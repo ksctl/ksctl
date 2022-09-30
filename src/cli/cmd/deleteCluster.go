@@ -12,7 +12,7 @@ import (
 
 // deleteClusterCmd represents the deleteCluster command
 var deleteClusterCmd = &cobra.Command{
-	Use:   "deleteCluster",
+	Use:   "delete-cluster",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
