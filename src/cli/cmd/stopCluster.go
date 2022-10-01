@@ -13,15 +13,13 @@ import (
 // stopClusterCmd represents the stopCluster command
 var stopClusterCmd = &cobra.Command{
 	Use:   "stop-cluster",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Use to stop a cluster",
+	Long: `It is used to stop cluster with the given name from user. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+kubesimpctl stop-cluster <name-cluster>
+CONSTRAINS: one cluster are platform dependent some don't have start and stop features Ex. EKS`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("stopCluster called")
+		fmt.Println("kubesimpctl stop-cluster [CALLED]")
 	},
 }
 

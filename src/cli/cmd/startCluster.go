@@ -13,15 +13,13 @@ import (
 // startClusterCmd represents the startCluster command
 var startClusterCmd = &cobra.Command{
 	Use:   "start-cluster",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Use to start a cluster",
+	Long: `It is used to start cluster with the given name from user. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+kubesimpctl start-cluster <name-cluster>
+CONSTRAINS: one cluster are platform dependent some don't have start and stop features Ex. EKS`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("startCluster called")
+		fmt.Println("kubesimpctl start-cluster [CALLED]")
 	},
 }
 

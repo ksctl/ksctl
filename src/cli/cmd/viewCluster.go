@@ -12,16 +12,13 @@ import (
 
 // viewClusterCmd represents the viewCluster command
 var viewClusterCmd = &cobra.Command{
-	Use:   "view-cluster",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "view-clusters",
+	Short: "Use to view clusters",
+	Long: `It is used to view clusters. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+kubesimpctl view-clusters `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("viewCluster called")
+		fmt.Println("kubesimpctl view-clusters [CALLED]")
 	},
 }
 
