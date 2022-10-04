@@ -4,6 +4,8 @@ A Kubernetes Distribution that can create clusters as well as High-Available clu
 
 # Project Scope
 
+User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted  
+
 # Demo Screenshot
 
 ![CoverImage](./CoverPage.png)
