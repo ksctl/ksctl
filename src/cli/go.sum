@@ -1,6 +1,6 @@
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
-github.com/dipankardas011/Kubesimpctl/src/api v0.0.0-20221005153821-4dab25961278 h1:mwIiuTeMAse2Z3w20A54pY7kiqk13SQwk16Vqjbpd0k=
-github.com/dipankardas011/Kubesimpctl/src/api v0.0.0-20221005153821-4dab25961278/go.mod h1:kPlLRrXCOfIizqnwdh6A2z+PCwLJ8h18BhYV4y44XAE=
+github.com/dipankardas011/Kubesimpctl/src/api v0.0.0-20221005164940-59f443eb4a07 h1:av48KvbtSrDT9oqCNI2+7+rruapFD38lDfEnmGqwAgg=
+github.com/dipankardas011/Kubesimpctl/src/api v0.0.0-20221005164940-59f443eb4a07/go.mod h1:kPlLRrXCOfIizqnwdh6A2z+PCwLJ8h18BhYV4y44XAE=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
