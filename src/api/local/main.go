@@ -1,5 +1,7 @@
 package local
 
+import "fmt"
+
 func DockerHandler() string {
-	return "Docker API"
+	return fmt.Sprintln("Local K8s Called!")
 }

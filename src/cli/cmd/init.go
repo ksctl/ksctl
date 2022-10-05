@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	credentials "github.com/dipankardas011/Kubesimpctl/src/api/payload"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,24 @@ var initCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		isSuccess := false
+		fmt.Println(`
+1> AWS (EKS)
+2> Azure (AKS)
+3> Civo (K3s)`)
+		choice := 0
+		_, err := fmt.Scanf("%d", &choice)
+		if err != nil {
+			panic(err.Error())
+		}
+		switch choice {
+		case 1, 2, 3:
+			fmt.Println("Enter your credentials")
+		default:
+			err := fmt.Errorf("Given Choice is Invalid!")
+			fmt.Println(err.Error())
+			return
+		}
+
 		for !isSuccess {
 			acckey := ""
 			secacckey := ""
@@ -30,6 +49,12 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				panic(err.Error())
 			}
+			credentialStore := credentials.Credential{AccessKey: acckey, Secret: secacckey}
+			// store them ~/.kube/kubesimpctl/cred/<provider>/credential
+			fmt.Println("Entered Cred")
+			fmt.Printf(`
+Access-Key: %s
+Secret-Access-Key: %s`, credentialStore.AccessKey, credentialStore.Secret)
 			isSuccess = true
 		}
 	},

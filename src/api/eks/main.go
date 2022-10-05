@@ -1,5 +1,7 @@
 package eks
 
+import "fmt"
+
 func EKSHandler() string {
-	return "AWS CLI API"
+	return fmt.Sprintln("AWS EKS Called!")
 }

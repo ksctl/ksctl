@@ -6,7 +6,10 @@ package cmd
 
 import (
 	"fmt"
-	awsHandler "github.com/dipankardas011/Kubesimpctl/src/api/aks"
+	azHandler "github.com/dipankardas011/Kubesimpctl/src/api/aks"
+	civoHandler "github.com/dipankardas011/Kubesimpctl/src/api/civo"
+	awsHandler "github.com/dipankardas011/Kubesimpctl/src/api/eks"
+	localHandler "github.com/dipankardas011/Kubesimpctl/src/api/local"
 	"github.com/spf13/cobra"
 )
 
@@ -19,13 +22,33 @@ var createClusterCmd = &cobra.Command{
 kubesimpctl create-cluster <name-cluster> --provider or -p ["azure", "gcp", "aws", "local"]
 CONSTRAINS: only single provider can be used at a time.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("kubesimpctl create-cluster [CALLED]")
-		fmt.Println(awsHandler.AKSHandler())
+		switch provider {
+		case "civo":
+			fmt.Println(civoHandler.K3sHandler())
+		case "azure":
+			fmt.Println(azHandler.AKSHandler())
+		case "aws":
+			fmt.Println(awsHandler.EKSHandler())
+		case "local":
+			fmt.Println(localHandler.DockerHandler())
+		}
 	},
 }
 
+var (
+	clusterName string
+	provider    string
+	nodes       uint8
+)
+
 func init() {
 	rootCmd.AddCommand(createClusterCmd)
+	createClusterCmd.Flags().StringVarP(&clusterName, "name", "c", "demo", "Cluster name")
+	createClusterCmd.Flags().StringVarP(&provider, "provider", "p", "local", "Provider Name [aws, azure, civo, local]")
+	createClusterCmd.Flags().Uint8VarP(&nodes, "nodes", "n", 1, "Number of Nodes")
+	createClusterCmd.MarkFlagRequired("name")
+	createClusterCmd.MarkFlagRequired("nodes")
+	createClusterCmd.MarkFlagRequired("provider")
 
 	// Here you will define your flags and configuration settings.
 
