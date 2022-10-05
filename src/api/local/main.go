@@ -1,16 +1,5 @@
-package main
+package local
 
-import (
-	"fmt"
-)
-
-
-func dockerHandler() string {
+func DockerHandler() string {
 	return "Docker API"
-}
-
-func main() {
-	fmt.Println("Local API Called")
-
-	fmt.Println(dockerHandler())
 }

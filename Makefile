@@ -7,3 +7,9 @@ docker_run:
 
 docker_clean:
 	docker rmi -f kubesimpctl
+
+build_exec:
+	cd src/cli && go build -v -o kubesimpctl .
+
+rm_exec:
+	rm -vf src/cli/kubesimpctl

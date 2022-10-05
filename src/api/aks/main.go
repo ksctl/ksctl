@@ -1,16 +1,7 @@
-package main
+package aks
 
-import (
-	"fmt"
-)
+import "fmt"
 
-
-func aksHandler() string {
-	return "Azure CLI API"
-}
-
-func main() {
-	fmt.Println("Azure AKS API Called")
-
-	fmt.Println(aksHandler())
+func AKSHandler() string {
+	return fmt.Sprintln("AWS Called!")
 }

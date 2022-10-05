@@ -9,3 +9,17 @@ User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to
 # Demo Screenshot
 
 ![CoverImage](./CoverPage.png)
+
+# How to install
+```zsh
+chmod +x install.sh
+make build_exec
+./install.sh
+```
+
+# How to uninstall
+
+```zsh
+make rm_exec
+./uninstall.sh
+```
