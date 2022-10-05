@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go get github.com/dipankardas011/Kubesimpctl/src/api@HEAD
 // createClusterCmd represents the createCluster command
 var createClusterCmd = &cobra.Command{
 	Use:   "create-cluster",
