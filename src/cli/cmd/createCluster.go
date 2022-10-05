@@ -6,9 +6,11 @@ package cmd
 
 import (
 	"fmt"
+	awsHandler "github.com/dipankardas011/Kubesimpctl/src/api/aks"
 	"github.com/spf13/cobra"
 )
 
+//go get github.com/dipankardas011/Kubesimpctl/src/api@HEAD
 // createClusterCmd represents the createCluster command
 var createClusterCmd = &cobra.Command{
 	Use:   "create-cluster",
@@ -19,6 +21,7 @@ kubesimpctl create-cluster <name-cluster> --provider or -p ["azure", "gcp", "aws
 CONSTRAINS: only single provider can be used at a time.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("kubesimpctl create-cluster [CALLED]")
+		fmt.Println(awsHandler.AKSHandler())
 	},
 }
 
