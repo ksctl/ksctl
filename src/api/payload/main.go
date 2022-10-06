@@ -1,35 +1,44 @@
 package payload
 
-type Credential struct {
-	AccessKey string
-	Secret    string
-}
-
 type Machine struct {
 	Nodes uint8
 	Cpu   uint8
 	Mem   uint8
+	Disk  uint8
 }
 
 type AwsProvider struct {
 	ClusterName string
-	Credential  Credential
 	HACluster   bool
+	Region      string
 	Spec        Machine
+	AccessKey   string
+	Secret      string
 }
 
-type AzureProvider struct{}
+type AzureProvider struct {
+	ClusterName         string
+	HACluster           bool
+	Region              string
+	Spec                Machine
+	SubscriptionID      string
+	TenantID            string
+	servicePrincipleKey string
+	servicePrincipleID  string
+}
 
 type CivoProvider struct {
 	ClusterName string
-	Credential  Credential
+	APIKey      string
 	HACluster   bool
+	Region      string
 	Spec        Machine
 }
 
 type LocalProvider struct {
 	ClusterName string
 	HACluster   bool
+	Region      string
 	Spec        Machine
 }
 
