@@ -23,8 +23,9 @@ sudo mkdir /etc/kubesimpctl
 # Setup the ~/.kube
 mkdir -p /home/$usr/.kube/kubesimpctl/config
 mkdir -p /home/$usr/.kube/kubesimpctl/cred
-mkdir /home/$usr/.kube/kubesimpctl/cred/aws
-mkdir /home/$usr/.kube/kubesimpctl/cred/azure
+touch /home/$usr/.kube/kubesimpctl/cred/aws
+touch /home/$usr/.kube/kubesimpctl/cred/azure
+touch /home/$usr/.kube/kubesimpctl/cred/civo
 
 mkdir /home/$usr/.kube/kubesimpctl/config/azure
 mkdir /home/$usr/.kube/kubesimpctl/config/aws

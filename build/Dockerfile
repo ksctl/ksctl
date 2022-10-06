@@ -18,8 +18,9 @@ RUN mkdir /etc/kubesimpctl
 
 RUN mkdir -p /home/$(whoami)/.kube/kubesimpctl/config && \
     mkdir -p /home/$(whoami)/.kube/kubesimpctl/cred && \
-    mkdir /home/$(whoami)/.kube/kubesimpctl/cred/aws && \
-    mkdir /home/$(whoami)/.kube/kubesimpctl/cred/azure && \
+    touch /home/$(whoami)/.kube/kubesimpctl/cred/aws && \
+    touch /home/$(whoami)/.kube/kubesimpctl/cred/azure && \
+    touch /home/$(whoami)/.kube/kubesimpctl/cred/civo && \
     mkdir /home/$(whoami)/.kube/kubesimpctl/config/azure && \
     mkdir /home/$(whoami)/.kube/kubesimpctl/config/aws && \
     mkdir /home/$(whoami)/.kube/kubesimpctl/config/local
