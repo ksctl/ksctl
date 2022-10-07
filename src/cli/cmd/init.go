@@ -84,7 +84,7 @@ func storeCredentials(provider int) bool {
 		}()
 
 		_, err = file.Write([]byte(fmt.Sprintf(`Access-Key: %s
-Secret-Access-Key: %s\n`, acckey, secacckey)))
+Secret-Access-Key: %s`, acckey, secacckey)))
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
@@ -105,7 +105,7 @@ Secret-Access-Key: %s\n`, acckey, secacckey)))
 			}
 		}()
 
-		_, err = file.Write([]byte(fmt.Sprintf("API-TOKEN-Key: %s\n", apikey)))
+		_, err = file.Write([]byte(fmt.Sprintf("API-TOKEN-Key: %s", apikey)))
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
@@ -150,7 +150,7 @@ Secret-Access-Key: %s\n`, acckey, secacckey)))
 		_, err = file.Write([]byte(fmt.Sprintf(`Subscription-ID: %s
 Tenant-ID: %s
 Service-Principal-ID: %s
-Service Principal-Key: %s\n`, skey, tid, pi, pk)))
+Service Principal-Key: %s`, skey, tid, pi, pk)))
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
