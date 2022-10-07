@@ -125,22 +125,21 @@ echo -n foobar | sha256sum | awk '{print $1}'
 
 ```text
 ~/.kube
-   ...
-   ...
-   kubesimpctl
-      cred
-         aws
-           |- credential
-         azure
-           |- credential
-      config
-         aws
-           |- 1ea1bf647945ff30efd1a62d0be84da659c248760cf9c0412840979a7b40a65a.yaml
-           |- bf67c55e1add70240ce7df7e7d0634da60c988a0f014da0dd635efc8136d9872.yaml
-         azure
-           |- c07ed10784ad2ff06e24aad10a90d3bd6bfdc8216cccea3a6aecd9575d04ab5d.yaml
-         local
-           |- 2a97516c354b68848cdbd8f54a226a0a55b21ed138e207ad6c5cbb9c00aa5aea.yaml
+  ...
+  ...
+  kubesimpctl
+    cred
+      aws
+      azure
+			civo
+    config
+      aws
+        |- 1ea1bf647945ff30efd1a62d0be84da659c248760cf9c0412840979a7b40a65a.yaml
+        |- bf67c55e1add70240ce7df7e7d0634da60c988a0f014da0dd635efc8136d9872.yaml
+      azure
+        |- c07ed10784ad2ff06e24aad10a90d3bd6bfdc8216cccea3a6aecd9575d04ab5d.yaml
+      local
+        |- 2a97516c354b68848cdbd8f54a226a0a55b21ed138e207ad6c5cbb9c00aa5aea.yaml
 ```
 
 
