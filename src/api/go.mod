@@ -1,3 +1,3 @@
-module github.com/dipankardas011/Kubesimpctl/src/api
+module github.com/kubesimplify/Kubesimpctl/src/api
 
 go 1.19

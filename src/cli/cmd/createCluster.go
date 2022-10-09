@@ -7,10 +7,10 @@ Kubesimplify (c)
 
 import (
 	"fmt"
-	azHandler "github.com/dipankardas011/Kubesimpctl/src/api/aks"
-	civoHandler "github.com/dipankardas011/Kubesimpctl/src/api/civo"
-	awsHandler "github.com/dipankardas011/Kubesimpctl/src/api/eks"
-	localHandler "github.com/dipankardas011/Kubesimpctl/src/api/local"
+	azHandler "github.com/kubesimplify/Kubesimpctl/src/api/aks"
+	civoHandler "github.com/kubesimplify/Kubesimpctl/src/api/civo"
+	awsHandler "github.com/kubesimplify/Kubesimpctl/src/api/eks"
+	localHandler "github.com/kubesimplify/Kubesimpctl/src/api/local"
 	"github.com/spf13/cobra"
 )
 
