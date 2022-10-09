@@ -1,10 +1,10 @@
-module github.com/dipankardas011/Kubesimpctl/src/cli
+module github.com/kubesimplify/Kubesimpctl/src/cli
 
 go 1.19
 
 // to get latest api changes replace the version number in module to main/latest
 require (
-	github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221006123524-2b9c7123c58c
+	github.com/kubesimplify/Kubesimpctl/src/api main
 	github.com/spf13/cobra v1.5.0
 )
 
