@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Get the binary from the source code
 

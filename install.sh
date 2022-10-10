@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Get the binary from the source code
 
@@ -10,7 +10,10 @@ usr=$(whoami)
 
 #wget -O ~URL_OF_BINARY~
 
+cd src/cli || echo "Path couldn't be found"
 # Check if sudo access
+go build -v -o kubesimpctl .
+cd - || echo "Failed to move to previous directory"
 chmod +x src/cli/kubesimpctl
 
 

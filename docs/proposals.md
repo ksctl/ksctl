@@ -13,6 +13,9 @@
 2. Some processing program will check request's validation (local validation and remote validation by dry-run)
 3. Then CLI will call using API to create job which in-turn will allocate the neccessary resources and configure them
 
+# Development
+1. When there is an API Change in `main` branch or in `PR` make sure to update the API part first then in second commit make the neccesssary changes to go.mod in src/cli like changing the branch and then `go mod tidy` to get the latest commit hash for that branch
+
 > **NOTE**
 > Suggestions are most Welcome
 
@@ -123,7 +126,7 @@ echo -n foobar | sha256sum | awk '{print $1}'
 > Suggestions are most Welcome
 
 
-```text
+```prototext
 ~/.kube
   ...
   ...
@@ -147,33 +150,56 @@ echo -n foobar | sha256sum | awk '{print $1}'
 
 ```go
 // General structure for API handler to consume from CLI
-type Provider struct {
-	Aws   *AwsApi
-	Azure *AzureApi
-	Local *LocalApi
+
+type Machine struct {
+	Nodes uint8
+	Cpu   uint8
+	Mem   uint8
+	Disk  uint8
 }
 
-type Credential struct {
-	Key 		string
-	SecretKey 	string
+type AwsProvider struct {
+	ClusterName string
+	HACluster   bool
+	Region      string
+	Spec        Machine
+	AccessKey   string
+	Secret      string
 }
 
-type AwsApi struct {
-	Passwd 	Credential
-	Nodes 	int16
-	Name   	string
+type AzureProvider struct {
+	ClusterName         string
+	HACluster           bool
+	Region              string
+	Spec                Machine
+	SubscriptionID      string
+	TenantID            string
+	servicePrincipleKey string
+	servicePrincipleID  string
 }
 
-type AzureApi struct {
-	Passwd 	Credential
-	Nodes 	int16
-	Name   	string
+type CivoProvider struct {
+	ClusterName string
+	APIKey      string
+	HACluster   bool
+	Region      string
+	Spec        Machine
 }
 
-type LocalApi struct {
-	Nodes 	int16
-	Name   	string
+type LocalProvider struct {
+	ClusterName string
+	HACluster   bool
+	Region      string
+	Spec        Machine
 }
+
+type Providers struct {
+	eks  *AwsProvider
+	aks  *AzureProvider
+	k3s  *CivoProvider
+	mk8s *LocalProvider
+}
+
 ```
 
 
