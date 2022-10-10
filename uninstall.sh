@@ -11,7 +11,7 @@ usr=$(whoami)
 #wget -O ~URL_OF_BINARY~
 
 # Check if sudo access
-
+rm -v src/cli/kubesimpctl
 
 sudo rm -vf /usr/local/bin/kubesimpctl
 

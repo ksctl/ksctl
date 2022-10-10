@@ -11,6 +11,7 @@ import (
 	civoHandler "github.com/kubesimplify/Kubesimpctl/src/api/civo"
 	awsHandler "github.com/kubesimplify/Kubesimpctl/src/api/eks"
 	localHandler "github.com/kubesimplify/Kubesimpctl/src/api/local"
+	payload "github.com/kubesimplify/Kubesimpctl/src/api/payload"
 	"github.com/spf13/cobra"
 )
 
@@ -33,20 +34,31 @@ CONSTRAINS: only single provider can be used at a time.`,
 		case "local":
 			fmt.Println(localHandler.DockerHandler())
 		}
+		fmt.Printf(`
+Name: %s
+Provider: %s
+  cpu: %s
+  mem: %s
+  disk: %s
+  nodes: %v
+`, clusterName, provider, spec.Cpu, spec.Mem, spec.Disk, spec.Nodes)
 	},
 }
 
 var (
 	clusterName string
 	provider    string
-	nodes       uint8
+	spec        payload.Machine
 )
 
 func init() {
 	rootCmd.AddCommand(createClusterCmd)
-	createClusterCmd.Flags().StringVarP(&clusterName, "name", "c", "demo", "Cluster name")
+	createClusterCmd.Flags().StringVarP(&clusterName, "name", "C", "demo", "Cluster name")
+	createClusterCmd.Flags().StringVarP(&spec.Cpu, "cpus", "c", "2", "CPU size")
+	createClusterCmd.Flags().StringVarP(&spec.Mem, "memory", "m", "4Gi", "Memory size")
+	createClusterCmd.Flags().StringVarP(&spec.Disk, "disks", "d", "500M", "Disk Size")
+	createClusterCmd.Flags().Uint8VarP(&spec.Nodes, "nodes", "n", 1, "Number of Nodes")
 	createClusterCmd.Flags().StringVarP(&provider, "provider", "p", "local", "Provider Name [aws, azure, civo, local]")
-	createClusterCmd.Flags().Uint8VarP(&nodes, "nodes", "n", 1, "Number of Nodes")
 	createClusterCmd.MarkFlagRequired("name")
 	createClusterCmd.MarkFlagRequired("nodes")
 	createClusterCmd.MarkFlagRequired("provider")
