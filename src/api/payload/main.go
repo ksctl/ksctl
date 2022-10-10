@@ -7,9 +7,9 @@ package payload
 
 type Machine struct {
 	Nodes uint8
-	Cpu   uint8
-	Mem   uint8
-	Disk  uint8
+	Cpu   string
+	Mem   string
+	Disk  string
 }
 
 type AwsProvider struct {
