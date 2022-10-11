@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -12,8 +11,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "kubesimpctl",
-	Short: "CLI tool for managing multiple K8s clusters",
+	Use:     "kubesimpctl",
+	Aliases: []string{"kuctl", "ksctl"},
+	Short:   "CLI tool for managing multiple K8s clusters",
 	Long: `CLI tool which can manage multiple K8s clusters
 from local clusters to cloud provider specific clusters.`,
 	// Uncomment the following line if your bare application
