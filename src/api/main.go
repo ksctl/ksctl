@@ -10,40 +10,34 @@ package main
 
 import (
 	"fmt"
-	"github.com/civo/civogo"
 	civoHandler "github.com/kubesimplify/Kubesimpctl/src/api/civo"
-	"strings"
-	"time"
 )
 
 func main() {
-	clusterID := civoHandler.CreateCluster(civoHandler.RegionLON, "demo")
-	client, err := civogo.NewClient(civoHandler.FetchAPIKey(), civoHandler.RegionLON)
+
+	fmt.Println("Enter 1 to create and 2 to delete")
+	var choice int
+	_, err := fmt.Scanf("%d", &choice)
 	if err != nil {
 		panic(err)
 	}
-	if strings.Compare(clusterID, civoHandler.ERRORCODE) == 0 {
-		panic(fmt.Errorf("[FAILED] create-cluster").Error())
-	}
-
-	for true {
-		clusterDS, _ := client.GetKubernetesCluster(clusterID)
-		if clusterDS.Ready {
-			//print the new KUBECONFIG
-			fmt.Println(clusterDS.KubeConfig)
-			break
+	switch choice {
+	case 1:
+		clusterConfig := civoHandler.ClusterInfoInjecter("demo", "FRA1", "g4s.kube.xsmall", 1)
+		err := civoHandler.CreateCluster(clusterConfig)
+		if err != nil {
+			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			return
 		}
-		fmt.Printf("Waiting.. Status: %v\n", clusterDS.Status)
-		time.Sleep(15 * time.Second)
-	}
-
-	choice := byte(' ')
-	fmt.Println("Do you want to remove the cluster Y/N..")
-	_, err = fmt.Scanf("%c", &choice)
-	if err != nil {
-		return
-	}
-	if choice == 'Y' || choice == 'y' {
-		fmt.Println(civoHandler.DeleteCluster(civoHandler.RegionLON, clusterID))
+		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+	case 2:
+		err = civoHandler.DeleteCluster("FRA1", "demo")
+		if err != nil {
+			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			return
+		}
+		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
+	default:
+		fmt.Println("INVALID CHOICE")
 	}
 }

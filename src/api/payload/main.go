@@ -6,7 +6,7 @@ Kubesimplify (c)
 package payload
 
 type Machine struct {
-	Nodes uint8
+	Nodes int
 	Cpu   string
 	Mem   string
 	Disk  string
