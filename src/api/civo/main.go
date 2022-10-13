@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	ERRORCODE = "0x001"
 	RegionLON = "LON1"
 	RegionFRA = "FRA1"
 	RegionNYC = "NYC1"
@@ -87,7 +86,7 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 		return err
 	}
 
-	//TODO: make this more reliable
+	//FIXME: make this more reliable
 	err = os.Setenv("KUBECONFIG", fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", getUserName(), clusterN+"-"+region))
 	if err != nil {
 		return err
