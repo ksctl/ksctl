@@ -95,14 +95,14 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	return nil
 }
 
-func ClusterInfoInjecter(cName, reg, size string, nodes int) payload.CivoProvider {
+func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int) payload.CivoProvider {
 	spec := payload.CivoProvider{
-		ClusterName: cName,
+		ClusterName: clusterName,
 		Region:      reg,
 		APIKey:      fetchAPIKey(),
 		HACluster:   false,
 		Spec: payload.Machine{
-			Nodes: nodes,
+			Nodes: noOfNodes,
 			Disk:  size,
 		},
 	}
