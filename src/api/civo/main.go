@@ -51,7 +51,7 @@ func isValidRegion(reg string) bool {
 //TODO: Refactoring of fmt.Sprintf statements
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// create the neccessary folders and files
-	err := os.Mkdir(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", getUserName(), clusterN+"-"+region), 0755)
+	err := os.Mkdir(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", getUserName(), clusterN+"-"+region), 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
@@ -81,7 +81,7 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	err = os.WriteFile(
 		fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), clusterN+"-"+region),
 		[]byte(fmt.Sprintf("%s %s", clusterID, region)),
-		0666)
+		0640)
 
 	if err != nil {
 		return err
@@ -95,7 +95,19 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	return nil
 }
 
-func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int) payload.CivoProvider {
+// ClusterInfoInjecter to return struct payload for sending it to API
+// clustername, regionCode, Size of Nodes, No of nodes, Applications(optional), cniPlugion(optional)
+func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, application, cniPlugin string) payload.CivoProvider {
+
+	if len(application) == 0 {
+		application = "Traefik-v2-nodeport,metrics-server" // default: applications
+	} else {
+		application += ",Traefik-v2-nodeport,metrics-server"
+	}
+	if len(cniPlugin) == 0 {
+		cniPlugin = "flannel" // default: flannel
+	}
+
 	spec := payload.CivoProvider{
 		ClusterName: clusterName,
 		Region:      reg,
@@ -104,7 +116,11 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int) payload.C
 		Spec: payload.Machine{
 			Nodes: noOfNodes,
 			Disk:  size,
+			Mem:   "0M",
+			Cpu:   "1m",
 		},
+		Application: application,
+		CNIPlugin:   cniPlugin,
 	}
 	return spec
 }
@@ -115,6 +131,16 @@ func isPresent(clusterName, Region string) bool {
 		return false
 	}
 	return true
+}
+
+func isValidSize(size string) bool {
+	validSizes := []string{"g4s.kube.xsmall", "g4s.kube.small", "g4s.kube.medium", "g4s.kube.large", "g4p.kube.small", "g4p.kube.medium", "g4p.kube.large", "g4p.kube.xlarge", "g4c.kube.small", "g4c.kube.medium", "g4c.kube.large", "g4c.kube.xlarge", "g4m.kube.small", "g4m.kube.medium", "g4m.kube.large", "g4m.kube.xlarge"}
+	for _, valid := range validSizes {
+		if strings.Compare(valid, size) == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func CreateCluster(payload payload.CivoProvider) error {
@@ -128,6 +154,10 @@ func CreateCluster(payload payload.CivoProvider) error {
 
 	if isPresent(payload.ClusterName, payload.Region) {
 		return fmt.Errorf("DUPLICATE Cluster")
+	}
+
+	if !isValidSize(payload.Spec.Disk) {
+		return fmt.Errorf("INVALID size of node")
 	}
 
 	client, err := civogo.NewClient(payload.APIKey, payload.Region)
@@ -146,6 +176,8 @@ func CreateCluster(payload payload.CivoProvider) error {
 		NumTargetNodes:  payload.Spec.Nodes,
 		TargetNodesSize: payload.Spec.Disk,
 		NetworkID:       defaultNetwork.ID,
+		Applications:    payload.Application,
+		CNIPlugin:       payload.CNIPlugin,
 	}
 
 	resp, err := client.NewKubernetesClusters(configK8s)
@@ -161,7 +193,6 @@ func CreateCluster(payload payload.CivoProvider) error {
 		}
 	}
 	fmt.Println(resp.Status)
-	//return resp.ID
 	for true {
 		clusterDS, _ := client.GetKubernetesCluster(resp.ID)
 		if clusterDS.Ready {
@@ -213,7 +244,6 @@ func deleteClusterWithID(regionCode string, clusterID string) error {
 		return err
 	}
 	fmt.Println(string(cluster.Result))
-	// remove the KUBECONFIG and related configs
 	return nil
 }
 

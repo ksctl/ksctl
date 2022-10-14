@@ -26,6 +26,21 @@ CONSTRAINS: only single provider can be used at a time.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		switch provider {
 		case "civo":
+			/**
+			clusterConfig := civoHandler.ClusterInfoInjecter(
+				clusterName,
+				Region,
+				spec.Disk,
+				spec.Nodes,
+				"Nginx",  ~~> Application
+				"cilium") ~~> CNI plugin
+			err := civoHandler.CreateCluster(clusterConfig)
+			if err != nil {
+				fmt.Printf("\033[31;40m%v\033[0m\n", err)
+				return
+			}
+			fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+			*/
 			fmt.Println(civoHandler.K3sHandler())
 		case "azure":
 			fmt.Println(azHandler.AKSHandler())
@@ -49,6 +64,7 @@ var (
 	clusterName string
 	provider    string
 	spec        payload.Machine
+	Region      string
 )
 
 func init() {

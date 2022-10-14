@@ -38,6 +38,8 @@ type CivoProvider struct {
 	HACluster   bool
 	Region      string
 	Spec        Machine
+	Application string
+	CNIPlugin   string
 }
 
 type LocalProvider struct {
