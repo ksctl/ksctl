@@ -22,6 +22,7 @@ const (
 	RegionNYC = "NYC1"
 )
 
+// getUserName returns current active username
 func getUserName() string {
 	usrCmd := exec.Command("whoami")
 
@@ -33,6 +34,7 @@ func getUserName() string {
 	return userName
 }
 
+// fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
 	file, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/cred/civo", getUserName()))
@@ -42,6 +44,7 @@ func fetchAPIKey() string {
 	return strings.Split(string(file), " ")[1]
 }
 
+// isValidRegion Checks whether the Region passed by user is valid according to CIVO
 func isValidRegion(reg string) bool {
 	return strings.Compare(reg, RegionFRA) == 0 ||
 		strings.Compare(reg, RegionNYC) == 0 ||
@@ -49,6 +52,8 @@ func isValidRegion(reg string) bool {
 }
 
 //TODO: Refactoring of fmt.Sprintf statements
+
+// kubeconfigWriter Writes kubeconfig supplied to config directory of respective cluster created
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// create the neccessary folders and files
 	err := os.Mkdir(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", getUserName(), clusterN+"-"+region), 0750)
@@ -95,8 +100,8 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	return nil
 }
 
-// ClusterInfoInjecter to return struct payload for sending it to API
-// clustername, regionCode, Size of Nodes, No of nodes, Applications(optional), cniPlugion(optional)
+// ClusterInfoInjecter Serializes the information which is return as payload.CivoProvider for sending it to API
+// {clustername, regionCode, Size of Nodes, No of nodes, Applications(optional), cniPlugion(optional)}
 func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, application, cniPlugin string) payload.CivoProvider {
 
 	if len(application) == 0 {
@@ -125,6 +130,7 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 	return spec
 }
 
+// isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
 	_, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), clusterName+"-"+Region))
 	if os.IsNotExist(err) {
@@ -133,6 +139,7 @@ func isPresent(clusterName, Region string) bool {
 	return true
 }
 
+// isValidSize checks whether the size passed by user is valid according to CIVO
 func isValidSize(size string) bool {
 	validSizes := []string{"g4s.kube.xsmall", "g4s.kube.small", "g4s.kube.medium", "g4s.kube.large", "g4p.kube.small", "g4p.kube.medium", "g4p.kube.large", "g4p.kube.xlarge", "g4c.kube.small", "g4c.kube.medium", "g4c.kube.large", "g4c.kube.xlarge", "g4m.kube.small", "g4m.kube.medium", "g4m.kube.large", "g4m.kube.xlarge"}
 	for _, valid := range validSizes {
@@ -143,6 +150,7 @@ func isValidSize(size string) bool {
 	return false
 }
 
+// CreateCluster creates cluster as provided configuration and returns whether it fails or not
 func CreateCluster(payload payload.CivoProvider) error {
 	if len(payload.APIKey) == 0 {
 		return fmt.Errorf("CREDENTIALS NOT PRESENT")
@@ -225,6 +233,7 @@ func CreateCluster(payload payload.CivoProvider) error {
 	return nil
 }
 
+//kubeconfigDeleter deletes all configs related to the provided cluster
 func kubeconfigDeleter(clustername, region string) error {
 	err := os.RemoveAll(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", getUserName(), clustername+"-"+region))
 	if err != nil {
@@ -233,6 +242,7 @@ func kubeconfigDeleter(clustername, region string) error {
 	return nil
 }
 
+// deleteClusterWithID delete cluster from CIVO by provided regionCode and clusterID
 func deleteClusterWithID(regionCode string, clusterID string) error {
 	client, err := civogo.NewClient(fetchAPIKey(), regionCode)
 	if err != nil {
@@ -247,6 +257,7 @@ func deleteClusterWithID(regionCode string, clusterID string) error {
 	return nil
 }
 
+// DeleteCluster deletes cluster from the given name and region
 func DeleteCluster(region, name string) error {
 	data, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), name+"-"+region))
 	if err != nil {
