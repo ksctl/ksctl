@@ -48,6 +48,7 @@ func isValidRegion(reg string) bool {
 		strings.Compare(reg, RegionLON) == 0
 }
 
+//TODO: Refactoring of fmt.Sprintf statements
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// create the neccessary folders and files
 	err := os.Mkdir(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", getUserName(), clusterN+"-"+region), 0755)
@@ -64,7 +65,7 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	}
 
 	// write the contents to the req. files
-	file, err := os.OpenFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", getUserName(), clusterN+"-"+region), os.O_WRONLY, 0755)
+	file, err := os.OpenFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", getUserName(), clusterN+"-"+region), os.O_WRONLY, 0750)
 	if err != nil {
 		return err
 	}
@@ -108,6 +109,14 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int) payload.C
 	return spec
 }
 
+func isPresent(clusterName, Region string) bool {
+	_, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), clusterName+"-"+Region))
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func CreateCluster(payload payload.CivoProvider) error {
 	if len(payload.APIKey) == 0 {
 		return fmt.Errorf("CREDENTIALS NOT PRESENT")
@@ -115,6 +124,10 @@ func CreateCluster(payload payload.CivoProvider) error {
 
 	if !isValidRegion(payload.Region) {
 		return fmt.Errorf("region code is Invalid")
+	}
+
+	if isPresent(payload.ClusterName, payload.Region) {
+		return fmt.Errorf("DUPLICATE Cluster")
 	}
 
 	client, err := civogo.NewClient(payload.APIKey, payload.Region)
@@ -138,7 +151,7 @@ func CreateCluster(payload payload.CivoProvider) error {
 	resp, err := client.NewKubernetesClusters(configK8s)
 	if err != nil {
 		if errors.Is(err, civogo.DatabaseKubernetesClusterDuplicateError) {
-			return fmt.Errorf("DUPLICATE NAME FOUND")
+			return fmt.Errorf("DUPLICATE Cluster FOUND")
 		}
 		if errors.Is(err, civogo.AuthenticationFailedError) {
 			return fmt.Errorf("AUTH FAILED")
@@ -153,11 +166,25 @@ func CreateCluster(payload payload.CivoProvider) error {
 		clusterDS, _ := client.GetKubernetesCluster(resp.ID)
 		if clusterDS.Ready {
 			//print the new KUBECONFIG
-			fmt.Println(clusterDS.KubeConfig)
 			err := kubeconfigWriter(clusterDS.KubeConfig, payload.ClusterName, payload.Region, resp.ID)
 			if err != nil {
 				return err
 			}
+
+			fmt.Println("Do you want to print KUBECONFIG here?[y/N]: ")
+			choice := byte(' ')
+			_, err = fmt.Scanf("%c", &choice)
+
+			if err != nil {
+				return err
+			}
+
+			if choice == 'y' || choice == 'Y' {
+				fmt.Println("########################")
+				fmt.Println(clusterDS.KubeConfig)
+				fmt.Println("########################")
+			}
+
 			break
 		}
 		fmt.Printf("Waiting.. Status: %v\n", clusterDS.Status)
