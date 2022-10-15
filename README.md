@@ -6,6 +6,9 @@ A Kubernetes Distribution that can create clusters as well as High-Available clu
 
 User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted  
 
+# Contribution Guidelines
+[contribution Guide](CONTRIBUTION-GUIDE.md)
+
 # Demo Screenshot
 
 ![CoverImage](./CoverPage.png)
