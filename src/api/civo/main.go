@@ -38,7 +38,7 @@ func getUserName() string {
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
-	file, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/cred/civo", getUserName()))
+	file, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/cred/civo", payload.GetUserName()))
 	if err != nil {
 		return ""
 	}
@@ -61,21 +61,21 @@ func isValidRegion(reg string) bool {
 // kubeconfigWriter Writes kubeconfig supplied to config directory of respective cluster created
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// create the neccessary folders and files
-	err := os.Mkdir(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", getUserName(), clusterN+"-"+region), 0750)
+	err := os.Mkdir(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", payload.GetUserName(), clusterN+"-"+region), 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	_, err = os.Create(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", getUserName(), clusterN+"-"+region))
+	_, err = os.Create(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", payload.GetUserName(), clusterN+"-"+region))
 	if err != nil {
 		return err
 	}
-	_, err = os.Create(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), clusterN+"-"+region))
+	_, err = os.Create(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", payload.GetUserName(), clusterN+"-"+region))
 	if err != nil {
 		return err
 	}
 
 	// write the contents to the req. files
-	file, err := os.OpenFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", getUserName(), clusterN+"-"+region), os.O_WRONLY, 0750)
+	file, err := os.OpenFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", payload.GetUserName(), clusterN+"-"+region), os.O_WRONLY, 0750)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// write the info of cluster
 	// @FORMAT: | ClusterID Region |
 	err = os.WriteFile(
-		fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), clusterN+"-"+region),
+		fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", payload.GetUserName(), clusterN+"-"+region),
 		[]byte(fmt.Sprintf("%s %s", clusterID, region)),
 		0640)
 
@@ -98,7 +98,7 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	}
 
 	//FIXME: make this more reliable
-	err = os.Setenv("KUBECONFIG", fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", getUserName(), clusterN+"-"+region))
+	err = os.Setenv("KUBECONFIG", fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/config", payload.GetUserName(), clusterN+"-"+region))
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
-	_, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), clusterName+"-"+Region))
+	_, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", payload.GetUserName(), clusterName+"-"+Region))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -240,7 +240,7 @@ func CreateCluster(payload payload.CivoProvider) error {
 
 //kubeconfigDeleter deletes all configs related to the provided cluster
 func kubeconfigDeleter(clustername, region string) error {
-	err := os.RemoveAll(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", getUserName(), clustername+"-"+region))
+	err := os.RemoveAll(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s", payload.GetUserName(), clustername+"-"+region))
 	if err != nil {
 		return err
 	}
@@ -264,9 +264,9 @@ func deleteClusterWithID(regionCode string, clusterID string) error {
 
 // DeleteCluster deletes cluster from the given name and region
 func DeleteCluster(region, name string) error {
-	data, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", getUserName(), name+"-"+region))
+	data, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/%s/info", payload.GetUserName(), name+"-"+region))
 	if err != nil {
-		return err
+		return fmt.Errorf("NO matching cluster found")
 	}
 	arr := strings.Split(string(data), " ")
 	err = deleteClusterWithID(arr[1], arr[0])

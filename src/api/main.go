@@ -9,24 +9,37 @@
 package main
 
 import (
-	"github.com/kubesimplify/Kubesimpctl/src/api/local"
 	"fmt"
+	"github.com/kubesimplify/Kubesimpctl/src/api/local"
 )
 
 func main() {
-	if err := local.CreateCluster("abcd", "kindest/node:v1.24.0"); err != nil {
-		panic(err)
+	ch := int8(0)
+	name := ""
+
+	fmt.Println("Want to create or delete [1/2]:")
+	_, err := fmt.Scanf("%d", &ch)
+	if err != nil {
+		return
 	}
 
-	ch := byte(' ')
-	fmt.Println("Do you want to delete the cluster")
-	_, err := fmt.Scanf("%c", &ch)
+	fmt.Println("Enter the cluster name to create / delete")
+	_, err = fmt.Scanf("%s", &name)
 	if err != nil {
-		panic(err)
+		return
 	}
-	if ch == 'y' {
-		if err := local.DeleteCluster("abcd", "./config.json"); err != nil {
-			panic(err)
+	switch ch {
+	case 1:
+		if err := local.CreateCluster(name); err != nil {
+			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			return
 		}
+		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+	case 2:
+		if err := local.DeleteCluster(name); err != nil {
+			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			return
+		}
+		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
 	}
 }
