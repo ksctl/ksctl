@@ -13,6 +13,7 @@ import (
 	localHandler "github.com/kubesimplify/Kubesimpctl/src/api/local"
 	payload "github.com/kubesimplify/Kubesimpctl/src/api/payload"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 // createClusterCmd represents the createCluster command
@@ -24,24 +25,25 @@ var createClusterCmd = &cobra.Command{
 kubesimpctl create-cluster <name-cluster> --provider or -p ["azure", "gcp", "aws", "local"]
 CONSTRAINS: only single provider can be used at a time.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		switch provider {
+		if len(cregion) == 0 && strings.Compare(cprovider, "local") != 0 {
+			panic(fmt.Errorf("region needs to be specifyed when using cloud providers"))
+		}
+		switch cprovider {
 		case "civo":
-			/**
 			clusterConfig := civoHandler.ClusterInfoInjecter(
-				clusterName,
-				Region,
-				spec.Disk,
-				spec.Nodes,
-				"Nginx",  ~~> Application
-				"cilium") ~~> CNI plugin
+				cclusterName,
+				cregion,
+				cspec.Disk,
+				cspec.Nodes,
+				"Nginx",  // TODO: Add Application addition option in CLI
+				"cilium") // TODO: Add CNI plugin addition option in CLI
 			err := civoHandler.CreateCluster(clusterConfig)
 			if err != nil {
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 				return
 			}
 			fmt.Printf("\033[32;40mCREATED!\033[0m\n")
-			*/
-			fmt.Println(civoHandler.K3sHandler())
+
 		case "azure":
 			fmt.Println(azHandler.AKSHandler())
 		case "aws":
@@ -49,32 +51,25 @@ CONSTRAINS: only single provider can be used at a time.`,
 		case "local":
 			fmt.Println(localHandler.DockerHandler())
 		}
-		fmt.Printf(`
-Name: %s
-Provider: %s
-  cpu: %s
-  mem: %s
-  disk: %s
-  nodes: %v
-`, clusterName, provider, spec.Cpu, spec.Mem, spec.Disk, spec.Nodes)
 	},
 }
 
 var (
-	clusterName string
-	provider    string
-	spec        payload.Machine
-	Region      string
+	cclusterName string
+	cprovider    string
+	cspec        payload.Machine
+	cregion      string
 )
 
 func init() {
 	rootCmd.AddCommand(createClusterCmd)
-	createClusterCmd.Flags().StringVarP(&clusterName, "name", "C", "demo", "Cluster name")
-	createClusterCmd.Flags().StringVarP(&spec.Cpu, "cpus", "c", "2", "CPU size")
-	createClusterCmd.Flags().StringVarP(&spec.Mem, "memory", "m", "4Gi", "Memory size")
-	createClusterCmd.Flags().StringVarP(&spec.Disk, "disks", "d", "500M", "Disk Size")
-	createClusterCmd.Flags().Uint8VarP(&spec.Nodes, "nodes", "n", 1, "Number of Nodes")
-	createClusterCmd.Flags().StringVarP(&provider, "provider", "p", "local", "Provider Name [aws, azure, civo, local]")
+	createClusterCmd.Flags().StringVarP(&cclusterName, "name", "C", "demo", "Cluster name")
+	createClusterCmd.Flags().StringVarP(&cspec.Cpu, "cpus", "c", "2", "CPU size")
+	createClusterCmd.Flags().StringVarP(&cspec.Mem, "memory", "m", "4Gi", "Memory size")
+	createClusterCmd.Flags().StringVarP(&cspec.Disk, "disks", "d", "500M", "Disk Size")
+	createClusterCmd.Flags().StringVarP(&cregion, "region", "r", "", "Region based on different cloud providers")
+	createClusterCmd.Flags().IntVarP(&cspec.Nodes, "nodes", "n", 1, "Number of Nodes")
+	createClusterCmd.Flags().StringVarP(&cprovider, "provider", "p", "local", "Provider Name [aws, azure, civo, local]")
 	createClusterCmd.MarkFlagRequired("name")
 	createClusterCmd.MarkFlagRequired("nodes")
 	createClusterCmd.MarkFlagRequired("provider")

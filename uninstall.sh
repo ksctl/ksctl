@@ -4,21 +4,14 @@
 
 usr=$(whoami)
 
-#cd /home/$usr
-
-#echo $(pwd)
-
 #wget -O ~URL_OF_BINARY~
-
-# Check if sudo access
-rm -v src/cli/kubesimpctl
 
 sudo rm -vf /usr/local/bin/kubesimpctl
 
 # Setup the configurations dir
-sudo rm -rfv /etc/kubesimpctl
+#sudo rm -rfv /etc/kubesimpctl
 
 # Setup the ~/.kube
 rm -rfv /home/$usr/.kube/kubesimpctl
 
-echo "UNINSTALL COMPLETE"
+echo -e "\033[32;40mUNINSTALL COMPLETE\033[0m\n"
