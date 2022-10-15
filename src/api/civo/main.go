@@ -41,6 +41,10 @@ func fetchAPIKey() string {
 	if err != nil {
 		return ""
 	}
+	if len(file) == 0 {
+		return ""
+	}
+
 	return strings.Split(string(file), " ")[1]
 }
 
