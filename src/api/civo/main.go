@@ -1,5 +1,6 @@
 /*
 Kubesimplify (c)
+Credit to @civo
 @maintainer: Dipankar Das <dipankardas0115@gmail.com> , Anurag Kumar <contact.anurag7@gmail.com>
 */
 
