@@ -54,12 +54,12 @@ type LocalProvider struct {
 	Spec        Machine
 }
 
-type Providers struct {
-	eks  *AwsProvider
-	aks  *AzureProvider
-	k3s  *CivoProvider
-	mk8s *LocalProvider
-}
+//type Providers struct {
+//	eks  *AwsProvider
+//	aks  *AzureProvider
+//	k3s  *CivoProvider
+//	mk8s *LocalProvider
+//}
 
 // GetUserName returns current active username
 func GetUserName() string {
@@ -71,4 +71,8 @@ func GetUserName() string {
 	}
 	userName := strings.Trim(string(output), "\n")
 	return userName
+}
+
+type PrinterKubeconfigPATH interface {
+	Printer(int)
 }

@@ -2,13 +2,13 @@ FROM golang:1.19 AS civoTest
 
 WORKDIR /go/src
 
-COPY go.sum .
+COPY ../go.sum .
 
-COPY go.mod .
+COPY ../go.mod .
 
 RUN go get -d || true
 
-COPY . .
+COPY ../ .
 
 RUN mkdir -p /home/$(whoami)/.kube/kubesimpctl/config/civo && \
 mkdir -p /home/$(whoami)/.kube/kubesimpctl/cred && \

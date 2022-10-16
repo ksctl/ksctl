@@ -1,8 +1,7 @@
 //
 // ######################################
-//		EARLY DEVELOPMENT
-//			CREATE & DELETE
-//   NOTE: THIS FILE WILL BE REMOVED IN NEXT VERSION
+//		EARLY DEVELOPMENT (TEMPLATE)
+//   NOTE: THIS FILE WILL BE REMOVED IN NEXT VERSION (remane it to main.go_template
 // ######################################
 //
 

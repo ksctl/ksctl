@@ -8,15 +8,18 @@ package local
 
 import (
 	"fmt"
-	"github.com/kubesimplify/Kubesimpctl/src/api/payload"
 	"os"
+	"time"
+
+	"github.com/kubesimplify/Kubesimpctl/src/api/payload"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
-	"time"
-	// "sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
 func generateConfig(noWorker, noControl int) ([]byte, error) {
+	if noWorker >= 0 && noControl == 0 {
+		return nil, fmt.Errorf("invalid config request control node cannot be 0")
+	}
 	var config string
 	config += `---
 kind: Cluster
@@ -36,14 +39,14 @@ nodes:
 	}
 	config += `...`
 
-	fmt.Println(config)
-
 	return []byte(config), nil
 }
 
 func configOption(noOfNodes int) (cluster.CreateOption, error) {
 
-	// formula to get number no of worker and controlplanes
+	if noOfNodes < 1 {
+		return nil, fmt.Errorf("invalid config request control node cannot be 0")
+	}
 	if noOfNodes == 1 {
 		var config string
 		config += `---
@@ -59,7 +62,7 @@ nodes:
 	worker := noOfNodes - control
 	raw, err := generateConfig(worker, control)
 	if err != nil {
-		return nil, fmt.Errorf("ERR in config generation")
+		return nil, fmt.Errorf("ERR in node config generation")
 	}
 
 	return cluster.CreateWithRawConfig(raw), nil
@@ -106,16 +109,16 @@ func createNecessaryConfigs(clusterName string) (string, error) {
 		return "", err
 	}
 
-	return kubeconfig + clusterName + "/config", nil
+	return workingDir + "/config", nil
 }
 
 func CreateCluster(Name string, nodes int) error {
+	//logg := log.Logger{}
 	provider := cluster.NewProvider(
-	// cluster.ProviderWithLogger(logger),  // TODO: try to add these
-	// runtime.GetDefault(logger),
+	//cluster.ProviderWithLogger(logg), // TODO: try to add these
+	//runtime.GetDefault(log),
 	)
 
-	// TODO: multiple node cluster creation
 	withConfig, err := configOption(nodes)
 	if err != nil {
 		return err
@@ -123,20 +126,8 @@ func CreateCluster(Name string, nodes int) error {
 	if isPresent(Name) {
 		return fmt.Errorf("DUPLICATE cluster creation")
 	}
-	/**
-	 * TODO & DISCUSS
-	 * whether to all users to config their clusters or they will specify the node number we will provide cluster
-	 * when the HA cluster gate is off then any node number > 1 will result in addtion of line
-	 * kind: Cluster
-	 * apiVersion: kind.x-k8s.io/v1alpha4
-	 * nodes:
-	 * - role: control-plane
-	 * - role: worker // addition of it
-	 *
-	 * if HA
-	 * then devise a formula how much controlplane node needed given number of nodes
-	 */
-	Wait := 5 * time.Second
+
+	Wait := 50 * time.Second
 	if err := provider.Create(
 		Name,
 		withConfig,
@@ -146,6 +137,7 @@ func CreateCluster(Name string, nodes int) error {
 		cluster.CreateWithKubeconfigPath(func() string {
 			path, err := createNecessaryConfigs(Name)
 			if err != nil {
+				_ = deleteConfigs(kubeconfig + Name) // for CLEANUP
 				panic(err)
 			}
 			return path
@@ -153,10 +145,30 @@ func CreateCluster(Name string, nodes int) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
+		_ = deleteConfigs(kubeconfig + Name) // for CLEANUP
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
+	var abc payload.PrinterKubeconfigPATH
+	abc = printer{ClusterName: Name}
+	abc.Printer(0)
 	return nil
+}
+
+type printer struct {
+	ClusterName string
+}
+
+func (p printer) Printer(a int) {
+	switch a {
+	case 0:
+		fmt.Printf("\nTo use this cluster set this environment variable\n\n")
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/local/%s/config'", payload.GetUserName(), p.ClusterName))
+	case 1:
+		fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
+		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
+	}
+	fmt.Println()
 }
 
 func deleteConfigs(path string) error {
@@ -180,5 +192,11 @@ func DeleteCluster(name string) error {
 	if err := provider.Delete(name, kubeconfig+name+"/config"); err != nil {
 		return fmt.Errorf("FAIL to delete cluster %q", "abcd")
 	}
-	return deleteConfigs(kubeconfig + name)
+	if err := deleteConfigs(kubeconfig + name); err != nil {
+		return err
+	}
+	var abc payload.PrinterKubeconfigPATH
+	abc = printer{ClusterName: name}
+	abc.Printer(1)
+	return nil
 }
