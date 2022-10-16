@@ -16,6 +16,7 @@ import (
 func main() {
 	ch := int8(0)
 	name := ""
+	no := 0
 
 	fmt.Println("Want to create or delete [1/2]:")
 	_, err := fmt.Scanf("%d", &ch)
@@ -28,17 +29,26 @@ func main() {
 	if err != nil {
 		return
 	}
+
 	switch ch {
 	case 1:
-		if err := local.CreateCluster(name); err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+		fmt.Println("Enter the ni of nodes")
+		_, err := fmt.Scanln(&no)
+		if err != nil {
+			return
+		}
+		if err := local.CreateCluster(name, no); err != nil {
+			fmt.Printf("\033[31;40m%v\033[0m\nDeleting configs...\n", err)
+			err := local.DeleteCluster(name)
+			if err != nil {
+				return
+			}
 			return
 		}
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	case 2:
 		if err := local.DeleteCluster(name); err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			return
 		}
 		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
 	}

@@ -12,24 +12,73 @@ import (
 	"os"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
+	"time"
 	// "sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
-// func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, error) {
-// 	// if not - then we are using a real file
-// 	if rawConfigFlag != "-" {
-// 		return cluster.CreateWithConfigFile(rawConfigFlag), nil
-// 	}
-// 	// otherwise read from stdin
-// 	raw, err := ioutil.ReadAll(stdin)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "error reading config from stdin")
-// 	}
-// 	return cluster.CreateWithRawConfig(raw), nil
-// }
+func generateConfig(noWorker, noControl int) ([]byte, error) {
+	var config string
+	config += `---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+`
+	for noControl > 0 {
+		config += `- role: control-plane
+`
+		noControl--
+	}
+
+	for noWorker > 0 {
+		config += `- role: worker
+`
+		noWorker--
+	}
+	config += `...`
+
+	fmt.Println(config)
+
+	return []byte(config), nil
+}
+
+func configOption(noOfNodes int) (cluster.CreateOption, error) {
+
+	// formula to get number no of worker and controlplanes
+	if noOfNodes == 1 {
+		var config string
+		config += `---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+...`
+		return cluster.CreateWithRawConfig([]byte(config)), nil
+	}
+	//control := noOfNodes / 2 // derive the math
+	control := 1
+	worker := noOfNodes - control
+	raw, err := generateConfig(worker, control)
+	if err != nil {
+		return nil, fmt.Errorf("ERR in config generation")
+	}
+
+	return cluster.CreateWithRawConfig(raw), nil
+}
+
 var (
 	kubeconfig = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/local/", payload.GetUserName())
 )
+
+func isPresent(cluster string) bool {
+	_, err := os.ReadFile(kubeconfig + cluster + "/info")
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return false
+}
 
 func createNecessaryConfigs(clusterName string) (string, error) {
 	workingDir := kubeconfig + clusterName
@@ -60,17 +109,20 @@ func createNecessaryConfigs(clusterName string) (string, error) {
 	return kubeconfig + clusterName + "/config", nil
 }
 
-func CreateCluster(Name string) error {
+func CreateCluster(Name string, nodes int) error {
 	provider := cluster.NewProvider(
 	// cluster.ProviderWithLogger(logger),  // TODO: try to add these
 	// runtime.GetDefault(logger),
 	)
 
 	// TODO: multiple node cluster creation
-	// withConfig, err := configOption(flags.Config, streams.In)
-	// if err != nil {
-	// 	return err
-	// }
+	withConfig, err := configOption(nodes)
+	if err != nil {
+		return err
+	}
+	if isPresent(Name) {
+		return fmt.Errorf("DUPLICATE cluster creation")
+	}
 	/**
 	 * TODO & DISCUSS
 	 * whether to all users to config their clusters or they will specify the node number we will provide cluster
@@ -81,16 +133,16 @@ func CreateCluster(Name string) error {
 	 * - role: control-plane
 	 * - role: worker // addition of it
 	 *
-	 *
 	 * if HA
 	 * then devise a formula how much controlplane node needed given number of nodes
 	 */
+	Wait := 5 * time.Second
 	if err := provider.Create(
 		Name,
-		// withConfig,
+		withConfig,
 		cluster.CreateWithNodeImage("kindest/node:v1.25.2@sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace"),
 		// cluster.CreateWithRetain(flags.Retain),
-		// cluster.CreateWithWaitForReady(Wait),
+		cluster.CreateWithWaitForReady(Wait),
 		cluster.CreateWithKubeconfigPath(func() string {
 			path, err := createNecessaryConfigs(Name)
 			if err != nil {
@@ -107,12 +159,20 @@ func CreateCluster(Name string) error {
 	return nil
 }
 
+func deleteConfigs(path string) error {
+	err := os.RemoveAll(path)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func DeleteCluster(name string) error {
 	provider := cluster.NewProvider(
 	// cluster.ProviderWithLogger(logger),	// TODO: try to add these
 	// runtime.GetDefault(logger),
 	)
-	_, err := os.ReadFile(kubeconfig + name+"/info")
+	_, err := os.ReadFile(kubeconfig + name + "/info")
 	if err != nil {
 		return fmt.Errorf("NO matching cluster found")
 	}
@@ -120,5 +180,5 @@ func DeleteCluster(name string) error {
 	if err := provider.Delete(name, kubeconfig+name+"/config"); err != nil {
 		return fmt.Errorf("FAIL to delete cluster %q", "abcd")
 	}
-	return nil
+	return deleteConfigs(kubeconfig + name)
 }
