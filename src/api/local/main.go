@@ -149,15 +149,12 @@ func CreateCluster(Name string, nodes int) error {
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
-	var abc payload.PrinterKubeconfigPATH
-	abc = printer{ClusterName: Name}
-	abc.Printer(0)
+	var printKubeconfig payload.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: Name}
+	printKubeconfig.Printer(0)
 	return nil
 }
 
-type printer struct {
-	ClusterName string
-}
 
 func (p printer) Printer(a int) {
 	switch a {
@@ -195,8 +192,12 @@ func DeleteCluster(name string) error {
 	if err := deleteConfigs(kubeconfig + name); err != nil {
 		return err
 	}
-	var abc payload.PrinterKubeconfigPATH
-	abc = printer{ClusterName: name}
-	abc.Printer(1)
+	var printKubeconfig payload.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: name}
+	printKubeconfig.Printer(1)
 	return nil
+}
+
+type printer struct {
+	ClusterName string
 }

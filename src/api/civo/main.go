@@ -142,22 +142,6 @@ func isValidSize(size string) bool {
 	return false
 }
 
-type printer struct {
-	ClusterName string
-	Region      string
-}
-
-func (p printer) Printer(a int) {
-	switch a {
-	case 0:
-		fmt.Printf("\nTo use this cluster set this environment variable\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/civo/%s/config'", payload.GetUserName(), p.ClusterName+"-"+p.Region))
-	case 1:
-		fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
-		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
-	}
-	fmt.Println()
-}
 
 // CreateCluster creates cluster as provided configuration and returns whether it fails or not
 func CreateCluster(cargo payload.CivoProvider) error {
@@ -233,9 +217,9 @@ func CreateCluster(cargo payload.CivoProvider) error {
 				fmt.Println(clusterDS.KubeConfig)
 				fmt.Println()
 			case 'n', 'N', ' ':
-				var abc payload.PrinterKubeconfigPATH
-				abc = printer{ClusterName: cargo.ClusterName, Region: cargo.Region}
-				abc.Printer(0)
+				var printKubeconfig payload.PrinterKubeconfigPATH
+				printKubeconfig = printer{ClusterName: cargo.ClusterName, Region: cargo.Region}
+				printKubeconfig.Printer(0)
 			}
 
 			break
@@ -275,6 +259,7 @@ func deleteClusterWithID(clusterID, regionCode string) error {
 func DeleteCluster(region, name string) error {
 	workingDir := kubeconfig + name + "-" + region
 
+	// data will contain the saved ClusterID and Region
 	data, err := os.ReadFile(workingDir + "/info")
 	if err != nil {
 		return fmt.Errorf("NO matching cluster found")
@@ -290,8 +275,26 @@ func DeleteCluster(region, name string) error {
 		return err
 	}
 
-	var abc payload.PrinterKubeconfigPATH
-	abc = printer{ClusterName: name, Region: region}
-	abc.Printer(1)
+	var printKubeconfig payload.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: name, Region: region}
+	printKubeconfig.Printer(1)
 	return nil
+}
+
+
+type printer struct {
+	ClusterName string
+	Region      string
+}
+
+func (p printer) Printer(a int) {
+	switch a {
+	case 0:
+		fmt.Printf("\nTo use this cluster set this environment variable\n\n")
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/civo/%s/config'", payload.GetUserName(), p.ClusterName+"-"+p.Region))
+		case 1:
+			fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
+			fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
+	}
+	fmt.Println()
 }
