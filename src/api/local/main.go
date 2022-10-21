@@ -1,7 +1,9 @@
 /*
 Kubesimplify
-Credit to @kubernetes.io
-@maintainer: Dipankar Das <dipankardas0115@gmail.com> , Anurag Kumar <contact.anurag7@gmail.com>
+Credit to @kubernetes.io, @kind
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 
 package local
@@ -154,7 +156,6 @@ func CreateCluster(Name string, nodes int) error {
 	printKubeconfig.Printer(0)
 	return nil
 }
-
 
 func (p printer) Printer(a int) {
 	switch a {

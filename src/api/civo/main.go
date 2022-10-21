@@ -1,7 +1,9 @@
 /*
-Kubesimplify (c)
+Kubesimplify
 Credit to @civo
-@maintainer: Dipankar Das <dipankardas0115@gmail.com> , Anurag Kumar <contact.anurag7@gmail.com>
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 
 package civo
@@ -142,7 +144,6 @@ func isValidSize(size string) bool {
 	return false
 }
 
-
 // CreateCluster creates cluster as provided configuration and returns whether it fails or not
 func CreateCluster(cargo payload.CivoProvider) error {
 	if len(cargo.APIKey) == 0 {
@@ -281,7 +282,6 @@ func DeleteCluster(region, name string) error {
 	return nil
 }
 
-
 type printer struct {
 	ClusterName string
 	Region      string
@@ -292,9 +292,9 @@ func (p printer) Printer(a int) {
 	case 0:
 		fmt.Printf("\nTo use this cluster set this environment variable\n\n")
 		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/civo/%s/config'", payload.GetUserName(), p.ClusterName+"-"+p.Region))
-		case 1:
-			fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
-			fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
+	case 1:
+		fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
+		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
 	}
 	fmt.Println()
 }
