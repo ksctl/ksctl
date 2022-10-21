@@ -50,7 +50,6 @@ type CivoProvider struct {
 type LocalProvider struct {
 	ClusterName string
 	HACluster   bool
-	Region      string
 	Spec        Machine
 }
 

@@ -290,10 +290,10 @@ type printer struct {
 func (p printer) Printer(a int) {
 	switch a {
 	case 0:
-		fmt.Printf("\nTo use this cluster set this environment variable\n\n")
+		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/civo/%s/config'", payload.GetUserName(), p.ClusterName+"-"+p.Region))
 	case 1:
-		fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
+		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
 	}
 	fmt.Println()

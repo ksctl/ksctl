@@ -114,32 +114,46 @@ func createNecessaryConfigs(clusterName string) (string, error) {
 	return workingDir + "/config", nil
 }
 
-func CreateCluster(Name string, nodes int) error {
-	//logg := log.Logger{}
+func ClusterInfoInjecter(clusterName string, noOfNodes int) payload.LocalProvider {
+	spec := payload.LocalProvider{
+		ClusterName: clusterName,
+		HACluster:   false,
+		Spec: payload.Machine{
+			Nodes: noOfNodes,
+			Disk:  "",
+			Mem:   "0M",
+			Cpu:   "1m",
+		},
+	}
+	return spec
+}
+
+func CreateCluster(cargo payload.LocalProvider) error {
+
 	provider := cluster.NewProvider(
 	//cluster.ProviderWithLogger(logg), // TODO: try to add these
 	//runtime.GetDefault(log),
 	)
 
-	withConfig, err := configOption(nodes)
+	withConfig, err := configOption(cargo.Spec.Nodes)
 	if err != nil {
 		return err
 	}
-	if isPresent(Name) {
+	if isPresent(cargo.ClusterName) {
 		return fmt.Errorf("DUPLICATE cluster creation")
 	}
 
 	Wait := 50 * time.Second
 	if err := provider.Create(
-		Name,
+		cargo.ClusterName,
 		withConfig,
 		cluster.CreateWithNodeImage("kindest/node:v1.25.2@sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace"),
 		// cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithWaitForReady(Wait),
 		cluster.CreateWithKubeconfigPath(func() string {
-			path, err := createNecessaryConfigs(Name)
+			path, err := createNecessaryConfigs(cargo.ClusterName)
 			if err != nil {
-				_ = deleteConfigs(kubeconfig + Name) // for CLEANUP
+				_ = deleteConfigs(kubeconfig + cargo.ClusterName) // for CLEANUP
 				panic(err)
 			}
 			return path
@@ -147,12 +161,12 @@ func CreateCluster(Name string, nodes int) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		_ = deleteConfigs(kubeconfig + Name) // for CLEANUP
+		_ = deleteConfigs(kubeconfig + cargo.ClusterName) // for CLEANUP
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
 	var printKubeconfig payload.PrinterKubeconfigPATH
-	printKubeconfig = printer{ClusterName: Name}
+	printKubeconfig = printer{ClusterName: cargo.ClusterName}
 	printKubeconfig.Printer(0)
 	return nil
 }
@@ -160,10 +174,10 @@ func CreateCluster(Name string, nodes int) error {
 func (p printer) Printer(a int) {
 	switch a {
 	case 0:
-		fmt.Printf("\nTo use this cluster set this environment variable\n\n")
+		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/local/%s/config'", payload.GetUserName(), p.ClusterName))
 	case 1:
-		fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
+		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
 	}
 	fmt.Println()
