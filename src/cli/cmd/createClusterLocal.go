@@ -35,7 +35,7 @@ var (
 
 func init() {
 	createClusterCmd.AddCommand(createClusterLocal)
-	createClusterLocal.Flags().StringVarP(&clocalclusterName, "name", "C", "demo", "Cluster name")
+	createClusterLocal.Flags().StringVarP(&clocalclusterName, "name", "c", "demo", "Cluster name")
 	createClusterLocal.Flags().IntVarP(&clocalspec.Nodes, "nodes", "n", 1, "Number of Nodes")
 	createClusterLocal.MarkFlagRequired("name")
 	createClusterLocal.MarkFlagRequired("nodes")
