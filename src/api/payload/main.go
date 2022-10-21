@@ -5,6 +5,11 @@ Kubesimplify (c)
 
 package payload
 
+import (
+	"os/exec"
+	"strings"
+)
+
 type Machine struct {
 	Nodes int
 	Cpu   string
@@ -49,9 +54,25 @@ type LocalProvider struct {
 	Spec        Machine
 }
 
-type Providers struct {
-	eks  *AwsProvider
-	aks  *AzureProvider
-	k3s  *CivoProvider
-	mk8s *LocalProvider
+//type Providers struct {
+//	eks  *AwsProvider
+//	aks  *AzureProvider
+//	k3s  *CivoProvider
+//	mk8s *LocalProvider
+//}
+
+// GetUserName returns current active username
+func GetUserName() string {
+	usrCmd := exec.Command("whoami")
+
+	output, err := usrCmd.Output()
+	if err != nil {
+		return ""
+	}
+	userName := strings.Trim(string(output), "\n")
+	return userName
+}
+
+type PrinterKubeconfigPATH interface {
+	Printer(int)
 }

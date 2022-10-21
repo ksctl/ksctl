@@ -2,6 +2,7 @@ package civo
 
 import (
 	"fmt"
+	"github.com/kubesimplify/Kubesimpctl/src/api/payload"
 	"os/exec"
 	"strings"
 	"testing"
@@ -42,7 +43,7 @@ func TestGetUserName(T *testing.T) {
 		T.Fatalf("Command exec failed")
 	}
 	userName := strings.Trim(string(output), "\n")
-	if strings.Compare(userName, getUserName()) != 0 {
+	if strings.Compare(userName, payload.GetUserName()) != 0 {
 		T.Fatalf("Couldn't retrieve the corrent username")
 	}
 }

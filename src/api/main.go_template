@@ -1,8 +1,7 @@
 //
 // ######################################
-//		EARLY DEVELOPMENT
-//			CREATE & DELETE
-//   NOTE: THIS FILE WILL BE REMOVED IN NEXT VERSION
+//		EARLY DEVELOPMENT (TEMPLATE)
+//   NOTE: THIS FILE WILL BE REMOVED IN NEXT VERSION (remane it to main.go_template
 // ######################################
 //
 
@@ -10,64 +9,46 @@ package main
 
 import (
 	"fmt"
-	civoHandler "github.com/kubesimplify/Kubesimpctl/src/api/civo"
+	"github.com/kubesimplify/Kubesimpctl/src/api/local"
 )
 
 func main() {
+	ch := int8(0)
+	name := ""
+	no := 0
 
-	fmt.Println("Enter 1 to create and 2 to delete")
-	var choice int
-	_, err := fmt.Scanf("%d", &choice)
+	fmt.Println("Want to create or delete [1/2]:")
+	_, err := fmt.Scanf("%d", &ch)
 	if err != nil {
-		panic(err)
+		return
 	}
-	switch choice {
+
+	fmt.Println("Enter the cluster name to create / delete")
+	_, err = fmt.Scanf("%s", &name)
+	if err != nil {
+		return
+	}
+
+	switch ch {
 	case 1:
-		clusterConfig := civoHandler.ClusterInfoInjecter("demo-london", "LON1", "g4s.kube.medium", 2, "Nginx", "cilium")
-		err := civoHandler.CreateCluster(clusterConfig)
+		fmt.Println("Enter the ni of nodes")
+		_, err := fmt.Scanln(&no)
 		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			return
 		}
-		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
-
-		clusterConfig = civoHandler.ClusterInfoInjecter("demo-nyc", "NYC1", "g4s.kube.medium", 2, "", "")
-		err = civoHandler.CreateCluster(clusterConfig)
-		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			return
-		}
-		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
-
-		clusterConfig = civoHandler.ClusterInfoInjecter("demo-fra", "FRA1", "g4s.kube.medium", 4, "Nginx,Traefik-v2-nodeport,metrics-server", "cilium")
-		err = civoHandler.CreateCluster(clusterConfig)
-		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+		if err := local.CreateCluster(name, no); err != nil {
+			fmt.Printf("\033[31;40m%v\033[0m\nDeleting configs...\n", err)
+			err := local.DeleteCluster(name)
+			if err != nil {
+				return
+			}
 			return
 		}
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	case 2:
-		err = civoHandler.DeleteCluster("LON1", "demo-london")
-		if err != nil {
+		if err := local.DeleteCluster(name); err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			return
 		}
 		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
-
-		err = civoHandler.DeleteCluster("NYC1", "demo-nyc")
-		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			return
-		}
-		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
-
-		err = civoHandler.DeleteCluster("FRA1", "demo-fra")
-		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			return
-		}
-		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
-	default:
-		fmt.Println("INVALID CHOICE")
 	}
 }
