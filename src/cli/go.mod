@@ -4,7 +4,7 @@ go 1.19
 
 // to get latest api changes replace the version number in module to main/latest
 require (
-	github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221015050056-c12b2981d69e
+	github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221021130224-a40f84e7e274
 	github.com/spf13/cobra v1.5.0
 )
 
