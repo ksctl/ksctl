@@ -16,6 +16,7 @@ kubesimpctl create-cluster local <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.Nodes)
+		fmt.Println("Building...")
 		if err := local.CreateCluster(cargo); err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\nDeleting configs...\n", err)
 			err := local.DeleteCluster(clocalclusterName)
@@ -38,5 +39,5 @@ func init() {
 	createClusterLocal.Flags().StringVarP(&clocalclusterName, "name", "c", "demo", "Cluster name")
 	createClusterLocal.Flags().IntVarP(&clocalspec.Nodes, "nodes", "n", 1, "Number of Nodes")
 	createClusterLocal.MarkFlagRequired("name")
-	createClusterLocal.MarkFlagRequired("nodes")
+	//createClusterLocal.MarkFlagRequired("nodes")
 }

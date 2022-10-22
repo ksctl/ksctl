@@ -27,6 +27,6 @@ var (
 
 func init() {
 	deleteClusterCmd.AddCommand(deleteClusterLocal)
-	deleteClusterLocal.Flags().StringVarP(&dlocalclusterName, "name", "C", "demo", "Cluster name")
+	deleteClusterLocal.Flags().StringVarP(&dlocalclusterName, "name", "c", "demo", "Cluster name")
 	deleteClusterLocal.MarkFlagRequired("name")
 }
