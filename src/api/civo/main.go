@@ -25,6 +25,10 @@ const (
 	RegionNYC = "NYC1"
 )
 
+var (
+	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/", payload.GetUserName())
+)
+
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
@@ -46,14 +50,10 @@ func isValidRegion(reg string) bool {
 		strings.Compare(reg, RegionLON) == 0
 }
 
-var (
-	kubeconfig = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/", payload.GetUserName())
-)
-
 // kubeconfigWriter Writes kubeconfig supplied to config directory of respective cluster created
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// create the neccessary folders and files
-	workingDir := kubeconfig + clusterN + "-" + region
+	workingDir := KUBECONFIG_PATH + clusterN + "-" + region
 	err := os.Mkdir(workingDir, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
@@ -126,7 +126,7 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
-	_, err := os.ReadFile(kubeconfig + clusterName + "-" + Region + "/info")
+	_, err := os.ReadFile(KUBECONFIG_PATH + clusterName + "-" + Region + "/info")
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -258,7 +258,7 @@ func deleteClusterWithID(clusterID, regionCode string) error {
 
 // DeleteCluster deletes cluster from the given name and region
 func DeleteCluster(region, name string) error {
-	workingDir := kubeconfig + name + "-" + region
+	workingDir := KUBECONFIG_PATH + name + "-" + region
 
 	// data will contain the saved ClusterID and Region
 	data, err := os.ReadFile(workingDir + "/info")
