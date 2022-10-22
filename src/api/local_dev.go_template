@@ -36,7 +36,8 @@ func main() {
 		if err != nil {
 			return
 		}
-		if err := local.CreateCluster(name, no); err != nil {
+		abcd := local.ClusterInfoInjecter(name, no)
+		if err := local.CreateCluster(abcd); err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\nDeleting configs...\n", err)
 			err := local.DeleteCluster(name)
 			if err != nil {

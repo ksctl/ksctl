@@ -18,6 +18,10 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
+var (
+	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/local/", payload.GetUserName())
+)
+
 func generateConfig(noWorker, noControl int) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
 		return nil, fmt.Errorf("invalid config request control node cannot be 0")
@@ -70,12 +74,8 @@ nodes:
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
-var (
-	kubeconfig = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/local/", payload.GetUserName())
-)
-
 func isPresent(cluster string) bool {
-	_, err := os.ReadFile(kubeconfig + cluster + "/info")
+	_, err := os.ReadFile(KUBECONFIG_PATH + cluster + "/info")
 	if err != nil {
 		if os.IsExist(err) {
 			return true
@@ -86,7 +86,7 @@ func isPresent(cluster string) bool {
 }
 
 func createNecessaryConfigs(clusterName string) (string, error) {
-	workingDir := kubeconfig + clusterName
+	workingDir := KUBECONFIG_PATH + clusterName
 	err := os.Mkdir(workingDir, 0750)
 	if err != nil && !os.IsExist(err) {
 		return "", err
@@ -114,32 +114,46 @@ func createNecessaryConfigs(clusterName string) (string, error) {
 	return workingDir + "/config", nil
 }
 
-func CreateCluster(Name string, nodes int) error {
-	//logg := log.Logger{}
+func ClusterInfoInjecter(clusterName string, noOfNodes int) payload.LocalProvider {
+	spec := payload.LocalProvider{
+		ClusterName: clusterName,
+		HACluster:   false,
+		Spec: payload.Machine{
+			Nodes: noOfNodes,
+			Disk:  "",
+			Mem:   "0M",
+			Cpu:   "1m",
+		},
+	}
+	return spec
+}
+
+func CreateCluster(cargo payload.LocalProvider) error {
+
 	provider := cluster.NewProvider(
 	//cluster.ProviderWithLogger(logg), // TODO: try to add these
 	//runtime.GetDefault(log),
 	)
 
-	withConfig, err := configOption(nodes)
+	withConfig, err := configOption(cargo.Spec.Nodes)
 	if err != nil {
 		return err
 	}
-	if isPresent(Name) {
+	if isPresent(cargo.ClusterName) {
 		return fmt.Errorf("DUPLICATE cluster creation")
 	}
 
 	Wait := 50 * time.Second
 	if err := provider.Create(
-		Name,
+		cargo.ClusterName,
 		withConfig,
 		cluster.CreateWithNodeImage("kindest/node:v1.25.2@sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace"),
 		// cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithWaitForReady(Wait),
 		cluster.CreateWithKubeconfigPath(func() string {
-			path, err := createNecessaryConfigs(Name)
+			path, err := createNecessaryConfigs(cargo.ClusterName)
 			if err != nil {
-				_ = deleteConfigs(kubeconfig + Name) // for CLEANUP
+				_ = deleteConfigs(KUBECONFIG_PATH + cargo.ClusterName) // for CLEANUP
 				panic(err)
 			}
 			return path
@@ -147,12 +161,12 @@ func CreateCluster(Name string, nodes int) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		_ = deleteConfigs(kubeconfig + Name) // for CLEANUP
+		_ = deleteConfigs(KUBECONFIG_PATH + cargo.ClusterName) // for CLEANUP
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
 	var printKubeconfig payload.PrinterKubeconfigPATH
-	printKubeconfig = printer{ClusterName: Name}
+	printKubeconfig = printer{ClusterName: cargo.ClusterName}
 	printKubeconfig.Printer(0)
 	return nil
 }
@@ -160,10 +174,10 @@ func CreateCluster(Name string, nodes int) error {
 func (p printer) Printer(a int) {
 	switch a {
 	case 0:
-		fmt.Printf("\nTo use this cluster set this environment variable\n\n")
+		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/local/%s/config'", payload.GetUserName(), p.ClusterName))
 	case 1:
-		fmt.Printf("\nUse the following command to unset KUBECONFIG\n\n")
+		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
 	}
 	fmt.Println()
@@ -182,15 +196,15 @@ func DeleteCluster(name string) error {
 	// cluster.ProviderWithLogger(logger),	// TODO: try to add these
 	// runtime.GetDefault(logger),
 	)
-	_, err := os.ReadFile(kubeconfig + name + "/info")
+	_, err := os.ReadFile(KUBECONFIG_PATH + name + "/info")
 	if err != nil {
 		return fmt.Errorf("NO matching cluster found")
 	}
 
-	if err := provider.Delete(name, kubeconfig+name+"/config"); err != nil {
+	if err := provider.Delete(name, KUBECONFIG_PATH+name+"/config"); err != nil {
 		return fmt.Errorf("FAIL to delete cluster %q", "abcd")
 	}
-	if err := deleteConfigs(kubeconfig + name); err != nil {
+	if err := deleteConfigs(KUBECONFIG_PATH + name); err != nil {
 		return err
 	}
 	var printKubeconfig payload.PrinterKubeconfigPATH
