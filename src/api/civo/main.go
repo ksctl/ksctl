@@ -217,7 +217,7 @@ func CreateCluster(cargo payload.CivoProvider) error {
 				fmt.Printf("\nHere is your KUBECONFIG\n\n")
 				fmt.Println(clusterDS.KubeConfig)
 				fmt.Println()
-			case 'n', 'N', ' ':
+			default:
 				var printKubeconfig payload.PrinterKubeconfigPATH
 				printKubeconfig = printer{ClusterName: cargo.ClusterName, Region: cargo.Region}
 				printKubeconfig.Printer(0)
