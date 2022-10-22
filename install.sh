@@ -8,6 +8,7 @@ usr=$(whoami)
 
 cd src/cli || echo -e "\033[31;40mPath couldn't be found\033[0m\n"
 # Check if sudo access
+go get -d
 go build -v -o kubesimpctl .
 cd - || echo -e "\033[31;40mFailed to move to previous directory\033[0m\n"
 chmod +x src/cli/kubesimpctl
