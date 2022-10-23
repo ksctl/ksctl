@@ -37,7 +37,7 @@ func main() {
 		clusterConfig := civoHandler.ClusterInfoInjecter(
 			name,
 			region,
-			"g4s.kube.medium",
+			"g4s.kube.xsmall",
 			1,
 			"",
 			"")

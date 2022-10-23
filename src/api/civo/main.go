@@ -26,13 +26,15 @@ const (
 )
 
 var (
+	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
+	// LINUX (DEFAULT)
 	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/civo/", payload.GetUserName())
 )
 
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
-	file, err := os.ReadFile(fmt.Sprintf("/home/%s/.kube/kubesimpctl/cred/civo", payload.GetUserName()))
+	file, err := os.ReadFile(payload.CRED_PATH + "civo")
 	if err != nil {
 		return ""
 	}
@@ -52,7 +54,7 @@ func isValidRegion(reg string) bool {
 
 // kubeconfigWriter Writes kubeconfig supplied to config directory of respective cluster created
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
-	// create the neccessary folders and files
+	// create the necessary folders and files
 	workingDir := KUBECONFIG_PATH + clusterN + "-" + region
 	err := os.Mkdir(workingDir, 0750)
 	if err != nil && !os.IsExist(err) {
@@ -86,7 +88,7 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 		return err
 	}
 
-	//FIXME: make this more reliable
+	//FIXME: make this more reliable ISSUE #5
 	err = os.Setenv("KUBECONFIG", workingDir+"/config")
 	if err != nil {
 		return err
@@ -141,6 +143,7 @@ func isValidSize(size string) bool {
 			return true
 		}
 	}
+	fmt.Printf("\n\n\033[34;40mAvailable Node sizes:\n- g4s.kube.xsmall\n- g4s.kube.small\n- g4s.kube.medium\n- g4s.kube.large\n- g4p.kube.small\n- g4p.kube.medium\n- g4p.kube.large\n- g4p.kube.xlarge\n- g4c.kube.small\n- g4c.kube.medium\n- g4c.kube.large\n- g4c.kube.xlarge\n- g4m.kube.small\n- g4m.kube.medium\n- g4m.kube.large\n- g4m.kube.xlarge\033[0m\n")
 	return false
 }
 
@@ -291,10 +294,22 @@ func (p printer) Printer(a int) {
 	switch a {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/civo/%s/config'", payload.GetUserName(), p.ClusterName+"-"+p.Region))
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s%s/config'", KUBECONFIG_PATH, p.ClusterName+"-"+p.Region))
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
 	}
 	fmt.Println()
+}
+
+// SwitchContext TODO: Add description
+func SwitchContext(clusterName, region string) error {
+	if isPresent(clusterName, region) {
+		// TODO: ISSUE #5
+		var printKubeconfig payload.PrinterKubeconfigPATH
+		printKubeconfig = printer{ClusterName: clusterName, Region: region}
+		printKubeconfig.Printer(0)
+		return nil
+	}
+	return fmt.Errorf("ERR Cluster not found")
 }
