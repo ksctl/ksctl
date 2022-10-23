@@ -52,7 +52,7 @@ func Printer(i int) {
 		}
 	}
 
-	arr, err := json.Marshal(toBePrinted)
+	arr, err := json.MarshalIndent(toBePrinted, "", "  ")
 	if err != nil {
 		panic(fmt.Errorf("JSON Convertion failed"))
 	}
