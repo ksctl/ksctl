@@ -1,3 +1,10 @@
+/*
+Kubesimplify
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
+*/
+
 package cmd
 
 import "github.com/spf13/cobra"
