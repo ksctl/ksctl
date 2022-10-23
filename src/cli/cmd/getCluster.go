@@ -1,8 +1,9 @@
 package cmd
 
 /*
-Kubesimplify (c)
-@maintainer: Dipankar Das <dipankardas0115@gmail.com> , Anurag Kumar <contact.anurag7@gmail.com>
+Kubesimplify
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
 */
 
 import (
@@ -22,7 +23,14 @@ type printer struct {
 	Provider    string `json:"provider"`
 }
 
+const (
+	ALL    = int(0)
+	CIVOC  = int(1)
+	LOCALC = int(2)
+)
+
 func printUtil(cargo []byte) {
+	//TODO: Added Table type display
 	fmt.Println(string(cargo))
 }
 
@@ -68,7 +76,9 @@ var getClusterCmd = &cobra.Command{
 
 kubesimpctl get-clusters `,
 	Run: func(cmd *cobra.Command, args []string) {
-		Printer(0) // 0 -> print all the clusters
+		Printer(ALL)
+		//Printer(CIVOC)
+		//Printer(LOCALC)
 	},
 }
 

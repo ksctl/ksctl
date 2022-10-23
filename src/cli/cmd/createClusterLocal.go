@@ -1,5 +1,11 @@
 package cmd
 
+/*
+Kubesimplify
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
+*/
 import (
 	"fmt"
 	"github.com/kubesimplify/Kubesimpctl/src/api/local"

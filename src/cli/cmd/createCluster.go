@@ -1,10 +1,11 @@
 package cmd
 
 /*
-Kubesimplify (c)
-@maintainer: Dipankar Das <dipankardas0115@gmail.com> , Anurag Kumar <contact.anurag7@gmail.com>
+Kubesimplify
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
-
 import (
 	"github.com/spf13/cobra"
 )
