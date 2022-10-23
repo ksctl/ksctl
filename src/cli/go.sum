@@ -40,10 +40,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
-github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221021134553-e4ecc82ac5d8 h1:NKy06wLm5iQEMwF5XZWI/cKLLPjlSfOEmppSfpiTIeY=
-github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221021134553-e4ecc82ac5d8/go.mod h1:LF6RHL4PrVBWJ36fgt7f+exNUCn0Q6aQOOVHRenZRL8=
-github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221022181111-2b31449ecef7 h1:BTdTu3RBusoXKPbJxMNK4NbV3/e/pCUDXnni1F5pQXY=
-github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221022181111-2b31449ecef7/go.mod h1:LF6RHL4PrVBWJ36fgt7f+exNUCn0Q6aQOOVHRenZRL8=
+github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221023165945-0b66696f75d3 h1:90SUabrRqjLuxy+RT3NzcAXz34+GgSdtNDG/qHGgvr0=
+github.com/kubesimplify/Kubesimpctl/src/api v0.0.0-20221023165945-0b66696f75d3/go.mod h1:LF6RHL4PrVBWJ36fgt7f+exNUCn0Q6aQOOVHRenZRL8=
 github.com/mattn/go-isatty v0.0.14 h1:yVuAays6BHfxijgZPzw+3Zlu5yQgKGP2/hcQbHb7S9Y=
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
