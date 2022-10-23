@@ -19,6 +19,8 @@ import (
 )
 
 var (
+	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
+	// LINUX (DEFAULT)
 	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/local/", payload.GetUserName())
 )
 
@@ -175,7 +177,7 @@ func (p printer) Printer(a int) {
 	switch a {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='/home/%s/.kube/kubesimpctl/config/local/%s/config'", payload.GetUserName(), p.ClusterName))
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s%s/config'", KUBECONFIG_PATH, p.ClusterName))
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
@@ -215,4 +217,16 @@ func DeleteCluster(name string) error {
 
 type printer struct {
 	ClusterName string
+}
+
+// SwitchContext TODO: Add description
+func SwitchContext(clusterName string) error {
+	if isPresent(clusterName) {
+		// TODO: ISSUE #5
+		var printKubeconfig payload.PrinterKubeconfigPATH
+		printKubeconfig = printer{ClusterName: clusterName}
+		printKubeconfig.Printer(0)
+		return nil
+	}
+	return fmt.Errorf("ERR Cluster not found")
 }
