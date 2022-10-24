@@ -1,4 +1,7 @@
-FROM golang:1.19
+FROM golang:1.19 AS builder
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
 WORKDIR /go/src
 
@@ -6,15 +9,18 @@ COPY go.sum .
 
 COPY go.mod .
 
-RUN go get -d || true
+RUN go mod download || true
 
 COPY . .
 
-RUN go build -o ksctl
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o ksctl
 
-RUN cp -v ksctl /usr/local/bin
 
-RUN mkdir /etc/ksctl
+FROM ubuntu
+
+WORKDIR /
+
+COPY --from=builder /go/src/ksctl /usr/local/bin/ksctl
 
 RUN mkdir -p /home/$(whoami)/.kube/ksctl/cred && \
     touch /home/$(whoami)/.kube/ksctl/cred/aws && \

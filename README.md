@@ -38,10 +38,19 @@ make uninstall-linux
 
 # Setup CLI (Docker)
 ## How to install
+
+> **Todo**
+> Local cluster cannot be created in docker container
+
 ```zsh
+cd build/
+docker build -f Dockerfile -t abc ../src/cli
+docker run -it --rm abc bash
 ```
 
 ## How to uninstall
 
 ```zsh
+docker rm -f abc
+docker rmi abc
 ```
