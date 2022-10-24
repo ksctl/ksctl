@@ -1,0 +1,31 @@
+name: Testing API
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  CIVO_API:
+    runs-on: ubuntu-latest
+#    environment: testing
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: |
+          cd test/api
+          chmod +x civo_test.sh
+          ./civo_test.sh
+
+  LOCAL_API:
+    runs-on: ubuntu-latest
+    #    environment: testing
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: |
+          cd test/api
+          chmod +x local_test.sh
+          ./local_test.sh
