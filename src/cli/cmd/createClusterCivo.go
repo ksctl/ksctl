@@ -8,8 +8,8 @@ Kubesimplify
 */
 import (
 	"fmt"
-	civoHandler "github.com/kubesimplify/Kubesimpctl/src/api/civo"
-	"github.com/kubesimplify/Kubesimpctl/src/api/payload"
+	civoHandler "github.com/kubesimplify/ksctl/src/api/civo"
+	"github.com/kubesimplify/ksctl/src/api/payload"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ var createClusterCivo = &cobra.Command{
 	Short: "Use to create a CIVO k3s cluster",
 	Long: `It is used to create cluster with the given name from user. For example:
 
-kubesimpctl create-cluster civo <arguments to civo cloud provider>
+ksctl create-cluster civo <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		clusterConfig := civoHandler.ClusterInfoInjecter(

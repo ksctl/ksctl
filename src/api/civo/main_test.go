@@ -2,7 +2,7 @@ package civo
 
 import (
 	"fmt"
-	"github.com/kubesimplify/Kubesimpctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/src/api/payload"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"os"

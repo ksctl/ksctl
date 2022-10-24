@@ -9,7 +9,7 @@ package main
 
 import (
 	"fmt"
-	civoHandler "github.com/kubesimplify/Kubesimpctl/src/api/civo"
+	civoHandler "github.com/kubesimplify/ksctl/src/api/civo"
 )
 
 func main() {

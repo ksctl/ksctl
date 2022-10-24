@@ -8,8 +8,8 @@ Kubesimplify
 */
 import (
 	"fmt"
-	"github.com/kubesimplify/Kubesimpctl/src/api/local"
-	"github.com/kubesimplify/Kubesimpctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/src/api/local"
+	"github.com/kubesimplify/ksctl/src/api/payload"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ var createClusterLocal = &cobra.Command{
 	Short: "Use to create a LOCAL cluster in Docker",
 	Long: `It is used to create cluster with the given name from user. For example:
 
-kubesimpctl create-cluster local <arguments to civo cloud provider>
+ksctl create-cluster local <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.Nodes)

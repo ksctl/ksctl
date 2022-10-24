@@ -10,17 +10,17 @@ RUN go get -d || true
 
 COPY . .
 
-RUN go build -o kubesimpctl
+RUN go build -o ksctl
 
-RUN cp -v kubesimpctl /usr/local/bin
+RUN cp -v ksctl /usr/local/bin
 
-RUN mkdir /etc/kubesimpctl
+RUN mkdir /etc/ksctl
 
-RUN mkdir -p /home/$(whoami)/.kube/kubesimpctl/cred && \
-    touch /home/$(whoami)/.kube/kubesimpctl/cred/aws && \
-    touch /home/$(whoami)/.kube/kubesimpctl/cred/azure && \
-    touch /home/$(whoami)/.kube/kubesimpctl/cred/civo && \
-    mkdir -p /home/$(whoami)/.kube/kubesimpctl/config/civo && \
-    mkdir /home/$(whoami)/.kube/kubesimpctl/config/azure && \
-    mkdir /home/$(whoami)/.kube/kubesimpctl/config/aws && \
-    mkdir /home/$(whoami)/.kube/kubesimpctl/config/local
+RUN mkdir -p /home/$(whoami)/.kube/ksctl/cred && \
+    touch /home/$(whoami)/.kube/ksctl/cred/aws && \
+    touch /home/$(whoami)/.kube/ksctl/cred/azure && \
+    touch /home/$(whoami)/.kube/ksctl/cred/civo && \
+    mkdir -p /home/$(whoami)/.kube/ksctl/config/civo && \
+    mkdir /home/$(whoami)/.kube/ksctl/config/azure && \
+    mkdir /home/$(whoami)/.kube/ksctl/config/aws && \
+    mkdir /home/$(whoami)/.kube/ksctl/config/local

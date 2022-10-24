@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubesimplify/Kubesimpctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/src/api/payload"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
 )
@@ -21,7 +21,7 @@ import (
 var (
 	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
 	// LINUX (DEFAULT)
-	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/kubesimpctl/config/local/", payload.GetUserName())
+	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/ksctl/config/local/", payload.GetUserName())
 )
 
 func generateConfig(noWorker, noControl int) ([]byte, error) {

@@ -1,4 +1,4 @@
-module github.com/kubesimplify/Kubesimpctl/src/api
+module github.com/kubesimplify/ksctl/src/api
 
 go 1.19
 

@@ -17,7 +17,7 @@ var createClusterCmd = &cobra.Command{
 	Aliases: []string{"create"},
 	Long: `It is used to create cluster with the given name from user. For example:
 
-kubesimpctl create-cluster ["azure", "gcp", "aws", "local"]
+ksctl create-cluster ["azure", "gcp", "aws", "local"]
 `,
 }
 

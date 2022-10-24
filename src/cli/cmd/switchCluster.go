@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubesimplify/Kubesimpctl/src/api/civo"
-	"github.com/kubesimplify/Kubesimpctl/src/api/local"
+	"github.com/kubesimplify/ksctl/src/api/civo"
+	"github.com/kubesimplify/ksctl/src/api/local"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +13,7 @@ var switchCluster = &cobra.Command{
 	Short:   "Use to switch between clusters",
 	Long: `It is used to switch cluster with the given clusterName from user. For example:
 
-kubesimpctl switch-context -p <civo,local>  -c <clustername> -r <region> <arguments to civo cloud provider>
+ksctl switch-context -p <civo,local>  -c <clustername> -r <region> <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		switch sprovider {

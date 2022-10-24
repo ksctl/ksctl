@@ -14,16 +14,16 @@ uninstall_linux:
 	./uninstall-linux.sh
 
 docker_builder:
-	docker build -t kubesimpctl -f build/Dockerfile src/cli/
+	docker build -t ksctl -f build/Dockerfile src/cli/
 
 docker_run:
-	docker run --rm -it kubesimpctl bash
+	docker run --rm -it ksctl bash
 
 docker_clean:
-	docker rmi -f kubesimpctl
+	docker rmi -f ksctl
 
 build_exec:
-	cd src/cli && go build -v -o kubesimpctl .
+	cd src/cli && go build -v -o ksctl .
 
 rm_exec:
-	rm -vf src/cli/kubesimpctl
+	rm -vf src/cli/ksctl

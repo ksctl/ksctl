@@ -80,5 +80,5 @@ type PrinterKubeconfigPATH interface {
 }
 
 var (
-	CRED_PATH = fmt.Sprintf("/home/%s/.kube/kubesimpctl/cred/", GetUserName())
+	CRED_PATH = fmt.Sprintf("/home/%s/.kube/ksctl/cred/", GetUserName())
 )

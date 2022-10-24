@@ -9,8 +9,8 @@ Kubesimplify
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kubesimplify/Kubesimpctl/src/api/civo"
-	"github.com/kubesimplify/Kubesimpctl/src/api/local"
+	"github.com/kubesimplify/ksctl/src/api/civo"
+	"github.com/kubesimplify/ksctl/src/api/local"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
@@ -74,7 +74,7 @@ var getClusterCmd = &cobra.Command{
 	Short:   "Use to get clusters",
 	Long: `It is used to view clusters. For example:
 
-kubesimpctl get-clusters `,
+ksctl get-clusters `,
 	Run: func(cmd *cobra.Command, args []string) {
 		Printer(ALL)
 		//Printer(CIVOC)

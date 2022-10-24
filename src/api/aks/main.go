@@ -1,6 +1,6 @@
 /*
-Kubesimplify (c)
-@maintainer: Dipankar Das <dipankardas0115@gmail.com> , Anurag Kumar <contact.anurag7@gmail.com>
+Kubesimplify
+@maintainer:
 */
 
 package aks

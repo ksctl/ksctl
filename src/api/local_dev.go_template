@@ -9,7 +9,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/kubesimplify/Kubesimpctl/src/api/local"
+	"github.com/kubesimplify/ksctl/src/api/local"
 )
 
 func main() {

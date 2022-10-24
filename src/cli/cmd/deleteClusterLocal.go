@@ -8,7 +8,7 @@ Kubesimplify
 */
 import (
 	"fmt"
-	"github.com/kubesimplify/Kubesimpctl/src/api/local"
+	"github.com/kubesimplify/ksctl/src/api/local"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ var deleteClusterLocal = &cobra.Command{
 	Short: "Use to delete a LOCAL cluster",
 	Long: `It is used to delete cluster of given provider. For example:
 
-kubesimpctl delete-cluster local <arguments to local/Docker provider>
+ksctl delete-cluster local <arguments to local/Docker provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := local.DeleteCluster(dlocalclusterName); err != nil {
