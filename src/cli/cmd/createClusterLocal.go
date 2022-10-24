@@ -11,6 +11,7 @@ import (
 	"github.com/kubesimplify/ksctl/src/api/local"
 	"github.com/kubesimplify/ksctl/src/api/payload"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 var createClusterLocal = &cobra.Command{
@@ -24,10 +25,13 @@ ksctl create-cluster local <arguments to civo cloud provider>
 		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.Nodes)
 		fmt.Println("Building...")
 		if err := local.CreateCluster(cargo); err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\nDeleting configs...\n", err)
-			err := local.DeleteCluster(clocalclusterName)
-			if err != nil {
-				return
+			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			if strings.Compare(err.Error(), "DUPLICATE cluster creation") != 0 {
+				fmt.Printf("Deleting configs...\n")
+				err := local.DeleteCluster(clocalclusterName)
+				if err != nil {
+					return
+				}
 			}
 			return
 		}
