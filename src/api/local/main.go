@@ -78,13 +78,10 @@ nodes:
 
 func isPresent(cluster string) bool {
 	_, err := os.ReadFile(KUBECONFIG_PATH + cluster + "/info")
-	if err != nil {
-		if os.IsExist(err) {
-			return true
-		}
+	if os.IsNotExist(err) {
 		return false
 	}
-	return false
+	return true
 }
 
 func createNecessaryConfigs(clusterName string) (string, error) {
