@@ -22,7 +22,7 @@ kubesimpctl switch-context -p <civo,local>  -c <clustername> -r <region> <argume
 			if err != nil {
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			}
-		case "aws", "azure", "civo":
+		case "civo":
 			if len(sregion) == 0 {
 				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
 			}
@@ -30,6 +30,10 @@ kubesimpctl switch-context -p <civo,local>  -c <clustername> -r <region> <argume
 			if err != nil {
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			}
+		case "azure":
+			fmt.Println("UNDER DEVELOPMENT!")
+		case "aws":
+			fmt.Println("UNDER DEVELOPMENT!")
 		default:
 			fmt.Println(fmt.Errorf("\033[31;40mINVALID provider (given)\033[0m\n"))
 		}

@@ -2,6 +2,13 @@
 
 A Kubernetes Distribution that can create clusters as well as High-Available clusters in local as well as on cloud platforms
 
+# Supported Platforms
+
+Platform | Status
+--|--
+Linux | :heavy_check_mark:
+macOS | :wrench:
+
 # Project Scope
 
 User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted  
@@ -9,7 +16,7 @@ User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to
 # Contribution Guidelines
 [contribution Guide](CONTRIBUTION-GUIDE.md)
 
-# Software Requirment Specification Docs
+# Software Requirement Specification Docs
 
 [Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing)
 
@@ -20,14 +27,13 @@ User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to
 # Setup CLI (Local)
 ## How to install
 ```zsh
-chmod +x install.sh
-./install.sh
+make install-linux
 ```
 
 ## How to uninstall
 
 ```zsh
-./uninstall.sh
+make uninstall-linux
 ```
 
 # Setup CLI (Docker)
