@@ -16,7 +16,7 @@ docker_builder:
 	docker build -t ksctl -f build/Dockerfile src/cli/ 
 
 docker_run:
-	docker run -v /var/run/docker.sock:/var/run/docker.sock --rm -it ksctl sh
+	docker run --net host -v /var/run/docker.sock:/var/run/docker.sock --rm -it ksctl sh
 
 docker_clean:
 	docker rmi -f ksctl

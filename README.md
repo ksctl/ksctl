@@ -2,6 +2,10 @@
 
 A Kubernetes Distribution that can create clusters as well as High-Available clusters in local as well as on cloud platforms
 
+# Prerequisites
+
+- Docker installed (if using docker container to run the CLI and for Local clusters)
+
 # Supported Platforms
 
 Platform | Status
