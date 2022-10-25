@@ -1,6 +1,7 @@
 # PRs
 - if it's documentation changes set target to `main` branch
 - if it's a API change then make sure you create the Issue then create 2 PR's one for API which will get merged then another for CLI
+> Reason 🧠: First we need to update the API as its merged in main branch then only it can use by go module to fetch latest API which can be used for CLI
 
 # Issues
 - mention the domain and concise subject
