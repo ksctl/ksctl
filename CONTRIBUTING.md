@@ -1,6 +1,6 @@
 # PRs
-- if its documentation changes set target to `main` branch
-- else to `dev` branch (especially PRs related to API)
+- if it's documentation changes set target to `main` branch
+- if it's a API change then make sure you create the Issue then create 2 PR's one for API which will get merged then another for CLI
 
 # Issues
 - mention the domain and concise subject
@@ -19,4 +19,7 @@
 
 # Related to CLI
 * [CLI](Sub-component)
+
+# Related to CI
+* [CI](Sub-component)
 ```
