@@ -16,9 +16,10 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o ksctl
 
 
-FROM ubuntu
+FROM docker
+#FROM alpine:3.16.2
 
-WORKDIR /
+WORKDIR /home/root
 
 COPY --from=builder /go/src/ksctl /usr/local/bin/ksctl
 
@@ -30,3 +31,7 @@ RUN mkdir -p /home/$(whoami)/.kube/ksctl/cred && \
     mkdir /home/$(whoami)/.kube/ksctl/config/azure && \
     mkdir /home/$(whoami)/.kube/ksctl/config/aws && \
     mkdir /home/$(whoami)/.kube/ksctl/config/local
+
+RUN wget -O kubectl https://dl.k8s.io/release/v1.25.0/bin/linux/amd64/kubectl
+
+RUN chmod +x kubectl && mv ./kubectl /usr/local/bin/kubectl
