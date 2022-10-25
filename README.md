@@ -29,32 +29,25 @@ User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to
 ![CoverImage](./CoverImage.png)
 
 # Setup CLI (Local)
-## How to install
+## Host Machine
+### Install
 ```zsh
 make install-linux
 ```
-
-## How to uninstall
-
+### Uninstall
 ```zsh
 make uninstall-linux
 ```
 
-# Setup CLI (Docker)
-## How to install
+## Inside Container
 
-> **Todo**
-> Local cluster cannot be created in docker container
+### Install
 
 ```zsh
-cd build/
-docker build -f Dockerfile -t abc ../src/cli
-docker run -it --rm abc bash
+make docker_builder docker_run
 ```
-
-## How to uninstall
+### Uninstall
 
 ```zsh
-docker rm -f abc
-docker rmi abc
+make docker_clean
 ```
