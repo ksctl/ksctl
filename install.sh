@@ -2,8 +2,6 @@
 
 # Get the binary from the source code
 
-usr=$(whoami)
-
 #wget -O ~URL_OF_BINARY~
 
 cd src/cli || echo -e "\033[31;40mPath couldn't be found\033[0m\n"
@@ -21,14 +19,14 @@ sudo mv -v src/cli/ksctl /usr/local/bin/ksctl
 #sudo mkdir /etc/ksctl
 
 # Setup the ~/.kube
-mkdir -p /home/$usr/.kube/ksctl/cred
-touch /home/$usr/.kube/ksctl/cred/aws
-touch /home/$usr/.kube/ksctl/cred/azure
-touch /home/$usr/.kube/ksctl/cred/civo
+mkdir -p ${HOME}/.kube/ksctl/cred
+touch ${HOME}/.kube/ksctl/cred/aws
+touch ${HOME}/.kube/ksctl/cred/azure
+touch ${HOME}/.kube/ksctl/cred/civo
 
-mkdir -p /home/$usr/.kube/ksctl/config/civo
-mkdir /home/$usr/.kube/ksctl/config/azure
-mkdir /home/$usr/.kube/ksctl/config/aws
-mkdir /home/$usr/.kube/ksctl/config/local
+mkdir -p ${HOME}/.kube/ksctl/config/civo
+mkdir ${HOME}/.kube/ksctl/config/azure
+mkdir ${HOME}/.kube/ksctl/config/aws
+mkdir ${HOME}/.kube/ksctl/config/local
 
 echo -e "\033[32;40mINSTALL COMPLETE\033[0m\n"

@@ -7,22 +7,22 @@ GOARCH_WINDOWS = amd64
 GOARCH_MACOS = arm64
 
 install_linux:
-	env GOOS=${GOOS_LINUX} GOARCH=${GOARCH_LINUX} ./install-linux.sh
+	env GOOS=${GOOS_LINUX} GOARCH=${GOARCH_LINUX} ./install.sh
 
-uninstall_linux:
-	./uninstall-linux.sh
+install_macos:
+	env GOOS=${GOOS_MACOS} GOARCH=${GOARCH_MACOS} ./install.sh
+
+uninstall:
+	./uninstall.sh
 
 docker_builder:
-	docker build -t ksctl -f build/Dockerfile src/cli/ 
+	docker build -t ksctl -f build/Dockerfile src/cli/
 
 docker_run:
-	docker run --net host -v /var/run/docker.sock:/var/run/docker.sock --rm -it ksctl sh
+	docker run \
+		--net host \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		--rm -it ksctl sh
 
 docker_clean:
 	docker rmi -f ksctl
-
-build_exec:
-	cd src/cli && go build -v -o ksctl .
-
-rm_exec:
-	rm -vf src/cli/ksctl

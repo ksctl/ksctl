@@ -10,9 +10,9 @@ RUN go get -d || true
 
 COPY . .
 
-RUN mkdir -p /home/$(whoami)/.kube/ksctl/config/civo && \
-mkdir -p /home/$(whoami)/.kube/ksctl/cred && \
-touch /home/$(whoami)/.kube/ksctl/cred/civo
+RUN mkdir -p ${HOME}/.kube/ksctl/config/civo && \
+mkdir -p ${HOME}/.kube/ksctl/cred && \
+touch ${HOME}/.kube/ksctl/cred/civo
 
 
 WORKDIR /go/src/civo
@@ -32,7 +32,7 @@ RUN go get -d || true
 
 COPY . .
 
-RUN mkdir -p /home/$(whoami)/.kube/ksctl/config/local
+RUN mkdir -p ${HOME}/.kube/ksctl/config/local
 
 WORKDIR /go/src/local
 

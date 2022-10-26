@@ -36,7 +36,7 @@ make install-linux
 ```
 ### Uninstall
 ```zsh
-make uninstall-linux
+make uninstall
 ```
 
 ## Inside Container

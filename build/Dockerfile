@@ -19,18 +19,18 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o ksctl
 FROM docker
 #FROM alpine:3.16.2
 
-WORKDIR /home/root
+WORKDIR /root
 
 COPY --from=builder /go/src/ksctl /usr/local/bin/ksctl
 
-RUN mkdir -p /home/$(whoami)/.kube/ksctl/cred && \
-    touch /home/$(whoami)/.kube/ksctl/cred/aws && \
-    touch /home/$(whoami)/.kube/ksctl/cred/azure && \
-    touch /home/$(whoami)/.kube/ksctl/cred/civo && \
-    mkdir -p /home/$(whoami)/.kube/ksctl/config/civo && \
-    mkdir /home/$(whoami)/.kube/ksctl/config/azure && \
-    mkdir /home/$(whoami)/.kube/ksctl/config/aws && \
-    mkdir /home/$(whoami)/.kube/ksctl/config/local
+RUN mkdir -p ${HOME}/.kube/ksctl/cred && \
+    touch ${HOME}/.kube/ksctl/cred/aws && \
+    touch ${HOME}/.kube/ksctl/cred/azure && \
+    touch ${HOME}/.kube/ksctl/cred/civo && \
+    mkdir -p ${HOME}/.kube/ksctl/config/civo && \
+    mkdir ${HOME}/.kube/ksctl/config/azure && \
+    mkdir ${HOME}/.kube/ksctl/config/aws && \
+    mkdir ${HOME}/.kube/ksctl/config/local
 
 RUN wget -O kubectl https://dl.k8s.io/release/v1.25.0/bin/linux/amd64/kubectl
 

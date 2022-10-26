@@ -9,8 +9,7 @@ package payload
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
+	"os"
 )
 
 type Machine struct {
@@ -65,14 +64,15 @@ type LocalProvider struct {
 
 // GetUserName returns current active username
 func GetUserName() string {
-	usrCmd := exec.Command("whoami")
 
-	output, err := usrCmd.Output()
-	if err != nil {
-		return ""
-	}
-	userName := strings.Trim(string(output), "\n")
-	return userName
+	usrCmd := os.Getenv("HOME")
+
+	//output, err := usrCmd.Output()
+	//if err != nil {
+	//	return ""
+	//}
+	//userName := strings.Trim(string(output), "\n")
+	return usrCmd
 }
 
 type PrinterKubeconfigPATH interface {
@@ -80,5 +80,5 @@ type PrinterKubeconfigPATH interface {
 }
 
 var (
-	CRED_PATH = fmt.Sprintf("/home/%s/.kube/ksctl/cred/", GetUserName())
+	CRED_PATH = fmt.Sprintf("%s/.kube/ksctl/cred/", GetUserName())
 )
