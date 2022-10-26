@@ -11,7 +11,8 @@ A Kubernetes Distribution that can create clusters as well as High-Available clu
 Platform | Status
 --|--
 Linux | :heavy_check_mark:
-macOS | :wrench:
+macOS | :heavy_check_mark:
+Windows | :wrench:
 
 # Project Scope
 
