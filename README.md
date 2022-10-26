@@ -29,11 +29,17 @@ User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to
 ![CoverImage](./CoverImage.png)
 
 # Setup CLI (Local)
-## Host Machine
+## Host Machine (LINUX)
 ### Install
 ```zsh
 make install-linux
 ```
+## Host Machine (macOS)
+### Install
+```zsh
+make install-macos
+```
+
 ### Uninstall
 ```zsh
 make uninstall

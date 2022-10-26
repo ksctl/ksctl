@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
-	"os/exec"
-	"strings"
 )
 
 const (
@@ -54,18 +52,11 @@ var initCmd = &cobra.Command{
 }
 
 func storeCredentials(provider int) bool {
-
-	usrCmd := exec.Command("whoami")
-
-	output, err := usrCmd.Output()
-	if err != nil {
-		return false
-	}
-	userName := strings.Trim(string(output), "\n")
+	userName := os.Getenv("HOME")
 
 	switch provider {
 	case AWS:
-		file, err := os.OpenFile(fmt.Sprintf("/home/%s/.kube/ksctl/cred/aws", userName), os.O_WRONLY, 0640)
+		file, err := os.OpenFile(fmt.Sprintf("%s/.kube/ksctl/cred/aws", userName), os.O_WRONLY, 0640)
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
@@ -92,7 +83,7 @@ Secret-Access-Key: %s`, acckey, secacckey)))
 			return false
 		}
 	case CIVO:
-		file, err := os.OpenFile(fmt.Sprintf("/home/%s/.kube/ksctl/cred/civo", userName), os.O_WRONLY, 0640)
+		file, err := os.OpenFile(fmt.Sprintf("%s/.kube/ksctl/cred/civo", userName), os.O_WRONLY, 0640)
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
@@ -113,7 +104,7 @@ Secret-Access-Key: %s`, acckey, secacckey)))
 			return false
 		}
 	case AZURE:
-		file, err := os.OpenFile(fmt.Sprintf("/home/%s/.kube/ksctl/cred/azure", userName), os.O_WRONLY, 0640)
+		file, err := os.OpenFile(fmt.Sprintf("%s/.kube/ksctl/cred/azure", userName), os.O_WRONLY, 0640)
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
