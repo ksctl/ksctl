@@ -21,7 +21,7 @@ import (
 var (
 	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
 	// LINUX (DEFAULT)
-	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/ksctl/config/local/", payload.GetUserName())
+	KUBECONFIG_PATH = fmt.Sprintf("%s/.kube/ksctl/config/local/", payload.GetUserName())
 )
 
 func generateConfig(noWorker, noControl int) ([]byte, error) {
@@ -50,6 +50,7 @@ nodes:
 	return []byte(config), nil
 }
 
+//TODO: Added option to add Nginx Ingress
 func configOption(noOfNodes int) (cluster.CreateOption, error) {
 
 	if noOfNodes < 1 {

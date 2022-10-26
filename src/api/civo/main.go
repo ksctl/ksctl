@@ -28,7 +28,7 @@ const (
 var (
 	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
 	// LINUX (DEFAULT)
-	KUBECONFIG_PATH = fmt.Sprintf("/home/%s/.kube/ksctl/config/civo/", payload.GetUserName())
+	KUBECONFIG_PATH = fmt.Sprintf("%s/.kube/ksctl/config/civo/", payload.GetUserName())
 )
 
 // fetchAPIKey returns the API key from the cred/civo file store
@@ -55,7 +55,7 @@ func isValidRegion(reg string) bool {
 // kubeconfigWriter Writes kubeconfig supplied to config directory of respective cluster created
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// create the necessary folders and files
-	workingDir := KUBECONFIG_PATH + clusterN + "-" + region
+	workingDir := KUBECONFIG_PATH + clusterN + " " + region
 	err := os.Mkdir(workingDir, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
@@ -128,7 +128,7 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
-	_, err := os.ReadFile(KUBECONFIG_PATH + clusterName + "-" + Region + "/info")
+	_, err := os.ReadFile(KUBECONFIG_PATH + clusterName + " " + Region + "/info")
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -147,10 +147,44 @@ func isValidSize(size string) bool {
 	return false
 }
 
+func helperASCII(character uint8) bool {
+	return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z')
+}
+
+func helperDIGIT(character uint8) bool {
+	return character >= '0' && character <= '9'
+}
+
+func helperSPECIAL(character uint8) bool {
+	return character == '-' || character == '_'
+}
+
+// TODO: Use Regex expression for valid clusterNames
+func isValidName(clusterName string) bool {
+
+	if !helperASCII(clusterName[0]) &&
+		(helperDIGIT(clusterName[0]) || !helperDIGIT(clusterName[0])) {
+		return false
+	}
+
+	for _, chara := range clusterName {
+		if helperASCII(uint8(chara)) || helperDIGIT(uint8(chara)) || helperSPECIAL(uint8(chara)) {
+			continue
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
 // CreateCluster creates cluster as provided configuration and returns whether it fails or not
 func CreateCluster(cargo payload.CivoProvider) error {
 	if len(cargo.APIKey) == 0 {
 		return fmt.Errorf("CREDENTIALS NOT PRESENT")
+	}
+
+	if !isValidName(cargo.ClusterName) {
+		return fmt.Errorf("INVALID CLUSTER NAME")
 	}
 
 	if !isValidRegion(cargo.Region) {
@@ -261,7 +295,7 @@ func deleteClusterWithID(clusterID, regionCode string) error {
 
 // DeleteCluster deletes cluster from the given name and region
 func DeleteCluster(region, name string) error {
-	workingDir := KUBECONFIG_PATH + name + "-" + region
+	workingDir := KUBECONFIG_PATH + name + " " + region
 
 	// data will contain the saved ClusterID and Region
 	data, err := os.ReadFile(workingDir + "/info")
@@ -294,7 +328,7 @@ func (p printer) Printer(a int) {
 	switch a {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s%s/config'", KUBECONFIG_PATH, p.ClusterName+"-"+p.Region))
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s%s/config'", KUBECONFIG_PATH, p.ClusterName+" "+p.Region))
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
