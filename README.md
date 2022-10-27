@@ -33,12 +33,12 @@ User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to
 ## Host Machine (LINUX)
 ### Install
 ```zsh
-make install-linux
+make install_linux
 ```
 ## Host Machine (macOS)
 ### Install
 ```zsh
-make install-macos
+make install_macos
 ```
 
 ### Uninstall
