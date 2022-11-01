@@ -9,6 +9,6 @@ sudo rm -vf /usr/local/bin/ksctl
 #sudo rm -rfv /etc/ksctl
 
 # Setup the ~/.kube
-rm -rfv ${HOME}/.kube/ksctl
+rm -rfv ${HOME}/.ksctl
 
 echo -e "\033[32;40mUNINSTALL COMPLETE\033[0m\n"

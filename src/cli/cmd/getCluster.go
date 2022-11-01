@@ -34,6 +34,7 @@ func printUtil(cargo []byte) {
 	fmt.Println(string(cargo))
 }
 
+// Printer TODO: Move the contents of get clusters to their respective api files
 func Printer(i int) {
 	var toBePrinted []printer
 

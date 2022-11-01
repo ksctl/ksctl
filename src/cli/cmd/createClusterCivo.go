@@ -47,11 +47,11 @@ var (
 
 func init() {
 	createClusterCmd.AddCommand(createClusterCivo)
-	createClusterCivo.Flags().StringVarP(&cclusterName, "name", "C", "", "Cluster name")
+	createClusterCivo.Flags().StringVarP(&cclusterName, "name", "c", "", "Cluster name")
 	createClusterCivo.Flags().StringVarP(&cspec.Disk, "nodeSize", "s", "g4s.kube.xsmall", "Node size")
 	createClusterCivo.Flags().StringVarP(&cregion, "region", "r", "", "Region")
 	createClusterCivo.Flags().StringVarP(&apps, "apps", "a", "", "PreInstalled Apps with comma seperated string")
-	createClusterCivo.Flags().StringVarP(&cni, "cni", "c", "", "CNI Plugin to be installed")
+	createClusterCivo.Flags().StringVarP(&cni, "cni", "C", "", "CNI Plugin to be installed")
 	createClusterCivo.Flags().IntVarP(&cspec.Nodes, "nodes", "n", 1, "Number of Nodes")
 	createClusterCivo.MarkFlagRequired("name")
 	//createClusterCivo.MarkFlagRequired("nodeSize")

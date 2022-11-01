@@ -23,14 +23,14 @@ WORKDIR /root
 
 COPY --from=builder /go/src/ksctl /usr/local/bin/ksctl
 
-RUN mkdir -p ${HOME}/.kube/ksctl/cred && \
-    touch ${HOME}/.kube/ksctl/cred/aws && \
-    touch ${HOME}/.kube/ksctl/cred/azure && \
-    touch ${HOME}/.kube/ksctl/cred/civo && \
-    mkdir -p ${HOME}/.kube/ksctl/config/civo && \
-    mkdir ${HOME}/.kube/ksctl/config/azure && \
-    mkdir ${HOME}/.kube/ksctl/config/aws && \
-    mkdir ${HOME}/.kube/ksctl/config/local
+RUN mkdir -p ${HOME}/.ksctl/cred && \
+    touch ${HOME}/.ksctl/cred/aws && \
+    touch ${HOME}/.ksctl/cred/azure && \
+    touch ${HOME}/.ksctl/cred/civo && \
+    mkdir -p ${HOME}/.ksctl/config/civo && \
+    mkdir ${HOME}/.ksctl/config/azure && \
+    mkdir ${HOME}/.ksctl/config/aws && \
+    mkdir ${HOME}/.ksctl/config/local
 
 RUN wget -O kubectl https://dl.k8s.io/release/v1.25.0/bin/linux/amd64/kubectl
 

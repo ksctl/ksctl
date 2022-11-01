@@ -18,15 +18,15 @@ sudo mv -v src/cli/ksctl /usr/local/bin/ksctl
 # Setup the configurations dir
 #sudo mkdir /etc/ksctl
 
-# Setup the ~/.kube
-mkdir -p ${HOME}/.kube/ksctl/cred
-touch ${HOME}/.kube/ksctl/cred/aws
-touch ${HOME}/.kube/ksctl/cred/azure
-touch ${HOME}/.kube/ksctl/cred/civo
+# Setup the ~/.ksctl
+mkdir -p ${HOME}/.ksctl/cred
+touch ${HOME}/.ksctl/cred/aws
+touch ${HOME}/.ksctl/cred/azure
+touch ${HOME}/.ksctl/cred/civo
 
-mkdir -p ${HOME}/.kube/ksctl/config/civo
-mkdir ${HOME}/.kube/ksctl/config/azure
-mkdir ${HOME}/.kube/ksctl/config/aws
-mkdir ${HOME}/.kube/ksctl/config/local
+mkdir -p ${HOME}/.ksctl/config/civo
+mkdir ${HOME}/.ksctl/config/azure
+mkdir ${HOME}/.ksctl/config/aws
+mkdir ${HOME}/.ksctl/config/local
 
 echo -e "\033[32;40mINSTALL COMPLETE\033[0m\n"

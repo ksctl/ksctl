@@ -22,16 +22,16 @@
 # Goal
 
 - Local system
-	- [  ] Single Node cluster
-	- [  ] Multi-node cluster
-	- [  ] High-Available K8s cluster
+	- [x] Single Node cluster
+	- [x] Multi-node cluster
+	- [ ] High-Available K8s cluster
 - Cloud provider
-	- [  ] multi-node cluster
-	- [  ] High-Available K8s cluster
+	- [x] multi-node cluster
+	- [ ] High-Available K8s cluster
 - Integrated system
-	- [  ] Store each cluster's info in some encrypted format in permenanent dir
-	- [  ] To have a head pointer similar to `Git` used to identify which context is been used
-    - [  ] change contexts by moving `KUBECONFIG` for the target file to the location `~/.kube/config`
+	- [ ] Store each cluster's info in some encrypted format in permenanent dir
+	- [ ] To have a head pointer similar to `Git` used to identify which context is been used
+    - [ ] change contexts by moving `KUBECONFIG` for the target file to the location `~/.kube/config`
 
 
 # CLI interface
@@ -40,24 +40,24 @@
 > Suggestions are most Welcome
 
 ```bash
-kubesimpctl get-contexts
-kubesimpctl set-context
-kubesimpctl init
-kubesimpctl pre-check
+ksctl get-contexts
+ksctl set-context
+ksctl init
+ksctl pre-check
 
 # local K8s cluster
 
 # create-cluster
-kubesimpctl create-cluster --provider local -name demo-cluster
+ksctl create-cluster --provider local -name demo-cluster
 
 # delete-cluster
-kubesimpctl delete-cluster -name demo-cluster # auto detect provider and delete the resources
+ksctl delete-cluster -name demo-cluster # auto detect provider and delete the resources
 
 # start-cluster
-kubesimpctl start-cluster -name demo-cluster 	# replace the current KUBECONFIG if present with the specific cluster's kubeconfig
+ksctl start-cluster -name demo-cluster 	# replace the current KUBECONFIG if present with the specific cluster's kubeconfig
 
 # stop-cluster
-kubesimpctl stop-cluster -name demo-cluster		# replace the current KUBECONFIG with the previous one if present or else empty config file
+ksctl stop-cluster -name demo-cluster		# replace the current KUBECONFIG with the previous one if present or else empty config file
 
 
 
@@ -66,13 +66,13 @@ kubesimpctl stop-cluster -name demo-cluster		# replace the current KUBECONFIG wi
 
 ## EKS
 # create-cluster
-kubesimpctl create-cluster --provider aws -name demo-cluster2 # other paramaters for EKS specific
+ksctl create-cluster --provider aws -name demo-cluster2 # other paramaters for EKS specific
 # For Example: eksctl
 
 
 ## AKS
 # create-cluster
-kubesimpctl create-cluster --provider azure -name demo-cluster3 #other paramaters for EKS specific
+ksctl create-cluster --provider azure -name demo-cluster3 #other paramaters for EKS specific
 
 ```
 
@@ -82,13 +82,7 @@ kubesimpctl create-cluster --provider azure -name demo-cluster3 #other paramater
 - current-context can be stored rather than the kubeconfig file location
   For Example:
 ```bash
-kubesimpctl create cluster -p aws -name demo-aws-1 -n 2
-```
-```text
-will store the kubeconfig to the location
-~/.kube/kubesimpctl/config/aws/<SHA256-of-cluster-name>.yaml
-Here
-~/.kube/kubesimpctl/config/aws/1e16b17f262363de8d659731e693d1ebfb99f8cfc2cfb81fd1c0fd3487f49154.yaml
+ksctl create cluster -p aws -name demo-aws-1 -n 2
 ```
 
 and set CONTEXT to this SHA code
@@ -127,10 +121,7 @@ echo -n foobar | sha256sum | awk '{print $1}'
 
 
 ```prototext
-~/.kube
-  ...
-  ...
-  kubesimpctl
+~/.ksctl
     cred
       aws
       azure

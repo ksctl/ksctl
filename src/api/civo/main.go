@@ -25,10 +25,13 @@ const (
 	RegionNYC = "NYC1"
 )
 
+// TODO: runtime.GOOS == "windows" here only change the path seperator
+// use this in every function and differentiate the logic by using if-else
+
 var (
 	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
 	// LINUX (DEFAULT)
-	KUBECONFIG_PATH = fmt.Sprintf("%s/.kube/ksctl/config/civo/", payload.GetUserName())
+	KUBECONFIG_PATH = fmt.Sprintf("%s/.ksctl/config/civo/", payload.GetUserName())
 )
 
 // fetchAPIKey returns the API key from the cred/civo file store

@@ -56,7 +56,8 @@ func storeCredentials(provider int) bool {
 
 	switch provider {
 	case AWS:
-		file, err := os.OpenFile(fmt.Sprintf("%s/.kube/ksctl/cred/aws", userName), os.O_WRONLY, 0640)
+		// TODO: move it to the eks
+		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/aws", userName), os.O_WRONLY, 0640)
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
@@ -83,7 +84,8 @@ Secret-Access-Key: %s`, acckey, secacckey)))
 			return false
 		}
 	case CIVO:
-		file, err := os.OpenFile(fmt.Sprintf("%s/.kube/ksctl/cred/civo", userName), os.O_WRONLY, 0640)
+		// TODO: move it to the civo
+		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/civo", userName), os.O_WRONLY, 0640)
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
@@ -104,7 +106,8 @@ Secret-Access-Key: %s`, acckey, secacckey)))
 			return false
 		}
 	case AZURE:
-		file, err := os.OpenFile(fmt.Sprintf("%s/.kube/ksctl/cred/azure", userName), os.O_WRONLY, 0640)
+		// TODO: move it to the aks
+		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/azure", userName), os.O_WRONLY, 0640)
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
