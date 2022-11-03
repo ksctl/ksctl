@@ -38,7 +38,7 @@ func printUtil(cargo []byte) {
 func Printer(i int) {
 	var toBePrinted []printer
 
-	files, err := ioutil.ReadDir(civo.KUBECONFIG_PATH)
+	files, err := ioutil.ReadDir(civo.GetPath(1))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func Printer(i int) {
 		}
 	}
 
-	files, err = ioutil.ReadDir(local.KUBECONFIG_PATH)
+	files, err = ioutil.ReadDir(local.GetPath())
 	if err != nil {
 		log.Fatal(err)
 	}

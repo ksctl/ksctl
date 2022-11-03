@@ -9,6 +9,7 @@ Kubesimplify
 
 import (
 	"fmt"
+	"github.com/kubesimplify/ksctl/src/api/civo"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -52,40 +53,40 @@ var initCmd = &cobra.Command{
 }
 
 func storeCredentials(provider int) bool {
-	userName := os.Getenv("HOME")
 
 	switch provider {
 	case AWS:
 		// TODO: move it to the eks
-		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/aws", userName), os.O_WRONLY, 0640)
-		if err != nil {
-			fmt.Println(err.Error())
-			return false
-		}
-		acckey := ""
-		secacckey := ""
-		func() {
-			fmt.Println("Enter your ACCESS-KEY: ")
-			_, err = fmt.Scanf("%s", &acckey)
-			if err != nil {
-				panic(err.Error())
-			}
-			fmt.Println("Enter your SECRET-ACCESS-KEY: ")
-			_, err = fmt.Scanf("%s", &secacckey)
-			if err != nil {
-				panic(err.Error())
-			}
-		}()
-
-		_, err = file.Write([]byte(fmt.Sprintf(`Access-Key: %s
-Secret-Access-Key: %s`, acckey, secacckey)))
-		if err != nil {
-			fmt.Println(err.Error())
-			return false
-		}
+		return false
+		//		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/aws", userName), os.O_WRONLY, 0640)
+		//		if err != nil {
+		//			fmt.Println(err.Error())
+		//			return false
+		//		}
+		//		acckey := ""
+		//		secacckey := ""
+		//		func() {
+		//			fmt.Println("Enter your ACCESS-KEY: ")
+		//			_, err = fmt.Scanf("%s", &acckey)
+		//			if err != nil {
+		//				panic(err.Error())
+		//			}
+		//			fmt.Println("Enter your SECRET-ACCESS-KEY: ")
+		//			_, err = fmt.Scanf("%s", &secacckey)
+		//			if err != nil {
+		//				panic(err.Error())
+		//			}
+		//		}()
+		//
+		//		_, err = file.Write([]byte(fmt.Sprintf(`Access-Key: %s
+		//Secret-Access-Key: %s`, acckey, secacckey)))
+		//		if err != nil {
+		//			fmt.Println(err.Error())
+		//			return false
+		//		}
 	case CIVO:
 		// TODO: move it to the civo
-		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/civo", userName), os.O_WRONLY, 0640)
+		file, err := os.OpenFile(civo.GetPath(0), os.O_WRONLY, 0640)
 		if err != nil {
 			fmt.Println(err.Error())
 			return false
@@ -106,51 +107,52 @@ Secret-Access-Key: %s`, acckey, secacckey)))
 			return false
 		}
 	case AZURE:
+		return false
 		// TODO: move it to the aks
-		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/azure", userName), os.O_WRONLY, 0640)
-		if err != nil {
-			fmt.Println(err.Error())
-			return false
-		}
-
-		skey := ""
-		tid := ""
-		pi := ""
-		pk := ""
-		func() {
-			fmt.Println("Enter your SUBSCRIPTION ID: ")
-			_, err = fmt.Scanf("%s", &skey)
-			if err != nil {
-				panic(err.Error())
-			}
-
-			fmt.Println("Enter your TENANT ID: ")
-			_, err = fmt.Scanf("%s", &tid)
-			if err != nil {
-				panic(err.Error())
-			}
-
-			fmt.Println("Enter your SERVICE PRINCIPAL ID: ")
-			_, err = fmt.Scanf("%s", &pi)
-			if err != nil {
-				panic(err.Error())
-			}
-
-			fmt.Println("Enter your : SERVICE PRINCIPAL KEY")
-			_, err = fmt.Scanf("%s", &pk)
-			if err != nil {
-				panic(err.Error())
-			}
-		}()
-
-		_, err = file.Write([]byte(fmt.Sprintf(`Subscription-ID: %s
-Tenant-ID: %s
-Service-Principal-ID: %s
-Service Principal-Key: %s`, skey, tid, pi, pk)))
-		if err != nil {
-			fmt.Println(err.Error())
-			return false
-		}
+		//		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/azure", userName), os.O_WRONLY, 0640)
+		//		if err != nil {
+		//			fmt.Println(err.Error())
+		//			return false
+		//		}
+		//
+		//		skey := ""
+		//		tid := ""
+		//		pi := ""
+		//		pk := ""
+		//		func() {
+		//			fmt.Println("Enter your SUBSCRIPTION ID: ")
+		//			_, err = fmt.Scanf("%s", &skey)
+		//			if err != nil {
+		//				panic(err.Error())
+		//			}
+		//
+		//			fmt.Println("Enter your TENANT ID: ")
+		//			_, err = fmt.Scanf("%s", &tid)
+		//			if err != nil {
+		//				panic(err.Error())
+		//			}
+		//
+		//			fmt.Println("Enter your SERVICE PRINCIPAL ID: ")
+		//			_, err = fmt.Scanf("%s", &pi)
+		//			if err != nil {
+		//				panic(err.Error())
+		//			}
+		//
+		//			fmt.Println("Enter your : SERVICE PRINCIPAL KEY")
+		//			_, err = fmt.Scanf("%s", &pk)
+		//			if err != nil {
+		//				panic(err.Error())
+		//			}
+		//		}()
+		//
+		//		_, err = file.Write([]byte(fmt.Sprintf(`Subscription-ID: %s
+		//Tenant-ID: %s
+		//Service-Principal-ID: %s
+		//Service Principal-Key: %s`, skey, tid, pi, pk)))
+		//		if err != nil {
+		//			fmt.Println(err.Error())
+		//			return false
+		//		}
 	}
 
 	//TODO: Verify the Credentials
