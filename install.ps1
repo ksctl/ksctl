@@ -11,21 +11,21 @@ if (($PSVersionTable.PSVersion.Major) -lt 5) {
 
 Write-Host "Welcome to Installation" -ForegroundColor DarkGreen
 
-mkdir -p $env:HOME\.ksctl\cred
-mkdir -p $env:HOME\.ksctl\config\civo
-mkdir -p $env:HOME\.ksctl\config\local
+mkdir -Force $env:USERPROFILE\.ksctl\cred
+mkdir -Force $env:USERPROFILE\.ksctl\config\civo
+mkdir -Force $env:USERPROFILE\.ksctl\config\local
 
-New-Item $env:HOME\.ksctl\cred\civo
-New-Item $env:HOME\.ksctl\cred\aws
-New-Item $env:HOME\.ksctl\cred\azure
+New-Item -Force $env:USERPROFILE\.ksctl\cred\civo
+New-Item -Force $env:USERPROFILE\.ksctl\cred\aws
+New-Item -Force $env:USERPROFILE\.ksctl\cred\azure
 
-Set-Variable $env:GOOS = 'windows'
-Set-Variable $env:GOARCH = 'amd64'
+$env:GOOS = 'windows'
+$env:GOARCH = 'amd64'
 
 Set-Location .\src\cli\
 go build -v -o ksctl.exe .
 
-#Move-Item ksctl.exe $env:HOME\.ksctl\
+#Move-Item ksctl.exe $env:USERPROFILE\.ksctl\
 
 $localAppDataPath = $env:LOCALAPPDATA
 $ksctl = Join-Path "$localAppDataPath" 'ksctl'
