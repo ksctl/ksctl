@@ -74,7 +74,7 @@ func TestGetUserName(T *testing.T) {
 //Testing of deleteClusterWithID() and DeleteCluster() and CreateCluster() [TODO Need to be done]
 
 func setup() {
-	err := os.MkdirAll(getPath(1), 0750)
+	err := os.MkdirAll(GetPath(1), 0750)
 	if err != nil {
 		return
 	}
@@ -82,7 +82,7 @@ func setup() {
 
 func cleanup() {
 	//_ = DeleteCluster(clusterName)
-	err := os.RemoveAll(getPath(1))
+	err := os.RemoveAll(GetPath(1))
 	if err != nil {
 		return
 	}
@@ -92,11 +92,11 @@ func TestIsPresent(t *testing.T) {
 	setup()
 	present := isPresent("demo", "LON1")
 	assert.Equal(t, false, present, "with no clusters returns true! (false +ve)")
-	err := os.Mkdir(getPath(1, "demo LON1"), 0755)
+	err := os.Mkdir(GetPath(1, "demo LON1"), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = os.Create(getPath(1, "demo LON1", "info"))
+	_, err = os.Create(GetPath(1, "demo LON1", "info"))
 	if err != nil {
 		t.Fatal(err)
 	}

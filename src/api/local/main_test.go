@@ -55,14 +55,14 @@ nodes:
 
 func cleanup() {
 	//_ = DeleteCluster(clusterName)
-	err := os.RemoveAll(getPath())
+	err := os.RemoveAll(GetPath())
 	if err != nil {
 		return
 	}
 }
 
 func setup() {
-	err := os.MkdirAll(getPath(), 0750)
+	err := os.MkdirAll(GetPath(), 0750)
 	if err != nil {
 		return
 	}
@@ -79,11 +79,11 @@ func TestIsPresent(t *testing.T) {
 	//}
 
 	// create the folder
-	err := os.Mkdir(getPath("demo"), 0755)
+	err := os.Mkdir(GetPath("demo"), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = os.Create(getPath("demo", "info"))
+	_, err = os.Create(GetPath("demo", "info"))
 	if err != nil {
 		t.Fatal(err)
 	}

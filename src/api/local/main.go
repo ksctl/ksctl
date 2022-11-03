@@ -47,7 +47,7 @@ func getKubeconfig(params ...string) string {
 
 // TODO: runtime.GOOS == "windows" here only change the path seperator
 // use this in every function and differentiate the logic by using if-else
-func getPath(params ...string) string {
+func GetPath(params ...string) string {
 	return getKubeconfig(params...)
 }
 
@@ -105,7 +105,7 @@ nodes:
 }
 
 func isPresent(cluster string) bool {
-	_, err := os.ReadFile(getPath(cluster, "info"))
+	_, err := os.ReadFile(GetPath(cluster, "info"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -114,23 +114,23 @@ func isPresent(cluster string) bool {
 
 func createNecessaryConfigs(clusterName string) (string, error) {
 	//workingDir := KUBECONFIG_PATH + clusterName
-	err := os.Mkdir(getPath(clusterName), 0750)
+	err := os.Mkdir(GetPath(clusterName), 0750)
 	if err != nil && !os.IsExist(err) {
 		return "", err
 	}
 
-	_, err = os.Create(getPath(clusterName, "config"))
+	_, err = os.Create(GetPath(clusterName, "config"))
 	if err != nil {
 		// TODO: if error happens here do clean up the dir created above
 		return "", err
 	}
-	_, err = os.Create(getPath(clusterName, "info"))
+	_, err = os.Create(GetPath(clusterName, "info"))
 	if err != nil {
 		return "", err
 	}
 
 	err = os.WriteFile(
-		fmt.Sprintf(getPath(clusterName, "info")),
+		fmt.Sprintf(GetPath(clusterName, "info")),
 		[]byte(fmt.Sprintf("%s", clusterName)),
 		0640)
 
@@ -138,7 +138,7 @@ func createNecessaryConfigs(clusterName string) (string, error) {
 		return "", err
 	}
 
-	return getPath(clusterName, "config"), nil
+	return GetPath(clusterName, "config"), nil
 }
 
 func ClusterInfoInjecter(clusterName string, noOfNodes int) payload.LocalProvider {
@@ -180,7 +180,7 @@ func CreateCluster(cargo payload.LocalProvider) error {
 		cluster.CreateWithKubeconfigPath(func() string {
 			path, err := createNecessaryConfigs(cargo.ClusterName)
 			if err != nil {
-				_ = deleteConfigs(getPath(cargo.ClusterName)) // for CLEANUP
+				_ = deleteConfigs(GetPath(cargo.ClusterName)) // for CLEANUP
 				panic(err)
 			}
 			return path
@@ -188,7 +188,7 @@ func CreateCluster(cargo payload.LocalProvider) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		_ = deleteConfigs(getPath(cargo.ClusterName)) // for CLEANUP
+		_ = deleteConfigs(GetPath(cargo.ClusterName)) // for CLEANUP
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
@@ -202,7 +202,7 @@ func (p printer) Printer(a int) {
 	switch a {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", getPath(p.ClusterName, "config")))
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", GetPath(p.ClusterName, "config")))
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
@@ -223,15 +223,15 @@ func DeleteCluster(name string) error {
 	// cluster.ProviderWithLogger(logger),	// TODO: try to add these
 	// runtime.GetDefault(logger),
 	)
-	_, err := os.ReadFile(getPath(name, "info"))
+	_, err := os.ReadFile(GetPath(name, "info"))
 	if err != nil {
 		return fmt.Errorf("NO matching cluster found")
 	}
 
-	if err := provider.Delete(name, getPath(name, "config")); err != nil {
+	if err := provider.Delete(name, GetPath(name, "config")); err != nil {
 		return fmt.Errorf("FAIL to delete cluster %q", err)
 	}
-	if err := deleteConfigs(getPath(name)); err != nil {
+	if err := deleteConfigs(GetPath(name)); err != nil {
 		return err
 	}
 	var printKubeconfig payload.PrinterKubeconfigPATH

@@ -55,7 +55,7 @@ func getCredentials() string {
 // TODO: runtime.GOOS == "windows" here only change the path seperator
 // use this in every function and differentiate the logic by using if-else
 // flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
-func getPath(flag int8, params ...string) string {
+func GetPath(flag int8, params ...string) string {
 	switch flag {
 	case 1:
 		return getKubeconfig(params...)
@@ -75,7 +75,7 @@ func getPath(flag int8, params ...string) string {
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
-	file, err := os.ReadFile(getPath(0))
+	file, err := os.ReadFile(GetPath(0))
 	if err != nil {
 		return ""
 	}
@@ -99,22 +99,22 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	//workingDir := KUBECONFIG_PATH + clusterN + " " + region
 	clusterFolder := clusterN + " " + region
 	//err := os.Mkdir(workingDir, 0750)
-	err := os.Mkdir(getPath(1, clusterFolder), 0750)
+	err := os.Mkdir(GetPath(1, clusterFolder), 0750)
 
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	_, err = os.Create(getPath(1, clusterFolder, "config"))
+	_, err = os.Create(GetPath(1, clusterFolder, "config"))
 	if err != nil {
 		return err
 	}
-	_, err = os.Create(getPath(1, clusterFolder, "info"))
+	_, err = os.Create(GetPath(1, clusterFolder, "info"))
 	if err != nil {
 		return err
 	}
 
 	// write the contents to the req. files
-	file, err := os.OpenFile(getPath(1, clusterFolder, "config"), os.O_WRONLY, 0750)
+	file, err := os.OpenFile(GetPath(1, clusterFolder, "config"), os.O_WRONLY, 0750)
 	if err != nil {
 		return err
 	}
@@ -127,13 +127,13 @@ func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 
 	// write the info of cluster
 	// @FORMAT: | ClusterID Region |
-	if err = os.WriteFile(getPath(1, clusterFolder, "info"),
+	if err = os.WriteFile(GetPath(1, clusterFolder, "info"),
 		[]byte(fmt.Sprintf("%s %s", clusterID, region)), 0640); err != nil {
 		return err
 	}
 
 	//FIXME: make this more reliable ISSUE #5
-	err = os.Setenv("KUBECONFIG", getPath(1, clusterFolder, "config"))
+	err = os.Setenv("KUBECONFIG", GetPath(1, clusterFolder, "config"))
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
-	_, err := os.ReadFile(getPath(1, clusterName+" "+Region, "info"))
+	_, err := os.ReadFile(GetPath(1, clusterName+" "+Region, "info"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -342,7 +342,7 @@ func DeleteCluster(region, name string) error {
 	//workingDir := KUBECONFIG_PATH + name + " " + region
 
 	// data will contain the saved ClusterID and Region
-	data, err := os.ReadFile(getPath(1, name+" "+region, "info"))
+	data, err := os.ReadFile(GetPath(1, name+" "+region, "info"))
 	if err != nil {
 		return fmt.Errorf("NO matching cluster found")
 	}
@@ -353,7 +353,7 @@ func DeleteCluster(region, name string) error {
 		return err
 	}
 
-	if err := kubeconfigDeleter(getPath(1, name+" "+region)); err != nil {
+	if err := kubeconfigDeleter(GetPath(1, name+" "+region)); err != nil {
 		return err
 	}
 
@@ -372,7 +372,7 @@ func (p printer) Printer(a int) {
 	switch a {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", getPath(1, p.ClusterName+" "+p.Region, "config")))
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", GetPath(1, p.ClusterName+" "+p.Region, "config")))
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
