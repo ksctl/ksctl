@@ -64,6 +64,9 @@ type LocalProvider struct {
 // GetUserName returns current active username
 func GetUserName() string {
 	usrCmd := os.Getenv("HOME")
+	if len(usrCmd) == 0 {
+		usrCmd = os.Getenv("USERPROFILE") // for windows
+	}
 	return usrCmd
 }
 
