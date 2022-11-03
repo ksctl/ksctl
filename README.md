@@ -12,7 +12,7 @@ Platform | Status
 --|--
 Linux | :heavy_check_mark:
 macOS | :heavy_check_mark:
-Windows | :wrench:
+Windows | :construction:
 
 # Project Scope
 
@@ -58,3 +58,4 @@ make docker_builder docker_run
 ```zsh
 make docker_clean
 ```
+
