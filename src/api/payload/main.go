@@ -8,7 +8,6 @@ Kubesimplify
 package payload
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -64,14 +63,7 @@ type LocalProvider struct {
 
 // GetUserName returns current active username
 func GetUserName() string {
-
 	usrCmd := os.Getenv("HOME")
-
-	//output, err := usrCmd.Output()
-	//if err != nil {
-	//	return ""
-	//}
-	//userName := strings.Trim(string(output), "\n")
 	return usrCmd
 }
 
@@ -79,6 +71,7 @@ type PrinterKubeconfigPATH interface {
 	Printer(int)
 }
 
-var (
-	CRED_PATH = fmt.Sprintf("%s/.ksctl/cred/", GetUserName())
-)
+//
+//var (
+//	CRED_PATH = fmt.Sprintf("%s/.ksctl/cred/", GetUserName())
+//)

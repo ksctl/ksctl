@@ -55,14 +55,14 @@ nodes:
 
 func cleanup() {
 	//_ = DeleteCluster(clusterName)
-	err := os.RemoveAll(KUBECONFIG_PATH)
+	err := os.RemoveAll(getPath())
 	if err != nil {
 		return
 	}
 }
 
 func setup() {
-	err := os.MkdirAll(KUBECONFIG_PATH, 0750)
+	err := os.MkdirAll(getPath(), 0750)
 	if err != nil {
 		return
 	}
@@ -79,11 +79,11 @@ func TestIsPresent(t *testing.T) {
 	//}
 
 	// create the folder
-	err := os.Mkdir(KUBECONFIG_PATH+"demo", 0755)
+	err := os.Mkdir(getPath("demo"), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = os.Create(KUBECONFIG_PATH + "demo/info")
+	_, err = os.Create(getPath("demo", "info"))
 	if err != nil {
 		t.Fatal(err)
 	}
