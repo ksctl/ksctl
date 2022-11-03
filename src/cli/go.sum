@@ -40,8 +40,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
-github.com/kubesimplify/ksctl/src/api v0.0.0-20221103130701-ba2333e784d4 h1:LNOuNGy0z+/nAATKbXGF8I+S/o7H11I9BX4VswG5hn0=
-github.com/kubesimplify/ksctl/src/api v0.0.0-20221103130701-ba2333e784d4/go.mod h1:mEmAoOc70RVFeoDIafCYWtPHyMVV5jfK+xeYHqTf7/g=
+github.com/kubesimplify/ksctl/src/api v0.0.0-20221103161222-ca5e66cad633 h1:lR3oMK1v/w4tM1HMN2y+h35D/3FuWsgOtMzrj/uDCSc=
+github.com/kubesimplify/ksctl/src/api v0.0.0-20221103161222-ca5e66cad633/go.mod h1:mEmAoOc70RVFeoDIafCYWtPHyMVV5jfK+xeYHqTf7/g=
 github.com/mattn/go-isatty v0.0.14 h1:yVuAays6BHfxijgZPzw+3Zlu5yQgKGP2/hcQbHb7S9Y=
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
