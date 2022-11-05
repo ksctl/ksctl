@@ -36,9 +36,12 @@ New-Item -ItemType Directory -Force -Path $ksctl | Out-Null
 
 Copy-Item ksctl.exe -Destination "$ksctl/" -Force | Out-Null
 
+Remove-Item ksctl.exe
+
+Set-Location ..\.. | Out-Null
 
 Write-Host "[V] Finished Installation" -ForegroundColor DarkGreen
 Write-Host ""
-Write-Host "To run datree globally, please follow these steps:" -ForegroundColor Cyan
+Write-Host "To run ksctl globally, please follow these steps:" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "    1. Run the following command as administrator: ``setx PATH `"`$env:path;$ksctl`" -m``"

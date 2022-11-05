@@ -9,9 +9,10 @@ Kubesimplify
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/kubesimplify/ksctl/src/api/civo"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 const (
@@ -57,7 +58,7 @@ func storeCredentials(provider int) bool {
 	switch provider {
 	case AWS:
 		// TODO: move it to the eks
-		return false
+		return true
 		//		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/aws", userName), os.O_WRONLY, 0640)
 		//		if err != nil {
 		//			fmt.Println(err.Error())
@@ -95,7 +96,7 @@ func storeCredentials(provider int) bool {
 		apikey := ""
 		func() {
 			fmt.Println("Enter your API-TOKEN-KEY: ")
-			_, err = fmt.Scanf("%s", &apikey)
+			_, err = fmt.Scan(&apikey)
 			if err != nil {
 				panic(err.Error())
 			}
@@ -107,7 +108,7 @@ func storeCredentials(provider int) bool {
 			return false
 		}
 	case AZURE:
-		return false
+		return true
 		// TODO: move it to the aks
 		//		file, err := os.OpenFile(fmt.Sprintf("%s/.ksctl/cred/azure", userName), os.O_WRONLY, 0640)
 		//		if err != nil {
