@@ -4,7 +4,7 @@ go 1.19
 
 // to get latest api changes replace the version number in module to main/latest
 require (
-	github.com/kubesimplify/ksctl/src/api v0.0.0-20221103161222-ca5e66cad633
+	github.com/kubesimplify/ksctl/src/api v0.0.0-20221106154234-55eaf6eaf88d
 	github.com/spf13/cobra v1.5.0
 )
 

@@ -9,7 +9,9 @@ Kubesimplify
 
 import (
 	"fmt"
+	"github.com/kubesimplify/ksctl/src/api/aks"
 	"github.com/kubesimplify/ksctl/src/api/civo"
+	"github.com/kubesimplify/ksctl/src/api/eks"
 	"github.com/spf13/cobra"
 )
 
@@ -58,11 +60,11 @@ func storeCredentials(provider int) bool {
 	//TODO: Verify the Credentials
 	switch provider {
 	case AWS:
-		return aws.Credentials()
+		return eks.Credentials()
 	case CIVO:
 		return civo.Credentials()
 	case AZURE:
-		return azure.Credentials()
+		return aks.Credentials()
 	default:
 		return false
 	}
