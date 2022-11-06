@@ -12,7 +12,7 @@ Platform | Status
 --|--
 Linux | :heavy_check_mark:
 macOS | :heavy_check_mark:
-Windows | :construction:
+Windows | :heavy_check_mark:
 
 # Project Scope
 

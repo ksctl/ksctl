@@ -52,8 +52,7 @@ func getCredentials() string {
 	}
 }
 
-// TODO: runtime.GOOS == "windows" here only change the path seperator
-// use this in every function and differentiate the logic by using if-else
+// GetPath use this in every function and differentiate the logic by using if-else
 // flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
 func GetPath(flag int8, params ...string) string {
 	switch flag {
@@ -65,12 +64,6 @@ func GetPath(flag int8, params ...string) string {
 		return ""
 	}
 }
-
-//var (
-//	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
-//	// LINUX (DEFAULT)
-//	KUBECONFIG_PATH = fmt.Sprintf("%s/.ksctl/config/civo/", payload.GetUserName())
-//)
 
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
@@ -84,6 +77,29 @@ func fetchAPIKey() string {
 	}
 
 	return strings.Split(string(file), " ")[1]
+}
+
+func Credentials() bool {
+	file, err := os.OpenFile(GetPath(0), os.O_WRONLY, 0640)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	apikey := ""
+	func() {
+		fmt.Println("Enter your API-TOKEN-KEY: ")
+		_, err = fmt.Scan(&apikey)
+		if err != nil {
+			panic(err.Error())
+		}
+	}()
+
+	_, err = file.Write([]byte(fmt.Sprintf("API-TOKEN-Key: %s", apikey)))
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
 }
 
 // isValidRegion Checks whether the Region passed by user is valid according to CIVO
