@@ -100,6 +100,7 @@ func Credentials() bool {
 		fmt.Println(err.Error())
 		return false
 	}
+	return true
 }
 
 // isValidRegion Checks whether the Region passed by user is valid according to CIVO

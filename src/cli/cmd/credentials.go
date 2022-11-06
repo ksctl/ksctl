@@ -22,8 +22,8 @@ const (
 )
 
 // initCmd represents the init command
-var initCmd = &cobra.Command{
-	Use:   "init",
+var credCmd = &cobra.Command{
+	Use:   "cred",
 	Short: "Login with your Cloud-provider Credentials",
 	Long: `login with your cloud provider credentials
 `,
@@ -71,7 +71,7 @@ func storeCredentials(provider int) bool {
 }
 
 func init() {
-	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(credCmd)
 
 	// Here you will define your flags and configuration settings.
 
