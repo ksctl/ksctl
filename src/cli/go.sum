@@ -40,8 +40,12 @@ github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
+github.com/kubesimplify/ksctl v0.0.0-20221106154926-be1126b69225 h1:f/cIAoD2K/nLWOG3SRkNkaee685hN/9DL+CodrSJyOE=
+github.com/kubesimplify/ksctl v0.0.0-20221106154926-be1126b69225/go.mod h1:woHBVbfVkzj9M3beAuLQFmwrbBT/CDrRLpLlSiHj434=
 github.com/kubesimplify/ksctl/src/api v0.0.0-20221106154234-55eaf6eaf88d h1:61kt7w0FW1vOfo2qeKEMgo5O/AGH2jdHKFgEjIwpxNc=
 github.com/kubesimplify/ksctl/src/api v0.0.0-20221106154234-55eaf6eaf88d/go.mod h1:mEmAoOc70RVFeoDIafCYWtPHyMVV5jfK+xeYHqTf7/g=
+github.com/kubesimplify/ksctl/src/api v0.0.0-20221106160333-308b8c9b789b h1:jUpzQ3WsNNYGoNEpviQG5NsoMiby2WsV3BWEibRq9+w=
+github.com/kubesimplify/ksctl/src/api v0.0.0-20221106160333-308b8c9b789b/go.mod h1:mEmAoOc70RVFeoDIafCYWtPHyMVV5jfK+xeYHqTf7/g=
 github.com/mattn/go-isatty v0.0.14 h1:yVuAays6BHfxijgZPzw+3Zlu5yQgKGP2/hcQbHb7S9Y=
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=

@@ -3,10 +3,7 @@ module github.com/kubesimplify/ksctl/src/cli
 go 1.19
 
 // to get latest api changes replace the version number in module to main/latest
-require (
-	github.com/kubesimplify/ksctl/src/api main 
-	github.com/spf13/cobra v1.5.0
-)
+require github.com/spf13/cobra v1.5.0
 
 require (
 	github.com/BurntSushi/toml v1.0.0 // indirect
@@ -15,6 +12,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/kubesimplify/ksctl/src/api v0.0.0-20221106160333-308b8c9b789b
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
