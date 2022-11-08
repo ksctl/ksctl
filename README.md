@@ -2,6 +2,8 @@
 
 A Kubernetes Distribution that can create clusters as well as High-Available clusters in local as well as on cloud platforms
 
+<img src="/img/ksctl-dark.png" style="height: auto!important;width: 600px !important;"/>
+
 # Prerequisites
 
 - Docker installed (if using docker container to run the CLI and for Local clusters)
@@ -26,8 +28,7 @@ User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to
 [Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing)
 
 # Demo Screenshot
-
-![CoverImage](./CoverImage.png)
+<!-- Add the demo screenshots-->
 
 # Setup CLI (Local)
 ## Host Machine (LINUX)
