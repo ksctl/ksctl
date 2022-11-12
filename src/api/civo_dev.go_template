@@ -7,52 +7,50 @@
 
 package main
 
-import (
-	"fmt"
-	civoHandler "github.com/kubesimplify/ksctl/src/api/civo"
-)
+import "github.com/kubesimplify/ksctl/src/api/ha_civo"
 
 func main() {
-	ch := int8(0)
-	name := ""
-	region := ""
-
-	fmt.Println("Want to create or delete [1/2]:")
-	_, err := fmt.Scanf("%d", &ch)
-	if err != nil {
-		return
-	}
-
-	fmt.Println("Enter the cluster name and region to create / delete")
-	_, err = fmt.Scanf("%s", &name)
-	if err != nil {
-		return
-	}
-	_, err = fmt.Scanf("%s", &region)
-	if err != nil {
-		return
-	}
-	switch ch {
-	case 1:
-		clusterConfig := civoHandler.ClusterInfoInjecter(
-			name,
-			region,
-			"g4s.kube.xsmall",
-			1,
-			"",
-			"")
-		err := civoHandler.CreateCluster(clusterConfig)
-		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			return
-		}
-		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
-	case 2:
-		err := civoHandler.DeleteCluster(region, name)
-		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			return
-		}
-		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
-	}
+	ha_civo.CreateVM()
+	//ch := int8(0)
+	//name := ""
+	//region := ""
+	//
+	//fmt.Println("Want to create or delete [1/2]:")
+	//_, err := fmt.Scanf("%d", &ch)
+	//if err != nil {
+	//	return
+	//}
+	//
+	//fmt.Println("Enter the cluster name and region to create / delete")
+	//_, err = fmt.Scanf("%s", &name)
+	//if err != nil {
+	//	return
+	//}
+	//_, err = fmt.Scanf("%s", &region)
+	//if err != nil {
+	//	return
+	//}
+	//switch ch {
+	//case 1:
+	//	clusterConfig := civoHandler.ClusterInfoInjecter(
+	//		name,
+	//		region,
+	//		"g4s.kube.xsmall",
+	//		1,
+	//		"",
+	//		"")
+	//	err := civoHandler.CreateCluster(clusterConfig)
+	//	if err != nil {
+	//		fmt.Printf("\033[31;40m%v\033[0m\n", err)
+	//		return
+	//	}
+	//	fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+	//case 2:
+	//	err := civoHandler.DeleteCluster(region, name)
+	//	if err != nil {
+	//		fmt.Printf("\033[31;40m%v\033[0m\n", err)
+	//		return
+	//	}
+	//	fmt.Printf("\033[32;40mDELETED!\033[0m\n")
+	//}
 }
