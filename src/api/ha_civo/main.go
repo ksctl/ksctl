@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kubesimplify/ksctl/src/api/payload"
 	"runtime"
+	"time"
 )
 
 //----------------
@@ -71,14 +72,15 @@ func fetchAPIKey() string {
 	return strings.Split(string(file), " ")[1]
 }
 
+// TODO demoScript try the script whether its working or not
 func demoScript() string {
 	return `#!/bin/bash
-echo "Hello"
-sudo echo "Demo1" > /home/test.txt
+sudo apt update -y
+sudo apt install nginx -y
 `
 }
 
-func CreateVM() {
+func CreateVM(name string) {
 	var cargo payload.CivoProvider = payload.CivoProvider{Region: "LON1", APIKey: fetchAPIKey()}
 	client, err := civogo.NewClient(cargo.APIKey, cargo.Region)
 	defaultNetwork, err := client.GetDefaultNetwork()
@@ -86,22 +88,38 @@ func CreateVM() {
 		panic(err.Error())
 	}
 
-	abcd := &civogo.InstanceConfig{Hostname: "demo", Region: cargo.Region, Count: 1, NetworkID: defaultNetwork.ID, Script: demoScript()}
+	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
+
+	abcd := &civogo.InstanceConfig{
+		Hostname: name,
+		Region:   cargo.Region,
+		//Count:      3,
+		Size:       "g3.xsmall",
+		TemplateID: diskImg.ID,
+		NetworkID:  defaultNetwork.ID,
+		Script:     demoScript()}
 
 	instance, err := client.CreateInstance(abcd)
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Println("Password", instance.InitialPassword)
-	fmt.Println("Public IP", instance.PublicIP)
-	//for true {
-	//	getInstance, err := client.GetInstance(instance.ID)
-	//	if err != nil {
-	//		return
-	//	}
-	//	fmt.Println(getInstance.Status)
-	//
-	//
-	//}
+
+	for true {
+		getInstance, err := client.GetInstance(instance.ID)
+		if err != nil {
+			return
+		}
+		//fmt.Println(getInstance)
+		if getInstance.Status == "ACTIVE" {
+			fmt.Println("~~~ ", name)
+			fmt.Println("Password", getInstance.InitialPassword)
+			fmt.Println("Public IP", getInstance.PublicIP)
+			fmt.Println()
+			fmt.Println()
+			return
+		}
+		fmt.Println(getInstance.Status)
+		time.Sleep(15 * time.Second)
+	}
 
 }
