@@ -7,9 +7,11 @@ import (
 	"time"
 )
 
-//----------------
-// ALPHA VERSION
-//----------------
+// +-------------------+
+// | UNDER DEVELOPMENT |
+// +-------------------+
+
+
 import (
 	"github.com/civo/civogo"
 	"os"
@@ -76,12 +78,12 @@ func fetchAPIKey() string {
 func demoScript() string {
 	return `#!/bin/bash
 sudo apt update -y
-sudo apt install nginx -y
+sudo apt install nginx git -y
 `
 }
 
-func CreateVM(name string) {
-	var cargo payload.CivoProvider = payload.CivoProvider{Region: "LON1", APIKey: fetchAPIKey()}
+func CreateVM(name, region string) {
+	var cargo payload.CivoProvider = payload.CivoProvider{Region: region, APIKey: fetchAPIKey()}
 	client, err := civogo.NewClient(cargo.APIKey, cargo.Region)
 	defaultNetwork, err := client.GetDefaultNetwork()
 	if err != nil {

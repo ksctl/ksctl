@@ -10,9 +10,9 @@ package main
 import "github.com/kubesimplify/ksctl/src/api/ha_civo"
 
 func main() {
-	ha_civo.CreateVM("control-plane-1")
-	ha_civo.CreateVM("control-plane-2")
-	ha_civo.CreateVM("control-plane-3")
+	ha_civo.CreateVM("control-plane-1", "FRA1")
+	ha_civo.CreateVM("control-plane-2", "FRA1")
+	ha_civo.CreateVM("control-plane-3", "FRA1")
 	//ch := int8(0)
 	//name := ""
 	//region := ""

@@ -2,7 +2,7 @@
 > The above-mentioned are major releases minor are 0.1.[0-9] 
 
 
-# 1.0.0v
+# 0.1v
 * Added Create and Delete for CIVO ([PR](https://github.com/kubesimplify/ksctl/pull/3))
 * Added Create and Delete for LOCAL ([PR](https://github.com/kubesimplify/ksctl/pull/12))
 * Upgraded the CLI and API ([PR](https://github.com/kubesimplify/ksctl/pull/20))
