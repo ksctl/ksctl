@@ -32,6 +32,5 @@ RUN mkdir -p ${HOME}/.ksctl/cred && \
     mkdir ${HOME}/.ksctl/config/aws && \
     mkdir ${HOME}/.ksctl/config/local
 
-RUN wget -O kubectl https://dl.k8s.io/release/v1.25.0/bin/linux/amd64/kubectl
-
-RUN chmod +x kubectl && mv ./kubectl /usr/local/bin/kubectl
+RUN wget -O kubectl https://dl.k8s.io/release/v1.25.0/bin/linux/amd64/kubectl && \
+    chmod +x kubectl && mv ./kubectl /usr/local/bin/kubectl
