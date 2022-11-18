@@ -11,6 +11,7 @@ After you have built ksctl locally, you can use the following steps to set it up
 - [Saving the Kubeconfig file](#saving-the-kubeconfig)
 - [Switching between clusters](#switching-between-multiple-clusters)
 - [Deleting Cluster](#deleteing-your-cluster)
+- [Creating a High Avaliability cluster](#creating-a-ha-cluster)
 
 #### Register Credentials
 
@@ -57,3 +58,7 @@ If we now check the civo dashboard, we should be able to see our `demo-cluster`
 Let's say you are done with Kubernetes and have finished your work and now you want to delete the cluster. You can do this relatively easily.
 
  We can use `ksctl delete [provider-name] --name [cluster-name] -r [region]`. For example, if we want to delete our `demo-cluster` we can do it easily by using the command `ksctl delete civo --name demo-cluster -r LON1`.
+
+ #### Creating a HA Cluster 
+
+ :construction: In Progress :construction:
