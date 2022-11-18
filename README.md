@@ -18,7 +18,9 @@ Windows | :heavy_check_mark:
 
 # Project Scope
 
-User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted  
+There are many cloud providers that offer their own flavor of Kubernetes. Each provider has their own unique cli tool which is used to create and manage clusters on that particular cloud. When working in a multi-cloud enviornment, it can get difficult to create and manage so many clusters. ksctl is a single cli tool which can interact with a multitude of cloud providers, making it easy for you to mange multi cloud clusters, with just a single cli tool. Currently, we support Azure, Civo and AWS.
+
+You can also use ksctl to create clusters locally using docker.
 
 # Contribution Guidelines
 [contribution Guide](CONTRIBUTION-GUIDE.md)
