@@ -1,5 +1,3 @@
-
-
 # Usage
 
 After you have built ksctl locally, you can use the following steps to set it up. We will use connect to a Civo account for this example, but the steps will remain the same for any cloud provider.
