@@ -23,7 +23,7 @@ There are many cloud providers that offer their own flavor of Kubernetes. Each p
 You can also use ksctl to create clusters locally using docker.
 
 # Contribution Guidelines
-[contribution Guide](CONTRIBUTION-GUIDE.md)
+Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
 
 # Software Requirement Specification Docs
 
