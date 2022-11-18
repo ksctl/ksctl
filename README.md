@@ -62,3 +62,23 @@ make docker_builder docker_run
 make docker_clean
 ```
 
+### Usage
+
+After you have built ksctl locally, you can use the following steps to set it up. We will use connect to a Civo account for this example, but the steps will remain the same for any cloud provider.
+
+- [Register your cloud credentials](#register-credentials)
+- [Creating a cluster](#create-a-cluster)
+
+#### Register Credentials
+
+- From your Civo dashboard, under profile > Security tab, copy your API key
+![](https://i.imgur.com/jexwOeu.png)
+- Open a terminal and type in `ksctl cred`
+ ![](https://i.imgur.com/fIWyqlH.png)
+ - Select the cloud provider you wish to register. In this case we are using Civo, so we will type `3` and enter.
+ - Paste your API key when prompted and hit enter.
+
+
+Now ksctl is connected to your civo account. We can now move ahead and create a cluster.
+
+#### Create a Cluster
