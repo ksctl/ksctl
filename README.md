@@ -21,7 +21,7 @@ Windows | :heavy_check_mark:
 User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted  
 
 # Contribution Guidelines
-[contribution Guide](CONTRIBUTION-GUIDE.md)
+[contribution Guide](CONTRIBUTING.md)
 
 # Software Requirement Specification Docs
 
