@@ -27,7 +27,7 @@ Now, ksctl is connected to your civo account. We can now move ahead and create a
 
 #### Create a Cluster
 
-- After connection to your cloud account, you can use `ksctl create [cloud-provider-name]` to create a cluster. This will have some options specific to the cloud provider. Below, we'll take a look at how you can create clusters in civo.
+- After adding your cloud cred to ksctl, you can use `ksctl create [cloud-provider-name]` to create a cluster. This will have some options specific to the cloud provider. Below, we'll take a look at how you can create clusters in civo.
 
 > Note: Please ensure that you have added a credit card to your cloud provider. Without it, you might not be able to create clusters.
 
