@@ -55,7 +55,7 @@ If we now check the civo dashboard, we should be able to see our `demo-cluster`
 
 #### Deleteing your cluster
 
-Let's say you are done with Kubernetes and have finished your work and now you want to delete the cluster. You can do this relatively easily.
+To delete your cluster
 
  We can use `ksctl delete [provider-name] --name [cluster-name] -r [region]`. For example, if we want to delete our `demo-cluster` we can do it easily by using the command `ksctl delete civo --name demo-cluster -r LON1`.
 
