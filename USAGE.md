@@ -4,7 +4,7 @@ Please refer to the [installation instructions](README.md#setup-cli-local) for i
 
 # Usage
 
-After you have built ksctl locally, you can use the following steps to set it up. We will use connect to a Civo account for this example, but the steps will remain the same for any cloud provider.
+Once you have installed ksctl, you can start using it to create and manage your clusters. In the below walkthrough, we will see how you can connect ksctl with a Civo account and manage clusters there.
 
 - [Register your cloud credentials](#register-credentials)
 - [Creating a cluster](#create-a-cluster)
