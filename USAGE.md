@@ -57,7 +57,9 @@ If we now check the civo dashboard, we should be able to see our `demo-cluster`
 
 To delete your cluster
 
- We can use `ksctl delete [provider-name] --name [cluster-name] -r [region]`. For example, if we want to delete our `demo-cluster` we can do it easily by using the command `ksctl delete civo --name demo-cluster -r LON1`.
+ We can use `ksctl delete [provider-name] --name [cluster-name] -r [region]`.
+ 
+For example, if we want to delete our `demo-cluster`  use `ksctl delete civo --name demo-cluster -r LON1`.
 
  #### Creating a HA Cluster 
 
