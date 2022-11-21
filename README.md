@@ -18,7 +18,7 @@ Windows | :heavy_check_mark:
 
 # Project Scope
 
-User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted  
+User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted
 
 # Contribution Guidelines
 [contribution Guide](CONTRIBUTING.md)
@@ -39,7 +39,11 @@ make install_linux
 ## Host Machine (macOS)
 ### Install
 ```zsh
+# macOS on M1
 make install_macos
+
+# macOS on INTEL
+make install_macos_intel
 ```
 
 ### Uninstall
@@ -47,16 +51,32 @@ make install_macos
 make uninstall
 ```
 
-## Inside Container
+# RoadMap
 
-### Install
+## Legends
+<span style="color: black; background-color: red;">DONE</span>
+<span style="color: white; background-color: black;">NO PLANS</span>
+<span style="color: white; background-color: blue;">BACKLOG</span>
 
-```zsh
-make docker_builder docker_run
+```mermaid
+flowchart LR;
+  classDef green color:#022e1f,fill:#00f500;
+  classDef red color:#022e1f,fill:#f11111;
+  classDef white color:#022e1f,fill:#fff;
+  classDef black color:#fff,fill:#000;
+  classDef blue color:#fff,fill:#00f;
+
+  XX[CLI]:::white--providers-->web{API};
+  web:::white--CIVO-->civo{Types};
+  civo:::blue--managed-->civom[Create & Delete]:::green;
+  civo--HA-->civoha[Create & Delete]:::blue;
+
+  web--LOCAL-->local{Types};
+  local:::green--managed-->localm[Create & Delete]:::green;
+  local--HA-->localha[Create & Delete]:::black;
+
+  web--EKS-->aws{Types};
+  aws:::red--managed-->awsm[Create & Delete]:::red;
+  aws--HA-->awsha[Create & Delete]:::red;
+
 ```
-### Uninstall
-
-```zsh
-make docker_clean
-```
-
