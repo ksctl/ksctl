@@ -1,3 +1,5 @@
+# DEPRICATED! Dockerfile artifact
+
 FROM golang:1.19 AS builder
 
 ARG TARGETOS=linux
