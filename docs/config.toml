@@ -1,4 +1,4 @@
-baseURL = '/'
+baseURL = 'https://kubesimplify.github.io/ksctl/'
 languageCode = 'en-us'
 title = 'Kubesimplify ksctl docs'
 theme = 'hugo-book'
