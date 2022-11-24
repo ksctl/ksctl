@@ -44,10 +44,11 @@ Now, ksctl is connected to your civo account. We can now move ahead and create a
 
 #### Saving the Kubeconfig
 
-- As of right now, ksctl cannot save the kubeconfig file to your local system. We do have a workaround for this. In the above step, type `y` when asked if you want to print your kubeconfig.
-- Copy the contents of the printed kubeconfig.
-- Navigate to your `.kube` directory, create a new file named `config` if you don't have it already, and paste the contents of the kubeconfig in this file.
-- If you did this correctly, you should be able to access your cluster using `kubectl` now.
+Once your cluster is up and running, you will get a prompt, asking if you want to print your kubeconfig file. This will print your kubeconfig file if you want to view its contents. 
+
+To connect `kubectl` with our cluster, we will need to export the kubeconfig file. Regardless of what option you select in the above step, you will get a prompt to run an `export` command. Run this command in your terminal and you can start using your cluster.
+
+The export command will look something like `export KUBECONFIG='/home/siddhant/.ksctl/config/civo/demo LON1/config'`
 
 If we now check the civo dashboard, we should be able to see our `demo-cluster`
 
