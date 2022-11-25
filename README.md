@@ -34,14 +34,18 @@ Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contrib
 # Demo Screenshot
 <!-- Add the demo screenshots-->
 
-# Setup CLI (Local)
-## Host Machine (LINUX)
+# Setup CLI
+## Linux
 ### Install
+
+
 ```zsh
 make install_linux
 ```
-## Host Machine (macOS)
+
+## macOS
 ### Install
+
 ```zsh
 # macOS on M1
 make install_macos
@@ -53,6 +57,19 @@ make install_macos_intel
 ### Uninstall
 ```zsh
 make uninstall
+```
+
+## Windows
+### Install
+
+```ps
+./install.ps1
+```
+
+### Uninstall
+
+```ps
+./uninstall.ps1
 ```
 
 # Usage
