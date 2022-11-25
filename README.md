@@ -63,9 +63,20 @@ Please refer to the [usage guide](USAGE.md) to know how you can use ksctl
 # RoadMap
 
 ## Legends
-<span style="color: black; background-color: red;">DONE</span>
+---
+**DONE** -> GREEN
+
+**NOT STARTED** -> RED
+
+**NO PLANS** -> BLACK
+
+**BACKLOG** -> BLUE
+
+---
+
+<!-- <span style="color: black; background-color: red;">DONE</span>
 <span style="color: white; background-color: black;">NO PLANS</span>
-<span style="color: white; background-color: blue;">BACKLOG</span>
+<span style="color: white; background-color: blue;">BACKLOG</span> -->
 
 ```mermaid
 flowchart LR;
