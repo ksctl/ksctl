@@ -22,6 +22,7 @@ Many cloud providers offer their flavor of Kubernetes. Each provider has its uni
 
 You can also use ksctl to create clusters locally using docker.
 
+
 # Contribution Guidelines
 Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
 
@@ -33,16 +34,24 @@ Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contrib
 # Demo Screenshot
 <!-- Add the demo screenshots-->
 
-# Setup CLI (Local)
-## Host Machine (LINUX)
+# Setup CLI
+## Linux
 ### Install
+
+
 ```zsh
 make install_linux
 ```
-## Host Machine (macOS)
+
+## macOS
 ### Install
+
 ```zsh
+# macOS on M1
 make install_macos
+
+# macOS on INTEL
+make install_macos_intel
 ```
 
 ### Uninstall
@@ -50,19 +59,62 @@ make install_macos
 make uninstall
 ```
 
-## Inside Container
-
+## Windows
 ### Install
 
-```zsh
-make docker_builder docker_run
+```ps
+./install.ps1
 ```
+
 ### Uninstall
 
-```zsh
-make docker_clean
+```ps
+./uninstall.ps1
 ```
 
 # Usage
 
 Please refer to the [usage guide](USAGE.md) to know how you can use ksctl
+
+
+# RoadMap
+
+## Legends
+---
+**DONE** -> GREEN
+
+**NOT STARTED** -> RED
+
+**NO PLANS** -> BLACK
+
+**BACKLOG** -> BLUE
+
+---
+
+<!-- <span style="color: black; background-color: red;">DONE</span>
+<span style="color: white; background-color: black;">NO PLANS</span>
+<span style="color: white; background-color: blue;">BACKLOG</span> -->
+
+```mermaid
+flowchart LR;
+  classDef green color:#022e1f,fill:#00f500;
+  classDef red color:#022e1f,fill:#f11111;
+  classDef white color:#022e1f,fill:#fff;
+  classDef black color:#fff,fill:#000;
+  classDef blue color:#fff,fill:#00f;
+
+  XX[CLI]:::white--providers-->web{API};
+  web:::white--CIVO-->civo{Types};
+  civo:::blue--managed-->civom[Create & Delete]:::green;
+  civo--HA-->civoha[Create & Delete]:::blue;
+
+  web--LOCAL-->local{Types};
+  local:::green--managed-->localm[Create & Delete]:::green;
+  local--HA-->localha[Create & Delete]:::black;
+
+  web--EKS-->aws{Types};
+  aws:::red--managed-->awsm[Create & Delete]:::red;
+  aws--HA-->awsha[Create & Delete]:::red;
+
+```
+
