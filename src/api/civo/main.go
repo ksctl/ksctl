@@ -11,19 +11,14 @@ package civo
 import (
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/payload"
 	"os"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/civo/civogo"
-)
+	"github.com/kubesimplify/ksctl/src/api/payload"
 
-const (
-	RegionLON = "LON1"
-	RegionFRA = "FRA1"
-	RegionNYC = "NYC1"
+	"github.com/civo/civogo"
 )
 
 func getKubeconfig(params ...string) string {
@@ -101,13 +96,6 @@ func Credentials() bool {
 		return false
 	}
 	return true
-}
-
-// isValidRegion Checks whether the Region passed by user is valid according to CIVO
-func isValidRegion(reg string) bool {
-	return strings.Compare(reg, RegionFRA) == 0 ||
-		strings.Compare(reg, RegionNYC) == 0 ||
-		strings.Compare(reg, RegionLON) == 0
 }
 
 // kubeconfigWriter Writes kubeconfig supplied to config directory of respective cluster created
@@ -208,47 +196,17 @@ func isValidSize(size string) bool {
 	return false
 }
 
-func helperASCII(character uint8) bool {
-	return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z')
-}
-
-func helperDIGIT(character uint8) bool {
-	return character >= '0' && character <= '9'
-}
-
-func helperSPECIAL(character uint8) bool {
-	return character == '-' || character == '_'
-}
-
-// TODO: Use Regex expression for valid clusterNames
-func isValidName(clusterName string) bool {
-
-	if !helperASCII(clusterName[0]) &&
-		(helperDIGIT(clusterName[0]) || !helperDIGIT(clusterName[0])) {
-		return false
-	}
-
-	for _, chara := range clusterName {
-		if helperASCII(uint8(chara)) || helperDIGIT(uint8(chara)) || helperSPECIAL(uint8(chara)) {
-			continue
-		} else {
-			return false
-		}
-	}
-	return true
-}
-
 // CreateCluster creates cluster as provided configuration and returns whether it fails or not
 func CreateCluster(cargo payload.CivoProvider) error {
 	if len(cargo.APIKey) == 0 {
 		return fmt.Errorf("CREDENTIALS NOT PRESENT")
 	}
 
-	if !isValidName(cargo.ClusterName) {
+	if !payload.IsValidName(cargo.ClusterName) {
 		return fmt.Errorf("INVALID CLUSTER NAME")
 	}
 
-	if !isValidRegion(cargo.Region) {
+	if !payload.IsValidRegionCIVO(cargo.Region) {
 		return fmt.Errorf("region code is Invalid")
 	}
 

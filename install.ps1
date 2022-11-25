@@ -13,6 +13,7 @@ Write-Host "Welcome to Installation" -ForegroundColor DarkGreen
 
 mkdir -Force $env:USERPROFILE\.ksctl\cred
 mkdir -Force $env:USERPROFILE\.ksctl\config\civo
+mkdir -Force $env:USERPROFILE\.ksctl\config\ha-civo
 mkdir -Force $env:USERPROFILE\.ksctl\config\local
 
 New-Item -Force $env:USERPROFILE\.ksctl\cred\civo

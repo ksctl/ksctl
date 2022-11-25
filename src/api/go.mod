@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/civo/civogo v0.3.14
 	github.com/stretchr/testify v1.5.1
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	sigs.k8s.io/kind v0.16.0
 )
 

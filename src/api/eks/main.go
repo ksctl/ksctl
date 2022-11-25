@@ -87,6 +87,9 @@ func Credentials() bool {
 		}
 	}()
 
+  strings.TrimSpace(acckey)
+  strings.TrimSpace(secacckey)
+
 	_, err = file.Write([]byte(fmt.Sprintf(`Access-Key: %s
 		Secret-Access-Key: %s`, acckey, secacckey)))
 	if err != nil {

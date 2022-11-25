@@ -2,12 +2,13 @@ package civo
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/payload"
-	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/kubesimplify/ksctl/src/api/payload"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFetchAPIKey(T *testing.T) {
@@ -28,20 +29,20 @@ func TestIsValidRegion(T *testing.T) {
 		"NYC":  false,
 	}
 	for reg, expRet := range locationCombinations {
-		if expRet != isValidRegion(reg) {
+		if expRet != payload.IsValidRegionCIVO(reg) {
 			T.Fatalf("Invalid Region Code is passed!")
 		}
 	}
 }
 
 func TestIsValidClusterName(T *testing.T) {
-	assert.Equalf(T, true, isValidName("demo"), "Returns True for invalid cluster name")
-	assert.Equalf(T, true, isValidName("Dem-o234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, true, isValidName("d-234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, isValidName("234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, isValidName("-2342"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, isValidName("dscdscsd-#$#$#"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, isValidName("ds@#$#$#"), "Returns True for invalid cluster name")
+	assert.Equalf(T, true, payload.IsValidName("demo"), "Returns True for invalid cluster name")
+	assert.Equalf(T, true, payload.IsValidName("Dem-o234"), "Returns True for invalid cluster name")
+	assert.Equalf(T, true, payload.IsValidName("d-234"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, payload.IsValidName("234"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, payload.IsValidName("-2342"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, payload.IsValidName("dscdscsd-#$#$#"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, payload.IsValidName("ds@#$#$#"), "Returns True for invalid cluster name")
 }
 
 func TestIsValidNodeSize(T *testing.T) {

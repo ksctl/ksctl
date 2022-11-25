@@ -1,21 +1,16 @@
 package ha_civo
 
 import (
+	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/payload"
-	"runtime"
-	"time"
-)
-
-// +-------------------+
-// | UNDER DEVELOPMENT |
-// +-------------------+
-
-
-import (
-	"github.com/civo/civogo"
+	"log"
 	"os"
+	"runtime"
 	"strings"
+	"time"
+
+	"github.com/civo/civogo"
+	"github.com/kubesimplify/ksctl/src/api/payload"
 )
 
 // all the configs are present in .ksctl
@@ -26,12 +21,12 @@ func getKubeconfig(params ...string) string {
 	var ret string
 
 	if runtime.GOOS == "windows" {
-		ret = fmt.Sprintf("%s\\.ksctl\\config\\civo", payload.GetUserName())
+		ret = fmt.Sprintf("%s\\.ksctl\\config\\ha-civo", payload.GetUserName())
 		for _, item := range params {
 			ret += "\\" + item
 		}
 	} else {
-		ret = fmt.Sprintf("%s/.ksctl/config/civo", payload.GetUserName())
+		ret = fmt.Sprintf("%s/.ksctl/config/ha-civo", payload.GetUserName())
 		for _, item := range params {
 			ret += "/" + item
 		}
@@ -74,54 +69,170 @@ func fetchAPIKey() string {
 	return strings.Split(string(file), " ")[1]
 }
 
-// TODO demoScript try the script whether its working or not
-func demoScript() string {
-	return `#!/bin/bash
-sudo apt update -y
-sudo apt install nginx git -y
-`
+// isPresent Checks whether the cluster to create is already had been created
+func isPresent(clusterName, Region string) bool {
+	_, err := os.ReadFile(GetPath(1, clusterName+" "+Region, "info", "network"))
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
-func CreateVM(name, region string) {
-	var cargo payload.CivoProvider = payload.CivoProvider{Region: region, APIKey: fetchAPIKey()}
-	client, err := civogo.NewClient(cargo.APIKey, cargo.Region)
-	defaultNetwork, err := client.GetDefaultNetwork()
-	if err != nil {
-		panic(err.Error())
+// isValidSize checks whether the size passed by user is valid according to CIVO
+func isValidSize(size string) bool {
+	validSizes := []string{
+		"g3.xsmall",
+		"g3.small",
+		"g3.medium",
+		"g3.large",
+		"g3.xlarge",
+		"g3.2xlarge"}
+	for _, valid := range validSizes {
+		if strings.Compare(valid, size) == 0 {
+			return true
+		}
+	}
+	fmt.Printf("\n\n\033[34;40mAvailable Node sizes:\n- g3.xsmall\n- g3.small\n- g3.medium\n- g3.large\n- g3.xlarge\n- g3.2xlarge\033[0m\n")
+	return false
+}
+
+func cleanup(name, region string) error {
+	log.Println("[ERR] Cannot continue 😢")
+	return DeleteCluster(name, region)
+}
+
+// TODO: If error occurs then remove all the resources created
+// CreateVM TODO: Handle the errors
+// check if the same cluster is present or not
+// get the format of cluster name verified and the region as well as the nodeSize
+func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
+
+	if isPresent(name, region) {
+		return fmt.Errorf("[FATAL] CLUSTER ALREADY PRESENT")
 	}
 
-	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
-
-	abcd := &civogo.InstanceConfig{
-		Hostname: name,
-		Region:   cargo.Region,
-		//Count:      3,
-		Size:       "g3.xsmall",
-		TemplateID: diskImg.ID,
-		NetworkID:  defaultNetwork.ID,
-		Script:     demoScript()}
-
-	instance, err := client.CreateInstance(abcd)
-	if err != nil {
-		panic(err.Error())
+	if !payload.IsValidRegionCIVO(region) {
+		return fmt.Errorf("[INVALID] REGION")
 	}
 
-	for true {
-		getInstance, err := client.GetInstance(instance.ID)
+	if !payload.IsValidName(name) {
+		return fmt.Errorf("[INVALID] NAME FORMAT")
+	}
+
+	if !isValidSize(nodeSize) {
+		return fmt.Errorf("INVALID] SIZE")
+	}
+
+	client, err := civogo.NewClient(fetchAPIKey(), region)
+	if err != nil {
+		return err
+	}
+
+	// NOTE: Config Loadbalancer require the control planes privateIPs
+
+	mysqlEndpoint, err := CreateDatabase(client, name)
+	if err != nil {
+		_ = cleanup(name, region)
+		return err
+	}
+
+	loadBalancer, err := CreateLoadbalancer(client, name)
+	if err != nil {
+		_ = cleanup(name, region)
+		return err
+	}
+
+	var controlPlanes = make([](*civogo.Instance), noCP)
+
+	for i := 0; i < noCP; i++ {
+		controlPlanes[i], err = CreateControlPlane(client, i+1, name, nodeSize)
 		if err != nil {
-			return
+			_ = cleanup(name, region)
+			return err
 		}
-		//fmt.Println(getInstance)
-		if getInstance.Status == "ACTIVE" {
-			fmt.Println("~~~ ", name)
-			fmt.Println("Password", getInstance.InitialPassword)
-			fmt.Println("Public IP", getInstance.PublicIP)
-			fmt.Println()
-			fmt.Println()
-			return
-		}
-		fmt.Println(getInstance.Status)
-		time.Sleep(15 * time.Second)
 	}
 
+	// NOTE: Config the loadbalancer before controlplane is configured
+
+	var controlPlaneIPs = make([]string, noCP)
+	for i := 0; i < noCP; i++ {
+		controlPlaneIPs[i] = controlPlanes[i].PrivateIP + ":6443"
+	}
+
+	err = ConfigLoadBalancer(loadBalancer, controlPlaneIPs)
+	if err != nil {
+		_ = cleanup(name, region)
+		return err
+	}
+
+	token := ""
+	for i := 0; i < noCP; i++ {
+		if i == 0 {
+			err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
+			if err != nil {
+				_ = cleanup(name, region)
+				return err
+			}
+			token = GetTokenFromCP_1(controlPlanes[0])
+			if len(token) == 0 {
+				fmt.Println("Cannot retrieve k3s token")
+			}
+		} else {
+			err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptCP_n(mysqlEndpoint, loadBalancer.PrivateIP, token), true)
+			if err != nil {
+				_ = cleanup(name, region)
+				return err
+			}
+		}
+		log.Printf("[CONFIGURED] control-plane-%d\n", i+1)
+	}
+
+	kubeconfig, err := FetchKUBECONFIG(controlPlanes[0])
+	if err != nil {
+		return fmt.Errorf("Cannot fetch kubeconfig\n" + err.Error())
+	}
+	newKubeconfig := strings.Replace(kubeconfig, "127.0.0.1", loadBalancer.PublicIP, 1)
+	fmt.Println(newKubeconfig)
+
+	_ = SaveKubeconfig(name, region, newKubeconfig)
+
+	log.Println("JOINING WORKER NODES")
+	var workerPlanes = make([](*civogo.Instance), noWP)
+
+	for i := 0; i < noWP; i++ {
+		workerPlanes[i], err = CreateWorkerNode(client, i+1, name, loadBalancer.PrivateIP, token, nodeSize)
+		if err != nil {
+			_ = cleanup(name, region)
+			return err
+		}
+	}
+
+	log.Println("Created the k3s ha cluster!!")
+	return nil
+}
+
+func DeleteCluster(name, region string) error {
+	client, err := civogo.NewClient(fetchAPIKey(), region)
+	if err != nil {
+		return err
+	}
+
+	if err := DeleteInstances(client, name); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
+		return err
+	}
+	time.Sleep(20 * time.Second)
+
+	if err := DeleteFirewalls(client, name); err != nil && !errors.Is(civogo.DatabaseFirewallNotFoundError, err) {
+		return err
+	}
+
+	time.Sleep(15 * time.Second)
+	if err := DeleteNetworks(client, name); err != nil && !errors.Is(civogo.DatabaseNetworkNotFoundError, err) {
+		return err
+	}
+
+	if err := DeleteAllPaths(name, region); err != nil {
+		return err
+	}
+	return nil
 }
