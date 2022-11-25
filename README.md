@@ -1,6 +1,6 @@
 # ksctl
 
-A Kubernetes Distribution that can create clusters as well as High-Available clusters in local as well as on cloud platforms
+A Kubernetes Distribution that can create clusters as well as high-availability clusters locally as well as on cloud platforms
 
 <img src="/img/ksctl-dark.png" style="height: auto!important;width: 600px !important;"/>
 
@@ -18,10 +18,13 @@ Windows | :heavy_check_mark:
 
 # Project Scope
 
-User of Kubernetes wanting a single CLI to manage any K8s cluster be it local to cloud-hosted  
+Many cloud providers offer their flavor of Kubernetes. Each provider has its unique CLI tool which is used to create and manage clusters on that particular cloud. When working in a multi-cloud environment, it can get difficult to create and manage so many clusters. ksctl is a **single CLI tool** that can interact with a multitude of cloud providers, making it easy for you to **manage multi-cloud clusters, with just a single CLI tool**. Currently, we support Civo and Local clusters.
+
+You can also use ksctl to create clusters locally using docker.
 
 # Contribution Guidelines
-[contribution Guide](CONTRIBUTING.md)
+Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
+
 
 # Software Requirement Specification Docs
 
@@ -60,3 +63,6 @@ make docker_builder docker_run
 make docker_clean
 ```
 
+# Usage
+
+Please refer to the [usage guide](USAGE.md) to know how you can use ksctl
