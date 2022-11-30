@@ -11,10 +11,10 @@ Welcome to Kubesimplify projects
 [Getting Started](/getting-start/getting-started.md)
 
 ## CLI create (data and control flow)
-![](cli-create-dg.png)
+![](img/cli-create-dg.png)
 
 ## CLI cred (data and control flow)
-![](cli-init-dg.png)
+![](img/cli-init-dg.png)
 
 ## CLI switch context (data and control flow)
-![](cli-switch-dg.png)
+![](img/cli-switch-dg.png)
