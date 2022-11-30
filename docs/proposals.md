@@ -24,7 +24,6 @@
 - Local system
 	- [x] Single Node cluster
 	- [x] Multi-node cluster
-	- [ ] High-Available K8s cluster
 - Cloud provider
 	- [x] multi-node cluster
 	- [ ] High-Available K8s cluster
