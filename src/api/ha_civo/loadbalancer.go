@@ -8,46 +8,6 @@ import (
 	"github.com/civo/civogo"
 )
 
-// NGINX LOADBALANCER (DEPRICATED)
-// func scriptLB() string {
-// 	return `#!/bin/bash
-// apt update
-// apt install nginx -y
-// systemctl start nginx && systemctl enable nginx
-// `
-// }
-
-// func configLBscript(controlPlaneIPs []string) string {
-// 	script := `cat <<EOF > /etc/nginx/nginx.conf
-// user www-data;
-// worker_processes auto;
-// pid /run/nginx.pid;
-// include /etc/nginx/modules-enabled/*.conf;
-
-// events {}
-// stream {
-//   upstream k3s_servers {
-// `
-
-// 	for _, controlPlaneIP := range controlPlaneIPs {
-// 		script += fmt.Sprintf(`    server %s;
-// `, controlPlaneIP)
-// 	}
-
-// 	script += `  }
-//   server {
-//     listen 6443;
-//     proxy_pass k3s_servers;
-//   }
-// }
-
-// EOF
-
-// systemctl restart nginx
-// `
-// 	return script
-// }
-
 // HAPROXY LOADBALANCER
 func scriptLB() string {
 	return `#!/bin/bash
