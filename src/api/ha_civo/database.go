@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"strings"
 	"time"
-
-	"github.com/civo/civogo"
 )
 
 // TODO: perform cleanup when there is error
@@ -69,56 +67,44 @@ systemctl restart mysql
 }
 
 // CreateDatabase return endpoint address if no error is encountered
-func CreateDatabase(client *civogo.Client, clusterName string) (string, error) {
+func (obj *HAType) CreateDatabase() (string, error) {
 
-	var networkID string
+	errV := obj.CreateNetwork(obj.ClusterName + "-ksctl")
+	if errV != nil {
+		return "", errV
+	}
 
-	network, err := CreateNetwork(client, clusterName+"-ksctl")
+	firewall, err := obj.CreateFirewall(obj.ClusterName + "-ksctl-db")
 	if err != nil {
 		return "", err
 	}
+	obj.DBFirewallID = firewall.ID
 
-	err = ConfigWriterNetwork(network, clusterName, client.Region)
-	if err != nil {
-		return "", err
-	}
-
-	networkID = network.ID
-
-	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
-	if err != nil {
-		return "", err
-	}
-
-	firewall, err := CreateFirewall(client, clusterName+"-ksctl-db", networkID)
-	if err != nil {
-		return "", err
-	}
-
-	err = ConfigWriterFirewall(firewall, clusterName, client.Region)
+	err = obj.ConfigWriterFirewall(firewall)
 	if err != nil {
 		return "", nil
 	}
 
-	instance, err := CreateInstance(client, clusterName+"-ksctl-db", firewall.ID, diskImg.ID, "g3.large", networkID, "")
+	instance, err := obj.CreateInstance(obj.ClusterName+"-ksctl-db", firewall.ID, "g3.large", "")
 	if err != nil {
 		return "", err
 	}
 
-	err = ConfigWriterInstance(instance, clusterName, client.Region)
+	err = obj.ConfigWriterInstance(instance)
 	if err != nil {
 		return "", nil
 	}
 
 	for {
-		getInstance, err := GetInstance(client, instance.ID)
+		getInstance, err := obj.GetInstance(instance.ID)
 		if err != nil {
 			return "", err
 		}
 
 		if getInstance.Status == "ACTIVE" {
+
 			generatedPassword := generateDBPassword(20)
-			log.Println("[ CREATED ] Instance " + clusterName + "-ksctl-db")
+			log.Println("[ CREATED ] Instance " + obj.ClusterName + "-ksctl-db")
 			err = ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptDB(generatedPassword), false)
 			if err != nil {
 				return "", err

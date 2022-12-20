@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 	"strings"
 	"time"
 
@@ -16,49 +15,10 @@ import (
 // all the configs are present in .ksctl
 // want to save the config to ~/.ksctl/config/ha-civo/<Cluster Name> <Region>/*
 
-// TODO: getKubeconfig() fix the path
-func getKubeconfig(params ...string) string {
-	var ret string
-
-	if runtime.GOOS == "windows" {
-		ret = fmt.Sprintf("%s\\.ksctl\\config\\ha-civo", payload.GetUserName())
-		for _, item := range params {
-			ret += "\\" + item
-		}
-	} else {
-		ret = fmt.Sprintf("%s/.ksctl/config/ha-civo", payload.GetUserName())
-		for _, item := range params {
-			ret += "/" + item
-		}
-	}
-	return ret
-}
-
-func getCredentials() string {
-	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s\\.ksctl\\cred\\civo", payload.GetUserName())
-	} else {
-		return fmt.Sprintf("%s/.ksctl/cred/civo", payload.GetUserName())
-	}
-}
-
-// GetPath use this in every function and differentiate the logic by using if-else
-// flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
-func GetPath(flag int8, params ...string) string {
-	switch flag {
-	case 1:
-		return getKubeconfig(params...)
-	case 0:
-		return getCredentials()
-	default:
-		return ""
-	}
-}
-
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
-	file, err := os.ReadFile(GetPath(0))
+	file, err := os.ReadFile(payload.GetPathCIVO(0))
 	if err != nil {
 		return ""
 	}
@@ -71,7 +31,7 @@ func fetchAPIKey() string {
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
-	_, err := os.ReadFile(GetPath(1, clusterName+" "+Region, "info", "network"))
+	_, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+Region, "info", "network"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -87,6 +47,7 @@ func isValidSize(size string) bool {
 		"g3.large",
 		"g3.xlarge",
 		"g3.2xlarge"}
+
 	for _, valid := range validSizes {
 		if strings.Compare(valid, size) == 0 {
 			return true
@@ -96,17 +57,13 @@ func isValidSize(size string) bool {
 	return false
 }
 
+// cleanup called when error is encountered during creation og cluster
 func cleanup(name, region string) error {
 	log.Println("[ERR] Cannot continue 😢")
 	return DeleteCluster(name, region)
 }
 
-// TODO: If error occurs then remove all the resources created
-// CreateVM TODO: Handle the errors
-// check if the same cluster is present or not
-// get the format of cluster name verified and the region as well as the nodeSize
-func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
-
+func validationOfArguments(name, region, nodeSize string) error {
 	if isPresent(name, region) {
 		return fmt.Errorf("[FATAL] CLUSTER ALREADY PRESENT")
 	}
@@ -123,20 +80,48 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 		return fmt.Errorf("INVALID] SIZE")
 	}
 
+	return nil
+}
+
+// this will be made available to each create functional calls
+func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
+
+	if errV := validationOfArguments(name, region, nodeSize); errV != nil {
+		return errV
+	}
+
 	client, err := civogo.NewClient(fetchAPIKey(), region)
 	if err != nil {
 		return err
 	}
 
+	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
+	if err != nil {
+		return err
+	}
+
+	var obj HACollection
+
+	obj = &HAType{
+		Client:       client,
+		NodeSize:     nodeSize,
+		ClusterName:  name,
+		DiskImgID:    diskImg.ID,
+		DBFirewallID: "",
+		LBFirewallID: "",
+		CPFirewallID: "",
+		WPFirewallID: "",
+		NetworkID:    ""}
+
 	// NOTE: Config Loadbalancer require the control planes privateIPs
 
-	mysqlEndpoint, err := CreateDatabase(client, name)
+	mysqlEndpoint, err := obj.CreateDatabase()
 	if err != nil {
 		_ = cleanup(name, region)
 		return err
 	}
 
-	loadBalancer, err := CreateLoadbalancer(client, name)
+	loadBalancer, err := obj.CreateLoadbalancer()
 	if err != nil {
 		_ = cleanup(name, region)
 		return err
@@ -145,7 +130,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 	var controlPlanes = make([](*civogo.Instance), noCP)
 
 	for i := 0; i < noCP; i++ {
-		controlPlanes[i], err = CreateControlPlane(client, i+1, name, nodeSize)
+		controlPlanes[i], err = obj.CreateControlPlane(i + 1)
 		if err != nil {
 			_ = cleanup(name, region)
 			return err
@@ -194,13 +179,13 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 	newKubeconfig := strings.Replace(kubeconfig, "127.0.0.1", loadBalancer.PublicIP, 1)
 	fmt.Println(newKubeconfig)
 
-	_ = SaveKubeconfig(name, region, newKubeconfig)
+	_ = obj.SaveKubeconfig(newKubeconfig)
 
 	log.Println("JOINING WORKER NODES")
 	var workerPlanes = make([](*civogo.Instance), noWP)
 
 	for i := 0; i < noWP; i++ {
-		workerPlanes[i], err = CreateWorkerNode(client, i+1, name, loadBalancer.PrivateIP, token, nodeSize)
+		workerPlanes[i], err = obj.CreateWorkerNode(i+1, loadBalancer.PrivateIP, token)
 		if err != nil {
 			_ = cleanup(name, region)
 			return err
@@ -208,31 +193,69 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 	}
 
 	log.Println("Created the k3s ha cluster!!")
+
+	var printKubeconfig payload.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: name, Region: region}
+	printKubeconfig.Printer(0)
 	return nil
 }
 
+type printer struct {
+	ClusterName string
+	Region      string
+}
+
+func (p printer) Printer(a int) {
+	switch a {
+	case 0:
+		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", payload.GetPathCIVO(1, "ha-civo", p.ClusterName+" "+p.Region, "config")))
+	case 1:
+		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
+		fmt.Println(fmt.Sprintf("unset KUBECONFIG\n"))
+	}
+	fmt.Println()
+}
+
+// DeleteCluster to delete the entire cluster
 func DeleteCluster(name, region string) error {
 	client, err := civogo.NewClient(fetchAPIKey(), region)
 	if err != nil {
 		return err
 	}
+	var obj HACollection
 
-	if err := DeleteInstances(client, name); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
+	obj = &HAType{
+		Client:       client,
+		NodeSize:     "",
+		ClusterName:  name,
+		DiskImgID:    "",
+		DBFirewallID: "",
+		LBFirewallID: "",
+		CPFirewallID: "",
+		WPFirewallID: "",
+		NetworkID:    ""}
+
+	if err := obj.DeleteInstances(); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
 		return err
 	}
 	time.Sleep(20 * time.Second)
 
-	if err := DeleteFirewalls(client, name); err != nil && !errors.Is(civogo.DatabaseFirewallNotFoundError, err) {
+	if err := obj.DeleteFirewalls(); err != nil && !errors.Is(civogo.DatabaseFirewallNotFoundError, err) {
 		return err
 	}
 
 	time.Sleep(15 * time.Second)
-	if err := DeleteNetworks(client, name); err != nil && !errors.Is(civogo.DatabaseNetworkNotFoundError, err) {
+	if err := obj.DeleteNetworks(); err != nil && !errors.Is(civogo.DatabaseNetworkNotFoundError, err) {
 		return err
 	}
 
 	if err := DeleteAllPaths(name, region); err != nil {
 		return err
 	}
+
+	var printKubeconfig payload.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: name, Region: region}
+	printKubeconfig.Printer(1)
 	return nil
 }

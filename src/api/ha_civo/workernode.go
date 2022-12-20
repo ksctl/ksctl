@@ -15,36 +15,29 @@ curl -sfL https://get.k3s.io | sh -s - agent --token=$SECRET --server https://%s
 `, token, privateIPlb)
 }
 
-func CreateWorkerNode(client *civogo.Client, number int, clusterName, privateIPlb, token, nodeSize string) (*civogo.Instance, error) {
+func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civogo.Instance, error) {
 
-	network, err := GetNetwork(client, clusterName+"-ksctl")
+	name := fmt.Sprintf("%s-ksctl-wp", obj.ClusterName)
+
+	if len(obj.WPFirewallID) == 0 {
+		firewall, err := obj.CreateFirewall(name)
+		if err != nil {
+			return nil, err
+		}
+		obj.WPFirewallID = firewall.ID
+		err = obj.ConfigWriterFirewall(firewall)
+		if err != nil {
+			return nil, nil
+		}
+	}
+	name += fmt.Sprint(number)
+
+	instance, err := obj.CreateInstance(name, obj.WPFirewallID, obj.NodeSize, "")
 	if err != nil {
 		return nil, err
 	}
 
-	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
-	if err != nil {
-		return nil, err
-	}
-
-	name := fmt.Sprintf("%s-ksctl-wp-%d", clusterName, number)
-
-	firewall, err := CreateFirewall(client, name, network.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ConfigWriterFirewall(firewall, clusterName, client.Region)
-	if err != nil {
-		return nil, nil
-	}
-
-	instance, err := CreateInstance(client, name, firewall.ID, diskImg.ID, nodeSize, network.ID, "")
-	if err != nil {
-		return nil, err
-	}
-
-	err = ConfigWriterInstance(instance, clusterName, client.Region)
+	err = obj.ConfigWriterInstance(instance)
 	if err != nil {
 		return nil, nil
 	}
@@ -52,7 +45,7 @@ func CreateWorkerNode(client *civogo.Client, number int, clusterName, privateIPl
 	var retObject *civogo.Instance
 
 	for {
-		getInstance, err := GetInstance(client, instance.ID)
+		getInstance, err := obj.GetInstance(instance.ID)
 		if err != nil {
 			return nil, err
 		}

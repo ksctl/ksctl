@@ -7,10 +7,11 @@ package eks
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/payload"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/kubesimplify/ksctl/src/api/payload"
 )
 
 func getKubeconfig(params ...string) string {
@@ -86,9 +87,6 @@ func Credentials() bool {
 			panic(err.Error())
 		}
 	}()
-
-  strings.TrimSpace(acckey)
-  strings.TrimSpace(secacckey)
 
 	_, err = file.Write([]byte(fmt.Sprintf(`Access-Key: %s
 		Secret-Access-Key: %s`, acckey, secacckey)))

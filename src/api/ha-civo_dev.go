@@ -25,7 +25,7 @@ func main() {
 		err = ha_civo.DeleteCluster("dipankar", "FRA1")
 	case 1:
 		// controlplane and workernode nodeSize
-		err = ha_civo.CreateCluster("dipankar", "FRA1", "g3.medium", 3, 2)
+		err = ha_civo.CreateCluster("dipankar", "FRA1", "g3.medium", 2, 2)
 	}
 	if err != nil {
 		log.Panicln(err)

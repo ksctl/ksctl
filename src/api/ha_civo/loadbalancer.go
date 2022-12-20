@@ -35,7 +35,7 @@ backend kubernetes-backend
 `
 
 	for index, controlPlaneIP := range controlPlaneIPs {
-		script += fmt.Sprintf(`  server k3sserver-%d %s 
+		script += fmt.Sprintf(`  server k3sserver-%d %s
 `, index+1, controlPlaneIP)
 	}
 
@@ -55,37 +55,26 @@ func ConfigLoadBalancer(instance *civogo.Instance, CPIPs []string) error {
 	return err
 }
 
-func CreateLoadbalancer(client *civogo.Client, clusterName string) (*civogo.Instance, error) {
+func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 
-	var networkID string
-	network, err := GetNetwork(client, clusterName+"-ksctl")
+	name := obj.ClusterName + "-ksctl-lb"
+	firewall, err := obj.CreateFirewall(name)
 	if err != nil {
 		return nil, err
 	}
-	networkID = network.ID
+	obj.LBFirewallID = firewall.ID
 
-	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
-	if err != nil {
-		return nil, err
-	}
-
-	name := clusterName + "-ksctl-lb"
-	firewall, err := CreateFirewall(client, name, networkID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ConfigWriterFirewall(firewall, clusterName, client.Region)
+	err = obj.ConfigWriterFirewall(firewall)
 	if err != nil {
 		return nil, nil
 	}
 
-	instance, err := CreateInstance(client, name, firewall.ID, diskImg.ID, "g3.medium", networkID, "")
+	instance, err := obj.CreateInstance(name, firewall.ID, "g3.medium", "")
 	if err != nil {
 		return nil, err
 	}
 
-	err = ConfigWriterInstance(instance, clusterName, client.Region)
+	err = obj.ConfigWriterInstance(instance)
 	if err != nil {
 		return nil, nil
 	}
@@ -93,7 +82,7 @@ func CreateLoadbalancer(client *civogo.Client, clusterName string) (*civogo.Inst
 	var retObject *civogo.Instance
 
 	for {
-		getInstance, err := GetInstance(client, instance.ID)
+		getInstance, err := obj.GetInstance(instance.ID)
 		if err != nil {
 			return nil, err
 		}

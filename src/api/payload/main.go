@@ -8,7 +8,9 @@ Kubesimplify
 package payload
 
 import (
+	"fmt"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -109,4 +111,42 @@ func IsValidName(clusterName string) bool {
 		}
 	}
 	return true
+}
+
+func getKubeconfigCIVO(params ...string) string {
+	var ret string
+
+	if runtime.GOOS == "windows" {
+		ret = fmt.Sprintf("%s\\.ksctl\\config", GetUserName())
+		for _, item := range params {
+			ret += "\\" + item
+		}
+	} else {
+		ret = fmt.Sprintf("%s/.ksctl/config", GetUserName())
+		for _, item := range params {
+			ret += "/" + item
+		}
+	}
+	return ret
+}
+
+func getCredentialsCIVO() string {
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf("%s\\.ksctl\\cred\\civo", GetUserName())
+	} else {
+		return fmt.Sprintf("%s/.ksctl/cred/civo", GetUserName())
+	}
+}
+
+// GetPath use this in every function and differentiate the logic by using if-else
+// flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
+func GetPathCIVO(flag int8, params ...string) string {
+	switch flag {
+	case 1:
+		return getKubeconfigCIVO(params...)
+	case 0:
+		return getCredentialsCIVO()
+	default:
+		return ""
+	}
 }
