@@ -52,15 +52,15 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
+			log.Println("✅ 🚀 Instance " + name)
 			err := ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptWP(privateIPlb, token), false)
 			if err != nil {
 				return nil, err
 			}
-
-			log.Println("[ CREATED ] Instance " + name)
+			log.Println("✅ 🔧🔨 Instance" + name)
 			return retObject, nil
 		}
-		log.Println(getInstance.Status)
+		log.Println("🚧 Instance " + name)
 		time.Sleep(10 * time.Second)
 	}
 

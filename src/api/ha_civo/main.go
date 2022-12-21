@@ -65,19 +65,19 @@ func cleanup(name, region string) error {
 
 func validationOfArguments(name, region, nodeSize string) error {
 	if isPresent(name, region) {
-		return fmt.Errorf("[FATAL] CLUSTER ALREADY PRESENT")
+		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
 	}
 
 	if !payload.IsValidRegionCIVO(region) {
-		return fmt.Errorf("[INVALID] REGION")
+		return fmt.Errorf("🚩 REGION")
 	}
 
 	if !payload.IsValidName(name) {
-		return fmt.Errorf("[INVALID] NAME FORMAT")
+		return fmt.Errorf("🚩 NAME FORMAT")
 	}
 
 	if !isValidSize(nodeSize) {
-		return fmt.Errorf("INVALID] SIZE")
+		return fmt.Errorf("🚩 SIZE")
 	}
 
 	return nil
@@ -160,7 +160,8 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 			}
 			token = GetTokenFromCP_1(controlPlanes[0])
 			if len(token) == 0 {
-				fmt.Println("Cannot retrieve k3s token")
+				_ = cleanup(name, region)
+				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
 		} else {
 			err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptCP_n(mysqlEndpoint, loadBalancer.PrivateIP, token), true)
@@ -169,7 +170,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 				return err
 			}
 		}
-		log.Printf("[CONFIGURED] control-plane-%d\n", i+1)
+		log.Printf("✅ 🔧🔨 control-plane-%d\n", i+1)
 	}
 
 	kubeconfig, err := FetchKUBECONFIG(controlPlanes[0])
@@ -192,7 +193,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 		}
 	}
 
-	log.Println("Created the k3s ha cluster!!")
+	log.Println("Created the k3s ha cluster!!🥳 🎉 ")
 
 	var printKubeconfig payload.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
@@ -253,6 +254,8 @@ func DeleteCluster(name, region string) error {
 	if err := DeleteAllPaths(name, region); err != nil {
 		return err
 	}
+
+	log.Println("Deleted the cluster 🏭 🔥")
 
 	var printKubeconfig payload.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}

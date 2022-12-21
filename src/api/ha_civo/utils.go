@@ -49,16 +49,16 @@ func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
 		if err == nil {
 			break
 		} else {
-			log.Printf("[ RETRYING ] %v\n", err)
+			log.Printf("❗ RETRYING %v\n", err)
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
 	}
 	if currRetryCounter == MAX_RETRY_COUNT {
-		return fmt.Errorf("[FATAL] COULDN'T RETRY: %v", err)
+		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
 	}
 
-	log.Println("CONFIGURING...")
+	log.Println("🤖 📃 Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -100,16 +100,16 @@ func ExecWithOutput(publicIP, password, script string, fastMode bool) (string, e
 		if err == nil {
 			break
 		} else {
-			log.Printf("[ RETRYING ] %v\n", err)
+			log.Printf("❗ RETRYING %v\n", err)
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
 	}
 	if currRetryCounter == MAX_RETRY_COUNT {
-		return "", fmt.Errorf("[FATAL] COULDN'T RETRY: %v", err)
+		return "", fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
 	}
 
-	log.Println("CONFIGURING...")
+	log.Println("🤖 📃 Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -138,10 +138,12 @@ func (obj *HAType) DeleteInstances() error {
 	if len(instances) == 0 {
 		return nil
 	}
-	for _, instanceID := range instances {
+	for index, instanceID := range instances {
 		if err := obj.DeleteInstance(instanceID); err != nil {
+			log.Println(fmt.Sprintf("❌ [%d/%d] deleted instances", index+1, len(instances)))
 			return err
 		}
+		log.Println(fmt.Sprintf("✅ [%d/%d] deleted instances", index+1, len(instances)))
 	}
 	return nil
 }
@@ -154,10 +156,12 @@ func (obj *HAType) DeleteFirewalls() error {
 	if len(firewalls) == 0 {
 		return nil
 	}
-	for _, firewallID := range firewalls {
+	for index, firewallID := range firewalls {
 		if err := obj.DeleteFirewall(firewallID); err != nil {
+			log.Println(fmt.Sprintf("❌ [%d/%d] deleted firewall", index+1, len(firewalls)))
 			return err
 		}
+		log.Println(fmt.Sprintf("✅ [%d/%d] deleted firewalls", index+1, len(firewalls)))
 	}
 	return nil
 }
@@ -170,33 +174,31 @@ func (obj *HAType) DeleteNetworks() error {
 	if len(networks) == 0 {
 		return nil
 	}
-	for _, networkID := range networks {
+	for index, networkID := range networks {
 		if err := obj.DeleteNetwork(networkID); err != nil {
+			log.Println(fmt.Sprintf("❌ [%d/%d] deleted Network", index+1, len(networks)))
 			return err
 		}
+		log.Println(fmt.Sprintf("✅ [%d/%d] deleted Network", index+1, len(networks)))
 	}
 	return nil
 }
 
 func (obj *HAType) DeleteInstance(instanceID string) error {
-	resp, err := obj.Client.DeleteInstance(instanceID)
-	defer log.Println(resp)
+	_, err := obj.Client.DeleteInstance(instanceID)
 	return err
 }
 
 func (obj *HAType) DeleteFirewall(firewallID string) error {
-	resp, err := obj.Client.DeleteFirewall(firewallID)
-	defer log.Println(resp)
+	_, err := obj.Client.DeleteFirewall(firewallID)
 	return err
 }
 
 func (obj *HAType) DeleteNetwork(networkID string) error {
-	resp, err := obj.Client.DeleteNetwork(networkID)
+	_, err := obj.Client.DeleteNetwork(networkID)
 	if errors.Is(civogo.DatabaseNetworkDeleteWithInstanceError, err) {
 		time.Sleep(10 * time.Second)
 		return obj.DeleteNetwork(networkID)
-	} else {
-		log.Println(resp)
 	}
 	return err
 }
@@ -274,7 +276,7 @@ func (obj *HAType) ConfigWriterInstance(instanceObj *civogo.Instance) error {
 	if err != nil {
 		return err
 	}
-
+	log.Println("✅ 📃 instance configuration")
 	return nil
 }
 
@@ -302,7 +304,7 @@ func (obj *HAType) ConfigWriterFirewall(firewallObj *civogo.FirewallResult) erro
 	if err != nil {
 		return err
 	}
-
+	log.Println("✅ 📃 firewall configuration")
 	return nil
 }
 
@@ -332,6 +334,8 @@ func (obj *HAType) ConfigWriterNetwork(networkObj *civogo.NetworkResult) error {
 		return err
 	}
 
+	log.Println("✅ 📃 network configuration")
+
 	return nil
 }
 
@@ -357,13 +361,14 @@ func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	if err != nil {
 		return err
 	}
+	log.Println("✅ 📃 Kubeconfig")
 	return nil
 }
 
 func ExtractInstances(clusterName, region string) ([]string, error) {
 	data, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info", "instances"))
 	if err != nil {
-		return nil, fmt.Errorf("NO matching instance(s) found")
+		return nil, fmt.Errorf("🚩 NO matching instance(s) found")
 	}
 
 	arr := strings.Split(strings.TrimSpace(string(data)), " ")
@@ -374,7 +379,7 @@ func ExtractInstances(clusterName, region string) ([]string, error) {
 func ExtractFirewalls(clusterName, region string) ([]string, error) {
 	data, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info", "firewalls"))
 	if err != nil {
-		return nil, fmt.Errorf("NO matching firewall(s) found")
+		return nil, fmt.Errorf("🚩 NO matching firewall(s) found")
 	}
 
 	arr := strings.Split(strings.TrimSpace(string(data)), " ")
@@ -385,7 +390,7 @@ func ExtractFirewalls(clusterName, region string) ([]string, error) {
 func ExtractNetwork(clusterName, region string) ([]string, error) {
 	data, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info", "network"))
 	if err != nil {
-		return nil, fmt.Errorf("NO matching network(s) found")
+		return nil, fmt.Errorf("🚩 NO matching network(s) found")
 	}
 
 	arr := strings.Split(strings.TrimSpace(string(data)), " ")

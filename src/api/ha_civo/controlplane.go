@@ -84,10 +84,10 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
-			log.Println("[ CREATED ] Instance " + name)
+			log.Println("✅ 🚀 Instance " + name)
 			return retObject, nil
 		}
-		log.Println(getInstance.Status)
+		log.Println("🚧 Instance " + name)
 		time.Sleep(10 * time.Second)
 	}
 

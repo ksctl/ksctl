@@ -74,7 +74,9 @@ func (obj *HAType) CreateDatabase() (string, error) {
 		return "", errV
 	}
 
-	firewall, err := obj.CreateFirewall(obj.ClusterName + "-ksctl-db")
+	name := obj.ClusterName + "-ksctl-db"
+
+	firewall, err := obj.CreateFirewall(name)
 	if err != nil {
 		return "", err
 	}
@@ -85,7 +87,7 @@ func (obj *HAType) CreateDatabase() (string, error) {
 		return "", nil
 	}
 
-	instance, err := obj.CreateInstance(obj.ClusterName+"-ksctl-db", firewall.ID, "g3.large", "")
+	instance, err := obj.CreateInstance(name, firewall.ID, "g3.large", "")
 	if err != nil {
 		return "", err
 	}
@@ -104,16 +106,16 @@ func (obj *HAType) CreateDatabase() (string, error) {
 		if getInstance.Status == "ACTIVE" {
 
 			generatedPassword := generateDBPassword(20)
-			log.Println("[ CREATED ] Instance " + obj.ClusterName + "-ksctl-db")
+			log.Println("✅ 🚀 Instance " + name)
 			err = ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptDB(generatedPassword), false)
 			if err != nil {
 				return "", err
 			}
 
-			log.Println("[CONFIGURED] Database")
+			log.Println("✅ 🔧🔨 Database")
 			return fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, getInstance.PrivateIP), nil
 		}
-		log.Println(getInstance.Status)
+		log.Println("🚧 Instance " + name)
 		time.Sleep(10 * time.Second)
 	}
 }
