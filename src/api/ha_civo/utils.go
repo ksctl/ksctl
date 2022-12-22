@@ -124,7 +124,7 @@ func saveConfig(clusterFolder string, configStore JsonStore) error {
 	if err != nil {
 		return err
 	}
-	log.Println("✅ 📃 instance configuration")
+	log.Println("💾 📃 configuration")
 	return nil
 }
 
@@ -349,35 +349,43 @@ func (obj *HAType) DeleteNetworks() error {
 		return err
 	}
 
-	err = obj.DeleteFirewall(networks.FirewallIDControlPlaneNode)
-	if err != nil {
-		log.Println(fmt.Sprintf("❌ deleted controlplane firewall"))
+	if len(networks.FirewallIDControlPlaneNode) != 0 {
+		err = obj.DeleteFirewall(networks.FirewallIDControlPlaneNode)
+		if err != nil {
+			log.Println(fmt.Sprintf("❌ deleted controlplane firewall"))
+		}
+		log.Println(fmt.Sprintf("✅ deleted controlplane firewall"))
 	}
-	log.Println(fmt.Sprintf("✅ deleted controlplane firewall"))
 
 	time.Sleep(5 * time.Second)
 
-	err = obj.DeleteFirewall(networks.FirewallIDWorkerNode)
-	if err != nil {
-		log.Println(fmt.Sprintf("❌ deleted workerplane firewall"))
+	if len(networks.FirewallIDWorkerNode) != 0 {
+		err = obj.DeleteFirewall(networks.FirewallIDWorkerNode)
+		if err != nil {
+			log.Println(fmt.Sprintf("❌ deleted workerplane firewall"))
+		}
+		log.Println(fmt.Sprintf("✅ deleted workerplane firewall"))
 	}
-	log.Println(fmt.Sprintf("✅ deleted workerplane firewall"))
 
 	time.Sleep(5 * time.Second)
 
-	err = obj.DeleteFirewall(networks.FirewallIDDatabaseNode)
-	if err != nil {
-		log.Println(fmt.Sprintf("❌ deleted database firewall"))
+	if len(networks.FirewallIDDatabaseNode) != 0 {
+		err = obj.DeleteFirewall(networks.FirewallIDDatabaseNode)
+		if err != nil {
+			log.Println(fmt.Sprintf("❌ deleted database firewall"))
+		}
+		log.Println(fmt.Sprintf("✅ deleted database firewall"))
 	}
-	log.Println(fmt.Sprintf("✅ deleted database firewall"))
 
 	time.Sleep(5 * time.Second)
 
-	err = obj.DeleteFirewall(networks.FirewallIDLoadBalancerNode)
-	if err != nil {
-		log.Println(fmt.Sprintf("❌ deleted loadbalancer firewall"))
+	if len(networks.FirewallIDLoadBalancerNode) != 0 {
+		err = obj.DeleteFirewall(networks.FirewallIDLoadBalancerNode)
+		if err != nil {
+			log.Println(fmt.Sprintf("❌ deleted loadbalancer firewall"))
+		}
+		log.Println(fmt.Sprintf("✅ deleted loadbalancer firewall"))
 	}
-	log.Println(fmt.Sprintf("✅ deleted loadbalancer firewall"))
 
 	time.Sleep(5 * time.Second)
 

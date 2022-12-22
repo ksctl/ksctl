@@ -32,7 +32,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 	}
 	name += fmt.Sprint(number)
 
-	instance, err := obj.CreateInstance(name, obj.WPFirewallID, obj.NodeSize, "")
+	instance, err := obj.CreateInstance(name, obj.WPFirewallID, obj.NodeSize, scriptWP(privateIPlb, token))
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
 			log.Println("✅ 🚀 Instance " + name)
-			err := ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptWP(privateIPlb, token), false)
-			if err != nil {
-				return nil, err
-			}
-			log.Println("✅ 🔧 Instance" + name)
+			// err := ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptWP(privateIPlb, token), false)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			// log.Println("✅ 🔧 Instance" + name)
 			return retObject, nil
 		}
 		log.Println("🚧 Instance " + name)
