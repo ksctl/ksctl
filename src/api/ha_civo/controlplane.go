@@ -57,7 +57,7 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 			return nil, err
 		}
 		obj.CPFirewallID = firewall.ID
-		err = obj.ConfigWriterFirewall(firewall)
+		err = obj.Configuration.ConfigWriterFirewallControlPlaneNodes(firewall.ID)
 		if err != nil {
 			return nil, nil
 		}
@@ -69,7 +69,7 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 		return nil, err
 	}
 
-	err = obj.ConfigWriterInstance(instance)
+	err = obj.Configuration.ConfigWriterInstanceControlPlaneNodes(instance.ID)
 	if err != nil {
 		return nil, nil
 	}
@@ -93,8 +93,12 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 
 }
 
-func GetTokenFromCP_1(instance *civogo.Instance) string {
+func (obj *HAType) GetTokenFromCP_1(instance *civogo.Instance) string {
 	token, err := ExecWithOutput(instance.PublicIP, instance.InitialPassword, scriptWithCP_1(), true)
+	if err != nil {
+		return ""
+	}
+	err = obj.Configuration.ConfigWriterServerToken(token)
 	if err != nil {
 		return ""
 	}

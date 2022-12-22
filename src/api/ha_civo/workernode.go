@@ -25,7 +25,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 			return nil, err
 		}
 		obj.WPFirewallID = firewall.ID
-		err = obj.ConfigWriterFirewall(firewall)
+		err = obj.Configuration.ConfigWriterFirewallWorkerNodes(firewall.ID)
 		if err != nil {
 			return nil, nil
 		}
@@ -37,7 +37,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 		return nil, err
 	}
 
-	err = obj.ConfigWriterInstance(instance)
+	err = obj.Configuration.ConfigWriterInstanceWorkerNodes(instance.ID)
 	if err != nil {
 		return nil, nil
 	}
@@ -57,7 +57,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 			if err != nil {
 				return nil, err
 			}
-			log.Println("✅ 🔧🔨 Instance" + name)
+			log.Println("✅ 🔧 Instance" + name)
 			return retObject, nil
 		}
 		log.Println("🚧 Instance " + name)

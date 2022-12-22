@@ -82,7 +82,7 @@ func (obj *HAType) CreateDatabase() (string, error) {
 	}
 	obj.DBFirewallID = firewall.ID
 
-	err = obj.ConfigWriterFirewall(firewall)
+	err = obj.Configuration.ConfigWriterFirewallDatabaseNodes(firewall.ID)
 	if err != nil {
 		return "", nil
 	}
@@ -92,7 +92,7 @@ func (obj *HAType) CreateDatabase() (string, error) {
 		return "", err
 	}
 
-	err = obj.ConfigWriterInstance(instance)
+	err = obj.Configuration.ConfigWriterInstanceDatabase(instance.ID)
 	if err != nil {
 		return "", nil
 	}
@@ -112,8 +112,13 @@ func (obj *HAType) CreateDatabase() (string, error) {
 				return "", err
 			}
 
-			log.Println("✅ 🔧🔨 Database")
-			return fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, getInstance.PrivateIP), nil
+			log.Println("✅ 🔧 Database")
+			endpoint := fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, getInstance.PrivateIP)
+			err = obj.Configuration.ConfigWriterDBEndpoint(endpoint)
+			if err != nil {
+				return "", err
+			}
+			return endpoint, nil
 		}
 		log.Println("🚧 Instance " + name)
 		time.Sleep(10 * time.Second)

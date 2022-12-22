@@ -2,11 +2,12 @@ package ha_civo
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/civo/civogo"
@@ -22,6 +23,178 @@ const (
 type LoadBalancerRet struct {
 	PublicIP   string
 	InstanceID *civogo.Instance
+}
+
+type HACollection interface {
+	DeleteInstances() error
+	DeleteNetworks() error
+
+	DeleteInstance(string) error
+	DeleteFirewall(string) error
+	DeleteNetwork(string) error
+
+	GetNetwork(string) (*civogo.Network, error)
+	GetInstance(string) (*civogo.Instance, error)
+
+	CreateFirewall(string) (*civogo.FirewallResult, error)
+	CreateNetwork(string) error
+	CreateInstance(string, string, string, string) (*civogo.Instance, error)
+
+	SaveKubeconfig(string) error
+
+	CreateLoadbalancer() (*civogo.Instance, error)
+	CreateControlPlane(int) (*civogo.Instance, error)
+	CreateWorkerNode(int, string, string) (*civogo.Instance, error)
+	CreateDatabase() (string, error)
+	GetTokenFromCP_1(*civogo.Instance) string
+}
+
+type HAType struct {
+	Client        *civogo.Client // CIVO client obj
+	ClusterName   string         // clusterName provided by the user
+	DiskImgID     string         // disk Img ID for ubuntu
+	NetworkID     string         // network id
+	NodeSize      string         // e.x. g3.medium
+	DBFirewallID  string
+	LBFirewallID  string
+	CPFirewallID  string
+	WPFirewallID  string
+	Configuration *JsonStore
+}
+
+type InstanceID struct {
+	ControlNodes     []string `json:"controlnodeids"`
+	WorkerNodes      []string `json:"workernodeids"`
+	LoadBalancerNode []string `json:"loadbalancernodeids"`
+	DatabaseNode     []string `json:"databasenodeids"`
+}
+
+type NetworkID struct {
+	FirewallIDControlPlaneNode string `json:"fwidcontrolplanenode"`
+	FirewallIDWorkerNode       string `json:"fwidworkernode"`
+	FirewallIDLoadBalancerNode string `json:"fwidloadbalancenode"`
+	FirewallIDDatabaseNode     string `json:"fwiddatabasenode"`
+	NetworkID                  string `json:"clusternetworkid"`
+}
+
+type JsonStore struct {
+	ClusterName string     `json:"clustername"`
+	Region      string     `json:"region"`
+	DBEndpoint  string     `json:"dbendpoint"`
+	ServerToken string     `json:"servertoken"`
+	InstanceIDs InstanceID `json:"instanceids"`
+	NetworkIDs  NetworkID  `json:"networkids"`
+}
+
+func GetConfig(clusterName, region string) (configStore JsonStore, err error) {
+
+	fileBytes, err := ioutil.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info.json"))
+
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(fileBytes, &configStore)
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func saveConfig(clusterFolder string, configStore JsonStore) error {
+
+	storeBytes, err := json.Marshal(configStore)
+	if err != nil {
+		return err
+	}
+
+	err = os.Mkdir(payload.GetPathCIVO(1, "ha-civo", clusterFolder), 0750)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	// _, err = os.Create(payload.GetPathCIVO(1, "ha-civo", clusterFolder, "config"))
+	// if err != nil && !os.IsExist(err) {
+	// 	return err
+	// }
+
+	err = ioutil.WriteFile(payload.GetPathCIVO(1, "ha-civo", clusterFolder, "info.json"), storeBytes, 0640)
+	if err != nil {
+		return err
+	}
+	log.Println("✅ 📃 instance configuration")
+	return nil
+}
+
+type ConfigurationHandlers interface {
+	ConfigWriterDBEndpoint(string) error
+	ConfigWriterInstanceDatabase(string) error
+	ConfigWriterServerToken(string) error
+	ConfigWriterInstanceLoadBalancer(string) error
+	ConfigWriterInstanceControlPlaneNodes(string) error
+	ConfigWriterInstanceWorkerNodes(string) error
+	ConfigWriterFirewallLoadBalancerNodes(string) error
+	ConfigWriterFirewallControlPlaneNodes(string) error
+	ConfigWriterFirewallWorkerNodes(string) error
+	ConfigWriterFirewallDatabaseNodes(string) error
+	ConfigWriterNetworkID(string) error
+}
+
+func (config *JsonStore) ConfigWriterDBEndpoint(endpoint string) error {
+	config.DBEndpoint = endpoint
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterNetworkID(netID string) error {
+	config.NetworkIDs.NetworkID = netID
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterFirewallControlPlaneNodes(fwID string) error {
+	config.NetworkIDs.FirewallIDControlPlaneNode = fwID
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterFirewallWorkerNodes(fwID string) error {
+	config.NetworkIDs.FirewallIDWorkerNode = fwID
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterFirewallLoadBalancerNodes(fwID string) error {
+	config.NetworkIDs.FirewallIDLoadBalancerNode = fwID
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterFirewallDatabaseNodes(fwID string) error {
+	config.NetworkIDs.FirewallIDDatabaseNode = fwID
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterServerToken(token string) error {
+	config.ServerToken = token
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterInstanceDatabase(instanceID string) error {
+	config.InstanceIDs.DatabaseNode = append(config.InstanceIDs.DatabaseNode, instanceID)
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterInstanceLoadBalancer(instanceID string) error {
+	config.InstanceIDs.LoadBalancerNode = append(config.InstanceIDs.LoadBalancerNode, instanceID)
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterInstanceControlPlaneNodes(instanceID string) error {
+	config.InstanceIDs.ControlNodes = append(config.InstanceIDs.ControlNodes, instanceID)
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterInstanceWorkerNodes(instanceID string) error {
+	config.InstanceIDs.WorkerNodes = append(config.InstanceIDs.WorkerNodes, instanceID)
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
 func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
@@ -135,52 +308,85 @@ func (obj *HAType) DeleteInstances() error {
 	if err != nil {
 		return err
 	}
-	if len(instances) == 0 {
-		return nil
-	}
-	for index, instanceID := range instances {
-		if err := obj.DeleteInstance(instanceID); err != nil {
-			log.Println(fmt.Sprintf("❌ [%d/%d] deleted instances", index+1, len(instances)))
-			return err
-		}
-		log.Println(fmt.Sprintf("✅ [%d/%d] deleted instances", index+1, len(instances)))
-	}
-	return nil
-}
 
-func (obj *HAType) DeleteFirewalls() error {
-	firewalls, err := ExtractFirewalls(obj.ClusterName, obj.Client.Region)
-	if err != nil {
-		return err
-	}
-	if len(firewalls) == 0 {
-		return nil
-	}
-	for index, firewallID := range firewalls {
-		if err := obj.DeleteFirewall(firewallID); err != nil {
-			log.Println(fmt.Sprintf("❌ [%d/%d] deleted firewall", index+1, len(firewalls)))
+	for index, instanceID := range instances.ControlNodes {
+		if err := obj.DeleteInstance(instanceID); err != nil {
+			log.Println(fmt.Sprintf("❌ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)))
 			return err
 		}
-		log.Println(fmt.Sprintf("✅ [%d/%d] deleted firewalls", index+1, len(firewalls)))
+		log.Println(fmt.Sprintf("✅ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)))
+	}
+
+	for index, instanceID := range instances.WorkerNodes {
+		if err := obj.DeleteInstance(instanceID); err != nil {
+			log.Println(fmt.Sprintf("❌ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)))
+			return err
+		}
+		log.Println(fmt.Sprintf("✅ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)))
+	}
+
+	for index, instanceID := range instances.LoadBalancerNode {
+		if err := obj.DeleteInstance(instanceID); err != nil {
+			log.Println(fmt.Sprintf("❌ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)))
+			return err
+		}
+		log.Println(fmt.Sprintf("✅ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)))
+	}
+
+	for index, instanceID := range instances.DatabaseNode {
+		if err := obj.DeleteInstance(instanceID); err != nil {
+			log.Println(fmt.Sprintf("❌ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)))
+			return err
+		}
+		log.Println(fmt.Sprintf("✅ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)))
 	}
 	return nil
 }
 
 func (obj *HAType) DeleteNetworks() error {
-	networks, err := ExtractNetwork(obj.ClusterName, obj.Client.Region)
+	networks, err := ExtractNetworks(obj.ClusterName, obj.Client.Region)
 	if err != nil {
 		return err
 	}
-	if len(networks) == 0 {
-		return nil
+
+	err = obj.DeleteFirewall(networks.FirewallIDControlPlaneNode)
+	if err != nil {
+		log.Println(fmt.Sprintf("❌ deleted controlplane firewall"))
 	}
-	for index, networkID := range networks {
-		if err := obj.DeleteNetwork(networkID); err != nil {
-			log.Println(fmt.Sprintf("❌ [%d/%d] deleted Network", index+1, len(networks)))
-			return err
-		}
-		log.Println(fmt.Sprintf("✅ [%d/%d] deleted Network", index+1, len(networks)))
+	log.Println(fmt.Sprintf("✅ deleted controlplane firewall"))
+
+	time.Sleep(5 * time.Second)
+
+	err = obj.DeleteFirewall(networks.FirewallIDWorkerNode)
+	if err != nil {
+		log.Println(fmt.Sprintf("❌ deleted workerplane firewall"))
 	}
+	log.Println(fmt.Sprintf("✅ deleted workerplane firewall"))
+
+	time.Sleep(5 * time.Second)
+
+	err = obj.DeleteFirewall(networks.FirewallIDDatabaseNode)
+	if err != nil {
+		log.Println(fmt.Sprintf("❌ deleted database firewall"))
+	}
+	log.Println(fmt.Sprintf("✅ deleted database firewall"))
+
+	time.Sleep(5 * time.Second)
+
+	err = obj.DeleteFirewall(networks.FirewallIDLoadBalancerNode)
+	if err != nil {
+		log.Println(fmt.Sprintf("❌ deleted loadbalancer firewall"))
+	}
+	log.Println(fmt.Sprintf("✅ deleted loadbalancer firewall"))
+
+	time.Sleep(5 * time.Second)
+
+	err = obj.DeleteNetwork(networks.NetworkID)
+	if err != nil {
+		log.Println(fmt.Sprintf("❌ deleted network"))
+	}
+	log.Println(fmt.Sprintf("✅ deleted network"))
+
 	return nil
 }
 
@@ -248,95 +454,7 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 		return err
 	}
 	obj.NetworkID = net.ID
-	return obj.ConfigWriterNetwork(net)
-}
-
-func (obj *HAType) ConfigWriterInstance(instanceObj *civogo.Instance) error {
-	// NOTE: location -> '~/.ksctl/config/ha-civo/name region/info/instances' file will contain all the instanceID
-	//  location -> '~/.ksctl/config/ha-civo/name region/config' KUBECONFIG
-
-	folderName := obj.ClusterName + " " + obj.Client.Region
-	err := os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName), 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	err = os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName, "info"), 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	file, err := os.OpenFile(payload.GetPathCIVO(1, "ha-civo", folderName, "info", "instances"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(instanceObj.ID + " ")
-	if err != nil {
-		return err
-	}
-	log.Println("✅ 📃 instance configuration")
-	return nil
-}
-
-func (obj *HAType) ConfigWriterFirewall(firewallObj *civogo.FirewallResult) error {
-	// NOTE: location -> '~/.ksctl/config/ha-civo/name region/info/firewalls' file will contain all the instanceID
-	//  location -> '~/.ksctl/config/ha-civo/name region/config' KUBECONFIG
-	folderName := obj.ClusterName + " " + obj.Client.Region
-	err := os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName), 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	err = os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName, "info"), 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	file, err := os.OpenFile(payload.GetPathCIVO(1, "ha-civo", folderName, "info", "firewalls"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(firewallObj.ID + " ")
-	if err != nil {
-		return err
-	}
-	log.Println("✅ 📃 firewall configuration")
-	return nil
-}
-
-func (obj *HAType) ConfigWriterNetwork(networkObj *civogo.NetworkResult) error {
-	// NOTE: location -> '~/.ksctl/config/ha-civo/name region/info/network' file will contain all the instanceID
-	//  location -> '~/.ksctl/config/ha-civo/name region/config' KUBECONFIG
-
-	folderName := obj.ClusterName + " " + obj.Client.Region
-	err := os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName), 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	err = os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName, "info"), 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	file, err := os.OpenFile(payload.GetPathCIVO(1, "ha-civo", folderName, "info", "network"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0750)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(networkObj.ID + " ")
-	if err != nil {
-		return err
-	}
-
-	log.Println("✅ 📃 network configuration")
-
-	return nil
+	return obj.Configuration.ConfigWriterNetworkID(net.ID)
 }
 
 func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
@@ -365,78 +483,28 @@ func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	return nil
 }
 
-func ExtractInstances(clusterName, region string) ([]string, error) {
-	data, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info", "instances"))
+func ExtractInstances(clusterName, region string) (instIDs InstanceID, err error) {
+	data, err := GetConfig(clusterName, region)
 	if err != nil {
-		return nil, fmt.Errorf("🚩 NO matching instance(s) found")
+		err = fmt.Errorf("🚩 NO matching instance(s) found")
+		return
 	}
 
-	arr := strings.Split(strings.TrimSpace(string(data)), " ")
-
-	return arr, nil
+	instIDs = data.InstanceIDs
+	return
 }
 
-func ExtractFirewalls(clusterName, region string) ([]string, error) {
-	data, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info", "firewalls"))
+func ExtractNetworks(clusterName, region string) (instIDs NetworkID, err error) {
+	data, err := GetConfig(clusterName, region)
 	if err != nil {
-		return nil, fmt.Errorf("🚩 NO matching firewall(s) found")
+		err = fmt.Errorf("🚩 NO matching network / firewall(s) found")
+		return
 	}
 
-	arr := strings.Split(strings.TrimSpace(string(data)), " ")
-
-	return arr, nil
-}
-
-func ExtractNetwork(clusterName, region string) ([]string, error) {
-	data, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info", "network"))
-	if err != nil {
-		return nil, fmt.Errorf("🚩 NO matching network(s) found")
-	}
-
-	arr := strings.Split(strings.TrimSpace(string(data)), " ")
-
-	return arr, nil
+	instIDs = data.NetworkIDs
+	return
 }
 
 func DeleteAllPaths(clusterName, region string) error {
 	return os.RemoveAll(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region))
-}
-
-type HACollection interface {
-	DeleteInstances() error
-	DeleteFirewalls() error
-	DeleteNetworks() error
-
-	DeleteInstance(string) error
-	DeleteFirewall(string) error
-	DeleteNetwork(string) error
-
-	GetNetwork(string) (*civogo.Network, error)
-	GetInstance(string) (*civogo.Instance, error)
-
-	CreateFirewall(string) (*civogo.FirewallResult, error)
-	CreateNetwork(string) error
-	CreateInstance(string, string, string, string) (*civogo.Instance, error)
-
-	ConfigWriterInstance(*civogo.Instance) error
-	ConfigWriterFirewall(*civogo.FirewallResult) error
-	ConfigWriterNetwork(*civogo.NetworkResult) error
-	SaveKubeconfig(string) error
-
-	CreateLoadbalancer() (*civogo.Instance, error)
-	CreateControlPlane(int) (*civogo.Instance, error)
-	CreateWorkerNode(int, string, string) (*civogo.Instance, error)
-	CreateDatabase() (string, error)
-}
-
-type HAType struct {
-	Client       *civogo.Client // CIVO client obj
-	ClusterName  string         // clusterName provided by the user
-	DiskImgID    string         // disk Img ID for ubuntu
-	NetworkID    string         // network id
-	NodeSize     string         // e.x. g3.medium
-	DBFirewallID string
-	LBFirewallID string
-	CPFirewallID string
-	WPFirewallID string
 }

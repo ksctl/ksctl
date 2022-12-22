@@ -50,7 +50,7 @@ func ConfigLoadBalancer(instance *civogo.Instance, CPIPs []string) error {
 	getScript := configLBscript(CPIPs)
 	err := ExecWithoutOutput(instance.PublicIP, instance.InitialPassword, getScript, true)
 	if err == nil {
-		log.Println("✅ 🔧🔨 LoadBalancer")
+		log.Println("✅ 🔧 LoadBalancer")
 	}
 	return err
 }
@@ -64,7 +64,7 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 	}
 	obj.LBFirewallID = firewall.ID
 
-	err = obj.ConfigWriterFirewall(firewall)
+	err = obj.Configuration.ConfigWriterFirewallLoadBalancerNodes(firewall.ID)
 	if err != nil {
 		return nil, nil
 	}
@@ -74,7 +74,7 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 		return nil, err
 	}
 
-	err = obj.ConfigWriterInstance(instance)
+	err = obj.Configuration.ConfigWriterInstanceLoadBalancer(instance.ID)
 	if err != nil {
 		return nil, nil
 	}

@@ -111,7 +111,16 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 		LBFirewallID: "",
 		CPFirewallID: "",
 		WPFirewallID: "",
-		NetworkID:    ""}
+		NetworkID:    "",
+		Configuration: &JsonStore{
+			ClusterName: name,
+			Region:      region,
+			DBEndpoint:  "",
+			ServerToken: "",
+			InstanceIDs: InstanceID{},
+			NetworkIDs:  NetworkID{},
+		},
+	}
 
 	// NOTE: Config Loadbalancer require the control planes privateIPs
 
@@ -158,7 +167,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 				_ = cleanup(name, region)
 				return err
 			}
-			token = GetTokenFromCP_1(controlPlanes[0])
+			token = obj.GetTokenFromCP_1(controlPlanes[0])
 			if len(token) == 0 {
 				_ = cleanup(name, region)
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
@@ -170,7 +179,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 				return err
 			}
 		}
-		log.Printf("✅ 🔧🔨 control-plane-%d\n", i+1)
+		log.Printf("✅ 🔧 control-plane-%d\n", i+1)
 	}
 
 	kubeconfig, err := FetchKUBECONFIG(controlPlanes[0])
@@ -240,13 +249,8 @@ func DeleteCluster(name, region string) error {
 	if err := obj.DeleteInstances(); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
 		return err
 	}
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 
-	if err := obj.DeleteFirewalls(); err != nil && !errors.Is(civogo.DatabaseFirewallNotFoundError, err) {
-		return err
-	}
-
-	time.Sleep(15 * time.Second)
 	if err := obj.DeleteNetworks(); err != nil && !errors.Is(civogo.DatabaseNetworkNotFoundError, err) {
 		return err
 	}
