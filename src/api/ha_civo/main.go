@@ -31,7 +31,7 @@ func fetchAPIKey() string {
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
-	_, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+Region, "info", "network"))
+	_, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+Region, "info.json"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -80,6 +80,146 @@ func validationOfArguments(name, region, nodeSize string) error {
 		return fmt.Errorf("🚩 SIZE")
 	}
 
+	return nil
+}
+
+func AddMoreWorkerNodes(name, region, nodeSize string, noWP int) error {
+
+	if !isPresent(name, region) {
+		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
+	}
+	if !payload.IsValidRegionCIVO(region) {
+		return fmt.Errorf("🚩 REGION")
+	}
+
+	if !payload.IsValidName(name) {
+		return fmt.Errorf("🚩 NAME FORMAT")
+	}
+
+	if !isValidSize(nodeSize) {
+		return fmt.Errorf("🚩 SIZE")
+	}
+
+	config, err := GetConfig(name, region)
+	if err != nil {
+		return err
+	}
+
+	client, err := civogo.NewClient(fetchAPIKey(), region)
+	if err != nil {
+		return err
+	}
+
+	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
+	if err != nil {
+		return err
+	}
+	var obj HACollection
+
+	obj = &HAType{
+		Client:        client,
+		NodeSize:      nodeSize,
+		ClusterName:   name,
+		DiskImgID:     diskImg.ID,
+		WPFirewallID:  config.NetworkIDs.FirewallIDWorkerNode,
+		NetworkID:     config.NetworkIDs.NetworkID,
+		Configuration: &config}
+
+	log.Println("JOINING Additional WORKER NODES")
+	lb, err := obj.GetInstance(config.InstanceIDs.LoadBalancerNode[0])
+	var workerPlanes = make([](*civogo.Instance), noWP)
+
+	noOfWorkerNodes := len(config.InstanceIDs.WorkerNodes)
+
+	for i := 0; i < noWP; i++ {
+		workerPlanes[i], err = obj.CreateWorkerNode(i+noOfWorkerNodes+1, lb.PrivateIP, config.ServerToken)
+		if err != nil {
+			log.Println("Failed to add more nodes..")
+			return err
+		}
+	}
+
+	log.Println("Added more nodes 🥳 🎉 ")
+	return nil
+}
+
+func DeleteSomeWorkerNodes(clusterName, region string, noWP int) error {
+	if !payload.IsValidRegionCIVO(region) {
+		return fmt.Errorf("🚩 REGION")
+	}
+
+	if !payload.IsValidName(clusterName) {
+		return fmt.Errorf("🚩 NAME FORMAT")
+	}
+
+	if !isPresent(clusterName, region) {
+		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
+	}
+
+	log.Println(`NOTE 🚨
+((Deleteion of nodes happens from most recent added to first created worker node))
+i.e. of workernodes 1, 2, 3, 4
+then deletion will happen from 4, 3, 2, 1
+1) make sure you first drain the no of nodes
+		kubectl drain node <node name>
+2) then delete before deleting the instance
+		kubectl delete node <node name>
+`)
+	fmt.Println("Enter your choice to continue..[y/N]")
+	choice := "n"
+	unsafe := false
+	fmt.Scanf("%s", &choice)
+	if strings.Compare("y", choice) == 0 ||
+		strings.Compare("yes", choice) == 0 ||
+		strings.Compare("Y", choice) == 0 {
+		unsafe = true
+	}
+
+	if !unsafe {
+		return nil
+	}
+
+	config, err := GetConfig(clusterName, region)
+	if err != nil {
+		return err
+	}
+
+	client, err := civogo.NewClient(fetchAPIKey(), region)
+	if err != nil {
+		return err
+	}
+
+	var obj HACollection
+
+	obj = &HAType{
+		Client:        client,
+		NodeSize:      "",
+		ClusterName:   clusterName,
+		DiskImgID:     "",
+		WPFirewallID:  config.NetworkIDs.FirewallIDWorkerNode,
+		NetworkID:     config.NetworkIDs.NetworkID,
+		Configuration: &config}
+
+	currNoOfWorkerNodes := len(config.InstanceIDs.WorkerNodes)
+	if noWP > currNoOfWorkerNodes {
+		return fmt.Errorf("Requested no of deletion is more than present")
+	}
+
+	for i := 0; i < noWP; i++ {
+		err := obj.DeleteInstance(config.InstanceIDs.WorkerNodes[len(config.InstanceIDs.WorkerNodes)-1])
+		if err != nil {
+			return err
+		}
+
+		config.InstanceIDs.WorkerNodes = config.InstanceIDs.WorkerNodes[:len(config.InstanceIDs.WorkerNodes)-1]
+
+		err = saveConfig(clusterName+" "+region, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("Deleted some nodes 🥳 🎉 ")
 	return nil
 }
 

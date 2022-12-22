@@ -16,7 +16,7 @@ import (
 
 func main() {
 
-	fmt.Println("Enter 1 to create and 0 to delete: ")
+	fmt.Println("Enter 1 to create, 2 for add worker nodes and 3 for delete worker nodes, 0 to delete: ")
 	choice := -1
 	fmt.Scanf("%d", &choice)
 	var err error
@@ -25,7 +25,11 @@ func main() {
 		err = ha_civo.DeleteCluster("dipankar", "FRA1")
 	case 1:
 		// controlplane and workernode nodeSize
-		err = ha_civo.CreateCluster("dipankar", "FRA1", "g3.medium", 2, 2)
+		err = ha_civo.CreateCluster("dipankar", "FRA1", "g3.small", 3, 1)
+	case 2:
+		err = ha_civo.AddMoreWorkerNodes("dipankar", "FRA1", "g3.small", 3)
+	case 3:
+		err = ha_civo.DeleteSomeWorkerNodes("dipankar", "FRA1", 1)
 	}
 	if err != nil {
 		log.Panicln(err)
