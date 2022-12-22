@@ -386,6 +386,22 @@ func DeleteCluster(name, region string) error {
 		WPFirewallID: "",
 		NetworkID:    ""}
 
+	log.Printf(`NOTE 🚨
+THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'\n`, name+" "+region)
+	fmt.Println("Enter your choice to continue..[y/N]")
+	choice := "n"
+	unsafe := false
+	fmt.Scanf("%s", &choice)
+	if strings.Compare("y", choice) == 0 ||
+		strings.Compare("yes", choice) == 0 ||
+		strings.Compare("Y", choice) == 0 {
+		unsafe = true
+	}
+
+	if !unsafe {
+		return nil
+	}
+
 	if err := obj.DeleteInstances(); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
 		return err
 	}
