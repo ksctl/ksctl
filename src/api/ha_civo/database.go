@@ -86,8 +86,10 @@ func (obj *HAType) CreateDatabase() (string, error) {
 	if err != nil {
 		return "", nil
 	}
+	generatedPassword := generateDBPassword(20)
 
-	instance, err := obj.CreateInstance(name, firewall.ID, "g3.large", "")
+	// FIXME: try to make DB as private IP as SECURITY CONCERN
+	instance, err := obj.CreateInstance(name, firewall.ID, "g3.large", scriptDB(generatedPassword), true)
 	if err != nil {
 		return "", err
 	}
@@ -105,12 +107,7 @@ func (obj *HAType) CreateDatabase() (string, error) {
 
 		if getInstance.Status == "ACTIVE" {
 
-			generatedPassword := generateDBPassword(20)
 			log.Println("✅ 🚀 Instance " + name)
-			err = ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptDB(generatedPassword), false)
-			if err != nil {
-				return "", err
-			}
 
 			log.Println("✅ 🔧 Database")
 			endpoint := fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, getInstance.PrivateIP)

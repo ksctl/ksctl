@@ -38,7 +38,7 @@ type HACollection interface {
 
 	CreateFirewall(string) (*civogo.FirewallResult, error)
 	CreateNetwork(string) error
-	CreateInstance(string, string, string, string) (*civogo.Instance, error)
+	CreateInstance(string, string, string, string, bool) (*civogo.Instance, error)
 
 	SaveKubeconfig(string) error
 
@@ -427,16 +427,22 @@ func (obj *HAType) GetInstance(instanceID string) (inst *civogo.Instance, err er
 	return
 }
 
-func (obj *HAType) CreateInstance(instanceName, firewallID, NodeSize, initializationScript string) (inst *civogo.Instance, err error) {
+func (obj *HAType) CreateInstance(instanceName, firewallID, NodeSize, initializationScript string, public bool) (inst *civogo.Instance, err error) {
+	publicIP := "create"
+	if !public {
+		publicIP = "none"
+	}
+
 	instanceConfig := &civogo.InstanceConfig{
-		Hostname:    instanceName,
-		InitialUser: "root",
-		Region:      obj.Client.Region,
-		FirewallID:  firewallID,
-		Size:        NodeSize,
-		TemplateID:  obj.DiskImgID,
-		NetworkID:   obj.NetworkID,
-		Script:      initializationScript,
+		Hostname:         instanceName,
+		InitialUser:      "root",
+		Region:           obj.Client.Region,
+		FirewallID:       firewallID,
+		Size:             NodeSize,
+		TemplateID:       obj.DiskImgID,
+		NetworkID:        obj.NetworkID,
+		Script:           initializationScript,
+		PublicIPRequired: publicIP,
 	}
 
 	inst, err = obj.Client.CreateInstance(instanceConfig)

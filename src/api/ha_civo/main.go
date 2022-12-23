@@ -60,7 +60,7 @@ func isValidSize(size string) bool {
 // cleanup called when error is encountered during creation og cluster
 func cleanup(name, region string) error {
 	log.Println("[ERR] Cannot continue 😢")
-	return DeleteCluster(name, region)
+	return DeleteCluster(name, region, false)
 }
 
 func validationOfArguments(name, region, nodeSize string) error {
@@ -139,6 +139,7 @@ func AddMoreWorkerNodes(name, region, nodeSize string, noWP int) error {
 		}
 	}
 
+	log.Printf("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
 	log.Println("Added more nodes 🥳 🎉 ")
 	return nil
 }
@@ -156,7 +157,7 @@ func DeleteSomeWorkerNodes(clusterName, region string, noWP int) error {
 		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 
-	log.Println(`NOTE 🚨
+	log.Printf(`NOTE 🚨
 ((Deleteion of nodes happens from most recent added to first created worker node))
 i.e. of workernodes 1, 2, 3, 4
 then deletion will happen from 4, 3, 2, 1
@@ -368,7 +369,7 @@ func (p printer) Printer(a int) {
 }
 
 // DeleteCluster to delete the entire cluster
-func DeleteCluster(name, region string) error {
+func DeleteCluster(name, region string, showMsg bool) error {
 	client, err := civogo.NewClient(fetchAPIKey(), region)
 	if err != nil {
 		return err
@@ -386,20 +387,22 @@ func DeleteCluster(name, region string) error {
 		WPFirewallID: "",
 		NetworkID:    ""}
 
-	log.Printf(`NOTE 🚨
+	if showMsg {
+		log.Printf(`NOTE 🚨
 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'\n`, name+" "+region)
-	fmt.Println("Enter your choice to continue..[y/N]")
-	choice := "n"
-	unsafe := false
-	fmt.Scanf("%s", &choice)
-	if strings.Compare("y", choice) == 0 ||
-		strings.Compare("yes", choice) == 0 ||
-		strings.Compare("Y", choice) == 0 {
-		unsafe = true
-	}
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
 
-	if !unsafe {
-		return nil
+		if !unsafe {
+			return nil
+		}
 	}
 
 	if err := obj.DeleteInstances(); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {

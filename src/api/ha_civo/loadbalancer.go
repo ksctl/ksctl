@@ -69,7 +69,7 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 		return nil, nil
 	}
 
-	instance, err := obj.CreateInstance(name, firewall.ID, "g3.medium", "")
+	instance, err := obj.CreateInstance(name, firewall.ID, "g3.medium", scriptLB(), true)
 	if err != nil {
 		return nil, err
 	}
@@ -89,10 +89,6 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
-			err = ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptLB(), false)
-			if err != nil {
-				return nil, err
-			}
 
 			log.Println("✅ 🚀 Instance " + name)
 			return retObject, nil

@@ -64,7 +64,7 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 	}
 	name += fmt.Sprint(number)
 
-	instance, err := obj.CreateInstance(name, obj.CPFirewallID, obj.NodeSize, "")
+	instance, err := obj.CreateInstance(name, obj.CPFirewallID, obj.NodeSize, "", true)
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 	}
 	name += fmt.Sprint(number)
 
-	instance, err := obj.CreateInstance(name, obj.WPFirewallID, obj.NodeSize, scriptWP(privateIPlb, token))
+	instance, err := obj.CreateInstance(name, obj.WPFirewallID, obj.NodeSize, scriptWP(privateIPlb, token), false)
 	if err != nil {
 		return nil, err
 	}
