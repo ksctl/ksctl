@@ -1,3 +1,11 @@
+/*
+Kubesimplify
+Credit to @civo
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
+*/
+
 package ha_civo
 
 import (
@@ -50,7 +58,7 @@ func ConfigLoadBalancer(instance *civogo.Instance, CPIPs []string) error {
 	getScript := configLBscript(CPIPs)
 	err := ExecWithoutOutput(instance.PublicIP, instance.InitialPassword, getScript, true)
 	if err == nil {
-		log.Println("✅ 🔧 LoadBalancer")
+		log.Println("✅ Configured LoadBalancer")
 	}
 	return err
 }
@@ -90,7 +98,7 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
 
-			log.Println("✅ 🚀 Instance " + name)
+			log.Println("💻 Booted Instance " + name)
 			return retObject, nil
 		}
 		log.Println("🚧 Instance " + name)

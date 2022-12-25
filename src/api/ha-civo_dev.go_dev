@@ -3,7 +3,7 @@
 //		EARLY DEVELOPMENT [STUB AND DRIVER CONFIG]
 //   NOTE: THIS FILE WILL BE REMOVED IN NEXT VERSION (remane it to main.go_template
 // ######################################
-//
+//  last used DATE: 25th Dec, '22 
 
 package main
 
@@ -30,7 +30,7 @@ func main() {
 		err = ha_civo.DeleteCluster(CLUSTERNAME, REGION, true)
 	case 1:
 		// controlplane and workernode nodeSize
-		err = ha_civo.CreateCluster(CLUSTERNAME, REGION, "g3.small", 3, 1)
+		err = ha_civo.CreateCluster(CLUSTERNAME, REGION, "g3.small", 2, 1)
 	case 2:
 		err = ha_civo.AddMoreWorkerNodes(CLUSTERNAME, REGION, "g3.small", 3)
 	case 3:

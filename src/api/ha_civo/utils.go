@@ -1,3 +1,11 @@
+/*
+Kubesimplify
+Credit to @civo
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
+*/
+
 package ha_civo
 
 import (
@@ -115,16 +123,11 @@ func saveConfig(clusterFolder string, configStore JsonStore) error {
 		return err
 	}
 
-	// _, err = os.Create(payload.GetPathCIVO(1, "ha-civo", clusterFolder, "config"))
-	// if err != nil && !os.IsExist(err) {
-	// 	return err
-	// }
-
 	err = ioutil.WriteFile(payload.GetPathCIVO(1, "ha-civo", clusterFolder, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
-	log.Println("💾 📃 configuration")
+	log.Println("💾 configuration")
 	return nil
 }
 
@@ -231,7 +234,7 @@ func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
 		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
 	}
 
-	log.Println("🤖 📃 Exec Scripts")
+	log.Println("🤖 Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -279,10 +282,10 @@ func ExecWithOutput(publicIP, password, script string, fastMode bool) (string, e
 		currRetryCounter++
 	}
 	if currRetryCounter == MAX_RETRY_COUNT {
-		return "", fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
+		return "", fmt.Errorf("🚨💀 COULDN'T RETRY: %v", err)
 	}
 
-	log.Println("🤖 📃 Exec Scripts")
+	log.Println("🤖 Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -473,7 +476,7 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 
 func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Client.Region
-	err := os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName), 0750)
+	err := os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName), 0644)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
@@ -493,7 +496,7 @@ func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	if err != nil {
 		return err
 	}
-	log.Println("✅ 📃 Kubeconfig")
+	log.Println("💾 Kubeconfig")
 	return nil
 }
 

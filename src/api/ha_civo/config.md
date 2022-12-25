@@ -1,4 +1,9 @@
-# this file is for DEVELOPMENT
+---
+Name: Documentation of scripts used in ha setup
+Date: 23rd Dec, '22
+Author: Dipankar Das
+---
+
 
 ## Database setup commands
 
@@ -8,7 +13,7 @@
 
 ```bash
 apt update
-apt install -y mysql-server iptables iptables-persistent 
+apt install -y mysql-server
 
 mysql -e "create user 'ksctl' identified by '234ed34r4345Cg4';"
 mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
@@ -34,13 +39,9 @@ EOF
 
 systemctl restart mysql
 
-iptables -A INPUT -p tcp --destination-port 3306 -j ACCEPT
-iptables-save
-# to ensure check if sudo cat /etc/iptables/rules.v4 has the contents
-
 ```
 
-## Nginx LB
+## Nginx LB (NOT BEING USED)
 
 ```bash
 apt update

@@ -1,3 +1,11 @@
+/*
+Kubesimplify
+Credit to @civo
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
+*/
+
 package ha_civo
 
 import (
@@ -320,7 +328,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 				return err
 			}
 		}
-		log.Printf("✅ 🔧 control-plane-%d\n", i+1)
+		log.Printf("✅ Configured control-plane-%d\n", i+1)
 	}
 
 	kubeconfig, err := FetchKUBECONFIG(controlPlanes[0])
@@ -332,7 +340,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 
 	_ = obj.SaveKubeconfig(newKubeconfig)
 
-	log.Println("JOINING WORKER NODES")
+	log.Println("⛓  JOINING WORKER NODES")
 	var workerPlanes = make([](*civogo.Instance), noWP)
 
 	for i := 0; i < noWP; i++ {

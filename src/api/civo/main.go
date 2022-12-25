@@ -274,7 +274,6 @@ func deleteClusterWithID(clusterID, regionCode string) error {
 
 // DeleteCluster deletes cluster from the given name and region
 func DeleteCluster(region, name string) error {
-	//workingDir := KUBECONFIG_PATH + name + " " + region
 
 	// data will contain the saved ClusterID and Region
 	data, err := os.ReadFile(payload.GetPathCIVO(1, "civo", name+" "+region, "info"))

@@ -1,3 +1,11 @@
+/*
+Kubesimplify
+Credit to @civo
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
+*/
+
 package ha_civo
 
 import (
@@ -52,12 +60,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
-			log.Println("✅ 🚀 Instance " + name)
-			// err := ExecWithoutOutput(getInstance.PublicIP, getInstance.InitialPassword, scriptWP(privateIPlb, token), false)
-			// if err != nil {
-			// 	return nil, err
-			// }
-			// log.Println("✅ 🔧 Instance" + name)
+			log.Println("💻 Booted Instance " + name)
 			return retObject, nil
 		}
 		log.Println("🚧 Instance " + name)

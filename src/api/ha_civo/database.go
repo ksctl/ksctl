@@ -1,3 +1,11 @@
+/*
+Kubesimplify
+Credit to @civo
+@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+				Anurag Kumar <contact.anurag7@gmail.com>
+				Avinesh Tripathi <avineshtripathi1@gmail.com>
+*/
+
 package ha_civo
 
 import (
@@ -107,9 +115,9 @@ func (obj *HAType) CreateDatabase() (string, error) {
 
 		if getInstance.Status == "ACTIVE" {
 
-			log.Println("✅ 🚀 Instance " + name)
+			log.Println("💻 Booted Instance " + name)
 
-			log.Println("✅ 🔧 Database")
+			log.Println("✅ Configured Database")
 			endpoint := fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, getInstance.PrivateIP)
 			err = obj.Configuration.ConfigWriterDBEndpoint(endpoint)
 			if err != nil {
