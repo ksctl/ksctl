@@ -105,16 +105,20 @@ flowchart LR;
 
   XX[CLI]:::white--providers-->web{API};
   web:::white--CIVO-->civo{Types};
-  civo:::blue--managed-->civom[Create & Delete]:::green;
-  civo--HA-->civoha[Create & Delete]:::blue;
+  civo:::green--managed-->civom[Create & Delete]:::green;
+  civo--HA-->civoha[Create & Delete]:::green;
 
   web--LOCAL-->local{Types};
   local:::green--managed-->localm[Create & Delete]:::green;
   local--HA-->localha[Create & Delete]:::black;
 
   web--EKS-->aws{Types};
-  aws:::red--managed-->awsm[Create & Delete]:::red;
+  aws:::blue--managed-->awsm[Create & Delete]:::red;
   aws--HA-->awsha[Create & Delete]:::red;
+  
+  web--AKS-->az{Types};
+  az:::blue--managed-->azsm[Create & Delete]:::red;
+  az--HA-->azha[Create & Delete]:::red;
 
 ```
 
