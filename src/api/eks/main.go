@@ -7,10 +7,11 @@ package eks
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/payload"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/kubesimplify/ksctl/src/api/payload"
 )
 
 func getKubeconfig(params ...string) string {
