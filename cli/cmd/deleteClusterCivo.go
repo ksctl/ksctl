@@ -38,7 +38,7 @@ var (
 
 func init() {
 	deleteClusterCmd.AddCommand(deleteClusterCivo)
-	deleteClusterCivo.Flags().StringVarP(&dclusterName, "name", "c", "demo", "Cluster name")
+	deleteClusterCivo.Flags().StringVarP(&dclusterName, "name", "n", "demo", "Cluster name")
 	deleteClusterCivo.Flags().StringVarP(&dregion, "region", "r", "", "Region based on different cloud providers")
 	deleteClusterCivo.MarkFlagRequired("name")
 	deleteClusterCivo.MarkFlagRequired("region")

@@ -312,38 +312,56 @@ func (obj *HAType) DeleteInstances() error {
 		return err
 	}
 
+	var errV error
+	// if some controlplanes are down then there will be errors i.e if controlplanes are deleted
 	for index, instanceID := range instances.ControlNodes {
 		if err := obj.DeleteInstance(instanceID); err != nil {
+			errV = err
 			log.Println(fmt.Sprintf("❌ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)))
-			return err
+			continue
 		}
 		log.Println(fmt.Sprintf("✅ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)))
 	}
+	if errV != nil {
+		return errV
+	}
 
+	errV = nil
 	for index, instanceID := range instances.WorkerNodes {
 		if err := obj.DeleteInstance(instanceID); err != nil {
+			errV = err
 			log.Println(fmt.Sprintf("❌ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)))
-			return err
+			continue
 		}
 		log.Println(fmt.Sprintf("✅ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)))
 	}
+	if errV != nil {
+		return errV
+	}
 
+	errV = nil
 	for index, instanceID := range instances.LoadBalancerNode {
 		if err := obj.DeleteInstance(instanceID); err != nil {
+			errV = err
 			log.Println(fmt.Sprintf("❌ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)))
-			return err
+			continue
 		}
 		log.Println(fmt.Sprintf("✅ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)))
 	}
+	if errV != nil {
+		return errV
+	}
 
+	errV = nil
 	for index, instanceID := range instances.DatabaseNode {
 		if err := obj.DeleteInstance(instanceID); err != nil {
+			errV = err
 			log.Println(fmt.Sprintf("❌ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)))
-			return err
+			continue
 		}
 		log.Println(fmt.Sprintf("✅ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)))
 	}
-	return nil
+	return errV
 }
 
 func (obj *HAType) DeleteNetworks() error {

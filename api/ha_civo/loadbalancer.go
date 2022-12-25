@@ -43,7 +43,7 @@ backend kubernetes-backend
 `
 
 	for index, controlPlaneIP := range controlPlaneIPs {
-		script += fmt.Sprintf(`  server k3sserver-%d %s
+		script += fmt.Sprintf(`  server k3sserver-%d %s check
 `, index+1, controlPlaneIP)
 	}
 

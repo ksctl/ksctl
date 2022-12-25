@@ -413,13 +413,26 @@ THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'\n`, 
 		}
 	}
 
+	var errR error
+
 	if err := obj.DeleteInstances(); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
 		return err
 	}
+	errR = err
+	if errR != nil {
+		// dont delete the configs
+		return errR
+	}
 	time.Sleep(10 * time.Second)
 
+	errR = nil
 	if err := obj.DeleteNetworks(); err != nil && !errors.Is(civogo.DatabaseNetworkNotFoundError, err) {
 		return err
+	}
+	errR = err
+	if errR != nil {
+		// dont delete the configs
+		return errR
 	}
 
 	if err := DeleteAllPaths(name, region); err != nil {

@@ -51,6 +51,18 @@ func Printer(i int) {
 		}
 	}
 
+	files, err = ioutil.ReadDir(payload.GetPathCIVO(1, "ha-civo"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			info := strings.Split(file.Name(), " ")
+			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[1], Provider: "ha-civo"})
+		}
+	}
+
 	files, err = ioutil.ReadDir(local.GetPath())
 	if err != nil {
 		log.Fatal(err)
