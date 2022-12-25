@@ -446,3 +446,14 @@ THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'\n`, 
 	printKubeconfig.Printer(1)
 	return nil
 }
+
+func SwitchContext(clusterName, region string) error {
+	if isPresent(clusterName, region) {
+		// TODO: ISSUE #5
+		var printKubeconfig payload.PrinterKubeconfigPATH
+		printKubeconfig = printer{ClusterName: clusterName, Region: region}
+		printKubeconfig.Printer(0)
+		return nil
+	}
+	return fmt.Errorf("ERR Cluster not found")
+}

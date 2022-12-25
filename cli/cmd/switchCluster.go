@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/ha_civo"
 	"github.com/kubesimplify/ksctl/api/local"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +15,7 @@ var switchCluster = &cobra.Command{
 	Short:   "Use to switch between clusters",
 	Long: `It is used to switch cluster with the given clusterName from user. For example:
 
-ksctl switch-context -p <civo,local>  -c <clustername> -r <region> <arguments to civo cloud provider>
+ksctl switch-context -p <civo,local,ha-civo>  -c <clustername> -r <region> <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		switch sprovider {
@@ -28,6 +29,14 @@ ksctl switch-context -p <civo,local>  -c <clustername> -r <region> <arguments to
 				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
 			}
 			err := civo.SwitchContext(sclusterName, sregion)
+			if err != nil {
+				fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			}
+		case "ha-civo":
+			if len(sregion) == 0 {
+				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
+			}
+			err := ha_civo.SwitchContext(sclusterName, sregion)
 			if err != nil {
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			}
