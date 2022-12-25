@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubesimplify/ksctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/api/payload"
 
 	"github.com/civo/civogo"
 )
@@ -210,7 +210,7 @@ func CreateCluster(cargo payload.CivoProvider) error {
 			return fmt.Errorf("UNKNOWN ERR")
 		}
 	}
-	for true {
+	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
 		clusterDS, _ := client.GetKubernetesCluster(resp.ID)
 		if clusterDS.Ready {

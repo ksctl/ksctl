@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/api/payload"
 )
 
 func getKubeconfig(params ...string) string {

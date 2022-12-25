@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
-	"github.com/kubesimplify/ksctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/api/payload"
 )
 
 // all the configs are present in .ksctl

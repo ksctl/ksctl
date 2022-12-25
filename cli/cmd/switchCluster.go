@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/civo"
-	"github.com/kubesimplify/ksctl/src/api/local"
+
+	"github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/local"
 	"github.com/spf13/cobra"
 )
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/api/payload"
 	"github.com/stretchr/testify/assert"
 )
 

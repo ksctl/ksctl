@@ -1,6 +1,9 @@
 > **Note**:
-> The above-mentioned are major releases minor are 0.1.[0-9] 
+> The above-mentioned are major releases minor are 0.1.[0-9]
 
+# 0.2v
+* Added support for High availability Kubernetes cluster
+* Added complete support for CIVO provider
 
 # 0.1v
 * Added Create and Delete for CIVO ([PR](https://github.com/kubesimplify/ksctl/pull/3))

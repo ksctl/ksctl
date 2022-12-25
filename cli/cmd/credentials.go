@@ -9,9 +9,10 @@ Kubesimplify
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/aks"
-	"github.com/kubesimplify/ksctl/src/api/civo"
-	"github.com/kubesimplify/ksctl/src/api/eks"
+
+	"github.com/kubesimplify/ksctl/api/aks"
+	"github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/eks"
 	"github.com/spf13/cobra"
 )
 

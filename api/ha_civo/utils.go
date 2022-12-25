@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
-	"github.com/kubesimplify/ksctl/src/api/payload"
+	"github.com/kubesimplify/ksctl/api/payload"
 	"golang.org/x/crypto/ssh"
 )
 

@@ -8,10 +8,11 @@ Kubesimplify
 */
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/local"
-	"github.com/kubesimplify/ksctl/src/api/payload"
-	"github.com/spf13/cobra"
 	"strings"
+
+	"github.com/kubesimplify/ksctl/api/local"
+	"github.com/kubesimplify/ksctl/api/payload"
+	"github.com/spf13/cobra"
 )
 
 var createClusterLocal = &cobra.Command{

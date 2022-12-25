@@ -23,7 +23,7 @@ New-Item -Force $env:USERPROFILE\.ksctl\cred\azure
 $env:GOOS = 'windows'
 $env:GOARCH = 'amd64'
 
-Set-Location .\src\cli\
+Set-Location .\cli\
 go build -v -o ksctl.exe .
 
 #Move-Item ksctl.exe $env:USERPROFILE\.ksctl\

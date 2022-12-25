@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd ../../src/api || echo "FAILED to change the PWD"
+cd ../../api || echo "FAILED to change the PWD"
 
 docker build --target civoTest -t civo .
 

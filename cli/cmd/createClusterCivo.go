@@ -8,8 +8,9 @@ Kubesimplify
 */
 import (
 	"fmt"
-	civoHandler "github.com/kubesimplify/ksctl/src/api/civo"
-	"github.com/kubesimplify/ksctl/src/api/payload"
+
+	civoHandler "github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/payload"
 	"github.com/spf13/cobra"
 )
 

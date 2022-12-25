@@ -25,7 +25,7 @@ uninstall:
 	./uninstall.sh
 
 docker_builder:
-	docker build -t ksctl -f build/Dockerfile src/cli/
+	docker build -t ksctl -f build/Dockerfile cli/
 
 docker_run:
 	docker run \

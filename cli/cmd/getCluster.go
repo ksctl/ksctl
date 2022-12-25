@@ -9,12 +9,13 @@ Kubesimplify
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kubesimplify/ksctl/src/api/civo"
-	"github.com/kubesimplify/ksctl/src/api/local"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
 	"strings"
+
+	"github.com/kubesimplify/ksctl/api/local"
+	"github.com/kubesimplify/ksctl/api/payload"
+	"github.com/spf13/cobra"
 )
 
 type printer struct {
@@ -38,7 +39,7 @@ func printUtil(cargo []byte) {
 func Printer(i int) {
 	var toBePrinted []printer
 
-	files, err := ioutil.ReadDir(civo.GetPath(1))
+	files, err := ioutil.ReadDir(payload.GetPathCIVO(1, "civo"))
 	if err != nil {
 		log.Fatal(err)
 	}
