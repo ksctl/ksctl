@@ -19,9 +19,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build and install the latest version
+      # TODO: add support to check for the M1 chip as well
+      - name: Build and install the latest version on intel chip
         run: |
-          make install_macos
+          make install_macos_intel
           ksctl -h
 
   windows:
@@ -31,4 +32,5 @@ jobs:
       - name: Build and install the latest version
         run: |
           .\install.ps1
-          ksctl -h
+          cd C:\Users\runneradmin\AppData\Local\
+          .\ksctl -h
