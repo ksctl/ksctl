@@ -1,12 +1,12 @@
 name: Testing API
 on:
   push:
-    # paths:
-    # - 'api/**'
+    paths:
+    - 'api/**'
     branches: [ main ]
   pull_request:
-    # paths:
-    # - 'api/**'
+    paths:
+    - 'api/**'
     branches: [ main ]
 
 jobs:
