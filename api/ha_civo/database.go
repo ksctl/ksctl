@@ -96,7 +96,7 @@ func (obj *HAType) CreateDatabase() (string, error) {
 	}
 	generatedPassword := generateDBPassword(20)
 
-	// FIXME: try to make DB as private IP as SECURITY CONCERN
+	// FIXME: try to make DB as private instance as SECURITY CONCERN
 	instance, err := obj.CreateInstance(name, firewall.ID, "g3.large", scriptDB(generatedPassword), true)
 	if err != nil {
 		return "", err

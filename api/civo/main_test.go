@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,20 +29,20 @@ func TestIsValidRegion(T *testing.T) {
 		"NYC":  false,
 	}
 	for reg, expRet := range locationCombinations {
-		if expRet != payload.IsValidRegionCIVO(reg) {
+		if expRet != util.IsValidRegionCIVO(reg) {
 			T.Fatalf("Invalid Region Code is passed!")
 		}
 	}
 }
 
 func TestIsValidClusterName(T *testing.T) {
-	assert.Equalf(T, true, payload.IsValidName("demo"), "Returns True for invalid cluster name")
-	assert.Equalf(T, true, payload.IsValidName("Dem-o234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, true, payload.IsValidName("d-234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, payload.IsValidName("234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, payload.IsValidName("-2342"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, payload.IsValidName("dscdscsd-#$#$#"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, payload.IsValidName("ds@#$#$#"), "Returns True for invalid cluster name")
+	assert.Equalf(T, true, util.IsValidName("demo"), "Returns True for invalid cluster name")
+	assert.Equalf(T, true, util.IsValidName("Dem-o234"), "Returns True for invalid cluster name")
+	assert.Equalf(T, true, util.IsValidName("d-234"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, util.IsValidName("234"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, util.IsValidName("-2342"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, util.IsValidName("dscdscsd-#$#$#"), "Returns True for invalid cluster name")
+	assert.Equalf(T, false, util.IsValidName("ds@#$#$#"), "Returns True for invalid cluster name")
 }
 
 func TestIsValidNodeSize(T *testing.T) {
@@ -63,7 +63,7 @@ func TestGetUserName(T *testing.T) {
 	//	T.Fatalf("Command exec failed")
 	//}
 	//userName := strings.Trim(string(output), "\n")
-	if strings.Compare(os.Getenv("HOME"), payload.GetUserName()) != 0 {
+	if strings.Compare(os.Getenv("HOME"), util.GetUserName()) != 0 {
 		T.Fatalf("Couldn't retrieve the corrent username")
 	}
 }
@@ -75,7 +75,7 @@ func TestGetUserName(T *testing.T) {
 //Testing of deleteClusterWithID() and DeleteCluster() and CreateCluster() [TODO Need to be done]
 
 func setup() {
-	err := os.MkdirAll(payload.GetPathCIVO(1, "civo"), 0750)
+	err := os.MkdirAll(util.GetPathCIVO(1, "civo"), 0750)
 	if err != nil {
 		return
 	}
@@ -83,7 +83,7 @@ func setup() {
 
 func cleanup() {
 	//_ = DeleteCluster(clusterName)
-	err := os.RemoveAll(payload.GetPathCIVO(1, "civo"))
+	err := os.RemoveAll(util.GetPathCIVO(1, "civo"))
 	if err != nil {
 		return
 	}
@@ -93,11 +93,11 @@ func TestIsPresent(t *testing.T) {
 	setup()
 	present := isPresent("demo", "LON1")
 	assert.Equal(t, false, present, "with no clusters returns true! (false +ve)")
-	err := os.Mkdir(payload.GetPathCIVO(1, "civo", "demo LON1"), 0755)
+	err := os.Mkdir(util.GetPathCIVO(1, "civo", "demo LON1"), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = os.Create(payload.GetPathCIVO(1, "civo", "demo LON1", "info"))
+	_, err = os.Create(util.GetPathCIVO(1, "civo", "demo LON1", "info"))
 	if err != nil {
 		t.Fatal(err)
 	}

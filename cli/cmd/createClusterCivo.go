@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	civoHandler "github.com/kubesimplify/ksctl/api/civo"
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 
 var (
 	cclusterName string
-	cspec        payload.Machine
+	cspec        util.Machine
 	cregion      string
 	apps         string
 	cni          string

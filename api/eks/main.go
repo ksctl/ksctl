@@ -11,19 +11,19 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 func getKubeconfig(params ...string) string {
 	var ret string
 
 	if runtime.GOOS == "windows" {
-		ret = fmt.Sprintf("%s\\.ksctl\\config\\aws", payload.GetUserName())
+		ret = fmt.Sprintf("%s\\.ksctl\\config\\aws", util.GetUserName())
 		for _, item := range params {
 			ret += "\\" + item
 		}
 	} else {
-		ret = fmt.Sprintf("%s/.ksctl/config/aws", payload.GetUserName())
+		ret = fmt.Sprintf("%s/.ksctl/config/aws", util.GetUserName())
 		for _, item := range params {
 			ret += "/" + item
 		}
@@ -34,9 +34,9 @@ func getKubeconfig(params ...string) string {
 func getCredentials() string {
 
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s\\.ksctl\\cred\\aws", payload.GetUserName())
+		return fmt.Sprintf("%s\\.ksctl\\cred\\aws", util.GetUserName())
 	} else {
-		return fmt.Sprintf("%s/.ksctl/cred/aws", payload.GetUserName())
+		return fmt.Sprintf("%s/.ksctl/cred/aws", util.GetUserName())
 	}
 }
 

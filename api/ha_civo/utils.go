@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -96,7 +96,7 @@ type JsonStore struct {
 
 func GetConfig(clusterName, region string) (configStore JsonStore, err error) {
 
-	fileBytes, err := ioutil.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info.json"))
+	fileBytes, err := ioutil.ReadFile(util.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info.json"))
 
 	if err != nil {
 		return
@@ -118,12 +118,12 @@ func saveConfig(clusterFolder string, configStore JsonStore) error {
 		return err
 	}
 
-	err = os.Mkdir(payload.GetPathCIVO(1, "ha-civo", clusterFolder), 0750)
+	err = os.Mkdir(util.GetPathCIVO(1, "ha-civo", clusterFolder), 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	err = ioutil.WriteFile(payload.GetPathCIVO(1, "ha-civo", clusterFolder, "info.json"), storeBytes, 0640)
+	err = ioutil.WriteFile(util.GetPathCIVO(1, "ha-civo", clusterFolder, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -494,17 +494,17 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 
 func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Client.Region
-	err := os.Mkdir(payload.GetPathCIVO(1, "ha-civo", folderName), 0644)
+	err := os.Mkdir(util.GetPathCIVO(1, "ha-civo", folderName), 0644)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	_, err = os.Create(payload.GetPathCIVO(1, "ha-civo", folderName, "config"))
+	_, err = os.Create(util.GetPathCIVO(1, "ha-civo", folderName, "config"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	file, err := os.OpenFile(payload.GetPathCIVO(1, "ha-civo", folderName, "config"), os.O_WRONLY, 0750)
+	file, err := os.OpenFile(util.GetPathCIVO(1, "ha-civo", folderName, "config"), os.O_WRONLY, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
@@ -541,5 +541,5 @@ func ExtractNetworks(clusterName, region string) (instIDs NetworkID, err error) 
 }
 
 func DeleteAllPaths(clusterName, region string) error {
-	return os.RemoveAll(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+region))
+	return os.RemoveAll(util.GetPathCIVO(1, "ha-civo", clusterName+" "+region))
 }

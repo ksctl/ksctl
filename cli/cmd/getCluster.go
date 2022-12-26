@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/kubesimplify/ksctl/api/local"
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +39,7 @@ func printUtil(cargo []byte) {
 func Printer(i int) {
 	var toBePrinted []printer
 
-	files, err := ioutil.ReadDir(payload.GetPathCIVO(1, "civo"))
+	files, err := ioutil.ReadDir(util.GetPathCIVO(1, "civo"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func Printer(i int) {
 		}
 	}
 
-	files, err = ioutil.ReadDir(payload.GetPathCIVO(1, "ha-civo"))
+	files, err = ioutil.ReadDir(util.GetPathCIVO(1, "ha-civo"))
 	if err != nil {
 		log.Fatal(err)
 	}

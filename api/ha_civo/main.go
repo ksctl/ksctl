@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 // all the configs are present in .ksctl
@@ -26,7 +26,7 @@ import (
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
-	file, err := os.ReadFile(payload.GetPathCIVO(0))
+	file, err := os.ReadFile(util.GetPathCIVO(0))
 	if err != nil {
 		return ""
 	}
@@ -39,7 +39,7 @@ func fetchAPIKey() string {
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(clusterName, Region string) bool {
-	_, err := os.ReadFile(payload.GetPathCIVO(1, "ha-civo", clusterName+" "+Region, "info.json"))
+	_, err := os.ReadFile(util.GetPathCIVO(1, "ha-civo", clusterName+" "+Region, "info.json"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -76,11 +76,11 @@ func validationOfArguments(name, region, nodeSize string) error {
 		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
 	}
 
-	if !payload.IsValidRegionCIVO(region) {
+	if !util.IsValidRegionCIVO(region) {
 		return fmt.Errorf("🚩 REGION")
 	}
 
-	if !payload.IsValidName(name) {
+	if !util.IsValidName(name) {
 		return fmt.Errorf("🚩 NAME FORMAT")
 	}
 
@@ -96,11 +96,11 @@ func AddMoreWorkerNodes(name, region, nodeSize string, noWP int) error {
 	if !isPresent(name, region) {
 		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
-	if !payload.IsValidRegionCIVO(region) {
+	if !util.IsValidRegionCIVO(region) {
 		return fmt.Errorf("🚩 REGION")
 	}
 
-	if !payload.IsValidName(name) {
+	if !util.IsValidName(name) {
 		return fmt.Errorf("🚩 NAME FORMAT")
 	}
 
@@ -153,11 +153,11 @@ func AddMoreWorkerNodes(name, region, nodeSize string, noWP int) error {
 }
 
 func DeleteSomeWorkerNodes(clusterName, region string, noWP int) error {
-	if !payload.IsValidRegionCIVO(region) {
+	if !util.IsValidRegionCIVO(region) {
 		return fmt.Errorf("🚩 REGION")
 	}
 
-	if !payload.IsValidName(clusterName) {
+	if !util.IsValidName(clusterName) {
 		return fmt.Errorf("🚩 NAME FORMAT")
 	}
 
@@ -336,9 +336,11 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 		return fmt.Errorf("Cannot fetch kubeconfig\n" + err.Error())
 	}
 	newKubeconfig := strings.Replace(kubeconfig, "127.0.0.1", loadBalancer.PublicIP, 1)
-	fmt.Println(newKubeconfig)
 
-	_ = obj.SaveKubeconfig(newKubeconfig)
+	err = obj.SaveKubeconfig(newKubeconfig)
+	if err != nil {
+		return err
+	}
 
 	log.Println("⛓  JOINING WORKER NODES")
 	var workerPlanes = make([](*civogo.Instance), noWP)
@@ -353,7 +355,7 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 
 	log.Println("Created the k3s ha cluster!!🥳 🎉 ")
 
-	var printKubeconfig payload.PrinterKubeconfigPATH
+	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
 	printKubeconfig.Printer(0)
 	return nil
@@ -368,7 +370,7 @@ func (p printer) Printer(a int) {
 	switch a {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", payload.GetPathCIVO(1, "ha-civo", p.ClusterName+" "+p.Region, "config")))
+		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPathCIVO(1, "ha-civo", p.ClusterName+" "+p.Region, "config")))
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
 		fmt.Println(fmt.Sprintf("unset KUBECONFIG\n"))
@@ -441,7 +443,7 @@ THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'\n`, 
 
 	log.Println("Deleted the cluster 🏭 🔥")
 
-	var printKubeconfig payload.PrinterKubeconfigPATH
+	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
 	printKubeconfig.Printer(1)
 	return nil
@@ -450,7 +452,7 @@ THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'\n`, 
 func SwitchContext(clusterName, region string) error {
 	if isPresent(clusterName, region) {
 		// TODO: ISSUE #5
-		var printKubeconfig payload.PrinterKubeconfigPATH
+		var printKubeconfig util.PrinterKubeconfigPATH
 		printKubeconfig = printer{ClusterName: clusterName, Region: region}
 		printKubeconfig.Printer(0)
 		return nil

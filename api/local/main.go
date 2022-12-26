@@ -14,7 +14,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
 )
@@ -25,19 +25,19 @@ import (
 //var (
 //	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
 //	// LINUX (DEFAULT)
-//	KUBECONFIG_PATH = fmt.Sprintf("%s/.ksctl/config/local/", payload.GetUserName())
+//	KUBECONFIG_PATH = fmt.Sprintf("%s/.ksctl/config/local/", utils.GetUserName())
 //)
 
 func getKubeconfig(params ...string) string {
 	var ret string
 
 	if runtime.GOOS == "windows" {
-		ret = fmt.Sprintf("%s\\.ksctl\\config\\local", payload.GetUserName())
+		ret = fmt.Sprintf("%s\\.ksctl\\config\\local", util.GetUserName())
 		for _, item := range params {
 			ret += "\\" + item
 		}
 	} else {
-		ret = fmt.Sprintf("%s/.ksctl/config/local", payload.GetUserName())
+		ret = fmt.Sprintf("%s/.ksctl/config/local", util.GetUserName())
 		for _, item := range params {
 			ret += "/" + item
 		}
@@ -141,11 +141,11 @@ func createNecessaryConfigs(clusterName string) (string, error) {
 	return GetPath(clusterName, "config"), nil
 }
 
-func ClusterInfoInjecter(clusterName string, noOfNodes int) payload.LocalProvider {
-	spec := payload.LocalProvider{
+func ClusterInfoInjecter(clusterName string, noOfNodes int) util.LocalProvider {
+	spec := util.LocalProvider{
 		ClusterName: clusterName,
 		HACluster:   false,
-		Spec: payload.Machine{
+		Spec: util.Machine{
 			Nodes: noOfNodes,
 			Disk:  "",
 			Mem:   "0M",
@@ -155,32 +155,32 @@ func ClusterInfoInjecter(clusterName string, noOfNodes int) payload.LocalProvide
 	return spec
 }
 
-func CreateCluster(cargo payload.LocalProvider) error {
+func CreateCluster(localConfig util.LocalProvider) error {
 
 	provider := cluster.NewProvider(
 	//cluster.ProviderWithLogger(logg), // TODO: try to add these
 	//runtime.GetDefault(log),
 	)
 
-	withConfig, err := configOption(cargo.Spec.Nodes)
+	withConfig, err := configOption(localConfig.Spec.Nodes)
 	if err != nil {
 		return err
 	}
-	if isPresent(cargo.ClusterName) {
+	if isPresent(localConfig.ClusterName) {
 		return fmt.Errorf("DUPLICATE cluster creation")
 	}
 
 	Wait := 50 * time.Second
 	if err := provider.Create(
-		cargo.ClusterName,
+		localConfig.ClusterName,
 		withConfig,
 		cluster.CreateWithNodeImage("kindest/node:v1.25.2@sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace"),
 		// cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithWaitForReady(Wait),
 		cluster.CreateWithKubeconfigPath(func() string {
-			path, err := createNecessaryConfigs(cargo.ClusterName)
+			path, err := createNecessaryConfigs(localConfig.ClusterName)
 			if err != nil {
-				_ = deleteConfigs(GetPath(cargo.ClusterName)) // for CLEANUP
+				_ = deleteConfigs(GetPath(localConfig.ClusterName)) // for CLEANUP
 				panic(err)
 			}
 			return path
@@ -188,12 +188,12 @@ func CreateCluster(cargo payload.LocalProvider) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		_ = deleteConfigs(GetPath(cargo.ClusterName)) // for CLEANUP
+		_ = deleteConfigs(GetPath(localConfig.ClusterName)) // for CLEANUP
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
-	var printKubeconfig payload.PrinterKubeconfigPATH
-	printKubeconfig = printer{ClusterName: cargo.ClusterName}
+	var printKubeconfig util.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: localConfig.ClusterName}
 	printKubeconfig.Printer(0)
 	return nil
 }
@@ -234,7 +234,7 @@ func DeleteCluster(name string) error {
 	if err := deleteConfigs(GetPath(name)); err != nil {
 		return err
 	}
-	var printKubeconfig payload.PrinterKubeconfigPATH
+	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name}
 	printKubeconfig.Printer(1)
 	return nil
@@ -248,7 +248,7 @@ type printer struct {
 func SwitchContext(clusterName string) error {
 	if isPresent(clusterName) {
 		// TODO: ISSUE #5
-		var printKubeconfig payload.PrinterKubeconfigPATH
+		var printKubeconfig util.PrinterKubeconfigPATH
 		printKubeconfig = printer{ClusterName: clusterName}
 		printKubeconfig.Printer(0)
 		return nil

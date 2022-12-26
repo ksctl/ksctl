@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/kubesimplify/ksctl/api/local"
-	"github.com/kubesimplify/ksctl/api/payload"
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ ksctl create-cluster local <arguments to civo cloud provider>
 
 var (
 	clocalclusterName string
-	clocalspec        payload.Machine
+	clocalspec        util.Machine
 )
 
 func init() {
