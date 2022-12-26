@@ -32,5 +32,5 @@ jobs:
       - name: Build and install the latest version
         run: |
           .\install.ps1
-          cd C:\Users\runneradmin\AppData\Local\
-          .\ksctl -h
+          cd C:\Users\runneradmin\AppData\Local\ksctl
+          .\ksctl.exe -h
