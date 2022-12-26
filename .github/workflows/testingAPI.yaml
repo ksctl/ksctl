@@ -1,31 +1,68 @@
 name: Testing API
 on:
   push:
+    paths:
+    - 'api/**'
     branches: [ main ]
   pull_request:
+    paths:
+    - 'api/**'
     branches: [ main ]
 
 jobs:
-  CIVO_API:
+  API_on_Linux:
     runs-on: ubuntu-latest
-#    environment: testing
-
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
+      - name: provider (CIVO)
         run: |
-          cd test/api
-          chmod +x civo_test.sh
-          ./civo_test.sh
+          cd api/civo
+          go test -v .
 
-  LOCAL_API:
+      - name: provider (LOCAL)
+        run: |
+          cd api/local
+          go test -v .
+
+      - name: provider (HA-CIVO)
+        run: |
+          cd api/ha_civo
+          go test -v .
+
+  API_on_Macos:
     runs-on: ubuntu-latest
-    #    environment: testing
-
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
+      - name: provider (CIVO)
         run: |
-          cd test/api
-          chmod +x local_test.sh
-          ./local_test.sh
+          cd api/civo
+          go test -v .
+
+      - name: provider (LOCAL)
+        run: |
+          cd api/local
+          go test -v .
+
+      - name: provider (HA-CIVO)
+        run: |
+          cd api/ha_civo
+          go test -v .
+
+  API_on_Windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: provider (CIVO)
+        run: |
+          cd api\civo
+          go test -v .
+
+      - name: provider (LOCAL)
+        run: |
+          cd api\local
+          go test -v .
+
+      - name: provider (HA-CIVO)
+        run: |
+          cd api\ha_civo
+          go test -v .

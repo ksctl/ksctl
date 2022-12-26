@@ -1,0 +1,42 @@
+name: Testing Build process
+on:
+  push:
+    paths:
+    - 'api/**'
+    - 'cli/**'
+    branches: [ main ]
+  pull_request:
+    paths:
+    - 'api/**'
+    - 'cli/**'
+    branches: [ main ]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and install the latest version
+        run: |
+          make install_linux
+          ksctl -h
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      # TODO: add support to check for the M1 chip as well
+      - name: Build and install the latest version on intel chip
+        run: |
+          make install_macos_intel
+          ksctl -h
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and install the latest version
+        run: |
+          .\install.ps1
+          cd C:\Users\runneradmin\AppData\Local\ksctl
+          .\ksctl.exe -h
