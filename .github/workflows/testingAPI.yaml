@@ -6,10 +6,8 @@ on:
     branches: [ main ]
 
 jobs:
-  CIVO_API:
+  civo-api_linux:
     runs-on: ubuntu-latest
-#    environment: testing
-
     steps:
       - uses: actions/checkout@v3
       - name: Build the Docker image
@@ -18,10 +16,8 @@ jobs:
           chmod +x civo_test.sh
           ./civo_test.sh
 
-  LOCAL_API:
+  local-api_linux:
     runs-on: ubuntu-latest
-    #    environment: testing
-
     steps:
       - uses: actions/checkout@v3
       - name: Build the Docker image

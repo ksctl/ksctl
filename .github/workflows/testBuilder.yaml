@@ -1,0 +1,34 @@
+name: Testing Build process
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and install the latest version
+        run: |
+          make install_linux
+          ksctl -h
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and install the latest version
+        run: |
+          make install_macos
+          ksctl -h
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and install the latest version
+        run: |
+          .\install.ps1
+          ksctl -h
