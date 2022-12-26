@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -56,15 +57,14 @@ func TestIsValidNodeSize(T *testing.T) {
 }
 
 func TestGetUserName(T *testing.T) {
-	//usrCmd := exec.Command("whoami")
-	//
-	//output, err := usrCmd.Output()
-	//if err != nil {
-	//	T.Fatalf("Command exec failed")
-	//}
-	//userName := strings.Trim(string(output), "\n")
-	if strings.Compare(os.Getenv("HOME"), util.GetUserName()) != 0 {
-		T.Fatalf("Couldn't retrieve the corrent username")
+	if runtime.GOOS == "windows" {
+		if strings.Compare(os.Getenv("USERPROFILE"), util.GetUserName()) != 0 {
+			T.Fatalf("Couldn't retrieve the correct username")
+		}
+	} else {
+		if strings.Compare(os.Getenv("HOME"), util.GetUserName()) != 0 {
+			T.Fatalf("Couldn't retrieve the correct username")
+		}
 	}
 }
 
