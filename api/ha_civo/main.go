@@ -355,6 +355,13 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 
 	log.Println("Created the k3s ha cluster!!🥳 🎉 ")
 
+	fmt.Println(`
+NOTE
+for the very first kubectl API call, do this
+	kubectl cluster-info --insecure-skip-tls-verify
+
+after this you can procede with normal oprtation of the cluster`)
+
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
 	printKubeconfig.Printer(0)
@@ -399,7 +406,8 @@ func DeleteCluster(name, region string, showMsg bool) error {
 
 	if showMsg {
 		log.Printf(`NOTE 🚨
-THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'\n`, name+" "+region)
+THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+`, name+" "+region)
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
 		unsafe := false
