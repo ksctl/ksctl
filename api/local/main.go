@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -29,20 +30,20 @@ import (
 //)
 
 func getKubeconfig(params ...string) string {
-	var ret string
+	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
-		ret = fmt.Sprintf("%s\\.ksctl\\config\\local", util.GetUserName())
+		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\local", util.GetUserName()))
 		for _, item := range params {
-			ret += "\\" + item
+			ret.WriteString("\\" + item)
 		}
 	} else {
-		ret = fmt.Sprintf("%s/.ksctl/config/local", util.GetUserName())
+		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/local", util.GetUserName()))
 		for _, item := range params {
-			ret += "/" + item
+			ret.WriteString("/" + item)
 		}
 	}
-	return ret
+	return ret.String()
 }
 
 // TODO: runtime.GOOS == "windows" here only change the path seperator
