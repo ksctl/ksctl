@@ -1,10 +1,14 @@
 package local
 
 import (
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
+
+	util "github.com/kubesimplify/ksctl/api/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateConfig(t *testing.T) {
@@ -91,4 +95,13 @@ func TestIsPresent(t *testing.T) {
 	present = isPresent("demo")
 	cleanup()
 	assert.Equal(t, true, present, "Failed to detect the cluster (false -ve)")
+}
+
+func TestGetKubeConfig(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\config\\local\\demo", util.GetUserName()), getKubeconfig([]string{"demo"}...), "Kube config failed, as expected is not equal to actual")
+	} else {
+		assert.Equal(t, fmt.Sprintf("%s/.ksctl/config/local/demo", util.GetUserName()), getKubeconfig([]string{"demo"}...), "Kube config failed, as expected is not equal to actual")
+	}
+
 }
