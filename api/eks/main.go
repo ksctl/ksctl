@@ -14,23 +14,6 @@ import (
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
-func getKubeconfig(params ...string) string {
-	var ret strings.Builder
-
-	if runtime.GOOS == "windows" {
-		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\aws", util.GetUserName()))
-		for _, item := range params {
-			ret.WriteString("\\" + item)
-		}
-	} else {
-		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/aws", util.GetUserName()))
-		for _, item := range params {
-			ret.WriteString("/" + item)
-		}
-	}
-	return ret.String()
-}
-
 func getCredentials() string {
 
 	if runtime.GOOS == "windows" {
@@ -45,7 +28,7 @@ func getCredentials() string {
 func GetPath(flag int8, params ...string) string {
 	switch flag {
 	case 1:
-		return getKubeconfig(params...)
+		return util.GetKubeconfig(params...)
 	case 0:
 		return getCredentials()
 	default:

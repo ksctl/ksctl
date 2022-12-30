@@ -7,6 +7,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	gotest.tools v2.2.0+incompatible
 	sigs.k8s.io/kind v0.17.0
 )
 
@@ -15,6 +16,7 @@ require (
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
+	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect

@@ -1,6 +1,5 @@
 #Requires -Version 5
 
-$old_erroractionpreference = $erroractionpreference
 $erroractionpreference = 'stop' # quit if anything goes wrong
 
 if (($PSVersionTable.PSVersion.Major) -lt 5) {

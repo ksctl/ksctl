@@ -14,55 +14,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: provider (CIVO)
+      - name: Unit-Testing
         run: |
-          cd api/civo
-          go test -v .
-
-      - name: provider (LOCAL)
-        run: |
-          cd api/local
-          go test -v .
-
-      - name: provider (HA-CIVO)
-        run: |
-          cd api/ha_civo
-          go test -v .
+          cd api
+          chmod +x test-api.sh
+          ./test-api.sh
 
   API_on_Macos:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - name: provider (CIVO)
+      - name: Unit-Testing
         run: |
-          cd api/civo
-          go test -v .
-
-      - name: provider (LOCAL)
-        run: |
-          cd api/local
-          go test -v .
-
-      - name: provider (HA-CIVO)
-        run: |
-          cd api/ha_civo
-          go test -v .
+          cd api
+          chmod +x test-api.sh
+          ./test-api.sh
 
   API_on_Windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      - name: provider (CIVO)
+      - name: Unit-Testing
         run: |
-          cd api\civo
-          go test -v .
-
-      - name: provider (LOCAL)
-        run: |
-          cd api\local
-          go test -v .
-
-      - name: provider (HA-CIVO)
-        run: |
-          cd api\ha_civo
-          go test -v .
+          cd api
+          .\test-api.ps1

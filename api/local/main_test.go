@@ -1,13 +1,10 @@
 package local
 
 import (
-	"fmt"
 	"os"
-	"runtime"
 	"strings"
 	"testing"
 
-	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,7 +55,6 @@ nodes:
 }
 
 func cleanup() {
-	//_ = DeleteCluster(clusterName)
 	err := os.RemoveAll(GetPath())
 	if err != nil {
 		return
@@ -76,11 +72,6 @@ func TestIsPresent(t *testing.T) {
 	setup()
 	present := isPresent("demo")
 	assert.Equal(t, false, present, "with no clusters returns true! (false +ve)")
-	//abcd := ClusterInfoInjecter("demo", 1)
-	//if err := CreateCluster(abcd); err != nil {
-	//	fmt.Println("[DEBUG] failed to create cluster: ", err.Error())
-	//	t.Fatalf("Unable to create cluster ENV not supported!")
-	//}
 
 	// create the folder
 	err := os.Mkdir(GetPath("demo"), 0755)
@@ -95,13 +86,4 @@ func TestIsPresent(t *testing.T) {
 	present = isPresent("demo")
 	cleanup()
 	assert.Equal(t, true, present, "Failed to detect the cluster (false -ve)")
-}
-
-func TestGetKubeConfig(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\config\\local\\demo", util.GetUserName()), getKubeconfig([]string{"demo"}...), "Kube config failed, as expected is not equal to actual")
-	} else {
-		assert.Equal(t, fmt.Sprintf("%s/.ksctl/config/local/demo", util.GetUserName()), getKubeconfig([]string{"demo"}...), "Kube config failed, as expected is not equal to actual")
-	}
-
 }

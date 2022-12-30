@@ -5,7 +5,7 @@ Kubesimplify
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 
-package payload
+package utils
 
 import (
 	"fmt"
@@ -113,7 +113,7 @@ func IsValidName(clusterName string) bool {
 	return true
 }
 
-func getKubeconfigCIVO(params ...string) string {
+func GetKubeconfig(params ...string) string {
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
@@ -143,7 +143,7 @@ func getCredentialsCIVO() string {
 func GetPathCIVO(flag int8, params ...string) string {
 	switch flag {
 	case 1:
-		return getKubeconfigCIVO(params...)
+		return GetKubeconfig(params...)
 	case 0:
 		return getCredentialsCIVO()
 	default:

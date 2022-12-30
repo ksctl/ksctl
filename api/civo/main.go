@@ -61,9 +61,7 @@ func Credentials() bool {
 // kubeconfigWriter Writes kubeconfig supplied to config directory of respective cluster created
 func kubeconfigWriter(kubeconfig, clusterN, region, clusterID string) error {
 	// create the necessary folders and files
-	//workingDir := KUBECONFIG_PATH + clusterN + " " + region
 	clusterFolder := clusterN + " " + region
-	//err := os.Mkdir(workingDir, 0750)
 	err := os.Mkdir(util.GetPathCIVO(1, "civo", clusterFolder), 0750)
 
 	if err != nil && !os.IsExist(err) {

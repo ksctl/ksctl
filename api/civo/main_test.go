@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"runtime"
-	"strings"
 	"testing"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -20,32 +18,6 @@ func TestFetchAPIKey(T *testing.T) {
 	}
 }
 
-func TestIsValidRegion(T *testing.T) {
-	locationCombinations := map[string]bool{
-		"LOC":  false,
-		"LON":  false,
-		"LON1": true,
-		"lon1": false,
-		"FRA1": true,
-		"NYC":  false,
-	}
-	for reg, expRet := range locationCombinations {
-		if expRet != util.IsValidRegionCIVO(reg) {
-			T.Fatalf("Invalid Region Code is passed!")
-		}
-	}
-}
-
-func TestIsValidClusterName(T *testing.T) {
-	assert.Equalf(T, true, util.IsValidName("demo"), "Returns True for invalid cluster name")
-	assert.Equalf(T, true, util.IsValidName("Dem-o234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, true, util.IsValidName("d-234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, util.IsValidName("234"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, util.IsValidName("-2342"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, util.IsValidName("dscdscsd-#$#$#"), "Returns True for invalid cluster name")
-	assert.Equalf(T, false, util.IsValidName("ds@#$#$#"), "Returns True for invalid cluster name")
-}
-
 func TestIsValidNodeSize(T *testing.T) {
 	validSizes := []string{"g4s.kube.xsmall", "g4s.kube.small", "g4s.kube.medium", "g4s.kube.large", "g4p.kube.small", "g4p.kube.medium", "g4p.kube.large", "g4p.kube.xlarge", "g4c.kube.small", "g4c.kube.medium", "g4c.kube.large", "g4c.kube.xlarge", "g4m.kube.small", "g4m.kube.medium", "g4m.kube.large", "g4m.kube.xlarge"}
 	testData := validSizes[rand.Int()%len(validSizes)]
@@ -54,18 +26,6 @@ func TestIsValidNodeSize(T *testing.T) {
 	assert.Equalf(T, false, isValidSize("abcd"), "Returns True for invalid node size")
 	assert.Equalf(T, false, isValidSize("kube.small"), "Returns True for invalid node size")
 	assert.Equalf(T, false, isValidSize("g4s.k3s.small"), "Returns True for invalid node size")
-}
-
-func TestGetUserName(T *testing.T) {
-	if runtime.GOOS == "windows" {
-		if strings.Compare(os.Getenv("USERPROFILE"), util.GetUserName()) != 0 {
-			T.Fatalf("Couldn't retrieve the correct username")
-		}
-	} else {
-		if strings.Compare(os.Getenv("HOME"), util.GetUserName()) != 0 {
-			T.Fatalf("Couldn't retrieve the correct username")
-		}
-	}
 }
 
 //TODO: Test ClusterInfoInjecter()
