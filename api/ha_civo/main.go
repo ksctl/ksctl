@@ -337,6 +337,11 @@ func CreateCluster(name, region, nodeSize string, noCP, noWP int) error {
 	}
 	newKubeconfig := strings.Replace(kubeconfig, "127.0.0.1", loadBalancer.PublicIP, 1)
 
+	//--------------------------------
+	// FEATURE ADD (CHECK PENDING...)
+	newKubeconfig = strings.Replace(newKubeconfig, "default", name+"-"+region+"-hacivo", 6)
+	//--------------------------------
+
 	err = obj.SaveKubeconfig(newKubeconfig)
 	if err != nil {
 		return err
