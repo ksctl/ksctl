@@ -1,0 +1,25 @@
+name: ci-test-go
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  go-fmt:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: v1.19
+
+      - name: check gofmt
+        working-directory: api
+        run: gofmt -s -w -d $(find . -type f -name '*.go' -print)
+
+      # TODO: Add linter
+      # - name: check golint
+      #   run: $#@$@
