@@ -18,6 +18,7 @@ jobs:
         run: |
           cd api
           chmod +x test-api.sh
+          ./test-api.sh
 
   API_on_Macos:
     runs-on: macos-latest
@@ -27,6 +28,7 @@ jobs:
         run: |
           cd api
           chmod +x test-api.sh
+          ./test-api.sh
 
   API_on_Windows:
     runs-on: windows-latest
