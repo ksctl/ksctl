@@ -15,20 +15,20 @@ import (
 )
 
 func getKubeconfig(params ...string) string {
-	var ret string
+	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
-		ret = fmt.Sprintf("%s\\.ksctl\\config\\aws", util.GetUserName())
+		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\aws", util.GetUserName()))
 		for _, item := range params {
-			ret += "\\" + item
+			ret.WriteString("\\" + item)
 		}
 	} else {
-		ret = fmt.Sprintf("%s/.ksctl/config/aws", util.GetUserName())
+		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/aws", util.GetUserName()))
 		for _, item := range params {
-			ret += "/" + item
+			ret.WriteString("/" + item)
 		}
 	}
-	return ret
+	return ret.String()
 }
 
 func getCredentials() string {
