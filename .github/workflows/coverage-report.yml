@@ -14,7 +14,9 @@ jobs:
           go-version: '1.19'
       - name: Run coverage
         working-directory: api
-        run: go test -race -coverprofile=../coverage.xml -v ./...
+        run: |
+          go test -race -coverprofile=../coverage.xml -v ./...
+          go test -race -coverprofile=../coverage.out -v ./...
 
       # - name: Upload coverage to Codecov
       #   uses: codecov/codecov-action@v3
