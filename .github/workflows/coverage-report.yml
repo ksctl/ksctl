@@ -12,24 +12,20 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.19'
-      - name: Run coverage
+      - name: Save the coverage report
         working-directory: api
-        run: go test -race -coverprofile=../coverage.out -v ./...
-
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v3
-      #   go tool cover -func=coverage.out
-      #   go tool cover -html=coverage.out -o coverage.html
-      - name: generate the html
-        run: go tool cover -html=coverage.out -o coverage.html
+        run: |
+          go test -race -coverprofile=../coverage.out -v ./...
+          cd ..
+          go tool cover -func=coverage.out > coveragefunc.txt
 
       - name: PR comment with file
         uses: thollander/actions-comment-pull-request@v2
         with:
-          filePath: coverage.html
+          filePath: coveragefunc.txt
 
-      - uses: PaloAltoNetworks/cov@1.0.0
+      - name: Coverage Report using Cov
+        uses: PaloAltoNetworks/cov@1.0.0
         with:
-          main_branch: master
+          main_branch: main
 
-      

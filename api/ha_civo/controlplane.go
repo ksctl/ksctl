@@ -23,16 +23,17 @@ import (
 //	privateIPlb: private IP of loadbalancer
 func scriptWithoutCP_1(dbEndpoint, privateIPlb string) string {
 
-	// ---------------ADD TO MAKE (CILIUM) CNI BY DEFAULT TOBE TESTED-----------------------------------
 	return fmt.Sprintf(`#!/bin/bash
 export K3S_DATASTORE_ENDPOINT='%s'
 curl -sfL https://get.k3s.io | sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--flannel-backend=none \
-	--disable-network-policy \
 	--tls-san %s
 `, dbEndpoint, privateIPlb)
-	// --------------------------------------------------
+
+	// Add these tags for having different CNI
+	// 	--flannel-backend=none \
+	// --disable-network-policy \
+	// also check out the default loadbalancer available
 }
 
 func scriptWithCP_1() string {
