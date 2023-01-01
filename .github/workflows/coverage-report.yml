@@ -14,7 +14,10 @@ jobs:
           go-version: '1.19'
       - name: Run coverage
         working-directory: api
-        run: go test -race -coverprofile=../coverage.out -covermode=atomic -v ./...
+        run: go test -race -coverprofile=../coverage.out -v ./...
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v3
+      - uses: PaloAltoNetworks/cov@1.0.0
+        with:
+          main_branch: master
