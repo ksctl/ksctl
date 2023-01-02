@@ -147,10 +147,10 @@ func ClusterInfoInjecter(clusterName string, noOfNodes int) util.LocalProvider {
 		ClusterName: clusterName,
 		HACluster:   false,
 		Spec: util.Machine{
-			Nodes: noOfNodes,
-			Disk:  "",
-			Mem:   "0M",
-			Cpu:   "1m",
+			ManagedNodes: noOfNodes,
+			Disk:         "",
+			Mem:          "0M",
+			Cpu:          "1m",
 		},
 	}
 	return spec
@@ -163,7 +163,7 @@ func CreateCluster(localConfig util.LocalProvider) error {
 	//runtime.GetDefault(log),
 	)
 
-	withConfig, err := configOption(localConfig.Spec.Nodes)
+	withConfig, err := configOption(localConfig.Spec.ManagedNodes)
 	if err != nil {
 		return err
 	}
@@ -195,11 +195,11 @@ func CreateCluster(localConfig util.LocalProvider) error {
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: localConfig.ClusterName}
-	printKubeconfig.Printer(0)
+	printKubeconfig.Printer(false, 0)
 	return nil
 }
 
-func (p printer) Printer(a int) {
+func (p printer) Printer(ha bool, a int) {
 	switch a {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
@@ -237,7 +237,7 @@ func DeleteCluster(name string) error {
 	}
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name}
-	printKubeconfig.Printer(1)
+	printKubeconfig.Printer(false, 1)
 	return nil
 }
 
@@ -251,7 +251,7 @@ func SwitchContext(clusterName string) error {
 		// TODO: ISSUE #5
 		var printKubeconfig util.PrinterKubeconfigPATH
 		printKubeconfig = printer{ClusterName: clusterName}
-		printKubeconfig.Printer(0)
+		printKubeconfig.Printer(false, 0)
 		return nil
 	}
 	return fmt.Errorf("ERR Cluster not found")

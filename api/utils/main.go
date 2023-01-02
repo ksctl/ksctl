@@ -14,13 +14,6 @@ import (
 	"strings"
 )
 
-type Machine struct {
-	Nodes int
-	Cpu   string
-	Mem   string
-	Disk  string
-}
-
 type AwsProvider struct {
 	ClusterName string
 	HACluster   bool
@@ -40,29 +33,19 @@ type AzureProvider struct {
 	servicePrincipleKey string
 	servicePrincipleID  string
 }
-
-type CivoProvider struct {
-	ClusterName string
-	APIKey      string
-	HACluster   bool
-	Region      string
-	Spec        Machine
-	Application string
-	CNIPlugin   string
+type Machine struct {
+	ManagedNodes        int
+	Disk                string
+	HAControlPlaneNodes int
+	HAWorkerNodes       int
+	Mem                 string
+	Cpu                 string
 }
-
 type LocalProvider struct {
 	ClusterName string
 	HACluster   bool
 	Spec        Machine
 }
-
-//type Providers struct {
-//	eks  *AwsProvider
-//	aks  *AzureProvider
-//	k3s  *CivoProvider
-//	mk8s *LocalProvider
-//}
 
 // GetUserName returns current active username
 func GetUserName() string {
@@ -74,7 +57,15 @@ func GetUserName() string {
 }
 
 type PrinterKubeconfigPATH interface {
-	Printer(int)
+	Printer(bool, int)
+}
+
+type CivoHandlers interface {
+	CreateCluster() error
+	DeleteCluster() error
+	SwitchContext() error
+	AddMoreWorkerNodes() error
+	DeleteSomeWorkerNodes() error
 }
 
 func IsValidRegionCIVO(reg string) bool {

@@ -9,7 +9,8 @@ Kubesimplify
 import (
 	"fmt"
 
-	civoHandler "github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/utils"
 	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
@@ -22,14 +23,27 @@ var createClusterCivo = &cobra.Command{
 ksctl create-cluster civo <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		clusterConfig := civoHandler.ClusterInfoInjecter(
-			cclusterName,
-			cregion,
-			cspec.Disk,
-			cspec.Nodes,
-			apps,
-			cni)
-		err := civoHandler.CreateCluster(clusterConfig)
+
+		payload := civo.CivoProvider{
+			ClusterName: cclusterName,
+			Region:      cregion,
+			Application: apps,
+			CNIPlugin:   cni,
+			HACluster:   false,
+			Spec: utils.Machine{
+				Disk:         cspec.Disk,
+				ManagedNodes: cspec.ManagedNodes,
+			},
+		}
+		// clusterConfig := civoHandler.ClusterInfoInjecter(
+		// 	cclusterName,
+		// 	cregion,
+		// 	cspec.Disk,
+		// 	cspec.Nodes,
+		// 	apps,
+		// 	cni)
+		// err := civoHandler.CreateCluster(clusterConfig)
+		err := payload.CreateCluster()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			return
@@ -53,7 +67,7 @@ func init() {
 	createClusterCivo.Flags().StringVarP(&cregion, "region", "r", "", "Region")
 	createClusterCivo.Flags().StringVarP(&apps, "apps", "a", "", "PreInstalled Apps with comma seperated string")
 	createClusterCivo.Flags().StringVarP(&cni, "cni", "c", "", "CNI Plugin to be installed")
-	createClusterCivo.Flags().IntVarP(&cspec.Nodes, "nodes", "N", 1, "Number of Nodes")
+	createClusterCivo.Flags().IntVarP(&cspec.ManagedNodes, "nodes", "N", 1, "Number of Nodes")
 	createClusterCivo.MarkFlagRequired("name")
 	//createClusterCivo.MarkFlagRequired("nodeSize")
 	createClusterCivo.MarkFlagRequired("region")

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/kubesimplify/ksctl/api/civo"
-	"github.com/kubesimplify/ksctl/api/ha_civo"
 	"github.com/kubesimplify/ksctl/api/local"
 	"github.com/spf13/cobra"
 )
@@ -24,22 +23,26 @@ ksctl switch-context -p <civo,local,ha-civo>  -c <clustername> -r <region> <argu
 			if err != nil {
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			}
-		case "civo":
+		case "civo", "ha-civo":
 			if len(sregion) == 0 {
 				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
 			}
-			err := civo.SwitchContext(sclusterName, sregion)
+			payload := civo.CivoProvider{
+				ClusterName: sclusterName,
+				Region:      sregion,
+			}
+			if "civo" == sprovider {
+				payload.HACluster = false
+			} else {
+				payload.HACluster = true
+			}
+
+			err := payload.SwitchContext()
+			// err := civo.SwitchContext(sclusterName, sregion)
 			if err != nil {
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			}
-		case "ha-civo":
-			if len(sregion) == 0 {
-				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
-			}
-			err := ha_civo.SwitchContext(sclusterName, sregion)
-			if err != nil {
-				fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			}
+
 		case "azure":
 			fmt.Println("UNDER DEVELOPMENT!")
 		case "aws":

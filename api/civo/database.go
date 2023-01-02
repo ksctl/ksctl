@@ -6,7 +6,7 @@ Credit to @civo
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 
-package ha_civo
+package civo
 
 import (
 	"fmt"

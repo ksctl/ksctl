@@ -9,7 +9,8 @@ Kubesimplify
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/api/ha_civo"
+	"github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,17 @@ var addMoreWorkerNodesHACivo = &cobra.Command{
 ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := ha_civo.AddMoreWorkerNodes(awhcclustername, awhcregion, awhcnodesize, awhcnowp)
+		payload := civo.CivoProvider{
+			ClusterName: awhcclustername,
+			Region:      awhcregion,
+			HACluster:   true,
+			Spec: utils.Machine{
+				Disk:          awhcnodesize,
+				HAWorkerNodes: awhcnowp,
+			},
+		}
+		err := payload.AddMoreWorkerNodes()
+		// err :=  ha_civo.AddMoreWorkerNodes(awhcclustername, awhcregion, awhcnodesize, awhcnowp)
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 		}
