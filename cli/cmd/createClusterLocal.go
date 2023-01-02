@@ -8,7 +8,6 @@ Kubesimplify
 */
 import (
 	"fmt"
-	"strings"
 
 	"github.com/kubesimplify/ksctl/api/local"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -27,13 +26,6 @@ ksctl create-cluster local <arguments to civo cloud provider>
 		fmt.Println("Building...")
 		if err := local.CreateCluster(cargo); err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			if strings.Compare(err.Error(), "DUPLICATE cluster creation") != 0 {
-				fmt.Printf("Deleting configs...\n")
-				err := local.DeleteCluster(clocalclusterName)
-				if err != nil {
-					return
-				}
-			}
 			return
 		}
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")

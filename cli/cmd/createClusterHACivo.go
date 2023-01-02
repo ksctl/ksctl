@@ -44,6 +44,7 @@ ksctl create-cluster ha-civo <arguments to civo cloud provider>
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 		}
+		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	},
 }
 

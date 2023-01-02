@@ -39,7 +39,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 		return fmt.Errorf("🚩 SIZE")
 	}
 
-	if isPresent("ha-civo", name, region) {
+	if isPresent("ha", name, region) {
 		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
 	}
 
@@ -133,10 +133,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 	}
 	newKubeconfig := strings.Replace(kubeconfig, "127.0.0.1", loadBalancer.PublicIP, 1)
 
-	//--------------------------------
-	// FEATURE ADD (CHECK PENDING...)
-	newKubeconfig = strings.Replace(newKubeconfig, "default", name+"-"+region+"-hacivo", -1)
-	//--------------------------------
+	newKubeconfig = strings.Replace(newKubeconfig, "default", name+"-"+region+"-ha-civo", -1)
 
 	err = obj.SaveKubeconfig(newKubeconfig)
 	if err != nil {
@@ -153,8 +150,8 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 		}
 	}
 
-	log.Println("Created the k3s ha cluster!!🥳 🎉 ")
-
+	log.Println("Created your HA Civo cluster!!🥳 🎉 ")
+	log.Printf("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
 	fmt.Println(`
 NOTE
 for the very first kubectl API call, do this
@@ -174,7 +171,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 		return errV
 	}
 
-	if isPresent("ha-civo", name, region) {
+	if !isPresent("ha", name, region) {
 		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
 	}
 
@@ -259,8 +256,8 @@ func (provider CivoProvider) AddMoreWorkerNodes() error {
 		return fmt.Errorf("🚩 SIZE")
 	}
 
-	if !isPresent("ha-civo", name, region) {
-		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
+	if !isPresent("ha", name, region) {
+		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 
 	config, err := GetConfig(name, region)
@@ -302,7 +299,6 @@ func (provider CivoProvider) AddMoreWorkerNodes() error {
 		}
 	}
 
-	log.Printf("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
 	log.Println("Added more nodes 🥳 🎉 ")
 	return nil
 }
@@ -319,7 +315,7 @@ func (provider CivoProvider) DeleteSomeWorkerNodes() error {
 		return fmt.Errorf("🚩 NAME FORMAT")
 	}
 
-	if !isPresent("ha-civo", clusterName, region) {
+	if !isPresent("ha", clusterName, region) {
 		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 

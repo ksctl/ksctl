@@ -26,17 +26,17 @@ import (
 func configWriterManaged(kubeconfig, clusterN, region, clusterID string) error {
 	// create the necessary folders and files
 	clusterFolder := clusterN + " " + region
-	err := os.Mkdir(util.GetPathCIVO(1, "civo", clusterFolder), 0644)
+	err := os.MkdirAll(util.GetPathCIVO(1, "civo", "managed", clusterFolder), 0750)
 
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	_, err = os.Create(util.GetPathCIVO(1, "civo", clusterFolder, "config"))
+	_, err = os.Create(util.GetPathCIVO(1, "civo", "managed", clusterFolder, "config"))
 	if err != nil {
 		return err
 	}
 	// write the contents to the req. files
-	file, err := os.OpenFile(util.GetPathCIVO(1, "civo", clusterFolder, "config"), os.O_WRONLY, 0750)
+	file, err := os.OpenFile(util.GetPathCIVO(1, "civo", "managed", clusterFolder, "config"), os.O_WRONLY, 0640)
 	if err != nil {
 		return err
 	}
@@ -51,8 +51,8 @@ func configWriterManaged(kubeconfig, clusterN, region, clusterID string) error {
 		return err
 	}
 
-	//FIXME: make this more reliable ISSUE #5
-	err = os.Setenv("KUBECONFIG", util.GetPathCIVO(1, "civo", clusterFolder, "config"))
+	// FIXME: make this more reliable ISSUE #5
+	err = os.Setenv("KUBECONFIG", util.GetPathCIVO(1, "civo", "managed", clusterFolder, "config"))
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ type ManagedConfig struct {
 
 func GetConfigManaged(clusterName, region string) (configStore ManagedConfig, err error) {
 
-	fileBytes, err := ioutil.ReadFile(util.GetPathCIVO(1, "civo", clusterName+" "+region, "info.json"))
+	fileBytes, err := ioutil.ReadFile(util.GetPathCIVO(1, "civo", "managed", clusterName+" "+region, "info.json"))
 
 	if err != nil {
 		return
@@ -88,12 +88,12 @@ func saveConfigManaged(clusterFolder string, configStore ManagedConfig) error {
 		return err
 	}
 
-	err = os.Mkdir(util.GetPathCIVO(1, "civo", clusterFolder), 0750)
+	err = os.Mkdir(util.GetPathCIVO(1, "civo", "managed", clusterFolder), 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	err = ioutil.WriteFile(util.GetPathCIVO(1, "civo", clusterFolder, "info.json"), storeBytes, 0640)
+	err = ioutil.WriteFile(util.GetPathCIVO(1, "civo", "managed", clusterFolder, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -146,23 +146,23 @@ func isValidSizeManaged(size string) bool {
 // CreateCluster creates cluster as provided configuration and returns whether it fails or not
 func managedCreateClusterHandler(civoConfig CivoProvider) error {
 	if len(civoConfig.APIKey) == 0 {
-		return fmt.Errorf("CREDENTIALS NOT PRESENT")
+		return fmt.Errorf("🚩 CREDENTIALS NOT PRESENT")
 	}
 
 	if !util.IsValidName(civoConfig.ClusterName) {
-		return fmt.Errorf("INVALID CLUSTER NAME")
+		return fmt.Errorf("🚩 INVALID CLUSTER NAME")
 	}
 
 	if !util.IsValidRegionCIVO(civoConfig.Region) {
-		return fmt.Errorf("region code is Invalid")
+		return fmt.Errorf("🚩 region code is Invalid")
 	}
 
-	if isPresent("civo", civoConfig.ClusterName, civoConfig.Region) {
-		return fmt.Errorf("DUPLICATE Cluster")
+	if isPresent("managed", civoConfig.ClusterName, civoConfig.Region) {
+		return fmt.Errorf("🚩 DUPLICATE Cluster")
 	}
 
 	if !isValidSizeManaged(civoConfig.Spec.Disk) {
-		return fmt.Errorf("INVALID size of node")
+		return fmt.Errorf("🚩 INVALID size of node")
 	}
 
 	client, err := civogo.NewClient(civoConfig.APIKey, civoConfig.Region)
@@ -188,35 +188,35 @@ func managedCreateClusterHandler(civoConfig CivoProvider) error {
 	resp, err := client.NewKubernetesClusters(configK8s)
 	if err != nil {
 		if errors.Is(err, civogo.DatabaseKubernetesClusterDuplicateError) {
-			return fmt.Errorf("DUPLICATE Cluster FOUND")
+			return fmt.Errorf("🚨 DUPLICATE Cluster FOUND")
 		}
 		if errors.Is(err, civogo.AuthenticationFailedError) {
-			return fmt.Errorf("AUTH FAILED")
+			return fmt.Errorf("🚨 AUTH FAILED")
 		}
 		if errors.Is(err, civogo.UnknownError) {
-			return fmt.Errorf("UNKNOWN ERR")
+			return fmt.Errorf("🚨 UNKNOWN ERR")
 		}
 	}
 	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
 		clusterDS, _ := client.GetKubernetesCluster(resp.ID)
 		if clusterDS.Ready {
-
+			log.Println("💻 Booted Instance " + civoConfig.ClusterName)
 			err := configWriterManaged(clusterDS.KubeConfig, civoConfig.ClusterName, civoConfig.Region, resp.ID)
 			if err != nil {
 				return err
 			}
-
+			log.Printf("✅ Configured " + civoConfig.ClusterName)
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: civoConfig.ClusterName, Region: civoConfig.Region}
 			printKubeconfig.Printer(false, 0)
 
 			break
 		}
-		fmt.Printf("Waiting.. Status: %v\n", clusterDS.Status)
-		time.Sleep(15 * time.Second)
+		log.Println("🚧 Instance " + clusterDS.Status)
+		time.Sleep(10 * time.Second)
 	}
-
+	log.Println("Created your managed civo cluster!!🥳 🎉 ")
 	return nil
 }
 
@@ -250,14 +250,14 @@ func managedDeleteClusterHandler(name, region string) error {
 	// data will contain the saved ClusterID and Region
 	data, err := GetConfigManaged(name, region)
 	if err != nil {
-		return fmt.Errorf("NO matching cluster found")
+		return fmt.Errorf("🚩 NO matching cluster found")
 	}
 
 	if err = deleteClusterWithID(data.ClusterID, data.Region); err != nil {
 		return err
 	}
 
-	if err := kubeconfigDeleter(util.GetPathCIVO(1, "civo", name+" "+region)); err != nil {
+	if err := kubeconfigDeleter(util.GetPathCIVO(1, "civo", "managed", name+" "+region)); err != nil {
 		return err
 	}
 

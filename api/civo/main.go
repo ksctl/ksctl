@@ -66,7 +66,7 @@ func fetchAPIKey() string {
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(offering, clusterName, Region string) bool {
 	// FIXME: the ha and managed have 2 different type of config storeage
-	_, err := os.ReadFile(util.GetPathCIVO(1, offering, clusterName+" "+Region, "info.json"))
+	_, err := os.ReadFile(util.GetPathCIVO(1, "civo", offering, clusterName+" "+Region, "info.json"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -76,7 +76,7 @@ func isPresent(offering, clusterName, Region string) bool {
 // cleanup called when error is encountered during creation og cluster
 func cleanup(provider CivoProvider) error {
 	log.Println("[ERR] Cannot continue 😢")
-	return provider.DeleteCluster()
+	return haDeleteClusterHandler(provider.ClusterName, provider.Region, false)
 }
 
 func validationOfArguments(name, region string) error {
@@ -99,6 +99,7 @@ func (provider CivoProvider) CreateCluster() error {
 			_ = cleanup(provider)
 			return err
 		}
+		return nil
 	}
 	payload := ClusterInfoInjecter(provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
 	return managedCreateClusterHandler(payload)
@@ -114,14 +115,14 @@ func (provider CivoProvider) DeleteCluster() error {
 func (provider CivoProvider) SwitchContext() error {
 	switch provider.HACluster {
 	case true:
-		if isPresent("ha-civo", provider.ClusterName, provider.Region) {
+		if isPresent("ha", provider.ClusterName, provider.Region) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region}
 			printKubeconfig.Printer(true, 0)
 			return nil
 		}
 	case false:
-		if isPresent("civo", provider.ClusterName, provider.Region) {
+		if isPresent("ha", provider.ClusterName, provider.Region) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region}
 			printKubeconfig.Printer(false, 0)
@@ -143,9 +144,9 @@ func (p printer) Printer(ha bool, a int) {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
 		if ha {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPathCIVO(1, "ha-civo", p.ClusterName+" "+p.Region, "config")))
+			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPathCIVO(1, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
 		} else {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPathCIVO(1, "civo", p.ClusterName+" "+p.Region, "config")))
+			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPathCIVO(1, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
 		}
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")

@@ -10,6 +10,7 @@ package local
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -168,7 +169,7 @@ func CreateCluster(localConfig util.LocalProvider) error {
 		return err
 	}
 	if isPresent(localConfig.ClusterName) {
-		return fmt.Errorf("DUPLICATE cluster creation")
+		return fmt.Errorf("🚩 DUPLICATE cluster creation")
 	}
 
 	Wait := 50 * time.Second
@@ -181,7 +182,8 @@ func CreateCluster(localConfig util.LocalProvider) error {
 		cluster.CreateWithKubeconfigPath(func() string {
 			path, err := createNecessaryConfigs(localConfig.ClusterName)
 			if err != nil {
-				_ = deleteConfigs(GetPath(localConfig.ClusterName)) // for CLEANUP
+				log.Println("[ERR] Cannot continue 😢")
+				_ = DeleteCluster(localConfig.ClusterName)
 				panic(err)
 			}
 			return path
@@ -189,13 +191,17 @@ func CreateCluster(localConfig util.LocalProvider) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		_ = deleteConfigs(GetPath(localConfig.ClusterName)) // for CLEANUP
+		log.Println("[ERR] Cannot continue 😢")
+		_ = DeleteCluster(localConfig.ClusterName)
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: localConfig.ClusterName}
 	printKubeconfig.Printer(false, 0)
+
+	log.Println("Created your local cluster!!🥳 🎉 ")
+
 	return nil
 }
 
