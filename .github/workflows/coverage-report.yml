@@ -1,0 +1,34 @@
+name: Test and coverage
+
+on:
+  push:
+    paths:
+    - 'api/**_test.go'
+    branches: [ main ]
+  pull_request:
+    paths:
+    - 'api/**_test.go'
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.19'
+      - name: Save the coverage report
+        working-directory: api
+        run: |
+          go test -race -coverprofile=../coverage.out -v ./...
+          cd ..
+          echo "# Coverage Report
+          " > coverage.md
+          go tool cover -func=coverage.out >> coverage.md
+
+      - name: PR comment with file
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: coverage.md
+
