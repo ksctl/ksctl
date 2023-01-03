@@ -14,12 +14,12 @@ sudo mv -v ksctl /usr/local/bin/ksctl
 
 # Setup the configurations dir
 mkdir -p ${HOME}/.ksctl/cred
-touch ${HOME}/.ksctl/cred/aws
-touch ${HOME}/.ksctl/cred/azure
-touch ${HOME}/.ksctl/cred/civo
+# touch ${HOME}/.ksctl/cred/aws
+# touch ${HOME}/.ksctl/cred/azure
+# touch ${HOME}/.ksctl/cred/civo
 
-mkdir -p ${HOME}/.ksctl/config/civo
-mkdir -p ${HOME}/.ksctl/config/ha-civo
+mkdir -p ${HOME}/.ksctl/config/civo/ha
+mkdir -p ${HOME}/.ksctl/config/civo/managed
 mkdir ${HOME}/.ksctl/config/azure
 mkdir ${HOME}/.ksctl/config/aws
 mkdir ${HOME}/.ksctl/config/local

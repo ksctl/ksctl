@@ -9,7 +9,8 @@ Kubesimplify
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/api/ha_civo"
+	"github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -21,10 +22,22 @@ var createClusterHACivo = &cobra.Command{
 ksctl create-cluster ha-civo <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := ha_civo.CreateCluster(chcclustername, chcregion, chcnodesize, chcnocp, chcnowp)
+		payload := civo.CivoProvider{
+			ClusterName: chcclustername,
+			Region:      chcregion,
+			HACluster:   true,
+			Spec: utils.Machine{
+				Disk:                chcnodesize,
+				HAControlPlaneNodes: chcnocp,
+				HAWorkerNodes:       chcnowp,
+			},
+		}
+		err := payload.CreateCluster()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			return
 		}
+		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	},
 }
 

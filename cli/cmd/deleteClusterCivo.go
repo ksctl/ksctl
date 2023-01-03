@@ -10,7 +10,7 @@ Kubesimplify
 import (
 	"fmt"
 
-	civoHandler "github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/civo"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,12 @@ var deleteClusterCivo = &cobra.Command{
 ksctl delete-cluster civo
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := civoHandler.DeleteCluster(dregion, dclusterName)
+		payload := civo.CivoProvider{
+			ClusterName: dclusterName,
+			Region:      dregion,
+			HACluster:   false,
+		}
+		err := payload.DeleteCluster()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			return

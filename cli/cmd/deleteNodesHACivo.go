@@ -9,7 +9,8 @@ Kubesimplify
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/api/ha_civo"
+	"github.com/kubesimplify/ksctl/api/civo"
+	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,15 @@ var deleteNodesHACivo = &cobra.Command{
 ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := ha_civo.DeleteSomeWorkerNodes(dwhcclustername, dwhcregion, dwhcwp)
+		payload := civo.CivoProvider{
+			ClusterName: dwhcclustername,
+			Region:      dwhcregion,
+			HACluster:   true,
+			Spec: utils.Machine{
+				HAWorkerNodes: dwhcwp,
+			},
+		}
+		err := payload.DeleteSomeWorkerNodes()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 		}

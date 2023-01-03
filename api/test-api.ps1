@@ -34,12 +34,3 @@ Set-Location civo
 go test . -v && Set-Location -
 
 
-
-Write-Output "+-------------------------+"
-Write-Output "|  Testing (api/ha_civo)  |"
-Write-Output "+-------------------------+"
-
-Set-Location ha_civo
-go test . -v && Set-Location -
-
-

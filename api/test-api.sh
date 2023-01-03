@@ -26,10 +26,3 @@ cd civo/
 go test . -v && cd -
 
 
-
-echo "+-------------------------+"
-echo "|  Testing (api/ha_civo)  |"
-echo "+-------------------------+"
-
-cd ha_civo/
-go test . -v && cd -

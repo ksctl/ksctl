@@ -12,12 +12,13 @@ Write-Host "Welcome to Installation" -ForegroundColor DarkGreen
 
 mkdir -Force $env:USERPROFILE\.ksctl\cred
 mkdir -Force $env:USERPROFILE\.ksctl\config\civo
-mkdir -Force $env:USERPROFILE\.ksctl\config\ha-civo
+mkdir -Force $env:USERPROFILE\.ksctl\config\civo\ha
+mkdir -Force $env:USERPROFILE\.ksctl\config\civo\managed
 mkdir -Force $env:USERPROFILE\.ksctl\config\local
 
-New-Item -Force $env:USERPROFILE\.ksctl\cred\civo
-New-Item -Force $env:USERPROFILE\.ksctl\cred\aws
-New-Item -Force $env:USERPROFILE\.ksctl\cred\azure
+# New-Item -Force $env:USERPROFILE\.ksctl\cred\civo
+# New-Item -Force $env:USERPROFILE\.ksctl\cred\aws
+# New-Item -Force $env:USERPROFILE\.ksctl\cred\azure
 
 $env:GOOS = 'windows'
 $env:GOARCH = 'amd64'

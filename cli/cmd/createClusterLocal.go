@@ -8,7 +8,6 @@ Kubesimplify
 */
 import (
 	"fmt"
-	"strings"
 
 	"github.com/kubesimplify/ksctl/api/local"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -23,17 +22,10 @@ var createClusterLocal = &cobra.Command{
 ksctl create-cluster local <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.Nodes)
+		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.ManagedNodes)
 		fmt.Println("Building...")
 		if err := local.CreateCluster(cargo); err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
-			if strings.Compare(err.Error(), "DUPLICATE cluster creation") != 0 {
-				fmt.Printf("Deleting configs...\n")
-				err := local.DeleteCluster(clocalclusterName)
-				if err != nil {
-					return
-				}
-			}
 			return
 		}
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
@@ -48,7 +40,6 @@ var (
 func init() {
 	createClusterCmd.AddCommand(createClusterLocal)
 	createClusterLocal.Flags().StringVarP(&clocalclusterName, "name", "n", "demo", "Cluster name")
-	createClusterLocal.Flags().IntVarP(&clocalspec.Nodes, "nodes", "N", 1, "Number of Nodes")
+	createClusterLocal.Flags().IntVarP(&clocalspec.ManagedNodes, "nodes", "N", 1, "Number of Nodes")
 	createClusterLocal.MarkFlagRequired("name")
-	//createClusterLocal.MarkFlagRequired("nodes")
 }

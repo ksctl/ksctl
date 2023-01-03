@@ -21,11 +21,11 @@ func TestFetchAPIKey(T *testing.T) {
 func TestIsValidNodeSize(T *testing.T) {
 	validSizes := []string{"g4s.kube.xsmall", "g4s.kube.small", "g4s.kube.medium", "g4s.kube.large", "g4p.kube.small", "g4p.kube.medium", "g4p.kube.large", "g4p.kube.xlarge", "g4c.kube.small", "g4c.kube.medium", "g4c.kube.large", "g4c.kube.xlarge", "g4m.kube.small", "g4m.kube.medium", "g4m.kube.large", "g4m.kube.xlarge"}
 	testData := validSizes[rand.Int()%len(validSizes)]
-	assert.Equalf(T, true, isValidSize(testData), "Returns False for valid size")
+	assert.Equalf(T, true, isValidSizeManaged(testData), "Returns False for valid size")
 
-	assert.Equalf(T, false, isValidSize("abcd"), "Returns True for invalid node size")
-	assert.Equalf(T, false, isValidSize("kube.small"), "Returns True for invalid node size")
-	assert.Equalf(T, false, isValidSize("g4s.k3s.small"), "Returns True for invalid node size")
+	assert.Equalf(T, false, isValidSizeManaged("abcd"), "Returns True for invalid node size")
+	assert.Equalf(T, false, isValidSizeManaged("kube.small"), "Returns True for invalid node size")
+	assert.Equalf(T, false, isValidSizeManaged("g4s.k3s.small"), "Returns True for invalid node size")
 }
 
 //TODO: Test ClusterInfoInjecter()
@@ -35,15 +35,15 @@ func TestIsValidNodeSize(T *testing.T) {
 //Testing of deleteClusterWithID() and DeleteCluster() and CreateCluster() [TODO Need to be done]
 
 func setup() {
-	err := os.MkdirAll(util.GetPathCIVO(1, "civo"), 0750)
+	err := os.MkdirAll(util.GetPath(1, "civo", "managed"), 0750)
 	if err != nil {
 		return
 	}
 }
 
-func cleanup() {
+func clean() {
 	//_ = DeleteCluster(clusterName)
-	err := os.RemoveAll(util.GetPathCIVO(1, "civo"))
+	err := os.RemoveAll(util.GetPath(1, "civo"))
 	if err != nil {
 		return
 	}
@@ -51,17 +51,17 @@ func cleanup() {
 
 func TestIsPresent(t *testing.T) {
 	setup()
-	present := isPresent("demo", "LON1")
+	present := isPresent("managed", "demo", "LON1")
 	assert.Equal(t, false, present, "with no clusters returns true! (false +ve)")
-	err := os.Mkdir(util.GetPathCIVO(1, "civo", "demo LON1"), 0755)
+	err := os.Mkdir(util.GetPath(1, "civo", "managed", "demo LON1"), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = os.Create(util.GetPathCIVO(1, "civo", "demo LON1", "info"))
+	_, err = os.Create(util.GetPath(1, "civo", "managed", "demo LON1", "info.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	present = isPresent("demo", "LON1")
-	cleanup()
+	present = isPresent("managed", "demo", "LON1")
+	clean()
 	assert.Equal(t, true, present, "Failed to detect the cluster (false -ve)")
 }

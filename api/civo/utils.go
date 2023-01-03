@@ -6,12 +6,11 @@ Credit to @civo
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 
-package ha_civo
+package civo
 
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -23,9 +22,17 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// NOTE: where are the configs stored
+// .ksctl
+// |--- config
+// |    |--- civo
+// .    .    |--- managed {contains (config, info.json)}
+// .    .    |--- ha {contains (config, info.json)}
+//
+
 const (
 	SSH_PAUSE_IN_SECONDS = 20
-	MAX_RETRY_COUNT      = 6
+	MAX_RETRY_COUNT      = 8
 )
 
 type LoadBalancerRet struct {
@@ -96,7 +103,7 @@ type JsonStore struct {
 
 func GetConfig(clusterName, region string) (configStore JsonStore, err error) {
 
-	fileBytes, err := ioutil.ReadFile(util.GetPathCIVO(1, "ha-civo", clusterName+" "+region, "info.json"))
+	fileBytes, err := ioutil.ReadFile(util.GetPath(1, "civo", "ha", clusterName+" "+region, "info.json"))
 
 	if err != nil {
 		return
@@ -118,12 +125,12 @@ func saveConfig(clusterFolder string, configStore JsonStore) error {
 		return err
 	}
 
-	err = os.Mkdir(util.GetPathCIVO(1, "ha-civo", clusterFolder), 0750)
+	err = os.MkdirAll(util.GetPath(1, "civo", "ha", clusterFolder), 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	err = ioutil.WriteFile(util.GetPathCIVO(1, "ha-civo", clusterFolder, "info.json"), storeBytes, 0640)
+	err = ioutil.WriteFile(util.GetPath(1, "civo", "ha", clusterFolder, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -408,12 +415,22 @@ func (obj *HAType) DeleteNetworks() error {
 		log.Println(fmt.Sprintf("✅ deleted loadbalancer firewall"))
 	}
 
-	time.Sleep(5 * time.Second)
-
-	err = obj.DeleteNetwork(networks.NetworkID)
-	if err != nil {
-		log.Println(fmt.Sprintf("❌ deleted network"))
+	err = nil
+	retry := 0
+	for retry < MAX_RETRY_COUNT {
+		err = obj.DeleteNetwork(networks.NetworkID)
+		if err == nil {
+			break
+		}
+		retry++
+		time.Sleep(10 * time.Second)
+		log.Println("❗ RETRYING ", err)
 	}
+
+	if retry == MAX_RETRY_COUNT {
+		return fmt.Errorf("❌ deleted network")
+	}
+
 	log.Println(fmt.Sprintf("✅ deleted network"))
 
 	return nil
@@ -431,10 +448,6 @@ func (obj *HAType) DeleteFirewall(firewallID string) error {
 
 func (obj *HAType) DeleteNetwork(networkID string) error {
 	_, err := obj.Client.DeleteNetwork(networkID)
-	if errors.Is(civogo.DatabaseNetworkDeleteWithInstanceError, err) {
-		time.Sleep(10 * time.Second)
-		return obj.DeleteNetwork(networkID)
-	}
 	return err
 }
 
@@ -494,17 +507,17 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 
 func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Client.Region
-	err := os.Mkdir(util.GetPathCIVO(1, "ha-civo", folderName), 0644)
+	err := os.MkdirAll(util.GetPath(1, "civo", "ha", folderName), 0644)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	_, err = os.Create(util.GetPathCIVO(1, "ha-civo", folderName, "config"))
+	_, err = os.Create(util.GetPath(1, "civo", "ha", folderName, "config"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	file, err := os.OpenFile(util.GetPathCIVO(1, "ha-civo", folderName, "config"), os.O_WRONLY, 0750)
+	file, err := os.OpenFile(util.GetPath(1, "civo", "ha", folderName, "config"), os.O_WRONLY, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
@@ -541,5 +554,5 @@ func ExtractNetworks(clusterName, region string) (instIDs NetworkID, err error) 
 }
 
 func DeleteAllPaths(clusterName, region string) error {
-	return os.RemoveAll(util.GetPathCIVO(1, "ha-civo", clusterName+" "+region))
+	return os.RemoveAll(util.GetPath(1, "civo", "ha", clusterName+" "+region))
 }

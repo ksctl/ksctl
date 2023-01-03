@@ -39,7 +39,7 @@ func printUtil(cargo []byte) {
 func Printer(i int) {
 	var toBePrinted []printer
 
-	files, err := ioutil.ReadDir(util.GetPathCIVO(1, "civo"))
+	files, err := ioutil.ReadDir(util.GetPath(1, "civo", "managed"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,11 +47,11 @@ func Printer(i int) {
 	for _, file := range files {
 		if file.IsDir() {
 			info := strings.Split(file.Name(), " ")
-			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[1], Provider: "civo"})
+			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[1], Provider: "CIVO (MANAGED)"})
 		}
 	}
 
-	files, err = ioutil.ReadDir(util.GetPathCIVO(1, "ha-civo"))
+	files, err = ioutil.ReadDir(util.GetPath(1, "civo", "ha"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func Printer(i int) {
 	for _, file := range files {
 		if file.IsDir() {
 			info := strings.Split(file.Name(), " ")
-			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[1], Provider: "ha-civo"})
+			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[1], Provider: "CIVO (HA)"})
 		}
 	}
 
