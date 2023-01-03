@@ -9,10 +9,11 @@ Credit to @civo
 package civo
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
@@ -28,45 +29,89 @@ type CivoProvider struct {
 }
 
 func Credentials() bool {
-	file, err := os.OpenFile(util.GetPathCIVO(0), os.O_WRONLY, 0640)
-	if err != nil {
-		fmt.Println(err.Error())
-		return false
-	}
+	// _, err := os.ReadFile(util.GetPath(0, "civo"))
+	// if err != nil {
+	// 	fmt.Println(err.Error())
+	// 	return false
+	// }
 
 	apikey := ""
 	fmt.Println("Enter your API-TOKEN-KEY: ")
-	_, err = fmt.Scan(&apikey)
+	_, err := fmt.Scan(&apikey)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	_, err = file.Write([]byte(fmt.Sprintf("API-TOKEN-Key: %s", apikey)))
+	apiStore := util.CivoCredential{
+		Token: apikey,
+	}
+
+	err = saveCred(apiStore)
+
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
 	}
 	return true
+
+	// _, err = file.Write([]byte(fmt.Sprintf("API-TOKEN-Key: %s", apikey)))
+	// if err != nil {
+	// 	fmt.Println(err.Error())
+	// 	return false
+	// }
+	// return true
+}
+func getCred() (configStore util.CivoCredential, err error) {
+
+	fileBytes, err := os.ReadFile(util.GetPath(0, "civo"))
+
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(fileBytes, &configStore)
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func saveCred(configStore util.CivoCredential) error {
+
+	storeBytes, err := json.Marshal(configStore)
+	if err != nil {
+		return err
+	}
+	_, err = os.Create(util.GetPath(0, "civo"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	err = ioutil.WriteFile(util.GetPath(0, "civo"), storeBytes, 0640)
+	if err != nil {
+		return err
+	}
+	log.Println("💾 configuration")
+	return nil
 }
 
 // fetchAPIKey returns the API key from the cred/civo file store
 func fetchAPIKey() string {
 
-	file, err := os.ReadFile(util.GetPathCIVO(0))
+	token, err := getCred()
+
 	if err != nil {
 		return ""
 	}
-	if len(file) == 0 {
-		return ""
-	}
-
-	return strings.Split(string(file), " ")[1]
+	return token.Token
 }
 
 // isPresent Checks whether the cluster to create is already had been created
 func isPresent(offering, clusterName, Region string) bool {
 	// FIXME: the ha and managed have 2 different type of config storeage
-	_, err := os.ReadFile(util.GetPathCIVO(1, "civo", offering, clusterName+" "+Region, "info.json"))
+	_, err := os.ReadFile(util.GetPath(1, "civo", offering, clusterName+" "+Region, "info.json"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -144,9 +189,9 @@ func (p printer) Printer(ha bool, a int) {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
 		if ha {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPathCIVO(1, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
+			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPath(1, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
 		} else {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPathCIVO(1, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
+			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPath(1, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
 		}
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")

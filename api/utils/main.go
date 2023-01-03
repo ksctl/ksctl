@@ -30,8 +30,8 @@ type AzureProvider struct {
 	Spec                Machine
 	SubscriptionID      string
 	TenantID            string
-	servicePrincipleKey string
-	servicePrincipleID  string
+	ServicePrincipleKey string
+	ServicePrincipleID  string
 }
 type Machine struct {
 	ManagedNodes        int
@@ -45,6 +45,22 @@ type LocalProvider struct {
 	ClusterName string
 	HACluster   bool
 	Spec        Machine
+}
+
+type CivoCredential struct {
+	Token string `json:"token"`
+}
+
+type AzureCredential struct {
+	SubscriptionID      string `json:"subscription_id"`
+	TenantID            string `json:"tenant_id"`
+	ServicePrincipleKey string `json:"service_principal_key"`
+	ServicePrincipleID  string `json:"service_principal_id"`
+}
+
+type AwsCredential struct {
+	AccesskeyID string `json:"access_key_id"`
+	Secret      string `json:"secret_access_key"`
 }
 
 // GetUserName returns current active username
@@ -104,16 +120,16 @@ func IsValidName(clusterName string) bool {
 	return true
 }
 
-func GetKubeconfig(params ...string) string {
+func GetKubeconfig(provider string, params ...string) string {
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
-		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config", GetUserName()))
+		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\%s", GetUserName(), provider))
 		for _, item := range params {
 			ret.WriteString("\\" + item)
 		}
 	} else {
-		ret.WriteString(fmt.Sprintf("%s/.ksctl/config", GetUserName()))
+		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/%s", GetUserName(), provider))
 		for _, item := range params {
 			ret.WriteString("/" + item)
 		}
@@ -121,22 +137,22 @@ func GetKubeconfig(params ...string) string {
 	return ret.String()
 }
 
-func getCredentialsCIVO() string {
+func getCredentials(provider string) string {
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s\\.ksctl\\cred\\civo", GetUserName())
+		return fmt.Sprintf("%s\\.ksctl\\cred\\%s.json", GetUserName(), provider)
 	} else {
-		return fmt.Sprintf("%s/.ksctl/cred/civo", GetUserName())
+		return fmt.Sprintf("%s/.ksctl/cred/%s.json", GetUserName(), provider)
 	}
 }
 
 // GetPath use this in every function and differentiate the logic by using if-else
 // flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
-func GetPathCIVO(flag int8, params ...string) string {
+func GetPath(flag int8, provider string, subfolders ...string) string {
 	switch flag {
 	case 1:
-		return GetKubeconfig(params...)
+		return GetKubeconfig(provider, subfolders...)
 	case 0:
-		return getCredentialsCIVO()
+		return getCredentials(provider)
 	default:
 		return ""
 	}

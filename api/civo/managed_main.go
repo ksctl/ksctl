@@ -26,17 +26,17 @@ import (
 func configWriterManaged(kubeconfig, clusterN, region, clusterID string) error {
 	// create the necessary folders and files
 	clusterFolder := clusterN + " " + region
-	err := os.MkdirAll(util.GetPathCIVO(1, "civo", "managed", clusterFolder), 0750)
+	err := os.MkdirAll(util.GetPath(1, "civo", "managed", clusterFolder), 0750)
 
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	_, err = os.Create(util.GetPathCIVO(1, "civo", "managed", clusterFolder, "config"))
+	_, err = os.Create(util.GetPath(1, "civo", "managed", clusterFolder, "config"))
 	if err != nil {
 		return err
 	}
 	// write the contents to the req. files
-	file, err := os.OpenFile(util.GetPathCIVO(1, "civo", "managed", clusterFolder, "config"), os.O_WRONLY, 0640)
+	file, err := os.OpenFile(util.GetPath(1, "civo", "managed", clusterFolder, "config"), os.O_WRONLY, 0640)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func configWriterManaged(kubeconfig, clusterN, region, clusterID string) error {
 	}
 
 	// FIXME: make this more reliable ISSUE #5
-	err = os.Setenv("KUBECONFIG", util.GetPathCIVO(1, "civo", "managed", clusterFolder, "config"))
+	err = os.Setenv("KUBECONFIG", util.GetPath(1, "civo", "managed", clusterFolder, "config"))
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ type ManagedConfig struct {
 
 func GetConfigManaged(clusterName, region string) (configStore ManagedConfig, err error) {
 
-	fileBytes, err := ioutil.ReadFile(util.GetPathCIVO(1, "civo", "managed", clusterName+" "+region, "info.json"))
+	fileBytes, err := ioutil.ReadFile(util.GetPath(1, "civo", "managed", clusterName+" "+region, "info.json"))
 
 	if err != nil {
 		return
@@ -88,12 +88,12 @@ func saveConfigManaged(clusterFolder string, configStore ManagedConfig) error {
 		return err
 	}
 
-	err = os.Mkdir(util.GetPathCIVO(1, "civo", "managed", clusterFolder), 0750)
+	err = os.Mkdir(util.GetPath(1, "civo", "managed", clusterFolder), 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	err = ioutil.WriteFile(util.GetPathCIVO(1, "civo", "managed", clusterFolder, "info.json"), storeBytes, 0640)
+	err = ioutil.WriteFile(util.GetPath(1, "civo", "managed", clusterFolder, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -120,10 +120,8 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 		APIKey:      fetchAPIKey(),
 		HACluster:   false,
 		Spec: util.Machine{
-			Disk:                size,
-			ManagedNodes:        noOfNodes,
-			HAControlPlaneNodes: -1,
-			HAWorkerNodes:       -1,
+			Disk:         size,
+			ManagedNodes: noOfNodes,
 		},
 		Application: application,
 		CNIPlugin:   cniPlugin,
@@ -257,7 +255,7 @@ func managedDeleteClusterHandler(name, region string) error {
 		return err
 	}
 
-	if err := kubeconfigDeleter(util.GetPathCIVO(1, "civo", "managed", name+" "+region)); err != nil {
+	if err := kubeconfigDeleter(util.GetPath(1, "civo", "managed", name+" "+region)); err != nil {
 		return err
 	}
 

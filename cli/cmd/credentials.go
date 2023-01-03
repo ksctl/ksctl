@@ -48,8 +48,9 @@ var credCmd = &cobra.Command{
 			return
 		}
 
-		for !isSuccess {
-			isSuccess = storeCredentials(choice)
+		isSuccess = storeCredentials(choice)
+		if !isSuccess {
+			fmt.Println("Login Failed")
 		}
 		fmt.Println("Login Success")
 

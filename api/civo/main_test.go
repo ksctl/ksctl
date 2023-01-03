@@ -35,7 +35,7 @@ func TestIsValidNodeSize(T *testing.T) {
 //Testing of deleteClusterWithID() and DeleteCluster() and CreateCluster() [TODO Need to be done]
 
 func setup() {
-	err := os.MkdirAll(util.GetPathCIVO(1, "civo", "managed"), 0750)
+	err := os.MkdirAll(util.GetPath(1, "civo", "managed"), 0750)
 	if err != nil {
 		return
 	}
@@ -43,7 +43,7 @@ func setup() {
 
 func clean() {
 	//_ = DeleteCluster(clusterName)
-	err := os.RemoveAll(util.GetPathCIVO(1, "civo"))
+	err := os.RemoveAll(util.GetPath(1, "civo"))
 	if err != nil {
 		return
 	}
@@ -53,11 +53,11 @@ func TestIsPresent(t *testing.T) {
 	setup()
 	present := isPresent("managed", "demo", "LON1")
 	assert.Equal(t, false, present, "with no clusters returns true! (false +ve)")
-	err := os.Mkdir(util.GetPathCIVO(1, "civo", "managed", "demo LON1"), 0755)
+	err := os.Mkdir(util.GetPath(1, "civo", "managed", "demo LON1"), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = os.Create(util.GetPathCIVO(1, "civo", "managed", "demo LON1", "info.json"))
+	_, err = os.Create(util.GetPath(1, "civo", "managed", "demo LON1", "info.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

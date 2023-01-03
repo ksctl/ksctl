@@ -39,7 +39,7 @@ func printUtil(cargo []byte) {
 func Printer(i int) {
 	var toBePrinted []printer
 
-	files, err := ioutil.ReadDir(util.GetPathCIVO(1, "civo", "managed"))
+	files, err := ioutil.ReadDir(util.GetPath(1, "civo", "managed"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func Printer(i int) {
 		}
 	}
 
-	files, err = ioutil.ReadDir(util.GetPathCIVO(1, "civo", "ha"))
+	files, err = ioutil.ReadDir(util.GetPath(1, "civo", "ha"))
 	if err != nil {
 		log.Fatal(err)
 	}

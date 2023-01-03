@@ -172,7 +172,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 	}
 
 	if !isPresent("ha", name, region) {
-		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
+		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 
 	client, err := civogo.NewClient(fetchAPIKey(), region)
