@@ -32,15 +32,7 @@ ksctl create-cluster ha-civo <arguments to civo cloud provider>
 				HAWorkerNodes:       chcnowp,
 			},
 		}
-		// clusterConfig := civoHandler.ClusterInfoInjecter(
-		// 	cclusterName,
-		// 	cregion,
-		// 	cspec.Disk,
-		// 	cspec.Nodes,
-		// 	apps,
-		// 	cni)
 		err := payload.CreateCluster()
-		// err := ha_civo.CreateCluster(chcclustername, chcregion, chcnodesize, chcnocp, chcnowp)
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			return

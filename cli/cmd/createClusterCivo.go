@@ -35,14 +35,6 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 				ManagedNodes: cspec.ManagedNodes,
 			},
 		}
-		// clusterConfig := civoHandler.ClusterInfoInjecter(
-		// 	cclusterName,
-		// 	cregion,
-		// 	cspec.Disk,
-		// 	cspec.Nodes,
-		// 	apps,
-		// 	cni)
-		// err := civoHandler.CreateCluster(clusterConfig)
 		err := payload.CreateCluster()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
@@ -69,6 +61,5 @@ func init() {
 	createClusterCivo.Flags().StringVarP(&cni, "cni", "c", "", "CNI Plugin to be installed")
 	createClusterCivo.Flags().IntVarP(&cspec.ManagedNodes, "nodes", "N", 1, "Number of Nodes")
 	createClusterCivo.MarkFlagRequired("name")
-	//createClusterCivo.MarkFlagRequired("nodeSize")
 	createClusterCivo.MarkFlagRequired("region")
 }

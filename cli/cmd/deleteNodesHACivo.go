@@ -30,7 +30,6 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 				HAWorkerNodes: dwhcwp,
 			},
 		}
-		// err := ha_civo.DeleteSomeWorkerNodes(dwhcclustername, dwhcregion, dwhcwp)
 		err := payload.DeleteSomeWorkerNodes()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)

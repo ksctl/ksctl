@@ -38,7 +38,6 @@ ksctl switch-context -p <civo,local,ha-civo>  -c <clustername> -r <region> <argu
 			}
 
 			err := payload.SwitchContext()
-			// err := civo.SwitchContext(sclusterName, sregion)
 			if err != nil {
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			}

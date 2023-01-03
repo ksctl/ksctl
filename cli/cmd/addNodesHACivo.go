@@ -32,7 +32,6 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 			},
 		}
 		err := payload.AddMoreWorkerNodes()
-		// err :=  ha_civo.AddMoreWorkerNodes(awhcclustername, awhcregion, awhcnodesize, awhcnowp)
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 		}

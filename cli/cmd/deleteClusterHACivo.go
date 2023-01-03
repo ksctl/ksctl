@@ -26,7 +26,6 @@ ksctl delete-cluster ha-civo <arguments to civo cloud provider>
 			Region:      dhcregion,
 			HACluster:   true,
 		}
-		// err := ha_civo.DeleteCluster(dhcclustername, dhcregion, true)
 		err := payload.DeleteCluster()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)

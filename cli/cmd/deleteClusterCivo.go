@@ -27,7 +27,6 @@ ksctl delete-cluster civo
 			Region:      dregion,
 			HACluster:   false,
 		}
-		// err := civoHandler.DeleteCluster(dregion, dclusterName)
 		err := payload.DeleteCluster()
 		if err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
