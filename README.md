@@ -2,7 +2,7 @@
 
 A Kubernetes Distribution that can create clusters as well as high-availability clusters locally as well as on cloud platforms
 
-<img src="/img/ksctl-dark.png" style="height: auto!important;width: 600px !important;"/>
+<img src="./img/ksctl.png" style="height: auto!important;width: 600px !important;"/>
 
 # Prerequisites
 
