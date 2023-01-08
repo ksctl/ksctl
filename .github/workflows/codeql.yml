@@ -13,8 +13,14 @@ name: "CodeQL"
 
 on:
   push:
+    paths:
+    - 'api/**'
+    - 'cli/**'
     branches: [ "main" ]
   pull_request:
+    paths:
+    - 'api/**'
+    - 'cli/**'
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
   schedule:
