@@ -20,6 +20,7 @@ import (
 	"github.com/civo/civogo"
 	util "github.com/kubesimplify/ksctl/api/utils"
 	"golang.org/x/crypto/ssh"
+	"net"
 )
 
 // NOTE: where are the configs stored
@@ -216,7 +217,10 @@ func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
 		},
 		//HostKeyCallback: hostKeyCallback,
 		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.HostKeyCallback(
+			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+				return nil
+			}),
 	}
 
 	if !fastMode {
@@ -268,7 +272,10 @@ func ExecWithOutput(publicIP, password, script string, fastMode bool) (string, e
 		},
 		//HostKeyCallback: hostKeyCallback,
 		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.HostKeyCallback(
+			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+				return nil
+			}),
 	}
 
 	if !fastMode {
