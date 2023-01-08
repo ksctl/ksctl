@@ -2,7 +2,7 @@
 name: Custom issue template
 about: Describe this issue template's purpose here.
 title: "[<Target>][CLI or API] (Provider) <Title>"
-labels: NOT-MERGABLE, question
+labels: question
 assignees: ''
 
 ---

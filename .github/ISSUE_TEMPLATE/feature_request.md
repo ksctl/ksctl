@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea for this project
 title: "[Feature] [CLI or API] (Provider) <Title>"
-labels: EarlyDev, enhancement, help wanted, NOT-MERGABLE, type/Backlog
+labels: enhancement, help wanted
 assignees: dipankardas011, kranurag7
 
 ---
