@@ -6,7 +6,12 @@ Kubesimplify
 				Anurag Kumar <contact.anurag7@gmail.com>
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
-import "github.com/spf13/cobra"
+import (
+	"github.com/aws/aws-sdk-go"
+	"github.com/kubesimplify/ksctl/api/eks"
+	"github.com/spf13/cobra"
+)
+
 
 var createClusterAws = &cobra.Command{
 	Use:   "aws",
@@ -15,8 +20,29 @@ var createClusterAws = &cobra.Command{
 
 ksctl create-cluster aws <arguments to civo cloud provider>
 `,
-	Run: func(cmd *cobra.Command, args []string) {},
+	Run: func(cmd *cobra.Command, args []string) {
+
+		svc := eks.New
+
+
+
+
+	},
 }
+
+
+var (
+
+	awclientToken       string
+	awclusterName       string
+	awsecuritygrpID     []string
+	awsubnetID			[]string
+	awroleARN			string
+	awVersion			string
+)
+
+
+
 
 func init() {
 	createClusterCmd.AddCommand(createClusterAws)

@@ -210,17 +210,14 @@ func (config *JsonStore) ConfigWriterInstanceWorkerNodes(instanceID string) erro
 
 func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
 
+	var hostkey ssh.PublicKey
+	signer, _ := ssh.ParsePrivateKey([]byte(password))
 	config := &ssh.ClientConfig{
 		User: "root",
 		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
+			ssh.PublicKeys(signer),
 		},
-		//HostKeyCallback: hostKeyCallback,
-		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.HostKeyCallback(
-			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				return nil
-			}),
+		HostKeyCallback: ssh.FixedHostKey(hostkey),
 	}
 
 	if !fastMode {
@@ -265,17 +262,14 @@ func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
 
 func ExecWithOutput(publicIP, password, script string, fastMode bool) (string, error) {
 
+	var hostkey ssh.PublicKey
+	signer, _ := ssh.ParsePrivateKey([]byte(password))
 	config := &ssh.ClientConfig{
 		User: "root",
 		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
+			ssh.PublicKeys(signer),
 		},
-		//HostKeyCallback: hostKeyCallback,
-		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.HostKeyCallback(
-			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				return nil
-			}),
+		HostKeyCallback: ssh.FixedHostKey(hostkey),
 	}
 
 	if !fastMode {
