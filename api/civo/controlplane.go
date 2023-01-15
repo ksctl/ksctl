@@ -30,10 +30,19 @@ curl -sfL https://get.k3s.io | sh -s - server \
 	--tls-san %s
 `, dbEndpoint, privateIPlb)
 
+	// NOTE: Feature to add other CNI like Cilium
 	// Add these tags for having different CNI
-	// 	--flannel-backend=none \
-	// --disable-network-policy \
 	// also check out the default loadbalancer available
+
+	//	return fmt.Sprintf(`#!/bin/bash
+	// export K3S_DATASTORE_ENDPOINT='%s'
+	//	curl -sfL https://get.k3s.io | sh -s - server \
+	//		--flannel-backend=none \
+	//		--disable-network-policy \
+	//		--node-taint CriticalAddonsOnly=true:NoExecute \
+	//		--tls-san %s
+	//
+	// `, dbEndpoint, privateIPlb)
 }
 
 func scriptWithCP_1() string {
@@ -46,8 +55,28 @@ func scriptCP_n(dbEndpoint, privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
 export SECRET='%s'
 export K3S_DATASTORE_ENDPOINT='%s'
-curl -sfL https://get.k3s.io | sh -s - server --token=$SECRET --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
+curl -sfL https://get.k3s.io | sh -s - server \
+	--token=$SECRET \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--tls-san %s
 `, token, dbEndpoint, privateIPlb)
+
+	// NOTE: Feature to add other CNI like Cilium
+	// Add these tags for having different CNI
+	// also check out the default loadbalancer available
+
+	//	return fmt.Sprintf(`#!/bin/bash
+	// export SECRET='%s'
+	// export K3S_DATASTORE_ENDPOINT='%s'
+	//
+	//	curl -sfL https://get.k3s.io | sh -s - server \
+	//		--token=$SECRET \
+	//		--node-taint CriticalAddonsOnly=true:NoExecute \
+	//		--flannel-backend=none \
+	//		--disable-network-policy \
+	//		--tls-san %s
+	//
+	// `, token, dbEndpoint, privateIPlb)
 }
 
 func scriptKUBECONFIG() string {
