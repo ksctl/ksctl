@@ -133,7 +133,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 	}
 	newKubeconfig := strings.Replace(kubeconfig, "127.0.0.1", loadBalancer.PublicIP, 1)
 
-	newKubeconfig = strings.Replace(newKubeconfig, "default", name+"-"+region+"-ha-civo", -1)
+	newKubeconfig = strings.Replace(newKubeconfig, "default", name+"-"+strings.ToLower(region)+"-ha-civo", -1)
 
 	err = obj.SaveKubeconfig(newKubeconfig)
 	if err != nil {
