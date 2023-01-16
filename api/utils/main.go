@@ -215,7 +215,9 @@ func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 
 	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
 
-	out, err := exec.Command("cd", pathTillFolder, "&&", "ssh-keygen", "-N", "", "-f", "keypair").Output()
+	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
+	cmd.Dir = pathTillFolder
+	out, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}

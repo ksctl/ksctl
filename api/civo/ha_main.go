@@ -78,6 +78,11 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 
 	// NOTE: Config Loadbalancer require the control planes privateIPs
 
+	err = obj.UploadSSHKey()
+	if err != nil {
+		return err
+	}
+
 	mysqlEndpoint, err := obj.CreateDatabase()
 	if err != nil {
 		return err
@@ -232,6 +237,11 @@ THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
 	if errR != nil {
 		// dont delete the configs
 		return errR
+	}
+
+	err = obj.DeleteSSHKeyPair()
+	if err != nil {
+		return err
 	}
 
 	if err := DeleteAllPaths(name, region); err != nil {

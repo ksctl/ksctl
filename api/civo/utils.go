@@ -585,7 +585,7 @@ func DeleteAllPaths(clusterName, region string) error {
 
 func (ha *HAType) UploadSSHKey() (err error) {
 	path := util.GetPath(util.OTHER_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
-	err = os.MkdirAll(path, 0644)
+	err = os.MkdirAll(path, 0755)
 	if err != nil {
 		return
 	}
