@@ -185,6 +185,11 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 	if err != nil {
 		return err
 	}
+
+	config, err := GetConfig(name, region)
+	if err != nil {
+		return err
+	}
 	var obj HACollection
 
 	obj = &HAType{
@@ -196,12 +201,13 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 		LBFirewallID: "",
 		CPFirewallID: "",
 		WPFirewallID: "",
+		SSHID:        config.SSHID,
 		NetworkID:    ""}
 
 	if showMsg {
 		log.Printf(`NOTE 🚨
-THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-`, name+" "+region)
+	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, name+" "+region)
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
 		unsafe := false

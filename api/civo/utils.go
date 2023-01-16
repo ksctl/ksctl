@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/civo/civogo"
@@ -428,13 +429,15 @@ func (obj *HAType) DeleteNetworks() error {
 
 	err = nil
 	retry := 0
+	retryTimeout := 2
 	for retry < MAX_RETRY_COUNT {
 		err = obj.DeleteNetwork(networks.NetworkID)
 		if err == nil {
 			break
 		}
 		retry++
-		time.Sleep(10 * time.Second)
+		time.Sleep(time.Duration(retryTimeout) * time.Second)
+		retryTimeout *= 2
 		log.Println("❗ RETRYING ", err)
 	}
 
@@ -522,7 +525,7 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 }
 
 func (obj *HAType) CreateSSHKeyPair(publicKey string) error {
-	sshRes, err := obj.Client.NewSSHKey(obj.ClusterName+" "+obj.Client.Region+"-ksctl-ha", publicKey)
+	sshRes, err := obj.Client.NewSSHKey(obj.ClusterName+"-"+strings.ToLower(obj.Client.Region)+"-ksctl-ha", publicKey)
 	if err != nil {
 		return err
 	}
