@@ -62,6 +62,9 @@ type HACollection interface {
 	CreateWorkerNode(int, string, string) (*civogo.Instance, error)
 	CreateDatabase() (string, error)
 	GetTokenFromCP_1(*civogo.Instance) string
+
+	UploadSSHKey() error
+	DeleteSSHKeyPair() error
 }
 
 type HAType struct {
@@ -74,6 +77,7 @@ type HAType struct {
 	LBFirewallID  string
 	CPFirewallID  string
 	WPFirewallID  string
+	SSHID         string // used to store the ssh id from CIVO
 	Configuration *JsonStore
 }
 
@@ -97,6 +101,7 @@ type JsonStore struct {
 	Region      string     `json:"region"`
 	DBEndpoint  string     `json:"dbendpoint"`
 	ServerToken string     `json:"servertoken"`
+	SSHID       string     `json:"ssh_id"`
 	InstanceIDs InstanceID `json:"instanceids"`
 	NetworkIDs  NetworkID  `json:"networkids"`
 }
@@ -150,10 +155,16 @@ type ConfigurationHandlers interface {
 	ConfigWriterFirewallWorkerNodes(string) error
 	ConfigWriterFirewallDatabaseNodes(string) error
 	ConfigWriterNetworkID(string) error
+	ConfigWriterSSHID(string) error
 }
 
 func (config *JsonStore) ConfigWriterDBEndpoint(endpoint string) error {
 	config.DBEndpoint = endpoint
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterSSHID(keypair_id string) error {
+	config.SSHID = keypair_id
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
@@ -451,6 +462,11 @@ func (obj *HAType) DeleteNetwork(networkID string) error {
 	return err
 }
 
+func (obj *HAType) DeleteSSHKeyPair() error {
+	_, err := obj.Client.DeleteSSHKey(obj.SSHID)
+	return err
+}
+
 func (obj *HAType) GetNetwork(networkName string) (net *civogo.Network, err error) {
 	net, err = obj.Client.GetNetwork(networkName)
 	return
@@ -505,6 +521,16 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 	return obj.Configuration.ConfigWriterNetworkID(net.ID)
 }
 
+func (obj *HAType) CreateSSHKeyPair(publicKey string) error {
+	sshRes, err := obj.Client.NewSSHKey(obj.ClusterName+" "+obj.Client.Region+"-ksctl-ha", publicKey)
+	if err != nil {
+		return err
+	}
+	obj.SSHID = sshRes.ID
+	err = obj.Configuration.ConfigWriterSSHID(sshRes.ID)
+	return err
+}
+
 func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Client.Region
 	err := os.MkdirAll(util.GetPath(1, "civo", "ha", folderName), 0644)
@@ -555,4 +581,20 @@ func ExtractNetworks(clusterName, region string) (instIDs NetworkID, err error) 
 
 func DeleteAllPaths(clusterName, region string) error {
 	return os.RemoveAll(util.GetPath(1, "civo", "ha", clusterName+" "+region))
+}
+
+func (ha *HAType) UploadSSHKey() (err error) {
+	path := util.GetPath(util.OTHER_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
+	err = os.MkdirAll(path, 0644)
+	if err != nil {
+		return
+	}
+	keyPairToUpload, err := util.CreateSSHKeyPair("civo", ha.ClusterName, ha.Client.Region)
+	if err != nil {
+		return
+	}
+
+	err = ha.CreateSSHKeyPair(keyPairToUpload)
+
+	return
 }

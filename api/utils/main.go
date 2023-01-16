@@ -10,6 +10,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 )
@@ -33,6 +34,7 @@ type AzureProvider struct {
 	ServicePrincipleKey string
 	ServicePrincipleID  string
 }
+
 type Machine struct {
 	ManagedNodes        int
 	Disk                string
@@ -41,6 +43,7 @@ type Machine struct {
 	Mem                 string
 	Cpu                 string
 }
+
 type LocalProvider struct {
 	ClusterName string
 	HACluster   bool
@@ -145,15 +148,93 @@ func getCredentials(provider string) string {
 	}
 }
 
+const (
+	CREDENTIAL_PATH     = int(0)
+	CLUSTER_PATH        = int(1)
+	SSH_PATH            = int(2)
+	OTHER_PATH          = int(3)
+	EXEC_WITH_OUTPUT    = int(1)
+	EXEC_WITHOUT_OUTPUT = int(0)
+)
+
 // GetPath use this in every function and differentiate the logic by using if-else
 // flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
-func GetPath(flag int8, provider string, subfolders ...string) string {
+func GetPath(flag int, provider string, subfolders ...string) string {
 	switch flag {
-	case 1:
+	case SSH_PATH:
+		return GetSSHPath(provider, subfolders...)
+	case CLUSTER_PATH:
 		return GetKubeconfig(provider, subfolders...)
-	case 0:
+	case CREDENTIAL_PATH:
 		return getCredentials(provider)
+	case OTHER_PATH:
+		return getPaths(provider, subfolders...)
 	default:
 		return ""
 	}
+}
+
+func GetSSHPath(provider string, params ...string) string {
+	var ret strings.Builder
+
+	if runtime.GOOS == "windows" {
+		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\%s", GetUserName(), provider))
+		for _, item := range params {
+			ret.WriteString("\\" + item)
+		}
+		ret.WriteString("\\keypair")
+	} else {
+		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/%s", GetUserName(), provider))
+		for _, item := range params {
+			ret.WriteString("/" + item)
+		}
+		ret.WriteString("/keypair")
+	}
+	return ret.String()
+}
+
+func getPaths(provider string, params ...string) string {
+	var ret strings.Builder
+
+	if runtime.GOOS == "windows" {
+		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\%s", GetUserName(), provider))
+		for _, item := range params {
+			ret.WriteString("\\" + item)
+		}
+	} else {
+		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/%s", GetUserName(), provider))
+		for _, item := range params {
+			ret.WriteString("/" + item)
+		}
+	}
+	return ret.String()
+}
+
+// CreateSSHKeyPair return public key and error
+func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
+
+	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
+
+	out, err := exec.Command("cd", pathTillFolder, "&&", "ssh-keygen", "-N", "", "-f", "keypair").Output()
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println(string(out))
+
+	keyPairToUpload := GetPath(SSH_PATH, "civo", "ha", clusterName+" "+region) + ".pub"
+	fileBytePub, err := os.ReadFile(keyPairToUpload)
+	if err != nil {
+		return "", err
+	}
+
+	return string(fileBytePub), nil
+}
+
+type SSHPayload struct {
+	UserName       string
+	PathPrivateKey string
+}
+
+func (sshPayload *SSHPayload) SSHExecute(flag int, output *string) {
 }

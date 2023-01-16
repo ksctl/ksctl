@@ -65,6 +65,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 		CPFirewallID: "",
 		WPFirewallID: "",
 		NetworkID:    "",
+		SSHID:        "",
 		Configuration: &JsonStore{
 			ClusterName: name,
 			Region:      region,
