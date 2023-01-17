@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"runtime"
@@ -304,7 +305,14 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 			ssh.PublicKeys(signer),
 		},
 		// FIXME: Remove the InsecureIgnoreHostKey
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.HostKeyCallback(
+			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+				fmt.Println(key)
+				// check the fingerprint of hostkey and server key
+				// fmt.Println(publicKey)
+
+				return nil
+			}),
 	}
 
 	if !fastMode {
