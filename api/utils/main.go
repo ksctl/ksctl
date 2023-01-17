@@ -8,11 +8,19 @@ Kubesimplify
 package utils
 
 import (
+	"bytes"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
+
+	"golang.org/x/crypto/ssh"
 )
 
 type AwsProvider struct {
@@ -65,6 +73,17 @@ type AwsCredential struct {
 	AccesskeyID string `json:"access_key_id"`
 	Secret      string `json:"secret_access_key"`
 }
+
+const (
+	SSH_PAUSE_IN_SECONDS = 20
+	MAX_RETRY_COUNT      = 8
+	CREDENTIAL_PATH      = int(0)
+	CLUSTER_PATH         = int(1)
+	SSH_PATH             = int(2)
+	OTHER_PATH           = int(3)
+	EXEC_WITH_OUTPUT     = int(1)
+	EXEC_WITHOUT_OUTPUT  = int(0)
+)
 
 // GetUserName returns current active username
 func GetUserName() string {
@@ -148,15 +167,6 @@ func getCredentials(provider string) string {
 	}
 }
 
-const (
-	CREDENTIAL_PATH     = int(0)
-	CLUSTER_PATH        = int(1)
-	SSH_PATH            = int(2)
-	OTHER_PATH          = int(3)
-	EXEC_WITH_OUTPUT    = int(1)
-	EXEC_WITHOUT_OUTPUT = int(0)
-)
-
 // GetPath use this in every function and differentiate the logic by using if-else
 // flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
 func GetPath(flag int, provider string, subfolders ...string) string {
@@ -236,7 +246,111 @@ func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 type SSHPayload struct {
 	UserName       string
 	PathPrivateKey string
+	PublicIP       string
+	Output         string
 }
 
-func (sshPayload *SSHPayload) SSHExecute(flag int, output *string) {
+type SSHCollection interface {
+	SSHExecute(int, *string, bool)
+}
+
+func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
+
+	// read pem block
+	err := errors.New("pem decode failed, no key found")
+	pemBlock, _ := pem.Decode(pemBytes)
+	if pemBlock == nil {
+		return nil, err
+	}
+	if x509.IsEncryptedPEMBlock(pemBlock) {
+		return nil, fmt.Errorf("pem file is encrypted")
+	}
+
+	signer, err := ssh.ParsePrivateKey(pemBytes)
+	if err != nil {
+		return nil, fmt.Errorf("parsing plain private key failed %v", err)
+	}
+
+	return signer, nil
+}
+
+// NOTE: Replacement for existing sshExec functions
+func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool) error {
+
+	// var err error
+	// publicKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey + ".pub")
+	// if err != nil {
+	// 	return err
+	// }
+	// publicKey, err := ssh.ParsePublicKey(publicKeyBytes)
+	// if err != nil {
+	// 	return err
+	// }
+
+	privateKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	// create signer
+	signer, err := signerFromPem(privateKeyBytes)
+	if err != nil {
+		return err
+	}
+
+	config := &ssh.ClientConfig{
+		User: "root",
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		// FIXME: Remove the InsecureIgnoreHostKey
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	if !fastMode {
+		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
+	}
+
+	// var err error
+	var conn *ssh.Client
+	currRetryCounter := 0
+
+	for currRetryCounter < MAX_RETRY_COUNT {
+		conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)
+		if err == nil {
+			break
+		} else {
+			log.Printf("❗ RETRYING %v\n", err)
+		}
+		time.Sleep(10 * time.Second) // waiting for ssh to get started
+		currRetryCounter++
+	}
+	if currRetryCounter == MAX_RETRY_COUNT {
+		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
+	}
+
+	log.Println("🤖 Exec Scripts")
+	defer conn.Close()
+
+	session, err := conn.NewSession()
+
+	if err != nil {
+		return err
+	}
+
+	defer session.Close()
+	var buff bytes.Buffer
+
+	sshPayload.Output = ""
+	if flag == EXEC_WITH_OUTPUT {
+		session.Stdout = &buff
+	}
+	if err := session.Run(script); err != nil {
+		return err
+	}
+	if flag == EXEC_WITH_OUTPUT {
+		sshPayload.Output = buff.String()
+	}
+
+	return nil
 }
