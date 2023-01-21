@@ -40,6 +40,7 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			return
 		}
+		fmt.Println("[🏭] Building...")
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	},
 }

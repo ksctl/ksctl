@@ -101,7 +101,12 @@ func Printer(i int) {
 	if err != nil {
 		panic(fmt.Errorf("JSON Convertion failed"))
 	}
-	printUtil(arr)
+	if len(toBePrinted) == 0 {
+		fmt.Println("No clusters found")
+	} else {
+		printUtil(arr)
+
+	}
 }
 
 // viewClusterCmd represents the viewCluster command

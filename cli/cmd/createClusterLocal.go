@@ -23,7 +23,7 @@ ksctl create-cluster local <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.ManagedNodes)
-		fmt.Println("Building...")
+		fmt.Println("[🏭] Building...")
 		if err := local.CreateCluster(cargo); err != nil {
 			fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			return
