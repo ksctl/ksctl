@@ -19,3 +19,8 @@ install_macos_intel:
 
 uninstall:
 	./uninstall.sh
+
+unit_test_api:
+	cd api/ && \
+		chmod u+x test-api.sh && \
+		./test-api.sh
