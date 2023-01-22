@@ -114,7 +114,8 @@ func IsValidRegionCIVO(reg string) bool {
 }
 
 func helperASCII(character uint8) bool {
-	return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z')
+	// return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z')
+	return (character >= 'a' && character <= 'z')
 }
 
 func helperDIGIT(character uint8) bool {
