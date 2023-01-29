@@ -8,10 +8,14 @@ Kubesimplify
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"runtime"
 	"strings"
+
 )
 
 type AwsProvider struct {
@@ -23,16 +27,7 @@ type AwsProvider struct {
 	Secret      string
 }
 
-type AzureProvider struct {
-	ClusterName         string
-	HACluster           bool
-	Region              string
-	Spec                Machine
-	SubscriptionID      string
-	TenantID            string
-	ServicePrincipleKey string
-	ServicePrincipleID  string
-}
+
 type Machine struct {
 	ManagedNodes        int
 	Disk                string
@@ -156,4 +151,42 @@ func GetPath(flag int8, provider string, subfolders ...string) string {
 	default:
 		return ""
 	}
+}
+
+
+func SaveCred(config interface{}, provider string) error {
+
+	storeBytes, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	_, err = os.Create(GetPath(0, provider))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	err = ioutil.WriteFile(GetPath(0, provider), storeBytes, 0640)
+	if err != nil {
+		return err
+	}
+	log.Println("💾 configuration")
+	return nil
+}
+
+
+func GetCred(provider string) (i map[string]string, err error) {
+
+	fileBytes, err := os.ReadFile(GetPath(0, provider))
+
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(fileBytes, &i)
+
+	if err != nil {
+		return
+	}
+
+	return
 }
