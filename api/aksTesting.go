@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-    subscriptionID := "8e4140d6-c7a0-478e-9024-f88f981b1746"
+    subscriptionID := "your subscription id"
 
 
 
