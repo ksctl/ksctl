@@ -29,6 +29,25 @@ func isValidSizeHA(size string) bool {
 	return false
 }
 
+func (obj *HAType) HelperExecNoOutputControlPlane(publicIP, script string, fastMode bool) error {
+	obj.SSH_Payload.PublicIP = publicIP
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, script, fastMode)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *HAType) HelperExecOutputControlPlane(publicIP, script string, fastMode bool) (string, error) {
+	obj.SSH_Payload.Output = ""
+	obj.SSH_Payload.PublicIP = publicIP
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, script, fastMode)
+	if err != nil {
+		return "", err
+	}
+	return obj.SSH_Payload.Output, nil
+}
+
 func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error {
 
 	if errV := validationOfArguments(name, region); errV != nil {
@@ -65,6 +84,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 		CPFirewallID: "",
 		WPFirewallID: "",
 		NetworkID:    "",
+		SSHID:        "",
 		Configuration: &JsonStore{
 			ClusterName: name,
 			Region:      region,
@@ -73,9 +93,15 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 			InstanceIDs: InstanceID{},
 			NetworkIDs:  NetworkID{},
 		},
+		SSH_Payload: &util.SSHPayload{},
 	}
 
 	// NOTE: Config Loadbalancer require the control planes privateIPs
+
+	err = obj.UploadSSHKey()
+	if err != nil {
+		return err
+	}
 
 	mysqlEndpoint, err := obj.CreateDatabase()
 	if err != nil {
@@ -102,7 +128,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 		controlPlaneIPs[i] = controlPlanes[i].PrivateIP + ":6443"
 	}
 
-	err = ConfigLoadBalancer(loadBalancer, controlPlaneIPs)
+	err = obj.ConfigLoadBalancer(loadBalancer, controlPlaneIPs)
 	if err != nil {
 		return err
 	}
@@ -110,16 +136,18 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 	token := ""
 	for i := 0; i < noCP; i++ {
 		if i == 0 {
-			err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
+			err = obj.HelperExecNoOutputControlPlane(controlPlanes[i].PublicIP, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
+			// err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
 			if err != nil {
 				return err
 			}
+
 			token = obj.GetTokenFromCP_1(controlPlanes[0])
 			if len(token) == 0 {
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
 		} else {
-			err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptCP_n(mysqlEndpoint, loadBalancer.PrivateIP, token), true)
+			err = obj.HelperExecNoOutputControlPlane(controlPlanes[i].PublicIP, scriptCP_n(mysqlEndpoint, loadBalancer.PrivateIP, token), true)
 			if err != nil {
 				return err
 			}
@@ -127,7 +155,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 		log.Printf("✅ Configured control-plane-%d\n", i+1)
 	}
 
-	kubeconfig, err := FetchKUBECONFIG(controlPlanes[0])
+	kubeconfig, err := obj.FetchKUBECONFIG(controlPlanes[0])
 	if err != nil {
 		return fmt.Errorf("Cannot fetch kubeconfig\n" + err.Error())
 	}
@@ -179,6 +207,11 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 	if err != nil {
 		return err
 	}
+
+	config, err := GetConfig(name, region)
+	if err != nil {
+		return err
+	}
 	var obj HACollection
 
 	obj = &HAType{
@@ -190,12 +223,13 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 		LBFirewallID: "",
 		CPFirewallID: "",
 		WPFirewallID: "",
+		SSHID:        config.SSHID,
 		NetworkID:    ""}
 
 	if showMsg {
 		log.Printf(`NOTE 🚨
-THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-`, name+" "+region)
+	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, name+" "+region)
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
 		unsafe := false
@@ -231,6 +265,11 @@ THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
 	if errR != nil {
 		// dont delete the configs
 		return errR
+	}
+
+	err = obj.DeleteSSHKeyPair()
+	if err != nil {
+		return err
 	}
 
 	if err := DeleteAllPaths(name, region); err != nil {

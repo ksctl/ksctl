@@ -9,17 +9,16 @@ Credit to @civo
 package civo
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/civo/civogo"
 	util "github.com/kubesimplify/ksctl/api/utils"
-	"golang.org/x/crypto/ssh"
 )
 
 // NOTE: where are the configs stored
@@ -27,7 +26,7 @@ import (
 // |--- config
 // |    |--- civo
 // .    .    |--- managed {contains (config, info.json)}
-// .    .    |--- ha {contains (config, info.json)}
+// .    .    |--- ha {contains (config, info.json, keypair, keypair.pub)}
 //
 
 const (
@@ -62,6 +61,13 @@ type HACollection interface {
 	CreateWorkerNode(int, string, string) (*civogo.Instance, error)
 	CreateDatabase() (string, error)
 	GetTokenFromCP_1(*civogo.Instance) string
+
+	UploadSSHKey() error
+	DeleteSSHKeyPair() error
+	ConfigLoadBalancer(*civogo.Instance, []string) error
+	FetchKUBECONFIG(*civogo.Instance) (string, error)
+	HelperExecNoOutputControlPlane(string, string, bool) error
+	HelperExecOutputControlPlane(string, string, bool) (string, error)
 }
 
 type HAType struct {
@@ -74,7 +80,9 @@ type HAType struct {
 	LBFirewallID  string
 	CPFirewallID  string
 	WPFirewallID  string
+	SSHID         string // used to store the ssh id from CIVO
 	Configuration *JsonStore
+	SSH_Payload   *util.SSHPayload
 }
 
 type InstanceID struct {
@@ -97,6 +105,7 @@ type JsonStore struct {
 	Region      string     `json:"region"`
 	DBEndpoint  string     `json:"dbendpoint"`
 	ServerToken string     `json:"servertoken"`
+	SSHID       string     `json:"ssh_id"`
 	InstanceIDs InstanceID `json:"instanceids"`
 	NetworkIDs  NetworkID  `json:"networkids"`
 }
@@ -150,10 +159,16 @@ type ConfigurationHandlers interface {
 	ConfigWriterFirewallWorkerNodes(string) error
 	ConfigWriterFirewallDatabaseNodes(string) error
 	ConfigWriterNetworkID(string) error
+	ConfigWriterSSHID(string) error
 }
 
 func (config *JsonStore) ConfigWriterDBEndpoint(endpoint string) error {
 	config.DBEndpoint = endpoint
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+func (config *JsonStore) ConfigWriterSSHID(keypair_id string) error {
+	config.SSHID = keypair_id
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
@@ -205,112 +220,6 @@ func (config *JsonStore) ConfigWriterInstanceControlPlaneNodes(instanceID string
 func (config *JsonStore) ConfigWriterInstanceWorkerNodes(instanceID string) error {
 	config.InstanceIDs.WorkerNodes = append(config.InstanceIDs.WorkerNodes, instanceID)
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
-}
-
-func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
-
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
-		//HostKeyCallback: hostKeyCallback,
-		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	if !fastMode {
-		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
-	}
-
-	var err error
-	var conn *ssh.Client
-	currRetryCounter := 0
-
-	for currRetryCounter < MAX_RETRY_COUNT {
-		conn, err = ssh.Dial("tcp", publicIP+":22", config)
-		if err == nil {
-			break
-		} else {
-			log.Printf("❗ RETRYING %v\n", err)
-		}
-		time.Sleep(10 * time.Second) // waiting for ssh to get started
-		currRetryCounter++
-	}
-	if currRetryCounter == MAX_RETRY_COUNT {
-		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
-	}
-
-	log.Println("🤖 Exec Scripts")
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-
-	if err != nil {
-		return err
-	}
-
-	defer session.Close()
-
-	if err := session.Run(script); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func ExecWithOutput(publicIP, password, script string, fastMode bool) (string, error) {
-
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
-		//HostKeyCallback: hostKeyCallback,
-		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	if !fastMode {
-		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
-	}
-	var err error
-	var conn *ssh.Client
-	currRetryCounter := 0
-
-	for currRetryCounter < MAX_RETRY_COUNT {
-		conn, err = ssh.Dial("tcp", publicIP+":22", config)
-		if err == nil {
-			break
-		} else {
-			log.Printf("❗ RETRYING %v\n", err)
-		}
-		time.Sleep(10 * time.Second) // waiting for ssh to get started
-		currRetryCounter++
-	}
-	if currRetryCounter == MAX_RETRY_COUNT {
-		return "", fmt.Errorf("🚨💀 COULDN'T RETRY: %v", err)
-	}
-
-	log.Println("🤖 Exec Scripts")
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-
-	if err != nil {
-		return "", err
-	}
-
-	defer session.Close()
-
-	var buff bytes.Buffer
-	session.Stdout = &buff
-
-	if err := session.Run(script); err != nil {
-		return "", err
-	}
-
-	return buff.String(), nil
 }
 
 func (obj *HAType) DeleteInstances() error {
@@ -417,13 +326,15 @@ func (obj *HAType) DeleteNetworks() error {
 
 	err = nil
 	retry := 0
+	retryTimeout := 2
 	for retry < MAX_RETRY_COUNT {
 		err = obj.DeleteNetwork(networks.NetworkID)
 		if err == nil {
 			break
 		}
 		retry++
-		time.Sleep(10 * time.Second)
+		time.Sleep(time.Duration(retryTimeout) * time.Second)
+		retryTimeout *= 2
 		log.Println("❗ RETRYING ", err)
 	}
 
@@ -448,6 +359,11 @@ func (obj *HAType) DeleteFirewall(firewallID string) error {
 
 func (obj *HAType) DeleteNetwork(networkID string) error {
 	_, err := obj.Client.DeleteNetwork(networkID)
+	return err
+}
+
+func (obj *HAType) DeleteSSHKeyPair() error {
+	_, err := obj.Client.DeleteSSHKey(obj.SSHID)
 	return err
 }
 
@@ -476,6 +392,7 @@ func (obj *HAType) CreateInstance(instanceName, firewallID, NodeSize, initializa
 		TemplateID:       obj.DiskImgID,
 		NetworkID:        obj.NetworkID,
 		Script:           initializationScript,
+		SSHKeyID:         obj.SSHID,
 		PublicIPRequired: publicIP,
 	}
 
@@ -503,6 +420,16 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 	}
 	obj.NetworkID = net.ID
 	return obj.Configuration.ConfigWriterNetworkID(net.ID)
+}
+
+func (obj *HAType) CreateSSHKeyPair(publicKey string) error {
+	sshRes, err := obj.Client.NewSSHKey(obj.ClusterName+"-"+strings.ToLower(obj.Client.Region)+"-ksctl-ha", publicKey)
+	if err != nil {
+		return err
+	}
+	obj.SSHID = sshRes.ID
+	err = obj.Configuration.ConfigWriterSSHID(sshRes.ID)
+	return err
 }
 
 func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
@@ -555,4 +482,28 @@ func ExtractNetworks(clusterName, region string) (instIDs NetworkID, err error) 
 
 func DeleteAllPaths(clusterName, region string) error {
 	return os.RemoveAll(util.GetPath(1, "civo", "ha", clusterName+" "+region))
+}
+
+// UploadSSHKey it creates a ssh keypair saves it locally and uploads it to CIVO
+func (ha *HAType) UploadSSHKey() (err error) {
+	path := util.GetPath(util.OTHER_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
+	err = os.MkdirAll(path, 0755)
+	if err != nil {
+		return
+	}
+	keyPairToUpload, err := util.CreateSSHKeyPair("civo", ha.ClusterName, ha.Client.Region)
+	if err != nil {
+		return
+	}
+
+	err = ha.CreateSSHKeyPair(keyPairToUpload)
+
+	// ------- Setting the ssh configs only the public ips used will change
+	ha.SSH_Payload.UserName = "root"
+	ha.SSH_Payload.PathPrivateKey = util.GetSSHPath("civo", "ha", ha.ClusterName+" "+ha.Client.Region)
+	ha.SSH_Payload.Output = ""
+	ha.SSH_Payload.PublicIP = ""
+	// ------
+
+	return
 }
