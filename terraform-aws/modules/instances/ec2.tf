@@ -1,6 +1,6 @@
 resource "aws_instance" "instance"{
   ami = var.ami
-  key_name = "${var.cluster_name}-ha-ksctl"
+  key_name = "${var.cluster_name}"
   instance_type = var.instance_type[0]
   availability_zone = var.region_az
 

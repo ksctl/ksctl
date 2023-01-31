@@ -35,3 +35,7 @@ variable number_of_instance {
 variable "clustername" {
   type = string
 }
+
+output "public_ips" {
+  value = module.instances.aws_instance_public_key
+}
