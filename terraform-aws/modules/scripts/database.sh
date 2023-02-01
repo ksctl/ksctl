@@ -1,8 +1,8 @@
 #!/bin/bash
-apt update
-apt install -y mysql-server
+sudo apt update
+sudo apt install -y mysql-server
 
-mysql -e "create user 'ksctl' identified by '${random_password.k3s_db_password.result}';"
+mysql -e "create user 'ksctl' identified by '${data.local_file.k3s_password.content}';"
 mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
 
 cat <<EOF > /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -24,4 +24,4 @@ max_binlog_size   = 100M
 
 EOF
 
-systemctl restart mysql
+sudo systemctl restart mysql

@@ -1,49 +1,25 @@
 resource "aws_instance" "instance"{
   ami = var.ami
   key_name = "${var.cluster_name}"
-  instance_type = var.instance_type[0]
+  instance_type = var.name == "database" ? var.instance_type[2] : var.name == "controlplane" ? var.instance_type[1] : var.instance_type[0]
   availability_zone = var.region_az
 
   count = var.no_of_vms
-  security_groups = ["${var.cluster_name}-sg"]
+  security_groups = ["${var.cluster_name}-sg-${var.name}"]
   tags = {
-    "Name" = "${var.name}-${count.index+1}"
+    "Name" = "ha-ksctl-${var.cluster_name}-${var.name}-${count.index+1}"
   }
-  user_data = var.name == "database" ? file("scripts/database.sh") : var.name == "loadbalancer" ? file("scripts/loadbalancer.sh") : <<-EOF
+  user_data = var.name == "database" ? file("../modules/scripts/database.sh") : var.name == "loadbalancer" ? file("../modules/scripts/loadbalancer.sh") : <<-EOF
     #!/bin/bash
     sudo apt update -y
   EOF
 }
 
-resource "random_password" "k3s_db_password" {
-  length = 10
+data "local_file" "k3s_password" {
+  filename = "password.txt"
 }
 
-output "k3s_db_password_out" {
-  description = "k3s db password"
-  value = random_password.k3s_db_password.result
-}
-
-resource "tls_private_key" "ssh" {
-  algorithm = "RSA"
-  rsa_bits  = "4096"
-}
-
-resource "local_file" "private_key" {
-  content         = tls_private_key.ssh.private_key_openssh
-  filename        = "${var.keypair}.pem"
-  file_permission = "0400"
-}
-
-resource "aws_key_pair" "key_pair" {
-  depends_on = [
-    local_file.private_key
-  ]
-  key_name = "${var.cluster_name}"
-  public_key = tls_private_key.ssh.public_key_openssh
-}
-
-output "aws_instance_public_key" {
+output "aws_instance_public_ip" {
   description = "instance public IP"
   value = aws_instance.instance.*.public_dns
 }

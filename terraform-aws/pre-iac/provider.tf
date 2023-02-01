@@ -1,8 +1,10 @@
+# provider "local" {}
+
+# provider "random" {}
+
 provider "aws" {
   region = var.region
 }
-
-provider "local" {}
 
 terraform {
   required_providers {

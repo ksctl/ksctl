@@ -37,10 +37,6 @@ variable "clustername" {
 }
 
 output "public_ips" {
-  value = module.instances.aws_instance_public_key
-}
-
-output "password" {
-  sensitive = true
-  value     = module.instances.k3s_db_password_out
+  description = "public dns ips for 'SSH'"
+  value = module.instances.aws_instance_public_ip
 }
