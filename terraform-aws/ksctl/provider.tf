@@ -12,3 +12,5 @@ terraform {
     }
   }
 }
+
+provider "random" {}

@@ -9,11 +9,19 @@ resource "aws_instance" "instance"{
   tags = {
     "Name" = "${var.name}-${count.index+1}"
   }
-  user_data = <<-EOF
+  user_data = var.name == "database" ? file("scripts/database.sh") : var.name == "loadbalancer" ? file("scripts/loadbalancer.sh") : <<-EOF
     #!/bin/bash
     sudo apt update -y
-    sudo apt install vim neovim -y
   EOF
+}
+
+resource "random_password" "k3s_db_password" {
+  length = 10
+}
+
+output "k3s_db_password_out" {
+  description = "k3s db password"
+  value = random_password.k3s_db_password.result
 }
 
 resource "tls_private_key" "ssh" {
