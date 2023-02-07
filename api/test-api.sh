@@ -5,7 +5,7 @@ echo "|   Testing (api/util)    |"
 echo "+-------------------------+"
 
 cd utils/
-go test . -v && cd -
+go test -v . -timeout 10s && cd -
 
 
 
