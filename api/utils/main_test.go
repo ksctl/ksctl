@@ -62,7 +62,7 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	clusterRegion := "RegionXYz" // with the region as well
 
 	t.Cleanup(func() {
-		_ = os.RemoveAll(GetPath(OTHER_PATH, provider, "ha", clusterName+" "+clusterRegion))
+		_ = os.RemoveAll(GetPath(OTHER_PATH, provider))
 	})
 
 	path := GetPath(OTHER_PATH, provider, "ha", clusterName+" "+clusterRegion)

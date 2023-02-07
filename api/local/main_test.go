@@ -70,6 +70,9 @@ func setup() {
 
 func TestIsPresent(t *testing.T) {
 	setup()
+	t.Cleanup(func() {
+		cleanup()
+	})
 	present := isPresent("demo")
 	assert.Equal(t, false, present, "with no clusters returns true! (false +ve)")
 
@@ -84,6 +87,5 @@ func TestIsPresent(t *testing.T) {
 	}
 
 	present = isPresent("demo")
-	cleanup()
 	assert.Equal(t, true, present, "Failed to detect the cluster (false -ve)")
 }

@@ -180,12 +180,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 
 	log.Println("Created your HA Civo cluster!!🥳 🎉 ")
 	log.Printf("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
-	fmt.Println(`
-NOTE
-for the very first kubectl API call, do this
-	kubectl cluster-info --insecure-skip-tls-verify
-
-after this you can procede with normal oprtation of the cluster`)
+	fmt.Printf("\n\033[33mNOTE: for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
@@ -333,8 +328,7 @@ func (provider CivoProvider) AddMoreWorkerNodes() error {
 	for i := 0; i < noWP; i++ {
 		workerPlanes[i], err = obj.CreateWorkerNode(i+noOfWorkerNodes+1, lb.PrivateIP, config.ServerToken)
 		if err != nil {
-			log.Println("Failed to add more nodes..")
-			return err
+			log.Fatalf("Failed to add more nodes..")
 		}
 	}
 
