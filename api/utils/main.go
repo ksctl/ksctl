@@ -17,6 +17,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -113,35 +114,37 @@ func IsValidRegionCIVO(reg string) bool {
 		strings.Compare(reg, "LON1") == 0
 }
 
-func helperASCII(character uint8) bool {
-	// return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z')
-	return (character >= 'a' && character <= 'z')
-}
+// func helperASCII(character uint8) bool {
+// 	// return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z')
+// 	return (character >= 'a' && character <= 'z')
+// }
 
-func helperDIGIT(character uint8) bool {
-	return character >= '0' && character <= '9'
-}
+// func helperDIGIT(character uint8) bool {
+// 	return character >= '0' && character <= '9'
+// }
 
-func helperSPECIAL(character uint8) bool {
-	return character == '-' || character == '_'
-}
+// func helperSPECIAL(character uint8) bool {
+// 	return character == '-' || character == '_'
+// }
 
 // TODO: Use Regex expression for valid clusterNames
 func IsValidName(clusterName string) bool {
 
-	if !helperASCII(clusterName[0]) &&
-		(helperDIGIT(clusterName[0]) || !helperDIGIT(clusterName[0])) {
-		return false
-	}
+	// if !helperASCII(clusterName[0]) &&
+	// 	(helperDIGIT(clusterName[0]) || !helperDIGIT(clusterName[0])) {
+	// 	return false
+	// }
 
-	for _, chara := range clusterName {
-		if helperASCII(uint8(chara)) || helperDIGIT(uint8(chara)) || helperSPECIAL(uint8(chara)) {
-			continue
-		} else {
-			return false
-		}
-	}
-	return true
+	// for _, chara := range clusterName {
+	// 	if helperASCII(uint8(chara)) || helperDIGIT(uint8(chara)) || helperSPECIAL(uint8(chara)) {
+	// 		continue
+	// 	} else {
+	// 		return false
+	// 	}
+	// }
+	matched, _ := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
+
+	return matched
 }
 
 func GetKubeconfig(provider string, params ...string) string {

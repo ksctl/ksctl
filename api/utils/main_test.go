@@ -42,11 +42,12 @@ func TestValidRegionsInCIVO(t *testing.T) {
 }
 
 func TestIsValidClusterName(T *testing.T) {
-	assert.Equal(T, true, IsValidName("demo"), "Returns True for invalid cluster name")
+	assert.Equal(T, true, IsValidName("demo"), "Returns false for valid cluster name")
 	assert.Equal(T, false, IsValidName("Dem-o234"), "Returns True for invalid cluster name")
-	assert.Equal(T, true, IsValidName("d-234"), "Returns True for invalid cluster name")
-	assert.Equal(T, false, IsValidName("234"), "Returns True for invalid cluster name")
+	assert.Equal(T, true, IsValidName("d-234"), "Returns false for valid cluster name")
+	assert.Equal(T, false, IsValidName("234"), "Returns true for invalid cluster name")
 	assert.Equal(T, false, IsValidName("-2342"), "Returns True for invalid cluster name")
+	assert.Equal(T, false, IsValidName("demo-"), "Returns True for invalid cluster name")
 	assert.Equal(T, false, IsValidName("dscdscsd-#$#$#"), "Returns True for invalid cluster name")
 	assert.Equal(T, false, IsValidName("ds@#$#$#"), "Returns True for invalid cluster name")
 }
