@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-// TODO: perform cleanup when there is error
-
 func generateDBPassword(passwordLen int) string {
 	var password strings.Builder
 	var (

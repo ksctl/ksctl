@@ -11,6 +11,7 @@ import (
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
+// isValidSizeHA validates the VM size
 func isValidSizeHA(size string) bool {
 	validSizes := []string{
 		"g3.xsmall",
@@ -29,6 +30,7 @@ func isValidSizeHA(size string) bool {
 	return false
 }
 
+// HelperExecNoOutputControlPlane helps with script execution without returning us the output
 func (obj *HAType) HelperExecNoOutputControlPlane(publicIP, script string, fastMode bool) error {
 	obj.SSH_Payload.PublicIP = publicIP
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, script, fastMode)
@@ -38,6 +40,7 @@ func (obj *HAType) HelperExecNoOutputControlPlane(publicIP, script string, fastM
 	return nil
 }
 
+// HelperExecOutputControlPlane helps with script execution and also returns the script output
 func (obj *HAType) HelperExecOutputControlPlane(publicIP, script string, fastMode bool) (string, error) {
 	obj.SSH_Payload.Output = ""
 	obj.SSH_Payload.PublicIP = publicIP
@@ -48,6 +51,7 @@ func (obj *HAType) HelperExecOutputControlPlane(publicIP, script string, fastMod
 	return obj.SSH_Payload.Output, nil
 }
 
+// haCreateClusterHandler creates a HA type cluster
 func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error {
 
 	if errV := validationOfArguments(name, region); errV != nil {
@@ -137,7 +141,6 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 	for i := 0; i < noCP; i++ {
 		if i == 0 {
 			err = obj.HelperExecNoOutputControlPlane(controlPlanes[i].PublicIP, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
-			// err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
 			if err != nil {
 				return err
 			}
@@ -180,12 +183,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 
 	log.Println("Created your HA Civo cluster!!🥳 🎉 ")
 	log.Printf("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
-	fmt.Println(`
-NOTE
-for the very first kubectl API call, do this
-	kubectl cluster-info --insecure-skip-tls-verify
-
-after this you can procede with normal oprtation of the cluster`)
+	fmt.Printf("\n\033[33mNOTE: for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
@@ -284,6 +282,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 	return nil
 }
 
+// AddMoreWorkerNodes adds more worker nodes to the existing HA cluster
 func (provider CivoProvider) AddMoreWorkerNodes() error {
 	name, region, nodeSize, noWP := provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.HAWorkerNodes
 
@@ -333,8 +332,7 @@ func (provider CivoProvider) AddMoreWorkerNodes() error {
 	for i := 0; i < noWP; i++ {
 		workerPlanes[i], err = obj.CreateWorkerNode(i+noOfWorkerNodes+1, lb.PrivateIP, config.ServerToken)
 		if err != nil {
-			log.Println("Failed to add more nodes..")
-			return err
+			log.Fatalf("Failed to add more nodes..")
 		}
 	}
 
@@ -342,6 +340,7 @@ func (provider CivoProvider) AddMoreWorkerNodes() error {
 	return nil
 }
 
+// DeleteSomeWorkerNodes deletes workerNodes from existing HA cluster
 func (provider CivoProvider) DeleteSomeWorkerNodes() error {
 	clusterName := provider.ClusterName
 	region := provider.Region

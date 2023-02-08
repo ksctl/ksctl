@@ -33,4 +33,3 @@ Write-Output "+-------------------------+"
 Set-Location civo
 go test . -v && Set-Location -
 
-

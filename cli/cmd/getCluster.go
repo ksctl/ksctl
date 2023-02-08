@@ -9,11 +9,10 @@ Kubesimplify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/local"
 	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
@@ -39,36 +38,36 @@ func printUtil(cargo []byte) {
 func Printer(i int) {
 	var toBePrinted []printer
 
-	files, err := ioutil.ReadDir(util.GetPath(1, "civo", "managed"))
+	folders, err := os.ReadDir(util.GetPath(util.CLUSTER_PATH, "civo", "managed"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, file := range files {
+	for _, file := range folders {
 		if file.IsDir() {
 			info := strings.Split(file.Name(), " ")
 			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[1], Provider: "CIVO (MANAGED)"})
 		}
 	}
 
-	files, err = ioutil.ReadDir(util.GetPath(1, "civo", "ha"))
+	folders, err = os.ReadDir(util.GetPath(util.CLUSTER_PATH, "civo", "ha"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, file := range files {
+	for _, file := range folders {
 		if file.IsDir() {
 			info := strings.Split(file.Name(), " ")
 			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[1], Provider: "CIVO (HA)"})
 		}
 	}
 
-	files, err = ioutil.ReadDir(local.GetPath())
+	folders, err = os.ReadDir(util.GetPath(util.CLUSTER_PATH, "local"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, file := range files {
+	for _, file := range folders {
 		if file.IsDir() {
 			toBePrinted = append(toBePrinted, printer{ClusterName: file.Name(), Region: "N/A", Provider: "local"})
 		}
