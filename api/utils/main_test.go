@@ -10,20 +10,20 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestGetClusterPath(t *testing.T) {
+func TestGetUsername(t *testing.T) {
 	if runtime.GOOS == "windows" {
 
 		assert.Equal(t, os.Getenv("USERPROFILE"), GetUserName(), "Unable to fetch correct username")
 
-		assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\config\\abcd\\123w", GetUserName()),
-			GetKubeconfig("abcd", "123w"), "Kube config failed, as expected is not equal to actual")
+		// assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\config\\abcd\\123w", GetUserName()),
+		// 	getKubeconfig("abcd", "123w"), "Kube config failed, as expected is not equal to actual")
 
 	} else {
 
 		assert.Equal(t, os.Getenv("HOME"), GetUserName(), "Unable to fetch correct username")
 
-		assert.Equal(t, fmt.Sprintf("%s/.ksctl/config/abcd/123w", GetUserName()),
-			GetKubeconfig("abcd", "123w"), "Kube config failed, as expected is not equal to actual")
+		// assert.Equal(t, fmt.Sprintf("%s/.ksctl/config/abcd/123w", GetUserName()),
+		// getKubeconfig("abcd", "123w"), "Kube config failed, as expected is not equal to actual")
 	}
 }
 
@@ -50,6 +50,40 @@ func TestGetPaths(t *testing.T) {
 		if strings.Compare(dummy, getPaths("xx", "Ydcsd")) == 0 {
 			t.Fatalf("GetPath testing failed")
 		}
+	}
+}
+
+func TestGetClusterPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		testProviders := map[string]string{
+			"civo":  fmt.Sprintf("%s\\.ksctl\\config\\civo\\Yy zz", GetUserName()),
+			"local": fmt.Sprintf("%s\\.ksctl\\config\\local\\Yy zz", GetUserName()),
+			"xx":    "",
+			"Xyz":   "",
+			"azure": fmt.Sprintf("%s\\.ksctl\\config\\azure\\Yy zz", GetUserName()),
+		}
+		for provider, expectedPath := range testProviders {
+			assert.Equal(t, expectedPath, getKubeconfig(provider, "Yy zz")) // must return empty string as its invalid provider
+		}
+	} else {
+		testProviders := map[string]string{
+			"civo":  fmt.Sprintf("%s/.ksctl/config/civo/Yy zz", GetUserName()),
+			"local": fmt.Sprintf("%s/.ksctl/config/local/Yy zz", GetUserName()),
+			"xx":    "",
+			"Xyz":   "",
+			"azure": fmt.Sprintf("%s/.ksctl/config/azure/Yy zz", GetUserName()),
+		}
+		for provider, expectedPath := range testProviders {
+			assert.Equal(t, expectedPath, getKubeconfig(provider, "Yy zz")) // must return empty string as its invalid provider
+		}
+	}
+}
+
+func TestGetOtherPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\config\\abcd\\Yy zz", GetUserName()), getPaths("abcd", "Yy zz"))
+	} else {
+		assert.Equal(t, fmt.Sprintf("%s/.ksctl/config/abcd/Yy zz", GetUserName()), getPaths("abcd", "Yy zz"))
 	}
 }
 

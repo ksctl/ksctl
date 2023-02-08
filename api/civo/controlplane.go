@@ -90,7 +90,6 @@ func (obj *HAType) FetchKUBECONFIG(instanceCP *civogo.Instance) (string, error) 
 	obj.SSH_Payload.Output = ""
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptKUBECONFIG(), true)
 
-	// kubeconfig, err := ExecWithOutput(instanceCP.PublicIP, instanceCP.InitialPassword, scriptKUBECONFIG(), true)
 	if err != nil {
 		return "", nil
 	}
@@ -144,11 +143,11 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 
 }
 
+// GetTokenFromCP_1 used to extract the K3S_TOKEN from the first Controlplane node
 func (obj *HAType) GetTokenFromCP_1(instance *civogo.Instance) string {
 	obj.SSH_Payload.PublicIP = instance.PublicIP
 	obj.SSH_Payload.Output = ""
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
-	// token, err := ExecWithOutput(instance.PublicIP, instance.InitialPassword, scriptWithCP_1(), true)
 	if err != nil {
 		return ""
 	}

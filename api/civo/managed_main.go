@@ -22,6 +22,7 @@ import (
 	"github.com/civo/civogo"
 )
 
+// configWriterManaged stores the KUBECONFIG
 func configWriterManaged(kubeconfig, clusterN, region, clusterID string) error {
 	// create the necessary folders and files
 	clusterFolder := clusterN + " " + region
@@ -63,6 +64,7 @@ type ManagedConfig struct {
 	Region    string `json:"region"`
 }
 
+// GetConfigManaged fetch the state management file
 func GetConfigManaged(clusterName, region string) (configStore ManagedConfig, err error) {
 
 	fileBytes, err := os.ReadFile(util.GetPath(util.CLUSTER_PATH, "civo", "managed", clusterName+" "+region, "info.json"))
@@ -80,6 +82,7 @@ func GetConfigManaged(clusterName, region string) (configStore ManagedConfig, er
 	return
 }
 
+// saveConfigManaged update/store the state to state management file
 func saveConfigManaged(clusterFolder string, configStore ManagedConfig) error {
 
 	storeBytes, err := json.Marshal(configStore)
@@ -128,7 +131,7 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 	return spec
 }
 
-// isValidSize checks whether the size passed by user is valid according to CIVO
+// isValidSize validates the managed K3S civo nodepool nodesize
 func isValidSizeManaged(size string) bool {
 	validSizes := []string{"g4s.kube.xsmall", "g4s.kube.small", "g4s.kube.medium", "g4s.kube.large", "g4p.kube.small", "g4p.kube.medium", "g4p.kube.large", "g4p.kube.xlarge", "g4c.kube.small", "g4c.kube.medium", "g4c.kube.large", "g4c.kube.xlarge", "g4m.kube.small", "g4m.kube.medium", "g4m.kube.large", "g4m.kube.xlarge"}
 	for _, valid := range validSizes {
@@ -140,7 +143,7 @@ func isValidSizeManaged(size string) bool {
 	return false
 }
 
-// CreateCluster creates cluster as provided configuration and returns whether it fails or not
+// CreateCluster creates managed CIVO cluster
 func managedCreateClusterHandler(civoConfig CivoProvider) error {
 	if len(civoConfig.APIKey) == 0 {
 		return fmt.Errorf("🚩 CREDENTIALS NOT PRESENT")

@@ -59,7 +59,6 @@ func (obj *HAType) ConfigLoadBalancer(instance *civogo.Instance, CPIPs []string)
 	getScript := configLBscript(CPIPs)
 	obj.SSH_Payload.PublicIP = instance.PublicIP
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, getScript, true)
-	// err := ExecWithoutOutput(instance.PublicIP, instance.InitialPassword, getScript, true)
 	if err == nil {
 		log.Println("✅ Configured LoadBalancer")
 	}

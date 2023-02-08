@@ -108,9 +108,11 @@ type CivoHandlers interface {
 	DeleteSomeWorkerNodes() error
 }
 
+// IsValidRegionCIVO validates the region code for CIVO
 func IsValidRegionCIVO(reg string) bool {
 	return strings.Compare(reg, "FRA1") == 0 ||
 		strings.Compare(reg, "NYC1") == 0 ||
+		strings.Compare(reg, "PHX1") == 0 ||
 		strings.Compare(reg, "LON1") == 0
 }
 
@@ -120,7 +122,14 @@ func IsValidName(clusterName string) bool {
 	return matched
 }
 
-func GetKubeconfig(provider string, params ...string) string {
+// getKubeconfig returns the path to clusters specific to provider
+func getKubeconfig(provider string, params ...string) string {
+	if strings.Compare(provider, "civo") != 0 &&
+		strings.Compare(provider, "local") != 0 &&
+		strings.Compare(provider, "azure") != 0 &&
+		strings.Compare(provider, "aws") != 0 {
+		return ""
+	}
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
@@ -137,6 +146,7 @@ func GetKubeconfig(provider string, params ...string) string {
 	return ret.String()
 }
 
+// getCredentials generate the path to the credentials of different providers
 func getCredentials(provider string) string {
 	if runtime.GOOS == "windows" {
 		return fmt.Sprintf("%s\\.ksctl\\cred\\%s.json", GetUserName(), provider)
@@ -146,13 +156,12 @@ func getCredentials(provider string) string {
 }
 
 // GetPath use this in every function and differentiate the logic by using if-else
-// flag is used to indicate 1 -> KUBECONFIG, 0 -> CREDENTIALS
 func GetPath(flag int, provider string, subfolders ...string) string {
 	switch flag {
 	case SSH_PATH:
-		return GetSSHPath(provider, subfolders...)
+		return getSSHPath(provider, subfolders...)
 	case CLUSTER_PATH:
-		return GetKubeconfig(provider, subfolders...)
+		return getKubeconfig(provider, subfolders...)
 	case CREDENTIAL_PATH:
 		return getCredentials(provider)
 	case OTHER_PATH:
@@ -162,7 +171,8 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	}
 }
 
-func GetSSHPath(provider string, params ...string) string {
+// getSSHPath generate the SSH keypair location and subsequent fetch
+func getSSHPath(provider string, params ...string) string {
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
@@ -181,6 +191,8 @@ func GetSSHPath(provider string, params ...string) string {
 	return ret.String()
 }
 
+// getPaths to generate path irrespective of the cluster
+// its a free flowing (Provider field has not much significance)
 func getPaths(provider string, params ...string) string {
 	var ret strings.Builder
 
@@ -252,7 +264,6 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 	return signer, nil
 }
 
-// NOTE: Replacement for existing sshExec functions
 func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool) error {
 
 	// var err error

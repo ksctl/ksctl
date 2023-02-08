@@ -11,6 +11,7 @@ import (
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
+// isValidSizeHA validates the VM size
 func isValidSizeHA(size string) bool {
 	validSizes := []string{
 		"g3.xsmall",
@@ -29,6 +30,7 @@ func isValidSizeHA(size string) bool {
 	return false
 }
 
+// HelperExecNoOutputControlPlane helps with script execution without returning us the output
 func (obj *HAType) HelperExecNoOutputControlPlane(publicIP, script string, fastMode bool) error {
 	obj.SSH_Payload.PublicIP = publicIP
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, script, fastMode)
@@ -38,6 +40,7 @@ func (obj *HAType) HelperExecNoOutputControlPlane(publicIP, script string, fastM
 	return nil
 }
 
+// HelperExecOutputControlPlane helps with script execution and also returns the script output
 func (obj *HAType) HelperExecOutputControlPlane(publicIP, script string, fastMode bool) (string, error) {
 	obj.SSH_Payload.Output = ""
 	obj.SSH_Payload.PublicIP = publicIP
@@ -48,6 +51,7 @@ func (obj *HAType) HelperExecOutputControlPlane(publicIP, script string, fastMod
 	return obj.SSH_Payload.Output, nil
 }
 
+// haCreateClusterHandler creates a HA type cluster
 func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error {
 
 	if errV := validationOfArguments(name, region); errV != nil {
@@ -137,7 +141,6 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 	for i := 0; i < noCP; i++ {
 		if i == 0 {
 			err = obj.HelperExecNoOutputControlPlane(controlPlanes[i].PublicIP, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
-			// err = ExecWithoutOutput(controlPlanes[i].PublicIP, controlPlanes[i].InitialPassword, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
 			if err != nil {
 				return err
 			}
@@ -279,6 +282,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 	return nil
 }
 
+// AddMoreWorkerNodes adds more worker nodes to the existing HA cluster
 func (provider CivoProvider) AddMoreWorkerNodes() error {
 	name, region, nodeSize, noWP := provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.HAWorkerNodes
 
@@ -336,6 +340,7 @@ func (provider CivoProvider) AddMoreWorkerNodes() error {
 	return nil
 }
 
+// DeleteSomeWorkerNodes deletes workerNodes from existing HA cluster
 func (provider CivoProvider) DeleteSomeWorkerNodes() error {
 	clusterName := provider.ClusterName
 	region := provider.Region

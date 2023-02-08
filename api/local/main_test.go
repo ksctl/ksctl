@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,14 +56,14 @@ nodes:
 }
 
 func cleanup() {
-	err := os.RemoveAll(GetPath())
+	err := os.RemoveAll(util.GetPath(util.OTHER_PATH, "local"))
 	if err != nil {
 		return
 	}
 }
 
 func setup() {
-	err := os.MkdirAll(GetPath(), 0750)
+	err := os.MkdirAll(util.GetPath(util.OTHER_PATH, "local"), 0750)
 	if err != nil {
 		return
 	}
@@ -77,11 +78,11 @@ func TestIsPresent(t *testing.T) {
 	assert.Equal(t, false, present, "with no clusters returns true! (false +ve)")
 
 	// create the folder
-	err := os.Mkdir(GetPath("demo"), 0755)
+	err := os.Mkdir(util.GetPath(util.OTHER_PATH, "local", "demo"), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = os.Create(GetPath("demo", "info"))
+	_, err = os.Create(util.GetPath(util.OTHER_PATH, "local", "demo", "info"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -25,4 +25,4 @@ echo "+-------------------------+"
 cd civo/
 go test . -v && cd -
 
-
+rm -rvf ${HOME}/.ksctl

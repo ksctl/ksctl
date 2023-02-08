@@ -28,10 +28,14 @@ type CivoProvider struct {
 	CNIPlugin   string
 }
 
+// Credentials accept the api_token for CIVO auth and authorization from user
 func Credentials() bool {
 
 	apikey := ""
 	fmt.Println("Enter your API-TOKEN-KEY: ")
+	// FIXME: make the APIKEY scan as password based text
+	// More info:
+	//    to does not hide the apikey when the user is typing
 	_, err := fmt.Scan(&apikey)
 	if err != nil {
 		panic(err.Error())
@@ -86,7 +90,7 @@ func saveCred(configStore util.CivoCredential) error {
 	return nil
 }
 
-// fetchAPIKey returns the API key from the cred/civo file store
+// fetchAPIKey returns the api_token from the cred/civo.json file store
 func fetchAPIKey() string {
 
 	token, err := getCred()
@@ -97,7 +101,7 @@ func fetchAPIKey() string {
 	return token.Token
 }
 
-// isPresent Checks whether the cluster to create is already had been created
+// isPresent Checks whether the cluster to create is already present
 func isPresent(offering, clusterName, Region string) bool {
 	_, err := os.ReadFile(util.GetPath(util.CLUSTER_PATH, "civo", offering, clusterName+" "+Region, "info.json"))
 	if os.IsNotExist(err) {
@@ -106,12 +110,13 @@ func isPresent(offering, clusterName, Region string) bool {
 	return true
 }
 
-// cleanup called when error is encountered during creation og cluster
+// cleanup called when error is encountered during creation during cluster creation
 func cleanup(provider CivoProvider) error {
 	log.Println("[ERR] Cannot continue 😢")
 	return haDeleteClusterHandler(provider.ClusterName, provider.Region, false)
 }
 
+// validationOfArguments is name and region specified valid
 func validationOfArguments(name, region string) error {
 
 	if !util.IsValidRegionCIVO(region) {
@@ -125,6 +130,8 @@ func validationOfArguments(name, region string) error {
 	return nil
 }
 
+// CreateCluster calls the helper functions for cluster creation
+// based on the flag `HACluster` whether to delete managed cluster or HA type cluster
 func (provider CivoProvider) CreateCluster() error {
 	if provider.HACluster {
 		if err := haCreateClusterHandler(provider.ClusterName, provider.Region, provider.Spec.Disk,
@@ -138,6 +145,8 @@ func (provider CivoProvider) CreateCluster() error {
 	return managedCreateClusterHandler(payload)
 }
 
+// DeleteCluster calls the helper functions for cluster deletion
+// based on the flag `HACluster` whether to delete managed cluster or HA type cluster
 func (provider CivoProvider) DeleteCluster() error {
 	if provider.HACluster {
 		return haDeleteClusterHandler(provider.ClusterName, provider.Region, true)
@@ -145,6 +154,7 @@ func (provider CivoProvider) DeleteCluster() error {
 	return managedDeleteClusterHandler(provider.ClusterName, provider.Region)
 }
 
+// SwitchContext provides the export command for switching to specific provider's cluster
 func (provider CivoProvider) SwitchContext() error {
 	switch provider.HACluster {
 	case true:
