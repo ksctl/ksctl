@@ -23,7 +23,7 @@ jobs:
         working-directory: api/civo
         run: |
           go test -race -coverprofile=../../coverage-civo.out -v ./...
-          cd ..
+          cd ../..
           echo "# Coverage Report (CIVO API)
           " > coverage-civo.md
           go tool cover -func=coverage-civo.out >> coverage-civo.md
@@ -32,7 +32,7 @@ jobs:
         working-directory: api/local
         run: |
           go test -race -coverprofile=../../coverage-local.out -v ./...
-          cd ..
+          cd ../..
           echo "# Coverage Report (LOCAL API)
           " > coverage-local.md
           go tool cover -func=coverage-local.out >> coverage-local.md
@@ -41,7 +41,7 @@ jobs:
         working-directory: api/utils
         run: |
           go test -race -coverprofile=../../coverage-utils.out -v ./...
-          cd ..
+          cd ../..
           echo "# Coverage Report (UTILS API)
           " > coverage-utils.md
           go tool cover -func=coverage-utils.out >> coverage-utils.md
