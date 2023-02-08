@@ -18,17 +18,46 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.19'
-      - name: Save the coverage report
-        working-directory: api
-        run: |
-          go test -race -coverprofile=../coverage.out -v ./...
-          cd ..
-          echo "# Coverage Report
-          " > coverage.md
-          go tool cover -func=coverage.out >> coverage.md
 
-      - name: PR comment with file
+      - name: Save coverage report of CIVO
+        working-directory: api/civo
+        run: |
+          go test -race -coverprofile=../../coverage-civo.out -v ./...
+          cd ..
+          echo "# Coverage Report (CIVO API)
+          " > coverage-civo.md
+          go tool cover -func=coverage-civo.out >> coverage-civo.md
+
+      - name: save coverage report of LOCAL
+        working-directory: api/local
+        run: |
+          go test -race -coverprofile=../../coverage-local.out -v ./...
+          cd ..
+          echo "# Coverage Report (LOCAL API)
+          " > coverage-local.md
+          go tool cover -func=coverage-local.out >> coverage-local.md
+
+      - name: save coverage report of UTILS
+        working-directory: api/utils
+        run: |
+          go test -race -coverprofile=../../coverage-utils.out -v ./...
+          cd ..
+          echo "# Coverage Report (UTILS API)
+          " > coverage-utils.md
+          go tool cover -func=coverage-utils.out >> coverage-utils.md
+   
+
+      - name: PR comment for code coverage for CIVO
         uses: thollander/actions-comment-pull-request@v2
         with:
-          filePath: coverage.md
+          filePath: coverage-civo.md
 
+      - name: PR comment for code coverage for LOCAL
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: coverage-local.md
+
+      - name: PR comment for code coverage for UTILS
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: coverage-utils.md
