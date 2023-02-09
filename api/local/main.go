@@ -13,7 +13,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -21,37 +20,26 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-//// TODO: runtime.GOOS == "windows" here only change the path seperator
-//// use this in every function and differentiate the logic by using if-else
-//
-//var (
-//	// KUBECONFIG_PATH to denotes OS specific path where it will store the configs
-//	// LINUX (DEFAULT)
-//	KUBECONFIG_PATH = fmt.Sprintf("%s/.ksctl/config/local/", utils.GetUserName())
-//)
+// func getKubeconfig(params ...string) string {
+// 	var ret strings.Builder
 
-func getKubeconfig(params ...string) string {
-	var ret strings.Builder
+// 	if runtime.GOOS == "windows" {
+// 		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\local", util.GetUserName()))
+// 		for _, item := range params {
+// 			ret.WriteString("\\" + item)
+// 		}
+// 	} else {
+// 		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/local", util.GetUserName()))
+// 		for _, item := range params {
+// 			ret.WriteString("/" + item)
+// 		}
+// 	}
+// 	return ret.String()
+// }
 
-	if runtime.GOOS == "windows" {
-		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\local", util.GetUserName()))
-		for _, item := range params {
-			ret.WriteString("\\" + item)
-		}
-	} else {
-		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/local", util.GetUserName()))
-		for _, item := range params {
-			ret.WriteString("/" + item)
-		}
-	}
-	return ret.String()
-}
-
-// TODO: runtime.GOOS == "windows" here only change the path seperator
-// use this in every function and differentiate the logic by using if-else
-func GetPath(params ...string) string {
-	return getKubeconfig(params...)
-}
+// func GetPath(params ...string) string {
+// 	return getKubeconfig(params...)
+// }
 
 func generateConfig(noWorker, noControl int) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
@@ -107,7 +95,7 @@ nodes:
 }
 
 func isPresent(cluster string) bool {
-	_, err := os.ReadFile(GetPath(cluster, "info"))
+	_, err := os.ReadFile(util.GetPath(util.OTHER_PATH, "local", cluster, "info"))
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -115,24 +103,23 @@ func isPresent(cluster string) bool {
 }
 
 func createNecessaryConfigs(clusterName string) (string, error) {
-	//workingDir := KUBECONFIG_PATH + clusterName
-	err := os.Mkdir(GetPath(clusterName), 0750)
+	err := os.Mkdir(util.GetPath(util.OTHER_PATH, "local", clusterName), 0750)
 	if err != nil && !os.IsExist(err) {
 		return "", err
 	}
 
-	_, err = os.Create(GetPath(clusterName, "config"))
+	_, err = os.Create(util.GetPath(util.OTHER_PATH, "local", clusterName, "config"))
 	if err != nil {
 		// TODO: if error happens here do clean up the dir created above
 		return "", err
 	}
-	_, err = os.Create(GetPath(clusterName, "info"))
+	_, err = os.Create(util.GetPath(util.OTHER_PATH, "local", clusterName, "info"))
 	if err != nil {
 		return "", err
 	}
 
 	err = os.WriteFile(
-		fmt.Sprintf(GetPath(clusterName, "info")),
+		fmt.Sprintf(util.GetPath(util.OTHER_PATH, "local", clusterName, "info")),
 		[]byte(fmt.Sprintf("%s", clusterName)),
 		0640)
 
@@ -140,7 +127,7 @@ func createNecessaryConfigs(clusterName string) (string, error) {
 		return "", err
 	}
 
-	return GetPath(clusterName, "config"), nil
+	return util.GetPath(util.OTHER_PATH, "local", clusterName, "config"), nil
 }
 
 func ClusterInfoInjecter(clusterName string, noOfNodes int) util.LocalProvider {
@@ -205,14 +192,36 @@ func CreateCluster(localConfig util.LocalProvider) error {
 	return nil
 }
 
-func (p printer) Printer(ha bool, a int) {
-	switch a {
+func (p printer) Printer(isHA bool, operation int) {
+	// switch a {
+	// case 0:
+	// 	fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
+	// 	fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", util.GetPath(util.OTHER_PATH, "local", p.ClusterName, "config")))
+	// case 1:
+	// 	fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
+	// 	fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
+	// }
+	// fmt.Println()
+
+	preFix := "export "
+	if runtime.GOOS == "windows" {
+		preFix = "$Env:"
+	}
+	switch operation {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", GetPath(p.ClusterName, "config")))
+		if isHA {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
+		} else {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
+		}
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
+		if runtime.GOOS == "windows" {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+		} else {
+			fmt.Println("unset KUBECONFIG")
+		}
 	}
 	fmt.Println()
 }
@@ -230,15 +239,15 @@ func DeleteCluster(name string) error {
 	// cluster.ProviderWithLogger(logger),	// TODO: try to add these
 	// runtime.GetDefault(logger),
 	)
-	_, err := os.ReadFile(GetPath(name, "info"))
+	_, err := os.ReadFile(util.GetPath(util.CLUSTER_PATH, "local", name, "info"))
 	if err != nil {
 		return fmt.Errorf("NO matching cluster found")
 	}
 
-	if err := provider.Delete(name, GetPath(name, "config")); err != nil {
+	if err := provider.Delete(name, util.GetPath(util.CLUSTER_PATH, "local", name, "config")); err != nil {
 		return fmt.Errorf("FAIL to delete cluster %q", err)
 	}
-	if err := deleteConfigs(GetPath(name)); err != nil {
+	if err := deleteConfigs(util.GetPath(util.CLUSTER_PATH, "local", name)); err != nil {
 		return err
 	}
 	var printKubeconfig util.PrinterKubeconfigPATH

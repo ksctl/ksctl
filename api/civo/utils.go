@@ -9,17 +9,15 @@ Credit to @civo
 package civo
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/civo/civogo"
 	util "github.com/kubesimplify/ksctl/api/utils"
-	"golang.org/x/crypto/ssh"
 )
 
 // NOTE: where are the configs stored
@@ -27,7 +25,7 @@ import (
 // |--- config
 // |    |--- civo
 // .    .    |--- managed {contains (config, info.json)}
-// .    .    |--- ha {contains (config, info.json)}
+// .    .    |--- ha {contains (config, info.json, keypair, keypair.pub)}
 //
 
 const (
@@ -62,6 +60,13 @@ type HACollection interface {
 	CreateWorkerNode(int, string, string) (*civogo.Instance, error)
 	CreateDatabase() (string, error)
 	GetTokenFromCP_1(*civogo.Instance) string
+
+	UploadSSHKey() error
+	DeleteSSHKeyPair() error
+	ConfigLoadBalancer(*civogo.Instance, []string) error
+	FetchKUBECONFIG(*civogo.Instance) (string, error)
+	HelperExecNoOutputControlPlane(string, string, bool) error
+	HelperExecOutputControlPlane(string, string, bool) (string, error)
 }
 
 type HAType struct {
@@ -74,7 +79,9 @@ type HAType struct {
 	LBFirewallID  string
 	CPFirewallID  string
 	WPFirewallID  string
+	SSHID         string // used to store the ssh id from CIVO
 	Configuration *JsonStore
+	SSH_Payload   *util.SSHPayload
 }
 
 type InstanceID struct {
@@ -97,13 +104,14 @@ type JsonStore struct {
 	Region      string     `json:"region"`
 	DBEndpoint  string     `json:"dbendpoint"`
 	ServerToken string     `json:"servertoken"`
+	SSHID       string     `json:"ssh_id"`
 	InstanceIDs InstanceID `json:"instanceids"`
 	NetworkIDs  NetworkID  `json:"networkids"`
 }
 
 func GetConfig(clusterName, region string) (configStore JsonStore, err error) {
 
-	fileBytes, err := ioutil.ReadFile(util.GetPath(1, "civo", "ha", clusterName+" "+region, "info.json"))
+	fileBytes, err := os.ReadFile(util.GetPath(util.CLUSTER_PATH, "civo", "ha", clusterName+" "+region, "info.json"))
 
 	if err != nil {
 		return
@@ -125,12 +133,12 @@ func saveConfig(clusterFolder string, configStore JsonStore) error {
 		return err
 	}
 
-	err = os.MkdirAll(util.GetPath(1, "civo", "ha", clusterFolder), 0750)
+	err = os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "civo", "ha", clusterFolder), 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	err = ioutil.WriteFile(util.GetPath(1, "civo", "ha", clusterFolder, "info.json"), storeBytes, 0640)
+	err = os.WriteFile(util.GetPath(util.CLUSTER_PATH, "civo", "ha", clusterFolder, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -150,169 +158,85 @@ type ConfigurationHandlers interface {
 	ConfigWriterFirewallWorkerNodes(string) error
 	ConfigWriterFirewallDatabaseNodes(string) error
 	ConfigWriterNetworkID(string) error
+	ConfigWriterSSHID(string) error
 }
 
+// ConfigWriterDBEndpoint write Database endpoint to state management file
 func (config *JsonStore) ConfigWriterDBEndpoint(endpoint string) error {
 	config.DBEndpoint = endpoint
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterSSHID write SSH keypairId which is uploaded to Civo to state management file
+func (config *JsonStore) ConfigWriterSSHID(keypair_id string) error {
+	config.SSHID = keypair_id
+	return saveConfig(config.ClusterName+" "+config.Region, *config)
+}
+
+// ConfigWriterNetworkID write NetworkID of created network Civo to state management file
 func (config *JsonStore) ConfigWriterNetworkID(netID string) error {
 	config.NetworkIDs.NetworkID = netID
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterFirewallControlPlaneNodes write firewall_id of all controlplane's firewall to state management file
 func (config *JsonStore) ConfigWriterFirewallControlPlaneNodes(fwID string) error {
 	config.NetworkIDs.FirewallIDControlPlaneNode = fwID
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterFirewallWorkerNodes write firewall_id of all workernode's firewall to state management file
 func (config *JsonStore) ConfigWriterFirewallWorkerNodes(fwID string) error {
 	config.NetworkIDs.FirewallIDWorkerNode = fwID
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterFirewallLoadBalancerNodes write firewall_id of loadbalancer firewall to state management file
+// TODO: Add more fine grained firewall rules
 func (config *JsonStore) ConfigWriterFirewallLoadBalancerNodes(fwID string) error {
 	config.NetworkIDs.FirewallIDLoadBalancerNode = fwID
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterFirewallDatabaseNodes write firewall_id of database firewall to state management file
+// TODO: Add more restrictive firewall rules
 func (config *JsonStore) ConfigWriterFirewallDatabaseNodes(fwID string) error {
 	config.NetworkIDs.FirewallIDDatabaseNode = fwID
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterServerToken write the K3S_TOKEN to the state management file
 func (config *JsonStore) ConfigWriterServerToken(token string) error {
 	config.ServerToken = token
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterInstanceDatabase write the instance_id of database VM to state management file
 func (config *JsonStore) ConfigWriterInstanceDatabase(instanceID string) error {
 	config.InstanceIDs.DatabaseNode = append(config.InstanceIDs.DatabaseNode, instanceID)
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterInstanceLoadBalancer write the instance_id of loadbalancer VM to state management file
 func (config *JsonStore) ConfigWriterInstanceLoadBalancer(instanceID string) error {
 	config.InstanceIDs.LoadBalancerNode = append(config.InstanceIDs.LoadBalancerNode, instanceID)
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterInstanceControlPlaneNodes write the instance_id of controlplane VMs to state management file
 func (config *JsonStore) ConfigWriterInstanceControlPlaneNodes(instanceID string) error {
 	config.InstanceIDs.ControlNodes = append(config.InstanceIDs.ControlNodes, instanceID)
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
+// ConfigWriterInstanceWorkerNodes write the instance_id of workernode VMs to state management file
 func (config *JsonStore) ConfigWriterInstanceWorkerNodes(instanceID string) error {
 	config.InstanceIDs.WorkerNodes = append(config.InstanceIDs.WorkerNodes, instanceID)
 	return saveConfig(config.ClusterName+" "+config.Region, *config)
 }
 
-func ExecWithoutOutput(publicIP, password, script string, fastMode bool) error {
-
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
-		//HostKeyCallback: hostKeyCallback,
-		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	if !fastMode {
-		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
-	}
-
-	var err error
-	var conn *ssh.Client
-	currRetryCounter := 0
-
-	for currRetryCounter < MAX_RETRY_COUNT {
-		conn, err = ssh.Dial("tcp", publicIP+":22", config)
-		if err == nil {
-			break
-		} else {
-			log.Printf("❗ RETRYING %v\n", err)
-		}
-		time.Sleep(10 * time.Second) // waiting for ssh to get started
-		currRetryCounter++
-	}
-	if currRetryCounter == MAX_RETRY_COUNT {
-		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
-	}
-
-	log.Println("🤖 Exec Scripts")
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-
-	if err != nil {
-		return err
-	}
-
-	defer session.Close()
-
-	if err := session.Run(script); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func ExecWithOutput(publicIP, password, script string, fastMode bool) (string, error) {
-
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
-		//HostKeyCallback: hostKeyCallback,
-		// FIXME: Insecure Ignore should be replaced with secure
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	if !fastMode {
-		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
-	}
-	var err error
-	var conn *ssh.Client
-	currRetryCounter := 0
-
-	for currRetryCounter < MAX_RETRY_COUNT {
-		conn, err = ssh.Dial("tcp", publicIP+":22", config)
-		if err == nil {
-			break
-		} else {
-			log.Printf("❗ RETRYING %v\n", err)
-		}
-		time.Sleep(10 * time.Second) // waiting for ssh to get started
-		currRetryCounter++
-	}
-	if currRetryCounter == MAX_RETRY_COUNT {
-		return "", fmt.Errorf("🚨💀 COULDN'T RETRY: %v", err)
-	}
-
-	log.Println("🤖 Exec Scripts")
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-
-	if err != nil {
-		return "", err
-	}
-
-	defer session.Close()
-
-	var buff bytes.Buffer
-	session.Stdout = &buff
-
-	if err := session.Run(script); err != nil {
-		return "", err
-	}
-
-	return buff.String(), nil
-}
-
+// DeleteInstances deletes all the VMs
+// deletes controlplane VMs, workerplane VMs, Database VM, Loadbalancer VM
 func (obj *HAType) DeleteInstances() error {
 	instances, err := ExtractInstances(obj.ClusterName, obj.Client.Region)
 	if err != nil {
@@ -371,6 +295,8 @@ func (obj *HAType) DeleteInstances() error {
 	return errV
 }
 
+// DeleteNetworks deletes all network related objects
+// deletes all firewalls, and the network
 func (obj *HAType) DeleteNetworks() error {
 	networks, err := ExtractNetworks(obj.ClusterName, obj.Client.Region)
 	if err != nil {
@@ -417,13 +343,15 @@ func (obj *HAType) DeleteNetworks() error {
 
 	err = nil
 	retry := 0
+	retryTimeout := 2
 	for retry < MAX_RETRY_COUNT {
 		err = obj.DeleteNetwork(networks.NetworkID)
 		if err == nil {
 			break
 		}
 		retry++
-		time.Sleep(10 * time.Second)
+		time.Sleep(time.Duration(retryTimeout) * time.Second)
+		retryTimeout *= 2
 		log.Println("❗ RETRYING ", err)
 	}
 
@@ -436,31 +364,46 @@ func (obj *HAType) DeleteNetworks() error {
 	return nil
 }
 
+// DeleteInstance delete a VM with instance_id
 func (obj *HAType) DeleteInstance(instanceID string) error {
 	_, err := obj.Client.DeleteInstance(instanceID)
 	return err
 }
 
+// DeleteFirewall delete a firewall with firewall_id
 func (obj *HAType) DeleteFirewall(firewallID string) error {
 	_, err := obj.Client.DeleteFirewall(firewallID)
 	return err
 }
 
+// DeleteNetwork delete the network with network_id
 func (obj *HAType) DeleteNetwork(networkID string) error {
 	_, err := obj.Client.DeleteNetwork(networkID)
 	return err
 }
 
+// DeleteSSHKeyPair delete the SSH Keypair in CIVO
+func (obj *HAType) DeleteSSHKeyPair() error {
+	_, err := obj.Client.DeleteSSHKey(obj.SSHID)
+	return err
+}
+
+// GetNetwork get network object with the provided name
 func (obj *HAType) GetNetwork(networkName string) (net *civogo.Network, err error) {
 	net, err = obj.Client.GetNetwork(networkName)
 	return
 }
 
+// GetInstance get instance object with provided instance_id
 func (obj *HAType) GetInstance(instanceID string) (inst *civogo.Instance, err error) {
 	inst, err = obj.Client.GetInstance(instanceID)
 	return
 }
 
+// CreateInstance create a instance with provided Configuration
+// NOTE: initializationScript: if "" -> no default VM script when it is ready to serve
+// else -> provide the script to run when the VM is ready (no need to SSH into to exec script)
+// mention the `#!/bin/bash` for scripts
 func (obj *HAType) CreateInstance(instanceName, firewallID, NodeSize, initializationScript string, public bool) (inst *civogo.Instance, err error) {
 	publicIP := "create"
 	if !public {
@@ -476,6 +419,7 @@ func (obj *HAType) CreateInstance(instanceName, firewallID, NodeSize, initializa
 		TemplateID:       obj.DiskImgID,
 		NetworkID:        obj.NetworkID,
 		Script:           initializationScript,
+		SSHKeyID:         obj.SSHID,
 		PublicIPRequired: publicIP,
 	}
 
@@ -484,6 +428,7 @@ func (obj *HAType) CreateInstance(instanceName, firewallID, NodeSize, initializa
 	return
 }
 
+// CreateFirewall creates firewall with provided name and returns the firewall object
 func (obj *HAType) CreateFirewall(firewallName string) (firew *civogo.FirewallResult, err error) {
 	firewallConfig := &civogo.FirewallConfig{
 		Name:      firewallName,
@@ -496,6 +441,7 @@ func (obj *HAType) CreateFirewall(firewallName string) (firew *civogo.FirewallRe
 	return
 }
 
+// CreateNetwork creates network with provided name
 func (obj *HAType) CreateNetwork(networkName string) error {
 	net, err := obj.Client.NewNetwork(networkName)
 	if err != nil {
@@ -505,19 +451,31 @@ func (obj *HAType) CreateNetwork(networkName string) error {
 	return obj.Configuration.ConfigWriterNetworkID(net.ID)
 }
 
+// CreateSSHKeyPair upload's ssh keypair to CIVO using the Public Key generated by ssh-keygen
+func (obj *HAType) CreateSSHKeyPair(publicKey string) error {
+	sshRes, err := obj.Client.NewSSHKey(obj.ClusterName+"-"+strings.ToLower(obj.Client.Region)+"-ksctl-ha", publicKey)
+	if err != nil {
+		return err
+	}
+	obj.SSHID = sshRes.ID
+	err = obj.Configuration.ConfigWriterSSHID(sshRes.ID)
+	return err
+}
+
+// SaveKubeconfig stores the kubeconfig to state management file
 func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Client.Region
-	err := os.MkdirAll(util.GetPath(1, "civo", "ha", folderName), 0644)
+	err := os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "civo", "ha", folderName), 0644)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	_, err = os.Create(util.GetPath(1, "civo", "ha", folderName, "config"))
+	_, err = os.Create(util.GetPath(util.CLUSTER_PATH, "civo", "ha", folderName, "config"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	file, err := os.OpenFile(util.GetPath(1, "civo", "ha", folderName, "config"), os.O_WRONLY, 0750)
+	file, err := os.OpenFile(util.GetPath(util.CLUSTER_PATH, "civo", "ha", folderName, "config"), os.O_WRONLY, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
@@ -531,6 +489,7 @@ func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	return nil
 }
 
+// ExtractInstances fetch all VMs instance_id from state management file
 func ExtractInstances(clusterName, region string) (instIDs InstanceID, err error) {
 	data, err := GetConfig(clusterName, region)
 	if err != nil {
@@ -542,6 +501,7 @@ func ExtractInstances(clusterName, region string) (instIDs InstanceID, err error
 	return
 }
 
+// ExtractNetworks fetch the network_id from state management file
 func ExtractNetworks(clusterName, region string) (instIDs NetworkID, err error) {
 	data, err := GetConfig(clusterName, region)
 	if err != nil {
@@ -553,6 +513,33 @@ func ExtractNetworks(clusterName, region string) (instIDs NetworkID, err error) 
 	return
 }
 
+// DeleteAllPaths
+// WARNING: it is a destructive method
+// removes all the info related to cluster (i.e. stat management file, configs and related info)
 func DeleteAllPaths(clusterName, region string) error {
-	return os.RemoveAll(util.GetPath(1, "civo", "ha", clusterName+" "+region))
+	return os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "civo", "ha", clusterName+" "+region))
+}
+
+// UploadSSHKey it creates a ssh keypair saves to state management file and uploads it to CIVO
+func (ha *HAType) UploadSSHKey() (err error) {
+	path := util.GetPath(util.OTHER_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
+	err = os.MkdirAll(path, 0755)
+	if err != nil {
+		return
+	}
+	keyPairToUpload, err := util.CreateSSHKeyPair("civo", ha.ClusterName, ha.Client.Region)
+	if err != nil {
+		return
+	}
+
+	err = ha.CreateSSHKeyPair(keyPairToUpload)
+
+	// ------- Setting the ssh configs only the public ips used will change
+	ha.SSH_Payload.UserName = "root"
+	ha.SSH_Payload.PathPrivateKey = util.GetPath(util.SSH_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
+	ha.SSH_Payload.Output = ""
+	ha.SSH_Payload.PublicIP = ""
+	// ------
+
+	return
 }

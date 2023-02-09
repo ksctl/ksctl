@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 // HAPROXY LOADBALANCER
@@ -54,9 +55,10 @@ systemctl restart haproxy
 	return script
 }
 
-func ConfigLoadBalancer(instance *civogo.Instance, CPIPs []string) error {
+func (obj *HAType) ConfigLoadBalancer(instance *civogo.Instance, CPIPs []string) error {
 	getScript := configLBscript(CPIPs)
-	err := ExecWithoutOutput(instance.PublicIP, instance.InitialPassword, getScript, true)
+	obj.SSH_Payload.PublicIP = instance.PublicIP
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, getScript, true)
 	if err == nil {
 		log.Println("✅ Configured LoadBalancer")
 	}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 // scriptWithoutCP_1 script used to configure the control-plane-1 with no need of output inital
@@ -84,12 +85,16 @@ func scriptKUBECONFIG() string {
 cat /etc/rancher/k3s/k3s.yaml`
 }
 
-func FetchKUBECONFIG(instanceCP *civogo.Instance) (string, error) {
-	kubeconfig, err := ExecWithOutput(instanceCP.PublicIP, instanceCP.InitialPassword, scriptKUBECONFIG(), true)
+func (obj *HAType) FetchKUBECONFIG(instanceCP *civogo.Instance) (string, error) {
+	obj.SSH_Payload.PublicIP = instanceCP.PublicIP
+	obj.SSH_Payload.Output = ""
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptKUBECONFIG(), true)
+
 	if err != nil {
 		return "", nil
 	}
-	return kubeconfig, nil
+
+	return obj.SSH_Payload.Output, nil
 }
 
 func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
@@ -138,12 +143,18 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 
 }
 
+// GetTokenFromCP_1 used to extract the K3S_TOKEN from the first Controlplane node
 func (obj *HAType) GetTokenFromCP_1(instance *civogo.Instance) string {
-	token, err := ExecWithOutput(instance.PublicIP, instance.InitialPassword, scriptWithCP_1(), true)
+	obj.SSH_Payload.PublicIP = instance.PublicIP
+	obj.SSH_Payload.Output = ""
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
 	if err != nil {
 		return ""
 	}
+	token := obj.SSH_Payload.Output
+	obj.SSH_Payload.Output = ""
 	err = obj.Configuration.ConfigWriterServerToken(token)
+
 	if err != nil {
 		return ""
 	}

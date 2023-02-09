@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
@@ -26,15 +27,14 @@ type CivoProvider struct {
 	CNIPlugin   string
 }
 
+// Credentials accept the api_token for CIVO auth and authorization from user
 func Credentials() bool {
-	// _, err := os.ReadFile(util.GetPath(0, "civo"))
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return false
-	// }
 
 	apikey := ""
 	fmt.Println("Enter your API-TOKEN-KEY: ")
+	// FIXME: make the APIKEY scan as password based text
+	// More info:
+	//    to does not hide the apikey when the user is typing
 	_, err := fmt.Scan(&apikey)
 	if err != nil {
 		panic(err.Error())
@@ -51,16 +51,9 @@ func Credentials() bool {
 		return false
 	}
 	return true
-
-	// _, err = file.Write([]byte(fmt.Sprintf("API-TOKEN-Key: %s", apikey)))
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return false
-	// }
-	// return true
 }
 
-// fetchAPIKey returns the API key from the cred/civo file store
+// fetchAPIKey returns the api_token from the cred/civo.json file store
 func fetchAPIKey() string {
 
 	token, err := util.GetCred("civo")
@@ -72,22 +65,22 @@ func fetchAPIKey() string {
 	return token["token"]
 }
 
-// isPresent Checks whether the cluster to create is already had been created
+// isPresent Checks whether the cluster to create is already present
 func isPresent(offering, clusterName, Region string) bool {
-	// FIXME: the ha and managed have 2 different type of config storeage
-	_, err := os.ReadFile(util.GetPath(1, "civo", offering, clusterName+" "+Region, "info.json"))
+	_, err := os.ReadFile(util.GetPath(util.CLUSTER_PATH, "civo", offering, clusterName+" "+Region, "info.json"))
 	if os.IsNotExist(err) {
 		return false
 	}
 	return true
 }
 
-// cleanup called when error is encountered during creation og cluster
+// cleanup called when error is encountered during creation during cluster creation
 func cleanup(provider CivoProvider) error {
 	log.Println("[ERR] Cannot continue 😢")
 	return haDeleteClusterHandler(provider.ClusterName, provider.Region, false)
 }
 
+// validationOfArguments is name and region specified valid
 func validationOfArguments(name, region string) error {
 
 	if !util.IsValidRegionCIVO(region) {
@@ -101,6 +94,8 @@ func validationOfArguments(name, region string) error {
 	return nil
 }
 
+// CreateCluster calls the helper functions for cluster creation
+// based on the flag `HACluster` whether to delete managed cluster or HA type cluster
 func (provider CivoProvider) CreateCluster() error {
 	if provider.HACluster {
 		if err := haCreateClusterHandler(provider.ClusterName, provider.Region, provider.Spec.Disk,
@@ -114,6 +109,8 @@ func (provider CivoProvider) CreateCluster() error {
 	return managedCreateClusterHandler(payload)
 }
 
+// DeleteCluster calls the helper functions for cluster deletion
+// based on the flag `HACluster` whether to delete managed cluster or HA type cluster
 func (provider CivoProvider) DeleteCluster() error {
 	if provider.HACluster {
 		return haDeleteClusterHandler(provider.ClusterName, provider.Region, true)
@@ -121,6 +118,7 @@ func (provider CivoProvider) DeleteCluster() error {
 	return managedDeleteClusterHandler(provider.ClusterName, provider.Region)
 }
 
+// SwitchContext provides the export command for switching to specific provider's cluster
 func (provider CivoProvider) SwitchContext() error {
 	switch provider.HACluster {
 	case true:
@@ -131,7 +129,7 @@ func (provider CivoProvider) SwitchContext() error {
 			return nil
 		}
 	case false:
-		if isPresent("ha", provider.ClusterName, provider.Region) {
+		if isPresent("managed", provider.ClusterName, provider.Region) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region}
 			printKubeconfig.Printer(false, 0)
@@ -148,18 +146,29 @@ type printer struct {
 	Region      string
 }
 
-func (p printer) Printer(ha bool, a int) {
-	switch a {
+// Printer to print the KUBECONFIG ENV setter command
+// isHA: whether the cluster created is HA type or not
+// operation: 0 for created cluster operation and 1 for deleted cluster operation
+func (p printer) Printer(isHA bool, operation int) {
+	preFix := "export "
+	if runtime.GOOS == "windows" {
+		preFix = "$Env:"
+	}
+	switch operation {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		if ha {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPath(1, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
+		if isHA {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
 		} else {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPath(1, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
 		}
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("unset KUBECONFIG\n"))
+		if runtime.GOOS == "windows" {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+		} else {
+			fmt.Println("unset KUBECONFIG")
+		}
 	}
 	fmt.Println()
 }

@@ -112,13 +112,13 @@ flowchart LR;
   local:::green--managed-->localm[Create & Delete]:::green;
   local--HA-->localha[Create & Delete]:::black;
 
-  web--EKS-->aws{Types};
+  web--AWS-->aws{Types};
   aws:::blue--managed-->awsm[Create & Delete]:::red;
   aws--HA-->awsha[Create & Delete]:::red;
   
-  web--AKS-->az{Types};
-  az:::blue--managed-->azsm[Create & Delete]:::red;
-  az--HA-->azha[Create & Delete]:::red;
+  web--AZURE-->az{Types};
+  az:::blue--managed-->azsm[Create & Delete]:::blue;
+  az--HA-->azha[Create & Delete]:::blue;
 
 ```
 

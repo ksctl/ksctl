@@ -5,7 +5,7 @@ echo "|   Testing (api/util)    |"
 echo "+-------------------------+"
 
 cd utils/
-go test . -v && cd -
+go test -v . -timeout 10s && cd -
 
 
 
@@ -25,4 +25,4 @@ echo "+-------------------------+"
 cd civo/
 go test . -v && cd -
 
-
+rm -rvf ${HOME}/.ksctl
