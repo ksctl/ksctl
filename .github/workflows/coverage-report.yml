@@ -1,10 +1,10 @@
 name: Test and coverage
 
 on:
-  push:
-    paths:
-    - 'api/**_test.go'
-    branches: [ main ]
+  # push:
+  #   paths:
+  #   - 'api/**_test.go'
+  #   branches: [ main ]
   pull_request:
     paths:
     - 'api/**_test.go'

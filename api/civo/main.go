@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
@@ -186,18 +187,25 @@ type printer struct {
 // isHA: whether the cluster created is HA type or not
 // operation: 0 for created cluster operation and 1 for deleted cluster operation
 func (p printer) Printer(isHA bool, operation int) {
-	// FIXME: add platform dependent code missing windows env set
+	preFix := "export "
+	if runtime.GOOS == "windows" {
+		preFix = "$Env:"
+	}
 	switch operation {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
 		if isHA {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPath(util.CLUSTER_PATH, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
 		} else {
-			fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'\n", util.GetPath(util.CLUSTER_PATH, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
 		}
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("unset KUBECONFIG\n"))
+		if runtime.GOOS == "windows" {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+		} else {
+			fmt.Println("unset KUBECONFIG")
+		}
 	}
 	fmt.Println()
 }

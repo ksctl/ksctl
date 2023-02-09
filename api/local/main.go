@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"time"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -191,14 +192,36 @@ func CreateCluster(localConfig util.LocalProvider) error {
 	return nil
 }
 
-func (p printer) Printer(ha bool, a int) {
-	switch a {
+func (p printer) Printer(isHA bool, operation int) {
+	// switch a {
+	// case 0:
+	// 	fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
+	// 	fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", util.GetPath(util.OTHER_PATH, "local", p.ClusterName, "config")))
+	// case 1:
+	// 	fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
+	// 	fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
+	// }
+	// fmt.Println()
+
+	preFix := "export "
+	if runtime.GOOS == "windows" {
+		preFix = "$Env:"
+	}
+	switch operation {
 	case 0:
 		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", util.GetPath(util.OTHER_PATH, "local", p.ClusterName, "config")))
+		if isHA {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
+		} else {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
+		}
 	case 1:
 		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
-		fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
+		if runtime.GOOS == "windows" {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+		} else {
+			fmt.Println("unset KUBECONFIG")
+		}
 	}
 	fmt.Println()
 }
