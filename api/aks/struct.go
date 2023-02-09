@@ -6,11 +6,11 @@ import (
 )
 
 type AzureProvider struct {
-	User string
-	Cluster     *Cluster
-	HACluster   *HACluster
-	Spec        utils.Machine // do we really need this over here or keeping it inside cluster/HAcluster level makes more sense
-	Credentials *Cred
+	User           string
+	Cluster        *Cluster
+	HACluster      *HACluster
+	Spec           utils.Machine // do we really need this over here or keeping it inside cluster/HAcluster level makes more sense
+	Credentials    *Cred
 	ResourceGroups armresources.ResourceGroupsClientCreateOrUpdateResponse //can remove it, temp
 }
 
@@ -22,9 +22,8 @@ type HACluster struct {
 type Cluster struct {
 	ClusterName string
 	Region      string
-	NodeCount int32	
+	NodeCount   int32
 }
-
 
 type Cred struct {
 	SubscriptionID      string

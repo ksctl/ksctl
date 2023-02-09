@@ -17,7 +17,6 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect

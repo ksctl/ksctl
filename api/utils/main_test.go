@@ -12,18 +12,9 @@ import (
 
 func TestGetUsername(t *testing.T) {
 	if runtime.GOOS == "windows" {
-
 		assert.Equal(t, os.Getenv("USERPROFILE"), GetUserName(), "Unable to fetch correct username")
-
-		// assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\config\\abcd\\123w", GetUserName()),
-		// 	getKubeconfig("abcd", "123w"), "Kube config failed, as expected is not equal to actual")
-
 	} else {
-
 		assert.Equal(t, os.Getenv("HOME"), GetUserName(), "Unable to fetch correct username")
-
-		// assert.Equal(t, fmt.Sprintf("%s/.ksctl/config/abcd/123w", GetUserName()),
-		// getKubeconfig("abcd", "123w"), "Kube config failed, as expected is not equal to actual")
 	}
 }
 
@@ -140,3 +131,6 @@ func TestSSHExecute(t *testing.T) {
 	// payloadSSH := SSHPayload{UserName: "dipankar", PathPrivateKey: GetPath(SSH_PATH, "dcs"), PublicIP: "0.0.0.0", Output: ""}
 	// payloadSSH.SSHExecute()
 }
+
+// TODO: Add testing for credentials
+func TestSaveCred(t *testing.T) {}

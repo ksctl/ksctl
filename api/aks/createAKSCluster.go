@@ -10,7 +10,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 )
 
-
 func (cluster *Cluster) CreateCluster(ctx context.Context, cred *azidentity.DefaultAzureCredential, subscriptionID string, params map[string]string) error {
 
 	//creating the client
@@ -42,18 +41,17 @@ func (cluster *Cluster) CreateCluster(ctx context.Context, cred *azidentity.Defa
 			// Can we do anything about this?
 			ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{
 				ClientID: to.Ptr(os.Getenv("AZURE_CLIENT_ID")),
-				Secret: to.Ptr(os.Getenv("AZURE_CLIENT_SECRET")),
+				Secret:   to.Ptr(os.Getenv("AZURE_CLIENT_SECRET")),
 			},
 		},
 	}
-
 
 	managedCluster, err := client.BeginCreateOrUpdate(ctx, params["resourceGroupName"], cluster.ClusterName, clusterParam, nil)
 	if err != nil {
 		return err
 	}
 
-	timeout , err := managedCluster.PollUntilDone(ctx, nil)
+	timeout, err := managedCluster.PollUntilDone(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -61,5 +59,3 @@ func (cluster *Cluster) CreateCluster(ctx context.Context, cred *azidentity.Defa
 	fmt.Println("Created:", timeout)
 	return nil
 }
-
-

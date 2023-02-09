@@ -8,15 +8,13 @@ Kubesimplify
 package utils
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
 	"bytes"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -39,7 +37,6 @@ type AwsProvider struct {
 	Secret      string
 }
 
-
 //type AzureProvider struct {
 //	ClusterName         string
 //	HACluster           bool
@@ -50,7 +47,6 @@ type AwsProvider struct {
 //	ServicePrincipleKey string
 //	ServicePrincipleID  string
 //}
-
 
 type Machine struct {
 	ManagedNodes        int
@@ -179,17 +175,22 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 }
 
 func SaveCred(config interface{}, provider string) error {
+	if strings.Compare(provider, "civo") != 0 &&
+		strings.Compare(provider, "azure") != 0 &&
+		strings.Compare(provider, "aws") != 0 {
+		return fmt.Errorf("Invalid Provider (given): Unable to save configuration")
+	}
 
 	storeBytes, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
-	_, err = os.Create(GetPath(0, provider))
+	_, err = os.Create(GetPath(CREDENTIAL_PATH, provider))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	err = ioutil.WriteFile(GetPath(0, provider), storeBytes, 0640)
+	err = ioutil.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -197,10 +198,9 @@ func SaveCred(config interface{}, provider string) error {
 	return nil
 }
 
-
 func GetCred(provider string) (i map[string]string, err error) {
 
-	fileBytes, err := os.ReadFile(GetPath(0, provider))
+	fileBytes, err := os.ReadFile(GetPath(CREDENTIAL_PATH, provider))
 
 	if err != nil {
 		return
@@ -237,6 +237,10 @@ func getSSHPath(provider string, params ...string) string {
 
 // getPaths to generate path irrespective of the cluster
 // its a free flowing (Provider field has not much significance)
+// TODO: make this function work like '%s/.ksctl/%s'
+// here the user has to provide where to go for instance
+// getPaths("civo", "config", "dcscscsc", "dcsdcsc")
+// the first string in params.. must be config or cred otherwise throw an error
 func getPaths(provider string, params ...string) string {
 	var ret strings.Builder
 
