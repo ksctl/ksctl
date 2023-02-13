@@ -9,6 +9,7 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
     ldflags: -w -s -X github.com/kubesimplify/ksctl/selfupdate.BuildDate={{.Date}} -X github.com/kubesimplify/ksctl/selfupdate.GitSummary={{.Version}}
     env:
       - CGO_ENABLED=0
