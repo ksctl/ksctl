@@ -2,7 +2,7 @@
 
 A Kubernetes CLI which can manage Kubernetes cluster among different cloud providers
 
-[![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml)
+[![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/ci.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml)
 
 <img src="./img/ksctl.png" style="height: auto!important;width: 600px !important;"/>
 
@@ -33,12 +33,19 @@ Windows | :heavy_check_mark:
 # Single command install
 
 ## Linux
+
 ```bash
+# ARM based
+curl -sLO #<>
+# AMD based
 curl -sLO #<>
 ```
 
-## MacOs
+## MacOS
 ```bash
+# ARM based
+curl -sLO #<>
+# AMD based
 curl -sLO #<>
 ```
 
