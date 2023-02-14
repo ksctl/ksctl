@@ -32,24 +32,15 @@ Windows | :heavy_check_mark:
 
 # Single command install
 
-## Linux
+## Linux and MacOS
 
 ```bash
-# ARM based
-curl -sLO #<>
-# AMD based
-curl -sLO #<>
+bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.sh)
 ```
 
-## MacOS
-```bash
-# ARM based
-curl -sLO #<>
-# AMD based
-curl -sLO #<>
-```
 
 ## Windows
+TODO: add the script to install.ps1
 ```powershell
 iwr -useb #<> | iex
 ```
@@ -59,13 +50,13 @@ iwr -useb #<> | iex
 ## Linux & MacOs
 
 ```bash
-
+bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.sh)
 ```
 
 ## Windows
-
-```bash
-
+TODO: add the script to uninstall.ps1
+```powershell
+iwr -useb #<> | iex
 ```
 
 # Build from src
