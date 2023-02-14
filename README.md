@@ -97,7 +97,7 @@ make uninstall
 ### Install
 
 ```ps
-./install.ps1
+./builder.ps1
 ```
 
 ### Uninstall
