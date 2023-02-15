@@ -37,17 +37,6 @@ type AwsProvider struct {
 	Secret      string
 }
 
-//type AzureProvider struct {
-//	ClusterName         string
-//	HACluster           bool
-//	Region              string
-//	Spec                Machine
-//	SubscriptionID      string
-//	TenantID            string
-//	ServicePrincipleKey string
-//	ServicePrincipleID  string
-//}
-
 type Machine struct {
 	ManagedNodes        int
 	Disk                string
