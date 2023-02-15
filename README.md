@@ -42,7 +42,7 @@ bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install
 ## Windows
 TODO: add the script to install.ps1
 ```powershell
-iwr -useb #<> | iex
+iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
 ```
 
 # Uninstall?
@@ -56,7 +56,7 @@ bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninsta
 ## Windows
 TODO: add the script to uninstall.ps1
 ```powershell
-iwr -useb #<> | iex
+iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.ps1 | iex
 ```
 
 # Build from src

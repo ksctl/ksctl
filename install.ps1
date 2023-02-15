@@ -61,7 +61,7 @@ New-Item -ItemType Directory -Force -Path $ksctl | Out-Null
 
 Copy-Item ksctl.exe -Destination "$ksctl/" -Force | Out-Null
 
-Remove-Item ksctl* CHANGELOG.md README.md ./LICENSE
+Remove-Item ksctl*
 
 
 Write-Host "[V] Finished Installation" -ForegroundColor DarkGreen
