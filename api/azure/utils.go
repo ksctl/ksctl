@@ -1,36 +1,98 @@
 package azure
 
 import (
+	"os"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	util "github.com/kubesimplify/ksctl/api/utils"
+	"golang.org/x/net/context"
 )
 
-type AzureProvider struct {
-	ClusterName         string
-	HACluster           bool
-	Region              string
-	Spec                util.Machine
-	SubscriptionID      string
-	TenantID            string
-	ServicePrincipleKey string
-	ServicePrincipleID  string
-	ResourceGroups      armresources.ResourceGroupsClientCreateOrUpdateResponse //can remove it, temp
+type AzureOperations interface {
+	CreateCluster()
+	DeleteCluster()
 }
 
-// type HACluster struct {
-// 	HAClusterName string
-// 	Region        string
-// }
+type AzureInfra interface {
+	CreateResourceGroup(context.Context) error
+	DeleteResourceGroup(context.Context) error
+	CreateVM() error
+	DeleteVM() error
+}
 
-// type Cluster struct {
-// 	ClusterName string
-// 	Region      string
-// 	NodeCount   int32
-// }
+func getAzureManagedClusterClient(cred *AzureProvider) (*armcontainerservice.ManagedClustersClient, error) {
 
-// type Cred struct {
-// 	SubscriptionID      string
-// 	TenantID            string
-// 	servicePrincipleKey string
-// 	servicePrincipleID  string
-// }
+	if len(os.Getenv("AZURE_TENANT_ID")) == 0 {
+		tokens, err := util.GetCred("azure")
+		if err != nil {
+			return nil, err
+		}
+		cred.SubscriptionID = tokens["subscription_id"]
+		err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
+		if err != nil {
+			return nil, err
+		}
+		err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
+		if err != nil {
+			return nil, err
+		}
+		err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return managedClustersClient, nil
+}
+
+func getAzureResourceGroupsClient(cred *AzureProvider) (*armresources.ResourceGroupsClient, error) {
+	if len(os.Getenv("AZURE_TENANT_ID")) == 0 {
+		// not set
+		tokens, err := util.GetCred("azure")
+		if err != nil {
+			return nil, err
+		}
+		cred.SubscriptionID = tokens["subscription_id"]
+		err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
+		if err != nil {
+			return nil, err
+		}
+		err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
+		if err != nil {
+			return nil, err
+		}
+		err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
+		if err != nil {
+			return nil, err
+		}
+	}
+	resourceGroupClient, err := armresources.NewResourceGroupsClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resourceGroupClient, nil
+}
+
+func (obj *AzureProvider) CreateResourceGroup(ctx context.Context) error {
+	resourceGroupClient, err := getAzureResourceGroupsClient(obj)
+	if err != nil {
+		return err
+	}
+	_, err = resourceGroupClient.CreateOrUpdate(
+		ctx,
+		obj.ResourceGroupName,
+		armresources.ResourceGroup{
+			Location: to.Ptr(obj.Region),
+		},
+		nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}

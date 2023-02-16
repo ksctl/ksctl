@@ -57,10 +57,10 @@ type CivoCredential struct {
 }
 
 type AzureCredential struct {
-	SubscriptionID      string `json:"subscription_id"`
-	TenantID            string `json:"tenant_id"`
-	ServicePrincipleKey string `json:"service_principal_key"`
-	ServicePrincipleID  string `json:"service_principal_id"`
+	SubscriptionID string `json:"subscription_id"`
+	TenantID       string `json:"tenant_id"`
+	ClientID       string `json:"client_id"`
+	ClientSecret   string `json:"client_secret"`
 }
 
 type AwsCredential struct {

@@ -11,6 +11,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/crypto v0.0.0-20220511200225-c6db032c6c88
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	gotest.tools v2.2.0+incompatible
 	sigs.k8s.io/kind v0.17.0
 )
@@ -35,7 +36,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
