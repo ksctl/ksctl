@@ -21,6 +21,7 @@ Many cloud providers offer their flavor of Kubernetes. Each provider has its uni
 - Go (if building from source)
 - Administrative permission
 - Docker (if going to use Local provider)
+- Go version >1.19 for build process
 
 # Supported Platforms
 
