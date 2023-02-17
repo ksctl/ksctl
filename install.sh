@@ -1,22 +1,62 @@
 #!/bin/bash
+Red='\033[0;31m'
+Green='\033[0;32m'
+Blue='\033[0;34m'
+Yellow='\033[0;33m'
+NoColor='\033[0m' 
 
-# Get the binary from the source code
 
-#wget -O ~URL_OF_BINARY~
+# get the release version
+echo -e "${Yellow}Enter the ksctl version to install${NoColor}"
+read RELEASE_VERSION
 
-cd ./cli || echo -e "\033[31;40mPath couldn't be found\033[0m\n"
-# Check if sudo access
-go get -d
-go build -v -o ksctl .
-chmod +x ksctl
+echo -e "${Yellow}Enter the OS and corresponding Architecture${NoColor}"
+echo -e "${Blue}Enter [1] for Linux and [0] for MacOS${NoColor}"
+read OS
+
+echo -e "${Blue}Enter [1] for amd64 or x86_64 and [0] for arm64${NoColor}"
+read ARCH
+
+
+if [[ $ARCH -eq 1 ]]; then
+  ARCH="amd64"
+elif [[ $ARCH -eq 0 ]]; then
+  ARCH="arm64"
+else
+  echo -e "${Red}Invalid architecture${NoColor}"
+  exit 1
+fi
+
+if [[ $OS -eq 1 ]]; then
+  OS="linux"
+elif [[ $OS -eq 0 ]]; then
+  OS="darwin"
+else
+  echo -e "${Red}Invalid OS${NoColor}"
+  exit 1
+fi
+
+
+cd /tmp
+sudo wget -q https://github.com/kubesimplify/ksctl/releases/download/v${RELEASE_VERSION}/ksctl_${RELEASE_VERSION}_checksums.txt
+sudo wget https://github.com/kubesimplify/ksctl/releases/download/v${RELEASE_VERSION}/ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz
+sudo wget -q https://github.com/kubesimplify/ksctl/releases/download/v${RELEASE_VERSION}/ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz.cert
+
+file=$(sha256sum ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz | awk '{print $1}')
+checksum=$(cat ksctl_${RELEASE_VERSION}_checksums.txt | grep ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz | awk '{print $1}')
+
+if [[ $file != $checksum ]]; then
+  echo -e "${Red}Checksum didn't matched!${NoColor}"
+  exit 1
+else
+  echo -e "${Green}CheckSum are verified${NoColor}"
+fi
+
+sudo tar -xvf ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz
 
 sudo mv -v ksctl /usr/local/bin/ksctl
-
 # Setup the configurations dir
 mkdir -p ${HOME}/.ksctl/cred
-# touch ${HOME}/.ksctl/cred/aws
-# touch ${HOME}/.ksctl/cred/azure
-# touch ${HOME}/.ksctl/cred/civo
 
 mkdir -p ${HOME}/.ksctl/config/civo/ha
 mkdir -p ${HOME}/.ksctl/config/civo/managed
@@ -24,6 +64,4 @@ mkdir ${HOME}/.ksctl/config/azure
 mkdir ${HOME}/.ksctl/config/aws
 mkdir ${HOME}/.ksctl/config/local
 
-echo -e "\033[32;40mINSTALL COMPLETE\033[0m\n"
-
-cd - || echo -e "\033[31;40mFailed to move to previous directory\033[0m\n"
+echo -e "${Green}INSTALL COMPLETE${NoColor}"
