@@ -15,10 +15,9 @@ mkdir -Force $env:USERPROFILE\.ksctl\config\civo
 mkdir -Force $env:USERPROFILE\.ksctl\config\civo\ha
 mkdir -Force $env:USERPROFILE\.ksctl\config\civo\managed
 mkdir -Force $env:USERPROFILE\.ksctl\config\local
-
-# New-Item -Force $env:USERPROFILE\.ksctl\cred\civo
-# New-Item -Force $env:USERPROFILE\.ksctl\cred\aws
-# New-Item -Force $env:USERPROFILE\.ksctl\cred\azure
+mkdir -Force $env:USERPROFILE\.ksctl\config\azure
+mkdir -Force $env:USERPROFILE\.ksctl\config\azure\ha
+mkdir -Force $env:USERPROFILE\.ksctl\config\azure\managed
 
 $env:GOOS = 'windows'
 $env:GOARCH = 'amd64'

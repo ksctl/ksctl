@@ -15,34 +15,66 @@ type AzureOperations interface {
 	DeleteCluster()
 }
 
+type AzureManagedState struct {
+	ClusterName       string `json:"cluster_name"`
+	ResourceGroupName string `json:"resource_group_name"`
+}
+
 type AzureInfra interface {
 	CreateResourceGroup(context.Context) error
 	DeleteResourceGroup(context.Context) error
 	CreateVM() error
 	DeleteVM() error
+	ConfigWriterManagedClusteName() error
+	ConfigWriterManagedResourceName() error
+	ConfigReaderManaged() error
+}
+
+func (config *AzureProvider) ConfigWriterManagedClusteName() error {
+	config.Config.ClusterName = config.ClusterName
+	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.ResourceGroupName+" "+config.Region)
+}
+
+func (config *AzureProvider) ConfigWriterManagedResourceName() error {
+	config.Config.ResourceGroupName = config.ResourceGroupName
+	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.ResourceGroupName+" "+config.Region)
+}
+
+func (config *AzureProvider) ConfigReaderManaged() error {
+	data, err := util.GetState("azure", config.ClusterName+" "+config.ResourceGroupName+" "+config.Region)
+	if err != nil {
+		return err
+	}
+	// populating the state data
+	config.Config.ClusterName = data["cluster_name"]
+	config.Config.ResourceGroupName = data["resource_group_name"]
+	config.ClusterName = config.Config.ClusterName
+	config.ResourceGroupName = config.Config.ResourceGroupName
+	return nil
+}
+
+func setRequiredENV_VAR(ctx context.Context, cred *AzureProvider) error {
+	tokens, err := util.GetCred("azure")
+	if err != nil {
+		return err
+	}
+	cred.SubscriptionID = tokens["subscription_id"]
+	err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
+	if err != nil {
+		return err
+	}
+	err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
+	if err != nil {
+		return err
+	}
+	err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getAzureManagedClusterClient(cred *AzureProvider) (*armcontainerservice.ManagedClustersClient, error) {
-
-	if len(os.Getenv("AZURE_TENANT_ID")) == 0 {
-		tokens, err := util.GetCred("azure")
-		if err != nil {
-			return nil, err
-		}
-		cred.SubscriptionID = tokens["subscription_id"]
-		err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
-		if err != nil {
-			return nil, err
-		}
-		err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
-		if err != nil {
-			return nil, err
-		}
-		err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
 	if err != nil {
@@ -52,26 +84,7 @@ func getAzureManagedClusterClient(cred *AzureProvider) (*armcontainerservice.Man
 }
 
 func getAzureResourceGroupsClient(cred *AzureProvider) (*armresources.ResourceGroupsClient, error) {
-	if len(os.Getenv("AZURE_TENANT_ID")) == 0 {
-		// not set
-		tokens, err := util.GetCred("azure")
-		if err != nil {
-			return nil, err
-		}
-		cred.SubscriptionID = tokens["subscription_id"]
-		err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
-		if err != nil {
-			return nil, err
-		}
-		err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
-		if err != nil {
-			return nil, err
-		}
-		err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
-		if err != nil {
-			return nil, err
-		}
-	}
+
 	resourceGroupClient, err := armresources.NewResourceGroupsClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -94,5 +107,22 @@ func (obj *AzureProvider) CreateResourceGroup(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context) error {
+	resourceGroupClient, err := getAzureResourceGroupsClient(obj)
+	if err != nil {
+		return err
+	}
+	pollerResp, err := resourceGroupClient.BeginDelete(ctx, obj.ResourceGroupName, nil)
+	if err != nil {
+		return err
+	}
+	_, err = pollerResp.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

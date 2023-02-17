@@ -73,54 +73,61 @@ func Credentials() bool {
 }
 
 type AzureProvider struct {
-	ClusterName    string
-	HACluster      bool
-	Region         string
-	Spec           util.Machine
-	SubscriptionID string
-	// TenantID            string
-	// ServicePrincipleKey string
-	// ServicePrincipleID  string
+	ClusterName       string
+	HACluster         bool
+	Region            string
+	Spec              util.Machine
+	SubscriptionID    string
+	Config            *AzureManagedState
 	ResourceGroupName string
 	AzureTokenCred    azcore.TokenCredential
 }
 
 func (obj *AzureProvider) CreateCluster() {
+
+	ctx := context.Background()
+	setRequiredENV_VAR(ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctx := context.Background()
+	generateResourceName(obj)
+
 	if obj.HACluster {
 		// HA CLUSTER CREATE
 		log.Println("TO BE DEVELOPED")
 	} else {
 		obj.AzureTokenCred = cred
-		managedCluster, err := managedCreateClusterHandler(ctx, obj)
+		obj.Config = &AzureManagedState{}
+		_, err := managedCreateClusterHandler(ctx, obj)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("managed cluster created: ", *managedCluster.ID)
-
+		// TODO: Recieve the KUBECONFIG AND SAVE IT TO THE DIRECTORY
+		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.ResourceGroupName, obj.Region)
 	}
-
 }
 
 func (obj *AzureProvider) DeleteCluster() {
+	ctx := context.Background()
+	setRequiredENV_VAR(ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctx := context.Background()
 	if obj.HACluster {
 		// HA CLUSTER CREATE
 		log.Println("TO BE DEVELOPED")
 	} else {
 		obj.AzureTokenCred = cred
-		managedCluster, err := managedDeleteClusterHandler(ctx, obj)
+		obj.Config = &AzureManagedState{}
+		err := managedDeleteClusterHandler(ctx, obj)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("managed cluster deleted: ", *managedCluster.ID)
+		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "managed", obj.ClusterName+" "+obj.ResourceGroupName+" "+obj.Region)); err != nil {
+			log.Println(err)
+		}
+		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.ResourceGroupName, obj.Region)
 	}
 }

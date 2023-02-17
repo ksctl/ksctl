@@ -10,7 +10,7 @@ require (
 	github.com/civo/civogo v0.3.21
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/crypto v0.0.0-20220511200225-c6db032c6c88
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	gotest.tools v2.2.0+incompatible
 	sigs.k8s.io/kind v0.17.0

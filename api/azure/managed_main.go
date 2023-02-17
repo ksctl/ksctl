@@ -2,31 +2,52 @@ package azure
 
 import (
 	"context"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 )
 
-func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
-	// resourceGroupClient, err := armresources.NewResourceGroupsClient(subscriptionID, cred, nil)
-	// if err != nil {
-	// 	return err
+func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider) error {
+
+	managedClustersClient, err := getAzureManagedClusterClient(azureConfig)
+	if err != nil {
+		return err
+	}
+	azureConfig.ResourceGroupName = azureConfig.ClusterName + "-ksctl"
+
+	if err := azureConfig.ConfigReaderManaged(); err != nil {
+		return err
+	}
+
+	pollerResp, err := managedClustersClient.BeginDelete(ctx, azureConfig.ResourceGroupName, azureConfig.ClusterName, nil)
+	if err != nil {
+		return err
+	}
+	_, err = pollerResp.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Deleted the AKS cluster " + azureConfig.ClusterName)
+	return azureConfig.DeleteResourceGroup(ctx)
+}
+
+func generateResourceName(azureConfig *AzureProvider) {
+	// letter := "abcdefghijklmnopqrstuvwxyz0123456789"
+
+	// noOfCharacters := 5
+	var ret strings.Builder
+	ret.WriteString(azureConfig.ClusterName + "-ksctl")
+	// for noOfCharacters > 0 {
+	// 	char := string(letter[rand.Intn(len(letter))])
+	// 	ret.WriteString(char)
+	// 	noOfCharacters--
 	// }
 
-	// pollerResp, err := resourceGroupClient.BeginDelete(ctx, resourceGroupName, nil)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// _, err = pollerResp.PollUntilDone(ctx, nil)
-	// if err != nil {
-	// 	return err
-	// }
-	// TODO: Add the delete Resource group
-	// refer https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/d9f41170eaf6958209047f42c8ae4d0536577422/services/compute/container_cluster.go#L21
-	// also this https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/main/sdk/resourcemanager/containerservice/managed_clusters/main.go
-	return nil, nil
+	azureConfig.ResourceGroupName = ret.String()
 }
 
 func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
@@ -36,11 +57,14 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return nil, err
 	}
 
+	log.Println("Created the Resource Group " + azureConfig.ResourceGroupName)
+
 	managedClustersClient, err := getAzureManagedClusterClient(azureConfig)
 	if err != nil {
 		return nil, err
 	}
 
+	// INFO: do check the CreatorUpdate function used https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/d9f41170eaf6958209047f42c8ae4d0536577422/services/compute/container_cluster.go
 	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
 		ctx,
 		azureConfig.ResourceGroupName,
@@ -74,9 +98,16 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	if err != nil {
 		return nil, err
 	}
+
+	azureConfig.ConfigWriterManagedClusteName()
+	azureConfig.ConfigWriterManagedResourceName()
+
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("{INFO} %v\n", resp.ManagedCluster.Properties.KubernetesVersion)
+	log.Printf("{INFO} %v\n", resp.ManagedCluster.Properties.LinuxProfile)
+
 	return &resp.ManagedCluster, nil
 }

@@ -14,7 +14,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -179,7 +178,32 @@ func SaveCred(config interface{}, provider string) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
+	err = os.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
+	if err != nil {
+		return err
+	}
+	log.Println("💾 configuration")
+	return nil
+}
+
+func SaveState(config interface{}, provider, clusterDir string) error {
+	if strings.Compare(provider, "civo") != 0 &&
+		strings.Compare(provider, "azure") != 0 &&
+		strings.Compare(provider, "aws") != 0 {
+		return fmt.Errorf("invalid Provider (given): Unable to save configuration")
+	}
+	storeBytes, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, "managed", clusterDir), 0755); err != nil && !os.IsExist(err) {
+		return err
+	}
+	_, err = os.Create(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -190,6 +214,22 @@ func SaveCred(config interface{}, provider string) error {
 func GetCred(provider string) (i map[string]string, err error) {
 
 	fileBytes, err := os.ReadFile(GetPath(CREDENTIAL_PATH, provider))
+
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(fileBytes, &i)
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func GetState(provider, clusterDir string) (i map[string]string, err error) {
+	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"))
 
 	if err != nil {
 		return
