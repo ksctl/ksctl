@@ -37,6 +37,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build and install the latest version
         run: |
-          .\install.ps1
+          .\builder.ps1
           cd C:\Users\runneradmin\AppData\Local\ksctl
           .\ksctl.exe -h
