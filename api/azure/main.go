@@ -16,16 +16,6 @@ import (
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
-// fetchAPIKey returns the API key from the cred/civo file store
-func fetchAPIKey() string {
-
-	_, err := os.ReadFile(util.GetPath(util.CREDENTIAL_PATH, "azure"))
-	if err != nil {
-		return ""
-	}
-	return ""
-}
-
 func Credentials() bool {
 	fmt.Println("Enter your SUBSCRIPTION ID 👇")
 	skey, err := util.UserInputCredentials()
