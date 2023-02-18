@@ -8,6 +8,15 @@ import (
 	"testing"
 
 	"gotest.tools/assert"
+	"crypto/rand"
+    "crypto/rsa"
+    "crypto/x509"
+    "encoding/pem"
+    "fmt"
+    "golang.org/x/crypto/ssh"
+    "io/ioutil"
+    "net"
+    "os"
 )
 
 func TestGetUsername(t *testing.T) {
@@ -139,4 +148,5 @@ func TestSSHExecute(t *testing.T) {
 	// make a dummy ssh server with ssh keypair auth
 	// payloadSSH := SSHPayload{UserName: "dipankar", PathPrivateKey: GetPath(SSH_PATH, "dcs"), PublicIP: "0.0.0.0", Output: ""}
 	// payloadSSH.SSHExecute()
+
 }
