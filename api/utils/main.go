@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type AwsProvider struct {
@@ -426,4 +427,15 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	}
 
 	return nil
+}
+
+func UserInputCredentials() (string, error) {
+
+	fmt.Print("    Enter Secret-> ")
+	bytePassword, err := terminal.ReadPassword(0)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println()
+	return strings.TrimSpace(string(bytePassword)), nil
 }

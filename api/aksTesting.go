@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kubesimplify/ksctl/api/azure"
-	"github.com/kubesimplify/ksctl/api/utils"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		ClusterName: "demo",
 		HACluster:   false,
 		Region:      "eastus",
-		Spec: utils.Machine{
+		Spec: util.Machine{
 			ManagedNodes: 2,
 		},
 	}

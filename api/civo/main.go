@@ -30,12 +30,8 @@ type CivoProvider struct {
 // Credentials accept the api_token for CIVO auth and authorization from user
 func Credentials() bool {
 
-	apikey := ""
-	fmt.Println("Enter your API-TOKEN-KEY: ")
-	// FIXME: make the APIKEY scan as password based text
-	// More info:
-	//    to does not hide the apikey when the user is typing
-	_, err := fmt.Scan(&apikey)
+	fmt.Println("Enter your API-TOKEN-KEY 👇")
+	apikey, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -61,7 +57,7 @@ func fetchAPIKey() string {
 	if err != nil {
 		return ""
 	}
-	
+
 	return token["token"]
 }
 

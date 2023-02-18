@@ -27,30 +27,26 @@ func fetchAPIKey() string {
 }
 
 func Credentials() bool {
-	skey := ""
-	tid := ""
-	pi := ""
-	pk := ""
-	fmt.Println("Enter your SUBSCRIPTION ID: ")
-	_, err := fmt.Scan(&skey)
+	fmt.Println("Enter your SUBSCRIPTION ID 👇")
+	skey, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fmt.Println("Enter your TENANT ID: ")
-	_, err = fmt.Scan(&tid)
+	fmt.Println("Enter your TENANT ID 👇")
+	tid, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fmt.Println("Enter your CLIENT ID: ")
-	_, err = fmt.Scan(&pi)
+	fmt.Println("Enter your CLIENT ID 👇")
+	cid, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fmt.Println("Enter your CLIENT SECRET: ")
-	_, err = fmt.Scan(&pk)
+	fmt.Println("Enter your CLIENT SECRET 👇")
+	cs, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -58,8 +54,8 @@ func Credentials() bool {
 	apiStore := util.AzureCredential{
 		SubscriptionID: skey,
 		TenantID:       tid,
-		ClientID:       pi,
-		ClientSecret:   pk,
+		ClientID:       cid,
+		ClientSecret:   cs,
 	}
 
 	err = util.SaveCred(apiStore, "azure")
