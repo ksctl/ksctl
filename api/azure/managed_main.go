@@ -2,12 +2,14 @@ package azure
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider) error {
@@ -22,6 +24,8 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return err
 	}
 
+	log.Println("Deleting AKS cluster...")
+
 	pollerResp, err := managedClustersClient.BeginDelete(ctx, azureConfig.ResourceGroupName, azureConfig.ClusterName, nil)
 	if err != nil {
 		return err
@@ -32,10 +36,26 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	}
 
 	log.Println("Deleted the AKS cluster " + azureConfig.ClusterName)
-	return azureConfig.DeleteResourceGroup(ctx)
+	err = azureConfig.DeleteResourceGroup(ctx)
+	if err != nil {
+		return err
+	}
+	var printKubeconfig util.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.ResourceGroupName}
+	printKubeconfig.Printer(false, 1)
+	return nil
+}
+
+type printer struct {
+	ClusterName  string
+	Region       string
+	ResourceName string
 }
 
 func generateResourceName(azureConfig *AzureProvider) {
+	// random resourcename didnt went well as the resourcename entered by the user must be easier
+	// i.e. the user has mentioned the clusterName and so resourcename will be clusterName + "-ksctl"
+
 	// letter := "abcdefghijklmnopqrstuvwxyz0123456789"
 
 	// noOfCharacters := 5
@@ -106,8 +126,23 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("{INFO} %v\n", resp.ManagedCluster.Properties.KubernetesVersion)
-	log.Printf("{INFO} %v\n", resp.ManagedCluster.Properties.LinuxProfile)
 
+	kubeconfig, err := managedClustersClient.ListClusterAdminCredentials(ctx, azureConfig.ResourceGroupName, azureConfig.ClusterName, nil)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(kubeconfig.Kubeconfigs[0].Name)
+	KUBECONFIG := string(kubeconfig.Kubeconfigs[0].Value)
+
+	log.Println("NOTE: the kubeconfig to be saved has admin credentials")
+
+	if err := azureConfig.kubeconfigWriter(KUBECONFIG); err != nil {
+		return nil, err
+	}
+
+	// TODO: Try to make KubeconfigPrinter as global utility function across all Providers
+	var printKubeconfig util.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.ResourceGroupName}
+	printKubeconfig.Printer(false, 0)
 	return &resp.ManagedCluster, nil
 }

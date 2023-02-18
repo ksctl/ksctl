@@ -9,12 +9,14 @@ import (
 
 func main() {
 	var payload azure.AzureOperations
+	// what all things users can config
+	// also add the node type
 	payload = &azure.AzureProvider{
-		ClusterName: "dipankar-demo",
+		ClusterName: "demo",
 		HACluster:   false,
-		Region:      "westus",
+		Region:      "eastus",
 		Spec: utils.Machine{
-			ManagedNodes: 1,
+			ManagedNodes: 2,
 		},
 	}
 	fmt.Println("Enter [1] to create [0] to delete")
@@ -22,8 +24,8 @@ func main() {
 	fmt.Scanf("%d", &choice)
 	switch choice {
 	case 0:
-		payload.DeleteCluster()
+		fmt.Println(payload.DeleteCluster())
 	case 1:
-		payload.CreateCluster()
+		fmt.Println(payload.CreateCluster())
 	}
 }

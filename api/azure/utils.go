@@ -1,7 +1,10 @@
 package azure
 
 import (
+	"fmt"
+	"log"
 	"os"
+	"runtime"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
@@ -11,8 +14,8 @@ import (
 )
 
 type AzureOperations interface {
-	CreateCluster()
-	DeleteCluster()
+	CreateCluster() error
+	DeleteCluster() error
 }
 
 type AzureManagedState struct {
@@ -28,6 +31,8 @@ type AzureInfra interface {
 	ConfigWriterManagedClusteName() error
 	ConfigWriterManagedResourceName() error
 	ConfigReaderManaged() error
+	kubeconfigWriter(string) error
+	kubeconfigReader() ([]byte, error)
 }
 
 func (config *AzureProvider) ConfigWriterManagedClusteName() error {
@@ -125,4 +130,51 @@ func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (obj *AzureProvider) kubeconfigWriter(kubeconfig string) error {
+	clusterDirName := obj.ClusterName + " " + obj.ResourceGroupName + " " + obj.Region
+	typeOfCluster := "managed"
+	if obj.HACluster {
+		typeOfCluster = "ha"
+	}
+	err := os.WriteFile(util.GetPath(util.CLUSTER_PATH, "azure", typeOfCluster, clusterDirName, "config"), []byte(kubeconfig), 0644)
+	if err != nil {
+		return err
+	}
+	log.Println("💾 configuration")
+	return nil
+}
+
+func (obj *AzureProvider) kubeconfigReader() ([]byte, error) {
+	clusterDirName := obj.ClusterName + " " + obj.ResourceGroupName + " " + obj.Region
+	typeOfCluster := "managed"
+	if obj.HACluster {
+		typeOfCluster = "ha"
+	}
+	return os.ReadFile(util.GetPath(util.CLUSTER_PATH, "azure", typeOfCluster, clusterDirName, "config"))
+}
+
+func (p printer) Printer(isHA bool, operation int) {
+	preFix := "export "
+	if runtime.GOOS == "windows" {
+		preFix = "$Env:"
+	}
+	switch operation {
+	case 0:
+		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
+		if isHA {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "azure", "ha", p.ClusterName+" "+p.ResourceName+" "+p.Region, "config")))
+		} else {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "azure", "managed", p.ClusterName+" "+p.ResourceName+" "+p.Region, "config")))
+		}
+	case 1:
+		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
+		if runtime.GOOS == "windows" {
+			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+		} else {
+			fmt.Println("unset KUBECONFIG")
+		}
+	}
+	fmt.Println()
 }

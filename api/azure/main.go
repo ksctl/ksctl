@@ -83,13 +83,13 @@ type AzureProvider struct {
 	AzureTokenCred    azcore.TokenCredential
 }
 
-func (obj *AzureProvider) CreateCluster() {
+func (obj *AzureProvider) CreateCluster() error {
 
 	ctx := context.Background()
 	setRequiredENV_VAR(ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	generateResourceName(obj)
 
@@ -101,19 +101,19 @@ func (obj *AzureProvider) CreateCluster() {
 		obj.Config = &AzureManagedState{}
 		_, err := managedCreateClusterHandler(ctx, obj)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		// TODO: Recieve the KUBECONFIG AND SAVE IT TO THE DIRECTORY
 		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.ResourceGroupName, obj.Region)
 	}
+	return nil
 }
 
-func (obj *AzureProvider) DeleteCluster() {
+func (obj *AzureProvider) DeleteCluster() error {
 	ctx := context.Background()
 	setRequiredENV_VAR(ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	if obj.HACluster {
 		// HA CLUSTER CREATE
@@ -123,11 +123,41 @@ func (obj *AzureProvider) DeleteCluster() {
 		obj.Config = &AzureManagedState{}
 		err := managedDeleteClusterHandler(ctx, obj)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "managed", obj.ClusterName+" "+obj.ResourceGroupName+" "+obj.Region)); err != nil {
-			log.Println(err)
+			return err
 		}
 		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.ResourceGroupName, obj.Region)
 	}
+	return nil
+}
+
+func isPresent(kind string, obj AzureProvider) bool {
+	path := util.GetPath(util.CLUSTER_PATH, "azure", kind, obj.ClusterName+" "+obj.ResourceGroupName+" "+obj.Region, "info.json")
+	_, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func (provider AzureProvider) SwitchContext() error {
+	switch provider.HACluster {
+	case true:
+		if isPresent("ha", provider) {
+			var printKubeconfig util.PrinterKubeconfigPATH
+			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.ResourceGroupName}
+			printKubeconfig.Printer(true, 0)
+			return nil
+		}
+	case false:
+		if isPresent("managed", provider) {
+			var printKubeconfig util.PrinterKubeconfigPATH
+			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.ResourceGroupName}
+			printKubeconfig.Printer(false, 0)
+			return nil
+		}
+	}
+	return fmt.Errorf("ERR Cluster not found")
 }
