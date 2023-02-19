@@ -5,115 +5,87 @@ package azure
 
 import (
 	"context"
+	"fmt"
 	"log"
 )
 
 func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
-	log.Println("start creating virtual machine...")
-	resourceGroup, err := obj.CreateResourceGroup(ctx)
+	log.Println("Started to Create your HA cluster on Azure provider...")
+	defer obj.ConfigWriter("ha")
+
+	_, err := obj.CreateResourceGroup(ctx)
 	if err != nil {
-		log.Fatalf("cannot create resource group:%+v", err)
+		return err
 	}
-	log.Printf("Created resource group: %s", *resourceGroup.ID)
 
 	err = obj.UploadSSHKey(ctx)
 	if err != nil {
-		log.Fatalf("cannot create/upload ssh key:%+v", err)
+		return err
 	}
 
-	virtualNetwork, err := obj.CreateVirtualNetwork(ctx, obj.ClusterName+"-vn")
+	err = obj.createLoadBalancer(ctx)
 	if err != nil {
-		log.Fatalf("cannot create virtual network:%+v", err)
+		return err
 	}
-	log.Printf("Created virtual network: %s", *virtualNetwork.ID)
 
-	subnet, err := obj.CreateSubnet(ctx, obj.ClusterName+"-subnet")
-	if err != nil {
-		log.Fatalf("cannot create subnet:%+v", err)
-	}
-	log.Printf("Created subnet: %s", *subnet.ID)
-
-	publicIP, err := obj.CreatePublicIP(ctx, obj.ClusterName+"-pub-ip")
-	if err != nil {
-		log.Fatalf("cannot create public IP address:%+v", err)
-	}
-	log.Printf("Created public IP address: %s", *publicIP.ID)
-
-	// network security group
-	nsg, err := obj.CreateNSG(ctx, obj.ClusterName+"-nsg")
-	if err != nil {
-		log.Fatalf("cannot create network security group:%+v", err)
-	}
-	log.Printf("Created network security group: %s", *nsg.ID)
-
-	networkInterface, err := obj.CreateNetworkInterface(ctx, obj.Config.ResourceGroupName, obj.ClusterName+"-nic", *subnet.ID, *publicIP.ID, *nsg.ID)
-	if err != nil {
-		log.Fatalf("cannot create network interface:%+v", err)
-	}
-	log.Printf("Created network interface: %s", *networkInterface.ID)
-
-	networkInterfaceID := networkInterface.ID
-	virtualMachine, err := obj.CreateVM(ctx, obj.ClusterName+"-cp-1", *networkInterfaceID, obj.ClusterName+"-disk")
-	if err != nil {
-		log.Fatalf("cannot create virual machine:%+v", err)
-	}
-	log.Printf("Created network virual machine: %s", *virtualMachine.ID)
-
-	log.Println("Virtual machine created successfully")
+	log.Println("Your cluster is now ready")
 	return nil
 }
 
 func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
-	log.Println("start deleting virtual machine...")
-	obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl" //TODO: remove this
-	err := obj.DeleteVM(ctx, obj.ClusterName+"-cp-1")
-	if err != nil {
-		log.Fatalf("cannot delete virtual machine:%+v", err)
-	}
-	log.Println("deleted virtual machine")
+	log.Println("start deleting the cluster...")
 
-	err = obj.DeleteDisk(ctx, obj.ClusterName+"-disk")
+	obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
+	err := obj.ConfigReader("ha")
 	if err != nil {
-		log.Fatalf("cannot delete disk:%+v", err)
+		return fmt.Errorf("Unable to read configuration: %v", err)
 	}
-	log.Println("deleted disk")
 
-	err = obj.DeleteNetworkInterface(ctx, obj.ClusterName+"-nic")
+	err = obj.DeleteAllVMs(ctx)
 	if err != nil {
-		log.Fatalf("cannot delete network interface:%+v", err)
+		return err
 	}
-	log.Println("deleted network interface")
 
-	err = obj.DeleteNSG(ctx, obj.ClusterName+"-nsg")
+	err = obj.DeleteAllDisks(ctx)
 	if err != nil {
-		log.Fatalf("cannot delete network security group:%+v", err)
+		return err
 	}
-	log.Println("deleted network security group")
 
-	err = obj.DeletePublicIP(ctx, obj.ClusterName+"-pub-ip")
+	err = obj.DeleteAllNetworkInterface(ctx)
 	if err != nil {
-		log.Fatalf("cannot delete public IP address:%+v", err)
+		return err
 	}
-	log.Println("deleted public IP address")
 
-	obj.Config.VirtualNetworkName = obj.ClusterName + "-vn" // TODO: remove this
-	err = obj.DeleteSubnet(ctx, obj.ClusterName+"-subnet")
+	err = obj.DeleteAllNSG(ctx)
 	if err != nil {
-		log.Fatalf("cannot delete subnet:%+v", err)
+		return err
 	}
-	log.Println("deleted subnet")
+
+	err = obj.DeleteAllPublicIP(ctx)
+	if err != nil {
+		return err
+	}
+
+	// obj.Config.VirtualNetworkName = obj.ClusterName + "-vn" // TODO: remove this
+	err = obj.DeleteSubnet(ctx, obj.Config.SubnetName)
+	if err != nil {
+		return err
+	}
 
 	err = obj.DeleteVirtualNetwork(ctx)
 	if err != nil {
-		log.Fatalf("cannot delete virtual network:%+v", err)
+		return err
 	}
-	log.Println("deleted virtual network")
+
+	err = obj.DeleteSSHKeyPair(ctx)
+	if err != nil {
+		return err
+	}
 
 	err = obj.DeleteResourceGroup(ctx)
 	if err != nil {
-		log.Fatalf("cannot delete resource group:%+v", err)
+		return err
 	}
-	log.Println("deleted resource group")
-	log.Println("success deleted virtual machine.")
+
 	return nil
 }

@@ -20,7 +20,7 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	}
 	azureConfig.Config.ResourceGroupName = azureConfig.ClusterName + "-ksctl"
 
-	if err := azureConfig.ConfigReaderManaged(); err != nil {
+	if err := azureConfig.ConfigReader("managed"); err != nil {
 		return err
 	}
 
@@ -71,6 +71,7 @@ func generateResourceName(azureConfig *AzureProvider) {
 }
 
 func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
+	defer azureConfig.ConfigWriter("managed")
 
 	_, err := azureConfig.CreateResourceGroup(ctx)
 	if err != nil {
@@ -118,9 +119,6 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	if err != nil {
 		return nil, err
 	}
-
-	azureConfig.ConfigWriterManagedClusteName()
-	azureConfig.ConfigWriterManagedResourceName()
 
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {

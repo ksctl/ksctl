@@ -1,6 +1,8 @@
 package azure
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -23,6 +25,7 @@ type AzureOperations interface {
 type AzureStateVMs struct {
 	Names                    []string `json:"names"`
 	NetworkSecurityGroupName string   `json:"network_security_group_name"`
+	NetworkSecurityGroupID   string   `json:"network_security_group_id"`
 	DiskNames                []string `json:"disk_names"`
 	PublicIPNames            []string `json:"public_ip_names"`
 	NetworkInterfaceNames    []string `json:"network_interface_names"`
@@ -30,21 +33,26 @@ type AzureStateVMs struct {
 type AzureStateVM struct {
 	Name                     string `json:"name"`
 	NetworkSecurityGroupName string `json:"network_security_group_name"`
+	NetworkSecurityGroupID   string `json:"network_security_group_id"`
 	DiskName                 string `json:"disk_name"`
 	PublicIPName             string `json:"public_ip_name"`
 	NetworkInterfaceName     string `json:"network_interface_name"`
 }
 
 type AzureStateCluster struct {
-	ClusterName        string        `json:"cluster_name"`
-	ResourceGroupName  string        `json:"resource_group_name"`
-	SSHKeyName         string        `json:"ssh_key_name"`
-	SubnetName         string        `json:"subnet_name"`
-	VirtualNetworkName string        `json:"virtual_network_name"`
-	InfoControlPlanes  AzureStateVMs `json:"info_control_planes"`
-	InfoWorkerPlanes   AzureStateVMs `json:"info_worker_planes"`
-	InfoDatabase       AzureStateVM  `json:"info_database"`
-	InfoLoadBalancer   AzureStateVM  `json:"info_load_balancer"`
+	ClusterName       string `json:"cluster_name"`
+	ResourceGroupName string `json:"resource_group_name"`
+	SSHKeyName        string `json:"ssh_key_name"`
+
+	SubnetName         string `json:"subnet_name"`
+	SubnetID           string `json:"subnet_id"`
+	VirtualNetworkName string `json:"virtual_network_name"`
+	VirtualNetworkID   string `json:"virtual_network_id"`
+
+	InfoControlPlanes AzureStateVMs `json:"info_control_planes"`
+	InfoWorkerPlanes  AzureStateVMs `json:"info_worker_planes"`
+	InfoDatabase      AzureStateVM  `json:"info_database"`
+	InfoLoadBalancer  AzureStateVM  `json:"info_load_balancer"`
 }
 
 type AzureInfra interface {
@@ -59,7 +67,7 @@ type AzureInfra interface {
 	DeleteVM(context.Context, string) error
 	CreateVirtualNetwork(context.Context, string) (*armnetwork.VirtualNetwork, error)
 	DeleteVirtualNetwork(context.Context) error
-	CreateNSG(context.Context, string) (*armnetwork.SecurityGroup, error)
+	CreateNSG(context.Context, string, []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error)
 	DeleteNSG(context.Context, string) error
 	DeleteNetworkInterface(context.Context, string) error
 	CreateNetworkInterface(context.Context, string, string, string, string, string) (*armnetwork.Interface, error)
@@ -67,10 +75,11 @@ type AzureInfra interface {
 	CreatePublicIP(context.Context, string) (*armnetwork.PublicIPAddress, error)
 
 	UploadSSHKey(context.Context) (err error)
+	DeleteSSHKey(context.Context) error
+
 	// state file managemenet
-	ConfigWriterManagedClusteName() error
-	ConfigWriterManagedResourceName() error
-	ConfigReaderManaged() error
+	ConfigReader() error
+	ConfigWriter() error
 
 	// kubeconfig file
 	kubeconfigWriter(string) error
@@ -98,23 +107,34 @@ type AzureInfra interface {
 // 	return
 // }
 
-func (config *AzureProvider) ConfigWriterManagedClusteName() error {
-	config.Config.ClusterName = config.ClusterName
-	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+// func (config *AzureProvider) ConfigWriterManagedClusteName() error {
+// 	config.Config.ClusterName = config.ClusterName
+// 	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+// }
+
+// func (config *AzureProvider) ConfigWriterManagedResourceName() error {
+// 	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+// }
+
+func (config *AzureProvider) ConfigWriter(clusterType string) error {
+	return util.SaveState(config.Config, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
 }
 
-func (config *AzureProvider) ConfigWriterManagedResourceName() error {
-	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
-}
-
-func (config *AzureProvider) ConfigReaderManaged() error {
-	data, err := util.GetState("azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+func (config *AzureProvider) ConfigReader(clusterType string) error {
+	data, err := util.GetState("azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
 	if err != nil {
 		return err
 	}
-	// populating the state data
-	config.Config.ClusterName = data["cluster_name"].(string)
-	config.Config.ResourceGroupName = data["resource_group_name"].(string)
+	// Convert the map to JSON
+	jsonData, _ := json.Marshal(data)
+
+	// Convert the JSON to a struct
+	var structData AzureStateCluster
+	json.Unmarshal(jsonData, &structData)
+
+	// config.Config.ClusterName = data["cluster_name"].(string)
+	// config.Config.ResourceGroupName = data["resource_group_name"].(string)
+	config.Config = &structData
 	config.ClusterName = config.Config.ClusterName
 	return nil
 }
@@ -173,6 +193,7 @@ func (obj *AzureProvider) CreateResourceGroup(ctx context.Context) (*armresource
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Created resource group: {%s}", *resourceGroup.Name)
 	return &resourceGroup, nil
 }
 
@@ -190,6 +211,7 @@ func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context) error {
 		return err
 	}
 
+	log.Println("Deleted resource group")
 	return nil
 }
 
@@ -215,7 +237,8 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, subnetName string) (
 		return nil, err
 	}
 	obj.Config.SubnetName = subnetName
-
+	obj.Config.SubnetID = *resp.ID
+	log.Printf("Created subnet: {%s}", *resp.Name)
 	return &resp.Subnet, nil
 }
 
@@ -235,6 +258,7 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, subnetName string) e
 		return err
 	}
 
+	log.Println("Deleted subnet")
 	return nil
 }
 
@@ -260,7 +284,34 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, publicIPName strin
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Created public IP address: {%s}", *resp.Name)
 	return &resp.PublicIPAddress, err
+}
+
+func (obj *AzureProvider) DeleteAllPublicIP(ctx context.Context) error {
+	for _, interfaceName := range obj.Config.InfoControlPlanes.PublicIPNames {
+		if err := obj.DeletePublicIP(ctx, interfaceName); err != nil {
+			return err
+		}
+	}
+	for _, interfaceName := range obj.Config.InfoWorkerPlanes.PublicIPNames {
+		if err := obj.DeletePublicIP(ctx, interfaceName); err != nil {
+			return err
+		}
+	}
+
+	if len(obj.Config.InfoDatabase.PublicIPName) != 0 {
+		if err := obj.DeletePublicIP(ctx, obj.Config.InfoDatabase.PublicIPName); err != nil {
+			return err
+		}
+	}
+	if len(obj.Config.InfoLoadBalancer.PublicIPName) != 0 {
+		if err := obj.DeletePublicIP(ctx, obj.Config.InfoLoadBalancer.PublicIPName); err != nil {
+			return err
+		}
+	}
+	log.Println("Deleted all Public IPs")
+	return nil
 }
 
 func (obj *AzureProvider) DeletePublicIP(ctx context.Context, publicIPName string) error {
@@ -278,6 +329,19 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, publicIPName strin
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (obj *AzureProvider) DeleteSSHKeyPair(ctx context.Context) error {
+	sshClient, err := armcompute.NewSSHPublicKeysClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := sshClient.Delete(ctx, obj.Config.ResourceGroupName, obj.Config.SSHKeyName, nil)
+	if err != nil {
+		return err
+	}
+	log.Println(resp)
 	return nil
 }
 
@@ -301,12 +365,13 @@ func (obj *AzureProvider) UploadSSHKey(ctx context.Context) (err error) {
 		Location:   to.Ptr(obj.Region),
 		Properties: &armcompute.SSHPublicKeyResourceProperties{PublicKey: to.Ptr(keyPairToUpload)},
 	}, nil)
+	obj.Config.SSHKeyName = obj.ClusterName + "-ssh"
 
 	// ------- Setting the ssh configs only the public ips used will change
-	// ha.SSH_Payload.UserName = "root"
-	// ha.SSH_Payload.PathPrivateKey = util.GetPath(util.SSH_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
-	// ha.SSH_Payload.Output = ""
-	// ha.SSH_Payload.PublicIP = ""
+	obj.SSH_Payload.UserName = "azureuser"
+	obj.SSH_Payload.PathPrivateKey = util.GetPath(util.SSH_PATH, "azure", "ha", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)
+	obj.SSH_Payload.Output = ""
+	obj.SSH_Payload.PublicIP = ""
 	// ------
 
 	return
@@ -320,7 +385,6 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, resourceNa
 	parameters := armnetwork.Interface{
 		Location: to.Ptr(obj.Region),
 		Properties: &armnetwork.InterfacePropertiesFormat{
-			//NetworkSecurityGroup:
 			IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 				{
 					Name: to.Ptr(resourceName),
@@ -350,8 +414,34 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, resourceNa
 	if err != nil {
 		return nil, err
 	}
-
+	log.Printf("Created network interface: {%s}", *resp.Name)
 	return &resp.Interface, err
+}
+
+func (obj *AzureProvider) DeleteAllNetworkInterface(ctx context.Context) error {
+	for _, interfaceName := range obj.Config.InfoControlPlanes.NetworkInterfaceNames {
+		if err := obj.DeleteNetworkInterface(ctx, interfaceName); err != nil {
+			return err
+		}
+	}
+	for _, interfaceName := range obj.Config.InfoWorkerPlanes.NetworkInterfaceNames {
+		if err := obj.DeleteNetworkInterface(ctx, interfaceName); err != nil {
+			return err
+		}
+	}
+
+	if len(obj.Config.InfoDatabase.NetworkInterfaceName) != 0 {
+		if err := obj.DeleteNetworkInterface(ctx, obj.Config.InfoDatabase.NetworkInterfaceName); err != nil {
+			return err
+		}
+	}
+	if len(obj.Config.InfoLoadBalancer.NetworkInterfaceName) != 0 {
+		if err := obj.DeleteNetworkInterface(ctx, obj.Config.InfoLoadBalancer.NetworkInterfaceName); err != nil {
+			return err
+		}
+	}
+	log.Println("Deleted all network interfaces")
+	return nil
 }
 
 func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, nicName string) error {
@@ -373,6 +463,32 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, nicName st
 	return nil
 }
 
+func (obj *AzureProvider) DeleteAllNSG(ctx context.Context) error {
+	if len(obj.Config.InfoControlPlanes.NetworkSecurityGroupName) != 0 {
+		if err := obj.DeleteNSG(ctx, obj.Config.InfoControlPlanes.NetworkSecurityGroupName); err != nil {
+			return err
+		}
+	}
+	if len(obj.Config.InfoWorkerPlanes.NetworkSecurityGroupName) != 0 {
+		if err := obj.DeleteNSG(ctx, obj.Config.InfoWorkerPlanes.NetworkSecurityGroupName); err != nil {
+			return err
+		}
+	}
+
+	if len(obj.Config.InfoDatabase.NetworkSecurityGroupName) != 0 {
+		if err := obj.DeleteNSG(ctx, obj.Config.InfoDatabase.NetworkSecurityGroupName); err != nil {
+			return err
+		}
+	}
+	if len(obj.Config.InfoLoadBalancer.NetworkSecurityGroupName) != 0 {
+		if err := obj.DeleteNSG(ctx, obj.Config.InfoLoadBalancer.NetworkSecurityGroupName); err != nil {
+			return err
+		}
+	}
+	log.Println("Deleted all network security groups")
+	return nil
+}
+
 func (obj *AzureProvider) DeleteNSG(ctx context.Context, nsgName string) error {
 	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
@@ -391,7 +507,7 @@ func (obj *AzureProvider) DeleteNSG(ctx context.Context, nsgName string) error {
 	return nil
 }
 
-func (obj *AzureProvider) CreateNSG(ctx context.Context, nsgName string) (*armnetwork.SecurityGroup, error) {
+func (obj *AzureProvider) CreateNSG(ctx context.Context, nsgName string, securityRules []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error) {
 	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -400,39 +516,7 @@ func (obj *AzureProvider) CreateNSG(ctx context.Context, nsgName string) (*armne
 	parameters := armnetwork.SecurityGroup{
 		Location: to.Ptr(obj.Region),
 		Properties: &armnetwork.SecurityGroupPropertiesFormat{
-			SecurityRules: []*armnetwork.SecurityRule{
-				// Windows connection to virtual machine needs to open port 3389,RDP
-				// inbound
-				{
-					Name: to.Ptr("sample_inbound_22"), //
-					Properties: &armnetwork.SecurityRulePropertiesFormat{
-						SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-						SourcePortRange:          to.Ptr("*"),
-						DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-						DestinationPortRange:     to.Ptr("22"),
-						Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-						Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-						Priority:                 to.Ptr[int32](100),
-						Description:              to.Ptr("sample network security group inbound port 22"),
-						Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-					},
-				},
-				// outbound
-				{
-					Name: to.Ptr("sample_outbound_22"), //
-					Properties: &armnetwork.SecurityRulePropertiesFormat{
-						SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-						SourcePortRange:          to.Ptr("*"),
-						DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-						DestinationPortRange:     to.Ptr("22"),
-						Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-						Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-						Priority:                 to.Ptr[int32](100),
-						Description:              to.Ptr("sample network security group outbound port 22"),
-						Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-					},
-				},
-			},
+			SecurityRules: securityRules,
 		},
 	}
 
@@ -445,6 +529,7 @@ func (obj *AzureProvider) CreateNSG(ctx context.Context, nsgName string) (*armne
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Created network security group: {%s}", *resp.Name)
 	return &resp.SecurityGroup, nil
 }
 
@@ -463,7 +548,7 @@ func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
+	log.Printf("Deleted virtual network {%s}", obj.Config.VirtualNetworkName)
 	return nil
 }
 
@@ -484,14 +569,6 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, virtualNetwo
 					to.Ptr("10.1.0.0/16"), // example 10.1.0.0/16
 				},
 			},
-			//Subnets: []*armnetwork.Subnet{
-			//	{
-			//		Name: to.Ptr(subnetName+"3"),
-			//		Properties: &armnetwork.SubnetPropertiesFormat{
-			//			AddressPrefix: to.Ptr("10.1.0.0/24"),
-			//		},
-			//	},
-			//},
 		},
 	}
 
@@ -505,8 +582,9 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, virtualNetwo
 		return nil, err
 	}
 	// TODO: call the configWriter
-	obj.Config.VirtualNetworkName = virtualNetworkName
-
+	obj.Config.VirtualNetworkName = *resp.Name
+	obj.Config.VirtualNetworkID = *resp.ID
+	log.Printf("Created virtual network: {%s}", *resp.Name)
 	return &resp.VirtualNetwork, nil
 }
 
@@ -557,7 +635,7 @@ func (p printer) Printer(isHA bool, operation int) {
 	fmt.Println()
 }
 
-func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterfaceID, diskName string) (*armcompute.VirtualMachine, error) {
+func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterfaceID, diskName, script string) (*armcompute.VirtualMachine, error) {
 	vmClient, err := armcompute.NewVirtualMachinesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -584,13 +662,6 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 		Properties: &armcompute.VirtualMachineProperties{
 			StorageProfile: &armcompute.StorageProfile{
 				ImageReference: &armcompute.ImageReference{
-					// search image reference
-					// az vm image list --output table
-					// Offer:     to.Ptr("WindowsServer"),
-					// Publisher: to.Ptr("MicrosoftWindowsServer"),
-					// SKU:       to.Ptr("2019-Datacenter"),
-					// Version:   to.Ptr("latest"),
-					//require ssh key for authentication on linux
 					Offer:     to.Ptr("UbuntuServer"),
 					Publisher: to.Ptr("Canonical"),
 					SKU:       to.Ptr("18.04-LTS"),
@@ -612,11 +683,9 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 			OSProfile: &armcompute.OSProfile{ //
 				ComputerName:  to.Ptr(vmName),
 				AdminUsername: to.Ptr("azureuser"),
-				// AdminPassword: to.Ptr("Password01!@#"),
-				//require ssh key for authentication on linux
+				CustomData:    to.Ptr(base64.StdEncoding.EncodeToString([]byte(script))),
 				LinuxConfiguration: &armcompute.LinuxConfiguration{
 					DisablePasswordAuthentication: to.Ptr(true),
-					// PatchSettings:                 &armcompute.LinuxPatchSettings{},
 					SSH: &armcompute.SSHConfiguration{
 						PublicKeys: []*armcompute.SSHPublicKey{
 							{
@@ -646,8 +715,34 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 	if err != nil {
 		return nil, err
 	}
-
+	log.Printf("Created network virtual machine: {%s}", *resp.Name)
 	return &resp.VirtualMachine, nil
+}
+
+func (obj *AzureProvider) DeleteAllVMs(ctx context.Context) error {
+	for _, instanceName := range obj.Config.InfoControlPlanes.Names {
+		if err := obj.DeleteVM(ctx, instanceName); err != nil {
+			return err
+		}
+	}
+	for _, instanceName := range obj.Config.InfoWorkerPlanes.Names {
+		if err := obj.DeleteVM(ctx, instanceName); err != nil {
+			return err
+		}
+	}
+
+	if len(obj.Config.InfoDatabase.Name) != 0 {
+		if err := obj.DeleteVM(ctx, obj.Config.InfoDatabase.Name); err != nil {
+			return err
+		}
+	}
+	if len(obj.Config.InfoLoadBalancer.Name) != 0 {
+		if err := obj.DeleteVM(ctx, obj.Config.InfoLoadBalancer.Name); err != nil {
+			return err
+		}
+	}
+	log.Println("Deleted all virtual machines")
+	return nil
 }
 
 func (obj *AzureProvider) DeleteVM(ctx context.Context, vmName string) error {
@@ -666,6 +761,33 @@ func (obj *AzureProvider) DeleteVM(ctx context.Context, vmName string) error {
 		return err
 	}
 
+	log.Printf("Deleted the vm: {%s}", vmName)
+	return nil
+}
+
+func (obj *AzureProvider) DeleteAllDisks(ctx context.Context) error {
+	for _, diskName := range obj.Config.InfoControlPlanes.DiskNames {
+		if err := obj.DeleteDisk(ctx, diskName); err != nil {
+			return err
+		}
+	}
+	for _, diskName := range obj.Config.InfoWorkerPlanes.DiskNames {
+		if err := obj.DeleteDisk(ctx, diskName); err != nil {
+			return err
+		}
+	}
+
+	if len(obj.Config.InfoDatabase.DiskName) != 0 {
+		if err := obj.DeleteDisk(ctx, obj.Config.InfoDatabase.DiskName); err != nil {
+			return err
+		}
+	}
+	if len(obj.Config.InfoLoadBalancer.DiskName) != 0 {
+		if err := obj.DeleteDisk(ctx, obj.Config.InfoLoadBalancer.DiskName); err != nil {
+			return err
+		}
+	}
+	log.Println("Deleted all disks")
 	return nil
 }
 
@@ -684,5 +806,6 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, diskName string) error
 	if err != nil {
 		return err
 	}
+	log.Printf("Deleted disk: {%s}", diskName)
 	return nil
 }

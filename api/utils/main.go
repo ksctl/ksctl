@@ -187,7 +187,7 @@ func SaveCred(config interface{}, provider string) error {
 	return nil
 }
 
-func SaveState(config interface{}, provider, clusterDir string) error {
+func SaveState(config interface{}, provider, clusterType string, clusterDir string) error {
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
 		strings.Compare(provider, "aws") != 0 {
@@ -197,14 +197,14 @@ func SaveState(config interface{}, provider, clusterDir string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, "managed", clusterDir), 0755); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir), 0755); err != nil && !os.IsExist(err) {
 		return err
 	}
-	_, err = os.Create(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"))
+	_, err = os.Create(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"), storeBytes, 0640)
+	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -229,8 +229,8 @@ func GetCred(provider string) (i map[string]string, err error) {
 	return
 }
 
-func GetState(provider, clusterDir string) (i map[string]interface{}, err error) {
-	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"))
+func GetState(provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
+	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
 
 	if err != nil {
 		return

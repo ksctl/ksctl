@@ -79,10 +79,9 @@ func (obj *AzureProvider) CreateCluster() error {
 	}
 	obj.AzureTokenCred = cred
 	obj.Config = &AzureStateCluster{}
+	obj.SSH_Payload = &util.SSHPayload{}
 	generateResourceName(obj)
 	if obj.HACluster {
-		// TODO: HA CLUSTER CREATE
-		log.Println("TO BE DEVELOPED")
 		err := haCreateClusterHandler(ctx, obj)
 		if err != nil {
 			return err
@@ -107,13 +106,13 @@ func (obj *AzureProvider) DeleteCluster() error {
 	}
 	obj.AzureTokenCred = cred
 	obj.Config = &AzureStateCluster{}
+	obj.SSH_Payload = &util.SSHPayload{}
 	if obj.HACluster {
-		// TODO: HA CLUSTER CREATE
-		log.Println("TO BE DEVELOPED")
 		err := haDeleteClusterHandler(ctx, obj)
 		if err != nil {
 			return err
 		}
+
 		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)); err != nil {
 			return err
 		}

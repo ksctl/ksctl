@@ -5,6 +5,9 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 )
 
 func generateDBPassword(passwordLen int) string {
@@ -61,4 +64,36 @@ EOF
 
 systemctl restart mysql
 `, password)
+}
+
+func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
+	securityRules = append(securityRules, &armnetwork.SecurityRule{
+		Name: to.Ptr("sample_inbound_3306"),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("10.1.0.0/16"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("3306"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](100),
+			Description:              to.Ptr("sample network security group inbound port 3306"),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+		},
+	},
+		&armnetwork.SecurityRule{
+			Name: to.Ptr("sample_outbound_port"),
+			Properties: &armnetwork.SecurityRulePropertiesFormat{
+				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+				SourcePortRange:          to.Ptr("*"),
+				DestinationAddressPrefix: to.Ptr("10.1.0.0/16"),
+				DestinationPortRange:     to.Ptr("*"),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Priority:                 to.Ptr[int32](101),
+				Description:              to.Ptr("sample network security group inbound port All"),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+			},
+		})
+	return
 }
