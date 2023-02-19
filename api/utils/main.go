@@ -229,7 +229,7 @@ func GetCred(provider string) (i map[string]string, err error) {
 	return
 }
 
-func GetState(provider, clusterDir string) (i map[string]string, err error) {
+func GetState(provider, clusterDir string) (i map[string]interface{}, err error) {
 	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"))
 
 	if err != nil {

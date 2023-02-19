@@ -76,9 +76,9 @@ func (obj *AzureProvider) CreateCluster() error {
 	if err != nil {
 		return err
 	}
-	generateResourceName(obj)
 	obj.AzureTokenCred = cred
 	obj.Config = &AzureStateCluster{}
+	generateResourceName(obj)
 	if obj.HACluster {
 		// TODO: HA CLUSTER CREATE
 		log.Println("TO BE DEVELOPED")

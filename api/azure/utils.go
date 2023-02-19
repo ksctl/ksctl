@@ -76,6 +76,27 @@ type AzureInfra interface {
 	kubeconfigReader() ([]byte, error)
 }
 
+// func GetConfig(obj *AzureProvider) (configStore *AzureStateCluster, err error) {
+// 	kind := "managed"
+// 	if obj.HACluster {
+// 		kind = "ha"
+// 	}
+// 	clusterDir := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
+// 	fileBytes, err := os.ReadFile(util.GetPath(util.CLUSTER_PATH, "azure", kind, clusterDir, "info.json"))
+
+// 	if err != nil {
+// 		return
+// 	}
+
+// 	err = json.Unmarshal(fileBytes, &configStore)
+
+// 	if err != nil {
+// 		return
+// 	}
+
+// 	return
+// }
+
 func (config *AzureProvider) ConfigWriterManagedClusteName() error {
 	config.Config.ClusterName = config.ClusterName
 	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
@@ -91,8 +112,8 @@ func (config *AzureProvider) ConfigReaderManaged() error {
 		return err
 	}
 	// populating the state data
-	config.Config.ClusterName = data["cluster_name"]
-	config.Config.ResourceGroupName = data["resource_group_name"]
+	config.Config.ClusterName = data["cluster_name"].(string)
+	config.Config.ResourceGroupName = data["resource_group_name"].(string)
 	config.ClusterName = config.Config.ClusterName
 	return nil
 }
