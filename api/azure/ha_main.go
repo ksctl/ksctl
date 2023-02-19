@@ -16,13 +16,18 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	}
 	log.Printf("Created resource group: %s", *resourceGroup.ID)
 
-	virtualNetwork, err := obj.CreateVirtualNetwork(ctx)
+	err = obj.UploadSSHKey(ctx)
+	if err != nil {
+		log.Fatalf("cannot create/upload ssh key:%+v", err)
+	}
+
+	virtualNetwork, err := obj.CreateVirtualNetwork(ctx, obj.ClusterName+"-vn")
 	if err != nil {
 		log.Fatalf("cannot create virtual network:%+v", err)
 	}
 	log.Printf("Created virtual network: %s", *virtualNetwork.ID)
 
-	subnet, err := obj.CreateSubnet(ctx)
+	subnet, err := obj.CreateSubnet(ctx, obj.ClusterName+"-subnet")
 	if err != nil {
 		log.Fatalf("cannot create subnet:%+v", err)
 	}
@@ -60,6 +65,7 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 
 func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	log.Println("start deleting virtual machine...")
+	obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl" //TODO: remove this
 	err := obj.DeleteVM(ctx, obj.ClusterName+"-cp-1")
 	if err != nil {
 		log.Fatalf("cannot delete virtual machine:%+v", err)
@@ -90,7 +96,8 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	}
 	log.Println("deleted public IP address")
 
-	err = obj.DeleteSubnet(ctx)
+	obj.Config.VirtualNetworkName = obj.ClusterName + "-vn" // TODO: remove this
+	err = obj.DeleteSubnet(ctx, obj.ClusterName+"-subnet")
 	if err != nil {
 		log.Fatalf("cannot delete subnet:%+v", err)
 	}

@@ -66,6 +66,7 @@ type AzureProvider struct {
 	SubscriptionID string
 	Config         *AzureStateCluster
 	AzureTokenCred azcore.TokenCredential
+	SSH_Payload    *util.SSHPayload
 }
 
 func (obj *AzureProvider) CreateCluster() error {

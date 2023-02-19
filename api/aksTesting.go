@@ -12,9 +12,9 @@ func main() {
 	// what all things users can config
 	// also add the node type
 	payload = &azure.AzureProvider{
-		ClusterName: "demo",
-		HACluster:   false,
-		Region:      "eastus",
+		ClusterName: "demo-dipankar21312332322323243234",
+		HACluster:   true,
+		Region:      "centralindia",
 		Spec: util.Machine{
 			ManagedNodes: 2,
 		},

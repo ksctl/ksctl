@@ -289,9 +289,32 @@ func getPaths(provider string, params ...string) string {
 }
 
 // CreateSSHKeyPair return public key and error
-func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
+// func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 
-	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
+// 	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
+
+// 	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
+// 	cmd.Dir = pathTillFolder
+// 	out, err := cmd.Output()
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	fmt.Println(string(out))
+
+// 	keyPairToUpload := GetPath(SSH_PATH, provider, "ha", clusterName+" "+region) + ".pub"
+// 	fileBytePub, err := os.ReadFile(keyPairToUpload)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	return string(fileBytePub), nil
+// }
+
+// NOTE: DUPLICATE to be merged the above function
+func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
+
+	pathTillFolder := getPaths(provider, "ha", clusterDir)
 
 	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
 	cmd.Dir = pathTillFolder
@@ -302,7 +325,7 @@ func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 
 	fmt.Println(string(out))
 
-	keyPairToUpload := GetPath(SSH_PATH, provider, "ha", clusterName+" "+region) + ".pub"
+	keyPairToUpload := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
 	fileBytePub, err := os.ReadFile(keyPairToUpload)
 	if err != nil {
 		return "", err

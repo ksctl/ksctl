@@ -54,10 +54,10 @@ type AzureInfra interface {
 	DeleteResourceGroup(context.Context) error
 	DeleteDisk(context.Context, string) error
 	DeleteSubnet(context.Context) error
-	CreateSubnet(context.Context) (*armnetwork.Subnet, error)
+	CreateSubnet(context.Context, string) (*armnetwork.Subnet, error)
 	CreateVM(context.Context, string, string, string) (*armcompute.VirtualMachine, error)
 	DeleteVM(context.Context, string) error
-	CreateVirtualNetwork(context.Context) (*armnetwork.VirtualNetwork, error)
+	CreateVirtualNetwork(context.Context, string) (*armnetwork.VirtualNetwork, error)
 	DeleteVirtualNetwork(context.Context) error
 	CreateNSG(context.Context, string) (*armnetwork.SecurityGroup, error)
 	DeleteNSG(context.Context, string) error
@@ -66,6 +66,7 @@ type AzureInfra interface {
 	DeletePublicIP(context.Context, string) error
 	CreatePublicIP(context.Context, string) (*armnetwork.PublicIPAddress, error)
 
+	UploadSSHKey(context.Context) (err error)
 	// state file managemenet
 	ConfigWriterManagedClusteName() error
 	ConfigWriterManagedResourceName() error
@@ -192,7 +193,7 @@ func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context) error {
 	return nil
 }
 
-func (obj *AzureProvider) CreateSubnet(ctx context.Context) (*armnetwork.Subnet, error) {
+func (obj *AzureProvider) CreateSubnet(ctx context.Context, subnetName string) (*armnetwork.Subnet, error) {
 	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -204,7 +205,7 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context) (*armnetwork.Subnet,
 		},
 	}
 
-	pollerResponse, err := subnetClient.BeginCreateOrUpdate(ctx, obj.Config.ResourceGroupName, obj.Config.VirtualNetworkName, obj.Config.SubnetName, parameters, nil)
+	pollerResponse, err := subnetClient.BeginCreateOrUpdate(ctx, obj.Config.ResourceGroupName, obj.Config.VirtualNetworkName, subnetName, parameters, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -213,17 +214,18 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context) (*armnetwork.Subnet,
 	if err != nil {
 		return nil, err
 	}
+	obj.Config.SubnetName = subnetName
 
 	return &resp.Subnet, nil
 }
 
-func (obj *AzureProvider) DeleteSubnet(ctx context.Context) error {
+func (obj *AzureProvider) DeleteSubnet(ctx context.Context, subnetName string) error {
 	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := subnetClient.BeginDelete(ctx, obj.Config.ResourceGroupName, obj.Config.VirtualNetworkName, obj.Config.SubnetName, nil)
+	pollerResponse, err := subnetClient.BeginDelete(ctx, obj.Config.ResourceGroupName, obj.Config.VirtualNetworkName, subnetName, nil)
 	if err != nil {
 		return err
 	}
@@ -279,6 +281,37 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, publicIPName strin
 	return nil
 }
 
+func (obj *AzureProvider) UploadSSHKey(ctx context.Context) (err error) {
+	sshClient, err := armcompute.NewSSHPublicKeysClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return
+	}
+	path := util.GetPath(util.CLUSTER_PATH, "azure", "ha", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)
+	err = os.MkdirAll(path, 0755)
+	if err != nil {
+		return
+	}
+
+	keyPairToUpload, err := util.CreateSSHKeyPair("azure", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)
+	if err != nil {
+		return
+	}
+
+	_, err = sshClient.Create(ctx, obj.Config.ResourceGroupName, obj.ClusterName+"-ssh", armcompute.SSHPublicKeyResource{
+		Location:   to.Ptr(obj.Region),
+		Properties: &armcompute.SSHPublicKeyResourceProperties{PublicKey: to.Ptr(keyPairToUpload)},
+	}, nil)
+
+	// ------- Setting the ssh configs only the public ips used will change
+	// ha.SSH_Payload.UserName = "root"
+	// ha.SSH_Payload.PathPrivateKey = util.GetPath(util.SSH_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
+	// ha.SSH_Payload.Output = ""
+	// ha.SSH_Payload.PublicIP = ""
+	// ------
+
+	return
+}
+
 func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, resourceName, nicName string, subnetID string, publicIPID string, networkSecurityGroupID string) (*armnetwork.Interface, error) {
 	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
@@ -322,7 +355,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, resourceNa
 }
 
 func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, nicName string) error {
-	nicClient, err := armnetwork.NewInterfacesClient(obj.Config.ResourceGroupName, obj.AzureTokenCred, nil)
+	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
 	}
@@ -434,7 +467,7 @@ func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context) error {
 	return nil
 }
 
-func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context) (*armnetwork.VirtualNetwork, error) {
+func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, virtualNetworkName string) (*armnetwork.VirtualNetwork, error) {
 	vnetClient, err := armnetwork.NewVirtualNetworksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -462,7 +495,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context) (*armnetwork
 		},
 	}
 
-	pollerResponse, err := vnetClient.BeginCreateOrUpdate(ctx, obj.Config.ResourceGroupName, obj.Config.VirtualNetworkName, parameters, nil)
+	pollerResponse, err := vnetClient.BeginCreateOrUpdate(ctx, obj.Config.ResourceGroupName, virtualNetworkName, parameters, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -472,6 +505,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context) (*armnetwork
 		return nil, err
 	}
 	// TODO: call the configWriter
+	obj.Config.VirtualNetworkName = virtualNetworkName
 
 	return &resp.VirtualNetwork, nil
 }
@@ -530,15 +564,17 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 	}
 
 	//require ssh key for authentication on linux
-	//sshPublicKeyPath := "/home/user/.ssh/id_rsa.pub"
-	//var sshBytes []byte
-	//_,err := os.Stat(sshPublicKeyPath)
-	//if err == nil {
-	//	sshBytes,err = ioutil.ReadFile(sshPublicKeyPath)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+	sshPublicKeyPath := util.GetPath(util.OTHER_PATH, "azure", "ha", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region, "keypair.pub")
+	var sshBytes []byte
+	_, err = os.Stat(sshPublicKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	sshBytes, err = os.ReadFile(sshPublicKeyPath)
+	if err != nil {
+		return nil, err
+	}
 
 	parameters := armcompute.VirtualMachine{
 		Location: to.Ptr(obj.Region),
@@ -550,15 +586,15 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 				ImageReference: &armcompute.ImageReference{
 					// search image reference
 					// az vm image list --output table
-					Offer:     to.Ptr("WindowsServer"),
-					Publisher: to.Ptr("MicrosoftWindowsServer"),
-					SKU:       to.Ptr("2019-Datacenter"),
-					Version:   to.Ptr("latest"),
+					// Offer:     to.Ptr("WindowsServer"),
+					// Publisher: to.Ptr("MicrosoftWindowsServer"),
+					// SKU:       to.Ptr("2019-Datacenter"),
+					// Version:   to.Ptr("latest"),
 					//require ssh key for authentication on linux
-					//Offer:     to.Ptr("UbuntuServer"),
-					//Publisher: to.Ptr("Canonical"),
-					//SKU:       to.Ptr("18.04-LTS"),
-					//Version:   to.Ptr("latest"),
+					Offer:     to.Ptr("UbuntuServer"),
+					Publisher: to.Ptr("Canonical"),
+					SKU:       to.Ptr("18.04-LTS"),
+					Version:   to.Ptr("latest"),
 				},
 				OSDisk: &armcompute.OSDisk{
 					Name:         to.Ptr(diskName),
@@ -574,21 +610,22 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes("Standard_F2s")), // VM size include vCPUs,RAM,Data Disks,Temp storage.
 			},
 			OSProfile: &armcompute.OSProfile{ //
-				ComputerName:  to.Ptr("sample-compute"),
-				AdminUsername: to.Ptr("sample-user"),
-				AdminPassword: to.Ptr("Password01!@#"),
+				ComputerName:  to.Ptr(vmName),
+				AdminUsername: to.Ptr("azureuser"),
+				// AdminPassword: to.Ptr("Password01!@#"),
 				//require ssh key for authentication on linux
-				//LinuxConfiguration: &armcompute.LinuxConfiguration{
-				//	DisablePasswordAuthentication: to.Ptr(true),
-				//	SSH: &armcompute.SSHConfiguration{
-				//		PublicKeys: []*armcompute.SSHPublicKey{
-				//			{
-				//				Path:    to.Ptr(fmt.Sprintf("/home/%s/.ssh/authorized_keys", "sample-user")),
-				//				KeyData: to.Ptr(string(sshBytes)),
-				//			},
-				//		},
-				//	},
-				//},
+				LinuxConfiguration: &armcompute.LinuxConfiguration{
+					DisablePasswordAuthentication: to.Ptr(true),
+					// PatchSettings:                 &armcompute.LinuxPatchSettings{},
+					SSH: &armcompute.SSHConfiguration{
+						PublicKeys: []*armcompute.SSHPublicKey{
+							{
+								Path:    to.Ptr(string("/home/azureuser/.ssh/authorized_keys")),
+								KeyData: to.Ptr(string(sshBytes)),
+							},
+						},
+					},
+				},
 			},
 			NetworkProfile: &armcompute.NetworkProfile{
 				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{

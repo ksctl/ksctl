@@ -527,7 +527,7 @@ func (ha *HAType) UploadSSHKey() (err error) {
 	if err != nil {
 		return
 	}
-	keyPairToUpload, err := util.CreateSSHKeyPair("civo", ha.ClusterName, ha.Client.Region)
+	keyPairToUpload, err := util.CreateSSHKeyPair("civo", ha.ClusterName+" "+ha.Client.Region)
 	if err != nil {
 		return
 	}
