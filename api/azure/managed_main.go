@@ -18,7 +18,7 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	if err != nil {
 		return err
 	}
-	azureConfig.ResourceGroupName = azureConfig.ClusterName + "-ksctl"
+	azureConfig.Config.ResourceGroupName = azureConfig.ClusterName + "-ksctl"
 
 	if err := azureConfig.ConfigReaderManaged(); err != nil {
 		return err
@@ -26,7 +26,7 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 
 	log.Println("Deleting AKS cluster...")
 
-	pollerResp, err := managedClustersClient.BeginDelete(ctx, azureConfig.ResourceGroupName, azureConfig.ClusterName, nil)
+	pollerResp, err := managedClustersClient.BeginDelete(ctx, azureConfig.Config.ResourceGroupName, azureConfig.ClusterName, nil)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return err
 	}
 	var printKubeconfig util.PrinterKubeconfigPATH
-	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.ResourceGroupName}
+	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.Config.ResourceGroupName}
 	printKubeconfig.Printer(false, 1)
 	return nil
 }
@@ -67,17 +67,17 @@ func generateResourceName(azureConfig *AzureProvider) {
 	// 	noOfCharacters--
 	// }
 
-	azureConfig.ResourceGroupName = ret.String()
+	azureConfig.Config.ResourceGroupName = ret.String()
 }
 
 func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
 
-	err := azureConfig.CreateResourceGroup(ctx)
+	_, err := azureConfig.CreateResourceGroup(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Println("Created the Resource Group " + azureConfig.ResourceGroupName)
+	log.Println("Created the Resource Group " + azureConfig.Config.ResourceGroupName)
 
 	managedClustersClient, err := getAzureManagedClusterClient(azureConfig)
 	if err != nil {
@@ -87,7 +87,7 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	// INFO: do check the CreatorUpdate function used https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/d9f41170eaf6958209047f42c8ae4d0536577422/services/compute/container_cluster.go
 	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
 		ctx,
-		azureConfig.ResourceGroupName,
+		azureConfig.Config.ResourceGroupName,
 		azureConfig.ClusterName,
 		armcontainerservice.ManagedCluster{
 			Location: to.Ptr(azureConfig.Region),
@@ -127,7 +127,7 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return nil, err
 	}
 
-	kubeconfig, err := managedClustersClient.ListClusterAdminCredentials(ctx, azureConfig.ResourceGroupName, azureConfig.ClusterName, nil)
+	kubeconfig, err := managedClustersClient.ListClusterAdminCredentials(ctx, azureConfig.Config.ResourceGroupName, azureConfig.ClusterName, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 
 	// TODO: Try to make KubeconfigPrinter as global utility function across all Providers
 	var printKubeconfig util.PrinterKubeconfigPATH
-	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.ResourceGroupName}
+	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.Config.ResourceGroupName}
 	printKubeconfig.Printer(false, 0)
 	return &resp.ManagedCluster, nil
 }

@@ -1,6 +1,6 @@
 /*
 Kubesimplify
-@maintainer:
+@author: Dipankar Das
 */
 
 package azure
@@ -59,14 +59,13 @@ func Credentials() bool {
 }
 
 type AzureProvider struct {
-	ClusterName       string
-	HACluster         bool
-	Region            string
-	Spec              util.Machine
-	SubscriptionID    string
-	Config            *AzureManagedState
-	ResourceGroupName string
-	AzureTokenCred    azcore.TokenCredential
+	ClusterName    string
+	HACluster      bool
+	Region         string
+	Spec           util.Machine
+	SubscriptionID string
+	Config         *AzureStateCluster
+	AzureTokenCred azcore.TokenCredential
 }
 
 func (obj *AzureProvider) CreateCluster() error {
@@ -78,18 +77,22 @@ func (obj *AzureProvider) CreateCluster() error {
 		return err
 	}
 	generateResourceName(obj)
-
+	obj.AzureTokenCred = cred
+	obj.Config = &AzureStateCluster{}
 	if obj.HACluster {
-		// HA CLUSTER CREATE
+		// TODO: HA CLUSTER CREATE
 		log.Println("TO BE DEVELOPED")
+		err := haCreateClusterHandler(ctx, obj)
+		if err != nil {
+			return err
+		}
+		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	} else {
-		obj.AzureTokenCred = cred
-		obj.Config = &AzureManagedState{}
 		_, err := managedCreateClusterHandler(ctx, obj)
 		if err != nil {
 			return err
 		}
-		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.ResourceGroupName, obj.Region)
+		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	}
 	return nil
 }
@@ -101,26 +104,35 @@ func (obj *AzureProvider) DeleteCluster() error {
 	if err != nil {
 		return err
 	}
+	obj.AzureTokenCred = cred
+	obj.Config = &AzureStateCluster{}
 	if obj.HACluster {
-		// HA CLUSTER CREATE
+		// TODO: HA CLUSTER CREATE
 		log.Println("TO BE DEVELOPED")
+		err := haDeleteClusterHandler(ctx, obj)
+		if err != nil {
+			return err
+		}
+		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)); err != nil {
+			return err
+		}
+		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	} else {
-		obj.AzureTokenCred = cred
-		obj.Config = &AzureManagedState{}
+
 		err := managedDeleteClusterHandler(ctx, obj)
 		if err != nil {
 			return err
 		}
-		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "managed", obj.ClusterName+" "+obj.ResourceGroupName+" "+obj.Region)); err != nil {
+		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "managed", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)); err != nil {
 			return err
 		}
-		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.ResourceGroupName, obj.Region)
+		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	}
 	return nil
 }
 
 func isPresent(kind string, obj AzureProvider) bool {
-	path := util.GetPath(util.CLUSTER_PATH, "azure", kind, obj.ClusterName+" "+obj.ResourceGroupName+" "+obj.Region, "info.json")
+	path := util.GetPath(util.CLUSTER_PATH, "azure", kind, obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region, "info.json")
 	_, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return false
@@ -133,14 +145,14 @@ func (provider AzureProvider) SwitchContext() error {
 	case true:
 		if isPresent("ha", provider) {
 			var printKubeconfig util.PrinterKubeconfigPATH
-			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.ResourceGroupName}
+			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.Config.ResourceGroupName}
 			printKubeconfig.Printer(true, 0)
 			return nil
 		}
 	case false:
 		if isPresent("managed", provider) {
 			var printKubeconfig util.PrinterKubeconfigPATH
-			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.ResourceGroupName}
+			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.Config.ResourceGroupName}
 			printKubeconfig.Printer(false, 0)
 			return nil
 		}
