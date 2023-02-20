@@ -35,18 +35,20 @@ func generateDBPassword(passwordLen int) string {
 	return string(inRune)
 }
 
+// FIXME: review whether the mysql server is working or not
 func scriptDB(password string) string {
 	return fmt.Sprintf(`#!/bin/bash
 sudo apt update
-sudo apt install -y mysql-server
+sudo apt install -y mysql-server mysql-client
 
-sudo systemctl start mysql && sudo systemctl enable mysql
-sudo su -
+sudo systemctl start mysql
 
-mysql -e "create user 'ksctl' identified by '%s';"
-mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
+sudo systemctl enable mysql
 
-cat <<EOF > /etc/mysql/mysql.conf.d/mysqld.cnf
+sudo mysql -e "create user 'ksctl' identified by '%s';"
+sudo mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
+
+cat <<EOF > mysqld.cnf
 [mysqld]
 user            = mysql
 pid-file        = /var/run/mysqld/mysqld.pid
@@ -65,7 +67,9 @@ max_binlog_size   = 100M
 
 EOF
 
-systemctl restart mysql
+sudo mv mysqld.conf /etc/mysql/mysql.conf.d/mysqld.cnf
+
+sudo systemctl restart mysql
 `, password)
 }
 

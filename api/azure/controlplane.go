@@ -13,11 +13,16 @@ import (
 func scriptWithoutCP_1(dbEndpoint, privateIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
-sudo su -
+cat <<EOF > control-setup.sh
+#!/bin/bash
 export K3S_DATASTORE_ENDPOINT='%s'
 curl -sfL https://get.k3s.io | sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--tls-san %s
+EOF
+
+sudo chmod +x control-setup.sh
+sudo ./control-setup.sh
 `, dbEndpoint, privateIPlb)
 }
 
@@ -29,13 +34,18 @@ sudo cat /var/lib/rancher/k3s/server/token
 
 func scriptCP_n(dbEndpoint, privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
-sudo su -
+cat <<EOF > control-setupN.sh
+#!/bin/bash
 export SECRET='%s'
 export K3S_DATASTORE_ENDPOINT='%s'
 curl -sfL https://get.k3s.io | sh -s - server \
 	--token=$SECRET \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
 `, token, dbEndpoint, privateIPlb)
 }
 
@@ -48,10 +58,10 @@ func getControlPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_6443"),
 		Properties: &armnetwork.SecurityRulePropertiesFormat{
-			SourceAddressPrefix:      to.Ptr("10.1.0.0/16"),
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 			SourcePortRange:          to.Ptr("*"),
 			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-			DestinationPortRange:     to.Ptr("6443"),
+			DestinationPortRange:     to.Ptr("*"),
 			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 			Priority:                 to.Ptr[int32](100),
@@ -64,12 +74,12 @@ func getControlPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 			SourcePortRange:          to.Ptr("*"),
 			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-			DestinationPortRange:     to.Ptr("30000-35000"),
+			DestinationPortRange:     to.Ptr("*"),
 			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 			Priority:                 to.Ptr[int32](101),
 			Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 		},
 	})
 	return

@@ -20,8 +20,7 @@ sudo systemctl start haproxy && sudo systemctl enable haproxy
 
 func configLBscript(controlPlaneIPs []string) string {
 	script := `#!/bin/bash
-sudo su -
-cat <<EOF > /etc/haproxy/haproxy.cfg
+cat <<EOF > haproxy.cfg
 frontend kubernetes-frontend
   bind *:6443
   mode tcp
@@ -44,7 +43,8 @@ backend kubernetes-backend
 
 	script += `EOF
 
-systemctl restart haproxy
+sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
+sudo systemctl restart haproxy
 `
 	return script
 }
@@ -56,7 +56,7 @@ func getLoadBalancerFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 			SourcePortRange:          to.Ptr("*"),
 			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-			DestinationPortRange:     to.Ptr("6443"),
+			DestinationPortRange:     to.Ptr("*"),
 			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 			Priority:                 to.Ptr[int32](100),
@@ -64,20 +64,20 @@ func getLoadBalancerFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 		},
 	},
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_22"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("22"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group outbound port 22"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-			},
-		},
+		// &armnetwork.SecurityRule{
+		// 	Name: to.Ptr("sample_inbound_22"),
+		// 	Properties: &armnetwork.SecurityRulePropertiesFormat{
+		// 		SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+		// 		SourcePortRange:          to.Ptr("*"),
+		// 		DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+		// 		DestinationPortRange:     to.Ptr("22"),
+		// 		Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+		// 		Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+		// 		Priority:                 to.Ptr[int32](101),
+		// 		Description:              to.Ptr("sample network security group outbound port 22"),
+		// 		Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+		// 	},
+		// },
 		&armnetwork.SecurityRule{
 			Name: to.Ptr("sample_outbound_all"),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{

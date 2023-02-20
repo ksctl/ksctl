@@ -14,7 +14,7 @@ func main() {
 	payload = &azure.AzureProvider{
 		ClusterName: "demo",
 		HACluster:   true,
-		Region:      "westus",
+		Region:      "eastus",
 		Spec: util.Machine{
 			ManagedNodes:        2,
 			HAControlPlaneNodes: 1,

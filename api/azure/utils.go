@@ -186,7 +186,7 @@ func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context) error {
 		return err
 	}
 
-	log.Println("Deleted resource group")
+	log.Printf("Deleted resource group: {%s}", obj.Config.ResourceGroupName)
 	return nil
 }
 
@@ -233,7 +233,7 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, subnetName string) e
 		return err
 	}
 
-	log.Println("Deleted subnet")
+	log.Printf("Deleted subnet: {%s}", subnetName)
 	return nil
 }
 
@@ -304,6 +304,8 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, publicIPName strin
 	if err != nil {
 		return err
 	}
+
+	log.Printf("Deleted the pubIP: {%s}", publicIPName)
 	return nil
 }
 
@@ -312,11 +314,12 @@ func (obj *AzureProvider) DeleteSSHKeyPair(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := sshClient.Delete(ctx, obj.Config.ResourceGroupName, obj.Config.SSHKeyName, nil)
+	_, err = sshClient.Delete(ctx, obj.Config.ResourceGroupName, obj.Config.SSHKeyName, nil)
 	if err != nil {
 		return err
 	}
-	log.Println(resp)
+
+	log.Printf("Deleted the ssh: {%s}", obj.Config.SSHKeyName)
 	return nil
 }
 
@@ -434,6 +437,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, nicName st
 	if err != nil {
 		return err
 	}
+	log.Printf("Deleted the nic: {%s}", nicName)
 
 	return nil
 }
@@ -479,6 +483,7 @@ func (obj *AzureProvider) DeleteNSG(ctx context.Context, nsgName string) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("Deleted the nsg: {%s}", nsgName)
 	return nil
 }
 
