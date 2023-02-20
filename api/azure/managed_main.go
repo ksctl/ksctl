@@ -18,7 +18,6 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	if err != nil {
 		return err
 	}
-	azureConfig.Config.ResourceGroupName = azureConfig.ClusterName + "-ksctl"
 
 	if err := azureConfig.ConfigReader("managed"); err != nil {
 		return err
@@ -38,6 +37,9 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	log.Println("Deleted the AKS cluster " + azureConfig.ClusterName)
 	err = azureConfig.DeleteResourceGroup(ctx)
 	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "managed", azureConfig.ClusterName+" "+azureConfig.Config.ResourceGroupName+" "+azureConfig.Region)); err != nil {
 		return err
 	}
 	var printKubeconfig util.PrinterKubeconfigPATH

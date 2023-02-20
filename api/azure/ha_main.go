@@ -7,6 +7,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
@@ -28,6 +31,27 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 		return err
 	}
 
+	err = obj.createDatabase(ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
+		if err := obj.createControlPlane(ctx, i); err != nil {
+			return err
+		}
+	}
+
+	// Configure the Loadbalancer
+
+	// Extract KUBECONFIG
+
+	for i := 0; i < obj.Spec.HAWorkerNodes; i++ {
+		if err := obj.createWorkerPlane(ctx, i); err != nil {
+			return err
+		}
+	}
+
 	log.Println("Your cluster is now ready")
 	return nil
 }
@@ -35,7 +59,6 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	log.Println("start deleting the cluster...")
 
-	obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
 	err := obj.ConfigReader("ha")
 	if err != nil {
 		return fmt.Errorf("Unable to read configuration: %v", err)
@@ -66,7 +89,6 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
 		return err
 	}
 
-	// obj.Config.VirtualNetworkName = obj.ClusterName + "-vn" // TODO: remove this
 	err = obj.DeleteSubnet(ctx, obj.Config.SubnetName)
 	if err != nil {
 		return err
@@ -86,6 +108,9 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	if err != nil {
 		return err
 	}
-
+	clusterDir := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
+	if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", clusterDir)); err != nil {
+		return err
+	}
 	return nil
 }

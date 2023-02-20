@@ -12,11 +12,13 @@ func main() {
 	// what all things users can config
 	// also add the node type
 	payload = &azure.AzureProvider{
-		ClusterName: "demo",
+		ClusterName: "demo-dipankar",
 		HACluster:   true,
-		Region:      "centralindia",
+		Region:      "westus",
 		Spec: util.Machine{
-			ManagedNodes: 2,
+			ManagedNodes:        2,
+			HAControlPlaneNodes: 2,
+			HAWorkerNodes:       1,
 		},
 	}
 	fmt.Println("Enter [1] to create [0] to delete")

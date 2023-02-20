@@ -125,6 +125,8 @@ func (obj *AzureProvider) createLoadBalancer(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	obj.Config.InfoLoadBalancer.PublicIP = *publicIP.Properties.IPAddress
+	obj.Config.InfoLoadBalancer.PrivateIP = *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 	log.Println("💻 Booted LoadBalancer VM ")
 	return nil
 }

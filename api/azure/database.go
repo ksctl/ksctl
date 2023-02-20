@@ -1,7 +1,9 @@
 package azure
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"math/rand"
 	"strings"
 	"time"
@@ -96,4 +98,59 @@ func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 			},
 		})
 	return
+}
+
+func (obj *AzureProvider) createDatabase(ctx context.Context) error {
+	defer obj.ConfigWriter("ha")
+	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
+		// we need to create the virtual network
+		_, err := obj.CreateVirtualNetwork(ctx, obj.ClusterName+"-vnet")
+		if err != nil {
+			return err
+		}
+
+		_, err = obj.CreateSubnet(ctx, obj.ClusterName+"-subnet")
+		if err != nil {
+			return err
+		}
+	}
+	generatedPassword := generateDBPassword(20)
+
+	publicIP, err := obj.CreatePublicIP(ctx, obj.ClusterName+"-db-pub-ip")
+	if err != nil {
+		return err
+	}
+	obj.Config.InfoDatabase.PublicIPName = *publicIP.Name
+
+	// network security group
+	if len(obj.Config.InfoDatabase.NetworkSecurityGroupName) == 0 {
+		nsg, err := obj.CreateNSG(ctx, obj.ClusterName+"-db-nsg", getDatabaseFirewallRules())
+		if err != nil {
+			return err
+		}
+
+		obj.Config.InfoDatabase.NetworkSecurityGroupName = *nsg.Name
+		obj.Config.InfoDatabase.NetworkSecurityGroupID = *nsg.ID
+	}
+
+	networkInterface, err := obj.CreateNetworkInterface(ctx, obj.Config.ResourceGroupName, obj.ClusterName+"-db-nic", obj.Config.SubnetID, *publicIP.ID, obj.Config.InfoDatabase.NetworkSecurityGroupID)
+	if err != nil {
+		return err
+	}
+	obj.Config.InfoDatabase.NetworkInterfaceName = *networkInterface.Name
+
+	obj.Config.InfoDatabase.Name = obj.ClusterName + "-db"
+	obj.Config.InfoDatabase.DiskName = obj.ClusterName + "-db-disk"
+
+	_, err = obj.CreateVM(ctx, obj.ClusterName+"-db", *networkInterface.ID, obj.ClusterName+"-db-disk", scriptDB(generatedPassword))
+	if err != nil {
+		return err
+	}
+
+	obj.Config.InfoDatabase.PrivateIP = *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress
+	obj.Config.InfoDatabase.PublicIP = *publicIP.Properties.IPAddress
+
+	obj.Config.DBEndpoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, obj.Config.InfoDatabase.PrivateIP)
+	log.Println("💻 Booted Database VM ")
+	return nil
 }

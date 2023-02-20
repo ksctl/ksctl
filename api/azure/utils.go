@@ -28,8 +28,11 @@ type AzureStateVMs struct {
 	NetworkSecurityGroupID   string   `json:"network_security_group_id"`
 	DiskNames                []string `json:"disk_names"`
 	PublicIPNames            []string `json:"public_ip_names"`
+	PrivateIPs               []string `json:"private_ips"`
+	PublicIPs                []string `json:"public_ips"`
 	NetworkInterfaceNames    []string `json:"network_interface_names"`
 }
+
 type AzureStateVM struct {
 	Name                     string `json:"name"`
 	NetworkSecurityGroupName string `json:"network_security_group_name"`
@@ -37,12 +40,16 @@ type AzureStateVM struct {
 	DiskName                 string `json:"disk_name"`
 	PublicIPName             string `json:"public_ip_name"`
 	NetworkInterfaceName     string `json:"network_interface_name"`
+	PrivateIP                string `json:"private_ip"`
+	PublicIP                 string `json:"public_ip"`
 }
 
 type AzureStateCluster struct {
 	ClusterName       string `json:"cluster_name"`
 	ResourceGroupName string `json:"resource_group_name"`
 	SSHKeyName        string `json:"ssh_key_name"`
+	DBEndpoint        string `json:"database_endpoint"`
+	K3sToken          string `json:"k3s_token"`
 
 	SubnetName         string `json:"subnet_name"`
 	SubnetID           string `json:"subnet_id"`

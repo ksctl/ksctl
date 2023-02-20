@@ -77,17 +77,23 @@ func (obj *AzureProvider) CreateCluster() error {
 	if err != nil {
 		return err
 	}
+
 	obj.AzureTokenCred = cred
 	obj.Config = &AzureStateCluster{}
+	obj.Config.ClusterName = obj.ClusterName
 	obj.SSH_Payload = &util.SSHPayload{}
 	generateResourceName(obj)
 	if obj.HACluster {
+		obj.Config.ResourceGroupName = obj.ClusterName + "-ha-ksctl"
+
 		err := haCreateClusterHandler(ctx, obj)
 		if err != nil {
 			return err
 		}
 		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	} else {
+		obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
+
 		_, err := managedCreateClusterHandler(ctx, obj)
 		if err != nil {
 			return err
@@ -106,26 +112,23 @@ func (obj *AzureProvider) DeleteCluster() error {
 	}
 	obj.AzureTokenCred = cred
 	obj.Config = &AzureStateCluster{}
+	obj.Config.ClusterName = obj.ClusterName
 	obj.SSH_Payload = &util.SSHPayload{}
 	if obj.HACluster {
+		obj.Config.ResourceGroupName = obj.ClusterName + "-ha-ksctl"
 		err := haDeleteClusterHandler(ctx, obj)
 		if err != nil {
 			return err
 		}
 
-		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)); err != nil {
-			return err
-		}
 		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	} else {
-
+		obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
 		err := managedDeleteClusterHandler(ctx, obj)
 		if err != nil {
 			return err
 		}
-		if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "managed", obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)); err != nil {
-			return err
-		}
+
 		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	}
 	return nil
