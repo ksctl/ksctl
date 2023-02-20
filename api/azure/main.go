@@ -82,7 +82,6 @@ func (obj *AzureProvider) CreateCluster() error {
 	obj.Config = &AzureStateCluster{}
 	obj.Config.ClusterName = obj.ClusterName
 	obj.SSH_Payload = &util.SSHPayload{}
-	generateResourceName(obj)
 	if obj.HACluster {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ha-ksctl"
 

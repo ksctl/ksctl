@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
@@ -37,17 +38,63 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	}
 
 	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
-		if err := obj.createControlPlane(ctx, i); err != nil {
+		if err := obj.createControlPlane(ctx, i+1); err != nil {
 			return err
 		}
 	}
 
-	// Configure the Loadbalancer
+	var controlPlaneIPs = make([]string, obj.Spec.HAControlPlaneNodes)
+	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
+		controlPlaneIPs[i] = obj.Config.InfoControlPlanes.PrivateIPs[i] + ":6443"
+	}
 
+	err = obj.ConfigLoadBalancer(controlPlaneIPs)
+	if err != nil {
+		return err
+	}
+
+	token := ""
+	mysqlEndpoint := obj.Config.DBEndpoint
+	loadBalancerPrivateIP := obj.Config.InfoLoadBalancer.PrivateIP
+	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
+		if i == 0 {
+			err = obj.HelperExecNoOutputControlPlane(obj.Config.InfoControlPlanes.PublicIPs[i], scriptWithoutCP_1(mysqlEndpoint, loadBalancerPrivateIP), true)
+			if err != nil {
+				return err
+			}
+
+			token = obj.GetTokenFromCP_1(obj.Config.InfoControlPlanes.PublicIPs[0])
+			if len(token) == 0 {
+				return fmt.Errorf("🚨 Cannot retrieve k3s token")
+			}
+		} else {
+			err = obj.HelperExecNoOutputControlPlane(obj.Config.InfoControlPlanes.PublicIPs[i], scriptCP_n(mysqlEndpoint, loadBalancerPrivateIP, token), true)
+			if err != nil {
+				return err
+			}
+		}
+		log.Printf("✅ Configured %s-cp-%d\n", obj.ClusterName, i+1)
+	}
+
+	// Configure the Loadbalancer
+	kubeconfig, err := obj.FetchKUBECONFIG(obj.Config.InfoControlPlanes.PublicIPs[0])
+	if err != nil {
+		return fmt.Errorf("Cannot fetch kubeconfig\n" + err.Error())
+	}
+	newKubeconfig := strings.Replace(kubeconfig, "127.0.0.1", obj.Config.InfoLoadBalancer.PublicIP, 1)
+
+	newKubeconfig = strings.Replace(newKubeconfig, "default", obj.ClusterName+"-"+obj.Region+"-ha-azure-ksctl", -1)
+
+	err = obj.SaveKubeconfig(newKubeconfig)
+	if err != nil {
+		return err
+	}
+
+	log.Println("⛓  JOINING WORKER NODES")
 	// Extract KUBECONFIG
 
 	for i := 0; i < obj.Spec.HAWorkerNodes; i++ {
-		if err := obj.createWorkerPlane(ctx, i); err != nil {
+		if err := obj.createWorkerPlane(ctx, i+1); err != nil {
 			return err
 		}
 	}

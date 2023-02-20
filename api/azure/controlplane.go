@@ -7,11 +7,13 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 func scriptWithoutCP_1(dbEndpoint, privateIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
+sudo su -
 export K3S_DATASTORE_ENDPOINT='%s'
 curl -sfL https://get.k3s.io | sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
@@ -21,12 +23,13 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 func scriptWithCP_1() string {
 	return `#!/bin/bash
-cat /var/lib/rancher/k3s/server/token
+sudo cat /var/lib/rancher/k3s/server/token
 `
 }
 
 func scriptCP_n(dbEndpoint, privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
+sudo su -
 export SECRET='%s'
 export K3S_DATASTORE_ENDPOINT='%s'
 curl -sfL https://get.k3s.io | sh -s - server \
@@ -38,7 +41,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 func scriptKUBECONFIG() string {
 	return `#!/bin/bash
-cat /etc/rancher/k3s/k3s.yaml`
+sudo cat /etc/rancher/k3s/k3s.yaml`
 }
 
 func getControlPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
@@ -70,6 +73,56 @@ func getControlPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 		},
 	})
 	return
+}
+
+func (obj *AzureProvider) FetchKUBECONFIG(publicIP string) (string, error) {
+	obj.SSH_Payload.PublicIP = publicIP
+	obj.SSH_Payload.Output = ""
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptKUBECONFIG(), true)
+
+	if err != nil {
+		return "", nil
+	}
+
+	return obj.SSH_Payload.Output, nil
+}
+
+// GetTokenFromCP_1 used to extract the K3S_TOKEN from the first Controlplane node
+func (obj *AzureProvider) GetTokenFromCP_1(PublicIP string) string {
+	obj.SSH_Payload.PublicIP = PublicIP
+	obj.SSH_Payload.Output = ""
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
+	if err != nil {
+		return ""
+	}
+	token := obj.SSH_Payload.Output
+	obj.SSH_Payload.Output = ""
+	obj.Config.K3sToken = token
+
+	obj.ConfigWriter("ha")
+
+	return token
+}
+
+// HelperExecNoOutputControlPlane helps with script execution without returning us the output
+func (obj *AzureProvider) HelperExecNoOutputControlPlane(publicIP, script string, fastMode bool) error {
+	obj.SSH_Payload.PublicIP = publicIP
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, script, fastMode)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// HelperExecOutputControlPlane helps with script execution and also returns the script output
+func (obj *AzureProvider) HelperExecOutputControlPlane(publicIP, script string, fastMode bool) (string, error) {
+	obj.SSH_Payload.Output = ""
+	obj.SSH_Payload.PublicIP = publicIP
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, script, fastMode)
+	if err != nil {
+		return "", err
+	}
+	return obj.SSH_Payload.Output, nil
 }
 
 func (obj *AzureProvider) createControlPlane(ctx context.Context, indexOfNode int) error {

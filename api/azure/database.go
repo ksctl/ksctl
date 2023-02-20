@@ -37,10 +37,11 @@ func generateDBPassword(passwordLen int) string {
 
 func scriptDB(password string) string {
 	return fmt.Sprintf(`#!/bin/bash
-apt update
-apt install -y mysql-server
+sudo apt update
+sudo apt install -y mysql-server
 
-systemctl start mysql && systemctl enable mysql
+sudo systemctl start mysql && sudo systemctl enable mysql
+sudo su -
 
 mysql -e "create user 'ksctl' identified by '%s';"
 mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
@@ -70,31 +71,32 @@ systemctl restart mysql
 
 func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
-		Name: to.Ptr("sample_inbound_3306"),
+		Name: to.Ptr("sample_inbound_all"),
 		Properties: &armnetwork.SecurityRulePropertiesFormat{
-			SourceAddressPrefix:      to.Ptr("10.1.0.0/16"),
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 			SourcePortRange:          to.Ptr("*"),
 			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-			DestinationPortRange:     to.Ptr("3306"),
-			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-			Priority:                 to.Ptr[int32](100),
-			Description:              to.Ptr("sample network security group inbound port 3306"),
-			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+			DestinationPortRange:     to.Ptr("*"),
+			// DestinationPortRange:     to.Ptr("3306"),
+			Protocol:    to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:      to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:    to.Ptr[int32](100),
+			Description: to.Ptr("sample network security group inbound port 3306"),
+			Direction:   to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 		},
 	},
 		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_outbound_port"),
+			Name: to.Ptr("sample_outbound_port_all"),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
 				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("10.1.0.0/16"),
+				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
 				DestinationPortRange:     to.Ptr("*"),
 				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port All"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+				Description:              to.Ptr("sample network security group outbound port All"),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 			},
 		})
 	return

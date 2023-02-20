@@ -7,6 +7,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 func scriptLB() string {
@@ -18,7 +19,9 @@ sudo systemctl start haproxy && sudo systemctl enable haproxy
 }
 
 func configLBscript(controlPlaneIPs []string) string {
-	script := `sudo cat <<EOF > /etc/haproxy/haproxy.cfg
+	script := `#!/bin/bash
+sudo su -
+cat <<EOF > /etc/haproxy/haproxy.cfg
 frontend kubernetes-frontend
   bind *:6443
   mode tcp
@@ -41,7 +44,7 @@ backend kubernetes-backend
 
 	script += `EOF
 
-sudo systemctl restart haproxy
+systemctl restart haproxy
 `
 	return script
 }
@@ -61,22 +64,46 @@ func getLoadBalancerFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 		},
 	},
-	)
-	// &armnetwork.SecurityRule{
-	// 	Name: to.Ptr("sample_outbound_6443"),
-	// 	Properties: &armnetwork.SecurityRulePropertiesFormat{
-	// 		SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-	// 		SourcePortRange:          to.Ptr("*"),
-	// 		DestinationAddressPrefix: to.Ptr("10.1.0.0/16"),
-	// 		DestinationPortRange:     to.Ptr("6443"),
-	// 		Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-	// 		Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-	// 		Priority:                 to.Ptr[int32](101),
-	// 		Description:              to.Ptr("sample network security group outbound port 6443"),
-	// 		Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-	// 	},
-	// })
+		&armnetwork.SecurityRule{
+			Name: to.Ptr("sample_inbound_22"),
+			Properties: &armnetwork.SecurityRulePropertiesFormat{
+				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+				SourcePortRange:          to.Ptr("*"),
+				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+				DestinationPortRange:     to.Ptr("22"),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Priority:                 to.Ptr[int32](101),
+				Description:              to.Ptr("sample network security group outbound port 22"),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+			},
+		},
+		&armnetwork.SecurityRule{
+			Name: to.Ptr("sample_outbound_all"),
+			Properties: &armnetwork.SecurityRulePropertiesFormat{
+				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+				SourcePortRange:          to.Ptr("*"),
+				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+				DestinationPortRange:     to.Ptr("*"),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Priority:                 to.Ptr[int32](101),
+				Description:              to.Ptr("sample network security group outbound port all"),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
+			},
+		})
 	return
+}
+
+func (obj *AzureProvider) ConfigLoadBalancer(CPIPs []string) error {
+	getScript := configLBscript(CPIPs)
+	obj.SSH_Payload.PublicIP = obj.Config.InfoLoadBalancer.PublicIP
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, getScript, true)
+	if err == nil {
+		log.Println("✅ Configured LoadBalancer")
+		return nil
+	}
+	return err
 }
 
 func (obj *AzureProvider) createLoadBalancer(ctx context.Context) error {

@@ -387,9 +387,16 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	if err != nil {
 		return err
 	}
+	log.Printf("SSH into %s@%s:22", sshPayload.UserName, sshPayload.PublicIP)
+	log.Printf("SSH Private Key path: %s", sshPayload.PathPrivateKey)
+	log.Printf(`-----------------------
+SCRIPT TO RUN
+-----------------------
+%s
+-----------------------\n`, script)
 
 	config := &ssh.ClientConfig{
-		User: "root",
+		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},

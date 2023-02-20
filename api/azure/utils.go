@@ -93,36 +93,6 @@ type AzureInfra interface {
 	kubeconfigReader() ([]byte, error)
 }
 
-// func GetConfig(obj *AzureProvider) (configStore *AzureStateCluster, err error) {
-// 	kind := "managed"
-// 	if obj.HACluster {
-// 		kind = "ha"
-// 	}
-// 	clusterDir := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
-// 	fileBytes, err := os.ReadFile(util.GetPath(util.CLUSTER_PATH, "azure", kind, clusterDir, "info.json"))
-
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	err = json.Unmarshal(fileBytes, &configStore)
-
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	return
-// }
-
-// func (config *AzureProvider) ConfigWriterManagedClusteName() error {
-// 	config.Config.ClusterName = config.ClusterName
-// 	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
-// }
-
-// func (config *AzureProvider) ConfigWriterManagedResourceName() error {
-// 	return util.SaveState(config.Config, "azure", config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
-// }
-
 func (config *AzureProvider) ConfigWriter(clusterType string) error {
 	return util.SaveState(config.Config, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
 }
@@ -139,8 +109,6 @@ func (config *AzureProvider) ConfigReader(clusterType string) error {
 	var structData AzureStateCluster
 	json.Unmarshal(jsonData, &structData)
 
-	// config.Config.ClusterName = data["cluster_name"].(string)
-	// config.Config.ResourceGroupName = data["resource_group_name"].(string)
 	config.Config = &structData
 	config.ClusterName = config.Config.ClusterName
 	return nil
@@ -814,5 +782,32 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, diskName string) error
 		return err
 	}
 	log.Printf("Deleted disk: {%s}", diskName)
+	return nil
+}
+
+// SaveKubeconfig stores the kubeconfig to state management file
+func (obj *AzureProvider) SaveKubeconfig(kubeconfig string) error {
+	folderName := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
+	err := os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", folderName), 0644)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	_, err = os.Create(util.GetPath(util.CLUSTER_PATH, "azure", "ha", folderName, "config"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	file, err := os.OpenFile(util.GetPath(util.CLUSTER_PATH, "azure", "ha", folderName, "config"), os.O_WRONLY, 0750)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write([]byte(kubeconfig))
+	if err != nil {
+		return err
+	}
+	log.Println("💾 Kubeconfig")
 	return nil
 }
