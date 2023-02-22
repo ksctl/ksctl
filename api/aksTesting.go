@@ -11,14 +11,16 @@ func main() {
 	var payload azure.AzureOperations
 	// what all things users can config
 	// also add the node type
+
+	// add option to select size of vm
 	payload = &azure.AzureProvider{
-		ClusterName: "demo",
+		ClusterName: "demo-123",
 		HACluster:   true,
 		Region:      "eastus",
 		Spec: util.Machine{
 			ManagedNodes:        2,
 			HAControlPlaneNodes: 1,
-			HAWorkerNodes:       1,
+			HAWorkerNodes:       2,
 		},
 	}
 	fmt.Println("Enter [1] to create [0] to delete")

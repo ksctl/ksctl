@@ -39,37 +39,32 @@ func generateDBPassword(passwordLen int) string {
 func scriptDB(password string) string {
 	return fmt.Sprintf(`#!/bin/bash
 sudo apt update
-sudo apt install -y mysql-server mysql-client
+sudo apt install -y mysql-server
 
 sudo systemctl start mysql
 
 sudo systemctl enable mysql
 
-sudo mysql -e "create user 'ksctl' identified by '%s';"
-sudo mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
-
 cat <<EOF > mysqld.cnf
 [mysqld]
-user            = mysql
-pid-file        = /var/run/mysqld/mysqld.pid
-socket  = /var/run/mysqld/mysqld.sock
-port            = 3306
-datadir = /var/lib/mysql
+user		= mysql
+bind-address		= 0.0.0.0
+#mysqlx-bind-address	= 127.0.0.1
 
-bind-address            = 0.0.0.0
-mysqlx-bind-address     = 0.0.0.0
-key_buffer_size         = 16M
-
+key_buffer_size		= 16M
 myisam-recover-options  = BACKUP
-
 log_error = /var/log/mysql/error.log
 max_binlog_size   = 100M
 
 EOF
 
-sudo mv mysqld.conf /etc/mysql/mysql.conf.d/mysqld.cnf
+sudo mv mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
 
 sudo systemctl restart mysql
+
+sudo mysql -e "create user 'ksctl' identified by '%s';"
+sudo mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
+
 `, password)
 }
 
@@ -148,12 +143,13 @@ func (obj *AzureProvider) createDatabase(ctx context.Context) error {
 	obj.Config.InfoDatabase.Name = obj.ClusterName + "-db"
 	obj.Config.InfoDatabase.DiskName = obj.ClusterName + "-db-disk"
 
+	obj.Config.InfoDatabase.PrivateIP = *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress
+	fmt.Println("DB pprivate IP", obj.Config.InfoDatabase.PrivateIP)
 	_, err = obj.CreateVM(ctx, obj.ClusterName+"-db", *networkInterface.ID, obj.ClusterName+"-db-disk", scriptDB(generatedPassword))
 	if err != nil {
 		return err
 	}
 
-	obj.Config.InfoDatabase.PrivateIP = *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 	obj.Config.InfoDatabase.PublicIP = *publicIP.Properties.IPAddress
 
 	obj.Config.DBEndpoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, obj.Config.InfoDatabase.PrivateIP)

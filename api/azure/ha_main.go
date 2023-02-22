@@ -98,8 +98,11 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 			return err
 		}
 	}
-
-	log.Println("Your cluster is now ready")
+	log.Println("Created your HA azure cluster!!🥳 🎉 ")
+	fmt.Printf("\n\033[33mNOTE: for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
+	var printKubeconfig util.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
+	printKubeconfig.Printer(true, 0)
 	return nil
 }
 
@@ -159,5 +162,8 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", clusterDir)); err != nil {
 		return err
 	}
+	var printKubeconfig util.PrinterKubeconfigPATH
+	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
+	printKubeconfig.Printer(false, 1)
 	return nil
 }

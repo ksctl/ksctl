@@ -11,8 +11,14 @@ import (
 
 func scriptWP(privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
+cat <<EOF > worker-setup.sh
+#!/bin/bash
 export SECRET='%s'
 curl -sfL https://get.k3s.io | sh -s - agent --token=$SECRET --server https://%s:6443
+EOF
+
+sudo chmod +x worker-setup.sh
+sudo ./worker-setup.sh
 `, token, privateIPlb)
 }
 
@@ -72,7 +78,7 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 
 	// network security group
 	if len(obj.Config.InfoWorkerPlanes.NetworkSecurityGroupName) == 0 {
-		nsg, err := obj.CreateNSG(ctx, obj.ClusterName+"-wp-nsg", getControlPlaneFirewallRules())
+		nsg, err := obj.CreateNSG(ctx, obj.ClusterName+"-wp-nsg", getWorkerPlaneFirewallRules())
 		if err != nil {
 			return err
 		}
@@ -90,7 +96,7 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 	obj.Config.InfoWorkerPlanes.Names = append(obj.Config.InfoWorkerPlanes.Names, vmName)
 	obj.Config.InfoWorkerPlanes.DiskNames = append(obj.Config.InfoWorkerPlanes.DiskNames, vmName+"-disk")
 
-	_, err = obj.CreateVM(ctx, vmName, *networkInterface.ID, vmName+"-disk", "")
+	_, err = obj.CreateVM(ctx, vmName, *networkInterface.ID, vmName+"-disk", scriptWP(obj.Config.InfoLoadBalancer.PrivateIP, obj.Config.K3sToken))
 	if err != nil {
 		return err
 	}
