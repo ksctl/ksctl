@@ -452,6 +452,9 @@ SCRIPT TO RUN
 		session.Stdout = &buff
 	}
 	if err := session.Run(script); err != nil {
+		if flag == EXEC_WITH_OUTPUT {
+			sshPayload.Output = buff.String()
+		}
 		return err
 	}
 	if flag == EXEC_WITH_OUTPUT {

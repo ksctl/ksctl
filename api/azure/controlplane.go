@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
@@ -15,9 +16,9 @@ func scriptWithoutCP_1(dbEndpoint, privateIPlb string) string {
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setup.sh
 #!/bin/bash
-export K3S_DATASTORE_ENDPOINT='%s'
-curl -sfL https://get.k3s.io | sh -s - server \
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="v1.24.6+k3s1" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--datastore-endpoint "%s" \
 	--tls-san %s
 EOF
 
@@ -36,12 +37,7 @@ func scriptCP_n(dbEndpoint, privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setupN.sh
 #!/bin/bash
-export SECRET='%s'
-export K3S_DATASTORE_ENDPOINT='%s'
-curl -sfL https://get.k3s.io | sh -s - server \
-	--token=$SECRET \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--tls-san %s
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="v1.24.6+k3s1" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
@@ -107,6 +103,7 @@ func (obj *AzureProvider) GetTokenFromCP_1(PublicIP string) string {
 	}
 	token := obj.SSH_Payload.Output
 	obj.SSH_Payload.Output = ""
+	token = strings.Trim(token, "\n")
 	obj.Config.K3sToken = token
 
 	obj.ConfigWriter("ha")
@@ -117,10 +114,13 @@ func (obj *AzureProvider) GetTokenFromCP_1(PublicIP string) string {
 // HelperExecNoOutputControlPlane helps with script execution without returning us the output
 func (obj *AzureProvider) HelperExecNoOutputControlPlane(publicIP, script string, fastMode bool) error {
 	obj.SSH_Payload.PublicIP = publicIP
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, script, fastMode)
+	obj.SSH_Payload.Output = ""
+	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, script, fastMode)
+	fmt.Println(obj.SSH_Payload.Output)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

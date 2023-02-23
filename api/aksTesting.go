@@ -13,14 +13,15 @@ func main() {
 	// also add the node type
 
 	// add option to select size of vm
+	// cp = 2-cp,1wp name demo-cp
 	payload = &azure.AzureProvider{
-		ClusterName: "demo-123",
+		ClusterName: "demo-dipankar",
 		HACluster:   true,
 		Region:      "eastus",
 		Spec: util.Machine{
 			ManagedNodes:        2,
-			HAControlPlaneNodes: 1,
-			HAWorkerNodes:       2,
+			HAControlPlaneNodes: 2,
+			HAWorkerNodes:       1,
 		},
 	}
 	fmt.Println("Enter [1] to create [0] to delete")

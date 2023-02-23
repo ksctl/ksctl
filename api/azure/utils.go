@@ -642,10 +642,6 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 		Properties: &armcompute.VirtualMachineProperties{
 			StorageProfile: &armcompute.StorageProfile{
 				ImageReference: &armcompute.ImageReference{
-					// Offer:     to.Ptr("UbuntuServer"),
-					// Publisher: to.Ptr("Canonical"),
-					// SKU:       to.Ptr("18.04-LTS"),
-					// Version:   to.Ptr("latest"),
 					Offer:     to.Ptr("0001-com-ubuntu-server-jammy"),
 					Publisher: to.Ptr("Canonical"),
 					SKU:       to.Ptr("22_04-lts-gen2"),

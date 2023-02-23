@@ -91,7 +91,6 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	}
 
 	log.Println("⛓  JOINING WORKER NODES")
-	// Extract KUBECONFIG
 
 	for i := 0; i < obj.Spec.HAWorkerNodes; i++ {
 		if err := obj.createWorkerPlane(ctx, i+1); err != nil {

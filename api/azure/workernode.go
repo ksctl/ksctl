@@ -13,8 +13,7 @@ func scriptWP(privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > worker-setup.sh
 #!/bin/bash
-export SECRET='%s'
-curl -sfL https://get.k3s.io | sh -s - agent --token=$SECRET --server https://%s:6443
+curl -sfL https://get.k3s.io | sh -s - agent --token %s --server https://%s:6443
 EOF
 
 sudo chmod +x worker-setup.sh
@@ -96,6 +95,7 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 	obj.Config.InfoWorkerPlanes.Names = append(obj.Config.InfoWorkerPlanes.Names, vmName)
 	obj.Config.InfoWorkerPlanes.DiskNames = append(obj.Config.InfoWorkerPlanes.DiskNames, vmName+"-disk")
 
+	log.Println(scriptWP(obj.Config.InfoLoadBalancer.PrivateIP, obj.Config.K3sToken))
 	_, err = obj.CreateVM(ctx, vmName, *networkInterface.ID, vmName+"-disk", scriptWP(obj.Config.InfoLoadBalancer.PrivateIP, obj.Config.K3sToken))
 	if err != nil {
 		return err
