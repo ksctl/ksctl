@@ -387,15 +387,7 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	if err != nil {
 		return err
 	}
-	log.Printf("SSH into %s@%s:22", sshPayload.UserName, sshPayload.PublicIP)
-	log.Printf("SSH Private Key path: %s", sshPayload.PathPrivateKey)
-	fmt.Printf(`
------------------------
-SCRIPT TO RUN
------------------------
-%s
------------------------
-`, script)
+	log.Printf("SSH into %s@%s", sshPayload.UserName, sshPayload.PublicIP)
 
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
@@ -451,14 +443,12 @@ SCRIPT TO RUN
 	if flag == EXEC_WITH_OUTPUT {
 		session.Stdout = &buff
 	}
-	if err := session.Run(script); err != nil {
-		if flag == EXEC_WITH_OUTPUT {
-			sshPayload.Output = buff.String()
-		}
-		return err
-	}
+	err = session.Run(script)
 	if flag == EXEC_WITH_OUTPUT {
 		sshPayload.Output = buff.String()
+	}
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -79,8 +79,6 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return nil, err
 	}
 
-	log.Println("Created the Resource Group " + azureConfig.Config.ResourceGroupName)
-
 	managedClustersClient, err := getAzureManagedClusterClient(azureConfig)
 	if err != nil {
 		return nil, err
@@ -120,6 +118,7 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("AKS cluster is creating... {%s}", azureConfig.ClusterName)
 
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -135,7 +134,7 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 
 	log.Println("NOTE: the kubeconfig to be saved has admin credentials")
 
-	if err := azureConfig.kubeconfigWriter(KUBECONFIG); err != nil {
+	if err := azureConfig.SaveKubeconfig(KUBECONFIG); err != nil {
 		return nil, err
 	}
 

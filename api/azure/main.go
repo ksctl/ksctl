@@ -318,8 +318,10 @@ func (obj *AzureProvider) DeleteCluster() error {
 }
 
 func (provider AzureProvider) SwitchContext() error {
+	provider.Config = &AzureStateCluster{}
 	switch provider.HACluster {
 	case true:
+		provider.Config.ResourceGroupName = provider.ClusterName + "-ha-ksctl"
 		if isPresent("ha", provider) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.Config.ResourceGroupName}
@@ -327,6 +329,7 @@ func (provider AzureProvider) SwitchContext() error {
 			return nil
 		}
 	case false:
+		provider.Config.ResourceGroupName = provider.ClusterName + "-ksctl"
 		if isPresent("managed", provider) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.Config.ResourceGroupName}

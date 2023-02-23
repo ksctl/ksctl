@@ -580,20 +580,6 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, virtualNetwo
 	return &resp.VirtualNetwork, nil
 }
 
-func (obj *AzureProvider) kubeconfigWriter(kubeconfig string) error {
-	clusterDirName := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
-	typeOfCluster := "managed"
-	if obj.HACluster {
-		typeOfCluster = "ha"
-	}
-	err := os.WriteFile(util.GetPath(util.CLUSTER_PATH, "azure", typeOfCluster, clusterDirName, "config"), []byte(kubeconfig), 0644)
-	if err != nil {
-		return err
-	}
-	log.Println("💾 configuration")
-	return nil
-}
-
 func (obj *AzureProvider) kubeconfigReader() ([]byte, error) {
 	clusterDirName := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
 	typeOfCluster := "managed"
@@ -805,17 +791,21 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, diskName string) error
 // SaveKubeconfig stores the kubeconfig to state management file
 func (obj *AzureProvider) SaveKubeconfig(kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
-	err := os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", folderName), 0644)
+	kind := "managed"
+	if obj.HACluster {
+		kind = "ha"
+	}
+	err := os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "azure", kind, folderName), 0755)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	_, err = os.Create(util.GetPath(util.CLUSTER_PATH, "azure", "ha", folderName, "config"))
+	_, err = os.Create(util.GetPath(util.CLUSTER_PATH, "azure", kind, folderName, "config"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	file, err := os.OpenFile(util.GetPath(util.CLUSTER_PATH, "azure", "ha", folderName, "config"), os.O_WRONLY, 0750)
+	file, err := os.OpenFile(util.GetPath(util.CLUSTER_PATH, "azure", kind, folderName, "config"), os.O_WRONLY, 0750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}

@@ -8,6 +8,10 @@ Avinesh Tripathi <avineshtripathi1@gmail.com>
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/kubesimplify/ksctl/api/azure"
+	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -19,40 +23,36 @@ var createClusterAzure = &cobra.Command{
 	ksctl create-cluster azure <arguments to civo cloud provider>
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// NOTE: Every time we use this command a new azure instance in created which is not correct
-		// we need to move this along with other providers to top level instead of it being on command level
-		// azure := aks.AzureProvider{}
-
-		// cluster := &aks.Cluster{
-		// 	ClusterName: clusterName,
-		// 	NodeCount:   nodeCount,
-		// }
-
-		// // if param is not useful later on we can remove this and add the key value to the azure provider
-		// params := map[string]string{
-		// 	"resourceGroupName": resourceGroupName,
-		// 	"region":            region,
-		// }
-		// // change it based on requirement
-		// // below fields are manually filled
-		// fmt.Println(cluster)
-		// if err := azure.Create(cluster, nil, params); err != nil {
-		// 	fmt.Println("failed to initalize the azure struct:", err)
-		// }
+		payload := &azure.AzureProvider{
+			ClusterName: azmcclusterName,
+			HACluster:   false,
+			Region:      azmcregion,
+			Spec: util.Machine{
+				ManagedNodes: azmcnodeCount,
+				Disk:         azmcsize,
+			},
+		}
+		err := payload.CreateCluster()
+		if err != nil {
+			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			return
+		}
+		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	},
 }
 
 var (
-	clusterName       string
-	resourceGroupName string
-	nodeCount         int32
-	region            string
+	azmcclusterName string
+	azmcnodeCount   int
+	azmcsize        string
+	azmcregion      string
 )
 
 func init() {
 	createClusterCmd.AddCommand(createClusterAzure)
-	createClusterAzure.Flags().StringVarP(&clusterName, "name", "n", "", "cluster name") // what if the cluster name is same to a previously created cluster
-	createClusterAzure.Flags().Int32VarP(&nodeCount, "nodes", "N", 2, "Number of nodes")
-	createClusterAzure.Flags().StringVarP(&resourceGroupName, "resources", "r", "", "resource group name")
-	createClusterAzure.Flags().StringVarP(&region, "region", "l", "", "region")
+	createClusterAzure.Flags().StringVarP(&azmcclusterName, "name", "n", "", "Cluster name")
+	createClusterAzure.Flags().StringVarP(&azmcsize, "node-size", "s", "Standard_DS2_v2", "Node size")
+	createClusterAzure.Flags().StringVarP(&azmcregion, "region", "r", "eastus", "Region")
+	createClusterAzure.Flags().IntVarP(&azmcnodeCount, "nodes", "N", 1, "Number of Nodes")
+	createClusterAzure.MarkFlagRequired("name")
 }
