@@ -187,7 +187,7 @@ func SaveCred(config interface{}, provider string) error {
 	return nil
 }
 
-func SaveState(config interface{}, provider, clusterDir string) error {
+func SaveState(config interface{}, provider, clusterType string, clusterDir string) error {
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
 		strings.Compare(provider, "aws") != 0 {
@@ -197,14 +197,14 @@ func SaveState(config interface{}, provider, clusterDir string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, "managed", clusterDir), 0755); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir), 0755); err != nil && !os.IsExist(err) {
 		return err
 	}
-	_, err = os.Create(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"))
+	_, err = os.Create(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
-	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"), storeBytes, 0640)
+	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"), storeBytes, 0640)
 	if err != nil {
 		return err
 	}
@@ -229,8 +229,8 @@ func GetCred(provider string) (i map[string]string, err error) {
 	return
 }
 
-func GetState(provider, clusterDir string) (i map[string]string, err error) {
-	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, "managed", clusterDir, "info.json"))
+func GetState(provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
+	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
 
 	if err != nil {
 		return
@@ -289,9 +289,32 @@ func getPaths(provider string, params ...string) string {
 }
 
 // CreateSSHKeyPair return public key and error
-func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
+// func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 
-	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
+// 	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
+
+// 	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
+// 	cmd.Dir = pathTillFolder
+// 	out, err := cmd.Output()
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	fmt.Println(string(out))
+
+// 	keyPairToUpload := GetPath(SSH_PATH, provider, "ha", clusterName+" "+region) + ".pub"
+// 	fileBytePub, err := os.ReadFile(keyPairToUpload)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	return string(fileBytePub), nil
+// }
+
+// NOTE: DUPLICATE to be merged the above function
+func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
+
+	pathTillFolder := getPaths(provider, "ha", clusterDir)
 
 	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
 	cmd.Dir = pathTillFolder
@@ -302,7 +325,7 @@ func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 
 	fmt.Println(string(out))
 
-	keyPairToUpload := GetPath(SSH_PATH, provider, "ha", clusterName+" "+region) + ".pub"
+	keyPairToUpload := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
 	fileBytePub, err := os.ReadFile(keyPairToUpload)
 	if err != nil {
 		return "", err
@@ -364,16 +387,25 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	if err != nil {
 		return err
 	}
+	log.Printf("SSH into %s@%s:22", sshPayload.UserName, sshPayload.PublicIP)
+	log.Printf("SSH Private Key path: %s", sshPayload.PathPrivateKey)
+	fmt.Printf(`
+-----------------------
+SCRIPT TO RUN
+-----------------------
+%s
+-----------------------
+`, script)
 
 	config := &ssh.ClientConfig{
-		User: "root",
+		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
 		// FIXME: Remove the InsecureIgnoreHostKey
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				fmt.Println(key)
+				// fmt.Println(key.Verify())
 				// check the fingerprint of hostkey and server key
 				// fmt.Println(publicKey)
 
@@ -420,6 +452,9 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 		session.Stdout = &buff
 	}
 	if err := session.Run(script); err != nil {
+		if flag == EXEC_WITH_OUTPUT {
+			sshPayload.Output = buff.String()
+		}
 		return err
 	}
 	if flag == EXEC_WITH_OUTPUT {

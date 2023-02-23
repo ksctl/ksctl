@@ -95,7 +95,7 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to create dummy folder")
 	}
-	if _, err := CreateSSHKeyPair(provider, clusterName, clusterRegion); err != nil {
+	if _, err := CreateSSHKeyPair(provider, clusterName+" "+clusterRegion); err != nil {
 		t.Fatalf("Unable to create SSH keypair")
 	}
 }
