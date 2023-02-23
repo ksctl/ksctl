@@ -405,7 +405,7 @@ SCRIPT TO RUN
 		// FIXME: Remove the InsecureIgnoreHostKey
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				fmt.Println(key)
+				// fmt.Println(key.Verify())
 				// check the fingerprint of hostkey and server key
 				// fmt.Println(publicKey)
 

@@ -95,7 +95,6 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 	obj.Config.InfoWorkerPlanes.Names = append(obj.Config.InfoWorkerPlanes.Names, vmName)
 	obj.Config.InfoWorkerPlanes.DiskNames = append(obj.Config.InfoWorkerPlanes.DiskNames, vmName+"-disk")
 
-	log.Println(scriptWP(obj.Config.InfoLoadBalancer.PrivateIP, obj.Config.K3sToken))
 	_, err = obj.CreateVM(ctx, vmName, *networkInterface.ID, vmName+"-disk", scriptWP(obj.Config.InfoLoadBalancer.PrivateIP, obj.Config.K3sToken))
 	if err != nil {
 		return err

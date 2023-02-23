@@ -14,6 +14,18 @@ import (
 )
 
 func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
+	if !util.IsValidName(obj.ClusterName) {
+		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
+	}
+	// TODO: add VMSize and Region validation here
+
+	////////
+
+	////////
+	if isPresent("ha", *obj) {
+		return fmt.Errorf("cluster already exists: %v", obj.ClusterName)
+	}
+
 	log.Println("Started to Create your HA cluster on Azure provider...")
 	defer obj.ConfigWriter("ha")
 
@@ -105,7 +117,38 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	return nil
 }
 
-func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider) error {
+func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider, showMsg bool) error {
+	if !util.IsValidName(obj.ClusterName) {
+		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
+	}
+	// TODO: add VMSize and Region validation here
+
+	////////
+
+	////////
+	if !isPresent("ha", *obj) {
+		return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
+	}
+
+	if showMsg {
+		log.Printf(`NOTE 🚨
+	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
+
+		if !unsafe {
+			return nil
+		}
+	}
+
 	log.Println("start deleting the cluster...")
 
 	err := obj.ConfigReader("ha")

@@ -35,7 +35,6 @@ func generateDBPassword(passwordLen int) string {
 	return string(inRune)
 }
 
-// FIXME: review whether the mysql server is working or not
 func scriptDB(password string) string {
 	return fmt.Sprintf(`#!/bin/bash
 sudo apt update
@@ -144,7 +143,6 @@ func (obj *AzureProvider) createDatabase(ctx context.Context) error {
 	obj.Config.InfoDatabase.DiskName = obj.ClusterName + "-db-disk"
 
 	obj.Config.InfoDatabase.PrivateIP = *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-	fmt.Println("DB pprivate IP", obj.Config.InfoDatabase.PrivateIP)
 	_, err = obj.CreateVM(ctx, obj.ClusterName+"-db", *networkInterface.ID, obj.ClusterName+"-db-disk", scriptDB(generatedPassword))
 	if err != nil {
 		return err

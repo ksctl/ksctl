@@ -12,8 +12,25 @@ import (
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
-func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider) error {
+func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider, showMsg bool) error {
+	if showMsg {
+		log.Printf(`NOTE 🚨
+	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, azureConfig.ClusterName+" "+azureConfig.Config.ResourceGroupName+" "+azureConfig.Region)
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
 
+		if !unsafe {
+			return nil
+		}
+	}
 	managedClustersClient, err := getAzureManagedClusterClient(azureConfig)
 	if err != nil {
 		return err
@@ -54,24 +71,6 @@ type printer struct {
 	ResourceName string
 }
 
-func generateResourceName(azureConfig *AzureProvider) {
-	// random resourcename didnt went well as the resourcename entered by the user must be easier
-	// i.e. the user has mentioned the clusterName and so resourcename will be clusterName + "-ksctl"
-
-	// letter := "abcdefghijklmnopqrstuvwxyz0123456789"
-
-	// noOfCharacters := 5
-	var ret strings.Builder
-	ret.WriteString(azureConfig.ClusterName + "-ksctl")
-	// for noOfCharacters > 0 {
-	// 	char := string(letter[rand.Intn(len(letter))])
-	// 	ret.WriteString(char)
-	// 	noOfCharacters--
-	// }
-
-	azureConfig.Config.ResourceGroupName = ret.String()
-}
-
 func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
 	defer azureConfig.ConfigWriter("managed")
 
@@ -100,7 +99,7 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 					{
 						Name:              to.Ptr("askagent"),
 						Count:             to.Ptr[int32](int32(azureConfig.Spec.ManagedNodes)),
-						VMSize:            to.Ptr("Standard_DS2_v2"),
+						VMSize:            to.Ptr(azureConfig.Spec.Disk),
 						MaxPods:           to.Ptr[int32](110),
 						MinCount:          to.Ptr[int32](1),
 						MaxCount:          to.Ptr[int32](100),

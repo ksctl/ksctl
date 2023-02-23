@@ -20,6 +20,9 @@ import (
 type AzureOperations interface {
 	CreateCluster() error
 	DeleteCluster() error
+
+	AddMoreWorkerNodes() error
+	DeleteSomeWorkerNodes() error
 }
 
 type AzureStateVMs struct {
@@ -95,6 +98,15 @@ type AzureInfra interface {
 
 func (config *AzureProvider) ConfigWriter(clusterType string) error {
 	return util.SaveState(config.Config, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+}
+
+func isPresent(kind string, obj AzureProvider) bool {
+	path := util.GetPath(util.CLUSTER_PATH, "azure", kind, obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region, "info.json")
+	_, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func (config *AzureProvider) ConfigReader(clusterType string) error {
@@ -658,7 +670,7 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 				},
 			},
 			HardwareProfile: &armcompute.HardwareProfile{
-				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes("Standard_F2s")), // VM size include vCPUs,RAM,Data Disks,Temp storage.
+				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes(obj.Spec.Disk)), // VM size include vCPUs,RAM,Data Disks,Temp storage.
 			},
 			OSProfile: &armcompute.OSProfile{ //
 				ComputerName:  to.Ptr(vmName),
