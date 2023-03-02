@@ -31,7 +31,7 @@ func main() {
 	}
 	fmt.Println("Enter [1] to create [0] to delete [2] for adding more worker nodes [3] to delete worker nodes")
 	choice := -1
-	fmt.Scanf("%d", &choice)
+	_, _ = fmt.Scanf("%d", &choice)
 	switch choice {
 	case 0:
 		fmt.Println(payload.DeleteCluster())
