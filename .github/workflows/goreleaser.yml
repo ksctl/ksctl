@@ -27,11 +27,14 @@ jobs:
       - name: Install Cosign 
         uses: sigstore/cosign-installer@main
 
+      - name: Check cosign version
+        run: cosign version 
+      
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets. GITHUB_TOKEN }}

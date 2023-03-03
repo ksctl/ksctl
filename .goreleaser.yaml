@@ -10,19 +10,17 @@ builds:
     goarch:
       - amd64
       - arm64
-    ldflags: -w -s -X github.com/kubesimplify/ksctl/selfupdate.BuildDate={{.Date}} -X github.com/kubesimplify/ksctl/selfupdate.GitSummary={{.Version}}
+    ldflags: -w -s -X github.com/kubesimplify/ksctl/cli/cmd.BuildDate={{.Date}} -X github.com/kubesimplify/ksctl/cli.cmd.Commit=$(git rev-parse --short HEAD) -X github.com/kubesimplify/ksctl/cli/cmd.Version=$(git describe --tags --abbrev=0)
     env:
       - CGO_ENABLED=0
-
 signs:
   - cmd: cosign
-    env:
-      - COSIGN_EXPERIMENTAL=1
     certificate: '${artifact}.cert'
     args:
       - sign-blob
       - '--output-certificate=${certificate}' 
       - '--output-signature=${signature}'
       - '${artifact}'
+      -  --yes
     artifacts: all
     output: true
