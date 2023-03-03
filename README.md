@@ -140,8 +140,8 @@ flowchart LR;
   aws--HA-->awsha[Create & Delete]:::red;
   
   web--AZURE-->az{Types};
-  az:::blue--managed-->azsm[Create & Delete]:::blue;
-  az--HA-->azha[Create & Delete]:::blue;
+  az:::green--managed-->azsm[Create & Delete]:::green;
+  az--HA-->azha[Create & Delete]:::green;
 
 ```
 

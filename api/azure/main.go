@@ -246,6 +246,7 @@ func (obj *AzureProvider) CreateCluster() error {
 
 		err := haCreateClusterHandler(ctx, obj)
 		if err != nil {
+			log.Println("CLEANUP TRIGGERED!: failed to create")
 			_ = haDeleteClusterHandler(ctx, obj, false)
 			return err
 		}

@@ -130,9 +130,9 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider, showMsg boo
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
 
-	if !isPresent("ha", *obj) {
-		return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
-	}
+	// if !isPresent("ha", *obj) {
+	// 	return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
+	// }
 
 	if showMsg {
 		log.Printf(`NOTE 🚨

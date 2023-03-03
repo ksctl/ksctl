@@ -16,10 +16,10 @@ func main() {
 	// cp = 2-cp,1wp name demo-cp
 	payload = &azure.AzureProvider{
 		ClusterName: "demo",
-		HACluster:   false,
+		HACluster:   true,
 		Region:      "eastus",
 		Spec: util.Machine{
-			Disk:                "Standard_B2s",
+			Disk:                "Standard_B1s",
 			ManagedNodes:        2,
 			HAControlPlaneNodes: 3,
 			HAWorkerNodes:       1,
