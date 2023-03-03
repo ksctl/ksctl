@@ -74,29 +74,16 @@ type AzureProvider struct {
 // AddMoreWorkerNodes adds more worker nodes to the existing HA cluster
 func (obj *AzureProvider) AddMoreWorkerNodes() error {
 
-	// if errV := validationOfArguments(name, region); errV != nil {
-	// 	return errV
-	// }
-
-	// if !isValidSizeHA(nodeSize) {
-	// 	return fmt.Errorf("🚩 SIZE")
-	// }
-
-	// if !isPresent("ha", name, region) {
-	// 	return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
-	// }
-
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
-	// TODO: add VMSize and Region validation here
+	if !isValidNodeSize(obj.Spec.Disk) {
+		return fmt.Errorf("node size {%s} is invalid", obj.Spec.Disk)
+	}
 
-	////////
-
-	////////
-	// if !isPresent("ha", *obj) {
-	// 	return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
-	// }
+	if !isValidRegion(obj.Region) {
+		return fmt.Errorf("region {%s} is invalid", obj.Region)
+	}
 
 	ctx := context.Background()
 	setRequiredENV_VAR(ctx, obj)
@@ -136,28 +123,18 @@ func (obj *AzureProvider) AddMoreWorkerNodes() error {
 
 // DeleteSomeWorkerNodes deletes workerNodes from existing HA cluster
 func (obj *AzureProvider) DeleteSomeWorkerNodes() error {
-	// clusterName := provider.ClusterName
-	// region := provider.Region
-	// noWP := provider.Spec.HAWorkerNodes
-	// if !util.IsValidRegionCIVO(region) {
-	// 	return fmt.Errorf("🚩 REGION")
-	// }
 
-	// if !util.IsValidName(clusterName) {
-	// 	return fmt.Errorf("🚩 NAME FORMAT")
-	// }
-
-	// if !isPresent("ha", clusterName, region) {
-	// 	return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
-	// }
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
-	// TODO: add VMSize and Region validation here
 
-	////////
+	if !util.IsValidName(obj.ClusterName) {
+		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
+	}
 
-	////////
+	if !isValidRegion(obj.Region) {
+		return fmt.Errorf("region {%s} is invalid", obj.Region)
+	}
 
 	log.Printf(`NOTE 🚨
 ((Deleteion of nodes happens from most recent added to first created worker node))

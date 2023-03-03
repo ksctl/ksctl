@@ -17,11 +17,15 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
-	// TODO: add VMSize and Region validation here
 
-	////////
+	if !isValidNodeSize(obj.Spec.Disk) {
+		return fmt.Errorf("node size {%s} is invalid", obj.Spec.Disk)
+	}
 
-	////////
+	if !isValidRegion(obj.Region) {
+		return fmt.Errorf("region {%s} is invalid", obj.Region)
+	}
+
 	if isPresent("ha", *obj) {
 		return fmt.Errorf("cluster already exists: %v", obj.ClusterName)
 	}
@@ -121,11 +125,11 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider, showMsg boo
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
-	// TODO: add VMSize and Region validation here
 
-	////////
+	if !isValidRegion(obj.Region) {
+		return fmt.Errorf("region {%s} is invalid", obj.Region)
+	}
 
-	////////
 	if !isPresent("ha", *obj) {
 		return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
 	}

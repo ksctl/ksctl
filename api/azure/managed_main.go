@@ -13,6 +13,14 @@ import (
 )
 
 func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider, showMsg bool) error {
+	if !util.IsValidName(azureConfig.ClusterName) {
+		return fmt.Errorf("invalid cluster name: %v", azureConfig.ClusterName)
+	}
+
+	if !isValidRegion(azureConfig.Region) {
+		return fmt.Errorf("region {%s} is invalid", azureConfig.Region)
+	}
+
 	if showMsg {
 		log.Printf(`NOTE 🚨
 	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
@@ -72,6 +80,17 @@ type printer struct {
 }
 
 func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
+	if !util.IsValidName(azureConfig.ClusterName) {
+		return nil, fmt.Errorf("invalid cluster name: %v", azureConfig.ClusterName)
+	}
+	if !isValidNodeSize(azureConfig.Spec.Disk) {
+		return nil, fmt.Errorf("node size {%s} is invalid", azureConfig.Spec.Disk)
+	}
+
+	if !isValidRegion(azureConfig.Region) {
+		return nil, fmt.Errorf("region {%s} is invalid", azureConfig.Region)
+	}
+
 	defer azureConfig.ConfigWriter("managed")
 
 	_, err := azureConfig.CreateResourceGroup(ctx)
