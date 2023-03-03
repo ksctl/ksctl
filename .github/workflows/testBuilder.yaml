@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.19.0' # The Go version to download (if necessary) and use.
+      - run: go version
       - name: Build and install the latest version
         run: |
           make install_linux
@@ -25,6 +29,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.19.1' # The Go version to download (if necessary) and use.
+      - run: go version
       # TODO: add support to check for the M1 chip as well
       - name: Build and install the latest version on intel chip
         run: |
@@ -35,8 +43,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.19.1' # The Go version to download (if necessary) and use.
+      - run: go version
       - name: Build and install the latest version
         run: |
-          .\install.ps1
+          .\builder.ps1
           cd C:\Users\runneradmin\AppData\Local\ksctl
           .\ksctl.exe -h

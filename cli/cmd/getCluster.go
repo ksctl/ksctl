@@ -62,6 +62,30 @@ func Printer(i int) {
 		}
 	}
 
+	folders, err = os.ReadDir(util.GetPath(util.CLUSTER_PATH, "azure", "ha"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range folders {
+		if file.IsDir() {
+			info := strings.Split(file.Name(), " ")
+			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[2], Provider: "AZURE (HA)"})
+		}
+	}
+
+	folders, err = os.ReadDir(util.GetPath(util.CLUSTER_PATH, "azure", "managed"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range folders {
+		if file.IsDir() {
+			info := strings.Split(file.Name(), " ")
+			toBePrinted = append(toBePrinted, printer{ClusterName: info[0], Region: info[2], Provider: "AZURE (MANAGED)"})
+		}
+	}
+
 	folders, err = os.ReadDir(util.GetPath(util.CLUSTER_PATH, "local"))
 	if err != nil {
 		log.Fatal(err)

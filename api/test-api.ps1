@@ -33,3 +33,9 @@ Write-Output "+-------------------------+"
 Set-Location civo
 go test . -v && Set-Location -
 
+Write-Output "+-------------------------+"
+Write-Output "|   Testing (api/azure)    |"
+Write-Output "+-------------------------+"
+
+Set-Location azure
+go test . -v && Set-Location -

@@ -21,6 +21,7 @@ Many cloud providers offer their flavor of Kubernetes. Each provider has its uni
 - Go (if building from source)
 - Administrative permission
 - Docker (if going to use Local provider)
+- Go version >1.19 for build process
 
 # Supported Platforms
 
@@ -139,8 +140,8 @@ flowchart LR;
   aws--HA-->awsha[Create & Delete]:::red;
   
   web--AZURE-->az{Types};
-  az:::blue--managed-->azsm[Create & Delete]:::blue;
-  az--HA-->azha[Create & Delete]:::blue;
+  az:::green--managed-->azsm[Create & Delete]:::green;
+  az--HA-->azha[Create & Delete]:::green;
 
 ```
 
