@@ -55,7 +55,7 @@ func init() {
 	createClusterHACivo.Flags().StringVarP(&chcnodesize, "nodeSize", "s", "g3.small", "Node size")
 	createClusterHACivo.Flags().StringVarP(&chcclustername, "name", "n", "", "Cluster name")
 	createClusterHACivo.Flags().StringVarP(&chcregion, "region", "r", "LON1", "Region")
-	createClusterHACivo.Flags().IntVarP(&chcnocp, "control-planes-nodes", "c", 3, "no of control plane nodes")
+	createClusterHACivo.Flags().IntVarP(&chcnocp, "control-nodes", "c", 3, "no of control plane nodes")
 	createClusterHACivo.Flags().IntVarP(&chcnowp, "worker-nodes", "w", 1, "no of worker nodes")
 	createClusterHACivo.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterHACivo.MarkFlagRequired("name")

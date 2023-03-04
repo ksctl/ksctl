@@ -9,9 +9,7 @@ Credit to @civo
 package civo
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"runtime"
@@ -32,12 +30,8 @@ type CivoProvider struct {
 // Credentials accept the api_token for CIVO auth and authorization from user
 func Credentials() bool {
 
-	apikey := ""
-	fmt.Println("Enter your API-TOKEN-KEY: ")
-	// FIXME: make the APIKEY scan as password based text
-	// More info:
-	//    to does not hide the apikey when the user is typing
-	_, err := fmt.Scan(&apikey)
+	fmt.Println("Enter your API-TOKEN-KEY 👇")
+	apikey, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -46,7 +40,7 @@ func Credentials() bool {
 		Token: apikey,
 	}
 
-	err = saveCred(apiStore)
+	err = util.SaveCred(apiStore, "civo")
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -55,51 +49,16 @@ func Credentials() bool {
 	return true
 }
 
-func getCred() (configStore util.CivoCredential, err error) {
-
-	fileBytes, err := os.ReadFile(util.GetPath(util.CREDENTIAL_PATH, "civo"))
-
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(fileBytes, &configStore)
-
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-func saveCred(configStore util.CivoCredential) error {
-
-	storeBytes, err := json.Marshal(configStore)
-	if err != nil {
-		return err
-	}
-	_, err = os.Create(util.GetPath(util.CREDENTIAL_PATH, "civo"))
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	err = ioutil.WriteFile(util.GetPath(util.CREDENTIAL_PATH, "civo"), storeBytes, 0640)
-	if err != nil {
-		return err
-	}
-	log.Println("💾 configuration")
-	return nil
-}
-
 // fetchAPIKey returns the api_token from the cred/civo.json file store
 func fetchAPIKey() string {
 
-	token, err := getCred()
+	token, err := util.GetCred("civo")
 
 	if err != nil {
 		return ""
 	}
-	return token.Token
+
+	return token["token"]
 }
 
 // isPresent Checks whether the cluster to create is already present

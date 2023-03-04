@@ -10,6 +10,7 @@ package utils
 import (
 	"bytes"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -20,10 +21,13 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+
 	"time"
 
 	"golang.org/x/crypto/ssh"
-	kh "golang.org/x/crypto/ssh/knownhosts"
+
+	kh "golang.org/x//ssh/knownhosts
+	"golang.org/x/crypto/ssh/terminal
 )
 
 type AwsProvider struct {
@@ -33,17 +37,6 @@ type AwsProvider struct {
 	Spec        Machine
 	AccessKey   string
 	Secret      string
-}
-
-type AzureProvider struct {
-	ClusterName         string
-	HACluster           bool
-	Region              string
-	Spec                Machine
-	SubscriptionID      string
-	TenantID            string
-	ServicePrincipleKey string
-	ServicePrincipleID  string
 }
 
 type Machine struct {
@@ -66,10 +59,10 @@ type CivoCredential struct {
 }
 
 type AzureCredential struct {
-	SubscriptionID      string `json:"subscription_id"`
-	TenantID            string `json:"tenant_id"`
-	ServicePrincipleKey string `json:"service_principal_key"`
-	ServicePrincipleID  string `json:"service_principal_id"`
+	SubscriptionID string `json:"subscription_id"`
+	TenantID       string `json:"tenant_id"`
+	ClientID       string `json:"client_id"`
+	ClientSecret   string `json:"client_secret"`
 }
 
 type AwsCredential struct {
@@ -172,6 +165,88 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	}
 }
 
+func SaveCred(config interface{}, provider string) error {
+	if strings.Compare(provider, "civo") != 0 &&
+		strings.Compare(provider, "azure") != 0 &&
+		strings.Compare(provider, "aws") != 0 {
+		return fmt.Errorf("Invalid Provider (given): Unable to save configuration")
+	}
+
+	storeBytes, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	_, err = os.Create(GetPath(CREDENTIAL_PATH, provider))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	err = os.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
+	if err != nil {
+		return err
+	}
+	log.Println("💾 configuration")
+	return nil
+}
+
+func SaveState(config interface{}, provider, clusterType string, clusterDir string) error {
+	if strings.Compare(provider, "civo") != 0 &&
+		strings.Compare(provider, "azure") != 0 &&
+		strings.Compare(provider, "aws") != 0 {
+		return fmt.Errorf("invalid Provider (given): Unable to save configuration")
+	}
+	storeBytes, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir), 0755); err != nil && !os.IsExist(err) {
+		return err
+	}
+	_, err = os.Create(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"), storeBytes, 0640)
+	if err != nil {
+		return err
+	}
+	log.Println("💾 configuration")
+	return nil
+}
+
+func GetCred(provider string) (i map[string]string, err error) {
+
+	fileBytes, err := os.ReadFile(GetPath(CREDENTIAL_PATH, provider))
+
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(fileBytes, &i)
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func GetState(provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
+	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
+
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(fileBytes, &i)
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // getSSHPath generate the SSH keypair location and subsequent fetch
 func getSSHPath(provider string, params ...string) string {
 	var ret strings.Builder
@@ -194,6 +269,10 @@ func getSSHPath(provider string, params ...string) string {
 
 // getPaths to generate path irrespective of the cluster
 // its a free flowing (Provider field has not much significance)
+// TODO: make this function work like '%s/.ksctl/%s'
+// here the user has to provide where to go for instance
+// getPaths("civo", "config", "dcscscsc", "dcsdcsc")
+// the first string in params.. must be config or cred otherwise throw an error
 func getPaths(provider string, params ...string) string {
 	var ret strings.Builder
 
@@ -212,9 +291,32 @@ func getPaths(provider string, params ...string) string {
 }
 
 // CreateSSHKeyPair return public key and error
-func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
+// func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 
-	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
+// 	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
+
+// 	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
+// 	cmd.Dir = pathTillFolder
+// 	out, err := cmd.Output()
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	fmt.Println(string(out))
+
+// 	keyPairToUpload := GetPath(SSH_PATH, provider, "ha", clusterName+" "+region) + ".pub"
+// 	fileBytePub, err := os.ReadFile(keyPairToUpload)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	return string(fileBytePub), nil
+// }
+
+// NOTE: DUPLICATE to be merged the above function
+func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
+
+	pathTillFolder := getPaths(provider, "ha", clusterDir)
 
 	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
 	cmd.Dir = pathTillFolder
@@ -225,7 +327,7 @@ func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
 
 	fmt.Println(string(out))
 
-	keyPairToUpload := GetPath(SSH_PATH, provider, "ha", clusterName+" "+region) + ".pub"
+	keyPairToUpload := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
 	fileBytePub, err := os.ReadFile(keyPairToUpload)
 	if err != nil {
 		return "", err
@@ -287,6 +389,7 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	if err != nil {
 		return err
 	}
+	log.Printf("SSH into %s@%s", sshPayload.UserName, sshPayload.PublicIP)
 
 	hostKeyCallback,err:= kh.New("$HOME/.ssh/known_hosts")
 	if err!=nil{
@@ -294,11 +397,13 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	}
 
 	config := &ssh.ClientConfig{
-		User: "root",
+		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
+
 		HostKeyCallback: hostKeyCallback,
+
 	}
 
 	if !fastMode {
@@ -339,12 +444,24 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	if flag == EXEC_WITH_OUTPUT {
 		session.Stdout = &buff
 	}
-	if err := session.Run(script); err != nil {
-		return err
-	}
+	err = session.Run(script)
 	if flag == EXEC_WITH_OUTPUT {
 		sshPayload.Output = buff.String()
 	}
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func UserInputCredentials() (string, error) {
+
+	fmt.Print("    Enter Secret-> ")
+	bytePassword, err := terminal.ReadPassword(0)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println()
+	return strings.TrimSpace(string(bytePassword)), nil
 }

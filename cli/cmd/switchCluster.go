@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kubesimplify/ksctl/api/azure"
 	"github.com/kubesimplify/ksctl/api/civo"
 	"github.com/kubesimplify/ksctl/api/local"
 	"github.com/spf13/cobra"
@@ -42,8 +43,23 @@ ksctl switch-context -p <civo,local,ha-civo>  -n <clustername> -r <region> <argu
 				fmt.Printf("\033[31;40m%v\033[0m\n", err)
 			}
 
-		case "azure":
-			fmt.Println("UNDER DEVELOPMENT!")
+		case "azure", "ha-azure":
+			if len(sregion) == 0 {
+				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
+			}
+			payload := azure.AzureProvider{
+				ClusterName: sclusterName,
+				Region:      sregion,
+			}
+			if "azure" == sprovider {
+				payload.HACluster = false
+			} else {
+				payload.HACluster = true
+			}
+			err := payload.SwitchContext()
+			if err != nil {
+				fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			}
 		case "aws":
 			fmt.Println("UNDER DEVELOPMENT!")
 		default:

@@ -28,6 +28,15 @@ jobs:
           " > coverage-civo.md
           go tool cover -func=coverage-civo.out >> coverage-civo.md
 
+      - name: Save coverage report of AZURE
+        working-directory: api/azure
+        run: |
+          go test -race -coverprofile=../../coverage-azure.out -v ./...
+          cd ../..
+          echo "# Coverage Report (AZURE API)
+          " > coverage-azure.md
+          go tool cover -func=coverage-azure.out >> coverage-azure.md
+
       - name: save coverage report of LOCAL
         working-directory: api/local
         run: |
@@ -51,6 +60,11 @@ jobs:
         uses: thollander/actions-comment-pull-request@v2
         with:
           filePath: coverage-civo.md
+
+      - name: PR comment for code coverage for AZURE
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: coverage-azure.md
 
       - name: PR comment for code coverage for LOCAL
         uses: thollander/actions-comment-pull-request@v2

@@ -18,7 +18,7 @@ var deleteClusterCmd = &cobra.Command{
 	Aliases: []string{"delete"},
 	Long: `It is used to delete cluster of given provider. For example:
 
-ksctl delete-cluster ["azure", "gcp", "aws", "local"]
+ksctl delete-cluster ["azure", "ha-<provider>", "civo", "local"]
 `,
 }
 
