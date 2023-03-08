@@ -5,14 +5,14 @@ import (
 )
 
 func main() {
+	// logger := logger.Logger{Verbose: true}
 	logger := logger.Logger{}
-	logger.Msg = "Created the resource"
-	logger.Info("demo-ns")
-	logger.Info("")
+	logger.Info("Created the resource", "demo-ns")
+	logger.Info("Created the resource", "")
 
-	logger.Msg = "RETRYING ..."
-	logger.Warn()
+	logger.Warn("RETRYING ...")
 
-	logger.Msg = "INVALID CREDENTIALS"
-	logger.Err()
+	logger.Err("INVALID CREDENTIALS")
+
+	logger.Print("Hello")
 }

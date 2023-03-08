@@ -3,7 +3,9 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
+
 	"math/rand"
 	"strings"
 	"time"
@@ -100,23 +102,23 @@ func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	return
 }
 
-func (obj *AzureProvider) createDatabase(ctx context.Context) error {
+func (obj *AzureProvider) createDatabase(ctx context.Context, logger log.Logger) error {
 	defer obj.ConfigWriter("ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
 		// we need to create the virtual network
-		_, err := obj.CreateVirtualNetwork(ctx, obj.ClusterName+"-vnet")
+		_, err := obj.CreateVirtualNetwork(ctx, logger, obj.ClusterName+"-vnet")
 		if err != nil {
 			return err
 		}
 
-		_, err = obj.CreateSubnet(ctx, obj.ClusterName+"-subnet")
+		_, err = obj.CreateSubnet(ctx, logger, obj.ClusterName+"-subnet")
 		if err != nil {
 			return err
 		}
 	}
 	generatedPassword := generateDBPassword(20)
 
-	publicIP, err := obj.CreatePublicIP(ctx, obj.ClusterName+"-db-pub-ip")
+	publicIP, err := obj.CreatePublicIP(ctx, logger, obj.ClusterName+"-db-pub-ip")
 	if err != nil {
 		return err
 	}
@@ -124,7 +126,7 @@ func (obj *AzureProvider) createDatabase(ctx context.Context) error {
 
 	// network security group
 	if len(obj.Config.InfoDatabase.NetworkSecurityGroupName) == 0 {
-		nsg, err := obj.CreateNSG(ctx, obj.ClusterName+"-db-nsg", getDatabaseFirewallRules())
+		nsg, err := obj.CreateNSG(ctx, logger, obj.ClusterName+"-db-nsg", getDatabaseFirewallRules())
 		if err != nil {
 			return err
 		}
@@ -133,7 +135,7 @@ func (obj *AzureProvider) createDatabase(ctx context.Context) error {
 		obj.Config.InfoDatabase.NetworkSecurityGroupID = *nsg.ID
 	}
 
-	networkInterface, err := obj.CreateNetworkInterface(ctx, obj.Config.ResourceGroupName, obj.ClusterName+"-db-nic", obj.Config.SubnetID, *publicIP.ID, obj.Config.InfoDatabase.NetworkSecurityGroupID)
+	networkInterface, err := obj.CreateNetworkInterface(ctx, logger, obj.Config.ResourceGroupName, obj.ClusterName+"-db-nic", obj.Config.SubnetID, *publicIP.ID, obj.Config.InfoDatabase.NetworkSecurityGroupID)
 	if err != nil {
 		return err
 	}
@@ -143,7 +145,7 @@ func (obj *AzureProvider) createDatabase(ctx context.Context) error {
 	obj.Config.InfoDatabase.DiskName = obj.ClusterName + "-db-disk"
 
 	obj.Config.InfoDatabase.PrivateIP = *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-	_, err = obj.CreateVM(ctx, obj.ClusterName+"-db", *networkInterface.ID, obj.ClusterName+"-db-disk", scriptDB(generatedPassword))
+	_, err = obj.CreateVM(ctx, logger, obj.ClusterName+"-db", *networkInterface.ID, obj.ClusterName+"-db-disk", scriptDB(generatedPassword))
 	if err != nil {
 		return err
 	}
@@ -151,6 +153,6 @@ func (obj *AzureProvider) createDatabase(ctx context.Context) error {
 	obj.Config.InfoDatabase.PublicIP = *publicIP.Properties.IPAddress
 
 	obj.Config.DBEndpoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, obj.Config.InfoDatabase.PrivateIP)
-	log.Println("💻 Booted Database VM ")
+	logger.Info("💻 Booted Database VM ", "")
 	return nil
 }

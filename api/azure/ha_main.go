@@ -6,14 +6,14 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
+	log "github.com/kubesimplify/ksctl/api/logger"
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
-func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
+func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzureProvider) error {
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
@@ -30,10 +30,10 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 		return fmt.Errorf("cluster already exists: %v", obj.ClusterName)
 	}
 
-	log.Println("Started to Create your HA cluster on Azure provider...")
+	logger.Info("Started to Create your HA cluster on Azure provider...", "")
 	defer obj.ConfigWriter("ha")
 
-	_, err := obj.CreateResourceGroup(ctx)
+	_, err := obj.CreateResourceGroup(ctx, logger)
 	if err != nil {
 		return err
 	}
@@ -43,18 +43,18 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 		return err
 	}
 
-	err = obj.createLoadBalancer(ctx)
+	err = obj.createLoadBalancer(logger, ctx)
 	if err != nil {
 		return err
 	}
 
-	err = obj.createDatabase(ctx)
+	err = obj.createDatabase(ctx, logger)
 	if err != nil {
 		return err
 	}
 
 	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
-		if err := obj.createControlPlane(ctx, i+1); err != nil {
+		if err := obj.createControlPlane(ctx, logger, i+1); err != nil {
 			return err
 		}
 	}
@@ -64,7 +64,7 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 		controlPlaneIPs[i] = obj.Config.InfoControlPlanes.PrivateIPs[i] + ":6443"
 	}
 
-	err = obj.ConfigLoadBalancer(controlPlaneIPs)
+	err = obj.ConfigLoadBalancer(logger, controlPlaneIPs)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 				return err
 			}
 		}
-		log.Printf("✅ Configured %s-cp-%d\n", obj.ClusterName, i+1)
+		logger.Info("✅ Configured", fmt.Sprintf("%s-cp-%d", obj.ClusterName, i+1))
 	}
 
 	// Configure the Loadbalancer
@@ -101,27 +101,27 @@ func haCreateClusterHandler(ctx context.Context, obj *AzureProvider) error {
 
 	newKubeconfig = strings.Replace(newKubeconfig, "default", obj.ClusterName+"-"+obj.Region+"-ha-azure-ksctl", -1)
 
-	err = obj.SaveKubeconfig(newKubeconfig)
+	err = obj.SaveKubeconfig(logger, newKubeconfig)
 	if err != nil {
 		return err
 	}
 
-	log.Println("⛓  JOINING WORKER NODES")
+	logger.Info("⛓  JOINING WORKER NODES", "")
 
 	for i := 0; i < obj.Spec.HAWorkerNodes; i++ {
-		if err := obj.createWorkerPlane(ctx, i+1); err != nil {
+		if err := obj.createWorkerPlane(logger, ctx, i+1); err != nil {
 			return err
 		}
 	}
-	log.Println("Created your HA azure cluster!!🥳 🎉 ")
-	fmt.Printf("\n\033[33mNOTE: for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
+	logger.Info("Created your HA azure cluster!!🥳 🎉 ", "")
+	logger.Note("for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
 	printKubeconfig.Printer(true, 0)
 	return nil
 }
 
-func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider, showMsg bool) error {
+func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzureProvider, showMsg bool) error {
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
@@ -135,9 +135,10 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider, showMsg boo
 	// }
 
 	if showMsg {
-		log.Printf(`NOTE 🚨
+		logger.Note(fmt.Sprintf(`🚨
 	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-	`, obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region)
+	`, obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region))
+
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
 		unsafe := false
@@ -153,54 +154,54 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider, showMsg boo
 		}
 	}
 
-	log.Println("start deleting the cluster...")
+	logger.Info("start deleting the cluster...", "")
 
 	err := obj.ConfigReader("ha")
 	if err != nil {
 		return fmt.Errorf("Unable to read configuration: %v", err)
 	}
 
-	err = obj.DeleteAllVMs(ctx)
+	err = obj.DeleteAllVMs(ctx, logger)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteAllDisks(ctx)
+	err = obj.DeleteAllDisks(ctx, logger)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteAllNetworkInterface(ctx)
+	err = obj.DeleteAllNetworkInterface(ctx, logger)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteAllNSG(ctx)
+	err = obj.DeleteAllNSG(ctx, logger)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteAllPublicIP(ctx)
+	err = obj.DeleteAllPublicIP(ctx, logger)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteSubnet(ctx, obj.Config.SubnetName)
+	err = obj.DeleteSubnet(ctx, logger, obj.Config.SubnetName)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteVirtualNetwork(ctx)
+	err = obj.DeleteVirtualNetwork(ctx, logger)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteSSHKeyPair(ctx)
+	err = obj.DeleteSSHKeyPair(ctx, logger)
 	if err != nil {
 		return err
 	}
 
-	err = obj.DeleteResourceGroup(ctx)
+	err = obj.DeleteResourceGroup(ctx, logger)
 	if err != nil {
 		return err
 	}
@@ -208,6 +209,7 @@ func haDeleteClusterHandler(ctx context.Context, obj *AzureProvider, showMsg boo
 	if err := os.RemoveAll(util.GetPath(util.CLUSTER_PATH, "azure", "ha", clusterDir)); err != nil {
 		return err
 	}
+
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
 	printKubeconfig.Printer(false, 1)

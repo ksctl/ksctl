@@ -1,6 +1,9 @@
 package logger
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 const (
 	GREEN      = "\033[1;32m"
@@ -13,18 +16,52 @@ const (
 	RESET      = "\033[0m"
 )
 
-func (logger *Logger) Info(resource string) {
-	if len(resource) == 0 {
-		log.Printf("%s%v%s", WHITE_BOLD, logger.Msg, RESET)
+func (logger *Logger) Info(message, resource string) {
+
+	if logger.Verbose {
+		if len(resource) == 0 {
+			log.Printf("%s[INFO] %s%v%s", GREEN, WHITE_BOLD, message, RESET)
+		} else {
+			log.Printf("%s[INFO] %s%v %s%v%s", GREEN, WHITE, message, GREEN, resource, RESET)
+		}
 	} else {
-		log.Printf("%s%v %s%v%s", WHITE, logger.Msg, GREEN, resource, RESET)
+		if len(resource) == 0 {
+			fmt.Printf("%s[INFO] %s%v%s\n", GREEN, WHITE_BOLD, message, RESET)
+		} else {
+			fmt.Printf("%s[INFO] %s%v %s%v%s\n", GREEN, WHITE, message, GREEN, resource, RESET)
+		}
 	}
 }
 
-func (logger *Logger) Warn() {
-	log.Printf("%s%v%s", YELLOW, logger.Msg, RESET)
+func (logger *Logger) Print(message string) {
+	if logger.Verbose {
+		log.Println("[MSG] ", message)
+	} else {
+		fmt.Println("[MSG] ", message)
+	}
 }
 
-func (Logger *Logger) Err() {
-	log.Printf("%s%v%s", RED, Logger.Msg, RESET)
+func (logger *Logger) Note(message string) {
+
+	if logger.Verbose {
+		log.Printf("%s[NOTE] %v%s", BLUE_BOLD, message, RESET)
+	} else {
+		fmt.Printf("%s[NOTE] %v%s\n", BLUE_BOLD, message, RESET)
+	}
+}
+
+func (logger *Logger) Warn(message string) {
+	if logger.Verbose {
+		log.Printf("%s[WARN] %v%s", YELLOW, message, RESET)
+	} else {
+		fmt.Printf("%s[WARN] %v%s\n", YELLOW, message, RESET)
+	}
+}
+
+func (logger *Logger) Err(message string) {
+	if logger.Verbose {
+		log.Printf("%s[ERR] %v%s", RED, message, RESET)
+	} else {
+		fmt.Printf("%s[ERR] %v%s\n", RED, message, RESET)
+	}
 }

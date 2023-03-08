@@ -3,10 +3,10 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	log "github.com/kubesimplify/ksctl/api/logger"
 )
 
 func scriptWP(privateIPlb, token string) string {
@@ -52,16 +52,16 @@ func getWorkerPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	return
 }
 
-func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int) error {
+func (obj *AzureProvider) createWorkerPlane(logger log.Logger, ctx context.Context, indexOfNode int) error {
 	defer obj.ConfigWriter("ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
 		// we need to create the virtual network
-		_, err := obj.CreateVirtualNetwork(ctx, obj.ClusterName+"-vnet")
+		_, err := obj.CreateVirtualNetwork(ctx, logger, obj.ClusterName+"-vnet")
 		if err != nil {
 			return err
 		}
 
-		_, err = obj.CreateSubnet(ctx, obj.ClusterName+"-subnet")
+		_, err = obj.CreateSubnet(ctx, logger, obj.ClusterName+"-subnet")
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 
 	vmName := fmt.Sprintf("%s-wp-%d", obj.ClusterName, indexOfNode)
 
-	publicIP, err := obj.CreatePublicIP(ctx, vmName+"-pub-ip")
+	publicIP, err := obj.CreatePublicIP(ctx, logger, vmName+"-pub-ip")
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 
 	// network security group
 	if len(obj.Config.InfoWorkerPlanes.NetworkSecurityGroupName) == 0 {
-		nsg, err := obj.CreateNSG(ctx, obj.ClusterName+"-wp-nsg", getWorkerPlaneFirewallRules())
+		nsg, err := obj.CreateNSG(ctx, logger, obj.ClusterName+"-wp-nsg", getWorkerPlaneFirewallRules())
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 		obj.Config.InfoWorkerPlanes.NetworkSecurityGroupID = *nsg.ID
 	}
 
-	networkInterface, err := obj.CreateNetworkInterface(ctx, obj.Config.ResourceGroupName, vmName+"-nic", obj.Config.SubnetID, *publicIP.ID, obj.Config.InfoWorkerPlanes.NetworkSecurityGroupID)
+	networkInterface, err := obj.CreateNetworkInterface(ctx, logger, obj.Config.ResourceGroupName, vmName+"-nic", obj.Config.SubnetID, *publicIP.ID, obj.Config.InfoWorkerPlanes.NetworkSecurityGroupID)
 	if err != nil {
 		return err
 	}
@@ -95,12 +95,12 @@ func (obj *AzureProvider) createWorkerPlane(ctx context.Context, indexOfNode int
 	obj.Config.InfoWorkerPlanes.Names = append(obj.Config.InfoWorkerPlanes.Names, vmName)
 	obj.Config.InfoWorkerPlanes.DiskNames = append(obj.Config.InfoWorkerPlanes.DiskNames, vmName+"-disk")
 
-	_, err = obj.CreateVM(ctx, vmName, *networkInterface.ID, vmName+"-disk", scriptWP(obj.Config.InfoLoadBalancer.PrivateIP, obj.Config.K3sToken))
+	_, err = obj.CreateVM(ctx, logger, vmName, *networkInterface.ID, vmName+"-disk", scriptWP(obj.Config.InfoLoadBalancer.PrivateIP, obj.Config.K3sToken))
 	if err != nil {
 		return err
 	}
 	obj.Config.InfoWorkerPlanes.PublicIPs = append(obj.Config.InfoWorkerPlanes.PublicIPs, *publicIP.Properties.IPAddress)
 	obj.Config.InfoWorkerPlanes.PrivateIPs = append(obj.Config.InfoWorkerPlanes.PrivateIPs, *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress)
-	log.Println("💻 Booted Worker plane VM: ", vmName)
+	logger.Info("💻 Booted Worker plane VM: ", vmName)
 	return nil
 }

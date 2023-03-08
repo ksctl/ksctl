@@ -8,36 +8,37 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	log "github.com/kubesimplify/ksctl/api/logger"
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
 // TODO: add the VMSize as user defined option
 
 func Credentials() bool {
-	fmt.Println("Enter your SUBSCRIPTION ID 👇")
+	logger := log.Logger{Verbose: true}
+	logger.Print("Enter your SUBSCRIPTION ID 👇")
 	skey, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fmt.Println("Enter your TENANT ID 👇")
+	logger.Print("Enter your TENANT ID 👇")
 	tid, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fmt.Println("Enter your CLIENT ID 👇")
+	logger.Print("Enter your CLIENT ID 👇")
 	cid, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fmt.Println("Enter your CLIENT SECRET 👇")
+	logger.Print("Enter your CLIENT SECRET 👇")
 	cs, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
@@ -53,7 +54,7 @@ func Credentials() bool {
 	err = util.SaveCred(apiStore, "azure")
 
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Err(err.Error())
 		return false
 	}
 	return true
@@ -74,6 +75,7 @@ type AzureProvider struct {
 // AddMoreWorkerNodes adds more worker nodes to the existing HA cluster
 func (obj *AzureProvider) AddMoreWorkerNodes() error {
 
+	logging := log.Logger{Verbose: true} // make it move to cli part
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
@@ -106,24 +108,25 @@ func (obj *AzureProvider) AddMoreWorkerNodes() error {
 	}
 	obj.AzureTokenCred = cred
 
-	log.Println("JOINING Additional WORKER NODES")
+	logging.Info("JOINING Additional WORKER NODES", "")
 
 	noOfWorkerNodes := len(obj.Config.InfoWorkerPlanes.Names)
 
 	for i := 0; i < obj.Spec.HAWorkerNodes; i++ {
-		err := obj.createWorkerPlane(ctx, i+noOfWorkerNodes+1)
+		err := obj.createWorkerPlane(logging, ctx, i+noOfWorkerNodes+1)
 		if err != nil {
-			log.Fatalf("Failed to add more nodes..")
+			logging.Err("Failed to add more nodes..")
 		}
 	}
 
-	log.Println("Added more nodes 🥳 🎉 ")
+	logging.Info("Added more nodes 🥳 🎉 ", "")
 	return nil
 }
 
 // DeleteSomeWorkerNodes deletes workerNodes from existing HA cluster
 func (obj *AzureProvider) DeleteSomeWorkerNodes() error {
 
+	logging := log.Logger{Verbose: true} // make it move to cli part
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
@@ -136,7 +139,7 @@ func (obj *AzureProvider) DeleteSomeWorkerNodes() error {
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
 
-	log.Printf(`NOTE 🚨
+	logging.Note(`🚨
 ((Deleteion of nodes happens from most recent added to first created worker node))
 i.e. of workernodes 1, 2, 3, 4
 then deletion will happen from 4, 3, 2, 1
@@ -145,7 +148,7 @@ then deletion will happen from 4, 3, 2, 1
 2) then delete before deleting the instance
 		kubectl delete node <node name>
 `)
-	fmt.Println("Enter your choice to continue..[y/N]")
+	logging.Print("Enter your choice to continue..[y/N]")
 	choice := "n"
 	unsafe := false
 	fmt.Scanf("%s", &choice)
@@ -190,22 +193,22 @@ then deletion will happen from 4, 3, 2, 1
 	for i := 0; i < requestedNoOfWP; i++ {
 
 		currLen := len(obj.Config.InfoWorkerPlanes.Names)
-		err := obj.DeleteVM(ctx, obj.Config.InfoWorkerPlanes.Names[currLen-1])
+		err := obj.DeleteVM(ctx, logging, obj.Config.InfoWorkerPlanes.Names[currLen-1])
 		if err != nil {
 			return err
 		}
 
-		err = obj.DeleteDisk(ctx, obj.Config.InfoWorkerPlanes.DiskNames[currLen-1])
+		err = obj.DeleteDisk(ctx, logging, obj.Config.InfoWorkerPlanes.DiskNames[currLen-1])
 		if err != nil {
 			return err
 		}
 
-		err = obj.DeleteNetworkInterface(ctx, obj.Config.InfoWorkerPlanes.NetworkInterfaceNames[currLen-1])
+		err = obj.DeleteNetworkInterface(ctx, logging, obj.Config.InfoWorkerPlanes.NetworkInterfaceNames[currLen-1])
 		if err != nil {
 			return err
 		}
 
-		err = obj.DeletePublicIP(ctx, obj.Config.InfoWorkerPlanes.PublicIPNames[currLen-1])
+		err = obj.DeletePublicIP(ctx, logging, obj.Config.InfoWorkerPlanes.PublicIPNames[currLen-1])
 		if err != nil {
 			return err
 		}
@@ -224,12 +227,14 @@ then deletion will happen from 4, 3, 2, 1
 		}
 	}
 
-	log.Println("Deleted some nodes 🥳 🎉 ")
+	logging.Info("Deleted some nodes 🥳 🎉 ", "")
 	return nil
 }
 
 func (obj *AzureProvider) CreateCluster() error {
 
+	logging := log.Logger{Verbose: true} // make it move to cli part
+
 	ctx := context.Background()
 	setRequiredENV_VAR(ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
@@ -244,27 +249,28 @@ func (obj *AzureProvider) CreateCluster() error {
 	if obj.HACluster {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ha-ksctl"
 
-		err := haCreateClusterHandler(ctx, obj)
+		err := haCreateClusterHandler(ctx, logging, obj)
 		if err != nil {
-			log.Println("CLEANUP TRIGGERED!: failed to create")
-			_ = haDeleteClusterHandler(ctx, obj, false)
+			logging.Err("CLEANUP TRIGGERED!: failed to create")
+			_ = haDeleteClusterHandler(ctx, logging, obj, false)
 			return err
 		}
-		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	} else {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
 
-		_, err := managedCreateClusterHandler(ctx, obj)
+		_, err := managedCreateClusterHandler(ctx, logging, obj)
 		if err != nil {
-			_ = managedDeleteClusterHandler(ctx, obj, false)
+			logging.Err("CLEANUP TRIGGERED!: failed to create")
+			_ = managedDeleteClusterHandler(ctx, logging, obj, false)
 			return err
 		}
-		log.Printf("Created the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	}
 	return nil
 }
 
 func (obj *AzureProvider) DeleteCluster() error {
+	logging := log.Logger{Verbose: true} // make it move to cli part
+
 	ctx := context.Background()
 	setRequiredENV_VAR(ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
@@ -277,20 +283,18 @@ func (obj *AzureProvider) DeleteCluster() error {
 	obj.SSH_Payload = &util.SSHPayload{}
 	if obj.HACluster {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ha-ksctl"
-		err := haDeleteClusterHandler(ctx, obj, true)
+		err := haDeleteClusterHandler(ctx, logging, obj, true)
 		if err != nil {
 			return err
 		}
 
-		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	} else {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
-		err := managedDeleteClusterHandler(ctx, obj, true)
+		err := managedDeleteClusterHandler(ctx, logging, obj, true)
 		if err != nil {
 			return err
 		}
 
-		log.Printf("Deleted the cluster %s in resource group %s and region %s\n", obj.ClusterName, obj.Config.ResourceGroupName, obj.Region)
 	}
 	return nil
 }
