@@ -14,7 +14,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -343,9 +342,11 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 	return signer, nil
 }
 
-func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool) error {
+func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
 
-	// var err error
+	// INFO: POSSIBLE SOLUTION
+	// BUT NOT WORKING
+	// BUG: check this as it returns error as short read
 	// publicKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey + ".pub")
 	// if err != nil {
 	// 	return err
@@ -365,7 +366,7 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 	if err != nil {
 		return err
 	}
-	log.Printf("SSH into %s@%s", sshPayload.UserName, sshPayload.PublicIP)
+	logging.Info("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
@@ -373,6 +374,8 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 			ssh.PublicKeys(signer),
 		},
 		// FIXME: Remove the InsecureIgnoreHostKey
+		// using the the publickey
+		// HostKeyCallback: ssh.FixedHostKey(publicKey),
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 				// fmt.Println(key.Verify())
@@ -396,7 +399,7 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 		if err == nil {
 			break
 		} else {
-			log.Printf("❗ RETRYING %v\n", err)
+			logging.Err(fmt.Sprintln("RETRYING", err))
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
@@ -405,7 +408,7 @@ func (sshPayload *SSHPayload) SSHExecute(flag int, script string, fastMode bool)
 		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
 	}
 
-	log.Println("🤖 Exec Scripts")
+	logging.Info("🤖 Exec Scripts", "")
 	defer conn.Close()
 
 	session, err := conn.NewSession()

@@ -82,10 +82,10 @@ func getControlPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	return
 }
 
-func (obj *AzureProvider) FetchKUBECONFIG(publicIP string) (string, error) {
+func (obj *AzureProvider) FetchKUBECONFIG(logging log.Logger, publicIP string) (string, error) {
 	obj.SSH_Payload.PublicIP = publicIP
 	obj.SSH_Payload.Output = ""
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptKUBECONFIG(), true)
+	err := obj.SSH_Payload.SSHExecute(logging, util.EXEC_WITH_OUTPUT, scriptKUBECONFIG(), true)
 
 	if err != nil {
 		return "", nil
@@ -98,7 +98,7 @@ func (obj *AzureProvider) FetchKUBECONFIG(publicIP string) (string, error) {
 func (obj *AzureProvider) GetTokenFromCP_1(logger log.Logger, PublicIP string) string {
 	obj.SSH_Payload.PublicIP = PublicIP
 	obj.SSH_Payload.Output = ""
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
+	err := obj.SSH_Payload.SSHExecute(logger, util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
 	if err != nil {
 		return ""
 	}
@@ -113,10 +113,10 @@ func (obj *AzureProvider) GetTokenFromCP_1(logger log.Logger, PublicIP string) s
 }
 
 // HelperExecNoOutputControlPlane helps with script execution without returning us the output
-func (obj *AzureProvider) HelperExecNoOutputControlPlane(publicIP, script string, fastMode bool) error {
+func (obj *AzureProvider) HelperExecNoOutputControlPlane(logger log.Logger, publicIP, script string, fastMode bool) error {
 	obj.SSH_Payload.PublicIP = publicIP
 	obj.SSH_Payload.Output = ""
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, script, fastMode)
+	err := obj.SSH_Payload.SSHExecute(logger, util.EXEC_WITH_OUTPUT, script, fastMode)
 	if err != nil {
 		return err
 	}
@@ -125,10 +125,10 @@ func (obj *AzureProvider) HelperExecNoOutputControlPlane(publicIP, script string
 }
 
 // HelperExecOutputControlPlane helps with script execution and also returns the script output
-func (obj *AzureProvider) HelperExecOutputControlPlane(publicIP, script string, fastMode bool) (string, error) {
+func (obj *AzureProvider) HelperExecOutputControlPlane(logger log.Logger, publicIP, script string, fastMode bool) (string, error) {
 	obj.SSH_Payload.Output = ""
 	obj.SSH_Payload.PublicIP = publicIP
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, script, fastMode)
+	err := obj.SSH_Payload.SSHExecute(logger, util.EXEC_WITH_OUTPUT, script, fastMode)
 	if err != nil {
 		return "", err
 	}

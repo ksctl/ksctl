@@ -66,9 +66,9 @@ type HACollection interface {
 	CreateSSHKeyPair(log.Logger, string) error
 	DeleteSSHKeyPair() error
 	ConfigLoadBalancer(log.Logger, *civogo.Instance, []string) error
-	FetchKUBECONFIG(*civogo.Instance) (string, error)
-	HelperExecNoOutputControlPlane(string, string, bool) error
-	HelperExecOutputControlPlane(string, string, bool) (string, error)
+	FetchKUBECONFIG(log.Logger, *civogo.Instance) (string, error)
+	HelperExecNoOutputControlPlane(log.Logger, string, string, bool) error
+	HelperExecOutputControlPlane(log.Logger, string, string, bool) (string, error)
 }
 
 type HAType struct {

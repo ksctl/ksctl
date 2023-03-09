@@ -98,7 +98,7 @@ func getLoadBalancerFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 func (obj *AzureProvider) ConfigLoadBalancer(logger log.Logger, CPIPs []string) error {
 	getScript := configLBscript(CPIPs)
 	obj.SSH_Payload.PublicIP = obj.Config.InfoLoadBalancer.PublicIP
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, getScript, true)
+	err := obj.SSH_Payload.SSHExecute(logger, util.EXEC_WITHOUT_OUTPUT, getScript, true)
 	if err == nil {
 		logger.Info("✅ Configured LoadBalancer", "")
 		return nil

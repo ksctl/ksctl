@@ -32,9 +32,9 @@ func isValidSizeHA(size string) bool {
 }
 
 // HelperExecNoOutputControlPlane helps with script execution without returning us the output
-func (obj *HAType) HelperExecNoOutputControlPlane(publicIP, script string, fastMode bool) error {
+func (obj *HAType) HelperExecNoOutputControlPlane(logging log.Logger, publicIP, script string, fastMode bool) error {
 	obj.SSH_Payload.PublicIP = publicIP
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, script, fastMode)
+	err := obj.SSH_Payload.SSHExecute(logging, util.EXEC_WITHOUT_OUTPUT, script, fastMode)
 	if err != nil {
 		return err
 	}
@@ -42,10 +42,10 @@ func (obj *HAType) HelperExecNoOutputControlPlane(publicIP, script string, fastM
 }
 
 // HelperExecOutputControlPlane helps with script execution and also returns the script output
-func (obj *HAType) HelperExecOutputControlPlane(publicIP, script string, fastMode bool) (string, error) {
+func (obj *HAType) HelperExecOutputControlPlane(logging log.Logger, publicIP, script string, fastMode bool) (string, error) {
 	obj.SSH_Payload.Output = ""
 	obj.SSH_Payload.PublicIP = publicIP
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, script, fastMode)
+	err := obj.SSH_Payload.SSHExecute(logging, util.EXEC_WITH_OUTPUT, script, fastMode)
 	if err != nil {
 		return "", err
 	}
@@ -141,7 +141,7 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 	token := ""
 	for i := 0; i < noCP; i++ {
 		if i == 0 {
-			err = obj.HelperExecNoOutputControlPlane(controlPlanes[i].PublicIP, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
+			err = obj.HelperExecNoOutputControlPlane(logging, controlPlanes[i].PublicIP, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
 			if err != nil {
 				return err
 			}
@@ -151,7 +151,7 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
 		} else {
-			err = obj.HelperExecNoOutputControlPlane(controlPlanes[i].PublicIP, scriptCP_n(mysqlEndpoint, loadBalancer.PrivateIP, token), true)
+			err = obj.HelperExecNoOutputControlPlane(logging, controlPlanes[i].PublicIP, scriptCP_n(mysqlEndpoint, loadBalancer.PrivateIP, token), true)
 			if err != nil {
 				return err
 			}
@@ -159,7 +159,7 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 		logging.Info("✅ Configured", fmt.Sprintf("control-plane-%d\n", i+1))
 	}
 
-	kubeconfig, err := obj.FetchKUBECONFIG(controlPlanes[0])
+	kubeconfig, err := obj.FetchKUBECONFIG(logging, controlPlanes[0])
 	if err != nil {
 		return fmt.Errorf("Cannot fetch kubeconfig\n" + err.Error())
 	}

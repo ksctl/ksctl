@@ -59,7 +59,7 @@ systemctl restart haproxy
 func (obj *HAType) ConfigLoadBalancer(logging log.Logger, instance *civogo.Instance, CPIPs []string) error {
 	getScript := configLBscript(CPIPs)
 	obj.SSH_Payload.PublicIP = instance.PublicIP
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, getScript, true)
+	err := obj.SSH_Payload.SSHExecute(logging, util.EXEC_WITHOUT_OUTPUT, getScript, true)
 	if err == nil {
 		logging.Info("✅ Configured LoadBalancer", "")
 	}

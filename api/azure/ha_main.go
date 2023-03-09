@@ -74,7 +74,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	loadBalancerPrivateIP := obj.Config.InfoLoadBalancer.PrivateIP
 	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
 		if i == 0 {
-			err = obj.HelperExecNoOutputControlPlane(obj.Config.InfoControlPlanes.PublicIPs[i], scriptWithoutCP_1(mysqlEndpoint, loadBalancerPrivateIP), true)
+			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptWithoutCP_1(mysqlEndpoint, loadBalancerPrivateIP), true)
 			if err != nil {
 				return err
 			}
@@ -84,7 +84,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
 		} else {
-			err = obj.HelperExecNoOutputControlPlane(obj.Config.InfoControlPlanes.PublicIPs[i], scriptCP_n(mysqlEndpoint, loadBalancerPrivateIP, token), true)
+			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptCP_n(mysqlEndpoint, loadBalancerPrivateIP, token), true)
 			if err != nil {
 				return err
 			}
@@ -93,7 +93,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	}
 
 	// Configure the Loadbalancer
-	kubeconfig, err := obj.FetchKUBECONFIG(obj.Config.InfoControlPlanes.PublicIPs[0])
+	kubeconfig, err := obj.FetchKUBECONFIG(logger, obj.Config.InfoControlPlanes.PublicIPs[0])
 	if err != nil {
 		return fmt.Errorf("Cannot fetch kubeconfig\n" + err.Error())
 	}

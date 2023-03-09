@@ -86,10 +86,10 @@ func scriptKUBECONFIG() string {
 cat /etc/rancher/k3s/k3s.yaml`
 }
 
-func (obj *HAType) FetchKUBECONFIG(instanceCP *civogo.Instance) (string, error) {
+func (obj *HAType) FetchKUBECONFIG(logging log.Logger, instanceCP *civogo.Instance) (string, error) {
 	obj.SSH_Payload.PublicIP = instanceCP.PublicIP
 	obj.SSH_Payload.Output = ""
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptKUBECONFIG(), true)
+	err := obj.SSH_Payload.SSHExecute(logging, util.EXEC_WITH_OUTPUT, scriptKUBECONFIG(), true)
 
 	if err != nil {
 		return "", nil
@@ -148,7 +148,7 @@ func (obj *HAType) CreateControlPlane(logging log.Logger, number int) (*civogo.I
 func (obj *HAType) GetTokenFromCP_1(logging log.Logger, instance *civogo.Instance) string {
 	obj.SSH_Payload.PublicIP = instance.PublicIP
 	obj.SSH_Payload.Output = ""
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
+	err := obj.SSH_Payload.SSHExecute(logging, util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
 	if err != nil {
 		return ""
 	}
