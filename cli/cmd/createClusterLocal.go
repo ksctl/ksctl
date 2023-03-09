@@ -22,7 +22,11 @@ var createClusterLocal = &cobra.Command{
 ksctl create-cluster local <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.ManagedNodes)
 		logger.Info("Building cluster", "")
@@ -43,5 +47,6 @@ func init() {
 	createClusterCmd.AddCommand(createClusterLocal)
 	createClusterLocal.Flags().StringVarP(&clocalclusterName, "name", "n", "demo", "Cluster name")
 	createClusterLocal.Flags().IntVarP(&clocalspec.ManagedNodes, "nodes", "N", 1, "Number of Nodes")
+	createClusterLocal.Flags().BoolP("verbose", "v", true, "Verbose output")
 	createClusterLocal.MarkFlagRequired("name")
 }

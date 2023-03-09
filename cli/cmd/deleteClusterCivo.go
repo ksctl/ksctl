@@ -22,7 +22,11 @@ var deleteClusterCivo = &cobra.Command{
 ksctl delete-cluster civo
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		payload := civo.CivoProvider{
 			ClusterName: dclusterName,
@@ -47,6 +51,7 @@ func init() {
 	deleteClusterCmd.AddCommand(deleteClusterCivo)
 	deleteClusterCivo.Flags().StringVarP(&dclusterName, "name", "n", "demo", "Cluster name")
 	deleteClusterCivo.Flags().StringVarP(&dregion, "region", "r", "", "Region based on different cloud providers")
+	deleteClusterCivo.Flags().BoolP("verbose", "v", true, "for verbose output")
 	deleteClusterCivo.MarkFlagRequired("name")
 	deleteClusterCivo.MarkFlagRequired("region")
 }

@@ -21,7 +21,11 @@ var deleteClusterAzure = &cobra.Command{
 ksctl create-cluster azure <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		payload := &azure.AzureProvider{
 			ClusterName: azdcclusterName,
@@ -46,6 +50,7 @@ func init() {
 	deleteClusterCmd.AddCommand(deleteClusterAzure)
 	deleteClusterAzure.Flags().StringVarP(&azdcclusterName, "name", "n", "", "Cluster name")
 	deleteClusterAzure.Flags().StringVarP(&azdcregion, "region", "r", "eastus", "Region")
+	deleteClusterAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
 	deleteClusterAzure.MarkFlagRequired("name")
 	deleteClusterAzure.MarkFlagRequired("region")
 }

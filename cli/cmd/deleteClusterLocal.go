@@ -21,7 +21,11 @@ var deleteClusterLocal = &cobra.Command{
 ksctl delete-cluster local <arguments to local/Docker provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		if err := local.DeleteCluster(dlocalclusterName); err != nil {
 			logger.Err(err.Error())
@@ -38,5 +42,6 @@ var (
 func init() {
 	deleteClusterCmd.AddCommand(deleteClusterLocal)
 	deleteClusterLocal.Flags().StringVarP(&dlocalclusterName, "name", "n", "demo", "Cluster name")
+	deleteClusterLocal.Flags().BoolP("verbose", "v", true, "for verbose output")
 	deleteClusterLocal.MarkFlagRequired("name")
 }

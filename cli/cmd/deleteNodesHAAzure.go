@@ -22,7 +22,11 @@ var deleteNodesHAAzure = &cobra.Command{
 ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		payload := azure.AzureProvider{
 			ClusterName: azdhdclustername,

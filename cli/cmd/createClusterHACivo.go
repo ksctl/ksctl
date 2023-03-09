@@ -22,8 +22,11 @@ var createClusterHACivo = &cobra.Command{
 ksctl create-cluster ha-civo <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
-
+		if !isSet {
+			logger.Verbose = false
+		}
 		payload := civo.CivoProvider{
 			ClusterName: chcclustername,
 			Region:      chcregion,

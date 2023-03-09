@@ -25,7 +25,11 @@ var createClusterCivo = &cobra.Command{
 ksctl create-cluster civo <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		payload := civo.CivoProvider{
 			ClusterName: cclusterName,
@@ -64,6 +68,7 @@ func init() {
 	createClusterCivo.Flags().StringVarP(&apps, "apps", "a", "", "PreInstalled Apps with comma seperated string")
 	createClusterCivo.Flags().StringVarP(&cni, "cni", "c", "", "CNI Plugin to be installed")
 	createClusterCivo.Flags().IntVarP(&cspec.ManagedNodes, "nodes", "N", 1, "Number of Nodes")
+	createClusterCivo.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterCivo.MarkFlagRequired("name")
 	createClusterCivo.MarkFlagRequired("region")
 }

@@ -23,7 +23,11 @@ var createClusterAzure = &cobra.Command{
 	ksctl create-cluster azure <arguments to civo cloud provider>
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
 		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		payload := &azure.AzureProvider{
 			ClusterName: azmcclusterName,
@@ -56,5 +60,6 @@ func init() {
 	createClusterAzure.Flags().StringVarP(&azmcsize, "node-size", "s", "Standard_DS2_v2", "Node size")
 	createClusterAzure.Flags().StringVarP(&azmcregion, "region", "r", "eastus", "Region")
 	createClusterAzure.Flags().IntVarP(&azmcnodeCount, "nodes", "N", 1, "Number of Nodes")
+	createClusterAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterAzure.MarkFlagRequired("name")
 }
