@@ -10,36 +10,16 @@ package local
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime"
 	"time"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
 )
-
-// func getKubeconfig(params ...string) string {
-// 	var ret strings.Builder
-
-// 	if runtime.GOOS == "windows" {
-// 		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\local", util.GetUserName()))
-// 		for _, item := range params {
-// 			ret.WriteString("\\" + item)
-// 		}
-// 	} else {
-// 		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/local", util.GetUserName()))
-// 		for _, item := range params {
-// 			ret.WriteString("/" + item)
-// 		}
-// 	}
-// 	return ret.String()
-// }
-
-// func GetPath(params ...string) string {
-// 	return getKubeconfig(params...)
-// }
 
 func generateConfig(noWorker, noControl int) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
@@ -144,7 +124,7 @@ func ClusterInfoInjecter(clusterName string, noOfNodes int) util.LocalProvider {
 	return spec
 }
 
-func CreateCluster(localConfig util.LocalProvider) error {
+func CreateCluster(logging log.Logger, localConfig util.LocalProvider) error {
 
 	provider := cluster.NewProvider(
 	//cluster.ProviderWithLogger(logg), // TODO: try to add these
@@ -169,7 +149,7 @@ func CreateCluster(localConfig util.LocalProvider) error {
 		cluster.CreateWithKubeconfigPath(func() string {
 			path, err := createNecessaryConfigs(localConfig.ClusterName)
 			if err != nil {
-				log.Println("[ERR] Cannot continue 😢")
+				logging.Err("Cannot continue 😢")
 				_ = DeleteCluster(localConfig.ClusterName)
 				panic(err)
 			}
@@ -178,7 +158,7 @@ func CreateCluster(localConfig util.LocalProvider) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		log.Println("[ERR] Cannot continue 😢")
+		logging.Err("Cannot continue 😢")
 		_ = DeleteCluster(localConfig.ClusterName)
 		return errors.Wrap(err, "failed to create cluster")
 	}
@@ -187,22 +167,12 @@ func CreateCluster(localConfig util.LocalProvider) error {
 	printKubeconfig = printer{ClusterName: localConfig.ClusterName}
 	printKubeconfig.Printer(false, 0)
 
-	log.Println("Created your local cluster!!🥳 🎉 ")
+	logging.Info("Created your local cluster!!🥳 🎉 ", "")
 
 	return nil
 }
 
 func (p printer) Printer(isHA bool, operation int) {
-	// switch a {
-	// case 0:
-	// 	fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
-	// 	fmt.Println(fmt.Sprintf("export KUBECONFIG='%s'", util.GetPath(util.OTHER_PATH, "local", p.ClusterName, "config")))
-	// case 1:
-	// 	fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
-	// 	fmt.Println(fmt.Sprintf("unset KUBECONFIG"))
-	// }
-	// fmt.Println()
-
 	preFix := "export "
 	if runtime.GOOS == "windows" {
 		preFix = "$Env:"

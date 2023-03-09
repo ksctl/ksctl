@@ -12,7 +12,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
+
 	"os"
 	"strings"
 	"time"
@@ -23,7 +25,7 @@ import (
 )
 
 // configWriterManaged stores the KUBECONFIG
-func configWriterManaged(kubeconfig, clusterN, region, clusterID string) error {
+func configWriterManaged(logging log.Logger, kubeconfig, clusterN, region, clusterID string) error {
 	// create the necessary folders and files
 	clusterFolder := clusterN + " " + region
 	err := os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "civo", "managed", clusterFolder), 0750)
@@ -47,7 +49,7 @@ func configWriterManaged(kubeconfig, clusterN, region, clusterID string) error {
 		return err
 	}
 
-	if err = saveConfigManaged(clusterFolder, ManagedConfig{ClusterID: clusterID, Region: region}); err != nil {
+	if err = saveConfigManaged(logging, clusterFolder, ManagedConfig{ClusterID: clusterID, Region: region}); err != nil {
 		return err
 	}
 
@@ -83,7 +85,7 @@ func GetConfigManaged(clusterName, region string) (configStore ManagedConfig, er
 }
 
 // saveConfigManaged update/store the state to state management file
-func saveConfigManaged(clusterFolder string, configStore ManagedConfig) error {
+func saveConfigManaged(logging log.Logger, clusterFolder string, configStore ManagedConfig) error {
 
 	storeBytes, err := json.Marshal(configStore)
 	if err != nil {
@@ -99,7 +101,7 @@ func saveConfigManaged(clusterFolder string, configStore ManagedConfig) error {
 	if err != nil {
 		return err
 	}
-	log.Println("💾 configuration")
+	logging.Info("💾 configuration", "")
 	return nil
 }
 
@@ -144,7 +146,7 @@ func isValidSizeManaged(size string) bool {
 }
 
 // CreateCluster creates managed CIVO cluster
-func managedCreateClusterHandler(civoConfig CivoProvider) error {
+func managedCreateClusterHandler(logging log.Logger, civoConfig CivoProvider) error {
 	if len(civoConfig.APIKey) == 0 {
 		return fmt.Errorf("🚩 CREDENTIALS NOT PRESENT")
 	}
@@ -201,22 +203,22 @@ func managedCreateClusterHandler(civoConfig CivoProvider) error {
 		// clusterDS fetches the current state of kubernetes cluster given its id
 		clusterDS, _ := client.GetKubernetesCluster(resp.ID)
 		if clusterDS.Ready {
-			log.Println("💻 Booted Instance " + civoConfig.ClusterName)
-			err := configWriterManaged(clusterDS.KubeConfig, civoConfig.ClusterName, civoConfig.Region, resp.ID)
+			logging.Info("💻 Booted Instance", civoConfig.ClusterName)
+			err := configWriterManaged(logging, clusterDS.KubeConfig, civoConfig.ClusterName, civoConfig.Region, resp.ID)
 			if err != nil {
 				return err
 			}
-			log.Printf("✅ Configured " + civoConfig.ClusterName)
+			logging.Info("✅ Configured", civoConfig.ClusterName)
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: civoConfig.ClusterName, Region: civoConfig.Region}
 			printKubeconfig.Printer(false, 0)
 
 			break
 		}
-		log.Println("🚧 Instance " + clusterDS.Status)
+		logging.Info("🚧 Instance", clusterDS.Status)
 		time.Sleep(10 * time.Second)
 	}
-	log.Println("Created your managed civo cluster!!🥳 🎉 ")
+	logging.Info("Created your managed civo cluster!!🥳 🎉 ", "")
 	return nil
 }
 
@@ -230,22 +232,22 @@ func kubeconfigDeleter(path string) error {
 }
 
 // deleteClusterWithID delete cluster from CIVO by provided regionCode and clusterID
-func deleteClusterWithID(clusterID, regionCode string) error {
+func deleteClusterWithID(logging log.Logger, clusterID, regionCode string) error {
 	client, err := civogo.NewClient(fetchAPIKey(), regionCode)
 	if err != nil {
 		return err
 	}
 
-	cluster, err := client.DeleteKubernetesCluster(clusterID)
+	_, err = client.DeleteKubernetesCluster(clusterID)
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(cluster.Result))
+	logging.Info("Deleting kubernetes cluster", clusterID)
 	return nil
 }
 
 // DeleteCluster deletes cluster from the given name and region
-func managedDeleteClusterHandler(name, region string) error {
+func managedDeleteClusterHandler(logging log.Logger, name, region string) error {
 
 	// data will contain the saved ClusterID and Region
 	data, err := GetConfigManaged(name, region)
@@ -253,7 +255,7 @@ func managedDeleteClusterHandler(name, region string) error {
 		return fmt.Errorf("🚩 NO matching cluster found")
 	}
 
-	if err = deleteClusterWithID(data.ClusterID, data.Region); err != nil {
+	if err = deleteClusterWithID(logging, data.ClusterID, data.Region); err != nil {
 		return err
 	}
 

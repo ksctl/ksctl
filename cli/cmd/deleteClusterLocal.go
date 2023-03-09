@@ -7,7 +7,7 @@ Kubesimplify
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 import (
-	"fmt"
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/kubesimplify/ksctl/api/local"
 	"github.com/spf13/cobra"
@@ -21,10 +21,13 @@ var deleteClusterLocal = &cobra.Command{
 ksctl delete-cluster local <arguments to local/Docker provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		logger := log.Logger{Verbose: true}
+
 		if err := local.DeleteCluster(dlocalclusterName); err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			logger.Err(err.Error())
+			return
 		}
-		fmt.Printf("\033[32;40mDELETED!\033[0m\n")
+		logger.Info("DELETED!", "")
 	},
 }
 

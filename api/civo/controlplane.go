@@ -10,8 +10,9 @@ package civo
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/civo/civogo"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -97,7 +98,7 @@ func (obj *HAType) FetchKUBECONFIG(instanceCP *civogo.Instance) (string, error) 
 	return obj.SSH_Payload.Output, nil
 }
 
-func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
+func (obj *HAType) CreateControlPlane(logging log.Logger, number int) (*civogo.Instance, error) {
 
 	name := fmt.Sprintf("%s-ksctl-cp", obj.ClusterName)
 
@@ -107,7 +108,7 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 			return nil, err
 		}
 		obj.CPFirewallID = firewall.ID
-		err = obj.Configuration.ConfigWriterFirewallControlPlaneNodes(firewall.ID)
+		err = obj.Configuration.ConfigWriterFirewallControlPlaneNodes(logging, firewall.ID)
 		if err != nil {
 			return nil, nil
 		}
@@ -119,7 +120,7 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 		return nil, err
 	}
 
-	err = obj.Configuration.ConfigWriterInstanceControlPlaneNodes(instance.ID)
+	err = obj.Configuration.ConfigWriterInstanceControlPlaneNodes(logging, instance.ID)
 	if err != nil {
 		return nil, nil
 	}
@@ -134,17 +135,17 @@ func (obj *HAType) CreateControlPlane(number int) (*civogo.Instance, error) {
 
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
-			log.Println("💻 Booted Instance " + name)
+			logging.Info("💻 Booted Instance ", name)
 			return retObject, nil
 		}
-		log.Println("🚧 Instance " + name)
+		logging.Info("🚧 Instance ", name)
 		time.Sleep(10 * time.Second)
 	}
 
 }
 
 // GetTokenFromCP_1 used to extract the K3S_TOKEN from the first Controlplane node
-func (obj *HAType) GetTokenFromCP_1(instance *civogo.Instance) string {
+func (obj *HAType) GetTokenFromCP_1(logging log.Logger, instance *civogo.Instance) string {
 	obj.SSH_Payload.PublicIP = instance.PublicIP
 	obj.SSH_Payload.Output = ""
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
@@ -153,7 +154,7 @@ func (obj *HAType) GetTokenFromCP_1(instance *civogo.Instance) string {
 	}
 	token := obj.SSH_Payload.Output
 	obj.SSH_Payload.Output = ""
-	err = obj.Configuration.ConfigWriterServerToken(token)
+	err = obj.Configuration.ConfigWriterServerToken(logging, token)
 
 	if err != nil {
 		return ""

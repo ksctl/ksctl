@@ -10,9 +10,10 @@ package civo
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
@@ -28,9 +29,9 @@ type CivoProvider struct {
 }
 
 // Credentials accept the api_token for CIVO auth and authorization from user
-func Credentials() bool {
+func Credentials(logger log.Logger) bool {
 
-	fmt.Println("Enter your API-TOKEN-KEY 👇")
+	logger.Print("Enter your API-TOKEN-KEY 👇")
 	apikey, err := util.UserInputCredentials()
 	if err != nil {
 		panic(err.Error())
@@ -43,7 +44,7 @@ func Credentials() bool {
 	err = util.SaveCred(apiStore, "civo")
 
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Err(err.Error())
 		return false
 	}
 	return true
@@ -71,9 +72,9 @@ func isPresent(offering, clusterName, Region string) bool {
 }
 
 // cleanup called when error is encountered during creation during cluster creation
-func cleanup(provider CivoProvider) error {
-	log.Println("[ERR] Cannot continue 😢")
-	return haDeleteClusterHandler(provider.ClusterName, provider.Region, false)
+func cleanup(logging log.Logger, provider CivoProvider) error {
+	logging.Err("Cannot continue 😢")
+	return haDeleteClusterHandler(logging, provider.ClusterName, provider.Region, false)
 }
 
 // validationOfArguments is name and region specified valid
@@ -92,26 +93,26 @@ func validationOfArguments(name, region string) error {
 
 // CreateCluster calls the helper functions for cluster creation
 // based on the flag `HACluster` whether to delete managed cluster or HA type cluster
-func (provider CivoProvider) CreateCluster() error {
+func (provider CivoProvider) CreateCluster(logging log.Logger) error {
 	if provider.HACluster {
-		if err := haCreateClusterHandler(provider.ClusterName, provider.Region, provider.Spec.Disk,
+		if err := haCreateClusterHandler(logging, provider.ClusterName, provider.Region, provider.Spec.Disk,
 			provider.Spec.HAControlPlaneNodes, provider.Spec.HAWorkerNodes); err != nil {
-			_ = cleanup(provider)
+			_ = cleanup(logging, provider)
 			return err
 		}
 		return nil
 	}
 	payload := ClusterInfoInjecter(provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
-	return managedCreateClusterHandler(payload)
+	return managedCreateClusterHandler(logging, payload)
 }
 
 // DeleteCluster calls the helper functions for cluster deletion
 // based on the flag `HACluster` whether to delete managed cluster or HA type cluster
-func (provider CivoProvider) DeleteCluster() error {
+func (provider CivoProvider) DeleteCluster(logging log.Logger) error {
 	if provider.HACluster {
-		return haDeleteClusterHandler(provider.ClusterName, provider.Region, true)
+		return haDeleteClusterHandler(logging, provider.ClusterName, provider.Region, true)
 	}
-	return managedDeleteClusterHandler(provider.ClusterName, provider.Region)
+	return managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region)
 }
 
 // SwitchContext provides the export command for switching to specific provider's cluster

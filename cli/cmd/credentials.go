@@ -10,6 +10,8 @@ Kubesimplify
 import (
 	"fmt"
 
+	log "github.com/kubesimplify/ksctl/api/logger"
+
 	eks "github.com/kubesimplify/ksctl/api/aws"
 	aks "github.com/kubesimplify/ksctl/api/azure"
 	"github.com/kubesimplify/ksctl/api/civo"
@@ -58,15 +60,16 @@ var credCmd = &cobra.Command{
 }
 
 func storeCredentials(provider int) bool {
+	logger := log.Logger{Verbose: true}
 
 	//TODO: Verify the Credentials
 	switch provider {
 	case AWS:
 		return eks.Credentials()
 	case CIVO:
-		return civo.Credentials()
+		return civo.Credentials(logger)
 	case AZURE:
-		return aks.Credentials()
+		return aks.Credentials(logger)
 	default:
 		return false
 	}

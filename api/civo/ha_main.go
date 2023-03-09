@@ -3,9 +3,10 @@ package civo
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/civo/civogo"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -52,7 +53,7 @@ func (obj *HAType) HelperExecOutputControlPlane(publicIP, script string, fastMod
 }
 
 // haCreateClusterHandler creates a HA type cluster
-func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error {
+func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, noCP, noWP int) error {
 
 	if errV := validationOfArguments(name, region); errV != nil {
 		return errV
@@ -102,17 +103,17 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 
 	// NOTE: Config Loadbalancer require the control planes privateIPs
 
-	err = obj.UploadSSHKey()
+	err = obj.UploadSSHKey(logging)
 	if err != nil {
 		return err
 	}
 
-	mysqlEndpoint, err := obj.CreateDatabase()
+	mysqlEndpoint, err := obj.CreateDatabase(logging)
 	if err != nil {
 		return err
 	}
 
-	loadBalancer, err := obj.CreateLoadbalancer()
+	loadBalancer, err := obj.CreateLoadbalancer(logging)
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 	var controlPlanes = make([](*civogo.Instance), noCP)
 
 	for i := 0; i < noCP; i++ {
-		controlPlanes[i], err = obj.CreateControlPlane(i + 1)
+		controlPlanes[i], err = obj.CreateControlPlane(logging, i+1)
 		if err != nil {
 			return err
 		}
@@ -132,7 +133,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 		controlPlaneIPs[i] = controlPlanes[i].PrivateIP + ":6443"
 	}
 
-	err = obj.ConfigLoadBalancer(loadBalancer, controlPlaneIPs)
+	err = obj.ConfigLoadBalancer(logging, loadBalancer, controlPlaneIPs)
 	if err != nil {
 		return err
 	}
@@ -145,7 +146,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 				return err
 			}
 
-			token = obj.GetTokenFromCP_1(controlPlanes[0])
+			token = obj.GetTokenFromCP_1(logging, controlPlanes[0])
 			if len(token) == 0 {
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
@@ -155,7 +156,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 				return err
 			}
 		}
-		log.Printf("✅ Configured control-plane-%d\n", i+1)
+		logging.Info("✅ Configured", fmt.Sprintf("control-plane-%d\n", i+1))
 	}
 
 	kubeconfig, err := obj.FetchKUBECONFIG(controlPlanes[0])
@@ -166,24 +167,24 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 
 	newKubeconfig = strings.Replace(newKubeconfig, "default", name+"-"+strings.ToLower(region)+"-ha-civo", -1)
 
-	err = obj.SaveKubeconfig(newKubeconfig)
+	err = obj.SaveKubeconfig(logging, newKubeconfig)
 	if err != nil {
 		return err
 	}
 
-	log.Println("⛓  JOINING WORKER NODES")
+	logging.Info("⛓  JOINING WORKER NODES", "")
 	var workerPlanes = make([](*civogo.Instance), noWP)
 
 	for i := 0; i < noWP; i++ {
-		workerPlanes[i], err = obj.CreateWorkerNode(i+1, loadBalancer.PrivateIP, token)
+		workerPlanes[i], err = obj.CreateWorkerNode(logging, i+1, loadBalancer.PrivateIP, token)
 		if err != nil {
 			return err
 		}
 	}
 
-	log.Println("Created your HA Civo cluster!!🥳 🎉 ")
-	log.Printf("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
-	fmt.Printf("\n\033[33mNOTE: for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
+	logging.Info("Created your HA Civo cluster!!🥳 🎉 ", "")
+	logging.Note("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
+	logging.Note("for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\nafter this you can proceed with normal operation of the cluster")
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
@@ -191,7 +192,7 @@ func haCreateClusterHandler(name, region, nodeSize string, noCP, noWP int) error
 	return nil
 }
 
-func haDeleteClusterHandler(name, region string, showMsg bool) error {
+func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg bool) error {
 
 	if errV := validationOfArguments(name, region); errV != nil {
 		return errV
@@ -225,9 +226,9 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 		NetworkID:    ""}
 
 	if showMsg {
-		log.Printf(`NOTE 🚨
+		logging.Note(fmt.Sprintf(`NOTE 🚨
 	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-	`, name+" "+region)
+	`, name+" "+region))
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
 		unsafe := false
@@ -245,7 +246,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 
 	var errR error
 
-	if err := obj.DeleteInstances(); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
+	if err := obj.DeleteInstances(logging); err != nil && !errors.Is(civogo.DatabaseInstanceNotFoundError, err) {
 		return err
 	}
 	errR = err
@@ -256,7 +257,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 	time.Sleep(10 * time.Second)
 
 	errR = nil
-	if err := obj.DeleteNetworks(); err != nil && !errors.Is(civogo.DatabaseNetworkNotFoundError, err) {
+	if err := obj.DeleteNetworks(logging); err != nil && !errors.Is(civogo.DatabaseNetworkNotFoundError, err) {
 		return err
 	}
 	errR = err
@@ -274,7 +275,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 		return err
 	}
 
-	log.Println("Deleted the cluster 🏭 🔥")
+	logging.Info("Deleted the cluster 🏭 🔥", "")
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
@@ -283,7 +284,7 @@ func haDeleteClusterHandler(name, region string, showMsg bool) error {
 }
 
 // AddMoreWorkerNodes adds more worker nodes to the existing HA cluster
-func (provider CivoProvider) AddMoreWorkerNodes() error {
+func (provider CivoProvider) AddMoreWorkerNodes(logging log.Logger) error {
 	name, region, nodeSize, noWP := provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.HAWorkerNodes
 
 	if errV := validationOfArguments(name, region); errV != nil {
@@ -323,25 +324,25 @@ func (provider CivoProvider) AddMoreWorkerNodes() error {
 		NetworkID:     config.NetworkIDs.NetworkID,
 		Configuration: &config}
 
-	log.Println("JOINING Additional WORKER NODES")
+	logging.Info("JOINING Additional WORKER NODES", "")
 	lb, err := obj.GetInstance(config.InstanceIDs.LoadBalancerNode[0])
 	var workerPlanes = make([](*civogo.Instance), noWP)
 
 	noOfWorkerNodes := len(config.InstanceIDs.WorkerNodes)
 
 	for i := 0; i < noWP; i++ {
-		workerPlanes[i], err = obj.CreateWorkerNode(i+noOfWorkerNodes+1, lb.PrivateIP, config.ServerToken)
+		workerPlanes[i], err = obj.CreateWorkerNode(logging, i+noOfWorkerNodes+1, lb.PrivateIP, config.ServerToken)
 		if err != nil {
-			log.Fatalf("Failed to add more nodes..")
+			logging.Err("Failed to add more nodes..")
 		}
 	}
 
-	log.Println("Added more nodes 🥳 🎉 ")
+	logging.Info("Added more nodes 🥳 🎉 ", "")
 	return nil
 }
 
 // DeleteSomeWorkerNodes deletes workerNodes from existing HA cluster
-func (provider CivoProvider) DeleteSomeWorkerNodes() error {
+func (provider CivoProvider) DeleteSomeWorkerNodes(logging log.Logger) error {
 	clusterName := provider.ClusterName
 	region := provider.Region
 	noWP := provider.Spec.HAWorkerNodes
@@ -357,7 +358,7 @@ func (provider CivoProvider) DeleteSomeWorkerNodes() error {
 		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 
-	log.Printf(`NOTE 🚨
+	logging.Note(fmt.Sprintf(`NOTE 🚨
 ((Deleteion of nodes happens from most recent added to first created worker node))
 i.e. of workernodes 1, 2, 3, 4
 then deletion will happen from 4, 3, 2, 1
@@ -365,7 +366,7 @@ then deletion will happen from 4, 3, 2, 1
 		kubectl drain node <node name>
 2) then delete before deleting the instance
 		kubectl delete node <node name>
-`)
+`))
 	fmt.Println("Enter your choice to continue..[y/N]")
 	choice := "n"
 	unsafe := false
@@ -414,12 +415,12 @@ then deletion will happen from 4, 3, 2, 1
 
 		config.InstanceIDs.WorkerNodes = config.InstanceIDs.WorkerNodes[:len(config.InstanceIDs.WorkerNodes)-1]
 
-		err = saveConfig(clusterName+" "+region, config)
+		err = saveConfig(logging, clusterName+" "+region, config)
 		if err != nil {
 			return err
 		}
 	}
 
-	log.Println("Deleted some nodes 🥳 🎉 ")
+	logging.Info("Deleted some nodes 🥳 🎉 ", "")
 	return nil
 }

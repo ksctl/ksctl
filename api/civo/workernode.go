@@ -10,8 +10,9 @@ package civo
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/civo/civogo"
 )
@@ -23,7 +24,7 @@ curl -sfL https://get.k3s.io | sh -s - agent --token=$SECRET --server https://%s
 `, token, privateIPlb)
 }
 
-func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civogo.Instance, error) {
+func (obj *HAType) CreateWorkerNode(logging log.Logger, number int, privateIPlb, token string) (*civogo.Instance, error) {
 
 	name := fmt.Sprintf("%s-ksctl-wp", obj.ClusterName)
 
@@ -33,7 +34,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 			return nil, err
 		}
 		obj.WPFirewallID = firewall.ID
-		err = obj.Configuration.ConfigWriterFirewallWorkerNodes(firewall.ID)
+		err = obj.Configuration.ConfigWriterFirewallWorkerNodes(logging, firewall.ID)
 		if err != nil {
 			return nil, nil
 		}
@@ -45,7 +46,7 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 		return nil, err
 	}
 
-	err = obj.Configuration.ConfigWriterInstanceWorkerNodes(instance.ID)
+	err = obj.Configuration.ConfigWriterInstanceWorkerNodes(logging, instance.ID)
 	if err != nil {
 		return nil, nil
 	}
@@ -60,10 +61,10 @@ func (obj *HAType) CreateWorkerNode(number int, privateIPlb, token string) (*civ
 
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
-			log.Println("💻 Booted Instance " + name)
+			logging.Info("💻 Booted Instance", name)
 			return retObject, nil
 		}
-		log.Println("🚧 Instance " + name)
+		logging.Info("🚧 Instance", name)
 		time.Sleep(10 * time.Second)
 	}
 

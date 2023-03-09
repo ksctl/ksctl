@@ -10,8 +10,9 @@ package civo
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/civo/civogo"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -55,17 +56,17 @@ systemctl restart haproxy
 	return script
 }
 
-func (obj *HAType) ConfigLoadBalancer(instance *civogo.Instance, CPIPs []string) error {
+func (obj *HAType) ConfigLoadBalancer(logging log.Logger, instance *civogo.Instance, CPIPs []string) error {
 	getScript := configLBscript(CPIPs)
 	obj.SSH_Payload.PublicIP = instance.PublicIP
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, getScript, true)
 	if err == nil {
-		log.Println("✅ Configured LoadBalancer")
+		logging.Info("✅ Configured LoadBalancer", "")
 	}
 	return err
 }
 
-func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
+func (obj *HAType) CreateLoadbalancer(logging log.Logger) (*civogo.Instance, error) {
 
 	name := obj.ClusterName + "-ksctl-lb"
 	firewall, err := obj.CreateFirewall(name)
@@ -74,7 +75,7 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 	}
 	obj.LBFirewallID = firewall.ID
 
-	err = obj.Configuration.ConfigWriterFirewallLoadBalancerNodes(firewall.ID)
+	err = obj.Configuration.ConfigWriterFirewallLoadBalancerNodes(logging, firewall.ID)
 	if err != nil {
 		return nil, nil
 	}
@@ -84,7 +85,7 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 		return nil, err
 	}
 
-	err = obj.Configuration.ConfigWriterInstanceLoadBalancer(instance.ID)
+	err = obj.Configuration.ConfigWriterInstanceLoadBalancer(logging, instance.ID)
 	if err != nil {
 		return nil, nil
 	}
@@ -100,10 +101,10 @@ func (obj *HAType) CreateLoadbalancer() (*civogo.Instance, error) {
 		if getInstance.Status == "ACTIVE" {
 			retObject = getInstance
 
-			log.Println("💻 Booted Instance " + name)
+			logging.Info("💻 Booted Instance ", name)
 			return retObject, nil
 		}
-		log.Println("🚧 Instance " + name)
+		logging.Info("🚧 Instance ", name)
 		time.Sleep(10 * time.Second)
 	}
 }

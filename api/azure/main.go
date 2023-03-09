@@ -18,8 +18,7 @@ import (
 
 // TODO: add the VMSize as user defined option
 
-func Credentials() bool {
-	logger := log.Logger{Verbose: true}
+func Credentials(logger log.Logger) bool {
 	logger.Print("Enter your SUBSCRIPTION ID 👇")
 	skey, err := util.UserInputCredentials()
 	if err != nil {
@@ -73,9 +72,9 @@ type AzureProvider struct {
 }
 
 // AddMoreWorkerNodes adds more worker nodes to the existing HA cluster
-func (obj *AzureProvider) AddMoreWorkerNodes() error {
+func (obj *AzureProvider) AddMoreWorkerNodes(logging log.Logger) error {
 
-	logging := log.Logger{Verbose: true} // make it move to cli part
+	// logging := log.Logger{Verbose: true} // make it move to cli part
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
@@ -124,9 +123,9 @@ func (obj *AzureProvider) AddMoreWorkerNodes() error {
 }
 
 // DeleteSomeWorkerNodes deletes workerNodes from existing HA cluster
-func (obj *AzureProvider) DeleteSomeWorkerNodes() error {
+func (obj *AzureProvider) DeleteSomeWorkerNodes(logging log.Logger) error {
 
-	logging := log.Logger{Verbose: true} // make it move to cli part
+	// logging := log.Logger{Verbose: true} // make it move to cli part
 	if !util.IsValidName(obj.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", obj.ClusterName)
 	}
@@ -231,9 +230,9 @@ then deletion will happen from 4, 3, 2, 1
 	return nil
 }
 
-func (obj *AzureProvider) CreateCluster() error {
+func (obj *AzureProvider) CreateCluster(logging log.Logger) error {
 
-	logging := log.Logger{Verbose: true} // make it move to cli part
+	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
 	setRequiredENV_VAR(ctx, obj)
@@ -268,8 +267,8 @@ func (obj *AzureProvider) CreateCluster() error {
 	return nil
 }
 
-func (obj *AzureProvider) DeleteCluster() error {
-	logging := log.Logger{Verbose: true} // make it move to cli part
+func (obj *AzureProvider) DeleteCluster(logging log.Logger) error {
+	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
 	setRequiredENV_VAR(ctx, obj)

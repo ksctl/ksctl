@@ -9,6 +9,8 @@ Kubesimplify
 import (
 	"fmt"
 
+	log "github.com/kubesimplify/ksctl/api/logger"
+
 	"github.com/kubesimplify/ksctl/api/civo"
 	"github.com/kubesimplify/ksctl/api/utils"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -23,6 +25,7 @@ var createClusterCivo = &cobra.Command{
 ksctl create-cluster civo <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		logger := log.Logger{Verbose: true}
 
 		payload := civo.CivoProvider{
 			ClusterName: cclusterName,
@@ -35,11 +38,12 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 				ManagedNodes: cspec.ManagedNodes,
 			},
 		}
-		err := payload.CreateCluster()
+		err := payload.CreateCluster(logger)
 		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			logger.Err(err.Error())
 			return
 		}
+		logger.Info("CREATED CLUSTER", "")
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	},
 }

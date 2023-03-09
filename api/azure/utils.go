@@ -20,11 +20,11 @@ import (
 )
 
 type AzureOperations interface {
-	CreateCluster() error
-	DeleteCluster() error
+	CreateCluster(log.Logger) error
+	DeleteCluster(log.Logger) error
 
-	AddMoreWorkerNodes() error
-	DeleteSomeWorkerNodes() error
+	AddMoreWorkerNodes(log.Logger) error
+	DeleteSomeWorkerNodes(log.Logger) error
 }
 
 type AzureStateVMs struct {
@@ -70,24 +70,24 @@ type AzureStateCluster struct {
 type AzureInfra interface {
 
 	// azure resources
-	CreateResourceGroup(context.Context) error
-	DeleteResourceGroup(context.Context) error
-	DeleteDisk(context.Context, string) error
-	DeleteSubnet(context.Context) error
-	CreateSubnet(context.Context, string) (*armnetwork.Subnet, error)
-	CreateVM(context.Context, string, string, string) (*armcompute.VirtualMachine, error)
-	DeleteVM(context.Context, string) error
-	CreateVirtualNetwork(context.Context, string) (*armnetwork.VirtualNetwork, error)
-	DeleteVirtualNetwork(context.Context) error
-	CreateNSG(context.Context, string, []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error)
-	DeleteNSG(context.Context, string) error
-	DeleteNetworkInterface(context.Context, string) error
-	CreateNetworkInterface(context.Context, string, string, string, string, string) (*armnetwork.Interface, error)
-	DeletePublicIP(context.Context, string) error
-	CreatePublicIP(context.Context, string) (*armnetwork.PublicIPAddress, error)
+	CreateResourceGroup(context.Context, log.Logger) error
+	DeleteResourceGroup(context.Context, log.Logger) error
+	DeleteDisk(context.Context, log.Logger, string) error
+	DeleteSubnet(context.Context, log.Logger) error
+	CreateSubnet(context.Context, log.Logger, string) (*armnetwork.Subnet, error)
+	CreateVM(context.Context, log.Logger, string, string, string) (*armcompute.VirtualMachine, error)
+	DeleteVM(context.Context, log.Logger, string) error
+	CreateVirtualNetwork(context.Context, log.Logger, string) (*armnetwork.VirtualNetwork, error)
+	DeleteVirtualNetwork(context.Context, log.Logger) error
+	CreateNSG(context.Context, log.Logger, string, []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error)
+	DeleteNSG(context.Context, log.Logger, string) error
+	DeleteNetworkInterface(context.Context, log.Logger, string) error
+	CreateNetworkInterface(context.Context, log.Logger, string, string, string, string, string) (*armnetwork.Interface, error)
+	DeletePublicIP(context.Context, log.Logger, string) error
+	CreatePublicIP(context.Context, log.Logger, string) (*armnetwork.PublicIPAddress, error)
 
-	UploadSSHKey(context.Context) (err error)
-	DeleteSSHKey(context.Context) error
+	UploadSSHKey(context.Context, log.Logger) (err error)
+	DeleteSSHKey(context.Context, log.Logger) error
 
 	// state file managemenet
 	ConfigReader() error
