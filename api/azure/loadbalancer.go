@@ -107,7 +107,7 @@ func (obj *AzureProvider) ConfigLoadBalancer(logger log.Logger, CPIPs []string) 
 }
 
 func (obj *AzureProvider) createLoadBalancer(logger log.Logger, ctx context.Context) error {
-	defer obj.ConfigWriter("ha")
+	defer obj.ConfigWriter(logger, "ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
 		// we need to create the virtual network
 		_, err := obj.CreateVirtualNetwork(ctx, logger, obj.ClusterName+"-vnet")

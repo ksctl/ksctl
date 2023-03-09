@@ -23,8 +23,7 @@ func managedDeleteClusterHandler(ctx context.Context, logging log.Logger, azureC
 	}
 
 	if showMsg {
-		logging.Note(fmt.Sprintf(`🚨
-	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+		logging.Note(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
 	`, azureConfig.ClusterName+" "+azureConfig.Config.ResourceGroupName+" "+azureConfig.Region))
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
@@ -45,7 +44,7 @@ func managedDeleteClusterHandler(ctx context.Context, logging log.Logger, azureC
 		return err
 	}
 
-	if err := azureConfig.ConfigReader("managed"); err != nil {
+	if err := azureConfig.ConfigReader(logging, "managed"); err != nil {
 		return err
 	}
 
@@ -92,7 +91,7 @@ func managedCreateClusterHandler(ctx context.Context, logging log.Logger, azureC
 		return nil, fmt.Errorf("region {%s} is invalid", azureConfig.Region)
 	}
 
-	defer azureConfig.ConfigWriter("managed")
+	defer azureConfig.ConfigWriter(logging, "managed")
 
 	_, err := azureConfig.CreateResourceGroup(ctx, logging)
 	if err != nil {

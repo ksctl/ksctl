@@ -31,7 +31,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	}
 
 	logger.Info("Started to Create your HA cluster on Azure provider...", "")
-	defer obj.ConfigWriter("ha")
+	defer obj.ConfigWriter(logger, "ha")
 
 	_, err := obj.CreateResourceGroup(ctx, logger)
 	if err != nil {
@@ -79,7 +79,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 				return err
 			}
 
-			token = obj.GetTokenFromCP_1(obj.Config.InfoControlPlanes.PublicIPs[0])
+			token = obj.GetTokenFromCP_1(logger, obj.Config.InfoControlPlanes.PublicIPs[0])
 			if len(token) == 0 {
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
@@ -135,8 +135,7 @@ func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	// }
 
 	if showMsg {
-		logger.Note(fmt.Sprintf(`🚨
-	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+		logger.Note(fmt.Sprintf(`🚨	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
 	`, obj.ClusterName+" "+obj.Config.ResourceGroupName+" "+obj.Region))
 
 		fmt.Println("Enter your choice to continue..[y/N]")
@@ -156,7 +155,7 @@ func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 
 	logger.Info("start deleting the cluster...", "")
 
-	err := obj.ConfigReader("ha")
+	err := obj.ConfigReader(logger, "ha")
 	if err != nil {
 		return fmt.Errorf("Unable to read configuration: %v", err)
 	}

@@ -95,7 +95,7 @@ func (obj *AzureProvider) FetchKUBECONFIG(publicIP string) (string, error) {
 }
 
 // GetTokenFromCP_1 used to extract the K3S_TOKEN from the first Controlplane node
-func (obj *AzureProvider) GetTokenFromCP_1(PublicIP string) string {
+func (obj *AzureProvider) GetTokenFromCP_1(logger log.Logger, PublicIP string) string {
 	obj.SSH_Payload.PublicIP = PublicIP
 	obj.SSH_Payload.Output = ""
 	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITH_OUTPUT, scriptWithCP_1(), true)
@@ -107,7 +107,7 @@ func (obj *AzureProvider) GetTokenFromCP_1(PublicIP string) string {
 	token = strings.Trim(token, "\n")
 	obj.Config.K3sToken = token
 
-	obj.ConfigWriter("ha")
+	obj.ConfigWriter(logger, "ha")
 
 	return token
 }
@@ -136,7 +136,7 @@ func (obj *AzureProvider) HelperExecOutputControlPlane(publicIP, script string, 
 }
 
 func (obj *AzureProvider) createControlPlane(ctx context.Context, logger log.Logger, indexOfNode int) error {
-	defer obj.ConfigWriter("ha")
+	defer obj.ConfigWriter(logger, "ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
 		// we need to create the virtual network
 		_, err := obj.CreateVirtualNetwork(ctx, logger, obj.ClusterName+"-vnet")

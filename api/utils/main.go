@@ -24,6 +24,7 @@ import (
 
 	"time"
 
+	"github.com/kubesimplify/ksctl/api/logger"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -163,7 +164,7 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	}
 }
 
-func SaveCred(config interface{}, provider string) error {
+func SaveCred(logging logger.Logger, config interface{}, provider string) error {
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
 		strings.Compare(provider, "aws") != 0 {
@@ -183,11 +184,11 @@ func SaveCred(config interface{}, provider string) error {
 	if err != nil {
 		return err
 	}
-	log.Println("💾 configuration")
+	logging.Info("💾 configuration", "")
 	return nil
 }
 
-func SaveState(config interface{}, provider, clusterType string, clusterDir string) error {
+func SaveState(logging logger.Logger, config interface{}, provider, clusterType string, clusterDir string) error {
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
 		strings.Compare(provider, "aws") != 0 {
@@ -208,11 +209,11 @@ func SaveState(config interface{}, provider, clusterType string, clusterDir stri
 	if err != nil {
 		return err
 	}
-	log.Println("💾 configuration")
+	logging.Info("💾 configuration", "")
 	return nil
 }
 
-func GetCred(provider string) (i map[string]string, err error) {
+func GetCred(logging logger.Logger, provider string) (i map[string]string, err error) {
 
 	fileBytes, err := os.ReadFile(GetPath(CREDENTIAL_PATH, provider))
 
@@ -225,11 +226,12 @@ func GetCred(provider string) (i map[string]string, err error) {
 	if err != nil {
 		return
 	}
+	logging.Info("🔄 configuration", "")
 
 	return
 }
 
-func GetState(provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
+func GetState(logging logger.Logger, provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
 	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
 
 	if err != nil {
@@ -241,7 +243,7 @@ func GetState(provider, clusterType, clusterDir string) (i map[string]interface{
 	if err != nil {
 		return
 	}
-
+	logging.Info("🔄 configuration", "")
 	return
 }
 
@@ -288,30 +290,6 @@ func getPaths(provider string, params ...string) string {
 	return ret.String()
 }
 
-// CreateSSHKeyPair return public key and error
-// func CreateSSHKeyPair(provider, clusterName, region string) (string, error) {
-
-// 	pathTillFolder := getPaths(provider, "ha", clusterName+" "+region)
-
-// 	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
-// 	cmd.Dir = pathTillFolder
-// 	out, err := cmd.Output()
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	fmt.Println(string(out))
-
-// 	keyPairToUpload := GetPath(SSH_PATH, provider, "ha", clusterName+" "+region) + ".pub"
-// 	fileBytePub, err := os.ReadFile(keyPairToUpload)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	return string(fileBytePub), nil
-// }
-
-// NOTE: DUPLICATE to be merged the above function
 func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 
 	pathTillFolder := getPaths(provider, "ha", clusterDir)

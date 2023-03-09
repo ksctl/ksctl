@@ -103,7 +103,7 @@ func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 }
 
 func (obj *AzureProvider) createDatabase(ctx context.Context, logger log.Logger) error {
-	defer obj.ConfigWriter("ha")
+	defer obj.ConfigWriter(logger, "ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
 		// we need to create the virtual network
 		_, err := obj.CreateVirtualNetwork(ctx, logger, obj.ClusterName+"-vnet")

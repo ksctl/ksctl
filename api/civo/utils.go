@@ -128,6 +128,7 @@ func GetConfig(clusterName, region string) (configStore JsonStore, err error) {
 	return
 }
 
+// TODO: Merge it with same function in utils package
 func saveConfig(logging log.Logger, clusterFolder string, configStore JsonStore) error {
 
 	storeBytes, err := json.Marshal(configStore)

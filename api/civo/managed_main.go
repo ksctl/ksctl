@@ -107,7 +107,7 @@ func saveConfigManaged(logging log.Logger, clusterFolder string, configStore Man
 
 // ClusterInfoInjecter Serializes the information which is return as utils.CivoProvider for sending it to API
 // {clustername, regionCode, Size of Nodes, No of nodes, Applications(optional), cniPlugion(optional)}
-func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, application, cniPlugin string) CivoProvider {
+func ClusterInfoInjecter(logging log.Logger, clusterName, reg, size string, noOfNodes int, application, cniPlugin string) CivoProvider {
 
 	if len(application) == 0 {
 		application = "Traefik-v2-nodeport,metrics-server" // default: applications
@@ -121,7 +121,7 @@ func ClusterInfoInjecter(clusterName, reg, size string, noOfNodes int, applicati
 	spec := CivoProvider{
 		ClusterName: clusterName,
 		Region:      reg,
-		APIKey:      fetchAPIKey(),
+		APIKey:      fetchAPIKey(logging),
 		HACluster:   false,
 		Spec: util.Machine{
 			Disk:         size,
@@ -148,23 +148,23 @@ func isValidSizeManaged(size string) bool {
 // CreateCluster creates managed CIVO cluster
 func managedCreateClusterHandler(logging log.Logger, civoConfig CivoProvider) error {
 	if len(civoConfig.APIKey) == 0 {
-		return fmt.Errorf("🚩 CREDENTIALS NOT PRESENT")
+		return fmt.Errorf("CREDENTIALS NOT PRESENT")
 	}
 
 	if !util.IsValidName(civoConfig.ClusterName) {
-		return fmt.Errorf("🚩 INVALID CLUSTER NAME")
+		return fmt.Errorf("INVALID CLUSTER NAME")
 	}
 
 	if !util.IsValidRegionCIVO(civoConfig.Region) {
-		return fmt.Errorf("🚩 region code is Invalid")
+		return fmt.Errorf("region code is Invalid")
 	}
 
 	if isPresent("managed", civoConfig.ClusterName, civoConfig.Region) {
-		return fmt.Errorf("🚩 DUPLICATE Cluster")
+		return fmt.Errorf("DUPLICATE Cluster")
 	}
 
 	if !isValidSizeManaged(civoConfig.Spec.Disk) {
-		return fmt.Errorf("🚩 INVALID size of node")
+		return fmt.Errorf("INVALID size of node")
 	}
 
 	client, err := civogo.NewClient(civoConfig.APIKey, civoConfig.Region)
@@ -190,13 +190,13 @@ func managedCreateClusterHandler(logging log.Logger, civoConfig CivoProvider) er
 	resp, err := client.NewKubernetesClusters(configK8s)
 	if err != nil {
 		if errors.Is(err, civogo.DatabaseKubernetesClusterDuplicateError) {
-			return fmt.Errorf("🚨 DUPLICATE Cluster FOUND")
+			return fmt.Errorf("DUPLICATE Cluster FOUND")
 		}
 		if errors.Is(err, civogo.AuthenticationFailedError) {
-			return fmt.Errorf("🚨 AUTH FAILED")
+			return fmt.Errorf("AUTH FAILED")
 		}
 		if errors.Is(err, civogo.UnknownError) {
-			return fmt.Errorf("🚨 UNKNOWN ERR")
+			return fmt.Errorf("UNKNOWN ERR")
 		}
 	}
 	for {
@@ -233,7 +233,7 @@ func kubeconfigDeleter(path string) error {
 
 // deleteClusterWithID delete cluster from CIVO by provided regionCode and clusterID
 func deleteClusterWithID(logging log.Logger, clusterID, regionCode string) error {
-	client, err := civogo.NewClient(fetchAPIKey(), regionCode)
+	client, err := civogo.NewClient(fetchAPIKey(logging), regionCode)
 	if err != nil {
 		return err
 	}
@@ -252,7 +252,7 @@ func managedDeleteClusterHandler(logging log.Logger, name, region string) error 
 	// data will contain the saved ClusterID and Region
 	data, err := GetConfigManaged(name, region)
 	if err != nil {
-		return fmt.Errorf("🚩 NO matching cluster found")
+		return fmt.Errorf("NO matching cluster found")
 	}
 
 	if err = deleteClusterWithID(logging, data.ClusterID, data.Region); err != nil {

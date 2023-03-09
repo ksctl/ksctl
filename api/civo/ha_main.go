@@ -67,7 +67,7 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
 	}
 
-	client, err := civogo.NewClient(fetchAPIKey(), region)
+	client, err := civogo.NewClient(fetchAPIKey(logging), region)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg boo
 		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 
-	client, err := civogo.NewClient(fetchAPIKey(), region)
+	client, err := civogo.NewClient(fetchAPIKey(logging), region)
 	if err != nil {
 		return err
 	}
@@ -304,7 +304,7 @@ func (provider CivoProvider) AddMoreWorkerNodes(logging log.Logger) error {
 		return err
 	}
 
-	client, err := civogo.NewClient(fetchAPIKey(), region)
+	client, err := civogo.NewClient(fetchAPIKey(logging), region)
 	if err != nil {
 		return err
 	}
@@ -347,15 +347,15 @@ func (provider CivoProvider) DeleteSomeWorkerNodes(logging log.Logger) error {
 	region := provider.Region
 	noWP := provider.Spec.HAWorkerNodes
 	if !util.IsValidRegionCIVO(region) {
-		return fmt.Errorf("🚩 REGION")
+		return fmt.Errorf("REGION")
 	}
 
 	if !util.IsValidName(clusterName) {
-		return fmt.Errorf("🚩 NAME FORMAT")
+		return fmt.Errorf("NAME FORMAT")
 	}
 
 	if !isPresent("ha", clusterName, region) {
-		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
+		return fmt.Errorf("CLUSTER NOT PRESENT")
 	}
 
 	logging.Note(fmt.Sprintf(`NOTE 🚨
@@ -386,7 +386,7 @@ then deletion will happen from 4, 3, 2, 1
 		return err
 	}
 
-	client, err := civogo.NewClient(fetchAPIKey(), region)
+	client, err := civogo.NewClient(fetchAPIKey(logging), region)
 	if err != nil {
 		return err
 	}

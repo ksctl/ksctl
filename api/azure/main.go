@@ -50,7 +50,7 @@ func Credentials(logger log.Logger) bool {
 		ClientSecret:   cs,
 	}
 
-	err = util.SaveCred(apiStore, "azure")
+	err = util.SaveCred(logger, apiStore, "azure")
 
 	if err != nil {
 		logger.Err(err.Error())
@@ -87,7 +87,7 @@ func (obj *AzureProvider) AddMoreWorkerNodes(logging log.Logger) error {
 	}
 
 	ctx := context.Background()
-	setRequiredENV_VAR(ctx, obj)
+	setRequiredENV_VAR(logging, ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (obj *AzureProvider) AddMoreWorkerNodes(logging log.Logger) error {
 		return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
 	}
 
-	err = obj.ConfigReader("ha")
+	err = obj.ConfigReader(logging, "ha")
 	if err != nil {
 		return fmt.Errorf("Unable to read configuration: %v", err)
 	}
@@ -138,8 +138,7 @@ func (obj *AzureProvider) DeleteSomeWorkerNodes(logging log.Logger) error {
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
 
-	logging.Note(`🚨
-((Deleteion of nodes happens from most recent added to first created worker node))
+	logging.Note(`🚨 ((Deleteion of nodes happens from most recent added to first created worker node))
 i.e. of workernodes 1, 2, 3, 4
 then deletion will happen from 4, 3, 2, 1
 1) make sure you first drain the no of nodes
@@ -162,7 +161,7 @@ then deletion will happen from 4, 3, 2, 1
 	}
 
 	ctx := context.Background()
-	setRequiredENV_VAR(ctx, obj)
+	setRequiredENV_VAR(logging, ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -176,7 +175,7 @@ then deletion will happen from 4, 3, 2, 1
 		return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
 	}
 
-	err = obj.ConfigReader("ha")
+	err = obj.ConfigReader(logging, "ha")
 	if err != nil {
 		return fmt.Errorf("Unable to read configuration: %v", err)
 	}
@@ -220,7 +219,7 @@ then deletion will happen from 4, 3, 2, 1
 		obj.Config.InfoWorkerPlanes.PrivateIPs = obj.Config.InfoWorkerPlanes.PublicIPs[:currLen-1]
 		obj.Config.InfoWorkerPlanes.PublicIPs = obj.Config.InfoWorkerPlanes.PublicIPs[:currLen-1]
 
-		err = obj.ConfigWriter("ha")
+		err = obj.ConfigWriter(logging, "ha")
 		if err != nil {
 			return err
 		}
@@ -235,7 +234,7 @@ func (obj *AzureProvider) CreateCluster(logging log.Logger) error {
 	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
-	setRequiredENV_VAR(ctx, obj)
+	setRequiredENV_VAR(logging, ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -271,7 +270,7 @@ func (obj *AzureProvider) DeleteCluster(logging log.Logger) error {
 	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
-	setRequiredENV_VAR(ctx, obj)
+	setRequiredENV_VAR(logging, ctx, obj)
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err

@@ -41,7 +41,7 @@ func Credentials(logger log.Logger) bool {
 		Token: apikey,
 	}
 
-	err = util.SaveCred(apiStore, "civo")
+	err = util.SaveCred(logger, apiStore, "civo")
 
 	if err != nil {
 		logger.Err(err.Error())
@@ -51,9 +51,9 @@ func Credentials(logger log.Logger) bool {
 }
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey() string {
+func fetchAPIKey(logger log.Logger) string {
 
-	token, err := util.GetCred("civo")
+	token, err := util.GetCred(logger, "civo")
 
 	if err != nil {
 		return ""
@@ -81,11 +81,11 @@ func cleanup(logging log.Logger, provider CivoProvider) error {
 func validationOfArguments(name, region string) error {
 
 	if !util.IsValidRegionCIVO(region) {
-		return fmt.Errorf("🚩 REGION")
+		return fmt.Errorf("REGION")
 	}
 
 	if !util.IsValidName(name) {
-		return fmt.Errorf("🚩 NAME FORMAT")
+		return fmt.Errorf("NAME FORMAT")
 	}
 
 	return nil
@@ -102,7 +102,7 @@ func (provider CivoProvider) CreateCluster(logging log.Logger) error {
 		}
 		return nil
 	}
-	payload := ClusterInfoInjecter(provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
+	payload := ClusterInfoInjecter(logging, provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
 	return managedCreateClusterHandler(logging, payload)
 }
 

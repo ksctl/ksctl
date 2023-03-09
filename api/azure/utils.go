@@ -818,8 +818,8 @@ func isValidRegion(region string) bool {
 	return false
 }
 
-func (config *AzureProvider) ConfigWriter(clusterType string) error {
-	return util.SaveState(config.Config, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+func (config *AzureProvider) ConfigWriter(logging log.Logger, clusterType string) error {
+	return util.SaveState(logging, config.Config, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
 }
 
 func isPresent(kind string, obj AzureProvider) bool {
@@ -831,8 +831,8 @@ func isPresent(kind string, obj AzureProvider) bool {
 	return true
 }
 
-func (config *AzureProvider) ConfigReader(clusterType string) error {
-	data, err := util.GetState("azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+func (config *AzureProvider) ConfigReader(logging log.Logger, clusterType string) error {
+	data, err := util.GetState(logging, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
 	if err != nil {
 		return err
 	}
@@ -848,8 +848,8 @@ func (config *AzureProvider) ConfigReader(clusterType string) error {
 	return nil
 }
 
-func setRequiredENV_VAR(ctx context.Context, cred *AzureProvider) error {
-	tokens, err := util.GetCred("azure")
+func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProvider) error {
+	tokens, err := util.GetCred(logging, "azure")
 	if err != nil {
 		return err
 	}

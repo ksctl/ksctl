@@ -53,7 +53,7 @@ func getWorkerPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 }
 
 func (obj *AzureProvider) createWorkerPlane(logger log.Logger, ctx context.Context, indexOfNode int) error {
-	defer obj.ConfigWriter("ha")
+	defer obj.ConfigWriter(logger, "ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
 		// we need to create the virtual network
 		_, err := obj.CreateVirtualNetwork(ctx, logger, obj.ClusterName+"-vnet")
