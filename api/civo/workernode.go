@@ -33,6 +33,7 @@ func (obj *HAType) CreateWorkerNode(logging log.Logger, number int, privateIPlb,
 		if err != nil {
 			return nil, err
 		}
+		// TODO: More restrictive firewalls
 		obj.WPFirewallID = firewall.ID
 		err = obj.Configuration.ConfigWriterFirewallWorkerNodes(logging, firewall.ID)
 		if err != nil {

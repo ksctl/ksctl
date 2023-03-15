@@ -108,6 +108,7 @@ func (obj *HAType) CreateControlPlane(logging log.Logger, number int) (*civogo.I
 			return nil, err
 		}
 		obj.CPFirewallID = firewall.ID
+		// TODO: Add better firewall rules
 		err = obj.Configuration.ConfigWriterFirewallControlPlaneNodes(logging, firewall.ID)
 		if err != nil {
 			return nil, nil

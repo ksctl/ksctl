@@ -49,6 +49,7 @@ sudo systemctl restart haproxy
 	return script
 }
 
+// TODO: Add more firewall rules
 func getLoadBalancerFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_6443"),

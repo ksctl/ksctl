@@ -93,6 +93,7 @@ func validationOfArguments(name, region string) error {
 
 // CreateCluster calls the helper functions for cluster creation
 // based on the flag `HACluster` whether to delete managed cluster or HA type cluster
+// FIXME: Ingress or Loadbalancer is not working as expected!!
 func (provider CivoProvider) CreateCluster(logging log.Logger) error {
 	if provider.HACluster {
 		if err := haCreateClusterHandler(logging, provider.ClusterName, provider.Region, provider.Spec.Disk,

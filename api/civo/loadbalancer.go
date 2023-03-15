@@ -75,6 +75,7 @@ func (obj *HAType) CreateLoadbalancer(logging log.Logger) (*civogo.Instance, err
 	}
 	obj.LBFirewallID = firewall.ID
 
+	// TODO: More restrictive policies
 	err = obj.Configuration.ConfigWriterFirewallLoadBalancerNodes(logging, firewall.ID)
 	if err != nil {
 		return nil, nil

@@ -21,6 +21,7 @@ sudo ./worker-setup.sh
 `, token, privateIPlb)
 }
 
+// TODO: Add more firewall rules
 func getWorkerPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_all_open"),
@@ -52,6 +53,7 @@ func getWorkerPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	return
 }
 
+// TODO: try to make worker nodes as private instances
 func (obj *AzureProvider) createWorkerPlane(logger log.Logger, ctx context.Context, indexOfNode int) error {
 	defer obj.ConfigWriter(logger, "ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {

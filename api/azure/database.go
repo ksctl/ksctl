@@ -69,6 +69,7 @@ sudo mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
 `, password)
 }
 
+// TODO: Add firewall rules
 func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_all"),

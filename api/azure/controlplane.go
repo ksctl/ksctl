@@ -51,6 +51,7 @@ func scriptKUBECONFIG() string {
 sudo cat /etc/rancher/k3s/k3s.yaml`
 }
 
+// TODO: Add more firewallrules
 func getControlPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_6443"),
