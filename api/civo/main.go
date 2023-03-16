@@ -50,15 +50,29 @@ func Credentials() bool {
 }
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey() string {
+func fetchAPIKey() (string, error) {
 
 	token, err := util.GetCred("civo")
 
 	if err != nil {
-		return ""
+		return "", err
 	}
 
-	return token["token"]
+	return token["token"], err
+}
+
+// Authentication
+func authenticate() (string, error) {
+	apikey, err := fetchAPIKey()
+	if err != nil {
+		return "", err
+	}
+	civoToken := os.Getenv("CIVO_TOKEN")
+	if civoToken != "" {
+		return civoToken, nil
+	}
+	return apikey, nil
+
 }
 
 // isPresent Checks whether the cluster to create is already present
