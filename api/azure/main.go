@@ -115,6 +115,7 @@ func (obj *AzureProvider) AddMoreWorkerNodes(logging log.Logger) error {
 		err := obj.createWorkerPlane(logging, ctx, i+noOfWorkerNodes+1)
 		if err != nil {
 			logging.Err("Failed to add more nodes..")
+			return err
 		}
 	}
 

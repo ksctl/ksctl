@@ -334,6 +334,7 @@ func (provider CivoProvider) AddMoreWorkerNodes(logging log.Logger) error {
 		workerPlanes[i], err = obj.CreateWorkerNode(logging, i+noOfWorkerNodes+1, lb.PrivateIP, config.ServerToken)
 		if err != nil {
 			logging.Err("Failed to add more nodes..")
+			return err
 		}
 	}
 
