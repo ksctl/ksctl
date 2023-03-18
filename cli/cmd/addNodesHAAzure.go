@@ -7,7 +7,7 @@ Kubesimplify
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 import (
-	"fmt"
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/kubesimplify/ksctl/api/azure"
 	"github.com/kubesimplify/ksctl/api/utils"
@@ -22,6 +22,12 @@ var addMoreWorkerNodesHAAzure = &cobra.Command{
 ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
+		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
+
 		payload := azure.AzureProvider{
 			ClusterName: azhncclustername,
 			Region:      azhncregion,
@@ -31,10 +37,12 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 				HAWorkerNodes: azhncwp,
 			},
 		}
-		err := payload.AddMoreWorkerNodes()
+		err := payload.AddMoreWorkerNodes(logger)
 		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			logger.Err(err.Error())
+			return
 		}
+		logger.Info("ADDED WORKKER NODE(s)", "")
 	},
 }
 

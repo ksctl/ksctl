@@ -6,7 +6,9 @@ Yellow='\033[0;33m'
 NoColor='\033[0m' 
 
 
+versions=$(git ls-remote --tags https://github.com/kubesimplify/ksctl.git | awk '{print $2}' | awk -F '/' '/1/ {print $3}')
 # get the release version
+echo -e "${Blue}Available Releases\n${versions}${NoColor}"
 echo -e "${Yellow}Enter the ksctl version to install${NoColor}"
 read RELEASE_VERSION
 

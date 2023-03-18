@@ -3,10 +3,10 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	log "github.com/kubesimplify/ksctl/api/logger"
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
@@ -49,6 +49,7 @@ sudo systemctl restart haproxy
 	return script
 }
 
+// TODO: Add more firewall rules
 func getLoadBalancerFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_6443"),
@@ -95,42 +96,41 @@ func getLoadBalancerFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	return
 }
 
-func (obj *AzureProvider) ConfigLoadBalancer(CPIPs []string) error {
+func (obj *AzureProvider) ConfigLoadBalancer(logger log.Logger, CPIPs []string) error {
 	getScript := configLBscript(CPIPs)
 	obj.SSH_Payload.PublicIP = obj.Config.InfoLoadBalancer.PublicIP
-	err := obj.SSH_Payload.SSHExecute(util.EXEC_WITHOUT_OUTPUT, getScript, true)
+	err := obj.SSH_Payload.SSHExecute(logger, util.EXEC_WITHOUT_OUTPUT, getScript, true)
 	if err == nil {
-		log.Println("✅ Configured LoadBalancer")
+		logger.Info("✅ Configured LoadBalancer", "")
 		return nil
 	}
 	return err
 }
 
-func (obj *AzureProvider) createLoadBalancer(ctx context.Context) error {
-	defer obj.ConfigWriter("ha")
+func (obj *AzureProvider) createLoadBalancer(logger log.Logger, ctx context.Context) error {
+	defer obj.ConfigWriter(logger, "ha")
 	if len(obj.Config.VirtualNetworkName) == 0 || len(obj.Config.SubnetName) == 0 {
 		// we need to create the virtual network
-		_, err := obj.CreateVirtualNetwork(ctx, obj.ClusterName+"-vnet")
+		_, err := obj.CreateVirtualNetwork(ctx, logger, obj.ClusterName+"-vnet")
 		if err != nil {
 			return err
 		}
 
-		_, err = obj.CreateSubnet(ctx, obj.ClusterName+"-subnet")
+		_, err = obj.CreateSubnet(ctx, logger, obj.ClusterName+"-subnet")
 		if err != nil {
 			return err
 		}
 	}
 
-	publicIP, err := obj.CreatePublicIP(ctx, obj.ClusterName+"-lb-pub-ip")
+	publicIP, err := obj.CreatePublicIP(ctx, logger, obj.ClusterName+"-lb-pub-ip")
 	if err != nil {
 		return err
 	}
 	obj.Config.InfoLoadBalancer.PublicIPName = *publicIP.Name
-	// TODO: call config writer
 
 	// network security group
 	if len(obj.Config.InfoLoadBalancer.NetworkSecurityGroupName) == 0 {
-		nsg, err := obj.CreateNSG(ctx, obj.ClusterName+"-lb-nsg", getLoadBalancerFirewallRules())
+		nsg, err := obj.CreateNSG(ctx, logger, obj.ClusterName+"-lb-nsg", getLoadBalancerFirewallRules())
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ func (obj *AzureProvider) createLoadBalancer(ctx context.Context) error {
 		obj.Config.InfoLoadBalancer.NetworkSecurityGroupID = *nsg.ID
 	}
 
-	networkInterface, err := obj.CreateNetworkInterface(ctx, obj.Config.ResourceGroupName, obj.ClusterName+"-lb-nic", obj.Config.SubnetID, *publicIP.ID, obj.Config.InfoLoadBalancer.NetworkSecurityGroupID)
+	networkInterface, err := obj.CreateNetworkInterface(ctx, logger, obj.Config.ResourceGroupName, obj.ClusterName+"-lb-nic", obj.Config.SubnetID, *publicIP.ID, obj.Config.InfoLoadBalancer.NetworkSecurityGroupID)
 	if err != nil {
 		return err
 	}
@@ -148,12 +148,12 @@ func (obj *AzureProvider) createLoadBalancer(ctx context.Context) error {
 	obj.Config.InfoLoadBalancer.Name = obj.ClusterName + "-lb"
 	obj.Config.InfoLoadBalancer.DiskName = obj.ClusterName + "-lb-disk"
 
-	_, err = obj.CreateVM(ctx, obj.ClusterName+"-lb", *networkInterface.ID, obj.ClusterName+"-lb-disk", scriptLB())
+	_, err = obj.CreateVM(ctx, logger, obj.ClusterName+"-lb", *networkInterface.ID, obj.ClusterName+"-lb-disk", scriptLB())
 	if err != nil {
 		return err
 	}
 	obj.Config.InfoLoadBalancer.PublicIP = *publicIP.Properties.IPAddress
 	obj.Config.InfoLoadBalancer.PrivateIP = *networkInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-	log.Println("💻 Booted LoadBalancer VM ")
+	logger.Info("💻 Booted LoadBalancer VM ", "")
 	return nil
 }

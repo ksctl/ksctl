@@ -8,7 +8,7 @@ Avinesh Tripathi <avineshtripathi1@gmail.com>
 package cmd
 
 import (
-	"fmt"
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/kubesimplify/ksctl/api/azure"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -23,6 +23,12 @@ var createClusterHAAzure = &cobra.Command{
 	ksctl create-cluster ha-azure <arguments to civo cloud provider>
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
+		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
+
 		payload := &azure.AzureProvider{
 			ClusterName: azhcclusterName,
 			HACluster:   true,
@@ -33,12 +39,12 @@ var createClusterHAAzure = &cobra.Command{
 				HAWorkerNodes:       azhcnodeCWP,
 			},
 		}
-		err := payload.CreateCluster()
+		err := payload.CreateCluster(logger)
 		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			logger.Err(err.Error())
 			return
 		}
-		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+		logger.Info("CREATED CLUSTER", "")
 	},
 }
 
@@ -57,5 +63,6 @@ func init() {
 	createClusterHAAzure.Flags().StringVarP(&azhcregion, "region", "r", "eastus", "Region")
 	createClusterHAAzure.Flags().IntVarP(&azhcnodeCWP, "worker-nodes", "w", 1, "Number of worker Nodes")
 	createClusterHAAzure.Flags().IntVarP(&azhcnodeCCP, "control-nodes", "c", 3, "Number of control Nodes")
+	createClusterHAAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterHAAzure.MarkFlagRequired("name")
 }

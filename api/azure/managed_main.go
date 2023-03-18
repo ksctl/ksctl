@@ -3,16 +3,17 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
-func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider, showMsg bool) error {
+func managedDeleteClusterHandler(ctx context.Context, logging log.Logger, azureConfig *AzureProvider, showMsg bool) error {
 	if !util.IsValidName(azureConfig.ClusterName) {
 		return fmt.Errorf("invalid cluster name: %v", azureConfig.ClusterName)
 	}
@@ -22,9 +23,8 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	}
 
 	if showMsg {
-		log.Printf(`NOTE 🚨
-	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-	`, azureConfig.ClusterName+" "+azureConfig.Config.ResourceGroupName+" "+azureConfig.Region)
+		logging.Note(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, azureConfig.ClusterName+" "+azureConfig.Config.ResourceGroupName+" "+azureConfig.Region))
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
 		unsafe := false
@@ -44,11 +44,11 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return err
 	}
 
-	if err := azureConfig.ConfigReader("managed"); err != nil {
+	if err := azureConfig.ConfigReader(logging, "managed"); err != nil {
 		return err
 	}
 
-	log.Println("Deleting AKS cluster...")
+	logging.Info("Deleting AKS cluster...", "")
 
 	pollerResp, err := managedClustersClient.BeginDelete(ctx, azureConfig.Config.ResourceGroupName, azureConfig.ClusterName, nil)
 	if err != nil {
@@ -59,8 +59,8 @@ func managedDeleteClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return err
 	}
 
-	log.Println("Deleted the AKS cluster " + azureConfig.ClusterName)
-	err = azureConfig.DeleteResourceGroup(ctx)
+	logging.Info("Deleted the AKS cluster", azureConfig.ClusterName)
+	err = azureConfig.DeleteResourceGroup(ctx, logging)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ type printer struct {
 	ResourceName string
 }
 
-func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
+func managedCreateClusterHandler(ctx context.Context, logging log.Logger, azureConfig *AzureProvider) (*armcontainerservice.ManagedCluster, error) {
 	if !util.IsValidName(azureConfig.ClusterName) {
 		return nil, fmt.Errorf("invalid cluster name: %v", azureConfig.ClusterName)
 	}
@@ -91,9 +91,9 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 		return nil, fmt.Errorf("region {%s} is invalid", azureConfig.Region)
 	}
 
-	defer azureConfig.ConfigWriter("managed")
+	defer azureConfig.ConfigWriter(logging, "managed")
 
-	_, err := azureConfig.CreateResourceGroup(ctx)
+	_, err := azureConfig.CreateResourceGroup(ctx, logging)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("AKS cluster is creating... {%s}", azureConfig.ClusterName)
+	logging.Info("AKS cluster is creating...", azureConfig.ClusterName)
 
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -151,9 +151,9 @@ func managedCreateClusterHandler(ctx context.Context, azureConfig *AzureProvider
 	fmt.Println(kubeconfig.Kubeconfigs[0].Name)
 	KUBECONFIG := string(kubeconfig.Kubeconfigs[0].Value)
 
-	log.Println("NOTE: the kubeconfig to be saved has admin credentials")
+	logging.Note("the kubeconfig to be saved has admin credentials")
 
-	if err := azureConfig.SaveKubeconfig(KUBECONFIG); err != nil {
+	if err := azureConfig.SaveKubeconfig(logging, KUBECONFIG); err != nil {
 		return nil, err
 	}
 

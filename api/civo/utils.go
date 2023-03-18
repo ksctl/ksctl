@@ -11,10 +11,11 @@ package civo
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/civo/civogo"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -39,8 +40,8 @@ type LoadBalancerRet struct {
 }
 
 type HACollection interface {
-	DeleteInstances() error
-	DeleteNetworks() error
+	DeleteInstances(log.Logger) error
+	DeleteNetworks(log.Logger) error
 
 	DeleteInstance(string) error
 	DeleteFirewall(string) error
@@ -50,23 +51,24 @@ type HACollection interface {
 	GetInstance(string) (*civogo.Instance, error)
 
 	CreateFirewall(string) (*civogo.FirewallResult, error)
-	CreateNetwork(string) error
+	CreateNetwork(log.Logger, string) error
 	CreateInstance(string, string, string, string, bool) (*civogo.Instance, error)
 
-	SaveKubeconfig(string) error
+	SaveKubeconfig(log.Logger, string) error
 
-	CreateLoadbalancer() (*civogo.Instance, error)
-	CreateControlPlane(int) (*civogo.Instance, error)
-	CreateWorkerNode(int, string, string) (*civogo.Instance, error)
-	CreateDatabase() (string, error)
-	GetTokenFromCP_1(*civogo.Instance) string
+	CreateLoadbalancer(log.Logger) (*civogo.Instance, error)
+	CreateControlPlane(log.Logger, int) (*civogo.Instance, error)
+	CreateWorkerNode(log.Logger, int, string, string) (*civogo.Instance, error)
+	CreateDatabase(log.Logger) (string, error)
+	GetTokenFromCP_1(log.Logger, *civogo.Instance) string
 
-	UploadSSHKey() error
+	UploadSSHKey(log.Logger) error
+	CreateSSHKeyPair(log.Logger, string) error
 	DeleteSSHKeyPair() error
-	ConfigLoadBalancer(*civogo.Instance, []string) error
-	FetchKUBECONFIG(*civogo.Instance) (string, error)
-	HelperExecNoOutputControlPlane(string, string, bool) error
-	HelperExecOutputControlPlane(string, string, bool) (string, error)
+	ConfigLoadBalancer(log.Logger, *civogo.Instance, []string) error
+	FetchKUBECONFIG(log.Logger, *civogo.Instance) (string, error)
+	HelperExecNoOutputControlPlane(log.Logger, string, string, bool) error
+	HelperExecOutputControlPlane(log.Logger, string, string, bool) (string, error)
 }
 
 type HAType struct {
@@ -126,7 +128,8 @@ func GetConfig(clusterName, region string) (configStore JsonStore, err error) {
 	return
 }
 
-func saveConfig(clusterFolder string, configStore JsonStore) error {
+// TODO: Merge it with same function in utils package
+func saveConfig(logging log.Logger, clusterFolder string, configStore JsonStore) error {
 
 	storeBytes, err := json.Marshal(configStore)
 	if err != nil {
@@ -142,102 +145,102 @@ func saveConfig(clusterFolder string, configStore JsonStore) error {
 	if err != nil {
 		return err
 	}
-	log.Println("💾 configuration")
+	logging.Info("💾 configuration", "")
 	return nil
 }
 
 type ConfigurationHandlers interface {
-	ConfigWriterDBEndpoint(string) error
-	ConfigWriterInstanceDatabase(string) error
-	ConfigWriterServerToken(string) error
-	ConfigWriterInstanceLoadBalancer(string) error
-	ConfigWriterInstanceControlPlaneNodes(string) error
-	ConfigWriterInstanceWorkerNodes(string) error
-	ConfigWriterFirewallLoadBalancerNodes(string) error
-	ConfigWriterFirewallControlPlaneNodes(string) error
-	ConfigWriterFirewallWorkerNodes(string) error
-	ConfigWriterFirewallDatabaseNodes(string) error
-	ConfigWriterNetworkID(string) error
-	ConfigWriterSSHID(string) error
+	ConfigWriterDBEndpoint(log.Logger, string) error
+	ConfigWriterInstanceDatabase(log.Logger, string) error
+	ConfigWriterServerToken(log.Logger, string) error
+	ConfigWriterInstanceLoadBalancer(log.Logger, string) error
+	ConfigWriterInstanceControlPlaneNodes(log.Logger, string) error
+	ConfigWriterInstanceWorkerNodes(log.Logger, string) error
+	ConfigWriterFirewallLoadBalancerNodes(log.Logger, string) error
+	ConfigWriterFirewallControlPlaneNodes(log.Logger, string) error
+	ConfigWriterFirewallWorkerNodes(log.Logger, string) error
+	ConfigWriterFirewallDatabaseNodes(log.Logger, string) error
+	ConfigWriterNetworkID(log.Logger, string) error
+	ConfigWriterSSHID(log.Logger, string) error
 }
 
 // ConfigWriterDBEndpoint write Database endpoint to state management file
-func (config *JsonStore) ConfigWriterDBEndpoint(endpoint string) error {
+func (config *JsonStore) ConfigWriterDBEndpoint(logging log.Logger, endpoint string) error {
 	config.DBEndpoint = endpoint
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterSSHID write SSH keypairId which is uploaded to Civo to state management file
-func (config *JsonStore) ConfigWriterSSHID(keypair_id string) error {
+func (config *JsonStore) ConfigWriterSSHID(logging log.Logger, keypair_id string) error {
 	config.SSHID = keypair_id
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterNetworkID write NetworkID of created network Civo to state management file
-func (config *JsonStore) ConfigWriterNetworkID(netID string) error {
+func (config *JsonStore) ConfigWriterNetworkID(logging log.Logger, netID string) error {
 	config.NetworkIDs.NetworkID = netID
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterFirewallControlPlaneNodes write firewall_id of all controlplane's firewall to state management file
-func (config *JsonStore) ConfigWriterFirewallControlPlaneNodes(fwID string) error {
+func (config *JsonStore) ConfigWriterFirewallControlPlaneNodes(logging log.Logger, fwID string) error {
 	config.NetworkIDs.FirewallIDControlPlaneNode = fwID
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterFirewallWorkerNodes write firewall_id of all workernode's firewall to state management file
-func (config *JsonStore) ConfigWriterFirewallWorkerNodes(fwID string) error {
+func (config *JsonStore) ConfigWriterFirewallWorkerNodes(logging log.Logger, fwID string) error {
 	config.NetworkIDs.FirewallIDWorkerNode = fwID
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterFirewallLoadBalancerNodes write firewall_id of loadbalancer firewall to state management file
 // TODO: Add more fine grained firewall rules
-func (config *JsonStore) ConfigWriterFirewallLoadBalancerNodes(fwID string) error {
+func (config *JsonStore) ConfigWriterFirewallLoadBalancerNodes(logging log.Logger, fwID string) error {
 	config.NetworkIDs.FirewallIDLoadBalancerNode = fwID
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterFirewallDatabaseNodes write firewall_id of database firewall to state management file
 // TODO: Add more restrictive firewall rules
-func (config *JsonStore) ConfigWriterFirewallDatabaseNodes(fwID string) error {
+func (config *JsonStore) ConfigWriterFirewallDatabaseNodes(logging log.Logger, fwID string) error {
 	config.NetworkIDs.FirewallIDDatabaseNode = fwID
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterServerToken write the K3S_TOKEN to the state management file
-func (config *JsonStore) ConfigWriterServerToken(token string) error {
+func (config *JsonStore) ConfigWriterServerToken(logging log.Logger, token string) error {
 	config.ServerToken = token
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterInstanceDatabase write the instance_id of database VM to state management file
-func (config *JsonStore) ConfigWriterInstanceDatabase(instanceID string) error {
+func (config *JsonStore) ConfigWriterInstanceDatabase(logging log.Logger, instanceID string) error {
 	config.InstanceIDs.DatabaseNode = append(config.InstanceIDs.DatabaseNode, instanceID)
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterInstanceLoadBalancer write the instance_id of loadbalancer VM to state management file
-func (config *JsonStore) ConfigWriterInstanceLoadBalancer(instanceID string) error {
+func (config *JsonStore) ConfigWriterInstanceLoadBalancer(logging log.Logger, instanceID string) error {
 	config.InstanceIDs.LoadBalancerNode = append(config.InstanceIDs.LoadBalancerNode, instanceID)
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterInstanceControlPlaneNodes write the instance_id of controlplane VMs to state management file
-func (config *JsonStore) ConfigWriterInstanceControlPlaneNodes(instanceID string) error {
+func (config *JsonStore) ConfigWriterInstanceControlPlaneNodes(logging log.Logger, instanceID string) error {
 	config.InstanceIDs.ControlNodes = append(config.InstanceIDs.ControlNodes, instanceID)
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // ConfigWriterInstanceWorkerNodes write the instance_id of workernode VMs to state management file
-func (config *JsonStore) ConfigWriterInstanceWorkerNodes(instanceID string) error {
+func (config *JsonStore) ConfigWriterInstanceWorkerNodes(logging log.Logger, instanceID string) error {
 	config.InstanceIDs.WorkerNodes = append(config.InstanceIDs.WorkerNodes, instanceID)
-	return saveConfig(config.ClusterName+" "+config.Region, *config)
+	return saveConfig(logging, config.ClusterName+" "+config.Region, *config)
 }
 
 // DeleteInstances deletes all the VMs
 // deletes controlplane VMs, workerplane VMs, Database VM, Loadbalancer VM
-func (obj *HAType) DeleteInstances() error {
+func (obj *HAType) DeleteInstances(logging log.Logger) error {
 	instances, err := ExtractInstances(obj.ClusterName, obj.Client.Region)
 	if err != nil {
 		return err
@@ -248,10 +251,10 @@ func (obj *HAType) DeleteInstances() error {
 	for index, instanceID := range instances.ControlNodes {
 		if err := obj.DeleteInstance(instanceID); err != nil {
 			errV = err
-			log.Println(fmt.Sprintf("❌ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)))
+			logging.Err(fmt.Sprintf("❌ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)))
 			continue
 		}
-		log.Println(fmt.Sprintf("✅ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)))
+		logging.Info(fmt.Sprintf("✅ [%d/%d] deleted controlplane instances", index+1, len(instances.ControlNodes)), instanceID)
 	}
 	if errV != nil {
 		return errV
@@ -261,10 +264,10 @@ func (obj *HAType) DeleteInstances() error {
 	for index, instanceID := range instances.WorkerNodes {
 		if err := obj.DeleteInstance(instanceID); err != nil {
 			errV = err
-			log.Println(fmt.Sprintf("❌ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)))
+			logging.Err(fmt.Sprintf("❌ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)))
 			continue
 		}
-		log.Println(fmt.Sprintf("✅ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)))
+		logging.Info(fmt.Sprintf("✅ [%d/%d] deleted workerplane instances", index+1, len(instances.WorkerNodes)), instanceID)
 	}
 	if errV != nil {
 		return errV
@@ -274,10 +277,10 @@ func (obj *HAType) DeleteInstances() error {
 	for index, instanceID := range instances.LoadBalancerNode {
 		if err := obj.DeleteInstance(instanceID); err != nil {
 			errV = err
-			log.Println(fmt.Sprintf("❌ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)))
+			logging.Err(fmt.Sprintf("❌ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)))
 			continue
 		}
-		log.Println(fmt.Sprintf("✅ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)))
+		logging.Info(fmt.Sprintf("✅ [%d/%d] deleted loadbalancer instances", index+1, len(instances.LoadBalancerNode)), instanceID)
 	}
 	if errV != nil {
 		return errV
@@ -287,17 +290,17 @@ func (obj *HAType) DeleteInstances() error {
 	for index, instanceID := range instances.DatabaseNode {
 		if err := obj.DeleteInstance(instanceID); err != nil {
 			errV = err
-			log.Println(fmt.Sprintf("❌ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)))
+			logging.Err(fmt.Sprintf("❌ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)))
 			continue
 		}
-		log.Println(fmt.Sprintf("✅ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)))
+		logging.Info(fmt.Sprintf("✅ [%d/%d] deleted database instances", index+1, len(instances.DatabaseNode)), instanceID)
 	}
 	return errV
 }
 
 // DeleteNetworks deletes all network related objects
 // deletes all firewalls, and the network
-func (obj *HAType) DeleteNetworks() error {
+func (obj *HAType) DeleteNetworks(logging log.Logger) error {
 	networks, err := ExtractNetworks(obj.ClusterName, obj.Client.Region)
 	if err != nil {
 		return err
@@ -306,9 +309,9 @@ func (obj *HAType) DeleteNetworks() error {
 	if len(networks.FirewallIDControlPlaneNode) != 0 {
 		err = obj.DeleteFirewall(networks.FirewallIDControlPlaneNode)
 		if err != nil {
-			log.Println(fmt.Sprintf("❌ deleted controlplane firewall"))
+			logging.Err(fmt.Sprintf("❌ deleted controlplane firewall"))
 		}
-		log.Println(fmt.Sprintf("✅ deleted controlplane firewall"))
+		logging.Info(fmt.Sprintf("✅ deleted controlplane firewall"), networks.FirewallIDControlPlaneNode)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -316,9 +319,9 @@ func (obj *HAType) DeleteNetworks() error {
 	if len(networks.FirewallIDWorkerNode) != 0 {
 		err = obj.DeleteFirewall(networks.FirewallIDWorkerNode)
 		if err != nil {
-			log.Println(fmt.Sprintf("❌ deleted workerplane firewall"))
+			logging.Err(fmt.Sprintf("❌ deleted workerplane firewall"))
 		}
-		log.Println(fmt.Sprintf("✅ deleted workerplane firewall"))
+		logging.Info(fmt.Sprintf("✅ deleted workerplane firewall"), networks.FirewallIDWorkerNode)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -326,9 +329,9 @@ func (obj *HAType) DeleteNetworks() error {
 	if len(networks.FirewallIDDatabaseNode) != 0 {
 		err = obj.DeleteFirewall(networks.FirewallIDDatabaseNode)
 		if err != nil {
-			log.Println(fmt.Sprintf("❌ deleted database firewall"))
+			logging.Err(fmt.Sprintf("❌ deleted database firewall"))
 		}
-		log.Println(fmt.Sprintf("✅ deleted database firewall"))
+		logging.Info(fmt.Sprintf("✅ deleted database firewall"), networks.FirewallIDDatabaseNode)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -336,9 +339,9 @@ func (obj *HAType) DeleteNetworks() error {
 	if len(networks.FirewallIDLoadBalancerNode) != 0 {
 		err = obj.DeleteFirewall(networks.FirewallIDLoadBalancerNode)
 		if err != nil {
-			log.Println(fmt.Sprintf("❌ deleted loadbalancer firewall"))
+			logging.Err(fmt.Sprintf("❌ deleted loadbalancer firewall"))
 		}
-		log.Println(fmt.Sprintf("✅ deleted loadbalancer firewall"))
+		logging.Info(fmt.Sprintf("✅ deleted loadbalancer firewall"), networks.FirewallIDLoadBalancerNode)
 	}
 
 	err = nil
@@ -352,14 +355,14 @@ func (obj *HAType) DeleteNetworks() error {
 		retry++
 		time.Sleep(time.Duration(retryTimeout) * time.Second)
 		retryTimeout *= 2
-		log.Println("❗ RETRYING ", err)
+		logging.Warn(fmt.Sprintln("❗ RETRYING ", err))
 	}
 
 	if retry == MAX_RETRY_COUNT {
 		return fmt.Errorf("❌ deleted network")
 	}
 
-	log.Println(fmt.Sprintf("✅ deleted network"))
+	logging.Info("✅ deleted network", "")
 
 	return nil
 }
@@ -442,28 +445,28 @@ func (obj *HAType) CreateFirewall(firewallName string) (firew *civogo.FirewallRe
 }
 
 // CreateNetwork creates network with provided name
-func (obj *HAType) CreateNetwork(networkName string) error {
+func (obj *HAType) CreateNetwork(logging log.Logger, networkName string) error {
 	net, err := obj.Client.NewNetwork(networkName)
 	if err != nil {
 		return err
 	}
 	obj.NetworkID = net.ID
-	return obj.Configuration.ConfigWriterNetworkID(net.ID)
+	return obj.Configuration.ConfigWriterNetworkID(logging, net.ID)
 }
 
 // CreateSSHKeyPair upload's ssh keypair to CIVO using the Public Key generated by ssh-keygen
-func (obj *HAType) CreateSSHKeyPair(publicKey string) error {
+func (obj *HAType) CreateSSHKeyPair(logging log.Logger, publicKey string) error {
 	sshRes, err := obj.Client.NewSSHKey(obj.ClusterName+"-"+strings.ToLower(obj.Client.Region)+"-ksctl-ha", publicKey)
 	if err != nil {
 		return err
 	}
 	obj.SSHID = sshRes.ID
-	err = obj.Configuration.ConfigWriterSSHID(sshRes.ID)
+	err = obj.Configuration.ConfigWriterSSHID(logging, sshRes.ID)
 	return err
 }
 
 // SaveKubeconfig stores the kubeconfig to state management file
-func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
+func (obj *HAType) SaveKubeconfig(logging log.Logger, kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Client.Region
 	err := os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "civo", "ha", folderName), 0644)
 	if err != nil && !os.IsExist(err) {
@@ -485,7 +488,7 @@ func (obj *HAType) SaveKubeconfig(kubeconfig string) error {
 	if err != nil {
 		return err
 	}
-	log.Println("💾 Kubeconfig")
+	logging.Info("💾 Kubeconfig", "")
 	return nil
 }
 
@@ -521,7 +524,7 @@ func DeleteAllPaths(clusterName, region string) error {
 }
 
 // UploadSSHKey it creates a ssh keypair saves to state management file and uploads it to CIVO
-func (ha *HAType) UploadSSHKey() (err error) {
+func (ha *HAType) UploadSSHKey(logging log.Logger) (err error) {
 	path := util.GetPath(util.OTHER_PATH, "civo", "ha", ha.ClusterName+" "+ha.Client.Region)
 	err = os.MkdirAll(path, 0755)
 	if err != nil {
@@ -532,7 +535,7 @@ func (ha *HAType) UploadSSHKey() (err error) {
 		return
 	}
 
-	err = ha.CreateSSHKeyPair(keyPairToUpload)
+	err = ha.CreateSSHKeyPair(logging, keyPairToUpload)
 
 	// ------- Setting the ssh configs only the public ips used will change
 	ha.SSH_Payload.UserName = "root"
