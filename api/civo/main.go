@@ -58,6 +58,10 @@ func fetchAPIKey(logger log.Logger) string {
 	if err != nil {
 		return ""
 	}
+	civoToken := os.Getenv("CIVO_TOKEN")
+	if civoToken != "" {
+		return civoToken
+	}
 
 	return token["token"]
 }
