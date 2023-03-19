@@ -13,6 +13,7 @@ const ksctl  = `
 |   <\__ \ (__| |_| |
 |_|\_\___/\___|\__|_|
 `
+// change this using ldflags 
 var Version string = "dev"
 
 var Commit string 
