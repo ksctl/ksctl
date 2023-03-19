@@ -20,4 +20,5 @@ ksctl create-cluster aws <arguments to civo cloud provider>
 
 func init() {
 	createClusterCmd.AddCommand(createClusterAws)
+	createClusterAws.Flags().BoolP("verbose", "v", true, "for verbose output")
 }

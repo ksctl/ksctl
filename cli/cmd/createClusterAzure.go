@@ -8,7 +8,7 @@ Avinesh Tripathi <avineshtripathi1@gmail.com>
 package cmd
 
 import (
-	"fmt"
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/kubesimplify/ksctl/api/azure"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -23,6 +23,12 @@ var createClusterAzure = &cobra.Command{
 	ksctl create-cluster azure <arguments to civo cloud provider>
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
+		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
+
 		payload := &azure.AzureProvider{
 			ClusterName: azmcclusterName,
 			HACluster:   false,
@@ -32,12 +38,12 @@ var createClusterAzure = &cobra.Command{
 				Disk:         azmcsize,
 			},
 		}
-		err := payload.CreateCluster()
+		err := payload.CreateCluster(logger)
 		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			logger.Err(err.Error())
 			return
 		}
-		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+		logger.Info("CREATED CLUSTER", "")
 	},
 }
 
@@ -54,5 +60,6 @@ func init() {
 	createClusterAzure.Flags().StringVarP(&azmcsize, "node-size", "s", "Standard_DS2_v2", "Node size")
 	createClusterAzure.Flags().StringVarP(&azmcregion, "region", "r", "eastus", "Region")
 	createClusterAzure.Flags().IntVarP(&azmcnodeCount, "nodes", "N", 1, "Number of Nodes")
+	createClusterAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterAzure.MarkFlagRequired("name")
 }
