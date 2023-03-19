@@ -10,10 +10,11 @@ package civo
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"strings"
 	"time"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 )
 
 func generateDBPassword(passwordLen int) string {
@@ -73,9 +74,9 @@ systemctl restart mysql
 }
 
 // CreateDatabase return endpoint address if no error is encountered
-func (obj *HAType) CreateDatabase() (string, error) {
+func (obj *HAType) CreateDatabase(logging log.Logger) (string, error) {
 
-	errV := obj.CreateNetwork(obj.ClusterName + "-ksctl")
+	errV := obj.CreateNetwork(logging, obj.ClusterName+"-ksctl")
 	if errV != nil {
 		return "", errV
 	}
@@ -88,19 +89,20 @@ func (obj *HAType) CreateDatabase() (string, error) {
 	}
 	obj.DBFirewallID = firewall.ID
 
-	err = obj.Configuration.ConfigWriterFirewallDatabaseNodes(firewall.ID)
+	err = obj.Configuration.ConfigWriterFirewallDatabaseNodes(logging, firewall.ID)
 	if err != nil {
 		return "", nil
 	}
 	generatedPassword := generateDBPassword(20)
 
 	// FIXME: try to make DB as private instance as SECURITY CONCERN
+	// SOLUTION: maybe try to make instance private or restricted firewall rules
 	instance, err := obj.CreateInstance(name, firewall.ID, "g3.large", scriptDB(generatedPassword), true)
 	if err != nil {
 		return "", err
 	}
 
-	err = obj.Configuration.ConfigWriterInstanceDatabase(instance.ID)
+	err = obj.Configuration.ConfigWriterInstanceDatabase(logging, instance.ID)
 	if err != nil {
 		return "", nil
 	}
@@ -113,17 +115,17 @@ func (obj *HAType) CreateDatabase() (string, error) {
 
 		if getInstance.Status == "ACTIVE" {
 
-			log.Println("💻 Booted Instance " + name)
+			logging.Info("💻 Booted Instance", name)
 
-			log.Println("✅ Configured Database")
+			logging.Info("✅ Configured Database", "")
 			endpoint := fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", generatedPassword, getInstance.PrivateIP)
-			err = obj.Configuration.ConfigWriterDBEndpoint(endpoint)
+			err = obj.Configuration.ConfigWriterDBEndpoint(logging, endpoint)
 			if err != nil {
 				return "", err
 			}
 			return endpoint, nil
 		}
-		log.Println("🚧 Instance " + name)
+		logging.Info("🚧 Instance ", name)
 		time.Sleep(10 * time.Second)
 	}
 }

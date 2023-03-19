@@ -9,6 +9,8 @@ Kubesimplify
 import (
 	"fmt"
 
+	log "github.com/kubesimplify/ksctl/api/logger"
+
 	"github.com/kubesimplify/ksctl/api/civo"
 	"github.com/kubesimplify/ksctl/api/utils"
 	util "github.com/kubesimplify/ksctl/api/utils"
@@ -23,6 +25,11 @@ var createClusterCivo = &cobra.Command{
 ksctl create-cluster civo <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
+		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
 
 		payload := civo.CivoProvider{
 			ClusterName: cclusterName,
@@ -35,12 +42,14 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 				ManagedNodes: cspec.ManagedNodes,
 			},
 		}
-		err := payload.CreateCluster()
+		err := payload.CreateCluster(logger)
 		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			logger.Err(err.Error())
 			return
 		}
-		fmt.Println("[🏭] Building...")
+
+		logger.Info("CREATED CLUSTER", "")
+
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	},
 }
@@ -61,6 +70,7 @@ func init() {
 	createClusterCivo.Flags().StringVarP(&apps, "apps", "a", "", "PreInstalled Apps with comma seperated string")
 	createClusterCivo.Flags().StringVarP(&cni, "cni", "c", "", "CNI Plugin to be installed")
 	createClusterCivo.Flags().IntVarP(&cspec.ManagedNodes, "nodes", "N", 1, "Number of Nodes")
+	createClusterCivo.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterCivo.MarkFlagRequired("name")
 	createClusterCivo.MarkFlagRequired("region")
 }

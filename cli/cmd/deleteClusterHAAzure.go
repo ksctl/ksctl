@@ -8,7 +8,7 @@ Avinesh Tripathi <avineshtripathi1@gmail.com>
 package cmd
 
 import (
-	"fmt"
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/kubesimplify/ksctl/api/azure"
 	"github.com/spf13/cobra"
@@ -22,17 +22,23 @@ var deleteClusterHAAzure = &cobra.Command{
 	ksctl delete-cluster ha-azure <arguments to civo cloud provider>
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
+		logger := log.Logger{Verbose: true}
+		if !isSet {
+			logger.Verbose = false
+		}
+
 		payload := &azure.AzureProvider{
 			ClusterName: azhdclusterName,
 			HACluster:   true,
 			Region:      azhdregion,
 		}
-		err := payload.DeleteCluster()
+		err := payload.DeleteCluster(logger)
 		if err != nil {
-			fmt.Printf("\033[31;40m%v\033[0m\n", err)
+			logger.Err(err.Error())
 			return
 		}
-		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+		logger.Info("CREATED CLUSTER", "")
 	},
 }
 
@@ -45,6 +51,7 @@ func init() {
 	deleteClusterCmd.AddCommand(deleteClusterHAAzure)
 	deleteClusterHAAzure.Flags().StringVarP(&azhdclusterName, "name", "n", "", "Cluster name")
 	deleteClusterHAAzure.Flags().StringVarP(&azhdregion, "region", "r", "eastus", "Region")
+	deleteClusterHAAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
 	deleteClusterHAAzure.MarkFlagRequired("name")
 	deleteClusterHAAzure.MarkFlagRequired("region")
 }

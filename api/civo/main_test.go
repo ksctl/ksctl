@@ -6,12 +6,15 @@ import (
 	"os"
 	"testing"
 
+	"github.com/kubesimplify/ksctl/api/logger"
 	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFetchAPIKey(T *testing.T) {
-	apikey := fetchAPIKey()
+	logging := logger.Logger{}
+
+	apikey := fetchAPIKey(logging)
 
 	if fmt.Sprintf("%T", apikey) != "string" || len(apikey) != 0 {
 		T.Fatalf("Invalid Return type or APIKey already present")
@@ -65,12 +68,13 @@ func TestClusterInfoInjecterManagedType(t *testing.T) {
 	clusterName := "xYz"
 	region := "aBc"
 	nodeSize := "k3s"
-	abcd := ClusterInfoInjecter(clusterName, region, nodeSize, 1, "", "")
+	logging := logger.Logger{}
+	abcd := ClusterInfoInjecter(logging, clusterName, region, nodeSize, 1, "", "")
 	worker := CivoProvider{
 		ClusterName: clusterName,
 		Region:      region,
 		Spec:        util.Machine{Disk: nodeSize, ManagedNodes: 1},
-		APIKey:      fetchAPIKey(),
+		APIKey:      fetchAPIKey(logging),
 		Application: "Traefik-v2-nodeport,metrics-server", // EXPLICITLY mentioned the expected data
 		CNIPlugin:   "flannel",
 	}

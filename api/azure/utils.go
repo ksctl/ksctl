@@ -4,9 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
+
 	"runtime"
+
+	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
@@ -18,11 +20,11 @@ import (
 )
 
 type AzureOperations interface {
-	CreateCluster() error
-	DeleteCluster() error
+	CreateCluster(log.Logger) error
+	DeleteCluster(log.Logger) error
 
-	AddMoreWorkerNodes() error
-	DeleteSomeWorkerNodes() error
+	AddMoreWorkerNodes(log.Logger) error
+	DeleteSomeWorkerNodes(log.Logger) error
 }
 
 type AzureStateVMs struct {
@@ -68,24 +70,24 @@ type AzureStateCluster struct {
 type AzureInfra interface {
 
 	// azure resources
-	CreateResourceGroup(context.Context) error
-	DeleteResourceGroup(context.Context) error
-	DeleteDisk(context.Context, string) error
-	DeleteSubnet(context.Context) error
-	CreateSubnet(context.Context, string) (*armnetwork.Subnet, error)
-	CreateVM(context.Context, string, string, string) (*armcompute.VirtualMachine, error)
-	DeleteVM(context.Context, string) error
-	CreateVirtualNetwork(context.Context, string) (*armnetwork.VirtualNetwork, error)
-	DeleteVirtualNetwork(context.Context) error
-	CreateNSG(context.Context, string, []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error)
-	DeleteNSG(context.Context, string) error
-	DeleteNetworkInterface(context.Context, string) error
-	CreateNetworkInterface(context.Context, string, string, string, string, string) (*armnetwork.Interface, error)
-	DeletePublicIP(context.Context, string) error
-	CreatePublicIP(context.Context, string) (*armnetwork.PublicIPAddress, error)
+	CreateResourceGroup(context.Context, log.Logger) error
+	DeleteResourceGroup(context.Context, log.Logger) error
+	DeleteDisk(context.Context, log.Logger, string) error
+	DeleteSubnet(context.Context, log.Logger) error
+	CreateSubnet(context.Context, log.Logger, string) (*armnetwork.Subnet, error)
+	CreateVM(context.Context, log.Logger, string, string, string) (*armcompute.VirtualMachine, error)
+	DeleteVM(context.Context, log.Logger, string) error
+	CreateVirtualNetwork(context.Context, log.Logger, string) (*armnetwork.VirtualNetwork, error)
+	DeleteVirtualNetwork(context.Context, log.Logger) error
+	CreateNSG(context.Context, log.Logger, string, []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error)
+	DeleteNSG(context.Context, log.Logger, string) error
+	DeleteNetworkInterface(context.Context, log.Logger, string) error
+	CreateNetworkInterface(context.Context, log.Logger, string, string, string, string, string) (*armnetwork.Interface, error)
+	DeletePublicIP(context.Context, log.Logger, string) error
+	CreatePublicIP(context.Context, log.Logger, string) (*armnetwork.PublicIPAddress, error)
 
-	UploadSSHKey(context.Context) (err error)
-	DeleteSSHKey(context.Context) error
+	UploadSSHKey(context.Context, log.Logger) (err error)
+	DeleteSSHKey(context.Context, log.Logger) error
 
 	// state file managemenet
 	ConfigReader() error
@@ -816,8 +818,8 @@ func isValidRegion(region string) bool {
 	return false
 }
 
-func (config *AzureProvider) ConfigWriter(clusterType string) error {
-	return util.SaveState(config.Config, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+func (config *AzureProvider) ConfigWriter(logging log.Logger, clusterType string) error {
+	return util.SaveState(logging, config.Config, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
 }
 
 func isPresent(kind string, obj AzureProvider) bool {
@@ -829,8 +831,8 @@ func isPresent(kind string, obj AzureProvider) bool {
 	return true
 }
 
-func (config *AzureProvider) ConfigReader(clusterType string) error {
-	data, err := util.GetState("azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
+func (config *AzureProvider) ConfigReader(logging log.Logger, clusterType string) error {
+	data, err := util.GetState(logging, "azure", clusterType, config.ClusterName+" "+config.Config.ResourceGroupName+" "+config.Region)
 	if err != nil {
 		return err
 	}
@@ -846,8 +848,8 @@ func (config *AzureProvider) ConfigReader(clusterType string) error {
 	return nil
 }
 
-func setRequiredENV_VAR(ctx context.Context, cred *AzureProvider) error {
-	tokens, err := util.GetCred("azure")
+func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProvider) error {
+	tokens, err := util.GetCred(logging, "azure")
 	if err != nil {
 		return err
 	}
@@ -885,7 +887,7 @@ func getAzureResourceGroupsClient(cred *AzureProvider) (*armresources.ResourceGr
 	return resourceGroupClient, nil
 }
 
-func (obj *AzureProvider) CreateResourceGroup(ctx context.Context) (*armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
+func (obj *AzureProvider) CreateResourceGroup(ctx context.Context, logging log.Logger) (*armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
 	resourceGroupClient, err := getAzureResourceGroupsClient(obj)
 	if err != nil {
 		return nil, err
@@ -900,11 +902,11 @@ func (obj *AzureProvider) CreateResourceGroup(ctx context.Context) (*armresource
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Created resource group: {%s}", *resourceGroup.Name)
+	logging.Info("Created resource group", *resourceGroup.Name)
 	return &resourceGroup, nil
 }
 
-func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context) error {
+func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context, logging log.Logger) error {
 	resourceGroupClient, err := getAzureResourceGroupsClient(obj)
 	if err != nil {
 		return err
@@ -918,11 +920,11 @@ func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("Deleted resource group: {%s}", obj.Config.ResourceGroupName)
+	logging.Info("Deleted resource group", obj.Config.ResourceGroupName)
 	return nil
 }
 
-func (obj *AzureProvider) CreateSubnet(ctx context.Context, subnetName string) (*armnetwork.Subnet, error) {
+func (obj *AzureProvider) CreateSubnet(ctx context.Context, logging log.Logger, subnetName string) (*armnetwork.Subnet, error) {
 	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -945,11 +947,11 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, subnetName string) (
 	}
 	obj.Config.SubnetName = subnetName
 	obj.Config.SubnetID = *resp.ID
-	log.Printf("Created subnet: {%s}", *resp.Name)
+	logging.Info("Created subnet", *resp.Name)
 	return &resp.Subnet, nil
 }
 
-func (obj *AzureProvider) DeleteSubnet(ctx context.Context, subnetName string) error {
+func (obj *AzureProvider) DeleteSubnet(ctx context.Context, logging log.Logger, subnetName string) error {
 	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -965,11 +967,11 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, subnetName string) e
 		return err
 	}
 
-	log.Printf("Deleted subnet: {%s}", subnetName)
+	logging.Info("Deleted subnet", subnetName)
 	return nil
 }
 
-func (obj *AzureProvider) CreatePublicIP(ctx context.Context, publicIPName string) (*armnetwork.PublicIPAddress, error) {
+func (obj *AzureProvider) CreatePublicIP(ctx context.Context, logging log.Logger, publicIPName string) (*armnetwork.PublicIPAddress, error) {
 	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -991,37 +993,37 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, publicIPName strin
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Created public IP address: {%s}", *resp.Name)
+	logging.Info("Created public IP address", *resp.Name)
 	return &resp.PublicIPAddress, err
 }
 
-func (obj *AzureProvider) DeleteAllPublicIP(ctx context.Context) error {
+func (obj *AzureProvider) DeleteAllPublicIP(ctx context.Context, logging log.Logger) error {
 	for _, interfaceName := range obj.Config.InfoControlPlanes.PublicIPNames {
-		if err := obj.DeletePublicIP(ctx, interfaceName); err != nil {
+		if err := obj.DeletePublicIP(ctx, logging, interfaceName); err != nil {
 			return err
 		}
 	}
 	for _, interfaceName := range obj.Config.InfoWorkerPlanes.PublicIPNames {
-		if err := obj.DeletePublicIP(ctx, interfaceName); err != nil {
+		if err := obj.DeletePublicIP(ctx, logging, interfaceName); err != nil {
 			return err
 		}
 	}
 
 	if len(obj.Config.InfoDatabase.PublicIPName) != 0 {
-		if err := obj.DeletePublicIP(ctx, obj.Config.InfoDatabase.PublicIPName); err != nil {
+		if err := obj.DeletePublicIP(ctx, logging, obj.Config.InfoDatabase.PublicIPName); err != nil {
 			return err
 		}
 	}
 	if len(obj.Config.InfoLoadBalancer.PublicIPName) != 0 {
-		if err := obj.DeletePublicIP(ctx, obj.Config.InfoLoadBalancer.PublicIPName); err != nil {
+		if err := obj.DeletePublicIP(ctx, logging, obj.Config.InfoLoadBalancer.PublicIPName); err != nil {
 			return err
 		}
 	}
-	log.Println("Deleted all Public IPs")
+	logging.Info("Deleted all Public IPs", "")
 	return nil
 }
 
-func (obj *AzureProvider) DeletePublicIP(ctx context.Context, publicIPName string) error {
+func (obj *AzureProvider) DeletePublicIP(ctx context.Context, logging log.Logger, publicIPName string) error {
 	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -1037,11 +1039,11 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, publicIPName strin
 		return err
 	}
 
-	log.Printf("Deleted the pubIP: {%s}", publicIPName)
+	logging.Info("Deleted the pubIP", publicIPName)
 	return nil
 }
 
-func (obj *AzureProvider) DeleteSSHKeyPair(ctx context.Context) error {
+func (obj *AzureProvider) DeleteSSHKeyPair(ctx context.Context, logging log.Logger) error {
 	sshClient, err := armcompute.NewSSHPublicKeysClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -1051,7 +1053,7 @@ func (obj *AzureProvider) DeleteSSHKeyPair(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("Deleted the ssh: {%s}", obj.Config.SSHKeyName)
+	logging.Info("Deleted the ssh", obj.Config.SSHKeyName)
 	return nil
 }
 
@@ -1087,7 +1089,7 @@ func (obj *AzureProvider) UploadSSHKey(ctx context.Context) (err error) {
 	return
 }
 
-func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, resourceName, nicName string, subnetID string, publicIPID string, networkSecurityGroupID string) (*armnetwork.Interface, error) {
+func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, logging log.Logger, resourceName, nicName string, subnetID string, publicIPID string, networkSecurityGroupID string) (*armnetwork.Interface, error) {
 	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -1124,37 +1126,37 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, resourceNa
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Created network interface: {%s}", *resp.Name)
+	logging.Info("Created network interface", *resp.Name)
 	return &resp.Interface, err
 }
 
-func (obj *AzureProvider) DeleteAllNetworkInterface(ctx context.Context) error {
+func (obj *AzureProvider) DeleteAllNetworkInterface(ctx context.Context, logging log.Logger) error {
 	for _, interfaceName := range obj.Config.InfoControlPlanes.NetworkInterfaceNames {
-		if err := obj.DeleteNetworkInterface(ctx, interfaceName); err != nil {
+		if err := obj.DeleteNetworkInterface(ctx, logging, interfaceName); err != nil {
 			return err
 		}
 	}
 	for _, interfaceName := range obj.Config.InfoWorkerPlanes.NetworkInterfaceNames {
-		if err := obj.DeleteNetworkInterface(ctx, interfaceName); err != nil {
+		if err := obj.DeleteNetworkInterface(ctx, logging, interfaceName); err != nil {
 			return err
 		}
 	}
 
 	if len(obj.Config.InfoDatabase.NetworkInterfaceName) != 0 {
-		if err := obj.DeleteNetworkInterface(ctx, obj.Config.InfoDatabase.NetworkInterfaceName); err != nil {
+		if err := obj.DeleteNetworkInterface(ctx, logging, obj.Config.InfoDatabase.NetworkInterfaceName); err != nil {
 			return err
 		}
 	}
 	if len(obj.Config.InfoLoadBalancer.NetworkInterfaceName) != 0 {
-		if err := obj.DeleteNetworkInterface(ctx, obj.Config.InfoLoadBalancer.NetworkInterfaceName); err != nil {
+		if err := obj.DeleteNetworkInterface(ctx, logging, obj.Config.InfoLoadBalancer.NetworkInterfaceName); err != nil {
 			return err
 		}
 	}
-	log.Println("Deleted all network interfaces")
+	logging.Info("Deleted all network interfaces", "")
 	return nil
 }
 
-func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, nicName string) error {
+func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, logging log.Logger, nicName string) error {
 	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -1169,38 +1171,38 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, nicName st
 	if err != nil {
 		return err
 	}
-	log.Printf("Deleted the nic: {%s}", nicName)
+	logging.Info("Deleted the nic", nicName)
 
 	return nil
 }
 
-func (obj *AzureProvider) DeleteAllNSG(ctx context.Context) error {
+func (obj *AzureProvider) DeleteAllNSG(ctx context.Context, logging log.Logger) error {
 	if len(obj.Config.InfoControlPlanes.NetworkSecurityGroupName) != 0 {
-		if err := obj.DeleteNSG(ctx, obj.Config.InfoControlPlanes.NetworkSecurityGroupName); err != nil {
+		if err := obj.DeleteNSG(ctx, logging, obj.Config.InfoControlPlanes.NetworkSecurityGroupName); err != nil {
 			return err
 		}
 	}
 	if len(obj.Config.InfoWorkerPlanes.NetworkSecurityGroupName) != 0 {
-		if err := obj.DeleteNSG(ctx, obj.Config.InfoWorkerPlanes.NetworkSecurityGroupName); err != nil {
+		if err := obj.DeleteNSG(ctx, logging, obj.Config.InfoWorkerPlanes.NetworkSecurityGroupName); err != nil {
 			return err
 		}
 	}
 
 	if len(obj.Config.InfoDatabase.NetworkSecurityGroupName) != 0 {
-		if err := obj.DeleteNSG(ctx, obj.Config.InfoDatabase.NetworkSecurityGroupName); err != nil {
+		if err := obj.DeleteNSG(ctx, logging, obj.Config.InfoDatabase.NetworkSecurityGroupName); err != nil {
 			return err
 		}
 	}
 	if len(obj.Config.InfoLoadBalancer.NetworkSecurityGroupName) != 0 {
-		if err := obj.DeleteNSG(ctx, obj.Config.InfoLoadBalancer.NetworkSecurityGroupName); err != nil {
+		if err := obj.DeleteNSG(ctx, logging, obj.Config.InfoLoadBalancer.NetworkSecurityGroupName); err != nil {
 			return err
 		}
 	}
-	log.Println("Deleted all network security groups")
+	logging.Info("Deleted all network security groups", "")
 	return nil
 }
 
-func (obj *AzureProvider) DeleteNSG(ctx context.Context, nsgName string) error {
+func (obj *AzureProvider) DeleteNSG(ctx context.Context, logging log.Logger, nsgName string) error {
 	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -1215,11 +1217,11 @@ func (obj *AzureProvider) DeleteNSG(ctx context.Context, nsgName string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Deleted the nsg: {%s}", nsgName)
+	logging.Info("Deleted the nsg", nsgName)
 	return nil
 }
 
-func (obj *AzureProvider) CreateNSG(ctx context.Context, nsgName string, securityRules []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error) {
+func (obj *AzureProvider) CreateNSG(ctx context.Context, logging log.Logger, nsgName string, securityRules []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error) {
 	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -1241,11 +1243,11 @@ func (obj *AzureProvider) CreateNSG(ctx context.Context, nsgName string, securit
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Created network security group: {%s}", *resp.Name)
+	logging.Info("Created network security group", *resp.Name)
 	return &resp.SecurityGroup, nil
 }
 
-func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context) error {
+func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, logging log.Logger) error {
 	vnetClient, err := armnetwork.NewVirtualNetworksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -1260,11 +1262,11 @@ func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Deleted virtual network {%s}", obj.Config.VirtualNetworkName)
+	logging.Info("Deleted virtual network", obj.Config.VirtualNetworkName)
 	return nil
 }
 
-func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, virtualNetworkName string) (*armnetwork.VirtualNetwork, error) {
+func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, logging log.Logger, virtualNetworkName string) (*armnetwork.VirtualNetwork, error) {
 	vnetClient, err := armnetwork.NewVirtualNetworksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -1296,7 +1298,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, virtualNetwo
 	// TODO: call the configWriter
 	obj.Config.VirtualNetworkName = *resp.Name
 	obj.Config.VirtualNetworkID = *resp.ID
-	log.Printf("Created virtual network: {%s}", *resp.Name)
+	logging.Info("Created virtual network", *resp.Name)
 	return &resp.VirtualNetwork, nil
 }
 
@@ -1333,7 +1335,7 @@ func (p printer) Printer(isHA bool, operation int) {
 	fmt.Println()
 }
 
-func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterfaceID, diskName, script string) (*armcompute.VirtualMachine, error) {
+func (obj *AzureProvider) CreateVM(ctx context.Context, logging log.Logger, vmName, networkInterfaceID, diskName, script string) (*armcompute.VirtualMachine, error) {
 	vmClient, err := armcompute.NewVirtualMachinesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return nil, err
@@ -1413,37 +1415,37 @@ func (obj *AzureProvider) CreateVM(ctx context.Context, vmName, networkInterface
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Created network virtual machine: {%s}", *resp.Name)
+	logging.Info("Created network virtual machine", *resp.Name)
 	return &resp.VirtualMachine, nil
 }
 
-func (obj *AzureProvider) DeleteAllVMs(ctx context.Context) error {
+func (obj *AzureProvider) DeleteAllVMs(ctx context.Context, logging log.Logger) error {
 	for _, instanceName := range obj.Config.InfoControlPlanes.Names {
-		if err := obj.DeleteVM(ctx, instanceName); err != nil {
+		if err := obj.DeleteVM(ctx, logging, instanceName); err != nil {
 			return err
 		}
 	}
 	for _, instanceName := range obj.Config.InfoWorkerPlanes.Names {
-		if err := obj.DeleteVM(ctx, instanceName); err != nil {
+		if err := obj.DeleteVM(ctx, logging, instanceName); err != nil {
 			return err
 		}
 	}
 
 	if len(obj.Config.InfoDatabase.Name) != 0 {
-		if err := obj.DeleteVM(ctx, obj.Config.InfoDatabase.Name); err != nil {
+		if err := obj.DeleteVM(ctx, logging, obj.Config.InfoDatabase.Name); err != nil {
 			return err
 		}
 	}
 	if len(obj.Config.InfoLoadBalancer.Name) != 0 {
-		if err := obj.DeleteVM(ctx, obj.Config.InfoLoadBalancer.Name); err != nil {
+		if err := obj.DeleteVM(ctx, logging, obj.Config.InfoLoadBalancer.Name); err != nil {
 			return err
 		}
 	}
-	log.Println("Deleted all virtual machines")
+	logging.Info("Deleted all virtual machines", "")
 	return nil
 }
 
-func (obj *AzureProvider) DeleteVM(ctx context.Context, vmName string) error {
+func (obj *AzureProvider) DeleteVM(ctx context.Context, logging log.Logger, vmName string) error {
 	vmClient, err := armcompute.NewVirtualMachinesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -1459,37 +1461,37 @@ func (obj *AzureProvider) DeleteVM(ctx context.Context, vmName string) error {
 		return err
 	}
 
-	log.Printf("Deleted the vm: {%s}", vmName)
+	logging.Info("Deleted the vm", vmName)
 	return nil
 }
 
-func (obj *AzureProvider) DeleteAllDisks(ctx context.Context) error {
+func (obj *AzureProvider) DeleteAllDisks(ctx context.Context, logging log.Logger) error {
 	for _, diskName := range obj.Config.InfoControlPlanes.DiskNames {
-		if err := obj.DeleteDisk(ctx, diskName); err != nil {
+		if err := obj.DeleteDisk(ctx, logging, diskName); err != nil {
 			return err
 		}
 	}
 	for _, diskName := range obj.Config.InfoWorkerPlanes.DiskNames {
-		if err := obj.DeleteDisk(ctx, diskName); err != nil {
+		if err := obj.DeleteDisk(ctx, logging, diskName); err != nil {
 			return err
 		}
 	}
 
 	if len(obj.Config.InfoDatabase.DiskName) != 0 {
-		if err := obj.DeleteDisk(ctx, obj.Config.InfoDatabase.DiskName); err != nil {
+		if err := obj.DeleteDisk(ctx, logging, obj.Config.InfoDatabase.DiskName); err != nil {
 			return err
 		}
 	}
 	if len(obj.Config.InfoLoadBalancer.DiskName) != 0 {
-		if err := obj.DeleteDisk(ctx, obj.Config.InfoLoadBalancer.DiskName); err != nil {
+		if err := obj.DeleteDisk(ctx, logging, obj.Config.InfoLoadBalancer.DiskName); err != nil {
 			return err
 		}
 	}
-	log.Println("Deleted all disks")
+	logging.Info("Deleted all disks", "")
 	return nil
 }
 
-func (obj *AzureProvider) DeleteDisk(ctx context.Context, diskName string) error {
+func (obj *AzureProvider) DeleteDisk(ctx context.Context, logging log.Logger, diskName string) error {
 	diskClient, err := armcompute.NewDisksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return err
@@ -1504,12 +1506,12 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, diskName string) error
 	if err != nil {
 		return err
 	}
-	log.Printf("Deleted disk: {%s}", diskName)
+	logging.Info("Deleted disk", diskName)
 	return nil
 }
 
 // SaveKubeconfig stores the kubeconfig to state management file
-func (obj *AzureProvider) SaveKubeconfig(kubeconfig string) error {
+func (obj *AzureProvider) SaveKubeconfig(logging log.Logger, kubeconfig string) error {
 	folderName := obj.ClusterName + " " + obj.Config.ResourceGroupName + " " + obj.Region
 	kind := "managed"
 	if obj.HACluster {
@@ -1535,6 +1537,6 @@ func (obj *AzureProvider) SaveKubeconfig(kubeconfig string) error {
 	if err != nil {
 		return err
 	}
-	log.Println("💾 Kubeconfig")
+	logging.Info("💾 Kubeconfig", "")
 	return nil
 }

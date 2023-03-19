@@ -10,6 +10,8 @@ Kubesimplify
 import (
 	"fmt"
 
+	log "github.com/kubesimplify/ksctl/api/logger"
+
 	eks "github.com/kubesimplify/ksctl/api/aws"
 	aks "github.com/kubesimplify/ksctl/api/azure"
 	"github.com/kubesimplify/ksctl/api/civo"
@@ -48,7 +50,7 @@ var credCmd = &cobra.Command{
 			return
 		}
 
-		isSuccess = storeCredentials(choice)
+		isSuccess = storeCredentials(cmd, choice)
 		if !isSuccess {
 			fmt.Println("Login Failed")
 		}
@@ -57,16 +59,21 @@ var credCmd = &cobra.Command{
 	},
 }
 
-func storeCredentials(provider int) bool {
+func storeCredentials(cmd *cobra.Command, provider int) bool {
+	isSet := cmd.Flags().Lookup("verbose").Changed
+	logger := log.Logger{Verbose: true}
+	if !isSet {
+		logger.Verbose = false
+	}
 
 	//TODO: Verify the Credentials
 	switch provider {
 	case AWS:
 		return eks.Credentials()
 	case CIVO:
-		return civo.Credentials()
+		return civo.Credentials(logger)
 	case AZURE:
-		return aks.Credentials()
+		return aks.Credentials(logger)
 	default:
 		return false
 	}
@@ -74,5 +81,6 @@ func storeCredentials(provider int) bool {
 
 func init() {
 	rootCmd.AddCommand(credCmd)
+	credCmd.Flags().BoolP("verbose", "v", true, "for verbose output")
 
 }
