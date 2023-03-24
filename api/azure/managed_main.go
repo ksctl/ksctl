@@ -115,7 +115,7 @@ func managedCreateClusterHandler(ctx context.Context, logging log.Logger, azureC
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 					{
 						Name:              to.Ptr("askagent"),
-						Count:             to.Ptr(int32(azureConfig.Spec.ManagedNodes)),
+						Count:             to.Ptr[int32](int32(azureConfig.Spec.ManagedNodes)),
 						VMSize:            to.Ptr(azureConfig.Spec.Disk),
 						MaxPods:           to.Ptr[int32](110),
 						MinCount:          to.Ptr[int32](1),
