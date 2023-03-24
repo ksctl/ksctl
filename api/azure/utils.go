@@ -848,23 +848,33 @@ func (config *AzureProvider) ConfigReader(logging log.Logger, clusterType string
 	return nil
 }
 
+// checking if the environment variables are set or not.
 func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProvider) error {
 	tokens, err := util.GetCred(logging, "azure")
 	if err != nil {
 		return err
 	}
 	cred.SubscriptionID = tokens["subscription_id"]
-	err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
-	if err != nil {
-		return err
+
+	if os.Getenv("AZURE_TENANT_ID") == "" {
+		err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
+		if err != nil {
+			return err
+		}
 	}
-	err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
-	if err != nil {
-		return err
+
+	if os.Getenv("AZURE_CLIENT_ID") == "" {
+		err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
+		if err != nil {
+			return err
+		}
 	}
-	err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
-	if err != nil {
-		return err
+
+	if os.Getenv("AZURE_CLIENT_SECRET") == "" {
+		err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
