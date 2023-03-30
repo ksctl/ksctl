@@ -438,7 +438,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 func UserInputCredentials() (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
-	bytePassword, err := terminal.ReadPassword(0)
+	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
