@@ -346,15 +346,14 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 
 	// INFO: POSSIBLE SOLUTION
 	// BUT NOT WORKING
-	// BUG: check this as it returns error as short read
-	// publicKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey + ".pub")
-	// if err != nil {
-	// 	return err
-	// }
-	// publicKey, err := ssh.ParsePublicKey(publicKeyBytes)
-	// if err != nil {
-	// 	return err
-	// }
+	publicKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey + ".pub")
+	if err != nil {
+		return err
+	}
+	required, _, _, _, err := ssh.ParseAuthorizedKey(publicKeyBytes)
+	if err != nil {
+		return err
+	}
 
 	privateKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey)
 	if err != nil {
@@ -375,12 +374,33 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		},
 		// FIXME: Remove the InsecureIgnoreHostKey
 		// using the the publickey
-		// HostKeyCallback: ssh.FixedHostKey(publicKey),
+		// HostKeyCallback: ssh.FixedHostKey(required),
+		// ...............
+		// FOUND THE ROOT cause
+		// when the PublisKey is returned from server its in
+		// publicKey wire format
+		// so does ssh.Marshal() returns the same
+		// hence the miss match
+
+		// should we check if public key in disk is same as
+		// when server returns the key from its side
+		// when its the first time connection
+
+		// im not a expert, may be my conclusion is wrong,
+		// do correct and resolve the error
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				// fmt.Println(key.Verify())
-				// check the fingerprint of hostkey and server key
-				// fmt.Println(publicKey)
+				// publicKey, err := ssh.ParsePublicKey(key.Marshal())
+				// if err != nil {
+				// 	return err
+				// }
+				fmt.Println("Public Key returned -> ", key.Marshal())
+				fmt.Println("Public Key i have- -> ", required.Marshal())
+
+				fmt.Println(ssh.FingerprintSHA256(key))
+				fmt.Println(ssh.FingerprintSHA256(required))
+				// if able to successfully verify the ssh key then store in the
+				// known_hosts file
 
 				return nil
 			}),
