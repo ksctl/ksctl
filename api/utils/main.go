@@ -374,6 +374,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		},
 		// FIXME: Remove the InsecureIgnoreHostKey
 		// using the the publickey
+		// ...............
 		// HostKeyCallback: ssh.FixedHostKey(required),
 		// ...............
 		// FOUND THE ROOT cause
