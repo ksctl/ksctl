@@ -14,6 +14,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -293,7 +294,7 @@ func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 
 	pathTillFolder := getPaths(provider, "ha", clusterDir)
 
-	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
+	cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-N", "", "-f", "keypair")
 	cmd.Dir = pathTillFolder
 	out, err := cmd.Output()
 	if err != nil {
@@ -342,16 +343,46 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 	return signer, nil
 }
 
+func returnServerPublicKeys(publicIP string) (string, error) {
+	c1 := exec.Command("ssh-keyscan", "-t", "ed25519", publicIP)
+	c2 := exec.Command("ssh-keygen", "-lf", "-")
+
+	r, w := io.Pipe()
+	c1.Stdout = w
+	c2.Stdin = r
+
+	var b2 bytes.Buffer
+	c2.Stdout = &b2
+
+	err := c1.Start()
+	if err != nil {
+		return "", nil
+	}
+	err = c2.Start()
+	if err != nil {
+		return "", nil
+	}
+	err = c1.Wait()
+	if err != nil {
+		return "", nil
+	}
+	err = w.Close()
+	if err != nil {
+		return "", nil
+	}
+	err = c2.Wait()
+	if err != nil {
+		return "", nil
+	}
+	io.Copy(os.Stdout, &b2)
+	return b2.String(), nil
+}
+
 func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
 
-	// INFO: POSSIBLE SOLUTION
-	// BUT NOT WORKING
-	publicKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey + ".pub")
+	fingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
 	if err != nil {
-		return err
-	}
-	required, _, _, _, err := ssh.ParseAuthorizedKey(publicKeyBytes)
-	if err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
 
@@ -366,43 +397,18 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		return err
 	}
 	logging.Info("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
-
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		// FIXME: Remove the InsecureIgnoreHostKey
-		// using the the publickey
-		// ...............
-		// HostKeyCallback: ssh.FixedHostKey(required),
-		// ...............
-		// FOUND THE ROOT cause
-		// when the PublisKey is returned from server its in
-		// publicKey wire format
-		// so does ssh.Marshal() returns the same
-		// hence the miss match
-
-		// should we check if public key in disk is same as
-		// when server returns the key from its side
-		// when its the first time connection
-
-		// im not a expert, may be my conclusion is wrong,
-		// do correct and resolve the error
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				// publicKey, err := ssh.ParsePublicKey(key.Marshal())
-				// if err != nil {
-				// 	return err
-				// }
-				fmt.Println("Public Key returned -> ", key.Marshal())
-				fmt.Println("Public Key i have- -> ", required.Marshal())
+				fmt.Println(ssh.FingerprintSHA256(key)) // check what does it returns
+				// is it the fingerprint we get first time we try to connnect?
+				// if yes make it compare with fingerprint
 
-				fmt.Println(ssh.FingerprintSHA256(key))
-				fmt.Println(ssh.FingerprintSHA256(required))
-				// if able to successfully verify the ssh key then store in the
-				// known_hosts file
-
+				fmt.Println(fingerprint)
 				return nil
 			}),
 	}
