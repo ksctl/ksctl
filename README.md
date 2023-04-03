@@ -1,10 +1,10 @@
-# ksctl
+# ![CoverPage Social Media](https://user-images.githubusercontent.com/65275144/229466078-27965fd5-98f0-42bf-b5a1-1a6bd9a3009e.png)
+
 
 A Kubernetes CLI which can manage Kubernetes cluster among different cloud providers
 
 [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml)
 
-<img src="./img/ksctl-logo.png" style="height: auto!important;width: 300px !important;"/>
 
 # Project Scope
 
