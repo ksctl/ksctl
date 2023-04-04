@@ -374,15 +374,20 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	io.Copy(os.Stdout, &b2)
-	return b2.String(), nil
+
+	ret := b2.String()
+
+	ret = strings.TrimSpace(ret)
+
+	fingerprint := strings.Split(ret, " ")
+
+	return fingerprint[1], nil
 }
 
 func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
 
-	fingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
+	expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
 	if err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
 
@@ -402,22 +407,27 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
+
+		HostKeyAlgorithms: []string{
+			ssh.KeyAlgoED25519,
+		},
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				fmt.Println(ssh.FingerprintSHA256(key)) // check what does it returns
-				// is it the fingerprint we get first time we try to connnect?
-				// if yes make it compare with fingerprint
-
-				fmt.Println(fingerprint)
-				return nil
-			}),
-	}
+				actualFingerprint := ssh.FingerprintSHA256(key)
+				keyType := key.Type()
+				if keyType == ssh.KeyAlgoED25519 {
+					if expectedFingerprint != actualFingerprint {
+						return fmt.Errorf("Mismatch of fingerprint")
+					}
+					return nil
+				}
+				return fmt.Errorf("unsupported key type: %s", keyType)
+			})}
 
 	if !fastMode {
 		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
 	}
 
-	// var err error
 	var conn *ssh.Client
 	currRetryCounter := 0
 
