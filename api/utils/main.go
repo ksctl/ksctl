@@ -386,11 +386,6 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 
 func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
 
-	expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
-	if err != nil {
-		return err
-	}
-
 	privateKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey)
 	if err != nil {
 		return err
@@ -416,6 +411,12 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 				actualFingerprint := ssh.FingerprintSHA256(key)
 				keyType := key.Type()
 				if keyType == ssh.KeyAlgoED25519 {
+					expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
+					if err != nil {
+						return err
+					}
+					fmt.Println(actualFingerprint)
+					fmt.Println(expectedFingerprint)
 					if expectedFingerprint != actualFingerprint {
 						return fmt.Errorf("Mismatch of fingerprint")
 					}
