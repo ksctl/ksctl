@@ -1,10 +1,9 @@
-# ksctl
+# ![CoverPage Social Media](https://user-images.githubusercontent.com/65275144/229466078-27965fd5-98f0-42bf-b5a1-1a6bd9a3009e.png)
+
 
 A Kubernetes CLI which can manage Kubernetes cluster among different cloud providers
 
 [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml)
-
-<img src="./img/ksctl.png" style="height: auto!important;width: 600px !important;"/>
 
 
 # Project Scope
@@ -12,7 +11,7 @@ A Kubernetes CLI which can manage Kubernetes cluster among different cloud provi
 Many cloud providers offer their flavor of Kubernetes. Each provider has its unique CLI tool which is used to create and manage clusters on that particular cloud. When working in a multi-cloud environment, it can get difficult to create and manage so many clusters using CLI from each cloud provider. ksctl is a **single CLI tool** that can interact with a multitude of cloud providers, making it easy for you to **manage multi-cloud clusters, with just a single CLI tool**. Currently, we support Civo and Local clusters.
 
 # Demo Screenshot
-<!-- Add the demo screenshots-->
+<!-- TODO: Add the demo screenshots-->
 
 
 
@@ -138,7 +137,7 @@ flowchart LR;
   web--AWS-->aws{Types};
   aws:::blue--managed-->awsm[Create & Delete]:::red;
   aws--HA-->awsha[Create & Delete]:::red;
-  
+
   web--AZURE-->az{Types};
   az:::green--managed-->azsm[Create & Delete]:::green;
   az--HA-->azha[Create & Delete]:::green;
