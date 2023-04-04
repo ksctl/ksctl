@@ -26,10 +26,6 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
 
-	if isPresent("ha", *obj) {
-		return fmt.Errorf("cluster already exists: %v", obj.ClusterName)
-	}
-
 	logger.Info("Started to Create your HA cluster on Azure provider...", "")
 	defer obj.ConfigWriter(logger, "ha")
 

@@ -294,7 +294,7 @@ func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 
 	pathTillFolder := getPaths(provider, "ha", clusterDir)
 
-	cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-N", "", "-f", "keypair")
+	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair")
 	cmd.Dir = pathTillFolder
 	out, err := cmd.Output()
 	if err != nil {
@@ -344,7 +344,7 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 }
 
 func returnServerPublicKeys(publicIP string) (string, error) {
-	c1 := exec.Command("ssh-keyscan", "-t", "ed25519", publicIP)
+	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
 	c2 := exec.Command("ssh-keygen", "-lf", "-")
 
 	r, w := io.Pipe()
@@ -404,19 +404,19 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		},
 
 		HostKeyAlgorithms: []string{
-			ssh.KeyAlgoED25519,
+			ssh.KeyAlgoRSASHA256,
 		},
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 				actualFingerprint := ssh.FingerprintSHA256(key)
 				keyType := key.Type()
-				if keyType == ssh.KeyAlgoED25519 {
+				if keyType == ssh.KeyAlgoRSA {
 					expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
 					if err != nil {
 						return err
 					}
 					if expectedFingerprint != actualFingerprint {
-						return fmt.Errorf("Mismatch of fingerprint")
+						return fmt.Errorf("mismatch of fingerprint")
 					}
 					return nil
 				}
