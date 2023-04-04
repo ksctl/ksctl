@@ -415,8 +415,6 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 					if err != nil {
 						return err
 					}
-					fmt.Println(actualFingerprint)
-					fmt.Println(expectedFingerprint)
 					if expectedFingerprint != actualFingerprint {
 						return fmt.Errorf("Mismatch of fingerprint")
 					}
