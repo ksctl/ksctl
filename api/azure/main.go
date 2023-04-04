@@ -248,6 +248,9 @@ func (obj *AzureProvider) CreateCluster(logging log.Logger) error {
 	if obj.HACluster {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ha-ksctl"
 
+		if isPresent("ha", *obj) {
+			return fmt.Errorf("cluster already exists: %v", obj.ClusterName)
+		}
 		err := haCreateClusterHandler(ctx, logging, obj)
 		if err != nil {
 			logging.Err("CLEANUP TRIGGERED!: failed to create")
@@ -257,6 +260,9 @@ func (obj *AzureProvider) CreateCluster(logging log.Logger) error {
 	} else {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
 
+		if isPresent("managed", *obj) {
+			return fmt.Errorf("cluster already exists: %v", obj.ClusterName)
+		}
 		_, err := managedCreateClusterHandler(ctx, logging, obj)
 		if err != nil {
 			logging.Err("CLEANUP TRIGGERED!: failed to create")
@@ -282,13 +288,20 @@ func (obj *AzureProvider) DeleteCluster(logging log.Logger) error {
 	obj.SSH_Payload = &util.SSHPayload{}
 	if obj.HACluster {
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ha-ksctl"
+		if !isPresent("ha", *obj) {
+			return fmt.Errorf("cluster doesn't exists: %v", obj.ClusterName)
+		}
 		err := haDeleteClusterHandler(ctx, logging, obj, true)
 		if err != nil {
 			return err
 		}
 
 	} else {
+
 		obj.Config.ResourceGroupName = obj.ClusterName + "-ksctl"
+		if !isPresent("managed", *obj) {
+			return fmt.Errorf("cluster doesn't exists: %v", obj.ClusterName)
+		}
 		err := managedDeleteClusterHandler(ctx, logging, obj, true)
 		if err != nil {
 			return err
