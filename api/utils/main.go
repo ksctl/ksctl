@@ -14,6 +14,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -293,7 +294,7 @@ func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 
 	pathTillFolder := getPaths(provider, "ha", clusterDir)
 
-	cmd := exec.Command("ssh-keygen", "-N", "", "-f", "keypair")
+	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair")
 	cmd.Dir = pathTillFolder
 	out, err := cmd.Output()
 	if err != nil {
@@ -342,19 +343,48 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 	return signer, nil
 }
 
-func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
+func returnServerPublicKeys(publicIP string) (string, error) {
+	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
+	c2 := exec.Command("ssh-keygen", "-lf", "-")
 
-	// INFO: POSSIBLE SOLUTION
-	// BUT NOT WORKING
-	// BUG: check this as it returns error as short read
-	// publicKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey + ".pub")
-	// if err != nil {
-	// 	return err
-	// }
-	// publicKey, err := ssh.ParsePublicKey(publicKeyBytes)
-	// if err != nil {
-	// 	return err
-	// }
+	r, w := io.Pipe()
+	c1.Stdout = w
+	c2.Stdin = r
+
+	var b2 bytes.Buffer
+	c2.Stdout = &b2
+
+	err := c1.Start()
+	if err != nil {
+		return "", nil
+	}
+	err = c2.Start()
+	if err != nil {
+		return "", nil
+	}
+	err = c1.Wait()
+	if err != nil {
+		return "", nil
+	}
+	err = w.Close()
+	if err != nil {
+		return "", nil
+	}
+	err = c2.Wait()
+	if err != nil {
+		return "", nil
+	}
+
+	ret := b2.String()
+
+	ret = strings.TrimSpace(ret)
+
+	fingerprint := strings.Split(ret, " ")
+
+	return fingerprint[1], nil
+}
+
+func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
 
 	privateKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey)
 	if err != nil {
@@ -367,30 +397,36 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		return err
 	}
 	logging.Info("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
-
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		// FIXME: Remove the InsecureIgnoreHostKey
-		// using the the publickey
-		// HostKeyCallback: ssh.FixedHostKey(publicKey),
+
+		HostKeyAlgorithms: []string{
+			ssh.KeyAlgoRSASHA256,
+		},
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				// fmt.Println(key.Verify())
-				// check the fingerprint of hostkey and server key
-				// fmt.Println(publicKey)
-
-				return nil
-			}),
-	}
+				actualFingerprint := ssh.FingerprintSHA256(key)
+				keyType := key.Type()
+				if keyType == ssh.KeyAlgoRSA {
+					expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
+					if err != nil {
+						return err
+					}
+					if expectedFingerprint != actualFingerprint {
+						return fmt.Errorf("mismatch of fingerprint")
+					}
+					return nil
+				}
+				return fmt.Errorf("unsupported key type: %s", keyType)
+			})}
 
 	if !fastMode {
 		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
 	}
 
-	// var err error
 	var conn *ssh.Client
 	currRetryCounter := 0
 
@@ -438,7 +474,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 func UserInputCredentials() (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
-	bytePassword, err := terminal.ReadPassword(0)
+	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
