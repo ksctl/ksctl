@@ -856,6 +856,13 @@ func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProv
 	}
 	cred.SubscriptionID = tokens["subscription_id"]
 
+	if os.Getenv("AZURE_SUBSCRIPTION_ID") == "" {
+		err = os.Setenv("AZURE_SUBSCRIPTION_ID", tokens["subscription_id"])
+		if err != nil {
+			return err
+		}
+	}
+
 	if os.Getenv("AZURE_TENANT_ID") == "" {
 		err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
 		if err != nil {
