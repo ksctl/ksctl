@@ -18,7 +18,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/intro">
-            kubernetes cluster - 10min ⏱️
+            Docusaurus Tutorial - 5min ⏱️
           </Link>
         </div>
       </div>

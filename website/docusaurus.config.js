@@ -66,7 +66,7 @@ const config = {
       navbar: {
         title: 'ksctl',
         logo: {
-          alt: 'ksctl logo',
+          alt: 'My Site Logo',
           src: 'img/logo.svg',
         },
         items: [
@@ -100,8 +100,12 @@ const config = {
             title: 'Community',
             items: [
               {
+                label: 'Stack Overflow',
+                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              },
+              {
                 label: 'Discord',
-                href: 'https://discordapp.com/invite/kubesimplify',
+                href: 'https://discordapp.com/invite/docusaurus',
               },
               {
                 label: 'Twitter',
@@ -112,10 +116,10 @@ const config = {
           {
             title: 'More',
             items: [
-              // {
-              //   label: 'Blog',
-              //   to: '/blog',
-              // },
+              {
+                label: 'Blog',
+                to: '/blog',
+              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/kubesimplify/ksctl',
@@ -123,7 +127,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} kubesimplify, Inc. Built with ❤️`,
+        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
       },
       prism: {
         theme: lightCodeTheme,
