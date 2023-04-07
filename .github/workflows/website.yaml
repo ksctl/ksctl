@@ -1,35 +1,43 @@
----
-name: docs-website
+name: Deploy to GitHub Pages
+
 on:
   push: 
     branches:
       - main
     paths:
-      - 'docs/**'
+      - 'website/**'
+    # Review gh actions docs if you want to further define triggers, paths, etc
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#on
 
 jobs:
   deploy:
-    runs-on: ubuntu-22.04
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      actions: write
+      contents: write
+
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          submodules: true
-          fetch-depth: 0
+          node-version: 18
+          cache: yarn
+          cache-dependency-path: ./website
 
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
-        with:
-          hugo-version: 'latest'
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        working-directory: ./website
+      - name: Build website
+        run: yarn build
+        working-directory: ./website
 
-      - name: Build
-        run: |-
-          cd docs/
-          hugo --minify
-      
-      - name: Deploy
+      # Popular action to deploy to GitHub Pages:
+      # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/public
-...
+          # Build output to publish to the `gh-pages` branch:
+          publish_dir: ./website/build
