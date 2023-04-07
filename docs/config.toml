@@ -1,5 +1,0 @@
-baseURL = 'https://Kubesimplify.github.io/ksctl'
-languageCode = 'en-us'
-title = 'Kubesimplify ksctl docs'
-theme = 'hugo-book'
-contentDir = "content/ksctl"
