@@ -1,6 +1,10 @@
 <!-- FORMAT of PRs
 Title should be:
-[--Topic-- Example: CLI or API or DOCS or TEST](provider) <PRs title>
+Topic Example: docs, fix, enhancement(provider or subcategory) <PRs title>
+example
+
+docs(website): new things
+fix(api): Civo Cred errors
 -->
 
 <!-- If your PR fixes an open issue, use `Closes #999` to link your PR with the issue. #999 stands for the issue number you are fixing -->
@@ -8,12 +12,8 @@ Title should be:
 # Tasks / Issue :construction: 🔧 
 
 <!-- List all the proposed changes in your PR. Mark all the applicable boxes. To mark the box as done follow the following conventions -->
-<!--
-- [x] Correct; marked as done
-- [X] Correct; marked as done
-
-[ ] - Not correct; marked as **not** done
--->
+- [ ] Task / issue no
+- [ ] other task items
 
 
 # Solution :heavy_check_mark:
