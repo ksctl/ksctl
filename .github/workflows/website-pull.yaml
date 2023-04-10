@@ -1,7 +1,7 @@
-name: Deploy to GitHub Pages
+name: Test deployment
 
 on:
-  push: 
+  pull_request:
     branches:
       - main
     paths:
@@ -10,14 +10,9 @@ on:
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#on
 
 jobs:
-  deploy:
-    name: Deploy to GitHub Pages
+  test-deploy:
+    name: Test deployment
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      actions: write
-      contents: write
-
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -29,15 +24,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
         working-directory: ./website
-      - name: Build website
+      - name: Test build website
         run: yarn build
         working-directory: ./website
-
-      # Popular action to deploy to GitHub Pages:
-      # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Build output to publish to the `gh-pages` branch:
-          publish_dir: ./website/build

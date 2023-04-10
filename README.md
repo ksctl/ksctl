@@ -1,4 +1,4 @@
-# ![CoverPage Social Media](https://user-images.githubusercontent.com/65275144/229466078-27965fd5-98f0-42bf-b5a1-1a6bd9a3009e.png)
+# ![CoverPage Social Media](./img/ksctl-cover.png)
 
 
 **CLI which can manage Kubernetes cluster on different environment**
