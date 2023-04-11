@@ -51,7 +51,7 @@ func Credentials(logger log.Logger) bool {
 }
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey() string {
+func fetchAPIKey(logger log.Logger) string {
 
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if civoToken != "" {
@@ -60,9 +60,8 @@ func fetchAPIKey() string {
 
 	token, err := util.GetCred(logger, "civo")
 	if err != nil {
-		return "", err
+		return ""
 	}
-
 	return token["token"]
 }
 
