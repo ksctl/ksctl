@@ -5,12 +5,14 @@ builds:
     main: ./cli
     goos:
       - linux
-      - darwin
-      - windows
+      # - darwin
+      # - windows
     goarch:
       - amd64
-      - arm64
-    ldflags: -w -s -X github.com/kubesimplify/ksctl/selfupdate.BuildDate={{.Date}} -X github.com/kubesimplify/ksctl/selfupdate.GitSummary={{.Version}}
+      # - arm64
+    ldflags:
+      - -s -w -X "github.com/kubesimplify/ksctl/cli/cmd.BuildDate={{.Env.DATE}}"
+      - -s -w -X "github.com/kubesimplify/ksctl/cli/cmd.Version={{.Env.VERSION}}"
     env:
       - CGO_ENABLED=0
 
