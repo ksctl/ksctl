@@ -19,10 +19,14 @@ mkdir -Force $env:USERPROFILE\.ksctl\config\azure\ha
 mkdir -Force $env:USERPROFILE\.ksctl\config\azure\managed
 mkdir -Force $env:USERPROFILE\.ksctl\config\local
 
-$versions=$(git ls-remote --tags https://github.com/kubesimplify/ksctl.git)
+Write-Host "Available Releases"  -ForegroundColor Cyan
+
+$response = Invoke-RestMethod "https://api.github.com/repos/kubesimplify/ksctl/releases"
 # get the release version
-Write-Host "Available Releases`
-${versions}" -ForegroundColor Cyan
+
+foreach ($release in $response.tag_name) {
+    Write-Host "${release}" -ForegroundColor Cyan
+}
 $ReleaseVersion= Read-Host -Prompt "Enter the ksctl version to install"
 $Arch= Read-Host -Prompt "Enter [1] for amd64 or x86_64 and [0] for arm64"
 
