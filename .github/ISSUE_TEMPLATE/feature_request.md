@@ -3,7 +3,7 @@ name: Feature request
 about: Suggest an idea for this project
 title: "[Feature] [CLI or API] (Provider) <Title>"
 labels: enhancement, help wanted
-assignees: dipankardas011, kranurag7
+assignees: dipankardas011
 
 ---
 
