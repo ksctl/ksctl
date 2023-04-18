@@ -31,6 +31,7 @@ func TestValidNodeSizes(t *testing.T) {
 		}
 	}
 }
+
 func setup() {
 	err := os.MkdirAll(util.GetPath(util.CLUSTER_PATH, "civo", "managed"), 0750)
 	if err != nil {
