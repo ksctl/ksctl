@@ -98,6 +98,7 @@ type AzureInfra interface {
 	kubeconfigReader() ([]byte, error)
 }
 
+// TODO: try to query the azureClient
 func isValidNodeSize(disk string) bool {
 	validDisks := []string{
 		"Standard_B1ms", "Standard_B1s", "Standard_B2ms", "Standard_B1ls", "Standard_B2s", "Standard_B4ms",
@@ -728,6 +729,7 @@ func isValidNodeSize(disk string) bool {
 	return false
 }
 
+// TODO: make the region validation using the azureclient
 func isValidRegion(region string) bool {
 	validRegions := []string{"eastus",
 		"eastus2",
