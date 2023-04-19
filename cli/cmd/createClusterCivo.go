@@ -47,7 +47,9 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 			logger.Err(err.Error())
 			return
 		}
+
 		logger.Info("CREATED CLUSTER", "")
+
 		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
 	},
 }

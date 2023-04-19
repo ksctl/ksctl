@@ -29,6 +29,7 @@ ksctl create-cluster local <arguments to civo cloud provider>
 		}
 
 		cargo := local.ClusterInfoInjecter(clocalclusterName, clocalspec.ManagedNodes)
+
 		logger.Info("Building cluster", "")
 		if err := local.CreateCluster(logger, cargo); err != nil {
 			logger.Err(err.Error())
