@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/kubesimplify/ksctl/api/logger"
 	util "github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,8 @@ const (
 
 func printUtil(cargo []byte) {
 	//TODO: Added Table type display
-	fmt.Println(string(cargo))
+	log := logger.Logger{}
+	log.Print("\n" + string(cargo))
 }
 
 // Printer TODO: Move the contents of get clusters to their respective api files
@@ -101,7 +103,13 @@ func Printer(i int) {
 	if err != nil {
 		panic(fmt.Errorf("JSON Convertion failed"))
 	}
-	printUtil(arr)
+	if len(toBePrinted) == 0 {
+		log := logger.Logger{}
+		log.Info("No clusters found", "")
+	} else {
+		printUtil(arr)
+
+	}
 }
 
 // viewClusterCmd represents the viewCluster command
