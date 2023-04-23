@@ -172,7 +172,7 @@ func SaveCred(logging logger.Logger, config interface{}, provider string) error 
 	}
 
 	storeBytes, err := json.Marshal(config)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	_, err = os.Create(GetPath(CREDENTIAL_PATH, provider))
@@ -181,7 +181,7 @@ func SaveCred(logging logger.Logger, config interface{}, provider string) error 
 	}
 
 	err = os.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	logging.Info("💾 configuration", "")
@@ -471,16 +471,16 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	return nil
 }
 
-func UserInputCredentials() (string, error) {
+func UserInputCredentials(logging logger.Logger) (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
 	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
-	if len(bytePassword)==0{
-		fmt.Println("Secret is empty!")
-		UserInputCredentials()
+	if len(bytePassword) == 0 {
+		logging.Err("Empty secret passed!")
+		UserInputCredentials(logging)
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
