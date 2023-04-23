@@ -101,6 +101,9 @@ Please refer to the [usage guide](USAGE.md) to know how you can use ksctl
 
 # RoadMap
 
+> **Note**
+marked for `deprecated`
+
 ## Legends
 ---
 **DONE** -> GREEN
