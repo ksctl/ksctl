@@ -172,7 +172,7 @@ func SaveCred(logging logger.Logger, config interface{}, provider string) error 
 	}
 
 	storeBytes, err := json.Marshal(config)
-	if err != nil {
+	if err != nil{
 		return err
 	}
 	_, err = os.Create(GetPath(CREDENTIAL_PATH, provider))
@@ -181,7 +181,7 @@ func SaveCred(logging logger.Logger, config interface{}, provider string) error 
 	}
 
 	err = os.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
-	if err != nil {
+	if err != nil{
 		return err
 	}
 	logging.Info("💾 configuration", "")
@@ -477,6 +477,10 @@ func UserInputCredentials() (string, error) {
 	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
+	}
+	if len(bytePassword)==0{
+		fmt.Println("Secret is empty!")
+		UserInputCredentials()
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
