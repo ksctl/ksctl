@@ -480,7 +480,7 @@ func UserInputCredentials(logging logger.Logger) (string, error) {
 	}
 	if len(bytePassword) == 0 {
 		logging.Err("Empty secret passed!")
-		UserInputCredentials(logging)
+		return UserInputCredentials(logging)
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
