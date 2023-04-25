@@ -20,25 +20,25 @@ import (
 
 func Credentials(logger log.Logger) bool {
 	logger.Print("Enter your SUBSCRIPTION ID 👇")
-	skey, err := util.UserInputCredentials()
+	skey, err := util.UserInputCredentials(logger)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	logger.Print("Enter your TENANT ID 👇")
-	tid, err := util.UserInputCredentials()
+	tid, err := util.UserInputCredentials(logger)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	logger.Print("Enter your CLIENT ID 👇")
-	cid, err := util.UserInputCredentials()
+	cid, err := util.UserInputCredentials(logger)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	logger.Print("Enter your CLIENT SECRET 👇")
-	cs, err := util.UserInputCredentials()
+	cs, err := util.UserInputCredentials(logger)
 	if err != nil {
 		panic(err.Error())
 	}

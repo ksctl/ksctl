@@ -471,12 +471,16 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	return nil
 }
 
-func UserInputCredentials() (string, error) {
+func UserInputCredentials(logging logger.Logger) (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
 	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
+	}
+	if len(bytePassword) == 0 {
+		logging.Err("Empty secret passed!")
+		return UserInputCredentials(logging)
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
