@@ -32,7 +32,7 @@ type CivoProvider struct {
 func Credentials(logger log.Logger) bool {
 
 	logger.Print("Enter your API-TOKEN-KEY 👇")
-	apikey, err := util.UserInputCredentials()
+	apikey, err := util.UserInputCredentials(logger)
 	if err != nil {
 		panic(err.Error())
 	}

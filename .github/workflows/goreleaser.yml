@@ -27,6 +27,12 @@ jobs:
       - name: Install Cosign 
         uses: sigstore/cosign-installer@main
 
+      - name: Set the value
+        id: set_environment
+        run: |
+          echo "CURR_DATE=$(date '+%d-%m-%Y')" >> $GITHUB_ENV
+          echo "CURR_VER=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -35,3 +41,5 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATE: ${{ env.CURR_DATE }}
+          VERSION: ${{ env.CURR_VER }}
