@@ -6,9 +6,9 @@ Kubesimplify
 package eks
 
 import (
-	"fmt"
 	"os"
 
+	log "github.com/kubesimplify/ksctl/api/logger"
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
@@ -23,32 +23,30 @@ func fetchAPIKey() string {
 	return ""
 }
 
-func Credentials() bool {
-	// _, err := os.OpenFile(util.GetPath(0, "aws"), os.O_WRONLY, 0640)
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return false
-	// }
-	acckey := ""
-	secacckey := ""
-	func() {
-		fmt.Println("Enter your ACCESS-KEY: ")
-		_, err := fmt.Scan(&acckey)
-		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Println("Enter your SECRET-ACCESS-KEY: ")
-		_, err = fmt.Scan(&secacckey)
-		if err != nil {
-			panic(err.Error())
-		}
-	}()
+func Credentials(logger log.Logger) bool {
 
-	// _, err = file.Write([]byte(fmt.Sprintf(`Access-Key: %s
-	// 	Secret-Access-Key: %s`, acckey, secacckey)))
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return false
-	// }
+	logger.Print("Enter your ACCESS-KEY: ")
+	accesKey, err := util.UserInputCredentials(logger)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	logger.Print("Enter your SECRET-KEY: ")
+	secret, err := util.UserInputCredentials(logger)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	apiStore := util.AwsCredential{
+		AccesskeyID: accesKey,
+		Secret:      secret,
+	}
+
+	err = util.SaveCred(logger, apiStore, "aws")
+	if err != nil {
+		logger.Err(err.Error())
+		return false
+	}
 	return true
+
 }

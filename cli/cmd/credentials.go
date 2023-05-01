@@ -69,7 +69,7 @@ func storeCredentials(cmd *cobra.Command, provider int) bool {
 	//TODO: Verify the Credentials
 	switch provider {
 	case AWS:
-		return eks.Credentials()
+		return eks.Credentials(logger)
 	case CIVO:
 		return civo.Credentials(logger)
 	case AZURE:
