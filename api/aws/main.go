@@ -28,13 +28,15 @@ func Credentials(logger log.Logger) bool {
 	logger.Print("Enter your ACCESS-KEY: ")
 	accesKey, err := util.UserInputCredentials(logger)
 	if err != nil {
-		panic(err.Error())
+		logger.Err(err.Error())
+		return false
 	}
 
 	logger.Print("Enter your SECRET-KEY: ")
 	secret, err := util.UserInputCredentials(logger)
 	if err != nil {
-		panic(err.Error())
+		logger.Err(err.Error())
+		return false
 	}
 
 	apiStore := util.AwsCredential{
