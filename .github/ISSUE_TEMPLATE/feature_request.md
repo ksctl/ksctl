@@ -1,9 +1,9 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: "[Feature] [CLI or API] (Provider) <Title>"
+title: 'feat(CLI / API): <Title>'
 labels: enhancement, help wanted
-assignees: dipankardas011
+assignees: AvineshTripathi, dipankardas011
 
 ---
 
@@ -15,6 +15,11 @@ assignees: dipankardas011
 
 # Describe alternatives you've considered💠
 <!-- A clear and concise description of any alternative solutions or features you've considered. -->
+# Provider in question
+- [ ] Civo
+- [ ] AWS
+- [ ] Local
+- [ ] Azure
 
 ## Additional context
 <!-- Add any other context or screenshots about the feature request here. -->
