@@ -28,7 +28,7 @@ jobs:
           MERGE_COMMIT_MESSAGE: "pull-request-title-and-description"
           MERGE_RETRIES: "6"
           MERGE_RETRY_SLEEP: "10000"
-          MERGE_REQUIRED_APPROVALS: "1" # change it
+          MERGE_REQUIRED_APPROVALS: "0" # change it
       - name: feedback
         run: |
           echo "Pull request ${{ steps.automerge.outputs.pullRequestNumber }} merged!"
