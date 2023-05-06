@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve
 title: 'bug(CLI or API): Title'
 labels: enhancement, help wanted, kind/bug
-assignees: AvineshTripathi, dipankardas011
+assignees: dipankardas011, AvineshTripathi
 
 ---
 

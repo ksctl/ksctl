@@ -1,9 +1,9 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: 'feature(CLI / API): <Title>'
+title: 'feat(CLI / API): <Title>'
 labels: enhancement, help wanted
-assignees: dipankardas011
+assignees: AvineshTripathi, dipankardas011
 
 ---
 
