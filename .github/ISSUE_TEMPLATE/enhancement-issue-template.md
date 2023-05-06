@@ -3,7 +3,7 @@ name: enhancement issue template
 about: Describe this enhancement pruposal template's purpose here.
 title: 'enhancement(API/CLI): <Title>'
 labels: enhancement
-assignees: ''
+assignees: AvineshTripathi, dipankardas011
 
 ---
 
