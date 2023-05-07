@@ -27,7 +27,7 @@ jobs:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           MERGE_LABELS: "pr/lgtm,pr/mergable"
           MERGE_METHOD: "squash"
-          MERGE_COMMIT_MESSAGE: "pull-request-title-and-description"
+          MERGE_COMMIT_MESSAGE: "automatic"
           MERGE_RETRIES: "6"
           MERGE_RETRY_SLEEP: "20000"
           MERGE_REQUIRED_APPROVALS: "1" # no of maintainers approvals
