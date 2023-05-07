@@ -1,7 +1,5 @@
 name: automerge
 on:
-  schedule:
-    - cron: "0 12 * * *"
   pull_request:
     branches:
       - main
@@ -32,7 +30,7 @@ jobs:
           MERGE_COMMIT_MESSAGE: "automatic"
           MERGE_RETRIES: "6"
           MERGE_RETRY_SLEEP: "20000"
-          MERGE_REQUIRED_APPROVALS: "1" # change it
+          MERGE_REQUIRED_APPROVALS: "1" # no of maintainers approvals
       - name: feedback
         run: |
           echo "Pull request ${{ steps.automerge.outputs.pullRequestNumber }} merged!"
