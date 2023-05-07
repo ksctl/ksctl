@@ -1,7 +1,5 @@
 name: automerge
 on:
-  schedule:
-    - cron: "0 12 * * *"
   pull_request:
     branches:
       - main
@@ -29,10 +27,10 @@ jobs:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           MERGE_LABELS: "pr/lgtm,pr/mergable"
           MERGE_METHOD: "squash"
-          MERGE_COMMIT_MESSAGE: "automatic"
+          MERGE_COMMIT_MESSAGE: "pull-request-title-and-description"
           MERGE_RETRIES: "6"
           MERGE_RETRY_SLEEP: "20000"
-          MERGE_REQUIRED_APPROVALS: "1" # change it
+          MERGE_REQUIRED_APPROVALS: "1" # no of maintainers approvals
       - name: feedback
         run: |
           echo "Pull request ${{ steps.automerge.outputs.pullRequestNumber }} merged!"
