@@ -103,6 +103,7 @@ Please refer to the [usage guide](USAGE.md) to know how you can use ksctl
 
 > **Note**
 marked for `deprecated`
+do check the docs website
 
 ## Legends
 ---
@@ -114,38 +115,6 @@ marked for `deprecated`
 
 **BACKLOG** -> BLUE
 
----
-
-<!-- <span style="color: black; background-color: red;">DONE</span>
-<span style="color: white; background-color: black;">NO PLANS</span>
-<span style="color: white; background-color: blue;">BACKLOG</span> -->
-
-```mermaid
-flowchart LR;
-  classDef green color:#022e1f,fill:#00f500;
-  classDef red color:#022e1f,fill:#f11111;
-  classDef white color:#022e1f,fill:#fff;
-  classDef black color:#fff,fill:#000;
-  classDef blue color:#fff,fill:#00f;
-
-  XX[CLI]:::white--providers-->web{API};
-  web:::white--CIVO-->civo{Types};
-  civo:::green--managed-->civom[Create & Delete]:::green;
-  civo--HA-->civoha[Create & Delete]:::green;
-
-  web--LOCAL-->local{Types};
-  local:::green--managed-->localm[Create & Delete]:::green;
-  local--HA-->localha[Create & Delete]:::black;
-
-  web--AWS-->aws{Types};
-  aws:::blue--managed-->awsm[Create & Delete]:::red;
-  aws--HA-->awsha[Create & Delete]:::red;
-
-  web--AZURE-->az{Types};
-  az:::green--managed-->azsm[Create & Delete]:::green;
-  az--HA-->azha[Create & Delete]:::green;
-
-```
 
 
 # Contribution Guidelines
@@ -156,4 +125,7 @@ Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contrib
 
 [Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing)
 
-
+## Thanks to all the contributors ❤️
+<a href = "https://github.com/kubesimplify/ksctl/graphs/contributors">
+  <img src = "https://contrib.rocks/image?repo=kubesimplify/ksctl"/>
+</a>
