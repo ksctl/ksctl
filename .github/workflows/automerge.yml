@@ -6,9 +6,11 @@ on:
       - dev
     types:
       - labeled
+      - synchronize
       - opened
+      - edited
       - reopened
-      - ready_for_review
+      - unlocked
   pull_request_review:
     types:
       - submitted
@@ -25,12 +27,9 @@ jobs:
         uses: "pascalgn/automerge-action@v0.15.6"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          MERGE_LABELS: "pr/lgtm,pr/mergable"
+          MERGE_LABELS: "pr/lgtm,pr/mergable,!pr/not-mergable"
           MERGE_METHOD: "squash"
           MERGE_COMMIT_MESSAGE: "pull-request-title-and-description"
           MERGE_RETRIES: "6"
-          MERGE_RETRY_SLEEP: "20000"
+          MERGE_RETRY_SLEEP: "10000"
           MERGE_REQUIRED_APPROVALS: "1" # no of maintainers approvals
-      - name: feedback
-        run: |
-          echo "Pull request ${{ steps.automerge.outputs.pullRequestNumber }} merged!"
