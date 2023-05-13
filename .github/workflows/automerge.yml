@@ -6,9 +6,11 @@ on:
       - dev
     types:
       - labeled
+      - synchronize
       - opened
+      - edited
       - reopened
-      - ready_for_review
+      - unlocked
   pull_request_review:
     types:
       - submitted
