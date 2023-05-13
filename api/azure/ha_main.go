@@ -145,7 +145,7 @@ func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 		}
 
 		if !unsafe {
-			return nil
+			return fmt.Errorf("permission denied")
 		}
 	}
 
