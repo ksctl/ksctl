@@ -240,7 +240,7 @@ func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg boo
 		}
 
 		if !unsafe {
-			return nil
+			return fmt.Errorf("permission denied")
 		}
 	}
 

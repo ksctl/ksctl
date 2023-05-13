@@ -36,7 +36,7 @@ func managedDeleteClusterHandler(ctx context.Context, logging log.Logger, azureC
 		}
 
 		if !unsafe {
-			return nil
+			return fmt.Errorf("permission denied")
 		}
 	}
 	managedClustersClient, err := getAzureManagedClusterClient(azureConfig)
