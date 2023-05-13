@@ -874,7 +874,7 @@ func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProv
 		return nil
 	}
 
-	logging.Info("environment variables not set", "")
+	logging.Warn("environment variables not set")
 
 	tokens, err := util.GetCred(logging, "azure")
 	if err != nil {
