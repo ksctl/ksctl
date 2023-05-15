@@ -853,24 +853,10 @@ func (config *AzureProvider) ConfigReader(logging log.Logger, clusterType string
 // checking if the environment variables are set or not.
 func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProvider) error {
 
-	// check if all the environment variables are set
-	envKeys := []string{
-		"AZURE_TENANT_ID",
-		"AZURE_SUBSCRIPTION_ID",
-		"AZURE_CLIENT_ID",
-		"AZURE_CLIENT_SECRET",
-	}
-
-	allEnvPresent := true
-
-	for _, key := range envKeys {
-		if os.Getenv(key) == "" {
-			allEnvPresent = false
-			break
-		}
-	}
-
-	if allEnvPresent {
+	if len(os.Getenv("AZURE_TENANT_ID")) != 0 &&
+		len(os.Getenv("AZURE_SUBSCRIPTION_ID")) != 0 &&
+		len(os.Getenv("AZURE_CLIENT_ID")) != 0 &&
+		len(os.Getenv("AZURE_CLIENT_SECRET")) != 0 {
 		return nil
 	}
 
@@ -883,22 +869,22 @@ func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProv
 
 	cred.SubscriptionID = tokens["subscription_id"]
 
-	err = os.Setenv(envKeys[1], tokens["subscription_id"])
+	err = os.Setenv("AZURE_SUBSCRIPTION_ID", tokens["subscription_id"])
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv(envKeys[0], tokens["tenant_id"])
+	err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv(envKeys[2], tokens["client_id"])
+	err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv(envKeys[3], tokens["client_secret"])
+	err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
 	if err != nil {
 		return err
 	}
