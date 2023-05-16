@@ -1,0 +1,6 @@
+- regExp: "^backend/.*"
+  labels: ["backend"]
+- regExp: "^frontend/.*"
+  labels: ["frontend"]
+- regExp: "^docs/.*"
+  labels: ["documentation"]
