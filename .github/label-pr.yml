@@ -1,6 +1,0 @@
-- regExp: "^api/.*"
-  labels: ["component/api"]
-- regExp: "^cli/.*"
-  labels: ["component/cli"]
-# - regExp: "^docs/.*"
-#   labels: ["documentation"]
