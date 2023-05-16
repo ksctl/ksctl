@@ -16,17 +16,17 @@ import TabItem from '@theme/TabItem';
 <Tabs groupId="install-platform" queryString>
   <TabItem value="Linux" label="Linux" default>
 
-    bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.sh)
+    $ bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.sh)
 
   </TabItem>
   <TabItem value="MacOS" label="MacOS">
 
-    zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.sh)
+    $ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.sh)
 
   </TabItem>
   <TabItem value="Windows" label="Windows">
 
-    iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
+    $ iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
 
   </TabItem>
 </Tabs>
@@ -36,17 +36,17 @@ import TabItem from '@theme/TabItem';
 <Tabs groupId="uninstall-platform" queryString>
   <TabItem value="Linux" label="Linux" default>
 
-    bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.sh)
+    $ bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.sh)
 
   </TabItem>
   <TabItem value="MacOS" label="MacOS">
 
-    zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.sh)
+    $ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.sh)
 
   </TabItem>
   <TabItem value="Windows" label="Windows">
 
-    iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.ps1 | iex
+    $ iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.ps1 | iex
 
   </TabItem>
 </Tabs>
@@ -60,21 +60,21 @@ import TabItem from '@theme/TabItem';
 <Tabs groupId="install-platform-src" queryString>
   <TabItem value="Linux" label="Linux" default>
 
-    make install_linux
+    $ make install_linux
 
   </TabItem>
   <TabItem value="MacOS" label="MacOS">
 
     # macOS on M1
-    make install_macos
+    $ make install_macos
 
     # macOS on INTEL
-    make install_macos_intel
+    $ make install_macos_intel
 
   </TabItem>
   <TabItem value="Windows" label="Windows">
 
-    ./builder.ps1
+    $ ./builder.ps1
 
   </TabItem>
 </Tabs>
@@ -84,17 +84,17 @@ import TabItem from '@theme/TabItem';
 <Tabs groupId="uninstall-platform-src" queryString>
   <TabItem value="Linux" label="Linux" default>
 
-    make uninstall
+    $ make uninstall
 
   </TabItem>
   <TabItem value="MacOS" label="MacOS">
 
-    make uninstall
+    $ make uninstall
 
   </TabItem>
   <TabItem value="Windows" label="Windows">
 
-    ./uninstall.ps1
+    $ ./uninstall.ps1
 
   </TabItem>
 </Tabs>
