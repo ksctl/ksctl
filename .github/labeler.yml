@@ -1,0 +1,22 @@
+pr/not-mergable:
+- '*'
+
+'component/api':
+- api/*
+
+'component/cli':
+- cli/*
+
+'kind/documentation':
+- 'website/*'
+- '**/*.md'
+
+'provider/azure':
+- 'api/azure/*'
+
+'provider/civo':
+- 'api/civo/*'
+
+'provider/local':
+- 'api/local/*'
+
