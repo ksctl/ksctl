@@ -14,6 +14,21 @@ Lets start to understand things better
 
 ## Current Status on Supported Providers
 
+export const Highlight = ({children, color}) => (
+  <span
+    style={{
+      backgroundColor: color,
+      borderRadius: '2px',
+      color: '#fff',
+      padding: '0.2rem',
+    }}>
+    {children}
+  </span>
+);
+
+<Highlight color="green">Done</Highlight> <Highlight color="red">Not Started</Highlight> <Highlight color="black">No Plans</Highlight> <Highlight color="blue">Backlog</Highlight>
+
+
 ```mermaid
 flowchart LR;
   classDef green color:#022e1f,fill:#00f500;
@@ -44,7 +59,7 @@ flowchart LR;
 ## Current Features
 
 Having core features of `get`, `create`, `delete`, `add nodes`, `switch`, under specific providers
- 
+
 - Local
     - kind cluster with specific version
 - Civo
@@ -56,6 +71,7 @@ Having core features of `get`, `create`, `delete`, `add nodes`, `switch`, under 
 - add Web client
 - GCP
 - AWS
+- additional kubernetes application support
 - all other cloud providers
 - improve the High avilability cluster architecture
 - improve logging in local
@@ -67,7 +83,7 @@ Having core features of `get`, `create`, `delete`, `add nodes`, `switch`, under 
 
 ## Current Releases
 
-- [ ] 1.0-rc3
+- [ ] 1.0
 - [x] 1.0-rc2
 - [x] 1.0-rc1
 - [x] ...

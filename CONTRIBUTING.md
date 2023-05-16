@@ -12,15 +12,19 @@
 
 # Formating for PR & Issue subject line
 ```markdown
-# Related to docs
-* [Docs](Sub-component)
+# Releated to enhancement
+enhancement(<Core Component>): <Title>
 
-# Related to API
-* [API](Sub-component)
+# Related to feature
+feat(<Core Component>): <Title>
 
-# Related to CLI
-* [CLI](Sub-component)
+# Related to Bug fix or other types of fixes
+fix(<Core Component>): <Title>
 
-# Related to CI
-* [CI](Sub-component)
+## Core Component
+- Docs
+- API
+- CLI
+- CI
+
 ```

@@ -99,23 +99,6 @@ make uninstall
 
 Please refer to the [usage guide](USAGE.md) to know how you can use ksctl
 
-# RoadMap
-
-> **Note**
-marked for `deprecated`
-do check the docs website
-
-## Legends
----
-**DONE** -> GREEN
-
-**NOT STARTED** -> RED
-
-**NO PLANS** -> BLACK
-
-**BACKLOG** -> BLUE
-
-
 
 # Contribution Guidelines
 Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
