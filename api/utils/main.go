@@ -39,12 +39,12 @@ type AwsProvider struct {
 }
 
 type Machine struct {
-	ManagedNodes        int
-	Disk                string
-	HAControlPlaneNodes int
-	HAWorkerNodes       int
-	Mem                 string
-	Cpu                 string
+	ManagedNodes        int     `json:"managed_nodes"`
+	Disk                string  `json:"disk"`
+	HAControlPlaneNodes int     `json:"no_cp"`
+	HAWorkerNodes       int     `json:"no_wp"`
+	Mem                 string  `json:"memory"`
+	Cpu                 string  `json:"cpu"`
 }
 
 type LocalProvider struct {
