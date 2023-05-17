@@ -8,7 +8,20 @@
 
 # Project Scope
 
-Many cloud providers offer their flavor of Kubernetes. Each provider has its unique CLI tool which is used to create and manage clusters on that particular cloud. When working in a multi-cloud environment, it can get difficult to create and manage so many clusters using CLI from each cloud provider. ksctl is a **single CLI tool** that can interact with a multitude of cloud providers, making it easy for you to **manage multi-cloud clusters, with just a single CLI tool**. Currently, we support Civo and Local clusters.
+Many cloud providers offer their flavor of Kubernetes. Each provider has its unique CLI tool which is used to create and manage clusters on that particular cloud. When working in a multi-cloud environment, it can get difficult to create and manage so many clusters using CLI from each cloud provider. ksctl is a **single CLI tool** that can interact with a multitude of cloud providers, making it easy for you to **manage multi-cloud clusters, with just a single CLI tool**
+
+# Purpose
+
+The ksctl project by kubesimplify is a command-line tool that helps developers manage Kubernetes clusters running on different enviroment
+
+It provides a simple and intuitive interface for performing common tasks such as creating, deleting, and managing Kubernetes resources. ksctl is designed to be easy to use, even for developers who are new to Kubernetes.
+
+Here are some of the specific features of ksctl:
+
+- It provides a simple and intuitive interface for managing Kubernetes clusters.
+- It is designed to be efficient and can perform tasks quickly and without the need for additional tools.
+- It is a powerful tool that can be used to perform a wide range of tasks.
+- It is currently under development, but it is already a valuable tool for developers who want to manage Kubernetes clusters.
 
 # Demo Screenshot
 <!-- TODO: Add the demo screenshots-->
@@ -18,7 +31,6 @@ Many cloud providers offer their flavor of Kubernetes. Each provider has its uni
 # Prerequisites
 
 - Go (if building from source)
-- Administrative permission
 - Docker (if going to use Local provider)
 - Go version >1.19 for build process
 
@@ -30,70 +42,10 @@ Linux | :heavy_check_mark:
 macOS | :heavy_check_mark:
 Windows | :heavy_check_mark:
 
-# Single command install
+# Getting Started guide
 
-## Linux and MacOS
+[Getting Started guide](https://kubesimplify.github.io/ksctl/docs/getting-started/install)
 
-```bash
-bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.sh)
-```
-
-
-## Windows
-```powershell
-iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
-```
-
-# Uninstall?
-
-## Linux & MacOs
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.sh)
-```
-
-## Windows
-```powershell
-iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.ps1 | iex
-```
-
-# Build from src
-## Linux
-### Install
-
-
-```zsh
-make install_linux
-```
-
-## macOS
-### Install
-
-```zsh
-# macOS on M1
-make install_macos
-
-# macOS on INTEL
-make install_macos_intel
-```
-
-### Uninstall
-```zsh
-make uninstall
-```
-
-## Windows
-### Install
-
-```ps
-./builder.ps1
-```
-
-### Uninstall
-
-```ps
-./uninstall.ps1
-```
 
 # Usage
 

@@ -4,15 +4,16 @@ sidebar_position: 1
 
 # Azure
 
-lets create kubernetes cluster using ksctl
+AZURE support for the HA and managed support
+
 
 ## Prequisites
 
 :::note
-we need credentials to access each
+we need credentials to access clusters
 :::
 
-:::danger
+:::caution
 these are confidential information so shouldn't be shared with anyone
 :::
 
@@ -72,4 +73,34 @@ it represents the secret associated with the app in order to use it
 
 
 ![copy-secret](/img/azure/azure-client-secret2.png)
+
+## Current Features
+
+### Cluster features
+#### High Avalibility cluster
+clusters which are managed by the user not by cloud provider
+
+    using K3s kubernetes distribution which is lightweight
+
+custom components being used
+- MySQL database VM
+- HAProxy loadbalancer VM for controlplane nodes
+- controlplane VMs
+- workerplane VMs
+
+#### Managed Cluster
+clusters which are managed by the cloud provider
+
+### Other capabilities
+
+#### Create, Update, Delete, Switch
+
+:::info Update the cluster infrastructure
+**Managed cluster**: till now it's not supported
+
+**HA cluster**
+- addition and deletion of new workerplane node
+- SSH access to each cluster node (DB, LB, Controplane) _Public Access_, secured by private key
+- SSH access to each workplane _Private Access_ via local network, secured by private key
+:::
 
