@@ -87,7 +87,10 @@ func (obj *AzureProvider) AddMoreWorkerNodes(logging log.Logger) error {
 	}
 
 	ctx := context.Background()
-	setRequiredENV_VAR(logging, ctx, obj)
+	err := setRequiredENV_VAR(logging, ctx, obj)
+	if err != nil {
+		return err
+	}
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -162,7 +165,10 @@ then deletion will happen from 4, 3, 2, 1
 	}
 
 	ctx := context.Background()
-	setRequiredENV_VAR(logging, ctx, obj)
+	err := setRequiredENV_VAR(logging, ctx, obj)
+	if err != nil {
+		return err
+	}
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -235,7 +241,10 @@ func (obj *AzureProvider) CreateCluster(logging log.Logger) error {
 	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
-	setRequiredENV_VAR(logging, ctx, obj)
+	err := setRequiredENV_VAR(logging, ctx, obj)
+	if err != nil {
+		return err
+	}
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -277,7 +286,10 @@ func (obj *AzureProvider) DeleteCluster(logging log.Logger) error {
 	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
-	setRequiredENV_VAR(logging, ctx, obj)
+	err := setRequiredENV_VAR(logging, ctx, obj)
+	if err != nil {
+		return err
+	}
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
