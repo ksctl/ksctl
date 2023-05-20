@@ -57,7 +57,7 @@ func fetchAPIKey(logger log.Logger) string {
 	if civoToken != "" {
 		return civoToken
 	}
-    logger.Warn("environment vars not set: CIVO_TOKEN")
+	logger.Warn("environment vars not set: CIVO_TOKEN")
 
 	token, err := util.GetCred(logger, "civo")
 	if err != nil {
@@ -108,7 +108,13 @@ func (provider CivoProvider) CreateCluster(logging log.Logger) error {
 		return nil
 	}
 	payload := ClusterInfoInjecter(logging, provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
-	return managedCreateClusterHandler(logging, payload)
+	err := managedCreateClusterHandler(logging, payload) // FIXME: no cleanup defined
+	if err != nil {
+		logging.Err("CLEANUP TRIGGERED!: failed to create")
+		_ = managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region)
+		return err
+	}
+	return err
 }
 
 // DeleteCluster calls the helper functions for cluster deletion
@@ -158,7 +164,7 @@ func (p printer) Printer(logging log.Logger, isHA bool, operation int) {
 	}
 	switch operation {
 	case 0:
-	    logging.Note("To use this cluster set this environment variable")
+		logging.Note("To use this cluster set this environment variable")
 		if isHA {
 			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
 		} else {
