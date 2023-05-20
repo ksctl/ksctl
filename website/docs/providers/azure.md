@@ -104,3 +104,7 @@ clusters which are managed by the cloud provider
 - SSH access to each workplane _Private Access_ via local network, secured by private key
 :::
 
+:::caution Creation of HA cluster
+when the cluster is created you need to run a command which fixes the issue [#105](https://github.com/kubesimplify/ksctl/issues/105)
+:::
+
