@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 const (
@@ -16,52 +17,59 @@ const (
 	RESET      = "\033[0m"
 )
 
-func (logger *Logger) Info(message, resource string) {
+// Info information message to stdout
+// in green colour
+func (logger *Logger) Info(message ...string) {
+
+    outputMsg := strings.Join(message, " ")
 
 	if logger.Verbose {
-		if len(resource) == 0 {
-			log.Printf("%s[INFO] %s%v%s", GREEN, WHITE_BOLD, message, RESET)
-		} else {
-			log.Printf("%s[INFO] %s%v %s%v%s", GREEN, WHITE, message, GREEN, resource, RESET)
-		}
+		log.Printf("%s[INFO] %v%s", GREEN, outputMsg, RESET)
 	} else {
-		if len(resource) == 0 {
-			fmt.Printf("%s[INFO] %s%v%s\n", GREEN, WHITE_BOLD, message, RESET)
-		} else {
-			fmt.Printf("%s[INFO] %s%v %s%v%s\n", GREEN, WHITE, message, GREEN, resource, RESET)
-		}
+		fmt.Printf("%s[INFO] %v%s\n", GREEN, outputMsg, RESET)
 	}
 }
 
-func (logger *Logger) Print(message string) {
+// Print plan text stdout
+func (logger *Logger) Print(message ...string) {
+    outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Println("[MSG] ", message)
+		log.Println("[MSG] ", outputMsg)
 	} else {
-		fmt.Println("[MSG] ", message)
+		fmt.Println("[MSG] ", outputMsg)
 	}
 }
 
-func (logger *Logger) Note(message string) {
+// Note note taking message to stdout
+// in blue colour
+func (logger *Logger) Note(message ...string) {
 
+    outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[NOTE] %v%s", BLUE_BOLD, message, RESET)
+		log.Printf("%s[NOTE] %v%s", BLUE_BOLD, outputMsg, RESET)
 	} else {
-		fmt.Printf("%s[NOTE] %v%s\n", BLUE_BOLD, message, RESET)
+		fmt.Printf("%s[NOTE] %v%s\n", BLUE_BOLD, outputMsg, RESET)
 	}
 }
 
-func (logger *Logger) Warn(message string) {
+// Warn warning message to stdout
+// in yellow colour
+func (logger *Logger) Warn(message ...string) {
+    outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[WARN] %v%s", YELLOW, message, RESET)
+		log.Printf("%s[WARN] %v%s", YELLOW, outputMsg, RESET)
 	} else {
-		fmt.Printf("%s[WARN] %v%s\n", YELLOW, message, RESET)
+		fmt.Printf("%s[WARN] %v%s\n", YELLOW, outputMsg, RESET)
 	}
 }
 
-func (logger *Logger) Err(message string) {
+// Err error message to stdout
+// in red color
+func (logger *Logger) Err(message ...string) {
+    outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[ERR] %v%s", RED, message, RESET)
+		log.Printf("%s[ERR] %v%s", RED, outputMsg, RESET)
 	} else {
-		fmt.Printf("%s[ERR] %v%s\n", RED, message, RESET)
+		fmt.Printf("%s[ERR] %v%s\n", RED, outputMsg, RESET)
 	}
 }

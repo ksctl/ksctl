@@ -90,13 +90,13 @@ func GetUserName() string {
 }
 
 type PrinterKubeconfigPATH interface {
-	Printer(bool, int)
+	Printer(logger.Logger, bool, int)
 }
 
 type CivoHandlers interface {
 	CreateCluster() error
 	DeleteCluster() error
-	SwitchContext() error
+	SwitchContext(logger.Logger) error
 	AddMoreWorkerNodes() error
 	DeleteSomeWorkerNodes() error
 }

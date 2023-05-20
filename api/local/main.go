@@ -150,7 +150,7 @@ func CreateCluster(logging log.Logger, localConfig util.LocalProvider) error {
 			path, err := createNecessaryConfigs(localConfig.ClusterName)
 			if err != nil {
 				logging.Err("Cannot continue 😢")
-				_ = DeleteCluster(localConfig.ClusterName)
+				_ = DeleteCluster(logging, localConfig.ClusterName)
 				panic(err)
 			}
 			return path
@@ -159,41 +159,40 @@ func CreateCluster(logging log.Logger, localConfig util.LocalProvider) error {
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
 		logging.Err("Cannot continue 😢")
-		_ = DeleteCluster(localConfig.ClusterName)
+		_ = DeleteCluster(logging, localConfig.ClusterName)
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: localConfig.ClusterName}
-	printKubeconfig.Printer(false, 0)
+	printKubeconfig.Printer(logging, false, 0)
 
 	logging.Info("Created your local cluster!!🥳 🎉 ", "")
 
 	return nil
 }
 
-func (p printer) Printer(isHA bool, operation int) {
+func (p printer) Printer(logging log.Logger,isHA bool, operation int) {
 	preFix := "export "
 	if runtime.GOOS == "windows" {
 		preFix = "$Env:"
 	}
 	switch operation {
 	case 0:
-		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
+		logging.Note("To use this cluster set this environment variable")
 		if isHA {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
 		} else {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "local", p.ClusterName, "config")))
 		}
 	case 1:
-		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
+		logging.Note("Use the following command to unset KUBECONFIG")
 		if runtime.GOOS == "windows" {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+		    logging.Print(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
 		} else {
-			fmt.Println("unset KUBECONFIG")
+			logging.Print("unset KUBECONFIG")
 		}
 	}
-	fmt.Println()
 }
 
 func deleteConfigs(path string) error {
@@ -204,7 +203,7 @@ func deleteConfigs(path string) error {
 	return nil
 }
 
-func DeleteCluster(name string) error {
+func DeleteCluster(logging log.Logger, name string) error {
 	provider := cluster.NewProvider(
 	// cluster.ProviderWithLogger(logger),	// TODO: try to add these
 	// runtime.GetDefault(logger),
@@ -222,7 +221,7 @@ func DeleteCluster(name string) error {
 	}
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name}
-	printKubeconfig.Printer(false, 1)
+	printKubeconfig.Printer(logging, false, 1)
 	return nil
 }
 
@@ -231,12 +230,12 @@ type printer struct {
 }
 
 // SwitchContext TODO: Add description
-func SwitchContext(clusterName string) error {
+func SwitchContext(logging log.Logger, clusterName string) error {
 	if isPresent(clusterName) {
 		// TODO: ISSUE #5
 		var printKubeconfig util.PrinterKubeconfigPATH
 		printKubeconfig = printer{ClusterName: clusterName}
-		printKubeconfig.Printer(false, 0)
+		printKubeconfig.Printer(logging, false, 0)
 		return nil
 	}
 	return fmt.Errorf("ERR Cluster not found")

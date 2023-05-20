@@ -38,7 +38,7 @@ var deleteClusterHAAzure = &cobra.Command{
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("CREATED CLUSTER", "")
+		logger.Info("DELETED CLUSTER")
 	},
 }
 
