@@ -1,14 +1,15 @@
-pr/not-mergable:
-- '*'
-
 'component/api':
-- api/*
+- 'api/*'
+- 'api/**/*'
 
 'component/cli':
-- cli/*
+- 'cli/*'
+- 'cli/**/*'
 
 'kind/documentation':
 - 'website/*'
+- 'website/**/*'
+- 'website/**/**/*'
 - '**/*.md'
 
 'provider/azure':
