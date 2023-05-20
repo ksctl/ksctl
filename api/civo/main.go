@@ -57,7 +57,7 @@ func fetchAPIKey(logger log.Logger) string {
 	if civoToken != "" {
 		return civoToken
 	}
-	logger.Warn("environment variables not set")
+    logger.Warn("environment vars not set: CIVO_TOKEN")
 
 	token, err := util.GetCred(logger, "civo")
 	if err != nil {
