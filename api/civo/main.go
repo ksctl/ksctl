@@ -108,10 +108,10 @@ func (provider CivoProvider) CreateCluster(logging log.Logger) error {
 		return nil
 	}
 	payload := ClusterInfoInjecter(logging, provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
-	err := managedCreateClusterHandler(logging, payload) // FIXME: no cleanup defined
+	err := managedCreateClusterHandler(logging, payload)
 	if err != nil {
 		logging.Err("CLEANUP TRIGGERED!: failed to create")
-		_ = managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region)
+		_ = managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region, false)
 		return err
 	}
 	return err
@@ -123,7 +123,7 @@ func (provider CivoProvider) DeleteCluster(logging log.Logger) error {
 	if provider.HACluster {
 		return haDeleteClusterHandler(logging, provider.ClusterName, provider.Region, true)
 	}
-	return managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region)
+	return managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region, true)
 }
 
 // SwitchContext provides the export command for switching to specific provider's cluster

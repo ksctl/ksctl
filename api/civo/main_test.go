@@ -2,10 +2,11 @@ package civo
 
 import (
 	"fmt"
-	"github.com/civo/civogo"
 	"math/rand"
 	"os"
 	"testing"
+
+	"github.com/civo/civogo"
 
 	"github.com/kubesimplify/ksctl/api/logger"
 	utils "github.com/kubesimplify/ksctl/api/utils"
@@ -133,7 +134,7 @@ func TestSwitchContext(t *testing.T) {
 		ClusterName: "demo",
 		Region:      "Abcd",
 	}
-    log := logger.Logger{}
+	log := logger.Logger{}
 	if err := civoOperator.SwitchContext(log); err == nil {
 		t.Fatalf("Passed when their is no matching cluster")
 	}
@@ -338,7 +339,7 @@ func TestCivoProvider_SwitchContext(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
-    log := logger.Logger{}
+	log := logger.Logger{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := CivoProvider{
@@ -2383,7 +2384,7 @@ func Test_managedDeleteClusterHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.wantErr(t, managedDeleteClusterHandler(tt.args.logging, tt.args.name, tt.args.region), fmt.Sprintf("managedDeleteClusterHandler(%v, %v, %v)", tt.args.logging, tt.args.name, tt.args.region))
+			tt.wantErr(t, managedDeleteClusterHandler(tt.args.logging, tt.args.name, tt.args.region, false), fmt.Sprintf("managedDeleteClusterHandler(%v, %v, %v)", tt.args.logging, tt.args.name, tt.args.region))
 		})
 	}
 }
@@ -2404,7 +2405,7 @@ func Test_printer_Printer(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
-    log := logger.Logger{}
+	log := logger.Logger{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := printer{
