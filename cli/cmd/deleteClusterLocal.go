@@ -27,7 +27,7 @@ ksctl delete-cluster local <arguments to local/Docker provider>
 			logger.Verbose = false
 		}
 
-		if err := local.DeleteCluster(dlocalclusterName); err != nil {
+		if err := local.DeleteCluster(logger, dlocalclusterName); err != nil {
 			logger.Err(err.Error())
 			return
 		}

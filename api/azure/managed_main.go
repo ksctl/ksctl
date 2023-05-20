@@ -69,7 +69,7 @@ func managedDeleteClusterHandler(ctx context.Context, logging log.Logger, azureC
 	}
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.Config.ResourceGroupName}
-	printKubeconfig.Printer(false, 1)
+	printKubeconfig.Printer(logging, false, 1)
 	return nil
 }
 
@@ -137,7 +137,7 @@ func managedCreateClusterHandler(ctx context.Context, logging log.Logger, azureC
 	if err != nil {
 		return nil, err
 	}
-	logging.Info("AKS cluster is creating...", azureConfig.ClusterName)
+	logging.Info("AKS cluster is creating ", azureConfig.ClusterName)
 
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -148,7 +148,6 @@ func managedCreateClusterHandler(ctx context.Context, logging log.Logger, azureC
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(kubeconfig.Kubeconfigs[0].Name)
 	KUBECONFIG := string(kubeconfig.Kubeconfigs[0].Value)
 
 	logging.Note("the kubeconfig to be saved has admin credentials")
@@ -160,6 +159,6 @@ func managedCreateClusterHandler(ctx context.Context, logging log.Logger, azureC
 	// TODO: Try to make KubeconfigPrinter as global utility function across all Providers
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: azureConfig.ClusterName, Region: azureConfig.Region, ResourceName: azureConfig.Config.ResourceGroupName}
-	printKubeconfig.Printer(false, 0)
+	printKubeconfig.Printer(logging, false, 0)
 	return &resp.ManagedCluster, nil
 }

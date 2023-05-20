@@ -133,14 +133,15 @@ func TestSwitchContext(t *testing.T) {
 		ClusterName: "demo",
 		Region:      "Abcd",
 	}
-	if err := civoOperator.SwitchContext(); err == nil {
+    log := logger.Logger{}
+	if err := civoOperator.SwitchContext(log); err == nil {
 		t.Fatalf("Passed when their is no matching cluster")
 	}
 	civoOperator.ClusterName = "demo-1"
 	civoOperator.Region = "FRA1"
 	civoOperator.HACluster = false
 
-	if err := civoOperator.SwitchContext(); err != nil {
+	if err := civoOperator.SwitchContext(log); err != nil {
 		t.Fatalf("Failed in switching context to %v\nError: %v\n", civoOperator, err)
 	}
 
@@ -148,7 +149,7 @@ func TestSwitchContext(t *testing.T) {
 	civoOperator.Region = "LON1"
 	civoOperator.HACluster = true
 
-	if err := civoOperator.SwitchContext(); err != nil {
+	if err := civoOperator.SwitchContext(log); err != nil {
 		t.Fatalf("Failed in switching context to %v\nError: %v\n", civoOperator, err)
 	}
 }
@@ -337,6 +338,7 @@ func TestCivoProvider_SwitchContext(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
+    log := logger.Logger{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := CivoProvider{
@@ -348,7 +350,7 @@ func TestCivoProvider_SwitchContext(t *testing.T) {
 				Application: tt.fields.Application,
 				CNIPlugin:   tt.fields.CNIPlugin,
 			}
-			tt.wantErr(t, provider.SwitchContext(), fmt.Sprintf("SwitchContext()"))
+			tt.wantErr(t, provider.SwitchContext(log), fmt.Sprintf("SwitchContext()"))
 		})
 	}
 }
@@ -2402,13 +2404,14 @@ func Test_printer_Printer(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
+    log := logger.Logger{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := printer{
 				ClusterName: tt.fields.ClusterName,
 				Region:      tt.fields.Region,
 			}
-			p.Printer(tt.args.isHA, tt.args.operation)
+			p.Printer(log, tt.args.isHA, tt.args.operation)
 		})
 	}
 }

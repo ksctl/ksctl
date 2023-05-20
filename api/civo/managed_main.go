@@ -53,11 +53,6 @@ func configWriterManaged(logging log.Logger, kubeconfig, clusterN, region, clust
 		return err
 	}
 
-	// FIXME: make this more reliable ISSUE #5
-	// err = os.Setenv("KUBECONFIG", util.GetPath(1, "civo", "managed", clusterFolder, "config"))
-	// if err != nil {
-	// 	return err
-	// }
 	return nil
 }
 
@@ -211,14 +206,14 @@ func managedCreateClusterHandler(logging log.Logger, civoConfig CivoProvider) er
 			logging.Info("✅ Configured", civoConfig.ClusterName)
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: civoConfig.ClusterName, Region: civoConfig.Region}
-			printKubeconfig.Printer(false, 0)
+			printKubeconfig.Printer(logging, false, 0)
 
 			break
 		}
 		logging.Info("🚧 Instance", clusterDS.Status)
 		time.Sleep(10 * time.Second)
 	}
-	logging.Info("Created your managed civo cluster!!🥳 🎉 ", "")
+	logging.Info("Created your managed civo cluster!!🥳 🎉 ")
 	return nil
 }
 
@@ -265,6 +260,6 @@ func managedDeleteClusterHandler(logging log.Logger, name, region string) error 
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
-	printKubeconfig.Printer(false, 1)
+	printKubeconfig.Printer(logging, false, 1)
 	return nil
 }

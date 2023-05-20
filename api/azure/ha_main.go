@@ -109,11 +109,16 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 			return err
 		}
 	}
-	logger.Info("Created your HA azure cluster!!🥳 🎉 ", "")
-	logger.Note("for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
+	logger.Info("Created your HA azure cluster!!🥳 🎉 ")
+	logger.Note("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard")
+	logger.Note(fmt.Sprintf(`
+🗒 for the very first kubectl API call, do this
+    kubectl cluster-info --insecure-skip-tls-verify
+after this you can proceed with normal operation of the cluster
+`))
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
-	printKubeconfig.Printer(true, 0)
+	printKubeconfig.Printer(logger,true, 0)
 	return nil
 }
 
@@ -125,10 +130,6 @@ func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	if !isValidRegion(obj.Region) {
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
-
-	// if !isPresent("ha", *obj) {
-	// 	return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
-	// }
 
 	if showMsg {
 		logger.Note(fmt.Sprintf(`🚨	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
@@ -207,6 +208,6 @@ func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
-	printKubeconfig.Printer(false, 1)
+	printKubeconfig.Printer(logger, false, 1)
 	return nil
 }

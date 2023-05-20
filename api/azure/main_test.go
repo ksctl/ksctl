@@ -1600,6 +1600,7 @@ func TestAzureProvider_SwitchContext(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
+    log := logger.Logger{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := AzureProvider{
@@ -1612,7 +1613,7 @@ func TestAzureProvider_SwitchContext(t *testing.T) {
 				AzureTokenCred: tt.fields.AzureTokenCred,
 				SSH_Payload:    tt.fields.SSH_Payload,
 			}
-			if err := provider.SwitchContext(); (err != nil) != tt.wantErr {
+			if err := provider.SwitchContext(log); (err != nil) != tt.wantErr {
 				t.Errorf("SwitchContext() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -2183,6 +2184,7 @@ func Test_printer_Printer(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
+    log := logger.Logger{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := printer{
@@ -2190,7 +2192,7 @@ func Test_printer_Printer(t *testing.T) {
 				Region:       tt.fields.Region,
 				ResourceName: tt.fields.ResourceName,
 			}
-			p.Printer(tt.args.isHA, tt.args.operation)
+			p.Printer(log, tt.args.isHA, tt.args.operation)
 		})
 	}
 }

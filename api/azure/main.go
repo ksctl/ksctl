@@ -122,7 +122,7 @@ func (obj *AzureProvider) AddMoreWorkerNodes(logging log.Logger) error {
 		}
 	}
 
-	logging.Info("Added more nodes 🥳 🎉 ", "")
+	logging.Info("Added more nodes 🥳 🎉 ")
 	return nil
 }
 
@@ -232,13 +232,11 @@ then deletion will happen from 4, 3, 2, 1
 		}
 	}
 
-	logging.Info("Deleted some nodes 🥳 🎉 ", "")
+	logging.Info("Deleted some nodes 🥳 🎉 ")
 	return nil
 }
 
 func (obj *AzureProvider) CreateCluster(logging log.Logger) error {
-
-	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
 	err := setRequiredENV_VAR(logging, ctx, obj)
@@ -283,7 +281,6 @@ func (obj *AzureProvider) CreateCluster(logging log.Logger) error {
 }
 
 func (obj *AzureProvider) DeleteCluster(logging log.Logger) error {
-	// logging := log.Logger{Verbose: true} // make it move to cli part
 
 	ctx := context.Background()
 	err := setRequiredENV_VAR(logging, ctx, obj)
@@ -323,7 +320,7 @@ func (obj *AzureProvider) DeleteCluster(logging log.Logger) error {
 	return nil
 }
 
-func (provider AzureProvider) SwitchContext() error {
+func (provider AzureProvider) SwitchContext(logging log.Logger) error {
 	provider.Config = &AzureStateCluster{}
 	switch provider.HACluster {
 	case true:
@@ -331,7 +328,7 @@ func (provider AzureProvider) SwitchContext() error {
 		if isPresent("ha", provider) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.Config.ResourceGroupName}
-			printKubeconfig.Printer(true, 0)
+			printKubeconfig.Printer(logging, true, 0)
 			return nil
 		}
 	case false:
@@ -339,7 +336,7 @@ func (provider AzureProvider) SwitchContext() error {
 		if isPresent("managed", provider) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region, ResourceName: provider.Config.ResourceGroupName}
-			printKubeconfig.Printer(false, 0)
+			printKubeconfig.Printer(logging, false, 0)
 			return nil
 		}
 	}

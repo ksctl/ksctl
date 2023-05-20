@@ -1,12 +1,11 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/kubesimplify/ksctl/api/azure"
 	"github.com/kubesimplify/ksctl/api/civo"
 	"github.com/kubesimplify/ksctl/api/local"
 	"github.com/spf13/cobra"
+	"github.com/kubesimplify/ksctl/api/logger"
 )
 
 var switchCluster = &cobra.Command{
@@ -15,18 +14,20 @@ var switchCluster = &cobra.Command{
 	Short:   "Use to switch between clusters",
 	Long: `It is used to switch cluster with the given clusterName from user. For example:
 
-ksctl switch-context -p <civo,local,ha-civo>  -n <clustername> -r <region> <arguments to civo cloud provider>
+ksctl switch-context -p <civo,local,ha-civo,ha-azure,azure>  -n <clustername> -r <region> <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+	    log := logger.Logger{}
 		switch sprovider {
 		case "local":
-			err := local.SwitchContext(sclusterName)
+			err := local.SwitchContext(log, sclusterName)
 			if err != nil {
-				fmt.Printf("\033[31;40m%v\033[0m\n", err)
+				log.Err(err.Error())
 			}
 		case "civo", "ha-civo":
 			if len(sregion) == 0 {
-				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
+				log.Err("Region is Required")
 			}
 			payload := civo.CivoProvider{
 				ClusterName: sclusterName,
@@ -38,14 +39,14 @@ ksctl switch-context -p <civo,local,ha-civo>  -n <clustername> -r <region> <argu
 				payload.HACluster = true
 			}
 
-			err := payload.SwitchContext()
+			err := payload.SwitchContext(log)
 			if err != nil {
-				fmt.Printf("\033[31;40m%v\033[0m\n", err)
+				log.Err(err.Error())
 			}
 
 		case "azure", "ha-azure":
 			if len(sregion) == 0 {
-				fmt.Println(fmt.Errorf("\033[31;40mRegion is Required\033[0m\n"))
+				log.Err("Region is Required")
 			}
 			payload := azure.AzureProvider{
 				ClusterName: sclusterName,
@@ -56,14 +57,14 @@ ksctl switch-context -p <civo,local,ha-civo>  -n <clustername> -r <region> <argu
 			} else {
 				payload.HACluster = true
 			}
-			err := payload.SwitchContext()
+			err := payload.SwitchContext(log)
 			if err != nil {
-				fmt.Printf("\033[31;40m%v\033[0m\n", err)
+				log.Err(err.Error())
 			}
 		case "aws":
-			fmt.Println("UNDER DEVELOPMENT!")
+            log.Warn("UNDER DEVELOPMENT")
 		default:
-			fmt.Println(fmt.Errorf("\033[31;40mINVALID provider (given)\033[0m\n"))
+            log.Err("invalid provider!")
 		}
 	},
 }
