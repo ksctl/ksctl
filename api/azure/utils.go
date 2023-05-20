@@ -853,14 +853,37 @@ func (config *AzureProvider) ConfigReader(logging log.Logger, clusterType string
 // checking if the environment variables are set or not.
 func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProvider) error {
 
-	if len(os.Getenv("AZURE_TENANT_ID")) != 0 &&
-		len(os.Getenv("AZURE_SUBSCRIPTION_ID")) != 0 &&
-		len(os.Getenv("AZURE_CLIENT_ID")) != 0 &&
-		len(os.Getenv("AZURE_CLIENT_SECRET")) != 0 {
+    env_tenant := os.Getenv("AZURE_TENANT_ID")
+    env_sub := os.Getenv("AZURE_SUBSCRIPTION_ID")
+    env_clientid := os.Getenv("AZURE_CLIENT_ID")
+    env_clientsec := os.Getenv("AZURE_CLIENT_SECRET")
+    
+
+	if len(env_tenant) != 0 &&
+		len(env_sub) != 0 &&
+		len(env_clientid) != 0 &&
+		len(env_clientsec) != 0 {
 		return nil
 	}
 
-	logging.Warn("environment variables not set")
+    msg := "environment vars not set:"
+    if len(env_tenant) == 0 {
+        msg = msg + " AZURE_TENANT_ID"
+    }
+
+    if len(env_sub) == 0 {
+        msg = msg + " AZURE_SUBSCRIPTION_ID"
+    }
+
+    if len(env_clientid) == 0 {
+        msg = msg + " AZURE_CLIENT_ID"
+    }
+
+    if len(env_clientsec) == 0 {
+        msg = msg + " AZURE_CLIENT_SECRET"
+    }
+
+	logging.Warn(msg)
 
 	tokens, err := util.GetCred(logging, "azure")
 	if err != nil {
