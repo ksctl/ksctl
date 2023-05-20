@@ -28,6 +28,7 @@ const (
 	ALL    = int(0)
 	CIVOC  = int(1)
 	LOCALC = int(2)
+    AZUREC = int(3)
 )
 
 func printUtil(cargo []byte) {
@@ -36,7 +37,7 @@ func printUtil(cargo []byte) {
 	log.Print("\n" + string(cargo))
 }
 
-// Printer TODO: Move the contents of get clusters to their respective api files
+// Printer
 func Printer(i int) {
 	var toBePrinted []printer
 

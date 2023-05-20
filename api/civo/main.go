@@ -53,12 +53,16 @@ func Credentials(logger log.Logger) bool {
 // fetchAPIKey returns the api_token from the cred/civo.json file store
 func fetchAPIKey(logger log.Logger) string {
 
-	token, err := util.GetCred(logger, "civo")
+	civoToken := os.Getenv("CIVO_TOKEN")
+	if civoToken != "" {
+		return civoToken
+	}
+	logger.Warn("environment vars not set: CIVO_TOKEN")
 
+	token, err := util.GetCred(logger, "civo")
 	if err != nil {
 		return ""
 	}
-
 	return token["token"]
 }
 
@@ -104,7 +108,16 @@ func (provider CivoProvider) CreateCluster(logging log.Logger) error {
 		return nil
 	}
 	payload := ClusterInfoInjecter(logging, provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
-	return managedCreateClusterHandler(logging, payload)
+	if isPresent("managed", provider.ClusterName, provider.Region) {
+		return fmt.Errorf("DUPLICATE Cluster")
+	}
+	err := managedCreateClusterHandler(logging, payload)
+	if err != nil {
+		logging.Err("CLEANUP TRIGGERED!: failed to create")
+		_ = managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region, false)
+		return err
+	}
+	return err
 }
 
 // DeleteCluster calls the helper functions for cluster deletion
@@ -113,24 +126,24 @@ func (provider CivoProvider) DeleteCluster(logging log.Logger) error {
 	if provider.HACluster {
 		return haDeleteClusterHandler(logging, provider.ClusterName, provider.Region, true)
 	}
-	return managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region)
+	return managedDeleteClusterHandler(logging, provider.ClusterName, provider.Region, true)
 }
 
 // SwitchContext provides the export command for switching to specific provider's cluster
-func (provider CivoProvider) SwitchContext() error {
+func (provider CivoProvider) SwitchContext(logging log.Logger) error {
 	switch provider.HACluster {
 	case true:
 		if isPresent("ha", provider.ClusterName, provider.Region) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region}
-			printKubeconfig.Printer(true, 0)
+			printKubeconfig.Printer(logging, true, 0)
 			return nil
 		}
 	case false:
 		if isPresent("managed", provider.ClusterName, provider.Region) {
 			var printKubeconfig util.PrinterKubeconfigPATH
 			printKubeconfig = printer{ClusterName: provider.ClusterName, Region: provider.Region}
-			printKubeconfig.Printer(false, 0)
+			printKubeconfig.Printer(logging, false, 0)
 			return nil
 		}
 	}
@@ -147,26 +160,25 @@ type printer struct {
 // Printer to print the KUBECONFIG ENV setter command
 // isHA: whether the cluster created is HA type or not
 // operation: 0 for created cluster operation and 1 for deleted cluster operation
-func (p printer) Printer(isHA bool, operation int) {
+func (p printer) Printer(logging log.Logger, isHA bool, operation int) {
 	preFix := "export "
 	if runtime.GOOS == "windows" {
 		preFix = "$Env:"
 	}
 	switch operation {
 	case 0:
-		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
+		logging.Note("To use this cluster set this environment variable")
 		if isHA {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "ha", p.ClusterName+" "+p.Region, "config")))
 		} else {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "civo", "managed", p.ClusterName+" "+p.Region, "config")))
 		}
 	case 1:
-		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
+		logging.Note("Use the following command to unset KUBECONFIG")
 		if runtime.GOOS == "windows" {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
 		} else {
-			fmt.Println("unset KUBECONFIG")
+			logging.Print("unset KUBECONFIG")
 		}
 	}
-	fmt.Println()
 }

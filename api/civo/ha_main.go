@@ -60,14 +60,19 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 	}
 
 	if !isValidSizeHA(nodeSize) {
-		return fmt.Errorf("🚩 SIZE")
+		return fmt.Errorf("🚩 invalid node sixe")
 	}
 
 	if isPresent("ha", name, region) {
-		return fmt.Errorf("🚨 💀 CLUSTER ALREADY PRESENT")
+		return fmt.Errorf("🚨 💀 duplicate cluster found")
 	}
 
-	client, err := civogo.NewClient(fetchAPIKey(logging), region)
+    apiToken := fetchAPIKey(logging)
+    if len(apiToken) == 0 {
+        return fmt.Errorf("Credentials are missing")
+    }
+
+	client, err := civogo.NewClient(apiToken, region)
 	if err != nil {
 		return err
 	}
@@ -182,13 +187,17 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 		}
 	}
 
-	logging.Info("Created your HA Civo cluster!!🥳 🎉 ", "")
-	logging.Note("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard\n")
-	logging.Note("for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\nafter this you can proceed with normal operation of the cluster")
+	logging.Info("Created your HA Civo cluster!!🥳 🎉 ")
+	logging.Note("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard")
+	logging.Note(fmt.Sprintf(`
+🗒 for the very first kubectl API call, do this
+    kubectl cluster-info --insecure-skip-tls-verify
+after this you can proceed with normal operation of the cluster
+`))
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
-	printKubeconfig.Printer(true, 0)
+	printKubeconfig.Printer(logging, true, 0)
 	return nil
 }
 
@@ -202,7 +211,12 @@ func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg boo
 		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 
-	client, err := civogo.NewClient(fetchAPIKey(logging), region)
+    apiToken := fetchAPIKey(logging)
+    if len(apiToken) == 0 {
+        return fmt.Errorf("Credentials are missing")
+    }
+
+	client, err := civogo.NewClient(apiToken, region)
 	if err != nil {
 		return err
 	}
@@ -279,7 +293,7 @@ func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg boo
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
-	printKubeconfig.Printer(true, 1)
+	printKubeconfig.Printer(logging, true, 1)
 	return nil
 }
 
@@ -292,11 +306,11 @@ func (provider CivoProvider) AddMoreWorkerNodes(logging log.Logger) error {
 	}
 
 	if !isValidSizeHA(nodeSize) {
-		return fmt.Errorf("🚩 SIZE")
+		return fmt.Errorf("🚩 invalid node size")
 	}
 
 	if !isPresent("ha", name, region) {
-		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
+		return fmt.Errorf("🚨 💀 cluster not found")
 	}
 
 	config, err := GetConfig(name, region)
@@ -338,7 +352,7 @@ func (provider CivoProvider) AddMoreWorkerNodes(logging log.Logger) error {
 		}
 	}
 
-	logging.Info("Added more nodes 🥳 🎉 ", "")
+	logging.Info("Added more nodes 🥳 🎉 ")
 	return nil
 }
 
@@ -422,6 +436,6 @@ then deletion will happen from 4, 3, 2, 1
 		}
 	}
 
-	logging.Info("Deleted some nodes 🥳 🎉 ", "")
+	logging.Info("Deleted some nodes 🥳 🎉 ")
 	return nil
 }

@@ -850,20 +850,65 @@ func (config *AzureProvider) ConfigReader(logging log.Logger, clusterType string
 	return nil
 }
 
+// checking if the environment variables are set or not.
 func setRequiredENV_VAR(logging log.Logger, ctx context.Context, cred *AzureProvider) error {
+
+    env_tenant := os.Getenv("AZURE_TENANT_ID")
+    env_sub := os.Getenv("AZURE_SUBSCRIPTION_ID")
+    env_clientid := os.Getenv("AZURE_CLIENT_ID")
+    env_clientsec := os.Getenv("AZURE_CLIENT_SECRET")
+    
+
+	if len(env_tenant) != 0 &&
+		len(env_sub) != 0 &&
+		len(env_clientid) != 0 &&
+		len(env_clientsec) != 0 {
+
+	    cred.SubscriptionID = env_sub
+		return nil
+	}
+
+    msg := "environment vars not set:"
+    if len(env_tenant) == 0 {
+        msg = msg + " AZURE_TENANT_ID"
+    }
+
+    if len(env_sub) == 0 {
+        msg = msg + " AZURE_SUBSCRIPTION_ID"
+    }
+
+    if len(env_clientid) == 0 {
+        msg = msg + " AZURE_CLIENT_ID"
+    }
+
+    if len(env_clientsec) == 0 {
+        msg = msg + " AZURE_CLIENT_SECRET"
+    }
+
+	logging.Warn(msg)
+
 	tokens, err := util.GetCred(logging, "azure")
 	if err != nil {
 		return err
 	}
+
 	cred.SubscriptionID = tokens["subscription_id"]
+
+	err = os.Setenv("AZURE_SUBSCRIPTION_ID", tokens["subscription_id"])
+	if err != nil {
+		return err
+	}
+
 	err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
 	if err != nil {
 		return err
 	}
+
 	err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
 	if err != nil {
 		return err
 	}
+
 	err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
 	if err != nil {
 		return err
@@ -1313,28 +1358,27 @@ func (obj *AzureProvider) kubeconfigReader() ([]byte, error) {
 	return os.ReadFile(util.GetPath(util.CLUSTER_PATH, "azure", typeOfCluster, clusterDirName, "config"))
 }
 
-func (p printer) Printer(isHA bool, operation int) {
+func (p printer) Printer(logging log.Logger, isHA bool, operation int) {
 	preFix := "export "
 	if runtime.GOOS == "windows" {
 		preFix = "$Env:"
 	}
 	switch operation {
 	case 0:
-		fmt.Printf("\n\033[33;40mTo use this cluster set this environment variable\033[0m\n\n")
+		logging.Note("To use this cluster set this environment variable")
 		if isHA {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "azure", "ha", p.ClusterName+" "+p.ResourceName+" "+p.Region, "config")))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "azure", "ha", p.ClusterName+" "+p.ResourceName+" "+p.Region, "config")))
 		} else {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "azure", "managed", p.ClusterName+" "+p.ResourceName+" "+p.Region, "config")))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"%s\"\n", preFix, util.GetPath(util.CLUSTER_PATH, "azure", "managed", p.ClusterName+" "+p.ResourceName+" "+p.Region, "config")))
 		}
 	case 1:
-		fmt.Printf("\n\033[33;40mUse the following command to unset KUBECONFIG\033[0m\n\n")
+		logging.Note("Use the following command to unset KUBECONFIG")
 		if runtime.GOOS == "windows" {
-			fmt.Println(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
+			logging.Print(fmt.Sprintf("%sKUBECONFIG=\"\"\n", preFix))
 		} else {
-			fmt.Println("unset KUBECONFIG")
+			logging.Print("unset KUBECONFIG")
 		}
 	}
-	fmt.Println()
 }
 
 func (obj *AzureProvider) CreateVM(ctx context.Context, logging log.Logger, vmName, networkInterfaceID, diskName, script string) (*armcompute.VirtualMachine, error) {
