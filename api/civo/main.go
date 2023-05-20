@@ -108,6 +108,9 @@ func (provider CivoProvider) CreateCluster(logging log.Logger) error {
 		return nil
 	}
 	payload := ClusterInfoInjecter(logging, provider.ClusterName, provider.Region, provider.Spec.Disk, provider.Spec.ManagedNodes, provider.Application, provider.CNIPlugin)
+	if isPresent("managed", provider.ClusterName, provider.Region) {
+		return fmt.Errorf("DUPLICATE Cluster")
+	}
 	err := managedCreateClusterHandler(logging, payload)
 	if err != nil {
 		logging.Err("CLEANUP TRIGGERED!: failed to create")

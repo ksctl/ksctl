@@ -154,10 +154,6 @@ func managedCreateClusterHandler(logging log.Logger, civoConfig CivoProvider) er
 		return fmt.Errorf("region code is Invalid")
 	}
 
-	if isPresent("managed", civoConfig.ClusterName, civoConfig.Region) {
-		return fmt.Errorf("DUPLICATE Cluster")
-	}
-
 	if !isValidSizeManaged(civoConfig.Spec.Disk) {
 		return fmt.Errorf("INVALID size of node")
 	}
