@@ -118,7 +118,10 @@ after this you can proceed with normal operation of the cluster
 `))
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
-	printKubeconfig.Printer(logger,true, 0)
+	printKubeconfig.Printer(logger, true, 0)
+	if err := util.SendFirstRequest(logger, obj.Config.InfoLoadBalancer.PublicIP); err != nil {
+		return err
+	}
 	return nil
 }
 

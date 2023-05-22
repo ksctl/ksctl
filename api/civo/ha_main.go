@@ -67,10 +67,10 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 		return fmt.Errorf("🚨 💀 duplicate cluster found")
 	}
 
-    apiToken := fetchAPIKey(logging)
-    if len(apiToken) == 0 {
-        return fmt.Errorf("Credentials are missing")
-    }
+	apiToken := fetchAPIKey(logging)
+	if len(apiToken) == 0 {
+		return fmt.Errorf("Credentials are missing")
+	}
 
 	client, err := civogo.NewClient(apiToken, region)
 	if err != nil {
@@ -198,6 +198,9 @@ after this you can proceed with normal operation of the cluster
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
 	printKubeconfig.Printer(logging, true, 0)
+	if err := util.SendFirstRequest(logging, loadBalancer.PublicIP); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -211,10 +214,10 @@ func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg boo
 		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
 	}
 
-    apiToken := fetchAPIKey(logging)
-    if len(apiToken) == 0 {
-        return fmt.Errorf("Credentials are missing")
-    }
+	apiToken := fetchAPIKey(logging)
+	if len(apiToken) == 0 {
+		return fmt.Errorf("Credentials are missing")
+	}
 
 	client, err := civogo.NewClient(apiToken, region)
 	if err != nil {
