@@ -13,18 +13,11 @@
 # Formating for PR & Issue subject line
 ```markdown
 # Releated to enhancement
-enhancement(<Core Component>): <Title>
+enhancement: <Title>
 
 # Related to feature
-feat(<Core Component>): <Title>
+feat: <Title>
 
 # Related to Bug fix or other types of fixes
-fix(<Core Component>): <Title>
-
-## Core Component
-- Docs
-- API
-- CLI
-- CI
-
+fix: <Title>
 ```
