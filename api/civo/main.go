@@ -19,13 +19,13 @@ import (
 )
 
 type CivoProvider struct {
-	ClusterName string
-	APIKey      string
-	HACluster   bool
-	Region      string
-	Spec        util.Machine
-	Application string
-	CNIPlugin   string
+	ClusterName string       `json:"cluster_name"`
+	APIKey      string       `json:"api_key"`
+	HACluster   bool         `json:"ha_cluster"`
+	Region      string       `json:"region"`
+	Spec        util.Machine `json:"spec"`
+	Application string       `json:"application"`
+	CNIPlugin   string       `json:"cni_plugin"`
 }
 
 // Credentials accept the api_token for CIVO auth and authorization from user

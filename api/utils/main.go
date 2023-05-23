@@ -9,6 +9,7 @@ package utils
 
 import (
 	"bytes"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -16,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -30,27 +32,38 @@ import (
 )
 
 type AwsProvider struct {
-	ClusterName string
-	HACluster   bool
-	Region      string
-	Spec        Machine
-	AccessKey   string
-	Secret      string
+	ClusterName string  `json:"cluster_name"`
+	HACluster   bool    `json:"ha_cluster"`
+	Region      string  `json:"region"`
+	Spec        Machine `json:"spec"`
+	AccessKey   string  `json:"access_key"`
+	Secret      string  `json:"secret"`
 }
 
 type Machine struct {
-	ManagedNodes        int     `json:"managed_nodes"`
-	Disk                string  `json:"disk"`
-	HAControlPlaneNodes int     `json:"no_cp"`
-	HAWorkerNodes       int     `json:"no_wp"`
-	Mem                 string  `json:"memory"`
-	Cpu                 string  `json:"cpu"`
+	ManagedNodes        int    `json:"managed_nodes"`
+	Disk                string `json:"disk"`
+	HAControlPlaneNodes int    `json:"no_cp"`
+	HAWorkerNodes       int    `json:"no_wp"`
+	Mem                 string `json:"memory"`
+	Cpu                 string `json:"cpu"`
+}
+
+type SSHPayload struct {
+	UserName       string `json:"user_name"`
+	PathPrivateKey string `json:"path_private_key"`
+	PublicIP       string `json:"public_ip"`
+	Output         string `json:"output"`
+}
+
+type SSHCollection interface {
+	SSHExecute(int, *string, bool)
 }
 
 type LocalProvider struct {
-	ClusterName string
-	HACluster   bool
-	Spec        Machine
+	ClusterName string  `json:"cluster_name"`
+	HACluster   bool    `json:"ha_cluster"`
+	Spec        Machine `json:"spec"`
 }
 
 type CivoCredential struct {
@@ -269,10 +282,6 @@ func getSSHPath(provider string, params ...string) string {
 
 // getPaths to generate path irrespective of the cluster
 // its a free flowing (Provider field has not much significance)
-// TODO: make this function work like '%s/.ksctl/%s'
-// here the user has to provide where to go for instance
-// getPaths("civo", "config", "dcscscsc", "dcsdcsc")
-// the first string in params.. must be config or cred otherwise throw an error
 func getPaths(provider string, params ...string) string {
 	var ret strings.Builder
 
@@ -310,17 +319,6 @@ func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 	}
 
 	return string(fileBytePub), nil
-}
-
-type SSHPayload struct {
-	UserName       string
-	PathPrivateKey string
-	PublicIP       string
-	Output         string
-}
-
-type SSHCollection interface {
-	SSHExecute(int, *string, bool)
 }
 
 func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
@@ -484,4 +482,38 @@ func UserInputCredentials(logging logger.Logger) (string, error) {
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
+}
+
+func IsValidNoOfControlPlanes(noCP int) error {
+	if noCP < 3 || (noCP)&1 == 0 {
+		return fmt.Errorf("no of controlplanes must be >= 3 and should be odd number")
+	}
+	return nil
+}
+
+// NOTE: Temporary solution for the x509 certificate issue
+func SendFirstRequest(logging logger.Logger, ip string) error {
+
+	// curl -vk https://74.220.21.225:6443
+	if logging.Verbose {
+		logging.Note("Sending curl request curl -vk to loadbalancer publicIP")
+	}
+
+	// TODO: This is insecure; use only in dev environments.
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s:6443", ip), nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
 }

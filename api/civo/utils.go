@@ -72,18 +72,18 @@ type HACollection interface {
 }
 
 type HAType struct {
-	Client        *civogo.Client // CIVO client obj
-	ClusterName   string         // clusterName provided by the user
-	DiskImgID     string         // disk Img ID for ubuntu
-	NetworkID     string         // network id
-	NodeSize      string         // e.x. g3.medium
-	DBFirewallID  string
-	LBFirewallID  string
-	CPFirewallID  string
-	WPFirewallID  string
-	SSHID         string // used to store the ssh id from CIVO
-	Configuration *JsonStore
-	SSH_Payload   *util.SSHPayload
+	Client        *civogo.Client   `json:"client"`       // CIVO client obj
+	ClusterName   string           `json:"cluster_name"` // clusterName provided by the user
+	DiskImgID     string           `json:"disk_img_id"`  // disk Img ID for ubuntu
+	NetworkID     string           `json:"network_id"`   // network id
+	NodeSize      string           `json:"node_size"`    // e.x. g3.medium
+	DBFirewallID  string           `json:"db_firewall_id"`
+	LBFirewallID  string           `json:"lb_firewall_id"`
+	CPFirewallID  string           `json:"cp_firewall_id"`
+	WPFirewallID  string           `json:"wp_firewall_id"`
+	SSHID         string           `json:"sshid"` // used to store the ssh id from CIVO
+	Configuration *JsonStore       `json:"configuration"`
+	SSH_Payload   *util.SSHPayload `json:"ssh___payload"`
 }
 
 type InstanceID struct {
