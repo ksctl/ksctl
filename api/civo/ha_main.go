@@ -60,11 +60,15 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 	}
 
 	if !isValidSizeHA(nodeSize) {
-		return fmt.Errorf("🚩 invalid node sixe")
+		return fmt.Errorf("invalid node size")
 	}
 
 	if isPresent("ha", name, region) {
-		return fmt.Errorf("🚨 💀 duplicate cluster found")
+		return fmt.Errorf("duplicate cluster found")
+	}
+
+	if err := util.IsValidNoOfControlPlanes(noCP); err != nil {
+		return err
 	}
 
 	apiToken := fetchAPIKey(logging)
@@ -189,11 +193,6 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 
 	logging.Info("Created your HA Civo cluster!!🥳 🎉 ")
 	logging.Note("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard")
-	logging.Note(fmt.Sprintf(`
-🗒 for the very first kubectl API call, do this
-    kubectl cluster-info --insecure-skip-tls-verify
-after this you can proceed with normal operation of the cluster
-`))
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
@@ -211,7 +210,7 @@ func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg boo
 	}
 
 	if !isPresent("ha", name, region) {
-		return fmt.Errorf("🚨 💀 CLUSTER NOT PRESENT")
+		return fmt.Errorf("CLUSTER NOT PRESENT")
 	}
 
 	apiToken := fetchAPIKey(logging)
@@ -244,7 +243,7 @@ func haDeleteClusterHandler(logging log.Logger, name, region string, showMsg boo
 
 	if showMsg {
 		logging.Note(fmt.Sprintf(`NOTE 🚨
-	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
 	`, name+" "+region))
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
@@ -309,11 +308,11 @@ func (provider CivoProvider) AddMoreWorkerNodes(logging log.Logger) error {
 	}
 
 	if !isValidSizeHA(nodeSize) {
-		return fmt.Errorf("🚩 invalid node size")
+		return fmt.Errorf("invalid node size")
 	}
 
 	if !isPresent("ha", name, region) {
-		return fmt.Errorf("🚨 💀 cluster not found")
+		return fmt.Errorf("cluster not found")
 	}
 
 	config, err := GetConfig(name, region)

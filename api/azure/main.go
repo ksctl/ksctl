@@ -61,14 +61,14 @@ func Credentials(logger log.Logger) bool {
 }
 
 type AzureProvider struct {
-	ClusterName    string
-	HACluster      bool
-	Region         string
-	Spec           util.Machine
-	SubscriptionID string
-	Config         *AzureStateCluster
-	AzureTokenCred azcore.TokenCredential
-	SSH_Payload    *util.SSHPayload
+	ClusterName    string                 `json:"cluster_name"`
+	HACluster      bool                   `json:"ha_cluster"`
+	Region         string                 `json:"region"`
+	Spec           util.Machine           `json:"spec"`
+	SubscriptionID string                 `json:"subscription_id"`
+	Config         *AzureStateCluster     `json:"config"`
+	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"`
+	SSH_Payload    *util.SSHPayload       `json:"ssh___payload"`
 }
 
 // AddMoreWorkerNodes adds more worker nodes to the existing HA cluster

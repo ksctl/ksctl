@@ -26,7 +26,11 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
 
-	logger.Info("Started to Create your HA cluster on Azure provider...", "")
+	if err := util.IsValidNoOfControlPlanes(obj.Spec.HAControlPlaneNodes); err != nil {
+		return err
+	}
+
+	logger.Info("Started to Create your HA cluster on Azure provider")
 	defer obj.ConfigWriter(logger, "ha")
 
 	_, err := obj.CreateResourceGroup(ctx, logger)
@@ -111,11 +115,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	}
 	logger.Info("Created your HA azure cluster!!🥳 🎉 ")
 	logger.Note("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard")
-	logger.Note(fmt.Sprintf(`
-🗒 for the very first kubectl API call, do this
-    kubectl cluster-info --insecure-skip-tls-verify
-after this you can proceed with normal operation of the cluster
-`))
+
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
 	printKubeconfig.Printer(logger, true, 0)

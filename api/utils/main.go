@@ -32,12 +32,12 @@ import (
 )
 
 type AwsProvider struct {
-	ClusterName string
-	HACluster   bool
-	Region      string
-	Spec        Machine
-	AccessKey   string
-	Secret      string
+	ClusterName string  `json:"cluster_name"`
+	HACluster   bool    `json:"ha_cluster"`
+	Region      string  `json:"region"`
+	Spec        Machine `json:"spec"`
+	AccessKey   string  `json:"access_key"`
+	Secret      string  `json:"secret"`
 }
 
 type Machine struct {
@@ -49,10 +49,21 @@ type Machine struct {
 	Cpu                 string `json:"cpu"`
 }
 
+type SSHPayload struct {
+	UserName       string `json:"user_name"`
+	PathPrivateKey string `json:"path_private_key"`
+	PublicIP       string `json:"public_ip"`
+	Output         string `json:"output"`
+}
+
+type SSHCollection interface {
+	SSHExecute(int, *string, bool)
+}
+
 type LocalProvider struct {
-	ClusterName string
-	HACluster   bool
-	Spec        Machine
+	ClusterName string  `json:"cluster_name"`
+	HACluster   bool    `json:"ha_cluster"`
+	Spec        Machine `json:"spec"`
 }
 
 type CivoCredential struct {
@@ -271,10 +282,6 @@ func getSSHPath(provider string, params ...string) string {
 
 // getPaths to generate path irrespective of the cluster
 // its a free flowing (Provider field has not much significance)
-// TODO: make this function work like '%s/.ksctl/%s'
-// here the user has to provide where to go for instance
-// getPaths("civo", "config", "dcscscsc", "dcsdcsc")
-// the first string in params.. must be config or cred otherwise throw an error
 func getPaths(provider string, params ...string) string {
 	var ret strings.Builder
 
@@ -312,17 +319,6 @@ func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 	}
 
 	return string(fileBytePub), nil
-}
-
-type SSHPayload struct {
-	UserName       string
-	PathPrivateKey string
-	PublicIP       string
-	Output         string
-}
-
-type SSHCollection interface {
-	SSHExecute(int, *string, bool)
 }
 
 func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
@@ -486,6 +482,13 @@ func UserInputCredentials(logging logger.Logger) (string, error) {
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
+}
+
+func IsValidNoOfControlPlanes(noCP int) error {
+	if noCP < 3 || (noCP)&1 == 0 {
+		return fmt.Errorf("no of controlplanes must be > 3 and should be odd number")
+	}
+	return nil
 }
 
 // NOTE: Temporary solution for the x509 certificate issue
