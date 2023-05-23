@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: 'bug(CLI or API): Title'
+title: 'bug: Title'
 labels: enhancement, help wanted, kind/bug
-assignees: dipankardas011, AvineshTripathi
+assignees: ''
 
 ---
 
