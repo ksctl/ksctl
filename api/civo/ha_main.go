@@ -150,7 +150,7 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 	token := ""
 	for i := 0; i < noCP; i++ {
 		if i == 0 {
-			err = obj.HelperExecNoOutputControlPlane(logging, controlPlanes[i].PublicIP, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PrivateIP), true)
+			err = obj.HelperExecNoOutputControlPlane(logging, controlPlanes[i].PublicIP, scriptWithoutCP_1(mysqlEndpoint, loadBalancer.PublicIP), true)
 			if err != nil {
 				return err
 			}
@@ -160,7 +160,7 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
 		} else {
-			err = obj.HelperExecNoOutputControlPlane(logging, controlPlanes[i].PublicIP, scriptCP_n(mysqlEndpoint, loadBalancer.PrivateIP, token), true)
+			err = obj.HelperExecNoOutputControlPlane(logging, controlPlanes[i].PublicIP, scriptCP_n(mysqlEndpoint, loadBalancer.PublicIP, token), true)
 			if err != nil {
 				return err
 			}
@@ -197,9 +197,9 @@ func haCreateClusterHandler(logging log.Logger, name, region, nodeSize string, n
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: name, Region: region}
 	printKubeconfig.Printer(logging, true, 0)
-	if err := util.SendFirstRequest(logging, loadBalancer.PublicIP); err != nil {
-		return err
-	}
+	// if err := util.SendFirstRequest(logging, loadBalancer.PublicIP); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
