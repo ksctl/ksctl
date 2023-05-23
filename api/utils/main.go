@@ -486,7 +486,7 @@ func UserInputCredentials(logging logger.Logger) (string, error) {
 
 func IsValidNoOfControlPlanes(noCP int) error {
 	if noCP < 3 || (noCP)&1 == 0 {
-		return fmt.Errorf("no of controlplanes must be > 3 and should be odd number")
+		return fmt.Errorf("no of controlplanes must be >= 3 and should be odd number")
 	}
 	return nil
 }
