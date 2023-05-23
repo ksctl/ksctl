@@ -1,5 +1,22 @@
-> **Note**:
-> The above-mentioned are major releases minor are 0.1.[0-9]
+
+# v1.0
+* fixed major bugs
+* removed the use of kubectl insecure
+* added gotags for all the structures
+
+# v1.0-rc3
+* Stable CLI
+* Docs are almost ready
+
+# v1.0-rc2
+* fixed major bugs
+* improved security in SSH Execute
+
+# v1.0.1-rc1
+* Added logging
+* 'Core' Azure support
+* 'Core' Civo support
+* Local support
 
 # 0.2v
 * Added support for High availability Kubernetes cluster
