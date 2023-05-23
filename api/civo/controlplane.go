@@ -27,9 +27,9 @@ func scriptWithoutCP_1(dbEndpoint, privateIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
 export K3S_DATASTORE_ENDPOINT='%s'
+export INSTALL_K3S_EXEC='--tls-san %s 0.0.0.0/0'
 curl -sfL https://get.k3s.io | sh -s - server \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--tls-san %s
+	--node-taint CriticalAddonsOnly=true:NoExecute
 `, dbEndpoint, privateIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
@@ -57,10 +57,10 @@ func scriptCP_n(dbEndpoint, privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
 export SECRET='%s'
 export K3S_DATASTORE_ENDPOINT='%s'
+export INSTALL_K3S_EXEC='--tls-san %s 0.0.0.0/0'
 curl -sfL https://get.k3s.io | sh -s - server \
 	--token=$SECRET \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--tls-san %s
+	--node-taint CriticalAddonsOnly=true:NoExecute
 `, token, dbEndpoint, privateIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
