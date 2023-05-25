@@ -36,32 +36,31 @@ len=$(echo "${#RELEASE_VERSION}")
 
 RELEASE_VERSION="${RELEASE_VERSION:1:$len}"
 
-echo -e "${Yellow}Enter the OS and corresponding Architecture${NoColor}"
-echo -e "${Blue}Enter [1] for Linux and [0] for MacOS${NoColor}"
-read OS
-
-echo -e "${Blue}Enter [1] for amd64 or x86_64 and [0] for arm64${NoColor}"
-read ARCH
+os_name=$(uname)
+OS=""
+ARCH=""
+arch=$(uname -m)
 
 
-if [[ $ARCH -eq 1 ]]; then
+if [[ "$arch" == "x86_64" ]]; then
     ARCH="amd64"
-elif [[ $ARCH -eq 0 ]]; then
+elif [[ "$arch" == "arm" ]]; then
     ARCH="arm64"
 else
     echo -e "${Red}Invalid architecture${NoColor}"
     exit 1
 fi
 
-if [[ $OS -eq 1 ]]; then
+if [[ "$os_name" == "Linux" ]]; then
     OS="linux"
-elif [[ $OS -eq 0 ]]; then
+elif [[ "$os_name" == "Darwin" ]]; then
     OS="darwin"
 else
     echo -e "${Red}Invalid OS${NoColor}"
     exit 1
 fi
 
+echo "Detected ${OS} which is ${ARCH}"
 
 cd /tmp
 sudo wget -q https://github.com/kubesimplify/ksctl/releases/download/v${RELEASE_VERSION}/ksctl_${RELEASE_VERSION}_checksums.txt
