@@ -12,7 +12,7 @@ import (
 	util "github.com/kubesimplify/ksctl/api/utils"
 )
 
-func scriptWithoutCP_1(dbEndpoint, privateIPlb string) string {
+func scriptWithoutCP_1(dbEndpoint, pubIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setup.sh
@@ -25,7 +25,7 @@ EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, dbEndpoint, privateIPlb)
+`, dbEndpoint, pubIPlb)
 }
 
 func scriptWithCP_1() string {
@@ -34,7 +34,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 `
 }
 
-func scriptCP_n(dbEndpoint, privateIPlb, token string) string {
+func scriptCP_n(dbEndpoint, pubIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setupN.sh
 #!/bin/bash
@@ -43,7 +43,7 @@ EOF
 log.Println
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, token, dbEndpoint, privateIPlb)
+`, token, dbEndpoint, pubIPlb)
 }
 
 func scriptKUBECONFIG() string {
