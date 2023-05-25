@@ -38,7 +38,7 @@ ksctl delete-cluster civo
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("DELETED CLUSTER", "")
+		logger.Info("DELETED CLUSTER")
 	},
 }
 

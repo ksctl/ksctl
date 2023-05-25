@@ -37,7 +37,7 @@ ksctl create-cluster azure <arguments to civo cloud provider>
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("DELETED CLUSTER", "")
+		logger.Info("DELETED CLUSTER")
 	},
 }
 

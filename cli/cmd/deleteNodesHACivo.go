@@ -41,7 +41,7 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("DELETED WorkerNode(s)", "")
+		logger.Info("DELETED WorkerNode(s)")
 	},
 }
 

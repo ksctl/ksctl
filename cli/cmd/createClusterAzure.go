@@ -43,7 +43,7 @@ var createClusterAzure = &cobra.Command{
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("CREATED CLUSTER", "")
+		logger.Info("CREATED CLUSTER")
 	},
 }
 

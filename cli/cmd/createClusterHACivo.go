@@ -42,7 +42,7 @@ ksctl create-cluster ha-civo <arguments to civo cloud provider>
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("CREATED CLUSTER", "")
+		logger.Info("CREATED CLUSTER")
 	},
 }
 

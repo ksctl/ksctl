@@ -7,8 +7,6 @@ Kubesimplify
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 import (
-	"fmt"
-
 	log "github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/kubesimplify/ksctl/api/civo"
@@ -47,8 +45,7 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("CREATED CLUSTER", "")
-		fmt.Printf("\033[32;40mCREATED!\033[0m\n")
+		logger.Info("CREATED CLUSTER")
 	},
 }
 
