@@ -9,7 +9,6 @@ package utils
 
 import (
 	"bytes"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -17,7 +16,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -488,32 +486,5 @@ func IsValidNoOfControlPlanes(noCP int) error {
 	if noCP < 3 || (noCP)&1 == 0 {
 		return fmt.Errorf("no of controlplanes must be >= 3 and should be odd number")
 	}
-	return nil
-}
-
-// NOTE: Temporary solution for the x509 certificate issue
-func SendFirstRequest(logging logger.Logger, ip string) error {
-
-	// curl -vk https://74.220.21.225:6443
-	if logging.Verbose {
-		logging.Note("Sending curl request curl -vk to loadbalancer publicIP")
-	}
-
-	// TODO: This is insecure; use only in dev environments.
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s:6443", ip), nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
 	return nil
 }

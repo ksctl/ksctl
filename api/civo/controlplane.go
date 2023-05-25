@@ -19,18 +19,14 @@ import (
 )
 
 // scriptWithoutCP_1 script used to configure the control-plane-1 with no need of output inital
-// params
-//
-//	dbEndpoint: database-Endpoint
-//	privateIPlb: private IP of loadbalancer
-func scriptWithoutCP_1(dbEndpoint, privateIPlb string) string {
+func scriptWithoutCP_1(dbEndpoint, pubIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
 export K3S_DATASTORE_ENDPOINT='%s'
-export INSTALL_K3S_EXEC='--tls-san %s 0.0.0.0/0'
+export INSTALL_K3S_EXEC='--tls-san %s'
 curl -sfL https://get.k3s.io | sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute
-`, dbEndpoint, privateIPlb)
+`, dbEndpoint, pubIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
 	// Add these tags for having different CNI
@@ -53,15 +49,15 @@ cat /var/lib/rancher/k3s/server/token
 `
 }
 
-func scriptCP_n(dbEndpoint, privateIPlb, token string) string {
+func scriptCP_n(dbEndpoint, pubIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
 export SECRET='%s'
 export K3S_DATASTORE_ENDPOINT='%s'
-export INSTALL_K3S_EXEC='--tls-san %s 0.0.0.0/0'
+export INSTALL_K3S_EXEC='--tls-san %s'
 curl -sfL https://get.k3s.io | sh -s - server \
 	--token=$SECRET \
 	--node-taint CriticalAddonsOnly=true:NoExecute
-`, token, dbEndpoint, privateIPlb)
+`, token, dbEndpoint, pubIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
 	// Add these tags for having different CNI

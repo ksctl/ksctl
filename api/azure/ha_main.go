@@ -71,10 +71,10 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 
 	token := ""
 	mysqlEndpoint := obj.Config.DBEndpoint
-	loadBalancerPrivateIP := obj.Config.InfoLoadBalancer.PrivateIP
+	loadBalancerPubIP := obj.Config.InfoLoadBalancer.PublicIP
 	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
 		if i == 0 {
-			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptWithoutCP_1(mysqlEndpoint, loadBalancerPrivateIP), true)
+			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptWithoutCP_1(mysqlEndpoint, loadBalancerPubIP), true)
 			if err != nil {
 				return err
 			}
@@ -84,7 +84,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
 		} else {
-			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptCP_n(mysqlEndpoint, loadBalancerPrivateIP, token), true)
+			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptCP_n(mysqlEndpoint, loadBalancerPubIP, token), true)
 			if err != nil {
 				return err
 			}
@@ -119,9 +119,9 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
 	printKubeconfig.Printer(logger, true, 0)
-	if err := util.SendFirstRequest(logger, obj.Config.InfoLoadBalancer.PublicIP); err != nil {
-		return err
-	}
+	// if err := util.SendFirstRequest(logger, obj.Config.InfoLoadBalancer.PublicIP); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
