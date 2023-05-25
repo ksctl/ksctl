@@ -36,7 +36,7 @@ ksctl delete-cluster ha-civo <arguments to civo cloud provider>
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("DELETED CLUSTER", "")
+		logger.Info("DELETED CLUSTER")
 	},
 }
 

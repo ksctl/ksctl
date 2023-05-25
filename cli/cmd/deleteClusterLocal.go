@@ -31,7 +31,7 @@ ksctl delete-cluster local <arguments to local/Docker provider>
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("DELETED!", "")
+		logger.Info("DELETED!")
 	},
 }
 

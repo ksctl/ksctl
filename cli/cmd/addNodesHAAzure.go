@@ -42,7 +42,7 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 			logger.Err(err.Error())
 			return
 		}
-		logger.Info("ADDED WORKKER NODE(s)", "")
+		logger.Info("ADDED WORKKER NODE(s)")
 	},
 }
 

@@ -4,8 +4,8 @@ import (
 	"github.com/kubesimplify/ksctl/api/azure"
 	"github.com/kubesimplify/ksctl/api/civo"
 	"github.com/kubesimplify/ksctl/api/local"
-	"github.com/spf13/cobra"
 	"github.com/kubesimplify/ksctl/api/logger"
+	"github.com/spf13/cobra"
 )
 
 var switchCluster = &cobra.Command{
@@ -18,7 +18,7 @@ ksctl switch-context -p <civo,local,ha-civo,ha-azure,azure>  -n <clustername> -r
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
-	    log := logger.Logger{}
+		log := logger.Logger{}
 		switch sprovider {
 		case "local":
 			err := local.SwitchContext(log, sclusterName)
@@ -62,9 +62,9 @@ ksctl switch-context -p <civo,local,ha-civo,ha-azure,azure>  -n <clustername> -r
 				log.Err(err.Error())
 			}
 		case "aws":
-            log.Warn("UNDER DEVELOPMENT")
+			log.Warn("UNDER DEVELOPMENT")
 		default:
-            log.Err("invalid provider!")
+			log.Err("invalid provider!")
 		}
 	},
 }
