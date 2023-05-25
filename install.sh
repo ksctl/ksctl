@@ -5,6 +5,17 @@ Blue='\033[1;34m'
 Yellow='\033[1;33m'
 NoColor='\033[0m' 
 
+if command -v jq > /dev/null; then
+    if command -v curl > /dev/null; then
+        echo -e "${Green}Installed dependencies are present${NoColor}"
+    else
+        echo -e "${Red}dependency 'curl' not found${NoColor}"
+        exit 1
+    fi
+else
+    echo -e "${Red}dependency 'jq' not found${NoColor}"
+    exit 1
+fi
 
 # get the release version
 echo -e "${Blue}Available Releases${NoColor}"
@@ -34,21 +45,21 @@ read ARCH
 
 
 if [[ $ARCH -eq 1 ]]; then
-  ARCH="amd64"
+    ARCH="amd64"
 elif [[ $ARCH -eq 0 ]]; then
-  ARCH="arm64"
+    ARCH="arm64"
 else
-  echo -e "${Red}Invalid architecture${NoColor}"
-  exit 1
+    echo -e "${Red}Invalid architecture${NoColor}"
+    exit 1
 fi
 
 if [[ $OS -eq 1 ]]; then
-  OS="linux"
+    OS="linux"
 elif [[ $OS -eq 0 ]]; then
-  OS="darwin"
+    OS="darwin"
 else
-  echo -e "${Red}Invalid OS${NoColor}"
-  exit 1
+    echo -e "${Red}Invalid OS${NoColor}"
+    exit 1
 fi
 
 
@@ -61,10 +72,10 @@ file=$(sha256sum ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz | awk '{print $1}
 checksum=$(cat ksctl_${RELEASE_VERSION}_checksums.txt | grep ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz | awk '{print $1}')
 
 if [[ $file != $checksum ]]; then
-  echo -e "${Red}Checksum didn't matched!${NoColor}"
-  exit 1
+    echo -e "${Red}Checksum didn't matched!${NoColor}"
+    exit 1
 else
-  echo -e "${Green}CheckSum are verified${NoColor}"
+    echo -e "${Green}CheckSum are verified${NoColor}"
 fi
 
 sudo tar -xvf ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz
