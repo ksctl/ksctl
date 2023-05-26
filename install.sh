@@ -9,6 +9,12 @@ if command -v jq > /dev/null; then
     if command -v curl > /dev/null; then
         echo -e "${Green}Installed dependencies are present${NoColor}"
     else
+        if command -v wget > /dev/null; then
+            echo -e "${Green}Installed dependencies are present${NoColor}"
+        else
+            echo -e "${Red}dependency 'wget' not found${NoColor}"
+            exit 1
+        fi
         echo -e "${Red}dependency 'curl' not found${NoColor}"
         exit 1
     fi
@@ -44,7 +50,7 @@ arch=$(uname -m)
 
 if [[ "$arch" == "x86_64" ]]; then
     ARCH="amd64"
-elif [[ "$arch" == "arm" ]]; then
+elif [[ "$arch" == "arm64" ]]; then
     ARCH="arm64"
 else
     echo -e "${Red}Invalid architecture${NoColor}"
@@ -61,6 +67,14 @@ else
 fi
 
 echo "Detected ${OS} which is ${ARCH}"
+
+if command -v sha256sum > /dev/null; then
+    echo -e "${Green}Installed dependencies are present${NoColor}"
+else
+    echo -e "${Red}dependency 'sha256sum' not found${NoColor}"
+    echo -e "${Blue}if you are using mac you can use 'brew install coreutils'${NoColor}"
+    exit 1
+fi
 
 cd /tmp
 sudo wget -q https://github.com/kubesimplify/ksctl/releases/download/v${RELEASE_VERSION}/ksctl_${RELEASE_VERSION}_checksums.txt
