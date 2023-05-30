@@ -11,6 +11,9 @@
 - use `go fmt` command to format code
 
 # Formating for PR & Issue subject line
+
+## Subject / Title
+
 ```markdown
 # Releated to enhancement
 enhancement: <Title>
@@ -21,3 +24,12 @@ feat: <Title>
 # Related to Bug fix or other types of fixes
 fix: <Title>
 ```
+
+## Tash Description
+must be elloborate on what is doing to be added/removed/modified and why
+and in solutions part how? it is changed
+
+# Git commits
+
+mention the detailed description in the git commits
+what? why? How?
