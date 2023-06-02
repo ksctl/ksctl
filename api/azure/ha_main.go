@@ -26,11 +26,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
 
-	if err := util.IsValidNoOfControlPlanes(obj.Spec.HAControlPlaneNodes); err != nil {
-		return err
-	}
-
-	logger.Info("Started to Create your HA cluster on Azure provider")
+	logger.Info("Started to Create your HA cluster on Azure provider...", "")
 	defer obj.ConfigWriter(logger, "ha")
 
 	_, err := obj.CreateResourceGroup(ctx, logger)
@@ -71,10 +67,10 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 
 	token := ""
 	mysqlEndpoint := obj.Config.DBEndpoint
-	loadBalancerPubIP := obj.Config.InfoLoadBalancer.PublicIP
+	loadBalancerPrivateIP := obj.Config.InfoLoadBalancer.PrivateIP
 	for i := 0; i < obj.Spec.HAControlPlaneNodes; i++ {
 		if i == 0 {
-			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptWithoutCP_1(mysqlEndpoint, loadBalancerPubIP), true)
+			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptWithoutCP_1(mysqlEndpoint, loadBalancerPrivateIP), true)
 			if err != nil {
 				return err
 			}
@@ -84,7 +80,7 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 				return fmt.Errorf("🚨 Cannot retrieve k3s token")
 			}
 		} else {
-			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptCP_n(mysqlEndpoint, loadBalancerPubIP, token), true)
+			err = obj.HelperExecNoOutputControlPlane(logger, obj.Config.InfoControlPlanes.PublicIPs[i], scriptCP_n(mysqlEndpoint, loadBalancerPrivateIP, token), true)
 			if err != nil {
 				return err
 			}
@@ -113,15 +109,11 @@ func haCreateClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 			return err
 		}
 	}
-	logger.Info("Created your HA azure cluster!!🥳 🎉 ")
-	logger.Note("\n🗒 Currently no firewall Rules are being used so you can add them using CIVO Dashboard")
-
+	logger.Info("Created your HA azure cluster!!🥳 🎉 ", "")
+	logger.Note("for the very first kubectl API call, do this\n  kubectl cluster-info --insecure-skip-tls-verify\033[0m\nafter this you can proceed with normal operation of the cluster")
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
-	printKubeconfig.Printer(logger, true, 0)
-	// if err := util.SendFirstRequest(logger, obj.Config.InfoLoadBalancer.PublicIP); err != nil {
-	// 	return err
-	// }
+	printKubeconfig.Printer(true, 0)
 	return nil
 }
 
@@ -133,6 +125,10 @@ func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 	if !isValidRegion(obj.Region) {
 		return fmt.Errorf("region {%s} is invalid", obj.Region)
 	}
+
+	// if !isPresent("ha", *obj) {
+	// 	return fmt.Errorf("cluster does not exists: %v", obj.ClusterName)
+	// }
 
 	if showMsg {
 		logger.Note(fmt.Sprintf(`🚨	THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
@@ -211,6 +207,6 @@ func haDeleteClusterHandler(ctx context.Context, logger log.Logger, obj *AzurePr
 
 	var printKubeconfig util.PrinterKubeconfigPATH
 	printKubeconfig = printer{ClusterName: obj.ClusterName, Region: obj.Region, ResourceName: obj.Config.ResourceGroupName}
-	printKubeconfig.Printer(logger, false, 1)
+	printKubeconfig.Printer(false, 1)
 	return nil
 }
