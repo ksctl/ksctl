@@ -3,7 +3,7 @@
 
 **CLI which can manage Kubernetes cluster on different environment**
 
-[![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml)
+[![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml) [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl)
 
 
 # Project Scope
@@ -49,12 +49,11 @@ Windows | :heavy_check_mark:
 
 # Usage
 
-Please refer to the [usage guide](USAGE.md) to know how you can use ksctl
+Please refer to the [usage guide](USAGE.md) also [Docs Website](https://kubesimplify.github.io/ksctl) to know how you can use ksctl
 
 
 # Contribution Guidelines
 Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
-
 
 # Software Requirement Specification Docs
 
