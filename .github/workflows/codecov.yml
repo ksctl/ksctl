@@ -1,10 +1,16 @@
 name: codecov
 on:
   push:
+    paths:
+    - 'api/**'
+    - 'cli/**'
     branches:
     - main
     - dev
   pull_request:
+    paths:
+    - 'api/**'
+    - 'cli/**'
     branches:
     - main
     - dev
