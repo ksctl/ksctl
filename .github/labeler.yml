@@ -1,8 +1,8 @@
-'component/api':
+'area/api':
 - 'api/*'
 - 'api/**/*'
 
-'component/cli':
+'area/cli':
 - 'cli/*'
 - 'cli/**/*'
 
