@@ -10,11 +10,11 @@ Kubesimplify
 import (
 	"fmt"
 
-	log "github.com/kubesimplify/ksctl/api/logger"
+	log "github.com/kubesimplify/ksctl/api/provider/logger"
 
-	eks "github.com/kubesimplify/ksctl/api/aws"
-	aks "github.com/kubesimplify/ksctl/api/azure"
-	"github.com/kubesimplify/ksctl/api/civo"
+	eks "github.com/kubesimplify/ksctl/api/provider/aws"
+	aks "github.com/kubesimplify/ksctl/api/provider/azure"
+	"github.com/kubesimplify/ksctl/api/provider/civo"
 	"github.com/spf13/cobra"
 )
 

@@ -13,6 +13,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	clusterName         string
+	region              string
+	noControlPlaneNodes int
+	noWorkerNodes       int
+	noManagedNodes      int
+	nodeSize            string
+	apps                string
+	cni                 string
+	provider            string
+)
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "ksctl",

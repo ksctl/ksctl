@@ -7,10 +7,10 @@ Kubesimplify
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 import (
-	log "github.com/kubesimplify/ksctl/api/logger"
+	log "github.com/kubesimplify/ksctl/api/provider/logger"
 
-	"github.com/kubesimplify/ksctl/api/civo"
-	"github.com/kubesimplify/ksctl/api/utils"
+	"github.com/kubesimplify/ksctl/api/provider/civo"
+	"github.com/kubesimplify/ksctl/api/provider/utils"
 	"github.com/spf13/cobra"
 )
 

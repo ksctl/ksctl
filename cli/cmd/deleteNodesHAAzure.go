@@ -7,10 +7,10 @@ Kubesimplify
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 import (
-	log "github.com/kubesimplify/ksctl/api/logger"
+	log "github.com/kubesimplify/ksctl/api/provider/logger"
 
-	"github.com/kubesimplify/ksctl/api/azure"
-	"github.com/kubesimplify/ksctl/api/utils"
+	"github.com/kubesimplify/ksctl/api/provider/azure"
+	"github.com/kubesimplify/ksctl/api/provider/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -29,11 +29,11 @@ ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
 		}
 
 		payload := azure.AzureProvider{
-			ClusterName: azdhdclustername,
-			Region:      azdhdregion,
+			ClusterName: clusterName,
+			Region:      region,
 			HACluster:   true,
 			Spec: utils.Machine{
-				HAWorkerNodes: azdhdwp,
+				HAWorkerNodes: noWorkerNodes,
 			},
 		}
 		err := payload.DeleteSomeWorkerNodes(logger)
@@ -45,18 +45,11 @@ ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
 	},
 }
 
-var (
-	// dw hc -> delete worker-nodes to ha-civo
-	azdhdregion      string
-	azdhdclustername string
-	azdhdwp          int
-)
-
 func init() {
 	deleteClusterHAAzure.AddCommand(deleteNodesHAAzure)
-	deleteNodesHAAzure.Flags().StringVarP(&azdhdclustername, "name", "n", "", "Cluster name")
-	deleteNodesHAAzure.Flags().StringVarP(&azdhdregion, "region", "r", "eastus", "Region")
-	deleteNodesHAAzure.Flags().IntVarP(&azdhdwp, "worker-nodes", "w", 1, "no of worker nodes to delete")
+	deleteNodesHAAzure.Flags().StringVarP(&clusterName, "name", "n", "", "Cluster name")
+	deleteNodesHAAzure.Flags().StringVarP(&region, "region", "r", "eastus", "Region")
+	deleteNodesHAAzure.Flags().IntVarP(&noWorkerNodes, "worker-nodes", "w", 1, "no of worker nodes to delete")
 	deleteNodesHAAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
 	deleteNodesHAAzure.MarkFlagRequired("name")
 	deleteNodesHAAzure.MarkFlagRequired("region")
