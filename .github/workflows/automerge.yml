@@ -10,7 +10,6 @@ on:
       - opened
       - edited
       - reopened
-      - unlocked
   pull_request_review:
     types:
       - submitted

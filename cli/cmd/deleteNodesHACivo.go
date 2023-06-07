@@ -7,10 +7,10 @@ Kubesimplify
 				Avinesh Tripathi <avineshtripathi1@gmail.com>
 */
 import (
-	log "github.com/kubesimplify/ksctl/api/logger"
+	log "github.com/kubesimplify/ksctl/api/provider/logger"
 
-	"github.com/kubesimplify/ksctl/api/civo"
-	"github.com/kubesimplify/ksctl/api/utils"
+	"github.com/kubesimplify/ksctl/api/provider/civo"
+	"github.com/kubesimplify/ksctl/api/provider/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -29,11 +29,11 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 		}
 
 		payload := civo.CivoProvider{
-			ClusterName: dwhcclustername,
-			Region:      dwhcregion,
+			ClusterName: clusterName,
+			Region:      region,
 			HACluster:   true,
 			Spec: utils.Machine{
-				HAWorkerNodes: dwhcwp,
+				HAWorkerNodes: noWorkerNodes,
 			},
 		}
 		err := payload.DeleteSomeWorkerNodes(logger)
@@ -45,18 +45,11 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 	},
 }
 
-var (
-	// dw hc -> delete worker-nodes to ha-civo
-	dwhcregion      string
-	dwhcclustername string
-	dwhcwp          int
-)
-
 func init() {
 	deleteClusterHACivo.AddCommand(deleteNodesHACivo)
-	deleteNodesHACivo.Flags().StringVarP(&dwhcclustername, "name", "n", "", "Cluster name")
-	deleteNodesHACivo.Flags().StringVarP(&dwhcregion, "region", "r", "LON1", "Region")
-	deleteNodesHACivo.Flags().IntVarP(&dwhcwp, "worker-nodes", "w", 1, "no of worker nodes to delete")
+	deleteNodesHACivo.Flags().StringVarP(&clusterName, "name", "n", "", "Cluster name")
+	deleteNodesHACivo.Flags().StringVarP(&region, "region", "r", "LON1", "Region")
+	deleteNodesHACivo.Flags().IntVarP(&noWorkerNodes, "worker-nodes", "w", 1, "no of worker nodes to delete")
 	deleteNodesHACivo.Flags().BoolP("verbose", "v", true, "for verbose output")
 	deleteNodesHACivo.MarkFlagRequired("name")
 }

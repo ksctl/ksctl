@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"github.com/kubesimplify/ksctl/api/azure"
-	"github.com/kubesimplify/ksctl/api/civo"
-	"github.com/kubesimplify/ksctl/api/local"
-	"github.com/kubesimplify/ksctl/api/logger"
+	"github.com/kubesimplify/ksctl/api/provider/azure"
+	"github.com/kubesimplify/ksctl/api/provider/civo"
+	"github.com/kubesimplify/ksctl/api/provider/local"
+	"github.com/kubesimplify/ksctl/api/provider/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -19,21 +19,21 @@ ksctl switch-context -p <civo,local,ha-civo,ha-azure,azure>  -n <clustername> -r
 	Run: func(cmd *cobra.Command, args []string) {
 
 		log := logger.Logger{}
-		switch sprovider {
+		switch provider {
 		case "local":
-			err := local.SwitchContext(log, sclusterName)
+			err := local.SwitchContext(log, clusterName)
 			if err != nil {
 				log.Err(err.Error())
 			}
 		case "civo", "ha-civo":
-			if len(sregion) == 0 {
+			if len(region) == 0 {
 				log.Err("Region is Required")
 			}
 			payload := civo.CivoProvider{
-				ClusterName: sclusterName,
-				Region:      sregion,
+				ClusterName: clusterName,
+				Region:      region,
 			}
-			if "civo" == sprovider {
+			if "civo" == provider {
 				payload.HACluster = false
 			} else {
 				payload.HACluster = true
@@ -45,14 +45,14 @@ ksctl switch-context -p <civo,local,ha-civo,ha-azure,azure>  -n <clustername> -r
 			}
 
 		case "azure", "ha-azure":
-			if len(sregion) == 0 {
+			if len(region) == 0 {
 				log.Err("Region is Required")
 			}
 			payload := azure.AzureProvider{
-				ClusterName: sclusterName,
-				Region:      sregion,
+				ClusterName: clusterName,
+				Region:      region,
 			}
-			if "azure" == sprovider {
+			if "azure" == provider {
 				payload.HACluster = false
 			} else {
 				payload.HACluster = true
@@ -69,17 +69,11 @@ ksctl switch-context -p <civo,local,ha-civo,ha-azure,azure>  -n <clustername> -r
 	},
 }
 
-var (
-	sclusterName string
-	sregion      string
-	sprovider    string
-)
-
 func init() {
 	rootCmd.AddCommand(switchCluster)
-	switchCluster.Flags().StringVarP(&sclusterName, "name", "n", "", "Cluster name")
-	switchCluster.Flags().StringVarP(&sregion, "region", "r", "", "Region")
-	switchCluster.Flags().StringVarP(&sprovider, "provider", "p", "", "Provider")
+	switchCluster.Flags().StringVarP(&clusterName, "name", "n", "", "Cluster name")
+	switchCluster.Flags().StringVarP(&region, "region", "r", "", "Region")
+	switchCluster.Flags().StringVarP(&provider, "provider", "p", "", "Provider")
 	switchCluster.MarkFlagRequired("name")
 	switchCluster.MarkFlagRequired("provider")
 }

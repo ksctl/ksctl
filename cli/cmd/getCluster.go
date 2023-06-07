@@ -13,8 +13,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/logger"
-	util "github.com/kubesimplify/ksctl/api/utils"
+	"github.com/kubesimplify/ksctl/api/provider/logger"
+	util "github.com/kubesimplify/ksctl/api/provider/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ const (
 	ALL    = int(0)
 	CIVOC  = int(1)
 	LOCALC = int(2)
-    AZUREC = int(3)
+	AZUREC = int(3)
 )
 
 func printUtil(cargo []byte) {
