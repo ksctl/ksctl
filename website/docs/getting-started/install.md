@@ -2,7 +2,6 @@
 sidebar_position: 1
 ---
 
-
 # Getting Started
 
 Lets begin with installtion of the tools
@@ -124,3 +123,14 @@ make uninstall
 </Tabs>
 :::
 
+
+:::caution VIDEO not playable
+
+# Installation video
+
+<video width="320" height="240" controls>
+<source src="/videos/ksctl-install.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::
