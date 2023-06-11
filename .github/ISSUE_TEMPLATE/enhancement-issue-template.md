@@ -2,7 +2,7 @@
 name: enhancement issue template
 about: Describe this enhancement pruposal template's purpose here.
 title: 'enhancement: <Title>'
-labels: enhancement
+labels: kind/enhancement, status/not-planned, triage/waiting-to-be-accepted
 assignees: ''
 
 ---
