@@ -2,7 +2,6 @@
 sidebar_position: 1
 ---
 
-
 # Getting Started
 
 Lets begin with installtion of the tools
@@ -28,7 +27,7 @@ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
 iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
@@ -54,7 +53,7 @@ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstal
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
 iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.ps1 | iex
@@ -88,7 +87,7 @@ make install_macos_intel
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps
 ./builder.ps1
@@ -114,7 +113,7 @@ make uninstall
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps
 ./uninstall.ps1
@@ -124,3 +123,14 @@ make uninstall
 </Tabs>
 :::
 
+
+:::caution VIDEO not playable
+
+# Installation video
+
+<video width="320" height="240" controls>
+<source src="/videos/ksctl-install.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::

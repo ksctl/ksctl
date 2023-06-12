@@ -23,6 +23,19 @@ these are confidential information so shouldn't be shared with anyone
 ### copy the credentials
 ![](/img/civo/security-api.png)
 
+## How to add credentials to ksctl
+
+1. Environment Variables
+
+```bash
+export CIVO_TOKEN=""
+```
+
+2. Using command line
+
+```bash
+ksctl cred
+```
 
 ## Current Features
 
@@ -54,6 +67,3 @@ clusters which are managed by the cloud provider
 - SSH access to each workplane _Private Access_ via local network, secured by private key
 :::
 
-:::caution Creation of HA cluster
-when the cluster is created you need to run a command which fixes the issue [#105](https://github.com/kubesimplify/ksctl/issues/105)
-:::
