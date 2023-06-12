@@ -1,12 +1,11 @@
 # Tasks description :construction: 🔧 
 
-<!-- add relevant issues and PRs -->
 - [ ] Closes #96
-
 
 # Solution :heavy_check_mark:
 
+NONE
 
 # Note to reviewers :notebook:
 
-<!-- Add notes to reviewers if applicable -->
+NONE
