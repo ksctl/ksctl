@@ -74,6 +74,28 @@ it represents the secret associated with the app in order to use it
 
 ![copy-secret](/img/azure/azure-client-secret2.png)
 
+## How to add credentials to ksctl
+
+:::note Advice
+When showing / giving demos use the command line
+when using it in temporary device
+:::
+
+1. Environment Variables
+
+```bash
+export AZURE_TENANT_ID=""
+export AZURE_SUBSCRIPTION_ID=""
+export AZURE_CLIENT_ID=""
+export AZURE_CLIENT_SECRET=""
+```
+
+2. Using command line
+
+```bash
+ksctl cred
+```
+
 ## Current Features
 
 ### Cluster features
@@ -102,9 +124,5 @@ clusters which are managed by the cloud provider
 - addition and deletion of new workerplane node
 - SSH access to each cluster node (DB, LB, Controplane) _Public Access_, secured by private key
 - SSH access to each workplane _Private Access_ via local network, secured by private key
-:::
-
-:::caution Creation of HA cluster
-when the cluster is created you need to run a command which fixes the issue [#105](https://github.com/kubesimplify/ksctl/issues/105)
 :::
 
