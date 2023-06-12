@@ -60,6 +60,4 @@ Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contrib
 [Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing)
 
 ## Thanks to all the contributors ❤️
-<a href = "https://github.com/kubesimplify/ksctl/graphs/contributors">
-  <img src = "https://contrib.rocks/image?repo=kubesimplify/ksctl"/>
-</a>
+[Link to Contributors](https://github.com/kubesimplify/ksctl/graphs/contributors)
