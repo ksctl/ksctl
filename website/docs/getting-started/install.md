@@ -124,7 +124,7 @@ make uninstall
 :::
 
 
-:::caution VIDEO not playable
+:::success GUIDE
 
 # Installation video
 
