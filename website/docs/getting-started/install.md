@@ -27,7 +27,7 @@ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows(Powershell)" label="Windows">
 
 ```ps1
 iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
