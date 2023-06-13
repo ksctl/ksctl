@@ -126,3 +126,25 @@ clusters which are managed by the cloud provider
 - SSH access to each workplane _Private Access_ via local network, secured by private key
 :::
 
+:::success GUIDE
+
+## &nbsp Managed Cluster - Azure
+
+<video width="320" height="240" controls>
+<source src="../../videos/ksctl-azure-managed.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::
+
+:::success GUIDE
+
+## &nbsp High Avalibility Cluster - Azure
+
+<video width="320" height="240" controls>
+<source src="../../videos/ksctl-azure-ha.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::
+
