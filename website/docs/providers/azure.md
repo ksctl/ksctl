@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Azure
 
-AZURE support for the HA and managed support
+AZURE support for the HA and Managed Cluster
 
 
 ## Prequisites
@@ -99,7 +99,7 @@ ksctl cred
 ## Current Features
 
 ### Cluster features
-#### High Avalibility cluster
+#### High Availability cluster
 clusters which are managed by the user not by cloud provider
 
     using K3s kubernetes distribution which is lightweight
@@ -128,7 +128,7 @@ clusters which are managed by the cloud provider
 
 :::success GUIDE
 
-## &nbsp Managed Cluster - Azure
+## &nbsp Managed Cluster - Azure {#azureManaged}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-azure-managed.mp4" type="video/mp4" />
@@ -139,7 +139,7 @@ Your browser does not support the video tag.
 
 :::success GUIDE
 
-## &nbsp High Avalibility Cluster - Azure
+## &nbsp High Avalibility Cluster - Azure {#azureHA}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-azure-ha.mp4" type="video/mp4" />

@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Getting Started
 
-Lets begin with installtion of the tools
+Lets begin with installation of the tools
 their are various method
 
 ## Single command method
@@ -124,13 +124,25 @@ make uninstall
 :::
 
 
-:::success GUIDE
+:::success GUIDE TO INSTALL
 
-# Installation video
+# Installation video 
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-install.mp4" type="video/mp4" />
 Your browser does not support the video tag.
 </video>
+
+:::
+
+:::success GUIDE TO SUPPORT
+
+##  SUPPORT FOR CIVO & AZURE  
+
+#### + [Azure High-Availability Cluster](../providers/azure.md#azureHA)
+#### + [Azure Managed Cluster](../providers/azure.md#azureManaged)
+#### + [Civo High-Availability Cluster](../providers/civo.md#civoHA)
+#### + [Civo Managed Cluster](../providers/civo.md#civoManaged)
+
 
 :::

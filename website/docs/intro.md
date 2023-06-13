@@ -86,9 +86,9 @@ Having core features of `get`, `create`, `delete`, `add nodes`, `switch`, under 
 - Local
     - kind cluster with specific version
 - Civo
-    - have support for the managed and High Available clusters(_Custom_)
+    - have support for the managed and High Availability Cluster(_Custom_)
 - Azure
-    - have support for the managed and High Available clusters(_Custom_)
+    - have support for the managed and High Availability Cluster(_Custom_)
 
 ## Future Plans
 - add Web client

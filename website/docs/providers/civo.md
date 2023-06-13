@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Civo
 
-CIVO support for HA and managed clusters
+CIVO support for HA and Managed Clusters
 
 :::note
 we need credentials to access clusters
@@ -40,7 +40,7 @@ ksctl cred
 ## Current Features
 
 ### Cluster features
-#### High Avalibility cluster
+#### High Availability cluster
 clusters which are managed by the user not by cloud provider
 
     using K3s kubernetes distribution which is lightweight
@@ -69,7 +69,7 @@ clusters which are managed by the cloud provider
 
 :::success GUIDE
 
-## &nbsp Managed Cluster - Civo
+## &nbsp Managed Cluster - Civo {#civoManaged}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-civo-managed.mp4" type="video/mp4" />
@@ -80,7 +80,7 @@ Your browser does not support the video tag.
 
 :::success GUIDE
 
-## &nbsp High Avalibility Cluster - Civo
+## &nbsp High Availability Cluster - Civo {#civoHA}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-civo-ha.mp4" type="video/mp4" />
