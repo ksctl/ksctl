@@ -27,7 +27,7 @@ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
 iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
@@ -53,7 +53,7 @@ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstal
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
 iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.ps1 | iex
@@ -87,7 +87,7 @@ make install_macos_intel
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps
 ./builder.ps1
@@ -113,7 +113,7 @@ make uninstall
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps
 ./uninstall.ps1
