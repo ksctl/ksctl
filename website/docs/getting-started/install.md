@@ -126,7 +126,7 @@ make uninstall
 
 :::success INSTALLATION DEMO
 
-<video width="320" height="240" controls>
+<video width="360" height="202" controls>
 <source src="../../videos/ksctl-install.mp4" type="video/mp4" />
 Your browser does not support the video tag.
 </video>
