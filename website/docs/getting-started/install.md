@@ -124,9 +124,7 @@ make uninstall
 :::
 
 
-:::success GUIDE TO INSTALL
-
-# Installation video 
+:::success INSTALLATION DEMO
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-install.mp4" type="video/mp4" />
@@ -135,9 +133,8 @@ Your browser does not support the video tag.
 
 :::
 
-:::success GUIDE TO SUPPORT
+:::success Demo for Supported Providers
 
-##  SUPPORT FOR CIVO & AZURE  
 
 #### + [Azure High-Availability Cluster](../providers/azure.md#azureHA)
 #### + [Azure Managed Cluster](../providers/azure.md#azureManaged)

@@ -99,7 +99,7 @@ ksctl cred
 ## Current Features
 
 ### Cluster features
-#### High Availability cluster
+#### Highly Available cluster
 clusters which are managed by the user not by cloud provider
 
     using K3s kubernetes distribution which is lightweight
@@ -126,9 +126,9 @@ clusters which are managed by the cloud provider
 - SSH access to each workplane _Private Access_ via local network, secured by private key
 :::
 
-:::success GUIDE
+:::success DEMO
 
-## &nbsp Managed Cluster - Azure {#azureManaged}
+### &nbsp &nbsp &nbsp Managed Cluster {#azureManaged}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-azure-managed.mp4" type="video/mp4" />
@@ -137,9 +137,9 @@ Your browser does not support the video tag.
 
 :::
 
-:::success GUIDE
+:::success DEMO
 
-## &nbsp High Avalibility Cluster - Azure {#azureHA}
+### &nbsp &nbsp &nbsp Highly Available Cluster {#azureHA}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-azure-ha.mp4" type="video/mp4" />

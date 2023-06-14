@@ -40,7 +40,7 @@ ksctl cred
 ## Current Features
 
 ### Cluster features
-#### High Availability cluster
+#### Highly Available cluster
 clusters which are managed by the user not by cloud provider
 
     using K3s kubernetes distribution which is lightweight
@@ -67,9 +67,9 @@ clusters which are managed by the cloud provider
 - SSH access to each workplane _Private Access_ via local network, secured by private key
 :::
 
-:::success GUIDE
+:::success DEMO
 
-## &nbsp Managed Cluster - Civo {#civoManaged}
+### &nbsp &nbsp &nbsp  Managed Cluster  {#civoManaged}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-civo-managed.mp4" type="video/mp4" />
@@ -78,9 +78,9 @@ Your browser does not support the video tag.
 
 :::
 
-:::success GUIDE
+:::success DEMO
 
-## &nbsp High Availability Cluster - Civo {#civoHA}
+### &nbsp &nbsp &nbsp Highly Available Cluster  {#civoHA}
 
 <video width="320" height="240" controls>
 <source src="../../videos/ksctl-civo-ha.mp4" type="video/mp4" />
