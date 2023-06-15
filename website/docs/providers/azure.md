@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Azure
 
-AZURE support for the HA and managed support
+AZURE support for the HA and Managed Cluster
 
 
 ## Prequisites
@@ -99,7 +99,7 @@ ksctl cred
 ## Current Features
 
 ### Cluster features
-#### High Avalibility cluster
+#### Highly Available cluster
 clusters which are managed by the user not by cloud provider
 
     using K3s kubernetes distribution which is lightweight
@@ -124,5 +124,27 @@ clusters which are managed by the cloud provider
 - addition and deletion of new workerplane node
 - SSH access to each cluster node (DB, LB, Controplane) _Public Access_, secured by private key
 - SSH access to each workplane _Private Access_ via local network, secured by private key
+:::
+
+:::success DEMO
+
+### &nbsp Managed Cluster {#azureManaged}
+
+<video width="360" height="202" controls>
+<source src="../../videos/ksctl-azure-managed.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::
+
+:::success DEMO
+
+### &nbsp Highly Available Cluster {#azureHA}
+
+<video width="360" height="202" controls>
+<source src="../../videos/ksctl-azure-ha.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
 :::
 
