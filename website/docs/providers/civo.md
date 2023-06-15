@@ -69,7 +69,7 @@ clusters which are managed by the cloud provider
 
 :::success DEMO
 
-### &nbsp &nbsp &nbsp  Managed Cluster  {#civoManaged}
+### &nbsp Managed Cluster  {#civoManaged}
 
 <video width="360" height="202" controls>
 <source src="../../videos/ksctl-civo-managed.mp4" type="video/mp4" />
@@ -80,7 +80,7 @@ Your browser does not support the video tag.
 
 :::success DEMO
 
-### &nbsp &nbsp &nbsp Highly Available Cluster  {#civoHA}
+### &nbsp Highly Available Cluster  {#civoHA}
 
 <video width="360" height="202" controls>
 <source src="../../videos/ksctl-civo-ha.mp4" type="video/mp4" />

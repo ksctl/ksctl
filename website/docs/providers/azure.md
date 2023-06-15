@@ -128,7 +128,7 @@ clusters which are managed by the cloud provider
 
 :::success DEMO
 
-### &nbsp &nbsp &nbsp Managed Cluster {#azureManaged}
+### &nbsp Managed Cluster {#azureManaged}
 
 <video width="360" height="202" controls>
 <source src="../../videos/ksctl-azure-managed.mp4" type="video/mp4" />
@@ -139,7 +139,7 @@ Your browser does not support the video tag.
 
 :::success DEMO
 
-### &nbsp &nbsp &nbsp Highly Available Cluster {#azureHA}
+### &nbsp Highly Available Cluster {#azureHA}
 
 <video width="360" height="202" controls>
 <source src="../../videos/ksctl-azure-ha.mp4" type="video/mp4" />
