@@ -9,3 +9,6 @@ NONE
 # Note to reviewers :notebook:
 
 NONE
+
+- [ ] Ran Unit Test locally
+- [ ] Tested the website locally
