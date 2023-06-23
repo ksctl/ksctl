@@ -74,10 +74,10 @@ func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_all"),
 		Properties: &armnetwork.SecurityRulePropertiesFormat{
-			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourceAddressPrefix:      to.Ptr("10.0.0.0/8"),
 			SourcePortRange:          to.Ptr("*"),
-			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-			DestinationPortRange:     to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("*"),
+			DestinationPortRange:     to.Ptr("22,3306"),
 			// DestinationPortRange:     to.Ptr("3306"),
 			Protocol:    to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 			Access:      to.Ptr(armnetwork.SecurityRuleAccessAllow),
@@ -91,7 +91,7 @@ func getDatabaseFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
 				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+				DestinationAddressPrefix: to.Ptr("10.0.0.0/8"),
 				DestinationPortRange:     to.Ptr("*"),
 				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),

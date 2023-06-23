@@ -39,10 +39,10 @@ func getWorkerPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	}, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_30_to_35k"),
 		Properties: &armnetwork.SecurityRulePropertiesFormat{
-			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourceAddressPrefix:      to.Ptr("10.0.0.0/8"),
 			SourcePortRange:          to.Ptr("*"),
 			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-			DestinationPortRange:     to.Ptr("*"),
+			DestinationPortRange:     to.Ptr("22"),
 			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 			Priority:                 to.Ptr[int32](101),

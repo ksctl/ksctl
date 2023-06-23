@@ -56,10 +56,10 @@ func getControlPlaneFirewallRules() (securityRules []*armnetwork.SecurityRule) {
 	securityRules = append(securityRules, &armnetwork.SecurityRule{
 		Name: to.Ptr("sample_inbound_6443"),
 		Properties: &armnetwork.SecurityRulePropertiesFormat{
-			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourceAddressPrefix:      to.Ptr("*"),
 			SourcePortRange:          to.Ptr("*"),
-			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-			DestinationPortRange:     to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("*"),
+			DestinationPortRange:     to.Ptr("22"),
 			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 			Priority:                 to.Ptr[int32](100),
