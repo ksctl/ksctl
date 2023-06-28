@@ -434,9 +434,52 @@ func (obj *HAType) CreateInstance(instanceName, firewallID, NodeSize, initializa
 // CreateFirewall creates firewall with provided name and returns the firewall object
 func (obj *HAType) CreateFirewall(firewallName string) (firew *civogo.FirewallResult, err error) {
 	firewallConfig := &civogo.FirewallConfig{
-		Name:      firewallName,
-		Region:    obj.Client.Region,
-		NetworkID: obj.NetworkID,
+		Name:        firewallName,
+		Region:      obj.Client.Region,
+		NetworkID:   obj.NetworkID,
+		CreateRules: &[]bool{true}[0],
+
+		Rules: []civogo.FirewallRule{
+			{
+				ID: "allow-ssh",
+			},
+			{
+				FirewallID: "firewall id",
+			},
+			{
+				StartPort: "22",
+			},
+			{
+				StartPort: "443",
+			},
+			{
+				StartPort: "3306",
+			},
+			{
+				StartPort: "6443",
+			},
+			{
+				EndPort: "6443",
+			},
+			{
+				Protocol: "tcp,http,https",
+			},
+			{
+				Cidr: []string{"192.168.0.0/24"},
+			},
+			{
+				Direction: "inbound",
+			},
+			{
+				Action: "accept",
+			},
+			{
+				Label: "cluster network rules",
+			},
+			{
+				Ports: "22,443,3306,6443",
+			},
+		},
 	}
 
 	firew, err = obj.Client.NewFirewall(firewallConfig)
