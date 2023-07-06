@@ -17,14 +17,6 @@ we need credentials to access clusters
 these are confidential information so shouldn't be shared with anyone
 :::
 
-### Azure Dashboard
-
-:::note
-Azure Dashboard contains all the credentials required
-:::
-
-![azure-dashboard](/img/azure/azure-dashboard.png)
-
 
 ### Azure Subscription ID
 
@@ -37,6 +29,14 @@ subscription id using your subscription
 
 
 ### Azure Tenant ID
+
+#### Azure Dashboard
+
+:::note
+Azure Dashboard contains all the credentials required
+:::
+
+![azure-dashboard](/img/azure/azure-dashboard.png)
 
 :::note
 lets get the tenant id from the Azure
@@ -52,9 +52,9 @@ lets get the tenant id from the Azure
 it represents the id of app created
 :::
 
-![](/img/azure/azure-create-app-reg.png)
-
 ![](/img/azure/azure-app-reg.png)
+
+![](/img/azure/azure-create-app-reg.png)
 
 ![](/img/azure/azure-clientid.png)
 
