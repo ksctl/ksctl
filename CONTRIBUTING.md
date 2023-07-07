@@ -2,7 +2,8 @@
 - must follow PR template
 - need to sign-off each commits
 - add all the significant changes to the PR description
-- if it's documentation changes set target to `main` branch
+
+- their should be atleast one Issue associated with each PR
 
 # Issues
 - mention the domain and concise subject
@@ -32,6 +33,10 @@ update: <Title>
 ## Tash Description
 must be elloborate on what is doing to be added/removed/modified and why
 and in solutions part how? it is changed
+
+## Testing
+
+make sure you test things out on local machine
 
 # Git commits
 

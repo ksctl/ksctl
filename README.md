@@ -3,7 +3,7 @@
 
 **CLI which can manage Kubernetes cluster on different environment**
 
-[![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml) [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl)
+[![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml) [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl) [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
 
 
 # Project Scope
@@ -60,6 +60,4 @@ Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contrib
 [Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing)
 
 ## Thanks to all the contributors ❤️
-<a href = "https://github.com/kubesimplify/ksctl/graphs/contributors">
-  <img src = "https://contrib.rocks/image?repo=kubesimplify/ksctl"/>
-</a>
+[Link to Contributors](https://github.com/kubesimplify/ksctl/graphs/contributors)

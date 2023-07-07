@@ -2,3 +2,5 @@
 coverage.out
 coverage.md
 dist
+website/package-lock.json
+website/yarn.lock
