@@ -2,10 +2,9 @@
 sidebar_position: 1
 ---
 
-
 # Getting Started
 
-Lets begin with installtion of the tools
+Lets begin with installation of the tools
 their are various method
 
 ## Single command method
@@ -28,7 +27,7 @@ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
 iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
@@ -54,7 +53,7 @@ zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstal
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
 iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/uninstall.ps1 | iex
@@ -88,7 +87,7 @@ make install_macos_intel
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps
 ./builder.ps1
@@ -114,7 +113,7 @@ make uninstall
 ```
 
   </TabItem>
-  <TabItem value="Windows" label="Windows">
+  <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps
 ./uninstall.ps1
@@ -124,3 +123,23 @@ make uninstall
 </Tabs>
 :::
 
+
+:::success INSTALLATION DEMO
+
+<video width="360" height="202" controls>
+<source src="../../videos/ksctl-install.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::
+
+:::success Demo for Supported Providers
+
+
+#### + [Azure High-Availability Cluster](../providers/azure.md#azureHA)
+#### + [Azure Managed Cluster](../providers/azure.md#azureManaged)
+#### + [Civo High-Availability Cluster](../providers/civo.md#civoHA)
+#### + [Civo Managed Cluster](../providers/civo.md#civoManaged)
+
+
+:::

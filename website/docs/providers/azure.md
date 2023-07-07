@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Azure
 
-AZURE support for the HA and managed support
+AZURE support for the HA and Managed Cluster
 
 
 ## Prequisites
@@ -16,14 +16,6 @@ we need credentials to access clusters
 :::caution
 these are confidential information so shouldn't be shared with anyone
 :::
-
-### Azure Dashboard
-
-:::note
-Azure Dashboard contains all the credentials required
-:::
-
-![azure-dashboard](/img/azure/azure-dashboard.png)
 
 
 ### Azure Subscription ID
@@ -37,6 +29,14 @@ subscription id using your subscription
 
 
 ### Azure Tenant ID
+
+#### Azure Dashboard
+
+:::note
+Azure Dashboard contains all the credentials required
+:::
+
+![azure-dashboard](/img/azure/azure-dashboard.png)
 
 :::note
 lets get the tenant id from the Azure
@@ -52,9 +52,9 @@ lets get the tenant id from the Azure
 it represents the id of app created
 :::
 
-![](/img/azure/azure-create-app-reg.png)
-
 ![](/img/azure/azure-app-reg.png)
+
+![](/img/azure/azure-create-app-reg.png)
 
 ![](/img/azure/azure-clientid.png)
 
@@ -74,10 +74,32 @@ it represents the secret associated with the app in order to use it
 
 ![copy-secret](/img/azure/azure-client-secret2.png)
 
+## How to add credentials to ksctl
+
+:::note Advice
+When showing / giving demos use the command line
+when using it in temporary device
+:::
+
+1. Environment Variables
+
+```bash
+export AZURE_TENANT_ID=""
+export AZURE_SUBSCRIPTION_ID=""
+export AZURE_CLIENT_ID=""
+export AZURE_CLIENT_SECRET=""
+```
+
+2. Using command line
+
+```bash
+ksctl cred
+```
+
 ## Current Features
 
 ### Cluster features
-#### High Avalibility cluster
+#### Highly Available cluster
 clusters which are managed by the user not by cloud provider
 
     using K3s kubernetes distribution which is lightweight
@@ -104,7 +126,25 @@ clusters which are managed by the cloud provider
 - SSH access to each workplane _Private Access_ via local network, secured by private key
 :::
 
-:::caution Creation of HA cluster
-when the cluster is created you need to run a command which fixes the issue [#105](https://github.com/kubesimplify/ksctl/issues/105)
+:::success DEMO
+
+### &nbsp Managed Cluster {#azureManaged}
+
+<video width="360" height="202" controls>
+<source src="../../videos/ksctl-azure-managed.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::
+
+:::success DEMO
+
+### &nbsp Highly Available Cluster {#azureHA}
+
+<video width="360" height="202" controls>
+<source src="../../videos/ksctl-azure-ha.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
 :::
 

@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Civo
 
-CIVO support for HA and managed clusters
+CIVO support for HA and Managed Clusters
 
 :::note
 we need credentials to access clusters
@@ -23,11 +23,24 @@ these are confidential information so shouldn't be shared with anyone
 ### copy the credentials
 ![](/img/civo/security-api.png)
 
+## How to add credentials to ksctl
+
+1. Environment Variables
+
+```bash
+export CIVO_TOKEN=""
+```
+
+2. Using command line
+
+```bash
+ksctl cred
+```
 
 ## Current Features
 
 ### Cluster features
-#### High Avalibility cluster
+#### Highly Available cluster
 clusters which are managed by the user not by cloud provider
 
     using K3s kubernetes distribution which is lightweight
@@ -54,6 +67,24 @@ clusters which are managed by the cloud provider
 - SSH access to each workplane _Private Access_ via local network, secured by private key
 :::
 
-:::caution Creation of HA cluster
-when the cluster is created you need to run a command which fixes the issue [#105](https://github.com/kubesimplify/ksctl/issues/105)
+:::success DEMO
+
+### &nbsp Managed Cluster  {#civoManaged}
+
+<video width="360" height="202" controls>
+<source src="../../videos/ksctl-civo-managed.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
+:::
+
+:::success DEMO
+
+### &nbsp Highly Available Cluster  {#civoHA}
+
+<video width="360" height="202" controls>
+<source src="../../videos/ksctl-civo-ha.mp4" type="video/mp4" />
+Your browser does not support the video tag.
+</video>
+
 :::
