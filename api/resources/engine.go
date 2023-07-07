@@ -48,6 +48,15 @@ type KubernetesInfrastructure interface {
 	InstallApplication() // not planned yet
 }
 
+type NonKubernetesInfrastructure interface {
+	InstallApplications()
+}
+
+type Distributions struct {
+	K8sDistributions    KubernetesInfrastructure
+	NonK8sDistributions NonKubernetesInfrastructure
+}
+
 type StateManagementInfrastructure interface {
 }
 
