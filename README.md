@@ -5,15 +5,15 @@
 
 <div align="center"> 
   
-   <img src="https://img.shields.io/github/repo-size/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/issues/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/issues-pr/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/issues-pr-closed-raw/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/license/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/forks/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/stars/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/contributors/arakoodev/EdgeChains?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/last-commit/arakoodev/EdgeChains?style=for-the-badge" />
+   <img src="https://img.shields.io/github/repo-size/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/issues/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/issues-pr/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/issues-pr-closed-raw/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/license/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/forks/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/stars/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/contributors/kubesimplify/ksctl?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/last-commit/kubesimplify/ksctl?style=for-the-badge" />
    
    <br>
    
