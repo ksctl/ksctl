@@ -3,7 +3,30 @@
 
 **CLI which can manage Kubernetes cluster on different environment**
 
-[![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml) [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl) [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
+<div align="center"> 
+  
+   <img src="https://img.shields.io/github/repo-size/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/issues/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/issues-pr/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/issues-pr-closed-raw/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/license/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/forks/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/stars/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/contributors/arakoodev/EdgeChains?style=for-the-badge" /> 
+   <img src="https://img.shields.io/github/last-commit/arakoodev/EdgeChains?style=for-the-badge" />
+   
+   <br>
+   
+   [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) 
+  [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) 
+  [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) 
+  [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml) 
+  [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl) 
+  [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
+  
+</div>
+
+
 
 
 # Project Scope
@@ -23,9 +46,9 @@ Here are some of the specific features of ksctl:
 - It is a powerful tool that can be used to perform a wide range of tasks.
 - It is currently under development, but it is already a valuable tool for developers who want to manage Kubernetes clusters.
 
-# Demo Screenshot
-<!-- TODO: Add the demo screenshots-->
+# Documentations
 
+Link to the [docs website](https://kubesimplify.github.io/ksctl/)
 
 
 # Prerequisites
@@ -55,9 +78,9 @@ Please refer to the [usage guide](USAGE.md) also [Docs Website](https://kubesimp
 # Contribution Guidelines
 Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
 
-# Software Requirement Specification Docs
+<!-- # Software Requirement Specification Docs
 
-[Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing)
+ [Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing) -->
 
 ## Thanks to all the contributors ❤️
 [Link to Contributors](https://github.com/kubesimplify/ksctl/graphs/contributors)
