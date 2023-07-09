@@ -1,16 +1,5 @@
 package providers
 
-import (
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/cli"
-)
-
-func NewCivoBuilderOrDie(b *cli.CobraCmd) error {
-	set := &resources.ClientSet{}
-	b.Client.Client = set.CloudHandler("civo")
-	return nil
-}
-
 type CivoInfrastructure interface {
 
 	// implemented by the different cloud provider

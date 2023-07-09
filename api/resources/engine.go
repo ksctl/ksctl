@@ -12,6 +12,10 @@ type ClientHandler interface {
 	StateManagementInfrastructure
 }
 
+type Builder struct {
+	Client CloudInfrastructure
+}
+
 type ClientSet struct {
 }
 
@@ -62,4 +66,17 @@ type LocalStorage struct {
 }
 
 type CredentialStorage struct {
+}
+
+func NewCivoBuilderOrDie(b *CobraCmd) error {
+	set := &ClientSet{}
+	b.Client.Client = set.CloudHandler("civo")
+	return nil
+}
+
+type CobraCmd struct {
+	ClusterName string
+	Region      string
+	Client      Builder
+	Version     string
 }
