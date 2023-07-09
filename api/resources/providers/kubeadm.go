@@ -12,5 +12,6 @@ type KubeadmConfiguration interface {
 	ConfigureDataStore()
 	DestroyDataStore()
 
-	InstallApplication() // not planned yet
+	ConfigureLoadbalancer()
+	DestroyLoadbalancer()
 }

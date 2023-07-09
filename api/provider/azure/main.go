@@ -15,7 +15,7 @@ type AzureProvider struct {
 
 func (a *AzureProvider) CreateVM() {
 	//TODO implement me
-	panic("implement me")
+	panic("Azure Create VM")
 }
 
 func (a *AzureProvider) DeleteVM() {

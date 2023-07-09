@@ -24,7 +24,12 @@ func HandleError(err error) {
 func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
-	err := resources.NewCivoBuilderOrDie(cmd)
-	HandleError(err)
+	HandleError(resources.NewCivoBuilderOrDie(cmd))
+	HandleError(resources.NewAzureBuilderOrDie(cmd))
+	HandleError(resources.NewK3sBuilderOrDie(cmd))
+	//HandleError(resources.NewKubeadmBuilderOrDie(cmd))
+
 	fmt.Println(cmd)
+	//cmd.Client.Cloud.CreateVM()
+	cmd.Client.Distro.ConfigureControlPlane()
 }
