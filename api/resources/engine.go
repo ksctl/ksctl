@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"github.com/kubesimplify/ksctl/api/k8s_distro/k3s"
+	"github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
 	"github.com/kubesimplify/ksctl/api/provider/azure"
 	"github.com/kubesimplify/ksctl/api/provider/civo"
 	"github.com/kubesimplify/ksctl/api/resources/providers"
@@ -13,7 +15,8 @@ type ClientHandler interface {
 }
 
 type Builder struct {
-	Client CloudInfrastructure
+	Cloud  CloudInfrastructure
+	Distro Distributions
 }
 
 type ClientSet struct {
@@ -32,9 +35,9 @@ func (h *ClientSet) CloudHandler(provider string) CloudInfrastructure {
 func (h *ClientSet) DistroHandler(distro string) Distributions {
 	switch distro {
 	case "k3s":
-		return nil
+		return &k3s.K3sDistro{}
 	case "kubeadm":
-		return nil
+		return &kubeadm.KubeadmDistro{}
 	}
 	return nil
 }
@@ -55,7 +58,7 @@ type NonKubernetesInfrastructure interface {
 
 type Distributions interface {
 	KubernetesInfrastructure
-	NonKubernetesInfrastructure
+	// NonKubernetesInfrastructure
 }
 
 type StateManagementInfrastructure interface {
@@ -70,7 +73,23 @@ type CredentialStorage struct {
 
 func NewCivoBuilderOrDie(b *CobraCmd) error {
 	set := &ClientSet{}
-	b.Client.Client = set.CloudHandler("civo")
+	b.Client.Cloud = set.CloudHandler("civo")
+	return nil
+}
+
+func NewAzureBuilderOrDie(b *CobraCmd) error {
+	set := &ClientSet{}
+	b.Client.Cloud = set.CloudHandler("azure")
+	return nil
+}
+func NewK3sBuilderOrDie(b *CobraCmd) error {
+	set := &ClientSet{}
+	b.Client.Distro = set.DistroHandler("k3s")
+	return nil
+}
+func NewKubeadmBuilderOrDie(b *CobraCmd) error {
+	set := &ClientSet{}
+	b.Client.Distro = set.DistroHandler("kubeadm")
 	return nil
 }
 
