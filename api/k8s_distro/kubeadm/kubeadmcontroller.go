@@ -1,5 +1,7 @@
 package kubeadm
 
+import "fmt"
+
 type KubeadmDistro struct {
 	IsHA bool
 }
@@ -16,7 +18,7 @@ func (kubeadm *KubeadmDistro) InstallApplication() {
 
 func (kubeadm *KubeadmDistro) ConfigureControlPlane() {
 	//TODO implement me
-	panic("Kubeadm Config CP")
+	fmt.Println("Kubeadm Config CP")
 }
 
 func (kubeadm *KubeadmDistro) ConfigureWorkerPlane() {

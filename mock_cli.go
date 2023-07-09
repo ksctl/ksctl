@@ -24,12 +24,16 @@ func HandleError(err error) {
 func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
-	HandleError(resources.NewCivoBuilderOrDie(cmd))
+	// HandleError(resources.NewCivoBuilderOrDie(cmd))
 	HandleError(resources.NewAzureBuilderOrDie(cmd))
+	// HandleError(resources.NewLocalBuilderOrDie(cmd))
 	HandleError(resources.NewK3sBuilderOrDie(cmd))
-	//HandleError(resources.NewKubeadmBuilderOrDie(cmd))
+	// HandleError(resources.NewKubeadmBuilderOrDie(cmd))
 
 	fmt.Println(cmd)
-	//cmd.Client.Cloud.CreateVM()
+	fmt.Println(cmd.Client.Cloud)
+	fmt.Println(cmd.Client.Distro)
+	cmd.Client.Cloud.CreateVM() // it will fail if local is present
+	// cmd.Client.Cloud.CreateManagedKubernetes()
 	cmd.Client.Distro.ConfigureControlPlane()
 }

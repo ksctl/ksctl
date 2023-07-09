@@ -1,12 +1,14 @@
 package k3s
 
+import "fmt"
+
 type K3sDistro struct {
 	IsHA bool
 }
 
 func (k3s *K3sDistro) ConfigureControlPlane() {
 	//TODO implement me
-	panic("K3s Config CP")
+	fmt.Println("K3s Config CP")
 }
 
 func (k3s *K3sDistro) DestroyControlPlane() {

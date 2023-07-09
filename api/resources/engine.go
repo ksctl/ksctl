@@ -5,6 +5,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
 	"github.com/kubesimplify/ksctl/api/provider/azure"
 	"github.com/kubesimplify/ksctl/api/provider/civo"
+	"github.com/kubesimplify/ksctl/api/provider/local"
 	"github.com/kubesimplify/ksctl/api/resources/providers"
 )
 
@@ -28,6 +29,8 @@ func (h *ClientSet) CloudHandler(provider string) CloudInfrastructure {
 		return &civo.CivoProvider{}
 	case "azure":
 		return &azure.AzureProvider{}
+	case "local":
+		return &local.LocalProvider{}
 	}
 	return nil
 }
@@ -76,12 +79,17 @@ func NewCivoBuilderOrDie(b *CobraCmd) error {
 	b.Client.Cloud = set.CloudHandler("civo")
 	return nil
 }
-
 func NewAzureBuilderOrDie(b *CobraCmd) error {
 	set := &ClientSet{}
 	b.Client.Cloud = set.CloudHandler("azure")
 	return nil
 }
+func NewLocalBuilderOrDie(b *CobraCmd) error {
+	set := &ClientSet{}
+	b.Client.Cloud = set.CloudHandler("local")
+	return nil
+}
+
 func NewK3sBuilderOrDie(b *CobraCmd) error {
 	set := &ClientSet{}
 	b.Client.Distro = set.DistroHandler("k3s")

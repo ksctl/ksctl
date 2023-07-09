@@ -1,6 +1,10 @@
 package azure
 
-import "github.com/Azure/azure-sdk-for-go/sdk/azcore"
+import (
+	"fmt"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+)
 
 type AzureProvider struct {
 	ClusterName string `json:"cluster_name"`
@@ -15,7 +19,7 @@ type AzureProvider struct {
 
 func (a *AzureProvider) CreateVM() {
 	//TODO implement me
-	panic("Azure Create VM")
+	fmt.Println("Azure Create VM")
 }
 
 func (a *AzureProvider) DeleteVM() {
