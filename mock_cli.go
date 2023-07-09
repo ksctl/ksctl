@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubesimplify/ksctl/api/resources/cli"
-	"github.com/kubesimplify/ksctl/api/resources/providers"
+	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-func NewCli(cmd *cli.CobraCmd) {
+func NewCli(cmd *resources.CobraCmd) {
 	version := os.Getenv("KSCTL_VERSION")
 
 	if len(version) == 0 {
@@ -23,9 +22,9 @@ func HandleError(err error) {
 }
 
 func main() {
-	cmd := &cli.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
+	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
-	err := providers.NewCivoBuilderOrDie(cmd)
+	err := resources.NewCivoBuilderOrDie(cmd)
 	HandleError(err)
 	fmt.Println(cmd)
 }
