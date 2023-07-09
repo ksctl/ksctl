@@ -1,5 +1,7 @@
 package civo
 
+import "fmt"
+
 type CivoProvider struct {
 	ClusterName string `json:"cluster_name"`
 	APIKey      string `json:"api_key"`
@@ -66,5 +68,5 @@ func (b *CivoProvider) InstallApplications() {
 }
 
 func (b *CivoProvider) CreateVM() {
-	panic("Civo Create VM")
+	fmt.Println("Civo Create VM")
 }
