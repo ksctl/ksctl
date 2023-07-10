@@ -29,6 +29,7 @@ func main() {
 	// HandleError(resources.NewLocalBuilderOrDie(cmd))
 	HandleError(resources.NewK3sBuilderOrDie(cmd))
 	// HandleError(resources.NewKubeadmBuilderOrDie(cmd))
+    HandleError(resources.NewLocalStorageBuilderOrDie(cmd))
 
 	fmt.Println(cmd)
 	fmt.Println(cmd.Client.Cloud)
@@ -36,4 +37,6 @@ func main() {
 	cmd.Client.Cloud.CreateVM() // it will fail if local is present
 	// cmd.Client.Cloud.CreateManagedKubernetes()
 	cmd.Client.Distro.ConfigureControlPlane()
+
+    cmd.Client.State.Load("$HOME/demo/.ksctl/cred/civo.json")
 }
