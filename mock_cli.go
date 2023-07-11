@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/cli"
 )
 
 func NewCli(cmd *resources.CobraCmd) {
@@ -25,11 +26,11 @@ func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
 	// HandleError(resources.NewCivoBuilderOrDie(cmd))
-	HandleError(resources.NewAzureBuilderOrDie(cmd))
+	HandleError(cli.NewAzureBuilderOrDie(cmd))
 	// HandleError(resources.NewLocalBuilderOrDie(cmd))
-	HandleError(resources.NewK3sBuilderOrDie(cmd))
+	HandleError(cli.NewK3sBuilderOrDie(cmd))
 	// HandleError(resources.NewKubeadmBuilderOrDie(cmd))
-    HandleError(resources.NewLocalStorageBuilderOrDie(cmd))
+	HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
 
 	fmt.Println(cmd)
 	fmt.Println(cmd.Client.Cloud)
@@ -38,5 +39,5 @@ func main() {
 	// cmd.Client.Cloud.CreateManagedKubernetes()
 	cmd.Client.Distro.ConfigureControlPlane()
 
-    cmd.Client.State.Load("$HOME/demo/.ksctl/cred/civo.json")
+	cmd.Client.State.Load("$HOME/demo/.ksctl/cred/civo.json")
 }

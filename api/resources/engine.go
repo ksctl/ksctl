@@ -2,13 +2,13 @@ package resources
 
 import (
 	"github.com/kubesimplify/ksctl/api/k8s_distro/k3s"
-	"github.com/kubesimplify/ksctl/api/storage/localstate"
-	"github.com/kubesimplify/ksctl/api/storage/remotestate"
 	"github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
 	"github.com/kubesimplify/ksctl/api/provider/azure"
 	"github.com/kubesimplify/ksctl/api/provider/civo"
 	"github.com/kubesimplify/ksctl/api/provider/local"
 	"github.com/kubesimplify/ksctl/api/resources/providers"
+	"github.com/kubesimplify/ksctl/api/storage/localstate"
+	"github.com/kubesimplify/ksctl/api/storage/remotestate"
 )
 
 type ClientHandler interface {
@@ -20,7 +20,7 @@ type ClientHandler interface {
 type Builder struct {
 	Cloud  CloudInfrastructure
 	Distro Distributions
-    State StateManagementInfrastructure
+	State  StateManagementInfrastructure
 }
 
 type ClientSet struct {
@@ -50,13 +50,13 @@ func (h *ClientSet) DistroHandler(distro string) Distributions {
 
 // StateHandler place local, remote
 func (h *ClientSet) StateHandler(place string) StateManagementInfrastructure {
-    switch place {
-    case "local":
-        return &localstate.LocalStorageProvider{}
-    case "remote":
-        return &remotestate.RemoteStorageProvider{}
-    }
-    return nil
+	switch place {
+	case "local":
+		return &localstate.LocalStorageProvider{}
+	case "remote":
+		return &remotestate.RemoteStorageProvider{}
+	}
+	return nil
 }
 
 type CloudInfrastructure interface {
@@ -79,53 +79,8 @@ type Distributions interface {
 }
 
 type StateManagementInfrastructure interface {
-    providers.LocalStorage
-    providers.RemoteStorage
-}
-
-// Hydrate Builder with the cloudProviders
-
-func NewCivoBuilderOrDie(b *CobraCmd) error {
-	set := &ClientSet{}
-	b.Client.Cloud = set.CloudHandler("civo")
-	return nil
-}
-func NewAzureBuilderOrDie(b *CobraCmd) error {
-	set := &ClientSet{}
-	b.Client.Cloud = set.CloudHandler("azure")
-	return nil
-}
-func NewLocalBuilderOrDie(b *CobraCmd) error {
-	set := &ClientSet{}
-	b.Client.Cloud = set.CloudHandler("local")
-	return nil
-}
-
-// Hydrate Builder with the Distro
-
-func NewK3sBuilderOrDie(b *CobraCmd) error {
-	set := &ClientSet{}
-	b.Client.Distro = set.DistroHandler("k3s")
-	return nil
-}
-func NewKubeadmBuilderOrDie(b *CobraCmd) error {
-	set := &ClientSet{}
-	b.Client.Distro = set.DistroHandler("kubeadm")
-	return nil
-}
-
-
-// Hydrate Builder with the state
-
-func NewLocalStorageBuilderOrDie(b *CobraCmd) error {
-	set := &ClientSet{}
-	b.Client.State = set.StateHandler("local")
-	return nil
-}
-func NewRemoteStorageBuilderOrDie(b *CobraCmd) error {
-	set := &ClientSet{}
-	b.Client.State = set.StateHandler("remote")
-	return nil
+	providers.LocalStorage
+	providers.RemoteStorage
 }
 
 type CobraCmd struct {
