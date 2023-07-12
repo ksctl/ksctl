@@ -13,11 +13,11 @@
 - '**/*.md'
 
 'provider/azure':
-- 'api/azure/*'
+- 'api/**/azure/*'
 
 'provider/civo':
-- 'api/civo/*'
+- 'api/**/civo/*'
 
 'provider/local':
-- 'api/local/*'
+- 'api/**/local/*'
 
