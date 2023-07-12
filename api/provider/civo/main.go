@@ -12,7 +12,16 @@ type CivoProvider struct {
 	CNIPlugin   string `json:"cni_plugin"`
 }
 
+func (b *CivoProvider) CreateVM() {
+	fmt.Println("Civo Create VM")
+}
+
 func (b *CivoProvider) DeleteVM() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (b *CivoProvider) GetVM() {
 	//TODO implement me
 	panic("implement me")
 }
@@ -33,11 +42,6 @@ func (b *CivoProvider) CreateVirtualNetwork() {
 }
 
 func (b *CivoProvider) DeleteVirtualNetwork() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (b *CivoProvider) GetVM() {
 	//TODO implement me
 	panic("implement me")
 }
@@ -65,8 +69,4 @@ func (b *CivoProvider) InstallApplication() {
 func (b *CivoProvider) InstallApplications() {
 	//TODO implement me
 	panic("implement me")
-}
-
-func (b *CivoProvider) CreateVM() {
-	fmt.Println("Civo Create VM")
 }
