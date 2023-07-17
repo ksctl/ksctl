@@ -2,7 +2,6 @@ package localstate
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"sync"
 )
@@ -34,8 +33,8 @@ func (storage *LocalStorageProvider) Save(path string, data interface{}) error {
 	defer fileMutex.Unlock()
 	fmt.Println("state: local save triggered")
 
-	demo := []byte("Hello")
-	err := os.WriteFile(path, demo, fs.FileMode(os.O_RDONLY|os.O_CREATE|os.O_WRONLY))
+	demo := []byte("Hello from ksctl [stores configs]")
+	err := os.WriteFile(path, demo, 0644)
 	if err != nil {
 		return fmt.Errorf("Unable")
 	}
