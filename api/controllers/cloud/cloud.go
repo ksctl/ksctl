@@ -3,6 +3,7 @@ package cloud
 import (
 	"fmt"
 
+	"github.com/kubesimplify/ksctl/api/provider/azure"
 	"github.com/kubesimplify/ksctl/api/provider/civo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
@@ -10,7 +11,13 @@ import (
 
 func NewController(b *cloud.ClientBuilder) {
 	// TODO: Which one to call controller will decide
-	var abcd cloud.ControllerInterface = civo.WrapCloudControllerBuilder(b)
+	var abcd cloud.ControllerInterface
+	switch b.Provider {
+	case "civo":
+		abcd = civo.WrapCloudControllerBuilder(b)
+	case "azure":
+		abcd = azure.WrapCloudControllerBuilder(b)
+	}
 	fmt.Printf("\tReq for HA: %v\n\n", b.IsHA)
 	abcd.CreateHACluster()
 	abcd.CreateManagedCluster()

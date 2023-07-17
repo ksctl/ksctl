@@ -21,7 +21,7 @@ type NetworkID struct {
 	NetworkID                  string `json:"clusternetworkid"`
 }
 
-type Configurations struct {
+type StateConfiguration struct {
 	ClusterName string     `json:"clustername"`
 	Region      string     `json:"region"`
 	DBEndpoint  string     `json:"dbendpoint"`
@@ -41,7 +41,7 @@ func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
 func (client *CloudController) CreateHACluster() {
 
 	fmt.Println("Implement me[civo ha create]")
-	err := client.State.Save("abcd.txt", nil)
+	err := client.State.Save("civo.txt", nil)
 	fmt.Println(err)
 	client.Distro.ConfigureControlPlane()
 }
@@ -51,7 +51,7 @@ func (client *CloudController) CreateManagedCluster() {
 
 	client.Cloud.CreateManagedKubernetes()
 
-	_, err := client.State.Load("abcd.txt")
+	_, err := client.State.Load("civo.txt")
 	fmt.Println(err)
 }
 

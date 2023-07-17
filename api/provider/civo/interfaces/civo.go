@@ -48,7 +48,7 @@ func (b *CivoProvider) DeleteVirtualNetwork() {
 
 func (b *CivoProvider) CreateManagedKubernetes() {
 	//TODO implement me
-	fmt.Println("implement me")
+	fmt.Println("civo managed implement me")
 }
 
 func (b *CivoProvider) GetManagedKubernetes() {

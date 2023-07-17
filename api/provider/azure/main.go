@@ -3,66 +3,78 @@ package azure
 import (
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
 
-type AzureProvider struct {
-	ClusterName string `json:"cluster_name"`
-	HACluster   bool   `json:"ha_cluster"`
-	Region      string `json:"region"`
-	// Spec           util.Machine `json:"spec"`
-	SubscriptionID string `json:"subscription_id"`
-	//Config         *AzureStateCluster     `json:"config"`
-	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"`
-	//SSH_Payload    *util.SSHPayload       `json:"ssh___payload"`
+type AzureStateVMs struct {
+	Names                    []string `json:"names"`
+	NetworkSecurityGroupName string   `json:"network_security_group_name"`
+	NetworkSecurityGroupID   string   `json:"network_security_group_id"`
+	DiskNames                []string `json:"disk_names"`
+	PublicIPNames            []string `json:"public_ip_names"`
+	PrivateIPs               []string `json:"private_ips"`
+	PublicIPs                []string `json:"public_ips"`
+	NetworkInterfaceNames    []string `json:"network_interface_names"`
 }
 
-func (a *AzureProvider) CreateVM() {
-	//TODO implement me
-	fmt.Println("Azure Create VM")
+type AzureStateVM struct {
+	Name                     string `json:"name"`
+	NetworkSecurityGroupName string `json:"network_security_group_name"`
+	NetworkSecurityGroupID   string `json:"network_security_group_id"`
+	DiskName                 string `json:"disk_name"`
+	PublicIPName             string `json:"public_ip_name"`
+	NetworkInterfaceName     string `json:"network_interface_name"`
+	PrivateIP                string `json:"private_ip"`
+	PublicIP                 string `json:"public_ip"`
 }
 
-func (a *AzureProvider) DeleteVM() {
-	//TODO implement me
-	panic("implement me")
+type StateConfiguration struct {
+	ClusterName       string `json:"cluster_name"`
+	ResourceGroupName string `json:"resource_group_name"`
+	SSHKeyName        string `json:"ssh_key_name"`
+	DBEndpoint        string `json:"database_endpoint"`
+	K3sToken          string `json:"k3s_token"`
+
+	SubnetName         string `json:"subnet_name"`
+	SubnetID           string `json:"subnet_id"`
+	VirtualNetworkName string `json:"virtual_network_name"`
+	VirtualNetworkID   string `json:"virtual_network_id"`
+
+	InfoControlPlanes AzureStateVMs `json:"info_control_planes"`
+	InfoWorkerPlanes  AzureStateVMs `json:"info_worker_planes"`
+	InfoDatabase      AzureStateVM  `json:"info_database"`
+	InfoLoadBalancer  AzureStateVM  `json:"info_load_balancer"`
 }
 
-func (a AzureProvider) CreateFirewall() {
-	//TODO implement me
-	panic("implement me")
+type CloudController cloud.ClientBuilder
+
+func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
+	azure := (*CloudController)(b)
+	return azure
 }
 
-func (a AzureProvider) DeleteFirewall() {
-	//TODO implement me
-	panic("implement me")
+func (client *CloudController) CreateHACluster() {
+
+	fmt.Println("Implement me[azure ha create]")
+	err := client.State.Save("azure.txt", nil)
+	fmt.Println(err)
+	client.Distro.ConfigureControlPlane()
 }
 
-func (a AzureProvider) CreateVirtualNetwork() {
-	//TODO implement me
-	panic("implement me")
+func (client *CloudController) CreateManagedCluster() {
+	fmt.Println("Implement me[azure managed create]")
+
+	client.Cloud.CreateManagedKubernetes()
+
+	_, err := client.State.Load("azure.txt")
+	fmt.Println(err)
 }
 
-func (a *AzureProvider) DeleteVirtualNetwork() {
-	//TODO implement me
-	panic("implement me")
+func (client *CloudController) DestroyHACluster() {
+	fmt.Println("Implement me[azure ha delete]")
 }
 
-func (a *AzureProvider) GetVM() {
-	//TODO implement me
-	panic("implement me")
-}
+func (client *CloudController) DestroyManagedCluster() {
 
-func (a *AzureProvider) CreateManagedKubernetes() {
-	//TODO implement me
-	fmt.Println("implement me")
-}
-
-func (a *AzureProvider) GetManagedKubernetes() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (a *AzureProvider) DeleteManagedKubernetes() {
-	//TODO implement me
-	panic("implement me")
+	fmt.Println("Implement me[azure managed delete]")
 }
