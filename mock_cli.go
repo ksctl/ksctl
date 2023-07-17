@@ -1,18 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
+	controller "github.com/kubesimplify/ksctl/api"
+	"github.com/kubesimplify/ksctl/api/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/cli"
 )
 
 func NewCli(cmd *resources.CobraCmd) {
-	version := os.Getenv("KSCTL_VERSION")
+	cmd.Version = os.Getenv("KSCTL_VERSION")
 
-	if len(version) == 0 {
-		version = "dummy v11001.2"
+	if len(cmd.Version) == 0 {
+		cmd.Version = "dummy v11001.2"
 	}
 }
 
@@ -25,19 +26,20 @@ func HandleError(err error) {
 func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
-	// HandleError(resources.NewCivoBuilderOrDie(cmd))
-	HandleError(cli.NewAzureBuilderOrDie(cmd))
-	// HandleError(resources.NewLocalBuilderOrDie(cmd))
+	HandleError(cli.NewCivoBuilderOrDie(cmd))
 	HandleError(cli.NewK3sBuilderOrDie(cmd))
-	// HandleError(resources.NewKubeadmBuilderOrDie(cmd))
 	HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
 
-	fmt.Println(cmd)
-	fmt.Println(cmd.Client.Cloud)
-	fmt.Println(cmd.Client.Distro)
-	cmd.Client.Cloud.CreateVM() // it will fail if local is present
-	// cmd.Client.Cloud.CreateManagedKubernetes()
-	cmd.Client.Distro.ConfigureControlPlane()
+	client := cmd.Client
+	api := cloud.ClientBuilder(client)
+	controller.NewController(&api)
 
-	cmd.Client.State.Load("$HOME/demo/.ksctl/cred/civo.json")
+	// fmt.Println(cmd)
+	// fmt.Println(cmd.Client.Cloud)
+	// fmt.Println(cmd.Client.Distro)
+	// cmd.Client.Cloud.CreateVM() // it will fail if local is present
+	// // cmd.Client.Cloud.CreateManagedKubernetes()
+	// cmd.Client.Distro.ConfigureControlPlane()
+	//
+	// cmd.Client.State.Load("$HOME/demo/.ksctl/cred/civo.json")
 }

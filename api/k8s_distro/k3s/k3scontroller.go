@@ -3,7 +3,8 @@ package k3s
 import "fmt"
 
 type K3sDistro struct {
-	IsHA bool
+	IsHA    bool
+	Version string
 }
 
 func (k3s *K3sDistro) ConfigureControlPlane() {

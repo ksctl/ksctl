@@ -8,16 +8,19 @@ import (
 
 func NewCivoBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
+	b.Client.Provider = "civo"
 	b.Client.Cloud = set.CloudHandler("civo")
 	return nil
 }
 func NewAzureBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
+	b.Client.Provider = "azure"
 	b.Client.Cloud = set.CloudHandler("azure")
 	return nil
 }
 func NewLocalBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
+	b.Client.Provider = "local"
 	b.Client.Cloud = set.CloudHandler("local")
 	return nil
 }
@@ -26,11 +29,13 @@ func NewLocalBuilderOrDie(b *resources.CobraCmd) error {
 
 func NewK3sBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
+	b.Client.K8sDistro = "k3s"
 	b.Client.Distro = set.DistroHandler("k3s")
 	return nil
 }
 func NewKubeadmBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
+	b.Client.K8sDistro = "kubeadm"
 	b.Client.Distro = set.DistroHandler("kubeadm")
 	return nil
 }
@@ -39,11 +44,13 @@ func NewKubeadmBuilderOrDie(b *resources.CobraCmd) error {
 
 func NewLocalStorageBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
+	b.Client.StateLocation = "local"
 	b.Client.State = set.StateHandler("local")
 	return nil
 }
 func NewRemoteStorageBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
+	b.Client.StateLocation = "remote"
 	b.Client.State = set.StateHandler("remote")
 	return nil
 }
