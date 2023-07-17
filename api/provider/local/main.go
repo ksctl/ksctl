@@ -1,59 +1,44 @@
 package local
 
-import "fmt"
+import (
+	"fmt"
 
-type LocalProvider struct {
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+)
+
+type StateConfiguration struct {
 	ClusterName string `json:"cluster_name"`
-	HACluster   bool   `json:"ha_cluster"`
-	// Spec        Machine `json:"spec"`
 }
 
-// CreateFirewall implements resources.CloudInfrastructure
-func (*LocalProvider) CreateFirewall() {
-	panic("unimplemented")
+type CloudController cloud.ClientBuilder
+
+func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
+	local := (*CloudController)(b)
+	return local
 }
 
-// CreateManagedKubernetes implements resources.CloudInfrastructure
-func (*LocalProvider) CreateManagedKubernetes() {
-	fmt.Println("Local create kind clusters")
+func (client *CloudController) CreateHACluster() {
+	panic("NO SUPPORT")
+	// fmt.Println("Implement me[local ha create]")
+	// err := client.State.Save("local.txt", nil)
+	// fmt.Println(err)
+	// client.Distro.ConfigureControlPlane() // no support for custom kubernetes distros
 }
 
-// CreateVM implements resources.CloudInfrastructure
-func (*LocalProvider) CreateVM() {
-	panic("unimplemented")
+func (client *CloudController) CreateManagedCluster() {
+	fmt.Println("Implement me[local managed create]")
+
+	client.Cloud.CreateManagedKubernetes()
+
+	err := client.State.Save("local.txt", nil)
+	fmt.Println(err)
 }
 
-// CreateVirtualNetwork implements resources.CloudInfrastructure
-func (*LocalProvider) CreateVirtualNetwork() {
-	panic("unimplemented")
+func (client *CloudController) DestroyHACluster() {
+	panic("NO SUPPORT")
 }
 
-// DeleteFirewall implements resources.CloudInfrastructure
-func (*LocalProvider) DeleteFirewall() {
-	panic("unimplemented")
-}
+func (client *CloudController) DestroyManagedCluster() {
 
-// DeleteManagedKubernetes implements resources.CloudInfrastructure
-func (*LocalProvider) DeleteManagedKubernetes() {
-	panic("unimplemented")
-}
-
-// DeleteVM implements resources.CloudInfrastructure
-func (*LocalProvider) DeleteVM() {
-	panic("unimplemented")
-}
-
-// DeleteVirtualNetwork implements resources.CloudInfrastructure
-func (*LocalProvider) DeleteVirtualNetwork() {
-	panic("unimplemented")
-}
-
-// GetManagedKubernetes implements resources.CloudInfrastructure
-func (*LocalProvider) GetManagedKubernetes() {
-	panic("unimplemented")
-}
-
-// GetVM implements resources.CloudInfrastructure
-func (*LocalProvider) GetVM() {
-	panic("unimplemented")
+	fmt.Println("Implement me[local managed delete]")
 }
