@@ -1,43 +1,64 @@
 package kubeadm
 
-import "fmt"
+import (
+	"fmt"
 
-type KubeadmDistro struct {
-	IsHA    bool
-	Version string
+	"github.com/kubesimplify/ksctl/api/resources/controllers/kubernetes"
+)
+
+// OTHER CONFIGURATIONS
+
+// configuration management
+type K8sController kubernetes.ClientBuilder
+
+// GetKubeconfig implements kubernetes.ControllerInterface.
+func (b *K8sController) GetKubeconfig() (string, error) {
+	fmt.Println("get kubeconfig kubeadm")
+	b.Distro.ConfigureControlPlane()
+	return "", nil
 }
 
-func (kubeadm *KubeadmDistro) DestroyControlPlane() {
-	//TODO implement me
-	panic("implement me")
+// GetServerToken implements kubernetes.ControllerInterface.
+func (b *K8sController) GetServerToken() (string, error) {
+	panic("unimplemented")
 }
 
-func (kubeadm *KubeadmDistro) InstallApplication() {
-	//TODO implement me
-	panic("implement me")
+// InitializeMasterControlPlane implements kubernetes.ControllerInterface.
+func (b *K8sController) InitializeMasterControlPlane() error {
+	panic("unimplemented")
 }
 
-func (kubeadm *KubeadmDistro) ConfigureControlPlane() {
-	//TODO implement me
-	fmt.Println("Kubeadm Config CP")
+// JoinControlplane implements kubernetes.ControllerInterface.
+func (b *K8sController) JoinControlplane() (string, error) {
+	panic("unimplemented")
 }
 
-func (kubeadm *KubeadmDistro) ConfigureWorkerPlane() {
-	// TODO implement me
+// JoinDatastore implements kubernetes.ControllerInterface.
+func (b *K8sController) JoinDatastore() (string, error) {
+	panic("unimplemented")
 }
 
-func (kubeadm *KubeadmDistro) DestroyWorkerPlane() {
-	// TODO implement me
+// JoinWorkerplane implements kubernetes.ControllerInterface.
+func (b *K8sController) JoinWorkerplane() (string, error) {
+	panic("unimplemented")
 }
 
-func (kubeadm *KubeadmDistro) ConfigureDataStore() {
-	// TODO implement me
+// SetupDatastore implements kubernetes.ControllerInterface.
+func (b *K8sController) SetupDatastore() (string, error) {
+	panic("unimplemented")
 }
 
-func (kubeadm *KubeadmDistro) DestroyDataStore() {
-	// TODO implement me
+// SetupLoadBalancer implements kubernetes.ControllerInterface.
+func (b *K8sController) SetupLoadBalancer() {
+	panic("unimplemented")
 }
 
-func (kubeadm *KubeadmDistro) ConfigureLoadbalancer() {}
+// SetupWorkerplane implements kubernetes.ControllerInterface.
+func (b *K8sController) SetupWorkerplane() (string, error) {
+	panic("unimplemented")
+}
 
-func (kubeadm *KubeadmDistro) DestroyLoadbalancer() {}
+func WrapK8sControllerBuilder(b *kubernetes.ClientBuilder) *K8sController {
+	k8s := (*K8sController)(b)
+	return k8s
+}

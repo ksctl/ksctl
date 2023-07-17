@@ -3,8 +3,8 @@ package resources_test
 import (
 	"testing"
 
-	"github.com/kubesimplify/ksctl/api/k8s_distro/k3s"
-	"github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
+	k3s "github.com/kubesimplify/ksctl/api/k8s_distro/k3s/interfaces"
+	kubeadm "github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm/interfaces"
 	azure "github.com/kubesimplify/ksctl/api/provider/azure/interfaces"
 	civo "github.com/kubesimplify/ksctl/api/provider/civo/interfaces"
 	local "github.com/kubesimplify/ksctl/api/provider/local/interfaces"
