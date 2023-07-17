@@ -26,6 +26,7 @@ type Builder struct {
 	K8sDistro     string
 	K8sVersion    string
 	StateLocation string
+	IsHA          bool
 }
 
 type ClientSet struct {

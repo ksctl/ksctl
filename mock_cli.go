@@ -3,8 +3,7 @@ package main
 import (
 	"os"
 
-	controller "github.com/kubesimplify/ksctl/api"
-	"github.com/kubesimplify/ksctl/api/controllers/cloud"
+	controller "github.com/kubesimplify/ksctl/api/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/cli"
 )
@@ -29,17 +28,8 @@ func main() {
 	HandleError(cli.NewCivoBuilderOrDie(cmd))
 	HandleError(cli.NewK3sBuilderOrDie(cmd))
 	HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
+	cmd.Client.IsHA = true // set by CMD
 
-	client := cmd.Client
-	api := cloud.ClientBuilder(client)
-	controller.NewController(&api)
-
-	// fmt.Println(cmd)
-	// fmt.Println(cmd.Client.Cloud)
-	// fmt.Println(cmd.Client.Distro)
-	// cmd.Client.Cloud.CreateVM() // it will fail if local is present
-	// // cmd.Client.Cloud.CreateManagedKubernetes()
-	// cmd.Client.Distro.ConfigureControlPlane()
-	//
-	// cmd.Client.State.Load("$HOME/demo/.ksctl/cred/civo.json")
+	ksctlAPI := controller.WrapEngineBuilder(&cmd.Client)
+	controller.NewController(ksctlAPI)
 }

@@ -3,7 +3,7 @@ package civo
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/api/controllers/cloud"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
 
 type InstanceID struct {
@@ -34,8 +34,8 @@ type Configurations struct {
 type CloudController cloud.ClientBuilder
 
 func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
-	abcd := (*CloudController)(b)
-	return abcd
+	civo := (*CloudController)(b)
+	return civo
 }
 
 func (client *CloudController) CreateHACluster() {
@@ -51,9 +51,8 @@ func (client *CloudController) CreateManagedCluster() {
 
 	client.Cloud.CreateManagedKubernetes()
 
-	err := client.State.Save("/tmp/abcd.txt", nil)
+	_, err := client.State.Load("abcd.txt")
 	fmt.Println(err)
-
 }
 
 func (client *CloudController) DestroyHACluster() {
