@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	controller "github.com/kubesimplify/ksctl/api/controllers/cloud"
+	"github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/cli"
 )
@@ -26,10 +26,9 @@ func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
 	HandleError(cli.NewLocalBuilderOrDie(cmd))
-	HandleError(cli.NewK3sBuilderOrDie(cmd))
+	HandleError(cli.NewKubeadmBuilderOrDie(cmd))
 	HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
 	cmd.Client.IsHA = true // set by CMD
 
-	ksctlAPI := controller.WrapEngineBuilder(&cmd.Client)
-	controller.NewController(ksctlAPI)
+	controllers.NewController(&cmd.Client)
 }

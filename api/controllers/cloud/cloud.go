@@ -28,7 +28,7 @@ func NewController(b *cloud.ClientBuilder) {
 	abcd.DestroyManagedCluster()
 }
 
-func WrapEngineBuilder(b *resources.Builder) *cloud.ClientBuilder {
+func WrapCloudEngineBuilder(b *resources.Builder) *cloud.ClientBuilder {
 	api := (*cloud.ClientBuilder)(b)
 	return api
 }
