@@ -54,7 +54,7 @@ func (a *AzureProvider) GetVM() {
 
 func (a *AzureProvider) CreateManagedKubernetes() {
 	//TODO implement me
-	panic("implement me")
+	fmt.Println("implement me")
 }
 
 func (a *AzureProvider) GetManagedKubernetes() {

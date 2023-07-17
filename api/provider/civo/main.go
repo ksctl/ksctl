@@ -1,72 +1,66 @@
 package civo
 
-import "fmt"
+import (
+	"fmt"
 
-type CivoProvider struct {
-	ClusterName string `json:"cluster_name"`
-	APIKey      string `json:"api_key"`
-	HACluster   bool   `json:"ha_cluster"`
-	Region      string `json:"region"`
-	//Spec        util.Machine `json:"spec"`
-	Application string `json:"application"`
-	CNIPlugin   string `json:"cni_plugin"`
+	"github.com/kubesimplify/ksctl/api/controllers/cloud"
+)
+
+type InstanceID struct {
+	ControlNodes     []string `json:"controlnodeids"`
+	WorkerNodes      []string `json:"workernodeids"`
+	LoadBalancerNode []string `json:"loadbalancernodeids"`
+	DatabaseNode     []string `json:"databasenodeids"`
 }
 
-func (b *CivoProvider) CreateVM() {
-	fmt.Println("Civo Create VM")
+type NetworkID struct {
+	FirewallIDControlPlaneNode string `json:"fwidcontrolplanenode"`
+	FirewallIDWorkerNode       string `json:"fwidworkernode"`
+	FirewallIDLoadBalancerNode string `json:"fwidloadbalancenode"`
+	FirewallIDDatabaseNode     string `json:"fwiddatabasenode"`
+	NetworkID                  string `json:"clusternetworkid"`
 }
 
-func (b *CivoProvider) DeleteVM() {
-	//TODO implement me
-	panic("implement me")
+type Configurations struct {
+	ClusterName string     `json:"clustername"`
+	Region      string     `json:"region"`
+	DBEndpoint  string     `json:"dbendpoint"`
+	ServerToken string     `json:"servertoken"`
+	SSHID       string     `json:"ssh_id"`
+	InstanceIDs InstanceID `json:"instanceids"`
+	NetworkIDs  NetworkID  `json:"networkids"`
 }
 
-func (b *CivoProvider) GetVM() {
-	//TODO implement me
-	panic("implement me")
+type CloudController cloud.ClientBuilder
+
+func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
+	abcd := (*CloudController)(b)
+	return abcd
 }
 
-func (b *CivoProvider) CreateFirewall() {
-	//TODO implement me
-	panic("implement me")
+func (client *CloudController) CreateHACluster() {
+
+	fmt.Println("Implement me[civo ha create]")
+	err := client.State.Save("abcd.txt", nil)
+	fmt.Println(err)
+	client.Distro.ConfigureControlPlane()
 }
 
-func (b *CivoProvider) DeleteFirewall() {
-	//TODO implement me
-	panic("implement me")
+func (client *CloudController) CreateManagedCluster() {
+	fmt.Println("Implement me[civo managed create]")
+
+	client.Cloud.CreateManagedKubernetes()
+
+	err := client.State.Save("/tmp/abcd.txt", nil)
+	fmt.Println(err)
+
 }
 
-func (b *CivoProvider) CreateVirtualNetwork() {
-	//TODO implement me
-	panic("implement me")
+func (client *CloudController) DestroyHACluster() {
+	fmt.Println("Implement me[civo ha delete]")
 }
 
-func (b *CivoProvider) DeleteVirtualNetwork() {
-	//TODO implement me
-	panic("implement me")
-}
+func (client *CloudController) DestroyManagedCluster() {
 
-func (b *CivoProvider) CreateManagedKubernetes() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (b *CivoProvider) GetManagedKubernetes() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (b *CivoProvider) DeleteManagedKubernetes() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (b *CivoProvider) InstallApplication() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (b *CivoProvider) InstallApplications() {
-	//TODO implement me
-	panic("implement me")
+	fmt.Println("Implement me[civo managed delete]")
 }

@@ -3,7 +3,8 @@ package kubeadm
 import "fmt"
 
 type KubeadmDistro struct {
-	IsHA bool
+	IsHA    bool
+	Version string
 }
 
 func (kubeadm *KubeadmDistro) DestroyControlPlane() {
