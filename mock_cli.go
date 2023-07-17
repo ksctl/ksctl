@@ -25,7 +25,7 @@ func HandleError(err error) {
 func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
-	HandleError(cli.NewCivoBuilderOrDie(cmd))
+	HandleError(cli.NewAzureBuilderOrDie(cmd))
 	HandleError(cli.NewK3sBuilderOrDie(cmd))
 	HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
 	cmd.Client.IsHA = true // set by CMD
