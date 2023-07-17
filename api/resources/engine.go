@@ -5,7 +5,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
 	azure "github.com/kubesimplify/ksctl/api/provider/azure/interfaces"
 	civo "github.com/kubesimplify/ksctl/api/provider/civo/interfaces"
-	"github.com/kubesimplify/ksctl/api/provider/local"
+	local "github.com/kubesimplify/ksctl/api/provider/local/interfaces"
 	"github.com/kubesimplify/ksctl/api/resources/providers"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/storage/remotestate"
