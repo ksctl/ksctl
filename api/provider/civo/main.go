@@ -24,11 +24,11 @@ type NetworkID struct {
 type StateConfiguration struct {
 	ClusterName string     `json:"clustername"`
 	Region      string     `json:"region"`
-	DBEndpoint  string     `json:"dbendpoint"`
-	ServerToken string     `json:"servertoken"`
 	SSHID       string     `json:"ssh_id"`
 	InstanceIDs InstanceID `json:"instanceids"`
 	NetworkIDs  NetworkID  `json:"networkids"`
+	// DBEndpoint  string     `json:"dbendpoint"`
+	// ServerToken string     `json:"servertoken"`
 }
 
 type CloudController cloud.ClientBuilder
