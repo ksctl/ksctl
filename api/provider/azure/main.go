@@ -6,6 +6,13 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
 
+// IMPORTANT: the state management structs are local to each provider thus making each of them unique
+// but the problem is we need to pass some required values from the cloud providers to the kubernetesdistro
+// but how?
+// can we use the controllers as a bridge to allow it to happen when we are going to transfer the resources
+// if this is the case we need to figure out the way to do so
+// also figure out, where the stateConfiguration struct vairable be present (i.e. in controller or inside this?)
+
 type AzureStateVMs struct {
 	Names                    []string `json:"names"`
 	NetworkSecurityGroupName string   `json:"network_security_group_name"`
@@ -32,8 +39,8 @@ type StateConfiguration struct {
 	ClusterName       string `json:"cluster_name"`
 	ResourceGroupName string `json:"resource_group_name"`
 	SSHKeyName        string `json:"ssh_key_name"`
-	DBEndpoint        string `json:"database_endpoint"`
-	K3sToken          string `json:"k3s_token"`
+	// DBEndpoint        string `json:"database_endpoint"`
+	// K3sToken          string `json:"k3s_token"`
 
 	SubnetName         string `json:"subnet_name"`
 	SubnetID           string `json:"subnet_id"`

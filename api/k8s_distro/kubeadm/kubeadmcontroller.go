@@ -7,6 +7,19 @@ import (
 )
 
 // OTHER CONFIGURATIONS
+type Instances struct {
+	ControlPlanes []string
+	WorkerPlanes  []string
+	DataStores    []string
+	Loadbalancer  string
+}
+
+type StateConfiguration struct {
+	JoinControlToken string
+	JoinWorkerToken  string
+	SSHUser          string
+	PublicIPs        Instances
+}
 
 // configuration management
 type K8sController kubernetes.ClientBuilder

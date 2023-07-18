@@ -6,6 +6,24 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources/controllers/kubernetes"
 )
 
+type Instances struct {
+	ControlPlanes []string
+	WorkerPlanes  []string
+	DataStores    []string
+	Loadbalancer  string
+}
+
+type StateConfiguration struct {
+	K3sToken  string
+	SSHUser   string
+	PublicIPs Instances
+}
+
+// type k3S struct {
+// 	Metadata k3sInterface.K3sDistro
+// 	State    StateConfiguration
+// }
+
 // configuration management
 type K8sController kubernetes.ClientBuilder
 
