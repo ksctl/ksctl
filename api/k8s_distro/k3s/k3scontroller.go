@@ -30,6 +30,7 @@ type K8sController kubernetes.ClientBuilder
 // GetKubeconfig implements kubernetes.ControllerInterface.
 func (b *K8sController) GetKubeconfig() (string, error) {
 	fmt.Println("get kubeconfig k3s")
+	// b.Cloud.GetVMStates()   // may be this act as a bridge to send the required information?
 	b.Distro.ConfigureControlPlane()
 
 	return "", nil
