@@ -10,7 +10,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
 
-func NewController(b *cloud.ClientBuilder) {
+func NewController(b *cloud.ClientBuilder) cloud.ControllerInterface {
 	// TODO: Which one to call controller will decide
 	var abcd cloud.ControllerInterface
 	switch b.Provider {
@@ -22,10 +22,15 @@ func NewController(b *cloud.ClientBuilder) {
 		abcd = local.WrapCloudControllerBuilder(b)
 	}
 	fmt.Printf("\tReq for HA: %v\n\n", b.IsHA)
-	// abcd.CreateHACluster() // for local it will panic
-	abcd.CreateManagedCluster()
+	if b.IsHA {
+		abcd.CreateHACluster() // for local it will panic
+	} else {
+		abcd.CreateManagedCluster()
+	}
 	// abcd.DestroyHACluster() // for local it will panic
 	abcd.DestroyManagedCluster()
+
+	return abcd
 }
 
 func WrapCloudEngineBuilder(b *resources.Builder) *cloud.ClientBuilder {

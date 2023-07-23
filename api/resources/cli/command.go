@@ -10,18 +10,24 @@ func NewCivoBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
 	b.Client.Provider = "civo"
 	b.Client.Cloud = set.CloudHandler("civo")
+	b.Client.ClusterName = b.ClusterName
+	b.Client.Region = b.Region
 	return nil
 }
 func NewAzureBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
 	b.Client.Provider = "azure"
 	b.Client.Cloud = set.CloudHandler("azure")
+	b.Client.ClusterName = b.ClusterName
+	b.Client.Region = b.Region
 	return nil
 }
 func NewLocalBuilderOrDie(b *resources.CobraCmd) error {
 	set := &resources.ClientSet{}
 	b.Client.Provider = "local"
 	b.Client.Cloud = set.CloudHandler("local")
+	b.Client.ClusterName = b.ClusterName
+	b.Client.Region = b.Region
 	return nil
 }
 

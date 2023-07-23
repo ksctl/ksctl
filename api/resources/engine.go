@@ -18,10 +18,11 @@ type ClientHandler interface {
 }
 
 type Builder struct {
-	Cloud  CloudInfrastructure
-	Distro Distributions
-	State  StateManagementInfrastructure
-
+	Cloud         CloudInfrastructure
+	Distro        Distributions
+	State         StateManagementInfrastructure
+	ClusterName   string
+	Region        string
 	Provider      string
 	K8sDistro     string
 	K8sVersion    string

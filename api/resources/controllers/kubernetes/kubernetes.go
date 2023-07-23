@@ -1,6 +1,9 @@
 package kubernetes
 
-import "github.com/kubesimplify/ksctl/api/resources"
+import (
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+)
 
 type ClientBuilder resources.Builder
 
@@ -16,4 +19,5 @@ type ControllerInterface interface {
 	JoinWorkerplane() (string, error)
 	JoinControlplane() (string, error)
 	JoinDatastore() (string, error)
+	HydrateCloudState(cloud.CloudResourceState)
 }

@@ -8,8 +8,9 @@ import (
 
 func NewController(client *resources.Builder) {
 	ksctlCloudAPI := cloudController.WrapCloudEngineBuilder(client)
-	cloudController.NewController(ksctlCloudAPI)
+	abcd := cloudController.NewController(ksctlCloudAPI)
+	reqForK8sDistro := abcd.FetchState()
 
 	ksctlK8sAPI := k8sController.WrapK8sEngineBuilder(client)
-	k8sController.NewController(ksctlK8sAPI)
+	k8sController.NewController(ksctlK8sAPI, reqForK8sDistro)
 }
