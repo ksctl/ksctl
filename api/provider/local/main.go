@@ -12,6 +12,16 @@ type StateConfiguration struct {
 
 type CloudController cloud.ClientBuilder
 
+// FetchState implements cloud.ControllerInterface.
+func (client *CloudController) FetchState() cloud.CloudResourceState {
+	return cloud.CloudResourceState{
+		Metadata: cloud.Metadata{
+			ClusterName: client.ClusterName,
+			Region:      client.Region,
+			Provider:    "local",
+		}}
+}
+
 func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
 	local := (*CloudController)(b)
 	return local

@@ -3,6 +3,7 @@ package k3s
 import (
 	"fmt"
 
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/kubernetes"
 )
 
@@ -14,23 +15,31 @@ type Instances struct {
 }
 
 type StateConfiguration struct {
-	K3sToken  string
-	SSHUser   string
-	PublicIPs Instances
+	K3sToken   string
+	SSHUser    string
+	PublicIPs  Instances
+	PrivateIPs Instances
 }
 
-// type k3S struct {
-// 	Metadata k3sInterface.K3sDistro
-// 	State    StateConfiguration
-// }
+// TODO: Add the SSH functionality here
+
+var (
+	k8sState *StateConfiguration
+)
 
 // configuration management
 type K8sController kubernetes.ClientBuilder
 
+// HydrateCloudState implements kubernetes.ControllerInterface.
+func (*K8sController) HydrateCloudState(state cloud.CloudResourceState) {
+	k8sState = &StateConfiguration{}
+	k8sState.PublicIPs.ControlPlanes = state.IPv4ControlPlanes
+	k8sState.PrivateIPs.ControlPlanes = state.PrivateIPv4ControlPlanes
+}
+
 // GetKubeconfig implements kubernetes.ControllerInterface.
 func (b *K8sController) GetKubeconfig() (string, error) {
 	fmt.Println("get kubeconfig k3s")
-	// b.Cloud.GetVMStates()   // may be this act as a bridge to send the required information?
 	b.Distro.ConfigureControlPlane()
 
 	return "", nil

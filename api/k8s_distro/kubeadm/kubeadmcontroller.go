@@ -3,6 +3,7 @@ package kubeadm
 import (
 	"fmt"
 
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/kubernetes"
 )
 
@@ -19,10 +20,22 @@ type StateConfiguration struct {
 	JoinWorkerToken  string
 	SSHUser          string
 	PublicIPs        Instances
+	PrivateIPs       Instances
 }
+
+var (
+	k8sState *StateConfiguration
+)
 
 // configuration management
 type K8sController kubernetes.ClientBuilder
+
+// TODO: HydrateCloudState implements kubernetes.ControllerInterface.
+func (*K8sController) HydrateCloudState(state cloud.CloudResourceState) {
+	k8sState = &StateConfiguration{}
+	k8sState.PublicIPs.ControlPlanes = state.IPv4ControlPlanes
+	k8sState.PrivateIPs.ControlPlanes = state.PrivateIPv4ControlPlanes
+}
 
 // GetKubeconfig implements kubernetes.ControllerInterface.
 func (b *K8sController) GetKubeconfig() (string, error) {
