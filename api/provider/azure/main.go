@@ -1,6 +1,8 @@
 package azure
 
 import (
+	"errors"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
@@ -61,8 +63,12 @@ type AzureProvider struct {
 	//SSH_Payload    *util.SSHPayload       `json:"ssh___payload"`
 }
 
+var (
+	currCloudState *StateConfiguration
+)
+
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (*AzureProvider) CreateUploadSSHKeyPair() error {
+func (client *AzureProvider) CreateUploadSSHKeyPair() error {
 	panic("unimplemented")
 }
 
@@ -103,7 +109,11 @@ func (*AzureProvider) GetStateForHACluster() (any, error) {
 
 // InitState implements resources.CloudInfrastructure.
 func (*AzureProvider) InitState() error {
-	panic("unimplemented")
+	if currCloudState != nil {
+		return errors.New("[FATAL] already initialized")
+	}
+	currCloudState = &StateConfiguration{}
+	return nil
 }
 
 // NewFirewall implements resources.CloudInfrastructure.
@@ -129,24 +139,6 @@ func (*AzureProvider) NewVM() error {
 func ReturnAzureStruct() *AzureProvider {
 	return &AzureProvider{}
 }
-
-// type CloudController cloud.ClientBuilder
-
-// var (
-// 	currCloudState *StateConfiguration
-// )
-
-// // FetchState implements cloud.ControllerInterface.
-// func (*CloudController) FetchState() cloud.CloudResourceState {
-// 	// move the publicIPs to the k8s
-// 	currCloudState.K8s.IPv4ControlPlanes = currCloudState.InfoControlPlanes.PublicIPs
-// 	return currCloudState.K8s
-// }
-
-// func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
-// 	azure := (*CloudController)(b)
-// 	return azure
-// }
 
 // func (client *CloudController) CreateHACluster() {
 

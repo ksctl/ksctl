@@ -26,7 +26,7 @@ func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
 
-	cmd.Client.Metadata.Provider = "civo"
+	cmd.Client.Metadata.Provider = "local"
 	cmd.Client.Metadata.K8sDistro = "k3s"
 	cmd.Client.Metadata.StateLocation = "local"
 

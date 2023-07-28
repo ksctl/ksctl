@@ -3,6 +3,7 @@ package cloud
 import (
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
+	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
@@ -15,6 +16,8 @@ func HydrateCloud(client *resources.KsctlClient) {
 		client.Cloud = civo_pkg.ReturnCivoStruct()
 	case "azure":
 		client.Cloud = azure_pkg.ReturnAzureStruct()
+	case "local":
+		client.Cloud = local_pkg.ReturnLocalStruct()
 	}
 }
 
