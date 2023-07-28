@@ -1,5 +1,7 @@
 package resources
 
+import "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+
 type KsctlClient struct {
 	Cloud    CloudInfrastructure
 	Distro   Distributions
@@ -34,7 +36,7 @@ type CloudInfrastructure interface {
 	DelSSHKeyPair(StateManagementInfrastructure) error
 
 	// get the state required for the kubernetes dributions to configure
-	GetStateForHACluster(StateManagementInfrastructure) (any, error)
+	GetStateForHACluster(StateManagementInfrastructure) (cloud.CloudResourceState, error)
 
 	NewManagedCluster(StateManagementInfrastructure) error
 	DelManagedCluster(StateManagementInfrastructure) error
@@ -42,7 +44,7 @@ type CloudInfrastructure interface {
 }
 
 type KubernetesInfrastructure interface {
-	InitState(any)
+	InitState(cloud.CloudResourceState)
 
 	// it recieves no of controlplane to which we want to configure
 	// NOTE: make the first controlplane return server token as possible

@@ -103,8 +103,12 @@ func (*CivoProvider) GetManagedKubernetes(state resources.StateManagementInfrast
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*CivoProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (any, error) {
-	panic("unimplemented")
+func (client *CivoProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
+	payload := cloud.CloudResourceState{
+		Metadata:          cloud.Metadata{ClusterName: client.ClusterName},
+		IPv4ControlPlanes: currCloudState.InstanceIDs.ControlNodes,
+	}
+	return payload, nil
 }
 
 // InitState implements resources.CloudInfrastructure.
@@ -113,6 +117,8 @@ func (*CivoProvider) InitState() error {
 		return errors.New("[FATAL] already initialized")
 	}
 	currCloudState = &StateConfiguration{}
+	currCloudState.InstanceIDs.ControlNodes = append(currCloudState.InstanceIDs.ControlNodes, "0.0.0.0")
+	fmt.Println("Civo cloud state", currCloudState)
 	return nil
 }
 

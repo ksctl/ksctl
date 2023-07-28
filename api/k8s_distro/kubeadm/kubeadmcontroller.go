@@ -1,6 +1,9 @@
 package kubeadm
 
-import "github.com/kubesimplify/ksctl/api/resources"
+import (
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+)
 
 // OTHER CONFIGURATIONS
 type Instances struct {
@@ -19,7 +22,6 @@ type StateConfiguration struct {
 }
 
 type KubeadmDistro struct {
-	IsHA    bool
 	Version string
 }
 
@@ -49,7 +51,7 @@ func (*KubeadmDistro) GetKubeConfig(state resources.StateManagementInfrastructur
 }
 
 // InitState implements resources.Distributions.
-func (k8s *KubeadmDistro) InitState(any) {
+func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState) {
 	k8sState = &StateConfiguration{}
 }
 

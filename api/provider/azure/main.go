@@ -104,7 +104,7 @@ func (*AzureProvider) GetManagedKubernetes(state resources.StateManagementInfras
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*AzureProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (any, error) {
+func (*AzureProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
 	panic("unimplemented")
 }
 

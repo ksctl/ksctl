@@ -1,6 +1,11 @@
 package k3s
 
-import "github.com/kubesimplify/ksctl/api/resources"
+import (
+	"fmt"
+
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+)
 
 type Instances struct {
 	ControlPlanes []string
@@ -17,7 +22,6 @@ type StateConfiguration struct {
 }
 
 type K3sDistro struct {
-	IsHA    bool
 	Version string
 }
 
@@ -32,9 +36,8 @@ func (*K3sDistro) ConfigureDataStore(state resources.StateManagementInfrastructu
 }
 
 // ConfigureLoadbalancer implements resources.Distributions.
-func (*K3sDistro) ConfigureLoadbalancer(state resources.StateManagementInfrastructure) {
-	k8sState = &StateConfiguration{}
-	panic("unimplemented")
+func (k8s *K3sDistro) ConfigureLoadbalancer(state resources.StateManagementInfrastructure) {
+	fmt.Println("Configuring Loadbalancer....")
 }
 
 // DestroyWorkerPlane implements resources.Distributions.
@@ -48,8 +51,13 @@ func (*K3sDistro) GetKubeConfig(state resources.StateManagementInfrastructure) (
 }
 
 // InitState implements resources.Distributions.
-func (*K3sDistro) InitState(any) {
+// try to achieve deepCopy
+func (*K3sDistro) InitState(cloudState cloud.CloudResourceState) {
 	// add the nil check here as well
+	k8sState = &StateConfiguration{}
+	k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
+	//.....
+	fmt.Println("Initialized K3s from cloudprovider", k8sState)
 }
 
 // InstallApplication implements resources.Distributions.

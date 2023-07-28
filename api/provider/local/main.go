@@ -1,6 +1,9 @@
 package local
 
-import "github.com/kubesimplify/ksctl/api/resources"
+import (
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+)
 
 type StateConfiguration struct {
 	ClusterName string `json:"cluster_name"`
@@ -47,7 +50,7 @@ func (*LocalProvider) GetManagedKubernetes(state resources.StateManagementInfras
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*LocalProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (any, error) {
+func (*LocalProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
 	panic("unimplemented")
 }
 
