@@ -1,26 +1,13 @@
 package resources
 
-import (
-	k3s "github.com/kubesimplify/ksctl/api/k8s_distro/k3s/interfaces"
-	kubeadm "github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm/interfaces"
-	azure "github.com/kubesimplify/ksctl/api/provider/azure/interfaces"
-	civo "github.com/kubesimplify/ksctl/api/provider/civo/interfaces"
-	local "github.com/kubesimplify/ksctl/api/provider/local/interfaces"
-	"github.com/kubesimplify/ksctl/api/resources/providers"
-	"github.com/kubesimplify/ksctl/api/storage/localstate"
-	"github.com/kubesimplify/ksctl/api/storage/remotestate"
-)
-
-type ClientHandler interface {
-	CloudHandler(provider string) CloudInfrastructure
-	DistroHandler(distro string) Distributions
-	StateHandler(place string) StateManagementInfrastructure
+type KsctlClient struct {
+	Cloud    CloudInfrastructure
+	Distro   Distributions
+	State    StateManagementInfrastructure
+	Metadata Metadata
 }
 
-type Builder struct {
-	Cloud         CloudInfrastructure
-	Distro        Distributions
-	State         StateManagementInfrastructure
+type Metadata struct {
 	ClusterName   string
 	Region        string
 	Provider      string
@@ -30,55 +17,59 @@ type Builder struct {
 	IsHA          bool
 }
 
-type ClientSet struct {
-}
-
-func (h *ClientSet) CloudHandler(provider string) CloudInfrastructure {
-	switch provider {
-	case "civo":
-		return &civo.CivoProvider{}
-	case "azure":
-		return &azure.AzureProvider{}
-	case "local":
-		return &local.LocalProvider{}
-	}
-	return nil
-}
-
-func (h *ClientSet) DistroHandler(distro string) Distributions {
-	switch distro {
-	case "k3s":
-		return &k3s.K3sDistro{}
-	case "kubeadm":
-		return &kubeadm.KubeadmDistro{}
-	}
-	return nil
-}
-
-// StateHandler place local, remote
-func (h *ClientSet) StateHandler(place string) StateManagementInfrastructure {
-	switch place {
-	case "local":
-		return &localstate.LocalStorageProvider{}
-	case "remote":
-		return &remotestate.RemoteStorageProvider{}
-	}
-	return nil
-}
-
+// NOTE: local cluster are also supported but with feature flags only managedcluster available
 type CloudInfrastructure interface {
-	providers.CivoInfrastructure
-	providers.AzureInfrastructure
+	NewVM() error
+	DelVM() error
+
+	NewFirewall() error
+	DelFirewall() error
+
+	NewNetwork() error
+	DelNetwork() error
+
+	InitState() error
+
+	CreateUploadSSHKeyPair() error
+	DelSSHKeyPair() error
+
+	// get the state required for the kubernetes dributions to configure
+	GetStateForHACluster() (any, error)
+
+	NewManagedCluster() error
+	DelManagedCluster() error
+	GetManagedKubernetes()
 }
 
 type KubernetesInfrastructure interface {
-	providers.K3sConfiguration
-	providers.KubeadmConfiguration
+	InitState(any)
+
+	// it recieves no of controlplane to which we want to configure
+	// NOTE: make the first controlplane return server token as possible
+	ConfigureControlPlane(int)
+	// DestroyControlPlane()  // NOTE: [FEATURE] destroy not available
+	// only able to remove the VirtualMachine
+
+	JoinWorkerplane() error
+	DestroyWorkerPlane()
+
+	ConfigureLoadbalancer()
+	// DestroyLoadbalancer()  // NOTE: [FEATURE] destroy not available
+	// only able to remove the VirtualMachine
+
+	ConfigureDataStore()
+	// DestroyDataStore()  // NOTE: [FEATURE] destroy not available
+	// only able to remove the VirtualMachine
+
+	InstallApplication()
+
+	GetKubeConfig() (string, error)
 }
 
-type NonKubernetesInfrastructure interface {
-	InstallApplications()
-}
+// FEATURE: non kubernetes distrobutions like nomad
+// type NonKubernetesInfrastructure interface {
+// 	InstallApplications()
+// }
 
 type Distributions interface {
 	KubernetesInfrastructure
@@ -86,13 +77,13 @@ type Distributions interface {
 }
 
 type StateManagementInfrastructure interface {
-	providers.LocalStorage
-	providers.RemoteStorage
+	Save(string, any) error
+	Load(string) (any, error) // try to make the return type defined
 }
 
 type CobraCmd struct {
 	ClusterName string
 	Region      string
-	Client      Builder
+	Client      KsctlClient
 	Version     string
 }

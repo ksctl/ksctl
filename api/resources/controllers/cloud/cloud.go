@@ -2,13 +2,7 @@ package cloud
 
 import "github.com/kubesimplify/ksctl/api/resources"
 
-const (
-	CREATE = 0
-	DELETE = 1
-	GET    = 2
-)
-
-type ClientBuilder resources.Builder
+type ClientBuilder resources.KsctlClient
 
 type ClientStateMgt resources.StateManagementInfrastructure
 
@@ -22,7 +16,6 @@ type CloudResourceState struct {
 	IPv4LoadBalancer  string
 
 	PrivateIPv4ControlPlanes []string
-	PrivateIPv4WorkerPlanes  []string
 	PrivateIPv4DataStores    []string
 	PrivateIPv4LoadBalancer  string
 	Metadata                 Metadata
@@ -42,12 +35,12 @@ type SSHPayload struct {
 	Output         string
 }
 
-type ControllerInterface interface {
-	CreateHACluster()
-	CreateManagedCluster()
+// type ControllerInterface interface {
+// 	CreateHACluster()
+// 	CreateManagedCluster()
 
-	DestroyHACluster()
-	DestroyManagedCluster()
+// 	DestroyHACluster()
+// 	DestroyManagedCluster()
 
-	FetchState() CloudResourceState
-}
+// 	FetchState() CloudResourceState
+// }

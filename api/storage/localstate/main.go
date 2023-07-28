@@ -7,13 +7,12 @@ import (
 )
 
 type LocalStorageProvider struct {
-	// TODO: implement me
 }
 
 var fileMutex sync.Mutex
 
 // Load implements resources.StateManagementInfrastructure.
-func (storage *LocalStorageProvider) Load(path string) (interface{}, error) {
+func (storage *LocalStorageProvider) Load(path string) (any, error) {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 	fmt.Println("state: local load triggered")
@@ -28,7 +27,7 @@ func (storage *LocalStorageProvider) Load(path string) (interface{}, error) {
 }
 
 // Save implements resources.StateManagementInfrastructure.
-func (storage *LocalStorageProvider) Save(path string, data interface{}) error {
+func (storage *LocalStorageProvider) Save(path string, data any) error {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 	fmt.Println("state: local save triggered")
