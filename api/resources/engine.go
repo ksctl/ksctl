@@ -14,31 +14,31 @@ type Metadata struct {
 	K8sDistro     string
 	K8sVersion    string
 	StateLocation string
-	IsHA          bool
+	// IsHA          bool
 }
 
 // NOTE: local cluster are also supported but with feature flags only managedcluster available
 type CloudInfrastructure interface {
-	NewVM() error
-	DelVM() error
+	NewVM(StateManagementInfrastructure) error
+	DelVM(StateManagementInfrastructure) error
 
-	NewFirewall() error
-	DelFirewall() error
+	NewFirewall(StateManagementInfrastructure) error
+	DelFirewall(StateManagementInfrastructure) error
 
-	NewNetwork() error
-	DelNetwork() error
+	NewNetwork(StateManagementInfrastructure) error
+	DelNetwork(StateManagementInfrastructure) error
 
 	InitState() error
 
-	CreateUploadSSHKeyPair() error
-	DelSSHKeyPair() error
+	CreateUploadSSHKeyPair(StateManagementInfrastructure) error
+	DelSSHKeyPair(StateManagementInfrastructure) error
 
 	// get the state required for the kubernetes dributions to configure
-	GetStateForHACluster() (any, error)
+	GetStateForHACluster(StateManagementInfrastructure) (any, error)
 
-	NewManagedCluster() error
-	DelManagedCluster() error
-	GetManagedKubernetes()
+	NewManagedCluster(StateManagementInfrastructure) error
+	DelManagedCluster(StateManagementInfrastructure) error
+	GetManagedKubernetes(StateManagementInfrastructure)
 }
 
 type KubernetesInfrastructure interface {
@@ -46,24 +46,24 @@ type KubernetesInfrastructure interface {
 
 	// it recieves no of controlplane to which we want to configure
 	// NOTE: make the first controlplane return server token as possible
-	ConfigureControlPlane(int)
-	// DestroyControlPlane()  // NOTE: [FEATURE] destroy not available
+	ConfigureControlPlane(int, StateManagementInfrastructure)
+	// DestroyControlPlane(StateManagementInfrastructure)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	JoinWorkerplane() error
-	DestroyWorkerPlane()
+	JoinWorkerplane(StateManagementInfrastructure) error
+	DestroyWorkerPlane(StateManagementInfrastructure)
 
-	ConfigureLoadbalancer()
-	// DestroyLoadbalancer()  // NOTE: [FEATURE] destroy not available
+	ConfigureLoadbalancer(StateManagementInfrastructure)
+	// DestroyLoadbalancer(StateManagementInfrastructure)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	ConfigureDataStore()
-	// DestroyDataStore()  // NOTE: [FEATURE] destroy not available
+	ConfigureDataStore(StateManagementInfrastructure)
+	// DestroyDataStore(StateManagementInfrastructure)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	InstallApplication()
+	InstallApplication(StateManagementInfrastructure)
 
-	GetKubeConfig() (string, error)
+	GetKubeConfig(StateManagementInfrastructure) (string, error)
 }
 
 // FEATURE: non kubernetes distrobutions like nomad

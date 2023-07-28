@@ -18,8 +18,16 @@ func HydrateCloud(client *resources.KsctlClient) {
 		client.Cloud = azure_pkg.ReturnAzureStruct()
 	case "local":
 		client.Cloud = local_pkg.ReturnLocalStruct()
+	default:
+		panic("Invalid Cloud provider")
 	}
 }
 
-func CreateHACluster(client *resources.KsctlClient) {
+func CreateHACluster(client *resources.KsctlClient) error {
+	netErr := client.Cloud.NewNetwork(client.State)
+	if netErr != nil {
+		return netErr
+	}
+
+	return nil
 }

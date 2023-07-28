@@ -23,12 +23,14 @@ func HandleError(err error) {
 }
 
 func main() {
-	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
+	cmd := &resources.CobraCmd{}
 	NewCli(cmd)
 
-	cmd.Client.Metadata.Provider = "local"
-	cmd.Client.Metadata.K8sDistro = "k3s"
+	cmd.Client.Metadata.Provider = "civo"
+	cmd.Client.Metadata.K8sDistro = "kubeadm"
 	cmd.Client.Metadata.StateLocation = "local"
+	cmd.Client.Metadata.ClusterName = "dummy-name"
+	cmd.Client.Metadata.Region = "southindia"
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
 	controller.CreateHACluster(&cmd.Client)

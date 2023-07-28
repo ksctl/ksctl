@@ -1,5 +1,11 @@
 package kubernetes
 
+import (
+	k3s_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/k3s"
+	kubeadm_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
+	"github.com/kubesimplify/ksctl/api/resources"
+)
+
 // func NewController(b *k8s.ClientBuilder, state cloud.CloudResourceState) {
 // 	// TODO: Which one to call controller will decide
 // 	var abcd k8s.ControllerInterface
@@ -22,3 +28,14 @@ package kubernetes
 // 	api := (*k8s.ClientBuilder)(b)
 // 	return api
 // }
+
+func HydrateK8sDistro(client *resources.KsctlClient) {
+	switch client.Metadata.K8sDistro {
+	case "k3s":
+		client.Distro = k3s_pkg.ReturnK3sStruct()
+	case "kubeadm":
+		client.Distro = kubeadm_pkg.ReturnKubeadmStruct()
+	default:
+		panic("Invalid k8s provider")
+	}
+}

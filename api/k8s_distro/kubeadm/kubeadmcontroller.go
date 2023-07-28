@@ -1,5 +1,7 @@
 package kubeadm
 
+import "github.com/kubesimplify/ksctl/api/resources"
+
 // OTHER CONFIGURATIONS
 type Instances struct {
 	ControlPlanes []string
@@ -21,6 +23,50 @@ type KubeadmDistro struct {
 	Version string
 }
 
+// ConfigureControlPlane implements resources.Distributions.
+func (*KubeadmDistro) ConfigureControlPlane(noOfCP int, state resources.StateManagementInfrastructure) {
+	panic("unimplemented")
+}
+
+// ConfigureDataStore implements resources.Distributions.
+func (*KubeadmDistro) ConfigureDataStore(state resources.StateManagementInfrastructure) {
+	panic("unimplemented")
+}
+
+// ConfigureLoadbalancer implements resources.Distributions.
+func (*KubeadmDistro) ConfigureLoadbalancer(state resources.StateManagementInfrastructure) {
+	panic("unimplemented")
+}
+
+// DestroyWorkerPlane implements resources.Distributions.
+func (*KubeadmDistro) DestroyWorkerPlane(state resources.StateManagementInfrastructure) {
+	panic("unimplemented")
+}
+
+// GetKubeConfig implements resources.Distributions.
+func (*KubeadmDistro) GetKubeConfig(state resources.StateManagementInfrastructure) (string, error) {
+	panic("unimplemented")
+}
+
+// InitState implements resources.Distributions.
+func (k8s *KubeadmDistro) InitState(any) {
+	k8sState = &StateConfiguration{}
+}
+
+// InstallApplication implements resources.Distributions.
+func (*KubeadmDistro) InstallApplication(state resources.StateManagementInfrastructure) {
+	panic("unimplemented")
+}
+
+// JoinWorkerplane implements resources.Distributions.
+func (*KubeadmDistro) JoinWorkerplane(state resources.StateManagementInfrastructure) error {
+	panic("unimplemented")
+}
+
 var (
 	k8sState *StateConfiguration
 )
+
+func ReturnKubeadmStruct() *KubeadmDistro {
+	return &KubeadmDistro{}
+}
