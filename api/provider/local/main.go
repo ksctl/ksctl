@@ -1,5 +1,7 @@
 package local
 
+import "github.com/kubesimplify/ksctl/api/resources"
+
 type StateConfiguration struct {
 	ClusterName string `json:"cluster_name"`
 }
@@ -10,42 +12,42 @@ type LocalProvider struct {
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (*LocalProvider) CreateUploadSSHKeyPair() error {
+func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelFirewall implements resources.CloudInfrastructure.
-func (*LocalProvider) DelFirewall() error {
+func (*LocalProvider) DelFirewall(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelManagedCluster implements resources.CloudInfrastructure.
-func (*LocalProvider) DelManagedCluster() error {
+func (*LocalProvider) DelManagedCluster(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelNetwork implements resources.CloudInfrastructure.
-func (*LocalProvider) DelNetwork() error {
+func (*LocalProvider) DelNetwork(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*LocalProvider) DelSSHKeyPair() error {
+func (*LocalProvider) DelSSHKeyPair(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelVM implements resources.CloudInfrastructure.
-func (*LocalProvider) DelVM() error {
+func (*LocalProvider) DelVM(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*LocalProvider) GetManagedKubernetes() {
+func (*LocalProvider) GetManagedKubernetes(state resources.StateManagementInfrastructure) {
 	panic("unimplemented")
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*LocalProvider) GetStateForHACluster() (any, error) {
+func (*LocalProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (any, error) {
 	panic("unimplemented")
 }
 
@@ -55,22 +57,22 @@ func (*LocalProvider) InitState() error {
 }
 
 // NewFirewall implements resources.CloudInfrastructure.
-func (*LocalProvider) NewFirewall() error {
+func (*LocalProvider) NewFirewall(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (*LocalProvider) NewManagedCluster() error {
+func (*LocalProvider) NewManagedCluster(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewNetwork implements resources.CloudInfrastructure.
-func (*LocalProvider) NewNetwork() error {
+func (*LocalProvider) NewNetwork(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewVM implements resources.CloudInfrastructure.
-func (*LocalProvider) NewVM() error {
+func (*LocalProvider) NewVM(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 

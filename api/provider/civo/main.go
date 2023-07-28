@@ -2,7 +2,9 @@ package civo
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
 
@@ -66,42 +68,42 @@ type CivoProvider struct {
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (*CivoProvider) CreateUploadSSHKeyPair() error {
+func (*CivoProvider) CreateUploadSSHKeyPair(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelFirewall implements resources.CloudInfrastructure.
-func (*CivoProvider) DelFirewall() error {
+func (*CivoProvider) DelFirewall(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelManagedCluster implements resources.CloudInfrastructure.
-func (*CivoProvider) DelManagedCluster() error {
+func (*CivoProvider) DelManagedCluster(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelNetwork implements resources.CloudInfrastructure.
-func (*CivoProvider) DelNetwork() error {
+func (*CivoProvider) DelNetwork(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*CivoProvider) DelSSHKeyPair() error {
+func (*CivoProvider) DelSSHKeyPair(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelVM implements resources.CloudInfrastructure.
-func (*CivoProvider) DelVM() error {
+func (*CivoProvider) DelVM(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*CivoProvider) GetManagedKubernetes() {
+func (*CivoProvider) GetManagedKubernetes(state resources.StateManagementInfrastructure) {
 	panic("unimplemented")
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*CivoProvider) GetStateForHACluster() (any, error) {
+func (*CivoProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (any, error) {
 	panic("unimplemented")
 }
 
@@ -115,22 +117,24 @@ func (*CivoProvider) InitState() error {
 }
 
 // NewFirewall implements resources.CloudInfrastructure.
-func (*CivoProvider) NewFirewall() error {
+func (*CivoProvider) NewFirewall(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (*CivoProvider) NewManagedCluster() error {
+func (*CivoProvider) NewManagedCluster(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewNetwork implements resources.CloudInfrastructure.
-func (*CivoProvider) NewNetwork() error {
-	panic("unimplemented")
+func (*CivoProvider) NewNetwork(state resources.StateManagementInfrastructure) error {
+	fmt.Println("[CIVO] Creating network...")
+	return state.Save("civoNet.txt", nil)
+	// return nil
 }
 
 // NewVM implements resources.CloudInfrastructure.
-func (*CivoProvider) NewVM() error {
+func (*CivoProvider) NewVM(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 

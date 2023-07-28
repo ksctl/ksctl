@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
 
@@ -68,42 +69,42 @@ var (
 )
 
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (client *AzureProvider) CreateUploadSSHKeyPair() error {
+func (client *AzureProvider) CreateUploadSSHKeyPair(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelFirewall implements resources.CloudInfrastructure.
-func (*AzureProvider) DelFirewall() error {
+func (*AzureProvider) DelFirewall(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelManagedCluster implements resources.CloudInfrastructure.
-func (*AzureProvider) DelManagedCluster() error {
+func (*AzureProvider) DelManagedCluster(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelNetwork implements resources.CloudInfrastructure.
-func (*AzureProvider) DelNetwork() error {
+func (*AzureProvider) DelNetwork(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*AzureProvider) DelSSHKeyPair() error {
+func (*AzureProvider) DelSSHKeyPair(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelVM implements resources.CloudInfrastructure.
-func (*AzureProvider) DelVM() error {
+func (*AzureProvider) DelVM(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*AzureProvider) GetManagedKubernetes() {
+func (*AzureProvider) GetManagedKubernetes(state resources.StateManagementInfrastructure) {
 	panic("unimplemented")
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*AzureProvider) GetStateForHACluster() (any, error) {
+func (*AzureProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (any, error) {
 	panic("unimplemented")
 }
 
@@ -117,23 +118,24 @@ func (*AzureProvider) InitState() error {
 }
 
 // NewFirewall implements resources.CloudInfrastructure.
-func (*AzureProvider) NewFirewall() error {
+func (*AzureProvider) NewFirewall(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (*AzureProvider) NewManagedCluster() error {
+func (*AzureProvider) NewManagedCluster(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewNetwork implements resources.CloudInfrastructure.
-func (*AzureProvider) NewNetwork() error {
+func (*AzureProvider) NewNetwork(state resources.StateManagementInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewVM implements resources.CloudInfrastructure.
-func (*AzureProvider) NewVM() error {
-	panic("unimplemented")
+func (*AzureProvider) NewVM(state resources.StateManagementInfrastructure) error {
+	_ = state.Save("abcd.txt", nil)
+	return errors.New("unimplemented")
 }
 
 func ReturnAzureStruct() *AzureProvider {
