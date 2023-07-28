@@ -34,4 +34,5 @@ func main() {
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
 	controller.CreateHACluster(&cmd.Client)
+	// controller.CreateManagedCluster(&cmd.Client)
 }

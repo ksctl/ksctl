@@ -27,17 +27,17 @@ type K3sDistro struct {
 
 // ConfigureControlPlane implements resources.Distributions.
 func (*K3sDistro) ConfigureControlPlane(noOfCP int, state resources.StateManagementInfrastructure) {
-	panic("unimplemented")
+	fmt.Printf("[K3s] Configuring Controlplane[%v]....\n", noOfCP)
 }
 
 // ConfigureDataStore implements resources.Distributions.
 func (*K3sDistro) ConfigureDataStore(state resources.StateManagementInfrastructure) {
-	panic("unimplemented")
+	fmt.Println("[K3s] Configuring DataStore....")
 }
 
 // ConfigureLoadbalancer implements resources.Distributions.
 func (k8s *K3sDistro) ConfigureLoadbalancer(state resources.StateManagementInfrastructure) {
-	fmt.Println("Configuring Loadbalancer....")
+	fmt.Println("[K3s] Configuring Loadbalancer....")
 }
 
 // DestroyWorkerPlane implements resources.Distributions.
@@ -47,7 +47,8 @@ func (*K3sDistro) DestroyWorkerPlane(state resources.StateManagementInfrastructu
 
 // GetKubeConfig implements resources.Distributions.
 func (*K3sDistro) GetKubeConfig(state resources.StateManagementInfrastructure) (string, error) {
-	panic("unimplemented")
+	fmt.Println("[K3s] Kubeconfig fetch....")
+	return "{}", nil
 }
 
 // InitState implements resources.Distributions.
@@ -57,7 +58,7 @@ func (*K3sDistro) InitState(cloudState cloud.CloudResourceState) {
 	k8sState = &StateConfiguration{}
 	k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
 	//.....
-	fmt.Println("Initialized K3s from cloudprovider", k8sState)
+	fmt.Println("[K3s] Initialized K3s from cloudprovider", k8sState)
 }
 
 // InstallApplication implements resources.Distributions.
@@ -67,7 +68,8 @@ func (*K3sDistro) InstallApplication(state resources.StateManagementInfrastructu
 
 // JoinWorkerplane implements resources.Distributions.
 func (*K3sDistro) JoinWorkerplane(state resources.StateManagementInfrastructure) error {
-	panic("unimplemented")
+	fmt.Println("[K3s] Adding WorkerPlane....")
+	return nil
 }
 
 // TODO: Add the SSH functionality here
