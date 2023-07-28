@@ -1,6 +1,8 @@
 package cloud
 
 import (
+	"fmt"
+
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
@@ -23,10 +25,32 @@ func HydrateCloud(client *resources.KsctlClient) {
 }
 
 func CreateHACluster(client *resources.KsctlClient) error {
-	netErr := client.Cloud.NewNetwork(client.State)
-	if netErr != nil {
-		return netErr
-	}
+	_ = client.Cloud.NewNetwork(client.State)
+	_ = client.Cloud.CreateUploadSSHKeyPair(client.State)
+	fmt.Println("Firewall LB")
+	_ = client.Cloud.NewFirewall(client.State)
+	fmt.Println("Firewall DB")
+	_ = client.Cloud.NewFirewall(client.State)
+	fmt.Println("Firewall CP")
+	_ = client.Cloud.NewFirewall(client.State)
+	fmt.Println("Firewall WP")
+	_ = client.Cloud.NewFirewall(client.State)
 
+	fmt.Println("Loadbalancer VM")
+	_ = client.Cloud.NewVM(client.State)
+	fmt.Println("Datastore VM")
+	_ = client.Cloud.NewVM(client.State)
+	fmt.Println("ControlPlane VM")
+	_ = client.Cloud.NewVM(client.State)
+	fmt.Println("ControlPlane VM")
+	_ = client.Cloud.NewVM(client.State)
+	fmt.Println("Workerplane VM")
+	_ = client.Cloud.NewVM(client.State)
+
+	return nil
+}
+
+func CreateManagedCluster(client *resources.KsctlClient) error {
+	_ = client.Cloud.NewManagedCluster(client.State)
 	return nil
 }
