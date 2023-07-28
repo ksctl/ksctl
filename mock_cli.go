@@ -27,7 +27,7 @@ func main() {
 	NewCli(cmd)
 
 	cmd.Client.Metadata.Provider = "civo"
-	cmd.Client.Metadata.K8sDistro = "kubeadm"
+	cmd.Client.Metadata.K8sDistro = "k3s"
 	cmd.Client.Metadata.StateLocation = "local"
 	cmd.Client.Metadata.ClusterName = "dummy-name"
 	cmd.Client.Metadata.Region = "southindia"

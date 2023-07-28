@@ -7,9 +7,6 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-// create a type for controlelr
-// which uses the controller.CreateHACluster(*KsctlClient) inside that
-
 func HydrateCloud(client *resources.KsctlClient) {
 	switch client.Metadata.Provider {
 	case "civo":
@@ -21,6 +18,8 @@ func HydrateCloud(client *resources.KsctlClient) {
 	default:
 		panic("Invalid Cloud provider")
 	}
+	// call the init state for cloud providers
+	_ = client.Cloud.InitState()
 }
 
 func CreateHACluster(client *resources.KsctlClient) error {
