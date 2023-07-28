@@ -31,6 +31,9 @@ func main() {
 	cmd.Client.Metadata.StateLocation = "local"
 	cmd.Client.Metadata.ClusterName = "dummy-name"
 	cmd.Client.Metadata.Region = "southindia"
+	cmd.Client.Metadata.NoCP = 5
+	cmd.Client.Metadata.NoWP = 5
+	cmd.Client.Metadata.NoDS = 3
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
 	controller.CreateHACluster(&cmd.Client)
