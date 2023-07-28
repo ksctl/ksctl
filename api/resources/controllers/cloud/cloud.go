@@ -1,11 +1,5 @@
 package cloud
 
-import "github.com/kubesimplify/ksctl/api/resources"
-
-type ClientBuilder resources.KsctlClient
-
-type ClientStateMgt resources.StateManagementInfrastructure
-
 // CloudResourceState provides the state which cloud provider creates
 // and which is consumed by the kubernetes to configure them
 type CloudResourceState struct {
@@ -34,13 +28,3 @@ type SSHPayload struct {
 	PathPrivateKey string
 	Output         string
 }
-
-// type ControllerInterface interface {
-// 	CreateHACluster()
-// 	CreateManagedCluster()
-
-// 	DestroyHACluster()
-// 	DestroyManagedCluster()
-
-// 	FetchState() CloudResourceState
-// }
