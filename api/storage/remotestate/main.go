@@ -7,18 +7,17 @@ type RemoteStorageProvider struct {
 }
 
 type payload struct {
-    data string
+	data string
 }
 
 // Load implements resources.StateManagementInfrastructure.
 func (*RemoteStorageProvider) Load(path string) (interface{}, error) {
 	fmt.Println("remote load")
-    return payload{}, nil
+	return payload{}, nil
 }
 
 // Save implements resources.StateManagementInfrastructure.
 func (*RemoteStorageProvider) Save(path string, data interface{}) error {
 	fmt.Println("remote save")
-    return nil
+	return nil
 }
-

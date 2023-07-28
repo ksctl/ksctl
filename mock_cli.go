@@ -3,9 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/cli"
 )
 
 func NewCli(cmd *resources.CobraCmd) {
@@ -23,12 +21,12 @@ func HandleError(err error) {
 }
 
 func main() {
-	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
-	NewCli(cmd)
-	HandleError(cli.NewCivoBuilderOrDie(cmd))
-	HandleError(cli.NewK3sBuilderOrDie(cmd))
-	HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
-	cmd.Client.IsHA = true // set by CMD
+	// cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
+	// NewCli(cmd)
+	// HandleError(cli.NewCivoBuilderOrDie(cmd))
+	// HandleError(cli.NewK3sBuilderOrDie(cmd))
+	// HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
+	// cmd.Client.IsHA = true // set by CMD
 
-	controllers.NewController(&cmd.Client)
+	// controllers.NewController(&cmd.Client)
 }

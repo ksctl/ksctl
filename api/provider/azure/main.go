@@ -1,8 +1,7 @@
 package azure
 
 import (
-	"fmt"
-
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
 
@@ -49,63 +48,73 @@ type StateConfiguration struct {
 	InfoDatabase       AzureStateVM             `json:"info_database"`
 	InfoLoadBalancer   AzureStateVM             `json:"info_load_balancer"`
 	K8s                cloud.CloudResourceState // dont include it here it should be present in kubernetes
-
 }
 
-type CloudController cloud.ClientBuilder
-
-var (
-	currCloudState *StateConfiguration
-)
-
-// FetchState implements cloud.ControllerInterface.
-func (*CloudController) FetchState() cloud.CloudResourceState {
-	// move the publicIPs to the k8s
-	currCloudState.K8s.IPv4ControlPlanes = currCloudState.InfoControlPlanes.PublicIPs
-	return currCloudState.K8s
+type AzureProvider struct {
+	ClusterName string `json:"cluster_name"`
+	HACluster   bool   `json:"ha_cluster"`
+	Region      string `json:"region"`
+	// Spec           util.Machine `json:"spec"`
+	SubscriptionID string `json:"subscription_id"`
+	//Config         *AzureStateCluster     `json:"config"`
+	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"`
+	//SSH_Payload    *util.SSHPayload       `json:"ssh___payload"`
 }
 
-func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
-	azure := (*CloudController)(b)
-	return azure
-}
+// type CloudController cloud.ClientBuilder
 
-func (client *CloudController) CreateHACluster() {
+// var (
+// 	currCloudState *StateConfiguration
+// )
 
-	fmt.Println("Implement me[azure ha create]")
-	err := client.State.Save("azure.txt", nil)
-	currCloudState = nil
-	currCloudState = &StateConfiguration{
-		ClusterName: client.ClusterName,
-		Region:      client.Region,
-		K8s: cloud.CloudResourceState{
-			SSHState: cloud.SSHPayload{UserName: "azureadmin"},
-			Metadata: cloud.Metadata{
-				ClusterName: client.ClusterName,
-				Region:      client.Region,
-				Provider:    "azure",
-			},
-		},
-	}
+// // FetchState implements cloud.ControllerInterface.
+// func (*CloudController) FetchState() cloud.CloudResourceState {
+// 	// move the publicIPs to the k8s
+// 	currCloudState.K8s.IPv4ControlPlanes = currCloudState.InfoControlPlanes.PublicIPs
+// 	return currCloudState.K8s
+// }
 
-	fmt.Println(err)
-	client.Distro.ConfigureControlPlane()
-}
+// func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
+// 	azure := (*CloudController)(b)
+// 	return azure
+// }
 
-func (client *CloudController) CreateManagedCluster() {
-	fmt.Println("Implement me[azure managed create]")
+// func (client *CloudController) CreateHACluster() {
 
-	client.Cloud.CreateManagedKubernetes()
+// 	fmt.Println("Implement me[azure ha create]")
+// 	err := client.State.Save("azure.txt", nil)
+// 	currCloudState = nil
+// 	currCloudState = &StateConfiguration{
+// 		ClusterName: client.ClusterName,
+// 		Region:      client.Region,
+// 		K8s: cloud.CloudResourceState{
+// 			SSHState: cloud.SSHPayload{UserName: "azureadmin"},
+// 			Metadata: cloud.Metadata{
+// 				ClusterName: client.ClusterName,
+// 				Region:      client.Region,
+// 				Provider:    "azure",
+// 			},
+// 		},
+// 	}
 
-	_, err := client.State.Load("azure.txt")
-	fmt.Println(err)
-}
+// 	fmt.Println(err)
+// 	client.Distro.ConfigureControlPlane()
+// }
 
-func (client *CloudController) DestroyHACluster() {
-	fmt.Println("Implement me[azure ha delete]")
-}
+// func (client *CloudController) CreateManagedCluster() {
+// 	fmt.Println("Implement me[azure managed create]")
 
-func (client *CloudController) DestroyManagedCluster() {
+// 	client.Cloud.CreateManagedKubernetes()
 
-	fmt.Println("Implement me[azure managed delete]")
-}
+// 	_, err := client.State.Load("azure.txt")
+// 	fmt.Println(err)
+// }
+
+// func (client *CloudController) DestroyHACluster() {
+// 	fmt.Println("Implement me[azure ha delete]")
+// }
+
+// func (client *CloudController) DestroyManagedCluster() {
+
+// 	fmt.Println("Implement me[azure managed delete]")
+// }
