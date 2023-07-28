@@ -1,7 +1,58 @@
 package civo
 
 import (
+	"errors"
+
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+)
+
+type InstanceID struct {
+	ControlNodes     []string `json:"controlnodeids"`
+	WorkerNodes      []string `json:"workernodeids"`
+	LoadBalancerNode []string `json:"loadbalancernodeids"`
+	DatabaseNode     []string `json:"databasenodeids"`
+}
+
+type NetworkID struct {
+	FirewallIDControlPlaneNode string `json:"fwidcontrolplanenode"`
+	FirewallIDWorkerNode       string `json:"fwidworkernode"`
+	FirewallIDLoadBalancerNode string `json:"fwidloadbalancenode"`
+	FirewallIDDatabaseNode     string `json:"fwiddatabasenode"`
+	NetworkID                  string `json:"clusternetworkid"`
+}
+
+type InstanceIP struct {
+	IPControlplane        []string
+	IPWorkerPlane         []string
+	IPLoadbalancer        string
+	IPDataStore           []string
+	PrivateIPControlplane []string
+	PrivateIPWorkerPlane  []string
+	PrivateIPLoadbalancer string
+	PrivateIPDataStore    []string
+}
+
+// Plan is to have seperate fileds inside it so that it will be much easier to transfer data
+// ex. ha state and managed state
+// when managed state is going to be used the specific section need to be used
+// other one should be null
+type StateConfiguration struct {
+	ClusterName string                   `json:"clustername"`
+	Region      string                   `json:"region"`
+	SSHID       string                   `json:"ssh_id"`
+	InstanceIDs InstanceID               `json:"instanceids"`
+	NetworkIDs  NetworkID                `json:"networkids"`
+	IPv4        InstanceIP               `json:"ipv4_addr"`
+	K8s         cloud.CloudResourceState // dont include it here it should be present in kubernetes
+	// for HA different StateConfiguration and for Managed different StateConfiguration
+	// WARN: HA cloud.CloudResourceState
+	// WARN: Managed xyz..
+}
+
+// type CloudController cloud.ClientBuilder
+
+var (
+	currCloudState *StateConfiguration
 )
 
 type CivoProvider struct {
@@ -56,7 +107,11 @@ func (*CivoProvider) GetStateForHACluster() (any, error) {
 
 // InitState implements resources.CloudInfrastructure.
 func (*CivoProvider) InitState() error {
-	panic("unimplemented")
+	if currCloudState != nil {
+		return errors.New("[FATAL] already initialized")
+	}
+	currCloudState = &StateConfiguration{}
+	return nil
 }
 
 // NewFirewall implements resources.CloudInfrastructure.
@@ -78,61 +133,6 @@ func (*CivoProvider) NewNetwork() error {
 func (*CivoProvider) NewVM() error {
 	panic("unimplemented")
 }
-
-type InstanceID struct {
-	ControlNodes     []string `json:"controlnodeids"`
-	WorkerNodes      []string `json:"workernodeids"`
-	LoadBalancerNode []string `json:"loadbalancernodeids"`
-	DatabaseNode     []string `json:"databasenodeids"`
-}
-
-type NetworkID struct {
-	FirewallIDControlPlaneNode string `json:"fwidcontrolplanenode"`
-	FirewallIDWorkerNode       string `json:"fwidworkernode"`
-	FirewallIDLoadBalancerNode string `json:"fwidloadbalancenode"`
-	FirewallIDDatabaseNode     string `json:"fwiddatabasenode"`
-	NetworkID                  string `json:"clusternetworkid"`
-}
-
-type InstanceIP struct {
-	IPControlplane        []string
-	IPWorkerPlane         []string
-	IPLoadbalancer        string
-	IPDataStore           []string
-	PrivateIPControlplane []string
-	PrivateIPWorkerPlane  []string
-	PrivateIPLoadbalancer string
-	PrivateIPDataStore    []string
-}
-
-type StateConfiguration struct {
-	ClusterName string                   `json:"clustername"`
-	Region      string                   `json:"region"`
-	SSHID       string                   `json:"ssh_id"`
-	InstanceIDs InstanceID               `json:"instanceids"`
-	NetworkIDs  NetworkID                `json:"networkids"`
-	IPv4        InstanceIP               `json:"ipv4_addr"`
-	K8s         cloud.CloudResourceState // dont include it here it should be present in kubernetes
-	// for HA different StateConfiguration and for Managed different StateConfiguration
-	// HA cloud.CloudResourceState
-	// Managed Cmanaed
-}
-
-// type CloudController cloud.ClientBuilder
-
-// var (
-// 	currCloudState *StateConfiguration
-// )
-
-// // FetchState implements cloud.ControllerInterface.
-// func (*CloudController) FetchState() cloud.CloudResourceState {
-// 	return currCloudState.K8s
-// }
-
-// func WrapCloudControllerBuilder(b *cloud.ClientBuilder) *CloudController {
-// 	civo := (*CloudController)(b)
-// 	return civo
-// }
 
 func ReturnCivoStruct() *CivoProvider {
 	return &CivoProvider{}
