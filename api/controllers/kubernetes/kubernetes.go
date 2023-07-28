@@ -19,15 +19,17 @@ func HydrateK8sDistro(client *resources.KsctlClient) {
 
 func ConfigureCluster(client *resources.KsctlClient) {
 	client.Distro.ConfigureLoadbalancer(client.State)
-	client.Distro.ConfigureDataStore(client.State)
-	client.Distro.ConfigureControlPlane(1, client.State)
-	client.Distro.ConfigureControlPlane(2, client.State)
-	client.Distro.ConfigureControlPlane(3, client.State)
-
+	for no := 0; no < int(client.Metadata.NoDS); no++ {
+		client.Distro.ConfigureDataStore(client.State)
+	}
+	for no := 0; no < int(client.Metadata.NoCP); no++ {
+		client.Distro.ConfigureControlPlane(no, client.State)
+	}
 	kubeconfig, _ := client.Distro.GetKubeConfig(client.State)
 
 	client.State.Save("kubeconfig", kubeconfig)
 
-	_ = client.Distro.JoinWorkerplane(client.State)
-	_ = client.Distro.JoinWorkerplane(client.State)
+	for no := 0; no < int(client.Metadata.NoWP); no++ {
+		_ = client.Distro.JoinWorkerplane(client.State)
+	}
 }

@@ -29,6 +29,7 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	_ = client.Cloud.CreateUploadSSHKeyPair(client.State)
 	fmt.Println("Firewall LB")
 	_ = client.Cloud.NewFirewall(client.State)
+
 	fmt.Println("Firewall DB")
 	_ = client.Cloud.NewFirewall(client.State)
 	fmt.Println("Firewall CP")
@@ -38,15 +39,20 @@ func CreateHACluster(client *resources.KsctlClient) error {
 
 	fmt.Println("Loadbalancer VM")
 	_ = client.Cloud.NewVM(client.State)
-	fmt.Println("Datastore VM")
-	_ = client.Cloud.NewVM(client.State)
-	fmt.Println("ControlPlane VM")
-	_ = client.Cloud.NewVM(client.State)
-	fmt.Println("ControlPlane VM")
-	_ = client.Cloud.NewVM(client.State)
-	fmt.Println("Workerplane VM")
-	_ = client.Cloud.NewVM(client.State)
+	for no := 0; no < int(client.Metadata.NoDS); no++ {
+		fmt.Println("Datastore VM", no)
+		_ = client.Cloud.NewVM(client.State)
+	}
 
+	for no := 0; no < int(client.Metadata.NoCP); no++ {
+		fmt.Println("ControlPlane VM", no)
+		_ = client.Cloud.NewVM(client.State)
+	}
+
+	for no := 0; no < int(client.Metadata.NoWP); no++ {
+		fmt.Println("Workerplane VM", no)
+		_ = client.Cloud.NewVM(client.State)
+	}
 	return nil
 }
 
