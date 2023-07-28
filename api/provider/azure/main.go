@@ -61,6 +61,75 @@ type AzureProvider struct {
 	//SSH_Payload    *util.SSHPayload       `json:"ssh___payload"`
 }
 
+// CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
+func (*AzureProvider) CreateUploadSSHKeyPair() error {
+	panic("unimplemented")
+}
+
+// DelFirewall implements resources.CloudInfrastructure.
+func (*AzureProvider) DelFirewall() error {
+	panic("unimplemented")
+}
+
+// DelManagedCluster implements resources.CloudInfrastructure.
+func (*AzureProvider) DelManagedCluster() error {
+	panic("unimplemented")
+}
+
+// DelNetwork implements resources.CloudInfrastructure.
+func (*AzureProvider) DelNetwork() error {
+	panic("unimplemented")
+}
+
+// DelSSHKeyPair implements resources.CloudInfrastructure.
+func (*AzureProvider) DelSSHKeyPair() error {
+	panic("unimplemented")
+}
+
+// DelVM implements resources.CloudInfrastructure.
+func (*AzureProvider) DelVM() error {
+	panic("unimplemented")
+}
+
+// GetManagedKubernetes implements resources.CloudInfrastructure.
+func (*AzureProvider) GetManagedKubernetes() {
+	panic("unimplemented")
+}
+
+// GetStateForHACluster implements resources.CloudInfrastructure.
+func (*AzureProvider) GetStateForHACluster() (any, error) {
+	panic("unimplemented")
+}
+
+// InitState implements resources.CloudInfrastructure.
+func (*AzureProvider) InitState() error {
+	panic("unimplemented")
+}
+
+// NewFirewall implements resources.CloudInfrastructure.
+func (*AzureProvider) NewFirewall() error {
+	panic("unimplemented")
+}
+
+// NewManagedCluster implements resources.CloudInfrastructure.
+func (*AzureProvider) NewManagedCluster() error {
+	panic("unimplemented")
+}
+
+// NewNetwork implements resources.CloudInfrastructure.
+func (*AzureProvider) NewNetwork() error {
+	panic("unimplemented")
+}
+
+// NewVM implements resources.CloudInfrastructure.
+func (*AzureProvider) NewVM() error {
+	panic("unimplemented")
+}
+
+func ReturnAzureStruct() *AzureProvider {
+	return &AzureProvider{}
+}
+
 // type CloudController cloud.ClientBuilder
 
 // var (

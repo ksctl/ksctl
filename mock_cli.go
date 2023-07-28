@@ -26,13 +26,10 @@ func main() {
 	cmd := &resources.CobraCmd{ClusterName: "dummy-name", Region: "southindia"}
 	NewCli(cmd)
 
+	cmd.Client.Metadata.Provider = "civo"
+	cmd.Client.Metadata.K8sDistro = "k3s"
+	cmd.Client.Metadata.StateLocation = "local"
+
 	var controller controllers.Controller = control_pkg.GenKsctlController()
-	controller.CreateHACluster(cmd.Client)
-
-	// HandleError(cli.NewCivoBuilderOrDie(cmd))
-	// HandleError(cli.NewK3sBuilderOrDie(cmd))
-	// HandleError(cli.NewLocalStorageBuilderOrDie(cmd))
-	// cmd.Client.IsHA = true // set by CMD
-
-	// controllers.NewController(&cmd.Client)
+	controller.CreateHACluster(&cmd.Client)
 }

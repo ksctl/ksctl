@@ -14,6 +14,71 @@ type CivoProvider struct {
 	CNIPlugin   string `json:"cni_plugin"`
 }
 
+// CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
+func (*CivoProvider) CreateUploadSSHKeyPair() error {
+	panic("unimplemented")
+}
+
+// DelFirewall implements resources.CloudInfrastructure.
+func (*CivoProvider) DelFirewall() error {
+	panic("unimplemented")
+}
+
+// DelManagedCluster implements resources.CloudInfrastructure.
+func (*CivoProvider) DelManagedCluster() error {
+	panic("unimplemented")
+}
+
+// DelNetwork implements resources.CloudInfrastructure.
+func (*CivoProvider) DelNetwork() error {
+	panic("unimplemented")
+}
+
+// DelSSHKeyPair implements resources.CloudInfrastructure.
+func (*CivoProvider) DelSSHKeyPair() error {
+	panic("unimplemented")
+}
+
+// DelVM implements resources.CloudInfrastructure.
+func (*CivoProvider) DelVM() error {
+	panic("unimplemented")
+}
+
+// GetManagedKubernetes implements resources.CloudInfrastructure.
+func (*CivoProvider) GetManagedKubernetes() {
+	panic("unimplemented")
+}
+
+// GetStateForHACluster implements resources.CloudInfrastructure.
+func (*CivoProvider) GetStateForHACluster() (any, error) {
+	panic("unimplemented")
+}
+
+// InitState implements resources.CloudInfrastructure.
+func (*CivoProvider) InitState() error {
+	panic("unimplemented")
+}
+
+// NewFirewall implements resources.CloudInfrastructure.
+func (*CivoProvider) NewFirewall() error {
+	panic("unimplemented")
+}
+
+// NewManagedCluster implements resources.CloudInfrastructure.
+func (*CivoProvider) NewManagedCluster() error {
+	panic("unimplemented")
+}
+
+// NewNetwork implements resources.CloudInfrastructure.
+func (*CivoProvider) NewNetwork() error {
+	panic("unimplemented")
+}
+
+// NewVM implements resources.CloudInfrastructure.
+func (*CivoProvider) NewVM() error {
+	panic("unimplemented")
+}
+
 type InstanceID struct {
 	ControlNodes     []string `json:"controlnodeids"`
 	WorkerNodes      []string `json:"workernodeids"`
@@ -68,3 +133,7 @@ type StateConfiguration struct {
 // 	civo := (*CloudController)(b)
 // 	return civo
 // }
+
+func ReturnCivoStruct() *CivoProvider {
+	return &CivoProvider{}
+}
