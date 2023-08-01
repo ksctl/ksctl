@@ -141,7 +141,6 @@ func (*AzureProvider) NewNetwork(state resources.StateManagementInfrastructure) 
 
 // NewVM implements resources.CloudInfrastructure.
 func (*AzureProvider) NewVM(state resources.StateManagementInfrastructure) error {
-	_ = state.Save("abcd.txt", nil)
 	return errors.New("unimplemented")
 }
 
