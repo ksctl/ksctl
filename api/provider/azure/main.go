@@ -52,6 +52,12 @@ type StateConfiguration struct {
 	InfoLoadBalancer   AzureStateVM             `json:"info_load_balancer"`
 	K8s                cloud.CloudResourceState // dont include it here it should be present in kubernetes
 }
+type Metadata struct {
+	ResName string
+	Role    string
+	VmType  string
+	Public  bool
+}
 
 type AzureProvider struct {
 	ClusterName string `json:"cluster_name"`
@@ -62,6 +68,7 @@ type AzureProvider struct {
 	//Config         *AzureStateCluster     `json:"config"`
 	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"`
 	//SSH_Payload    *util.SSHPayload       `json:"ssh___payload"`
+	Metadata
 }
 
 var (
@@ -142,42 +149,26 @@ func ReturnAzureStruct() *AzureProvider {
 	return &AzureProvider{}
 }
 
-// func (client *CloudController) CreateHACluster() {
+// it will contain the name of the resource to be created
+func (cloud *AzureProvider) Name(resName string) resources.CloudInfrastructure {
+	cloud.Metadata.ResName = resName
+	return cloud
+}
 
-// 	fmt.Println("Implement me[azure ha create]")
-// 	err := client.State.Save("azure.txt", nil)
-// 	currCloudState = nil
-// 	currCloudState = &StateConfiguration{
-// 		ClusterName: client.ClusterName,
-// 		Region:      client.Region,
-// 		K8s: cloud.CloudResourceState{
-// 			SSHState: cloud.SSHPayload{UserName: "azureadmin"},
-// 			Metadata: cloud.Metadata{
-// 				ClusterName: client.ClusterName,
-// 				Region:      client.Region,
-// 				Provider:    "azure",
-// 			},
-// 		},
-// 	}
+// it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
+func (cloud *AzureProvider) Role(resRole string) resources.CloudInfrastructure {
+	cloud.Metadata.Role = resRole
+	return cloud
+}
 
-// 	fmt.Println(err)
-// 	client.Distro.ConfigureControlPlane()
-// }
+// it will contain which vmType to create
+func (cloud *AzureProvider) VMType(size string) resources.CloudInfrastructure {
+	cloud.Metadata.VmType = size
+	return cloud
+}
 
-// func (client *CloudController) CreateManagedCluster() {
-// 	fmt.Println("Implement me[azure managed create]")
-
-// 	client.Cloud.CreateManagedKubernetes()
-
-// 	_, err := client.State.Load("azure.txt")
-// 	fmt.Println(err)
-// }
-
-// func (client *CloudController) DestroyHACluster() {
-// 	fmt.Println("Implement me[azure ha delete]")
-// }
-
-// func (client *CloudController) DestroyManagedCluster() {
-
-// 	fmt.Println("Implement me[azure managed delete]")
-// }
+// whether to have the resource as public or private (i.e. VMs)
+func (cloud *AzureProvider) Visibility(toBePublic bool) resources.CloudInfrastructure {
+	cloud.Metadata.Public = toBePublic
+	return cloud
+}
