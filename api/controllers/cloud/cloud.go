@@ -25,38 +25,67 @@ func HydrateCloud(client *resources.KsctlClient) {
 }
 
 func CreateHACluster(client *resources.KsctlClient) error {
-	_ = client.Cloud.NewNetwork(client.State)
-	_ = client.Cloud.CreateUploadSSHKeyPair(client.State)
+	_ = client.Cloud.Name("demo-net").NewNetwork(client.State)
+	_ = client.Cloud.Name("demo-ssh").CreateUploadSSHKeyPair(client.State)
+
 	fmt.Println("Firewall LB")
-	_ = client.Cloud.NewFirewall(client.State)
+	_ = client.Cloud.Name("demo-fw-lb").
+		Role("loadbalancer").
+		VMType("abcd-.t3mico").
+		NewFirewall(client.State)
 
 	fmt.Println("Firewall DB")
-	_ = client.Cloud.NewFirewall(client.State)
+	_ = client.Cloud.Name("demo-fw-db").
+		Role("datastore").
+		VMType("abcd-.t3medium").
+		NewFirewall(client.State)
+
 	fmt.Println("Firewall CP")
-	_ = client.Cloud.NewFirewall(client.State)
+	_ = client.Cloud.Name("demo-fw-cp").
+		Role("controlplane").
+		VMType("abcd-.t3large").
+		NewFirewall(client.State)
+
 	fmt.Println("Firewall WP")
-	_ = client.Cloud.NewFirewall(client.State)
+	_ = client.Cloud.Name("demo-fw-wp").
+		Role("workerplane").
+		VMType("abcd-.t3large").
+		NewFirewall(client.State)
 
 	fmt.Println("Loadbalancer VM")
-	_ = client.Cloud.NewVM(client.State)
+	_ = client.Cloud.Name("demo-vm-lb").
+		Role("loadbalancer").
+		VMType("abcd-.t3mico").
+		Visibility(true).
+		NewVM(client.State)
+
 	for no := 0; no < int(client.Metadata.NoDS); no++ {
-		fmt.Println("Datastore VM", no)
-		_ = client.Cloud.NewVM(client.State)
+		_ = client.Cloud.Name(fmt.Sprintf("demo-vm-db-%d", no)).
+			Role("datastore").
+			VMType("abcd-.t3medium").
+			Visibility(true).
+			NewVM(client.State)
 	}
 
 	for no := 0; no < int(client.Metadata.NoCP); no++ {
-		fmt.Println("ControlPlane VM", no)
-		_ = client.Cloud.NewVM(client.State)
+		_ = client.Cloud.Name(fmt.Sprintf("demo-vm-cp-%d", no)).
+			Role("controlplane").
+			VMType("abcd-.t3mico").
+			Visibility(true).
+			NewVM(client.State)
 	}
 
 	for no := 0; no < int(client.Metadata.NoWP); no++ {
-		fmt.Println("Workerplane VM", no)
-		_ = client.Cloud.NewVM(client.State)
+		_ = client.Cloud.Name(fmt.Sprintf("demo-vm-wp-%d", no)).
+			Role("workerplane").
+			VMType("abcd-.t3mico").
+			Visibility(true).
+			NewVM(client.State)
 	}
 	return nil
 }
 
 func CreateManagedCluster(client *resources.KsctlClient) error {
-	_ = client.Cloud.NewManagedCluster(client.State)
+	_ = client.Cloud.Name(client.Metadata.ClusterName).NewManagedCluster(client.State)
 	return nil
 }

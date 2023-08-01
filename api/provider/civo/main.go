@@ -34,83 +34,40 @@ type InstanceIP struct {
 	PrivateIPDataStore    []string
 }
 
-// Plan is to have seperate fileds inside it so that it will be much easier to transfer data
-// ex. ha state and managed state
-// when managed state is going to be used the specific section need to be used
-// other one should be null
 type StateConfiguration struct {
-	ClusterName string                   `json:"clustername"`
-	Region      string                   `json:"region"`
-	SSHID       string                   `json:"ssh_id"`
-	InstanceIDs InstanceID               `json:"instanceids"`
-	NetworkIDs  NetworkID                `json:"networkids"`
-	IPv4        InstanceIP               `json:"ipv4_addr"`
-	K8s         cloud.CloudResourceState // dont include it here it should be present in kubernetes
-	// for HA different StateConfiguration and for Managed different StateConfiguration
-	// WARN: HA cloud.CloudResourceState
-	// WARN: Managed xyz..
+	ClusterName string     `json:"clustername"`
+	Region      string     `json:"region"`
+	SSHID       string     `json:"ssh_id"`
+	InstanceIDs InstanceID `json:"instanceids"`
+	NetworkIDs  NetworkID  `json:"networkids"`
+	IPv4        InstanceIP `json:"ipv4_addr"`
 }
-
-// type CloudController cloud.ClientBuilder
 
 var (
 	currCloudState *StateConfiguration
 )
+
+type Metadata struct {
+	ResName string
+	Role    string
+	VmType  string
+	Public  bool
+}
 
 type CivoProvider struct {
 	ClusterName string `json:"cluster_name"`
 	APIKey      string `json:"api_key"`
 	HACluster   bool   `json:"ha_cluster"`
 	Region      string `json:"region"`
-	//Spec        util.Machine `json:"spec"`
 	Application string `json:"application"`
 	CNIPlugin   string `json:"cni_plugin"`
-}
-
-// CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (*CivoProvider) CreateUploadSSHKeyPair(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] Created SSHKeyPair....")
-	return nil
-}
-
-// DelFirewall implements resources.CloudInfrastructure.
-func (*CivoProvider) DelFirewall(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] Del Firewall....")
-	return nil
-}
-
-// DelManagedCluster implements resources.CloudInfrastructure.
-func (*CivoProvider) DelManagedCluster(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] Del Managed cluster....")
-	return nil
-}
-
-// DelNetwork implements resources.CloudInfrastructure.
-func (*CivoProvider) DelNetwork(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] Del Network....")
-	return nil
-}
-
-// DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*CivoProvider) DelSSHKeyPair(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] Del SSHKeypair....")
-	return nil
-}
-
-// DelVM implements resources.CloudInfrastructure.
-func (*CivoProvider) DelVM(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] Del VM....")
-	return nil
-}
-
-// GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*CivoProvider) GetManagedKubernetes(state resources.StateManagementInfrastructure) {
-	fmt.Println("[CIVO] Got Managed cluster....")
+	Metadata
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
 func (client *CivoProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
 	payload := cloud.CloudResourceState{
+		SSHState:          cloud.SSHPayload{PathPrivateKey: "abcd/rdcewcf"},
 		Metadata:          cloud.Metadata{ClusterName: client.ClusterName},
 		IPv4ControlPlanes: currCloudState.InstanceIDs.ControlNodes,
 	}
@@ -128,31 +85,30 @@ func (*CivoProvider) InitState() error {
 	return nil
 }
 
-// NewFirewall implements resources.CloudInfrastructure.
-func (*CivoProvider) NewFirewall(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] creating Firewall...")
-	return nil
-}
-
-// NewManagedCluster implements resources.CloudInfrastructure.
-func (*CivoProvider) NewManagedCluster(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] creating managed cluster...")
-	return nil
-}
-
-// NewNetwork implements resources.CloudInfrastructure.
-func (*CivoProvider) NewNetwork(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] Creating network...")
-	// return state.Save("civoNet.txt", nil)
-	return nil
-}
-
-// NewVM implements resources.CloudInfrastructure.
-func (*CivoProvider) NewVM(state resources.StateManagementInfrastructure) error {
-	fmt.Println("[CIVO] creating VM...")
-	return nil
-}
-
 func ReturnCivoStruct() *CivoProvider {
 	return &CivoProvider{}
+}
+
+// it will contain the name of the resource to be created
+func (cloud *CivoProvider) Name(resName string) resources.CloudInfrastructure {
+	cloud.Metadata.ResName = resName
+	return cloud
+}
+
+// it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
+func (cloud *CivoProvider) Role(resRole string) resources.CloudInfrastructure {
+	cloud.Metadata.Role = resRole
+	return cloud
+}
+
+// it will contain which vmType to create
+func (cloud *CivoProvider) VMType(size string) resources.CloudInfrastructure {
+	cloud.Metadata.VmType = size
+	return cloud
+}
+
+// whether to have the resource as public or private (i.e. VMs)
+func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudInfrastructure {
+	cloud.Metadata.Public = toBePublic
+	return cloud
 }

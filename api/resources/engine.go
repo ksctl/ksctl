@@ -43,6 +43,12 @@ type CloudInfrastructure interface {
 	NewManagedCluster(StateManagementInfrastructure) error
 	DelManagedCluster(StateManagementInfrastructure) error
 	GetManagedKubernetes(StateManagementInfrastructure)
+
+	// used by controller
+	Name(string) CloudInfrastructure
+	Role(string) CloudInfrastructure
+	VMType(string) CloudInfrastructure
+	Visibility(bool) CloudInfrastructure
 }
 
 type KubernetesInfrastructure interface {

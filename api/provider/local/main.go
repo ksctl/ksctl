@@ -9,9 +9,17 @@ type StateConfiguration struct {
 	ClusterName string `json:"cluster_name"`
 }
 
+type Metadata struct {
+	ResName string
+	Role    string
+	VmType  string
+	Public  bool
+}
+
 type LocalProvider struct {
 	ClusterName string `json:"cluster_name"`
 	// Spec        Machine `json:"spec"`
+	Metadata
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
@@ -81,4 +89,28 @@ func (*LocalProvider) NewVM(state resources.StateManagementInfrastructure) error
 
 func ReturnLocalStruct() *LocalProvider {
 	return &LocalProvider{}
+}
+
+// it will contain the name of the resource to be created
+func (cloud *LocalProvider) Name(resName string) resources.CloudInfrastructure {
+	cloud.Metadata.ResName = resName
+	return cloud
+}
+
+// it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
+func (cloud *LocalProvider) Role(resRole string) resources.CloudInfrastructure {
+	cloud.Metadata.Role = resRole
+	return cloud
+}
+
+// it will contain which vmType to create
+func (cloud *LocalProvider) VMType(size string) resources.CloudInfrastructure {
+	cloud.Metadata.VmType = size
+	return cloud
+}
+
+// whether to have the resource as public or private (i.e. VMs)
+func (cloud *LocalProvider) Visibility(toBePublic bool) resources.CloudInfrastructure {
+	cloud.Metadata.Public = toBePublic
+	return cloud
 }
