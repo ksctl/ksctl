@@ -6,18 +6,18 @@ type RemoteStorageProvider struct {
 	// TODO: implement me
 }
 
-type payload struct {
-	data string
-}
-
 // Load implements resources.StateManagementInfrastructure.
-func (*RemoteStorageProvider) Load(path string) (interface{}, error) {
+func (*RemoteStorageProvider) Load() (interface{}, error) {
 	fmt.Println("remote load")
-	return payload{}, nil
+	return nil, nil
 }
 
 // Save implements resources.StateManagementInfrastructure.
-func (*RemoteStorageProvider) Save(path string, data interface{}) error {
+func (*RemoteStorageProvider) Save(data interface{}) error {
 	fmt.Println("remote save")
+	return nil
+}
+
+func (*RemoteStorageProvider) Destroy() error {
 	return nil
 }

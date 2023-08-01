@@ -87,8 +87,15 @@ type Distributions interface {
 }
 
 type StateManagementInfrastructure interface {
-	Save(string, any) error
-	Load(string) (any, error) // try to make the return type defined
+	Save(any) error
+	Destroy() error
+	Load() (any, error) // try to make the return type defined
+
+	// for modifier
+	Provider(string) StateManagementInfrastructure
+	HA(bool) StateManagementInfrastructure
+	ClusterDir(string) StateManagementInfrastructure
+	File(string) StateManagementInfrastructure
 }
 
 type CobraCmd struct {

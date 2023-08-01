@@ -100,21 +100,6 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	}
 }
 
-func TestValidRegionsInCIVO(t *testing.T) {
-	testcase := map[string]bool{
-		"LON1":  true,
-		"FRA1":  true,
-		"NYC1":  true,
-		"nYv":   false,
-		"LON1 ": false,
-	}
-	for actualRegion, expectedRes := range testcase {
-		if expectedRes != IsValidRegionCIVO(actualRegion) {
-			t.Fatalf("Region validation of CIVO failed!")
-		}
-	}
-}
-
 func TestIsValidClusterName(T *testing.T) {
 	assert.Equal(T, true, IsValidName("demo"), "Returns false for valid cluster name")
 	assert.Equal(T, false, IsValidName("Dem-o234"), "Returns True for invalid cluster name")

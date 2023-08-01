@@ -23,7 +23,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	kubernetes.HydrateK8sDistro(client)
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.State = &localstate.LocalStorageProvider{}
+		client.State = localstate.InitStorage()
 	default:
 		panic("Currently Local state is supported!")
 	}

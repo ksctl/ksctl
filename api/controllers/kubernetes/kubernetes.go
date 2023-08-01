@@ -27,7 +27,7 @@ func ConfigureCluster(client *resources.KsctlClient) {
 	}
 	kubeconfig, _ := client.Distro.GetKubeConfig(client.State)
 
-	client.State.Save("kubeconfig", kubeconfig)
+	client.State.HA(true).Provider("civo").ClusterDir("demo LON1").File("kubeconfig").Save(kubeconfig)
 
 	for no := 0; no < int(client.Metadata.NoWP); no++ {
 		_ = client.Distro.JoinWorkerplane(client.State)

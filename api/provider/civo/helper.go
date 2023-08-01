@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/provider/utils"
+	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 func validationOfArguments(name, region string) error {

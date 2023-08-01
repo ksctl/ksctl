@@ -1,5 +1,4 @@
-//// MAKE ALL THE FILE OPERATIONS TO FEATURES OF STATE_CONTROLLER ////
-
+// ////////////// THIS FILE IS NOT READY ////////////////
 package utils
 
 import (
@@ -18,26 +17,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubesimplify/ksctl/api/provider/logger"
+	"github.com/kubesimplify/ksctl/api/logger"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
-//	type AwsProvider struct {
-//		ClusterName string  `json:"cluster_name"`
-//		HACluster   bool    `json:"ha_cluster"`
-//		Region      string  `json:"region"`
-//		Spec        Machine `json:"spec"`
-//		AccessKey   string  `json:"access_key"`
-//		Secret      string  `json:"secret"`
-//	}
 type Machine struct {
 	ManagedNodes        int    `json:"managed_nodes"`
-	Disk                string `json:"disk"`
+	MachineType         string `json:"machine_type"`
 	HAControlPlaneNodes int    `json:"no_cp"`
 	HAWorkerNodes       int    `json:"no_wp"`
-	Mem                 string `json:"memory"`
-	Cpu                 string `json:"cpu"`
 }
 
 type SSHPayload struct {
@@ -47,9 +36,11 @@ type SSHPayload struct {
 	Output         string `json:"output"`
 }
 
-//	type SSHCollection interface {
-//		SSHExecute(int, *string, bool)
-//	}
+type SSHCollection interface {
+	SSHExecute(int, *string, bool)
+}
+
+// //////////// MOVE THEM TO PROVIDER //////////////
 //
 //	type LocalProvider struct {
 //		ClusterName string  `json:"cluster_name"`
@@ -72,6 +63,7 @@ type SSHPayload struct {
 //		AccesskeyID string `json:"access_key_id"`
 //		Secret      string `json:"secret_access_key"`
 //	}
+
 const (
 	SSH_PAUSE_IN_SECONDS = 20
 	MAX_RETRY_COUNT      = 8
@@ -95,14 +87,6 @@ func GetUserName() string {
 //
 //type PrinterKubeconfigPATH interface {
 //	Printer(logger.Logger, bool, int)
-//}
-//
-//type CivoHandlers interface {
-//	CreateCluster() error
-//	DeleteCluster() error
-//	SwitchContext(logger.Logger) error
-//	AddMoreWorkerNodes() error
-//	DeleteSomeWorkerNodes() error
 //}
 //
 
@@ -169,7 +153,7 @@ func SaveCred(logging logger.Logger, config interface{}, provider string) error 
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
 		strings.Compare(provider, "aws") != 0 {
-		return fmt.Errorf("Invalid Provider (given): Unable to save configuration")
+		return fmt.Errorf("invalid provider (given): Unable to save configuration")
 	}
 
 	storeBytes, err := json.Marshal(config)
@@ -287,7 +271,8 @@ func getPaths(provider string, params ...string) string {
 
 func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 
-	pathTillFolder := getPaths(provider, "ha", clusterDir)
+	pathTillFolder := ""
+	pathTillFolder = getPaths(provider, "ha", clusterDir)
 
 	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair")
 	cmd.Dir = pathTillFolder
@@ -370,6 +355,7 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 
 func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
 
+	// TODO: Try to use the state Get()
 	privateKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey)
 	if err != nil {
 		return err
@@ -458,7 +444,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 func UserInputCredentials(logging logger.Logger) (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
-	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
