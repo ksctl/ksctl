@@ -3,10 +3,10 @@ package resources
 import "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 
 type KsctlClient struct {
-	Cloud    CloudInfrastructure
-	Distro   Distributions
-	State    StateManagementInfrastructure
-	Metadata Metadata
+	Cloud  CloudInfrastructure
+	Distro Distributions
+	State  StateManagementInfrastructure
+	Metadata
 }
 
 type Metadata struct {
@@ -32,7 +32,7 @@ type CloudInfrastructure interface {
 	NewNetwork(StateManagementInfrastructure) error
 	DelNetwork(StateManagementInfrastructure) error
 
-	InitState() error
+	InitState(string) error
 
 	CreateUploadSSHKeyPair(StateManagementInfrastructure) error
 	DelSSHKeyPair(StateManagementInfrastructure) error
@@ -87,15 +87,12 @@ type Distributions interface {
 }
 
 type StateManagementInfrastructure interface {
-	Save(any) error
+	Save([]byte) error
 	Destroy() error
-	Load() (any, error) // try to make the return type defined
+	Load() ([]byte, error) // try to make the return type defined
 
 	// for modifier
-	Provider(string) StateManagementInfrastructure
-	HA(bool) StateManagementInfrastructure
-	ClusterDir(string) StateManagementInfrastructure
-	File(string) StateManagementInfrastructure
+	Path(string) StateManagementInfrastructure
 }
 
 type CobraCmd struct {

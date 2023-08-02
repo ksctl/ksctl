@@ -1,6 +1,7 @@
 package localstate
 
 import (
+	"os"
 	"sync"
 
 	"github.com/kubesimplify/ksctl/api/logger"
@@ -8,10 +9,7 @@ import (
 )
 
 type Metadata struct {
-	Provider   string
-	HACluster  bool
-	ClusterDir string
-	FileName   string
+	Path string
 }
 
 type LocalStorageProvider struct {
@@ -27,40 +25,30 @@ func InitStorage() *LocalStorageProvider {
 	}
 }
 
-func (s *LocalStorageProvider) Provider(provider string) resources.StateManagementInfrastructure {
-	s.Metadata.Provider = provider
-	return s
-}
-
-func (s *LocalStorageProvider) HA(isHA bool) resources.StateManagementInfrastructure {
-	s.Metadata.HACluster = isHA
-	return s
-}
-
-func (s *LocalStorageProvider) ClusterDir(dir string) resources.StateManagementInfrastructure {
-	s.Metadata.ClusterDir = dir
-	return s
-}
-
-func (s *LocalStorageProvider) File(file string) resources.StateManagementInfrastructure {
-	s.Metadata.FileName = file
+func (s *LocalStorageProvider) Path(path string) resources.StateManagementInfrastructure {
+	s.Metadata.Path = path
 	return s
 }
 
 // Load implements resources.StateManagementInfrastructure.
-func (storage *LocalStorageProvider) Load() (any, error) {
+func (storage *LocalStorageProvider) Load() ([]byte, error) {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
-	return nil, nil
+	return os.ReadFile(storage.Metadata.Path)
 }
 
 // Save implements resources.StateManagementInfrastructure.
-func (storage *LocalStorageProvider) Save(data any) error {
+func (storage *LocalStorageProvider) Save(data []byte) error {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
-	return nil
+	// find the best way to use the paths to store
+	// or use a switch to use or else directly call as there is entry point GetPath()
+	// try to improve the functionality and simplify it
+	return os.WriteFile(
+		storage.Metadata.Path,
+		data, 0755)
 }
 
 func (storage *LocalStorageProvider) Destroy() error {

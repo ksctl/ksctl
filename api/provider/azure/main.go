@@ -116,7 +116,7 @@ func (*AzureProvider) GetStateForHACluster(state resources.StateManagementInfras
 }
 
 // InitState implements resources.CloudInfrastructure.
-func (*AzureProvider) InitState() error {
+func (*AzureProvider) InitState(operation string) error {
 	if currCloudState != nil {
 		return errors.New("[FATAL] already initialized")
 	}
@@ -144,8 +144,11 @@ func (*AzureProvider) NewVM(state resources.StateManagementInfrastructure) error
 	return errors.New("unimplemented")
 }
 
-func ReturnAzureStruct() *AzureProvider {
-	return &AzureProvider{}
+func ReturnAzureStruct(metadata resources.Metadata) *AzureProvider {
+	return &AzureProvider{
+		ClusterName: metadata.ClusterName,
+		Region:      metadata.Region,
+	}
 }
 
 // it will contain the name of the resource to be created

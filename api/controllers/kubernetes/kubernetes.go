@@ -25,9 +25,9 @@ func ConfigureCluster(client *resources.KsctlClient) {
 	for no := 0; no < int(client.Metadata.NoCP); no++ {
 		client.Distro.ConfigureControlPlane(no, client.State)
 	}
-	kubeconfig, _ := client.Distro.GetKubeConfig(client.State)
+	_, _ = client.Distro.GetKubeConfig(client.State)
 
-	client.State.HA(true).Provider("civo").ClusterDir("demo LON1").File("kubeconfig").Save(kubeconfig)
+	// client.State.Path("///sfs/cvf/vdf/vdf/vfd/v").Save([]byte{})
 
 	for no := 0; no < int(client.Metadata.NoWP); no++ {
 		_ = client.Distro.JoinWorkerplane(client.State)
