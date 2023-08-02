@@ -30,7 +30,7 @@ func main() {
 	cmd.Client.Metadata.K8sDistro = "k3s"
 	cmd.Client.Metadata.StateLocation = "local"
 	cmd.Client.Metadata.ClusterName = "dummy-name"
-	cmd.Client.Metadata.Region = "southindia"
+	cmd.Client.Metadata.Region = "LON1"
 	cmd.Client.Metadata.NoCP = 5
 	cmd.Client.Metadata.NoWP = 5
 	cmd.Client.Metadata.NoDS = 3

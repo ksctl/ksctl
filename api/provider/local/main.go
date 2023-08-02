@@ -63,7 +63,7 @@ func (*LocalProvider) GetStateForHACluster(state resources.StateManagementInfras
 }
 
 // InitState implements resources.CloudInfrastructure.
-func (*LocalProvider) InitState() error {
+func (*LocalProvider) InitState(operation string) error {
 	panic("unimplemented")
 }
 
@@ -87,8 +87,10 @@ func (*LocalProvider) NewVM(state resources.StateManagementInfrastructure) error
 	panic("unimplemented")
 }
 
-func ReturnLocalStruct() *LocalProvider {
-	return &LocalProvider{}
+func ReturnLocalStruct(metadata resources.Metadata) *LocalProvider {
+	return &LocalProvider{
+		ClusterName: metadata.ClusterName,
+	}
 }
 
 // it will contain the name of the resource to be created

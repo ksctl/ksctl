@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
@@ -44,7 +45,8 @@ type StateConfiguration struct {
 }
 
 var (
-	currCloudState *StateConfiguration
+	civoCloudState *StateConfiguration
+	civoClient     *civogo.Client
 )
 
 type Metadata struct {
@@ -61,6 +63,7 @@ type CivoProvider struct {
 	Region      string `json:"region"`
 	Application string `json:"application"`
 	CNIPlugin   string `json:"cni_plugin"`
+	SSHPath     string `json:"ssh_key"` // do check what need to be here
 	Metadata
 }
 
@@ -69,24 +72,44 @@ func (client *CivoProvider) GetStateForHACluster(state resources.StateManagement
 	payload := cloud.CloudResourceState{
 		SSHState:          cloud.SSHPayload{PathPrivateKey: "abcd/rdcewcf"},
 		Metadata:          cloud.Metadata{ClusterName: client.ClusterName},
-		IPv4ControlPlanes: currCloudState.InstanceIDs.ControlNodes,
+		IPv4ControlPlanes: civoCloudState.InstanceIDs.ControlNodes,
 	}
 	return payload, nil
 }
 
-// InitState implements resources.CloudInfrastructure.
-func (*CivoProvider) InitState() error {
-	if currCloudState != nil {
-		return errors.New("[FATAL] already initialized")
+func (obj *CivoProvider) InitState(operation string) error {
+	var err error
+
+	switch operation {
+	case "create":
+		if civoCloudState != nil {
+			return errors.New("[FATAL] already initialized")
+		}
+		civoCloudState = &StateConfiguration{}
+	case "delete":
+		// fetch from the state from store
+		civoCloudState = &StateConfiguration{}
+	default:
+		return errors.New("Invalid operation for init state")
 	}
-	currCloudState = &StateConfiguration{}
-	currCloudState.InstanceIDs.ControlNodes = append(currCloudState.InstanceIDs.ControlNodes, "0.0.0.0")
-	fmt.Println("[CIVO] Civo cloud state", currCloudState)
+
+	civoClient, err = civogo.NewClient(fetchAPIKey(), obj.Region)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("[CIVO] Civo cloud state", civoCloudState)
 	return nil
 }
 
-func ReturnCivoStruct() *CivoProvider {
-	return &CivoProvider{}
+func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
+	if err := validationOfArguments(metadata.ClusterName, metadata.Region); err != nil {
+		return nil, err
+	}
+	return &CivoProvider{
+		ClusterName: metadata.ClusterName,
+		Region:      metadata.Region,
+	}, nil
 }
 
 // it will contain the name of the resource to be created

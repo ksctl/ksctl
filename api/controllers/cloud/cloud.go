@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"fmt"
+	"log"
 
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
@@ -10,22 +11,29 @@ import (
 )
 
 func HydrateCloud(client *resources.KsctlClient) {
+	var err error
 	switch client.Metadata.Provider {
 	case "civo":
-		client.Cloud = civo_pkg.ReturnCivoStruct()
+		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "azure":
-		client.Cloud = azure_pkg.ReturnAzureStruct()
+		client.Cloud = azure_pkg.ReturnAzureStruct(client.Metadata)
 	case "local":
-		client.Cloud = local_pkg.ReturnLocalStruct()
+		client.Cloud = local_pkg.ReturnLocalStruct(client.Metadata)
 	default:
 		panic("Invalid Cloud provider")
 	}
 	// call the init state for cloud providers
-	_ = client.Cloud.InitState()
+	_ = client.Cloud.InitState("create")
 }
 
 func CreateHACluster(client *resources.KsctlClient) error {
-	_ = client.Cloud.Name("demo-net").NewNetwork(client.State)
+	err := client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.State)
+	if err != nil {
+		return err
+	}
 	_ = client.Cloud.Name("demo-ssh").CreateUploadSSHKeyPair(client.State)
 
 	fmt.Println("Firewall LB")
