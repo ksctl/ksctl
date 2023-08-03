@@ -31,11 +31,10 @@ func HydrateCloud(client *resources.KsctlClient, operation string) {
 
 func DeleteHACluster(client *resources.KsctlClient) error {
 
-	// add more
+	// TODO: ADD THE OTHER RESOURCE DESTRICTION
 
-	// last one t delete is network
-
-	err := client.Cloud.Name(client.ClusterName + "-net").DelNetwork(client.State)
+	// last one to delete is network
+	err := client.Cloud.DelNetwork(client.State)
 	if err != nil {
 		return err
 	}
@@ -53,54 +52,50 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	fmt.Println("Firewall LB")
 	_ = client.Cloud.Name("demo-fw-lb").
 		Role("loadbalancer").
-		VMType("abcd-.t3mico").
 		NewFirewall(client.State)
 
 	fmt.Println("Firewall DB")
 	_ = client.Cloud.Name("demo-fw-db").
 		Role("datastore").
-		VMType("abcd-.t3medium").
 		NewFirewall(client.State)
 
 	fmt.Println("Firewall CP")
 	_ = client.Cloud.Name("demo-fw-cp").
 		Role("controlplane").
-		VMType("abcd-.t3large").
 		NewFirewall(client.State)
 
 	fmt.Println("Firewall WP")
 	_ = client.Cloud.Name("demo-fw-wp").
 		Role("workerplane").
-		VMType("abcd-.t3large").
 		NewFirewall(client.State)
 
 	fmt.Println("Loadbalancer VM")
 	_ = client.Cloud.Name("demo-vm-lb").
 		Role("loadbalancer").
-		VMType("abcd-.t3mico").
+		VMType(client.LoadBalancerNodeType).
 		Visibility(true).
 		NewVM(client.State)
 
-	for no := 0; no < int(client.Metadata.NoDS); no++ {
+	for no := 0; no < client.Metadata.NoDS; no++ {
 		_ = client.Cloud.Name(fmt.Sprintf("demo-vm-db-%d", no)).
 			Role("datastore").
-			VMType("abcd-.t3medium").
+			VMType(client.DataStoreNodeType).
 			Visibility(true).
 			NewVM(client.State)
 	}
 
-	for no := 0; no < int(client.Metadata.NoCP); no++ {
+	for no := 0; no < client.Metadata.NoCP; no++ {
 		_ = client.Cloud.Name(fmt.Sprintf("demo-vm-cp-%d", no)).
 			Role("controlplane").
-			VMType("abcd-.t3mico").
+			VMType(client.ControlPlaneNodeType).
 			Visibility(true).
 			NewVM(client.State)
 	}
 
-	for no := 0; no < int(client.Metadata.NoWP); no++ {
+	for no := 0; no < client.Metadata.NoWP; no++ {
 		_ = client.Cloud.Name(fmt.Sprintf("demo-vm-wp-%d", no)).
 			Role("workerplane").
-			VMType("abcd-.t3mico").
+			VMType(client.WorkerPlaneNodeType).
 			Visibility(true).
 			NewVM(client.State)
 	}
@@ -108,6 +103,22 @@ func CreateHACluster(client *resources.KsctlClient) error {
 }
 
 func CreateManagedCluster(client *resources.KsctlClient) error {
-	_ = client.Cloud.Name(client.Metadata.ClusterName).NewManagedCluster(client.State)
+	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.State); err != nil {
+		// need to verify wrt to other providers
+		return err
+	}
+	return client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").VMType(client.Metadata.ManagedNodeType).NewManagedCluster(client.State)
+	//return nil
+}
+
+func DeleteManagedCluster(client *resources.KsctlClient) error {
+
+	if err := client.Cloud.DelManagedCluster(client.State); err != nil {
+		return err
+	}
+
+	if err := client.Cloud.DelNetwork(client.State); err != nil {
+		return err
+	}
 	return nil
 }

@@ -37,12 +37,13 @@ type InstanceIP struct {
 }
 
 type StateConfiguration struct {
-	ClusterName string     `json:"clustername"`
-	Region      string     `json:"region"`
-	SSHID       string     `json:"ssh_id"`
-	InstanceIDs InstanceID `json:"instanceids"`
-	NetworkIDs  NetworkID  `json:"networkids"`
-	IPv4        InstanceIP `json:"ipv4_addr"`
+	ClusterName      string     `json:"clustername"`
+	Region           string     `json:"region"`
+	ManagedClusterID string     `json:"managed_cluster_id"`
+	SSHID            string     `json:"ssh_id"`
+	InstanceIDs      InstanceID `json:"instanceids"`
+	NetworkIDs       NetworkID  `json:"networkids"`
+	IPv4             InstanceIP `json:"ipv4_addr"`
 }
 
 var (
@@ -55,8 +56,9 @@ var (
 const (
 	FILE_PERM_CLUSTER_DIR        = os.FileMode(0750)
 	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
-	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0750)
+	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0755)
 	STATE_FILE_NAME              = string("cloud-state.json")
+	KUBECONFIG_FILE_NAME         = string("kubeconfig")
 )
 
 type Metadata struct {
@@ -67,13 +69,14 @@ type Metadata struct {
 }
 
 type CivoProvider struct {
-	ClusterName string `json:"cluster_name"`
-	APIKey      string `json:"api_key"`
-	HACluster   bool   `json:"ha_cluster"`
-	Region      string `json:"region"`
-	Application string `json:"application"`
-	CNIPlugin   string `json:"cni_plugin"`
-	SSHPath     string `json:"ssh_key"` // do check what need to be here
+	ClusterName      string `json:"cluster_name"`
+	APIKey           string `json:"api_key"`
+	HACluster        bool   `json:"ha_cluster"`
+	Region           string `json:"region"`
+	Application      string `json:"application"`
+	CNIPlugin        string `json:"cni_plugin"`
+	SSHPath          string `json:"ssh_key"` // do check what need to be here
+	NoOfManagedNodes int
 	Metadata
 }
 
@@ -88,6 +91,7 @@ func (client *CivoProvider) GetStateForHACluster(state resources.StateManagement
 }
 
 func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure, operation string) error {
+
 	clusterDirName = obj.ClusterName + " " + obj.Region
 	if obj.HACluster {
 		clusterType = "ha"
@@ -102,10 +106,11 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 		if civoCloudState != nil {
 			return errors.New("[FATAL] already initialized")
 		}
-		civoCloudState = &StateConfiguration{}
+		civoCloudState = &StateConfiguration{
+			Region:      obj.Region,
+			ClusterName: obj.ClusterName,
+		}
 	case "delete":
-		// fetch from the state from store
-		// TODO: add the fetch expisting state (if failed return error)
 		err := loadStateHelper(state, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
 		if err != nil {
 			return err
@@ -119,23 +124,27 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 		return err
 	}
 
+	if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
+		return err
+	}
 	fmt.Println("[civo] Civo cloud state", civoCloudState)
 	return nil
 }
 
 func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
-	if err := validationOfArguments(metadata.ClusterName, metadata.Region); err != nil {
-		return nil, err
-	}
 	return &CivoProvider{
-		ClusterName: metadata.ClusterName,
-		Region:      metadata.Region,
-		HACluster:   metadata.IsHA,
+		ClusterName:      metadata.ClusterName,
+		Region:           metadata.Region,
+		HACluster:        metadata.IsHA,
+		NoOfManagedNodes: metadata.NoWP,
 	}, nil
 }
 
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudInfrastructure {
+	if err := utils.IsValidName(resName); err != nil {
+		return nil
+	}
 	cloud.Metadata.ResName = resName
 	return cloud
 }
@@ -148,6 +157,9 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudInfrastructure {
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudInfrastructure {
+	if err := isValidVMSize(size); err != nil {
+		return nil
+	}
 	cloud.Metadata.VmType = size
 	return cloud
 }
