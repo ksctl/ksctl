@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/kubesimplify/ksctl/api/logger"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"os"
 )
@@ -107,6 +108,9 @@ type StateManagementInfrastructure interface {
 	Permission(mode os.FileMode) StateManagementInfrastructure
 	CreateDir() error
 	DeleteDir() error
+
+	// to access logger
+	Logger() logger.LogFactory
 }
 
 type CobraCmd struct {

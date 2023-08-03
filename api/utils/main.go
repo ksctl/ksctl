@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/kubesimplify/ksctl/api/resources"
 	"io"
 	"net"
 	"os"
@@ -39,30 +40,6 @@ type SSHPayload struct {
 type SSHCollection interface {
 	SSHExecute(int, *string, bool)
 }
-
-// //////////// MOVE THEM TO PROVIDER //////////////
-//
-//	type LocalProvider struct {
-//		ClusterName string  `json:"cluster_name"`
-//		HACluster   bool    `json:"ha_cluster"`
-//		Spec        Machine `json:"spec"`
-//	}
-//
-//	type CivoCredential struct {
-//		Token string `json:"token"`
-//	}
-//
-//	type AzureCredential struct {
-//		SubscriptionID string `json:"subscription_id"`
-//		TenantID       string `json:"tenant_id"`
-//		ClientID       string `json:"client_id"`
-//		ClientSecret   string `json:"client_secret"`
-//	}
-//
-//	type AwsCredential struct {
-//		AccesskeyID string `json:"access_key_id"`
-//		Secret      string `json:"secret_access_key"`
-//	}
 
 const (
 	SSH_PAUSE_IN_SECONDS = 20
@@ -153,7 +130,8 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	}
 }
 
-func SaveCred(logging logger.Logger, config interface{}, provider string) error {
+func SaveCred(storage resources.StateManagementInfrastructure, config interface{}, provider string) error {
+
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
 		strings.Compare(provider, "aws") != 0 {
@@ -164,63 +142,19 @@ func SaveCred(logging logger.Logger, config interface{}, provider string) error 
 	if err != nil {
 		return err
 	}
-	_, err = os.Create(GetPath(CREDENTIAL_PATH, provider))
-	if err != nil && !os.IsExist(err) {
+
+	err = storage.Permission(0640).Path(GetPath(CREDENTIAL_PATH, provider)).Save(storeBytes)
+	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
-	if err != nil {
-		return err
-	}
-	logging.Info("💾 configuration", "")
-	return nil
-}
-func SaveState(logging logger.Logger, config interface{}, provider, clusterType string, clusterDir string) error {
-	if strings.Compare(provider, "civo") != 0 &&
-		strings.Compare(provider, "azure") != 0 &&
-		strings.Compare(provider, "aws") != 0 {
-		return fmt.Errorf("invalid Provider (given): Unable to save configuration")
-	}
-	storeBytes, err := json.Marshal(config)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir), 0755); err != nil && !os.IsExist(err) {
-		return err
-	}
-	_, err = os.Create(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"), storeBytes, 0640)
-	if err != nil {
-		return err
-	}
-	logging.Info("💾 configuration", "")
+	storage.Logger().Info("[secrets] configuration")
 	return nil
 }
 
-// func GetCred(logging logger.Logger, provider string) (i map[string]string, err error) {
-//
-//		fileBytes, err := os.ReadFile(GetPath(CREDENTIAL_PATH, provider))
-//
-//		if err != nil {
-//			return
-//		}
-//
-//		err = json.Unmarshal(fileBytes, &i)
-//
-//		if err != nil {
-//			return
-//		}
-//		logging.Info("🔄 configuration", "")
-//
-//		return
-//	}
-func GetState(logging logger.Logger, provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
-	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
+func GetCred(storage resources.StateManagementInfrastructure, provider string) (i map[string]string, err error) {
 
+	fileBytes, err := storage.Path(GetPath(CREDENTIAL_PATH, provider)).Load()
 	if err != nil {
 		return
 	}
@@ -230,9 +164,51 @@ func GetState(logging logger.Logger, provider, clusterType, clusterDir string) (
 	if err != nil {
 		return
 	}
-	logging.Info("🔄 configuration", "")
+	storage.Logger().Info("🔄 configuration")
+
 	return
 }
+
+//func SaveState(logging logger.Logger, config interface{}, provider, clusterType string, clusterDir string) error {
+//	if strings.Compare(provider, "civo") != 0 &&
+//		strings.Compare(provider, "azure") != 0 &&
+//		strings.Compare(provider, "aws") != 0 {
+//		return fmt.Errorf("invalid Provider (given): Unable to save configuration")
+//	}
+//	storeBytes, err := json.Marshal(config)
+//	if err != nil {
+//		return err
+//	}
+//	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir), 0755); err != nil && !os.IsExist(err) {
+//		return err
+//	}
+//	_, err = os.Create(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
+//	if err != nil && !os.IsExist(err) {
+//		return err
+//	}
+//	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"), storeBytes, 0640)
+//	if err != nil {
+//		return err
+//	}
+//	logging.Info("💾 configuration", "")
+//	return nil
+//}
+
+//func GetState(logging logger.Logger, provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
+//	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
+//
+//	if err != nil {
+//		return
+//	}
+//
+//	err = json.Unmarshal(fileBytes, &i)
+//
+//	if err != nil {
+//		return
+//	}
+//	logging.Info("🔄 configuration", "")
+//	return
+//}
 
 // getSSHPath generate the SSH keypair location and subsequent fetch
 func getSSHPath(provider string, params ...string) string {
@@ -445,7 +421,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	return nil
 }
 
-func UserInputCredentials(logging logger.Logger) (string, error) {
+func UserInputCredentials(logging logger.LogFactory) (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))

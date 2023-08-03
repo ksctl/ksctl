@@ -10,6 +10,8 @@ type Controller interface {
 
 	GetCluster()
 
+	Credentials(*resources.KsctlClient)
+
 	CreateHACluster(*resources.KsctlClient)
 	DeleteHACluster(*resources.KsctlClient)
 }

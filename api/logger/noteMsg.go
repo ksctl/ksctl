@@ -24,9 +24,9 @@ func (logger *Logger) Info(message ...string) {
 	outputMsg := strings.Join(message, " ")
 
 	if logger.Verbose {
-		log.Printf("%s[ ✔ ] %v%s", GREEN, outputMsg, RESET)
+		log.Printf("%s[INFO] %v%s", GREEN, outputMsg, RESET)
 	} else {
-		fmt.Printf("%s[ ✔ ] %v%s\n", GREEN, outputMsg, RESET)
+		fmt.Printf("%s[INFO] %v%s\n", GREEN, outputMsg, RESET)
 	}
 }
 
@@ -34,9 +34,9 @@ func (logger *Logger) Info(message ...string) {
 func (logger *Logger) Print(message ...string) {
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Println("[ ℹ ] ", outputMsg)
+		log.Println("[TXT] ", outputMsg)
 	} else {
-		fmt.Println("[ ℹ ] ", outputMsg)
+		fmt.Println("[TXT] ", outputMsg)
 	}
 }
 
@@ -46,9 +46,9 @@ func (logger *Logger) Note(message ...string) {
 
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[ 🗒️ ] %v%s", BLUE_BOLD, outputMsg, RESET)
+		log.Printf("%s[NOTE] %v%s", BLUE_BOLD, outputMsg, RESET)
 	} else {
-		fmt.Printf("%s[ 🗒️ ] %v%s\n", BLUE_BOLD, outputMsg, RESET)
+		fmt.Printf("%s[NOTE] %v%s\n", BLUE_BOLD, outputMsg, RESET)
 	}
 }
 
@@ -57,9 +57,9 @@ func (logger *Logger) Note(message ...string) {
 func (logger *Logger) Warn(message ...string) {
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[ ⚠️ ] %v%s", YELLOW, outputMsg, RESET)
+		log.Printf("%s[WARN] %v%s", YELLOW, outputMsg, RESET)
 	} else {
-		fmt.Printf("%s[ ⚠️ ] %v%s\n", YELLOW, outputMsg, RESET)
+		fmt.Printf("%s[WARN] %v%s\n", YELLOW, outputMsg, RESET)
 	}
 }
 
@@ -68,8 +68,8 @@ func (logger *Logger) Warn(message ...string) {
 func (logger *Logger) Err(message ...string) {
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[ ✘ ] %v%s", RED, outputMsg, RESET)
+		log.Printf("%s[ERR] %v%s", RED, outputMsg, RESET)
 	} else {
-		fmt.Printf("%s[ ✘ ] %v%s\n", RED, outputMsg, RESET)
+		fmt.Printf("%s[ERR] %v%s\n", RED, outputMsg, RESET)
 	}
 }
