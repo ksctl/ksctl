@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"os"
-	"strings"
-
 	"github.com/kubesimplify/ksctl/api/utils"
+	"log"
+	"os"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -17,14 +16,14 @@ func fetchAPIKey() string {
 	if civoToken != "" {
 		return civoToken
 	}
-	return ""
-	// logger.Warn("environment vars not set: CIVO_TOKEN")
+	log.Fatal("environment vars not set: `CIVO_TOKEN`")
 
 	// token, err := util.GetCred(logger, "civo")
 	// if err != nil {
 	// 	return ""
 	// }
 	// return token["token"]
+	return ""
 }
 
 func generatePath(flag int, path ...string) string {
@@ -70,21 +69,40 @@ func convertStateFromBytes(raw []byte) error {
 
 func validationOfArguments(name, region string) error {
 
-	if !isValidRegionCIVO(region) {
-		return fmt.Errorf("REGION")
+	if err := isValidRegion(region); err != nil {
+		return err
 	}
 
-	if !utils.IsValidName(name) {
-		return fmt.Errorf("NAME FORMAT")
+	if err := utils.IsValidName(name); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 // IsValidRegionCIVO validates the region code for CIVO
-func isValidRegionCIVO(reg string) bool {
-	return strings.Compare(reg, "FRA1") == 0 ||
-		strings.Compare(reg, "NYC1") == 0 ||
-		strings.Compare(reg, "PHX1") == 0 ||
-		strings.Compare(reg, "LON1") == 0
+func isValidRegion(reg string) error {
+	regions, err := civoClient.ListRegions()
+	if err != nil {
+		return err
+	}
+	for _, region := range regions {
+		if region.Name == reg {
+			return nil
+		}
+	}
+	return fmt.Errorf("INVALID REGION")
+}
+
+func isValidVMSize(size string) error {
+	nodeSizes, err := civoClient.ListInstanceSizes()
+	if err != nil {
+		return err
+	}
+	for _, nodeSize := range nodeSizes {
+		if size == nodeSize.Name {
+			return nil
+		}
+	}
+	return fmt.Errorf("INVALID VM SIZE")
 }

@@ -20,9 +20,16 @@ type Metadata struct {
 	K8sVersion    string
 	StateLocation string
 	IsHA          bool
-	NoWP          int8 // NO of woerkplane VMs
-	NoCP          int8 // No of Controlplane VMs
-	NoDS          int8 // No of DataStore VMs
+
+	ManagedNodeType      string
+	WorkerPlaneNodeType  string
+	ControlPlaneNodeType string
+	DataStoreNodeType    string
+	LoadBalancerNodeType string
+
+	NoWP int // No of woerkplane VMs
+	NoCP int // No of Controlplane VMs
+	NoDS int // No of DataStore VMs
 }
 
 // NOTE: local cluster are also supported but with feature flags only managedcluster available

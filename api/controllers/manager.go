@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kubesimplify/ksctl/api/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/controllers/kubernetes"
@@ -17,10 +18,7 @@ func GenKsctlController() *KsctlControllerClient {
 }
 
 func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) {
-	fmt.Println("Create HA Cluster triggered successfully")
-	// Builder methods directly called
-	cloud.HydrateCloud(client, "create")
-	kubernetes.HydrateK8sDistro(client)
+	fmt.Println("Create Managed Cluster triggered successfully")
 	switch client.Metadata.StateLocation {
 	case "local":
 		client.State = localstate.InitStorage()
@@ -28,11 +26,42 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		panic("Currently Local state is supported!")
 	}
 
+	cloud.HydrateCloud(client, "create")
+
 	cloudResErr := cloud.CreateManagedCluster(client)
 	fmt.Println("Called Create Cloud managed cluster; Err->", cloudResErr)
 }
 
-func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(*resources.KsctlClient) {}
+func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resources.KsctlClient) {
+	showMsg := true
+	if showMsg {
+		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, client.ClusterName+" "+client.Region))
+
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
+
+		if !unsafe {
+			return
+		}
+	}
+	switch client.Metadata.StateLocation {
+	case "local":
+		client.State = localstate.InitStorage()
+	default:
+		panic("Currently Local state is supported!")
+	}
+	cloud.HydrateCloud(client, "delete")
+	cloudResErr := cloud.DeleteManagedCluster(client)
+	fmt.Println("Called Delete Cloud managed cluster; Err->", cloudResErr)
+}
 
 func (ksctlControlCli *KsctlControllerClient) SwitchCluster() {}
 
@@ -66,6 +95,25 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 }
 
 func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) {
+	showMsg := true
+	if showMsg {
+		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, client.ClusterName+" "+client.Region))
+
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
+
+		if !unsafe {
+			return
+		}
+	}
 	fmt.Println("Create HA delete triggered successfully")
 	switch client.Metadata.StateLocation {
 	case "local":

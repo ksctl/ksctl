@@ -90,10 +90,14 @@ func GetUserName() string {
 //}
 //
 
-func IsValidName(clusterName string) bool {
-	matched, _ := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
+func IsValidName(clusterName string) error {
+	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
 
-	return matched
+	if !matched || err != nil {
+		return fmt.Errorf("CLUSTER NAME INVALID")
+	}
+
+	return nil
 }
 
 // getKubeconfig returns the path to clusters specific to provider
