@@ -34,6 +34,7 @@ func main() {
 	cmd.Client.Metadata.NoCP = 5
 	cmd.Client.Metadata.NoWP = 5
 	cmd.Client.Metadata.NoDS = 3
+	cmd.Client.Metadata.IsHA = true
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
 	controller.CreateHACluster(&cmd.Client)

@@ -15,12 +15,18 @@ func (obj *CivoProvider) NewNetwork(state resources.StateManagementInfrastructur
 	}
 	civoCloudState.NetworkIDs.NetworkID = res.ID
 	fmt.Printf("[civo] Created %s network\n", obj.Metadata.ResName)
-	path := generatePath(utils.CLUSTER_PATH, "config.json")
-	rawState, err := convertStateToBytes(*civoCloudState)
-	if err != nil {
+
+	// NOTE: as network creation marks first resource we should create the directoy
+	// when its success
+
+	if err := state.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
 		return err
 	}
-	return state.Path(path).Save(rawState)
+
+	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+
+	return saveStateHelper(state, path)
 }
 
 // DelNetwork implements resources.CloudInfrastructure.

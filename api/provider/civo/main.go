@@ -3,10 +3,10 @@ package civo
 import (
 	"errors"
 	"fmt"
-
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	"os"
 )
 
 type InstanceID struct {
@@ -47,6 +47,15 @@ type StateConfiguration struct {
 var (
 	civoCloudState *StateConfiguration
 	civoClient     *civogo.Client
+	clusterDirName string
+	clusterType    string // it stores the ha or managed
+)
+
+const (
+	FILE_PERM_CLUSTER_DIR        = os.FileMode(0750)
+	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
+	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0750)
+	STATE_FILE_NAME              = string("cloud-state.json")
 )
 
 type Metadata struct {
@@ -88,6 +97,7 @@ func (obj *CivoProvider) InitState(operation string) error {
 		civoCloudState = &StateConfiguration{}
 	case "delete":
 		// fetch from the state from store
+		// TODO: add the fetch expisting state (if failed return error)
 		civoCloudState = &StateConfiguration{}
 	default:
 		return errors.New("Invalid operation for init state")
@@ -96,6 +106,12 @@ func (obj *CivoProvider) InitState(operation string) error {
 	civoClient, err = civogo.NewClient(fetchAPIKey(), obj.Region)
 	if err != nil {
 		return err
+	}
+	clusterDirName = obj.ClusterName + " " + obj.Region
+	if obj.HACluster {
+		clusterType = "ha"
+	} else {
+		clusterType = "managed"
 	}
 
 	fmt.Println("[CIVO] Civo cloud state", civoCloudState)
@@ -109,6 +125,7 @@ func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
 	return &CivoProvider{
 		ClusterName: metadata.ClusterName,
 		Region:      metadata.Region,
+		HACluster:   metadata.IsHA,
 	}, nil
 }
 
