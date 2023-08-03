@@ -80,6 +80,10 @@ type CivoProvider struct {
 	Metadata
 }
 
+type Credential struct {
+	Token string `json:"token"`
+}
+
 // GetStateForHACluster implements resources.CloudInfrastructure.
 func (client *CivoProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
 	payload := cloud.CloudResourceState{
@@ -119,7 +123,7 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 		return errors.New("Invalid operation for init state")
 	}
 
-	civoClient, err = civogo.NewClient(fetchAPIKey(), obj.Region)
+	civoClient, err = civogo.NewClient(fetchAPIKey(state), obj.Region)
 	if err != nil {
 		return err
 	}

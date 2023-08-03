@@ -5,25 +5,37 @@ import (
 	"fmt"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"log"
 	"os"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey() string {
+func fetchAPIKey(storage resources.StateManagementInfrastructure) string {
 
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if civoToken != "" {
 		return civoToken
 	}
-	log.Fatal("environment vars not set: `CIVO_TOKEN`")
+	storage.Logger().Warn("environment vars not set: `CIVO_TOKEN`")
 
-	// token, err := util.GetCred(logger, "civo")
-	// if err != nil {
-	// 	return ""
-	// }
-	// return token["token"]
-	return ""
+	token, err := utils.GetCred(storage, "civo")
+	if err != nil {
+		return ""
+	}
+	return token["token"]
+}
+
+func GetInputCredential(storage resources.StateManagementInfrastructure) error {
+
+	storage.Logger().Print("Enter CIVO TOKEN")
+	token, err := utils.UserInputCredentials(storage.Logger())
+	if err != nil {
+		return err
+	}
+
+	if err := utils.SaveCred(storage, Credential{token}, "civo"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func generatePath(flag int, path ...string) string {

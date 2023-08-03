@@ -71,6 +71,13 @@ type AzureProvider struct {
 	Metadata
 }
 
+type Credential struct {
+	SubscriptionID string `json:"subscription_id"`
+	TenantID       string `json:"tenant_id"`
+	ClientID       string `json:"client_id"`
+	ClientSecret   string `json:"client_secret"`
+}
+
 var (
 	currCloudState *StateConfiguration
 )

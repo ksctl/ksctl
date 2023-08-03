@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 	"strings"
 
 	"github.com/kubesimplify/ksctl/api/controllers/cloud"
@@ -15,6 +16,27 @@ type KsctlControllerClient struct{}
 
 func GenKsctlController() *KsctlControllerClient {
 	return &KsctlControllerClient{}
+}
+
+func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) {
+	switch client.Metadata.StateLocation {
+	case "local":
+		client.State = localstate.InitStorage()
+	default:
+		panic("Currently Local state is supported!")
+	}
+
+	switch client.Metadata.Provider {
+	case "civo":
+		err := civo_pkg.GetInputCredential(client.State)
+		if err != nil {
+			panic(err)
+		}
+	case "azure", "aws":
+		panic("Currently not supported!")
+	default:
+		panic("Currently not supported!")
+	}
 }
 
 func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) {

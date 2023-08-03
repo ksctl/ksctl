@@ -76,6 +76,10 @@ func (storage *LocalStorageProvider) Save(data []byte) error {
 		data, 0755)
 }
 
-func (storage *LocalStorageProvider) Destroy() error {
+func (s *LocalStorageProvider) Destroy() error {
 	return nil
+}
+
+func (s *LocalStorageProvider) Logger() logger.LogFactory {
+	return s.Log
 }

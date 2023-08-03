@@ -41,6 +41,7 @@ func main() {
 	var controller controllers.Controller = control_pkg.GenKsctlController()
 	choice := -1
 	fmt.Println(`
+[0] enter credential
 [1] create HA
 [2] Delete HA
 [3] Create Managed
@@ -52,6 +53,8 @@ Your Choice`)
 		return
 	}
 	switch choice {
+	case 0:
+		controller.Credentials(&cmd.Client)
 	case 1:
 		cmd.Client.Metadata.IsHA = true
 		controller.CreateHACluster(&cmd.Client)
