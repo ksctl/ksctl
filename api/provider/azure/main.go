@@ -116,7 +116,7 @@ func (*AzureProvider) GetStateForHACluster(state resources.StateManagementInfras
 }
 
 // InitState implements resources.CloudInfrastructure.
-func (*AzureProvider) InitState(operation string) error {
+func (*AzureProvider) InitState(state resources.StateManagementInfrastructure, operation string) error {
 	if currCloudState != nil {
 		return errors.New("[FATAL] already initialized")
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-func HydrateCloud(client *resources.KsctlClient) {
+func HydrateCloud(client *resources.KsctlClient, operation string) {
 	var err error
 	switch client.Metadata.Provider {
 	case "civo":
@@ -26,7 +26,21 @@ func HydrateCloud(client *resources.KsctlClient) {
 		panic("Invalid Cloud provider")
 	}
 	// call the init state for cloud providers
-	_ = client.Cloud.InitState("create")
+	_ = client.Cloud.InitState(client.State, operation)
+}
+
+func DeleteHACluster(client *resources.KsctlClient) error {
+
+	// add more
+
+	// last one t delete is network
+
+	err := client.Cloud.Name(client.ClusterName + "-net").DelNetwork(client.State)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func CreateHACluster(client *resources.KsctlClient) error {

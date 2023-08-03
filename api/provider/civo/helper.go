@@ -39,6 +39,16 @@ func saveStateHelper(state resources.StateManagementInfrastructure, path string)
 	return state.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
+func loadStateHelper(state resources.StateManagementInfrastructure, path string) error {
+	fmt.Println(path)
+	raw, err := state.Path(path).Load()
+	if err != nil {
+		return err
+	}
+
+	return convertStateFromBytes(raw)
+}
+
 func saveKubeconfigHelper(state resources.StateManagementInfrastructure, path string, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
 
@@ -47,6 +57,15 @@ func saveKubeconfigHelper(state resources.StateManagementInfrastructure, path st
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {
 	return json.Marshal(state)
+}
+
+func convertStateFromBytes(raw []byte) error {
+	var data *StateConfiguration
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return err
+	}
+	civoCloudState = data
+	return nil
 }
 
 func validationOfArguments(name, region string) error {

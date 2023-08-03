@@ -38,5 +38,6 @@ func (obj *CivoProvider) DelNetwork(state resources.StateManagementInfrastructur
 	}
 	fmt.Printf("[civo] Deleted %s network\n", civoCloudState.NetworkIDs.NetworkID)
 	// state.Save()
-	return nil
+	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)
+	return state.Path(path).DeleteDir()
 }
