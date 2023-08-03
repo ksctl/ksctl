@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
@@ -37,6 +38,15 @@ func main() {
 	cmd.Client.Metadata.IsHA = true
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
-	controller.CreateHACluster(&cmd.Client)
-	// controller.CreateManagedCluster(&cmd.Client)
+	choice := -1
+	_, err := fmt.Scanf("%d", &choice)
+	if err != nil {
+		return
+	}
+	switch choice {
+	case 1:
+		controller.CreateHACluster(&cmd.Client)
+	case 2:
+		controller.DeleteHACluster(&cmd.Client)
+	}
 }

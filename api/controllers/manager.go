@@ -19,7 +19,7 @@ func GenKsctlController() *KsctlControllerClient {
 func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) {
 	fmt.Println("Create HA Cluster triggered successfully")
 	// Builder methods directly called
-	cloud.HydrateCloud(client)
+	cloud.HydrateCloud(client, "create")
 	kubernetes.HydrateK8sDistro(client)
 	switch client.Metadata.StateLocation {
 	case "local":
@@ -41,8 +41,10 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster() {}
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) {
 	fmt.Println("Create HA Cluster triggered successfully")
 	// Builder methods directly called
-	cloud.HydrateCloud(client)
+	cloud.HydrateCloud(client, "create")
+
 	kubernetes.HydrateK8sDistro(client)
+
 	switch client.Metadata.StateLocation {
 	case "local":
 		client.State = &localstate.LocalStorageProvider{}
@@ -51,7 +53,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	}
 
 	cloudResErr := cloud.CreateHACluster(client)
-	fmt.Println("Callled Create Cloud resources for HA setup; Err->", cloudResErr)
+	fmt.Println("Called Create Cloud resources for HA setup; Err->", cloudResErr)
 
 	// Cloud done
 	var payload cloudController.CloudResourceState
@@ -63,4 +65,18 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	kubernetes.ConfigureCluster(client)
 }
 
-func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(*resources.KsctlClient) {}
+func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) {
+	fmt.Println("Create HA delete triggered successfully")
+	switch client.Metadata.StateLocation {
+	case "local":
+		client.State = &localstate.LocalStorageProvider{}
+	default:
+		panic("Currently Local state is supported!")
+	}
+	cloud.HydrateCloud(client, "delete")
+
+	kubernetes.HydrateK8sDistro(client)
+
+	cloudResErr := cloud.DeleteHACluster(client)
+	fmt.Println("Called Delete Cloud resources for HA setup; Err->", cloudResErr)
+}

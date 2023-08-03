@@ -6,6 +6,7 @@ import (
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/api/utils"
 	"os"
 )
 
@@ -86,7 +87,14 @@ func (client *CivoProvider) GetStateForHACluster(state resources.StateManagement
 	return payload, nil
 }
 
-func (obj *CivoProvider) InitState(operation string) error {
+func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure, operation string) error {
+	clusterDirName = obj.ClusterName + " " + obj.Region
+	if obj.HACluster {
+		clusterType = "ha"
+	} else {
+		clusterType = "managed"
+	}
+
 	var err error
 
 	switch operation {
@@ -98,7 +106,10 @@ func (obj *CivoProvider) InitState(operation string) error {
 	case "delete":
 		// fetch from the state from store
 		// TODO: add the fetch expisting state (if failed return error)
-		civoCloudState = &StateConfiguration{}
+		err := loadStateHelper(state, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.New("Invalid operation for init state")
 	}
@@ -107,14 +118,8 @@ func (obj *CivoProvider) InitState(operation string) error {
 	if err != nil {
 		return err
 	}
-	clusterDirName = obj.ClusterName + " " + obj.Region
-	if obj.HACluster {
-		clusterType = "ha"
-	} else {
-		clusterType = "managed"
-	}
 
-	fmt.Println("[CIVO] Civo cloud state", civoCloudState)
+	fmt.Println("[civo] Civo cloud state", civoCloudState)
 	return nil
 }
 

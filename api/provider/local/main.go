@@ -63,7 +63,7 @@ func (*LocalProvider) GetStateForHACluster(state resources.StateManagementInfras
 }
 
 // InitState implements resources.CloudInfrastructure.
-func (*LocalProvider) InitState(operation string) error {
+func (*LocalProvider) InitState(state resources.StateManagementInfrastructure, operation string) error {
 	panic("unimplemented")
 }
 

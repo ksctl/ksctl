@@ -36,7 +36,7 @@ type CloudInfrastructure interface {
 	NewNetwork(StateManagementInfrastructure) error
 	DelNetwork(StateManagementInfrastructure) error
 
-	InitState(string) error
+	InitState(StateManagementInfrastructure, string) error
 
 	CreateUploadSSHKeyPair(StateManagementInfrastructure) error
 	DelSSHKeyPair(StateManagementInfrastructure) error
