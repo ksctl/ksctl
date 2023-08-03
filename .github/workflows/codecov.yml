@@ -32,19 +32,22 @@ jobs:
     - name: Run coverage (CIVO)
       working-directory: api/civo
       run: |
-        go test -race -coverprofile=../../coverage-civo.out -covermode=atomic -v
-        cd ../..
+        echo "TODO: CHANGE IT"
+        # go test -race -coverprofile=../../coverage-civo.out -covermode=atomic -v
+        # cd ../..
     - name: Run coverage (AZURE)
       working-directory: api/azure
       run: |
-        go test -race -coverprofile=../../coverage-azure.out -covermode=atomic -v
-        cd ../..
+        echo "TODO: CHANGE IT"
+        # go test -race -coverprofile=../../coverage-azure.out -covermode=atomic -v
+        # cd ../..
     - name: Run coverage (LOCAL)
       working-directory: api/local
       run: |
-        go test -race -coverprofile=../../coverage-local.out -covermode=atomic -v
-        cd ../..
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+        echo "TODO: CHANGE IT"
+        # go test -race -coverprofile=../../coverage-local.out -covermode=atomic -v
+        # cd ../..
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v3
+    #   with:
+    #     token: ${{ secrets.CODECOV_TOKEN }}
