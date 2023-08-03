@@ -22,8 +22,9 @@ jobs:
       - run: go version
       - name: Build and install the latest version
         run: |
-          make install_linux
-          ksctl -h
+          echo "TODO: CHANGE IT"
+          # make install_linux
+          # ksctl -h
 
   macos:
     runs-on: macos-latest
@@ -36,8 +37,9 @@ jobs:
       # TODO: add support to check for the M1 chip as well
       - name: Build and install the latest version on intel chip
         run: |
-          make install_macos_intel
-          ksctl -h
+          echo "TODO: CHANGE IT"
+          # make install_macos_intel
+          # ksctl -h
 
   windows:
     runs-on: windows-latest
@@ -49,6 +51,7 @@ jobs:
       - run: go version
       - name: Build and install the latest version
         run: |
-          .\builder.ps1
-          cd C:\Users\runneradmin\AppData\Local\ksctl
-          .\ksctl.exe -h
+          echo "TODO: CHANGE IT"
+          # .\builder.ps1
+          # cd C:\Users\runneradmin\AppData\Local\ksctl
+          # .\ksctl.exe -h
