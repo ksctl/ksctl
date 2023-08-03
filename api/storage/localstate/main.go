@@ -10,6 +10,7 @@ import (
 
 type Metadata struct {
 	Path string
+	Perm os.FileMode
 }
 
 type LocalStorageProvider struct {
@@ -28,6 +29,30 @@ func InitStorage() *LocalStorageProvider {
 func (s *LocalStorageProvider) Path(path string) resources.StateManagementInfrastructure {
 	s.Metadata.Path = path
 	return s
+}
+
+func (s *LocalStorageProvider) Permission(perm os.FileMode) resources.StateManagementInfrastructure {
+	s.Metadata.Perm = perm
+	return s
+}
+
+func (s *LocalStorageProvider) CreateDir() error {
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+	if err := os.Mkdir(s.Metadata.Path, s.Metadata.Perm); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *LocalStorageProvider) DeleteDir() error {
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+	// FIXME: check that create and delete cannot happen in same time
+	if err := os.RemoveAll(s.Metadata.Path); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Load implements resources.StateManagementInfrastructure.

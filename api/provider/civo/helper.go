@@ -3,6 +3,7 @@ package civo
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kubesimplify/ksctl/api/resources"
 	"os"
 	"strings"
 
@@ -28,6 +29,20 @@ func fetchAPIKey() string {
 
 func generatePath(flag int, path ...string) string {
 	return utils.GetPath(flag, "civo", path...)
+}
+
+func saveStateHelper(state resources.StateManagementInfrastructure, path string) error {
+	rawState, err := convertStateToBytes(*civoCloudState)
+	if err != nil {
+		return err
+	}
+	return state.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
+}
+
+func saveKubeconfigHelper(state resources.StateManagementInfrastructure, path string, kubeconfig string) error {
+	rawState := []byte(kubeconfig)
+
+	return state.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
 }
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {

@@ -1,6 +1,9 @@
 package resources
 
-import "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+import (
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	"os"
+)
 
 type KsctlClient struct {
 	Cloud  CloudInfrastructure
@@ -16,6 +19,7 @@ type Metadata struct {
 	K8sDistro     string
 	K8sVersion    string
 	StateLocation string
+	IsHA          bool
 	NoWP          int8 // NO of woerkplane VMs
 	NoCP          int8 // No of Controlplane VMs
 	NoDS          int8 // No of DataStore VMs
@@ -93,6 +97,9 @@ type StateManagementInfrastructure interface {
 
 	// for modifier
 	Path(string) StateManagementInfrastructure
+	Permission(mode os.FileMode) StateManagementInfrastructure
+	CreateDir() error
+	DeleteDir() error
 }
 
 type CobraCmd struct {
