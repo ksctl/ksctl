@@ -3,11 +3,12 @@ package civo
 import (
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"os"
 )
 
 type InstanceID struct {
@@ -37,6 +38,10 @@ type InstanceIP struct {
 }
 
 type StateConfiguration struct {
+	// at initial phase its building, only after the creation is done
+	// it has "DONE" status otherwise "BUILDING"
+	IsCompleted bool `json:"status"`
+
 	ClusterName      string     `json:"clustername"`
 	Region           string     `json:"region"`
 	ManagedClusterID string     `json:"managed_cluster_id"`
@@ -104,21 +109,37 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 	}
 
 	var err error
+	civoCloudState = &StateConfiguration{}
+	errLoadState := loadStateHelper(state, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
 
 	switch operation {
 	case "create":
-		if civoCloudState != nil {
-			return errors.New("[FATAL] already initialized")
+		// if civoCloudState != nil {
+		// 	return errors.New("[FATAL] already initialized")
+		// }
+		if errLoadState == nil && civoCloudState.IsCompleted {
+			// then found and it and the process is done then no point of duplicate creation
+			return fmt.Errorf("already exist")
 		}
-		civoCloudState = &StateConfiguration{
-			Region:      obj.Region,
-			ClusterName: obj.ClusterName,
+
+		if errLoadState == nil && !civoCloudState.IsCompleted {
+			// file present but not completed
+			fmt.Println("RESUME triggered!!")
+		} else {
+			fmt.Println("Fresh state!!")
+			civoCloudState = &StateConfiguration{
+				IsCompleted: false,
+				Region:      obj.Region,
+				ClusterName: obj.ClusterName,
+			}
 		}
+
 	case "delete":
-		err := loadStateHelper(state, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
-		if err != nil {
-			return err
+
+		if errLoadState != nil {
+			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
+		fmt.Println("Delete resource(s)")
 	default:
 		return errors.New("Invalid operation for init state")
 	}
@@ -131,7 +152,7 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 	if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
 		return err
 	}
-	fmt.Println("[civo] Civo cloud state", civoCloudState)
+	fmt.Println("[civo] init cloud state", civoCloudState)
 	return nil
 }
 
