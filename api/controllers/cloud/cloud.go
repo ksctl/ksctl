@@ -3,6 +3,7 @@ package cloud
 import (
 	"fmt"
 	"log"
+	"time"
 
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
@@ -102,13 +103,19 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	return nil
 }
 
+// only for testing
+// especially for testing the state mgt
+func ManualPause() {
+	fmt.Println("PAUSE FOR TESTING")
+	time.Sleep(5 * time.Second)
+}
+
 func CreateManagedCluster(client *resources.KsctlClient) error {
 	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.State); err != nil {
-		// need to verify wrt to other providers
+		// need to verify wrt to other providers wrt network creation
 		return err
 	}
 	return client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").VMType(client.Metadata.ManagedNodeType).NewManagedCluster(client.State)
-	//return nil
 }
 
 func DeleteManagedCluster(client *resources.KsctlClient) error {
@@ -116,6 +123,8 @@ func DeleteManagedCluster(client *resources.KsctlClient) error {
 	if err := client.Cloud.DelManagedCluster(client.State); err != nil {
 		return err
 	}
+
+	// ManualPause()
 
 	if err := client.Cloud.DelNetwork(client.State); err != nil {
 		return err

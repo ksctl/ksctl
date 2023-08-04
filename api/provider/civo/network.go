@@ -9,6 +9,13 @@ import (
 
 // NewNetwork implements resources.CloudInfrastructure.
 func (obj *CivoProvider) NewNetwork(state resources.StateManagementInfrastructure) error {
+
+	// check if the networkID already exist
+	if len(civoCloudState.NetworkIDs.NetworkID) != 0 {
+		fmt.Println("[skip] network creation found", civoCloudState.NetworkIDs.NetworkID)
+		return nil // its a part of play back
+	}
+
 	res, err := civoClient.NewNetwork(obj.Metadata.ResName)
 	if err != nil {
 		return err
@@ -31,13 +38,20 @@ func (obj *CivoProvider) NewNetwork(state resources.StateManagementInfrastructur
 
 // DelNetwork implements resources.CloudInfrastructure.
 func (obj *CivoProvider) DelNetwork(state resources.StateManagementInfrastructure) error {
-	// state.Get()
-	_, err := civoClient.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
-	if err != nil {
-		return err
+
+	if len(civoCloudState.NetworkIDs.NetworkID) == 0 {
+		fmt.Println("[skip] network already deleted")
+	} else {
+		_, err := civoClient.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("[civo] Deleted %s network\n", civoCloudState.NetworkIDs.NetworkID)
+		civoCloudState.NetworkIDs.NetworkID = ""
+		if err := saveStateHelper(state, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
+			return err
+		}
 	}
-	fmt.Printf("[civo] Deleted %s network\n", civoCloudState.NetworkIDs.NetworkID)
-	// state.Save()
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)
 	return state.Path(path).DeleteDir()
 }
