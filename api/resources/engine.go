@@ -8,9 +8,9 @@ import (
 )
 
 type KsctlClient struct {
-	Cloud  CloudInfrastructure
-	Distro Distributions
-	State  StateManagementInfrastructure
+	Cloud   CloudInfrastructure
+	Distro  Distributions
+	Storage StorageInfrastructure
 	Metadata
 }
 
@@ -40,26 +40,26 @@ type Metadata struct {
 }
 
 type CloudInfrastructure interface {
-	NewVM(StateManagementInfrastructure) error
-	DelVM(StateManagementInfrastructure) error
+	NewVM(StorageInfrastructure) error
+	DelVM(StorageInfrastructure) error
 
-	NewFirewall(StateManagementInfrastructure) error
-	DelFirewall(StateManagementInfrastructure) error
+	NewFirewall(StorageInfrastructure) error
+	DelFirewall(StorageInfrastructure) error
 
-	NewNetwork(StateManagementInfrastructure) error
-	DelNetwork(StateManagementInfrastructure) error
+	NewNetwork(StorageInfrastructure) error
+	DelNetwork(StorageInfrastructure) error
 
-	InitState(StateManagementInfrastructure, string) error
+	InitState(StorageInfrastructure, string) error
 
-	CreateUploadSSHKeyPair(StateManagementInfrastructure) error
-	DelSSHKeyPair(StateManagementInfrastructure) error
+	CreateUploadSSHKeyPair(StorageInfrastructure) error
+	DelSSHKeyPair(StorageInfrastructure) error
 
 	// get the state required for the kubernetes dributions to configure
-	GetStateForHACluster(StateManagementInfrastructure) (cloud.CloudResourceState, error)
+	GetStateForHACluster(StorageInfrastructure) (cloud.CloudResourceState, error)
 
-	NewManagedCluster(StateManagementInfrastructure) error
-	DelManagedCluster(StateManagementInfrastructure) error
-	GetManagedKubernetes(StateManagementInfrastructure)
+	NewManagedCluster(StorageInfrastructure) error
+	DelManagedCluster(StorageInfrastructure) error
+	GetManagedKubernetes(StorageInfrastructure)
 
 	// used by controller
 	Name(string) CloudInfrastructure
@@ -76,24 +76,24 @@ type KubernetesInfrastructure interface {
 
 	// it recieves no of controlplane to which we want to configure
 	// NOTE: make the first controlplane return server token as possible
-	ConfigureControlPlane(int, StateManagementInfrastructure)
-	// DestroyControlPlane(StateManagementInfrastructure)  // NOTE: [FEATURE] destroy not available
+	ConfigureControlPlane(int, StorageInfrastructure)
+	// DestroyControlPlane(StorageInfrastructure)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	JoinWorkerplane(StateManagementInfrastructure) error
-	DestroyWorkerPlane(StateManagementInfrastructure)
+	JoinWorkerplane(StorageInfrastructure) error
+	DestroyWorkerPlane(StorageInfrastructure)
 
-	ConfigureLoadbalancer(StateManagementInfrastructure)
-	// DestroyLoadbalancer(StateManagementInfrastructure)  // NOTE: [FEATURE] destroy not available
+	ConfigureLoadbalancer(StorageInfrastructure)
+	// DestroyLoadbalancer(StorageInfrastructure)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	ConfigureDataStore(StateManagementInfrastructure)
-	// DestroyDataStore(StateManagementInfrastructure)  // NOTE: [FEATURE] destroy not available
+	ConfigureDataStore(StorageInfrastructure)
+	// DestroyDataStore(StorageInfrastructure)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	InstallApplication(StateManagementInfrastructure)
+	InstallApplication(StorageInfrastructure)
 
-	GetKubeConfig(StateManagementInfrastructure) (string, error)
+	GetKubeConfig(StorageInfrastructure) (string, error)
 }
 
 // FEATURE: non kubernetes distrobutions like nomad
@@ -106,14 +106,14 @@ type Distributions interface {
 	// NonKubernetesInfrastructure
 }
 
-type StateManagementInfrastructure interface {
+type StorageInfrastructure interface {
 	Save([]byte) error
 	Destroy() error
 	Load() ([]byte, error) // try to make the return type defined
 
 	// for modifier
-	Path(string) StateManagementInfrastructure
-	Permission(mode os.FileMode) StateManagementInfrastructure
+	Path(string) StorageInfrastructure
+	Permission(mode os.FileMode) StorageInfrastructure
 	CreateDir() error
 	DeleteDir() error
 

@@ -21,14 +21,14 @@ func GenKsctlController() *KsctlControllerClient {
 func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) {
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.State = localstate.InitStorage()
+		client.Storage = localstate.InitStorage()
 	default:
 		panic("Currently Local state is supported!")
 	}
 
 	switch client.Metadata.Provider {
 	case "civo":
-		err := civo_pkg.GetInputCredential(client.State)
+		err := civo_pkg.GetInputCredential(client.Storage)
 		if err != nil {
 			panic(err)
 		}
@@ -43,7 +43,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	fmt.Println("Create Managed Cluster triggered successfully")
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.State = localstate.InitStorage()
+		client.Storage = localstate.InitStorage()
 	default:
 		panic("Currently Local state is supported!")
 	}
@@ -54,7 +54,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	if cloudResErr != nil {
 		panic(cloudResErr)
 	}
-	client.State.Logger().Success("[ksctl] Created the managed cluster")
+	client.Storage.Logger().Success("[ksctl] Created the managed cluster")
 }
 
 func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resources.KsctlClient) {
@@ -79,7 +79,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	}
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.State = localstate.InitStorage()
+		client.Storage = localstate.InitStorage()
 	default:
 		panic("Currently Local state is supported!")
 	}
@@ -88,7 +88,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	if cloudResErr != nil {
 		panic(cloudResErr)
 	}
-	client.State.Logger().Success("[ksctl] Deleted the managed cluster")
+	client.Storage.Logger().Success("[ksctl] Deleted the managed cluster")
 }
 
 func (ksctlControlCli *KsctlControllerClient) SwitchCluster() {}
@@ -104,7 +104,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.State = &localstate.LocalStorageProvider{}
+		client.Storage = &localstate.LocalStorageProvider{}
 	default:
 		panic("Currently Local state is supported!")
 	}
@@ -114,7 +114,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 	// Cloud done
 	var payload cloudController.CloudResourceState
-	payload, _ = client.Cloud.GetStateForHACluster(client.State)
+	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 	// transfer the state
 	client.Distro.InitState(payload)
 
@@ -145,7 +145,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	fmt.Println("Create HA delete triggered successfully")
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.State = &localstate.LocalStorageProvider{}
+		client.Storage = &localstate.LocalStorageProvider{}
 	default:
 		panic("Currently Local state is supported!")
 	}

@@ -26,7 +26,7 @@ func HydrateCloud(client *resources.KsctlClient, operation string) {
 		panic("Invalid Cloud provider")
 	}
 	// call the init state for cloud providers
-	err = client.Cloud.InitState(client.State, operation)
+	err = client.Cloud.InitState(client.Storage, operation)
 	if err != nil {
 		panic("[cloud] " + err.Error())
 	}
@@ -38,7 +38,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 	// TODO: ADD THE OTHER RESOURCE DESTRICTION
 
 	// last one to delete is network
-	err := client.Cloud.DelNetwork(client.State)
+	err := client.Cloud.DelNetwork(client.Storage)
 	if err != nil {
 		return err
 	}
@@ -47,45 +47,45 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 }
 
 func CreateHACluster(client *resources.KsctlClient) error {
-	err := client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.State)
+	err := client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.Storage)
 	if err != nil {
 		return err
 	}
-	_ = client.Cloud.Name("demo-ssh").CreateUploadSSHKeyPair(client.State)
+	_ = client.Cloud.Name("demo-ssh").CreateUploadSSHKeyPair(client.Storage)
 
 	fmt.Println("Firewall LB")
 	_ = client.Cloud.Name("demo-fw-lb").
 		Role("loadbalancer").
-		NewFirewall(client.State)
+		NewFirewall(client.Storage)
 
 	fmt.Println("Firewall DB")
 	_ = client.Cloud.Name("demo-fw-db").
 		Role("datastore").
-		NewFirewall(client.State)
+		NewFirewall(client.Storage)
 
 	fmt.Println("Firewall CP")
 	_ = client.Cloud.Name("demo-fw-cp").
 		Role("controlplane").
-		NewFirewall(client.State)
+		NewFirewall(client.Storage)
 
 	fmt.Println("Firewall WP")
 	_ = client.Cloud.Name("demo-fw-wp").
 		Role("workerplane").
-		NewFirewall(client.State)
+		NewFirewall(client.Storage)
 
 	fmt.Println("Loadbalancer VM")
 	_ = client.Cloud.Name("demo-vm-lb").
 		Role("loadbalancer").
 		VMType(client.LoadBalancerNodeType).
 		Visibility(true).
-		NewVM(client.State)
+		NewVM(client.Storage)
 
 	for no := 0; no < client.Metadata.NoDS; no++ {
 		_ = client.Cloud.Name(fmt.Sprintf("demo-vm-db-%d", no)).
 			Role("datastore").
 			VMType(client.DataStoreNodeType).
 			Visibility(true).
-			NewVM(client.State)
+			NewVM(client.Storage)
 	}
 
 	for no := 0; no < client.Metadata.NoCP; no++ {
@@ -93,7 +93,7 @@ func CreateHACluster(client *resources.KsctlClient) error {
 			Role("controlplane").
 			VMType(client.ControlPlaneNodeType).
 			Visibility(true).
-			NewVM(client.State)
+			NewVM(client.Storage)
 	}
 
 	for no := 0; no < client.Metadata.NoWP; no++ {
@@ -101,7 +101,7 @@ func CreateHACluster(client *resources.KsctlClient) error {
 			Role("workerplane").
 			VMType(client.WorkerPlaneNodeType).
 			Visibility(true).
-			NewVM(client.State)
+			NewVM(client.Storage)
 	}
 	return nil
 }
@@ -114,13 +114,13 @@ func ManualPause() {
 }
 
 func CreateManagedCluster(client *resources.KsctlClient) error {
-	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.State); err != nil {
+	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.Storage); err != nil {
 		// need to verify wrt to other providers wrt network creation
 		return err
 	}
 	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").
 		VMType(client.Metadata.ManagedNodeType).
-		NewManagedCluster(client.State); err != nil {
+		NewManagedCluster(client.Storage); err != nil {
 		return err
 	}
 	return nil
@@ -128,15 +128,15 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 
 func DeleteManagedCluster(client *resources.KsctlClient) error {
 
-	if err := client.Cloud.DelManagedCluster(client.State); err != nil {
+	if err := client.Cloud.DelManagedCluster(client.Storage); err != nil {
 		return err
 	}
 
 	// ManualPause()
 
-	if err := client.Cloud.DelNetwork(client.State); err != nil {
+	if err := client.Cloud.DelNetwork(client.Storage); err != nil {
 		return err
 	}
-	client.State.Logger().Success("[cloud] Deleted the managed cluster")
+	client.Storage.Logger().Success("[cloud] Deleted the managed cluster")
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 )
 
 // NewNetwork implements resources.CloudInfrastructure.
-func (obj *CivoProvider) NewNetwork(storage resources.StateManagementInfrastructure) error {
+func (obj *CivoProvider) NewNetwork(storage resources.StorageInfrastructure) error {
 
 	// check if the networkID already exist
 	if len(civoCloudState.NetworkIDs.NetworkID) != 0 {
@@ -35,7 +35,7 @@ func (obj *CivoProvider) NewNetwork(storage resources.StateManagementInfrastruct
 }
 
 // DelNetwork implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelNetwork(storage resources.StateManagementInfrastructure) error {
+func (obj *CivoProvider) DelNetwork(storage resources.StorageInfrastructure) error {
 
 	if len(civoCloudState.NetworkIDs.NetworkID) == 0 {
 		storage.Logger().Success("[skip] network already deleted")

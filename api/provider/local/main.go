@@ -23,67 +23,67 @@ type LocalProvider struct {
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelFirewall implements resources.CloudInfrastructure.
-func (*LocalProvider) DelFirewall(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) DelFirewall(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelManagedCluster implements resources.CloudInfrastructure.
-func (*LocalProvider) DelManagedCluster(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) DelManagedCluster(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelNetwork implements resources.CloudInfrastructure.
-func (*LocalProvider) DelNetwork(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) DelNetwork(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*LocalProvider) DelSSHKeyPair(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) DelSSHKeyPair(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelVM implements resources.CloudInfrastructure.
-func (*LocalProvider) DelVM(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) DelVM(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*LocalProvider) GetManagedKubernetes(state resources.StateManagementInfrastructure) {
+func (*LocalProvider) GetManagedKubernetes(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*LocalProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
+func (*LocalProvider) GetStateForHACluster(state resources.StorageInfrastructure) (cloud.CloudResourceState, error) {
 	panic("unimplemented")
 }
 
 // InitState implements resources.CloudInfrastructure.
-func (*LocalProvider) InitState(state resources.StateManagementInfrastructure, operation string) error {
+func (*LocalProvider) InitState(state resources.StorageInfrastructure, operation string) error {
 	panic("unimplemented")
 }
 
 // NewFirewall implements resources.CloudInfrastructure.
-func (*LocalProvider) NewFirewall(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) NewFirewall(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (*LocalProvider) NewManagedCluster(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) NewManagedCluster(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewNetwork implements resources.CloudInfrastructure.
-func (*LocalProvider) NewNetwork(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) NewNetwork(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewVM implements resources.CloudInfrastructure.
-func (*LocalProvider) NewVM(state resources.StateManagementInfrastructure) error {
+func (*LocalProvider) NewVM(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 

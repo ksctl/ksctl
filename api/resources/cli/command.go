@@ -47,12 +47,12 @@ package cli
 // func NewLocalStorageBuilderOrDie(b *resources.CobraCmd) error {
 // 	set := &resources.ClientSet{}
 // 	b.Client.StateLocation = "local"
-// 	b.Client.State = set.StateHandler("local")
+// 	b.Client.Storage = set.StateHandler("local")
 // 	return nil
 // }
 // func NewRemoteStorageBuilderOrDie(b *resources.CobraCmd) error {
 // 	set := &resources.ClientSet{}
 // 	b.Client.StateLocation = "remote"
-// 	b.Client.State = set.StateHandler("remote")
+// 	b.Client.Storage = set.StateHandler("remote")
 // 	return nil
 // }

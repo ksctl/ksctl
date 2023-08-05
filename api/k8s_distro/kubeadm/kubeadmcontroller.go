@@ -26,27 +26,27 @@ type KubeadmDistro struct {
 }
 
 // ConfigureControlPlane implements resources.Distributions.
-func (*KubeadmDistro) ConfigureControlPlane(noOfCP int, state resources.StateManagementInfrastructure) {
+func (*KubeadmDistro) ConfigureControlPlane(noOfCP int, state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // ConfigureDataStore implements resources.Distributions.
-func (*KubeadmDistro) ConfigureDataStore(state resources.StateManagementInfrastructure) {
+func (*KubeadmDistro) ConfigureDataStore(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // ConfigureLoadbalancer implements resources.Distributions.
-func (*KubeadmDistro) ConfigureLoadbalancer(state resources.StateManagementInfrastructure) {
+func (*KubeadmDistro) ConfigureLoadbalancer(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // DestroyWorkerPlane implements resources.Distributions.
-func (*KubeadmDistro) DestroyWorkerPlane(state resources.StateManagementInfrastructure) {
+func (*KubeadmDistro) DestroyWorkerPlane(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // GetKubeConfig implements resources.Distributions.
-func (*KubeadmDistro) GetKubeConfig(state resources.StateManagementInfrastructure) (string, error) {
+func (*KubeadmDistro) GetKubeConfig(state resources.StorageInfrastructure) (string, error) {
 	panic("unimplemented")
 }
 
@@ -56,12 +56,12 @@ func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState) {
 }
 
 // InstallApplication implements resources.Distributions.
-func (*KubeadmDistro) InstallApplication(state resources.StateManagementInfrastructure) {
+func (*KubeadmDistro) InstallApplication(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // JoinWorkerplane implements resources.Distributions.
-func (*KubeadmDistro) JoinWorkerplane(state resources.StateManagementInfrastructure) error {
+func (*KubeadmDistro) JoinWorkerplane(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
