@@ -11,7 +11,7 @@ import (
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey(storage resources.StateManagementInfrastructure) string {
+func fetchAPIKey(storage resources.StorageInfrastructure) string {
 
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if civoToken != "" {
@@ -26,7 +26,7 @@ func fetchAPIKey(storage resources.StateManagementInfrastructure) string {
 	return token["token"]
 }
 
-func GetInputCredential(storage resources.StateManagementInfrastructure) error {
+func GetInputCredential(storage resources.StorageInfrastructure) error {
 
 	storage.Logger().Print("Enter CIVO TOKEN")
 	token, err := utils.UserInputCredentials(storage.Logger())
@@ -54,7 +54,7 @@ func generatePath(flag int, path ...string) string {
 	return utils.GetPath(flag, "civo", path...)
 }
 
-func saveStateHelper(storage resources.StateManagementInfrastructure, path string) error {
+func saveStateHelper(storage resources.StorageInfrastructure, path string) error {
 	rawState, err := convertStateToBytes(*civoCloudState)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func saveStateHelper(storage resources.StateManagementInfrastructure, path strin
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
-func loadStateHelper(storage resources.StateManagementInfrastructure, path string) error {
+func loadStateHelper(storage resources.StorageInfrastructure, path string) error {
 	fmt.Println(path)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
@@ -72,7 +72,7 @@ func loadStateHelper(storage resources.StateManagementInfrastructure, path strin
 	return convertStateFromBytes(raw)
 }
 
-func saveKubeconfigHelper(storage resources.StateManagementInfrastructure, path string, kubeconfig string) error {
+func saveKubeconfigHelper(storage resources.StorageInfrastructure, path string, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
 
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
@@ -131,7 +131,7 @@ func isValidVMSize(size string) error {
 	return fmt.Errorf("INVALID VM SIZE")
 }
 
-func printKubeconfig(storage resources.StateManagementInfrastructure, operation string) {
+func printKubeconfig(storage resources.StorageInfrastructure, operation string) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)

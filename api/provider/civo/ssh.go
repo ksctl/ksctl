@@ -7,13 +7,13 @@ import (
 )
 
 // DelSSHKeyPair implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelSSHKeyPair(state resources.StateManagementInfrastructure) error {
+func (obj *CivoProvider) DelSSHKeyPair(state resources.StorageInfrastructure) error {
 	fmt.Printf("[civo] delete %s SSHKeypair....\n", obj.Metadata.ResName)
 	return nil
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (obj *CivoProvider) CreateUploadSSHKeyPair(state resources.StateManagementInfrastructure) error {
+func (obj *CivoProvider) CreateUploadSSHKeyPair(state resources.StorageInfrastructure) error {
 	fmt.Printf("[civo] delete %s SSHKeypair....\n", obj.Metadata.ResName)
 	return nil
 }

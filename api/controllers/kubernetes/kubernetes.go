@@ -18,18 +18,18 @@ func HydrateK8sDistro(client *resources.KsctlClient) {
 }
 
 func ConfigureCluster(client *resources.KsctlClient) {
-	client.Distro.ConfigureLoadbalancer(client.State)
+	client.Distro.ConfigureLoadbalancer(client.Storage)
 	for no := 0; no < int(client.Metadata.NoDS); no++ {
-		client.Distro.ConfigureDataStore(client.State)
+		client.Distro.ConfigureDataStore(client.Storage)
 	}
 	for no := 0; no < int(client.Metadata.NoCP); no++ {
-		client.Distro.ConfigureControlPlane(no, client.State)
+		client.Distro.ConfigureControlPlane(no, client.Storage)
 	}
-	_, _ = client.Distro.GetKubeConfig(client.State)
+	_, _ = client.Distro.GetKubeConfig(client.Storage)
 
-	// client.State.Path("///sfs/cvf/vdf/vdf/vfd/v").Save([]byte{})
+	// client.Storage.Path("///sfs/cvf/vdf/vdf/vfd/v").Save([]byte{})
 
 	for no := 0; no < int(client.Metadata.NoWP); no++ {
-		_ = client.Distro.JoinWorkerplane(client.State)
+		_ = client.Distro.JoinWorkerplane(client.Storage)
 	}
 }

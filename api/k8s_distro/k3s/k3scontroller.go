@@ -26,27 +26,27 @@ type K3sDistro struct {
 }
 
 // ConfigureControlPlane implements resources.Distributions.
-func (*K3sDistro) ConfigureControlPlane(noOfCP int, state resources.StateManagementInfrastructure) {
+func (*K3sDistro) ConfigureControlPlane(noOfCP int, state resources.StorageInfrastructure) {
 	fmt.Printf("[K3s] Configuring Controlplane[%v]....\n", noOfCP)
 }
 
 // ConfigureDataStore implements resources.Distributions.
-func (*K3sDistro) ConfigureDataStore(state resources.StateManagementInfrastructure) {
+func (*K3sDistro) ConfigureDataStore(state resources.StorageInfrastructure) {
 	fmt.Println("[K3s] Configuring DataStore....")
 }
 
 // ConfigureLoadbalancer implements resources.Distributions.
-func (k8s *K3sDistro) ConfigureLoadbalancer(state resources.StateManagementInfrastructure) {
+func (k8s *K3sDistro) ConfigureLoadbalancer(state resources.StorageInfrastructure) {
 	fmt.Println("[K3s] Configuring Loadbalancer....")
 }
 
 // DestroyWorkerPlane implements resources.Distributions.
-func (*K3sDistro) DestroyWorkerPlane(state resources.StateManagementInfrastructure) {
+func (*K3sDistro) DestroyWorkerPlane(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // GetKubeConfig implements resources.Distributions.
-func (*K3sDistro) GetKubeConfig(state resources.StateManagementInfrastructure) (string, error) {
+func (*K3sDistro) GetKubeConfig(state resources.StorageInfrastructure) (string, error) {
 	fmt.Println("[K3s] Kubeconfig fetch....")
 	return "{}", nil
 }
@@ -62,12 +62,12 @@ func (*K3sDistro) InitState(cloudState cloud.CloudResourceState) {
 }
 
 // InstallApplication implements resources.Distributions.
-func (*K3sDistro) InstallApplication(state resources.StateManagementInfrastructure) {
+func (*K3sDistro) InstallApplication(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // JoinWorkerplane implements resources.Distributions.
-func (*K3sDistro) JoinWorkerplane(state resources.StateManagementInfrastructure) error {
+func (*K3sDistro) JoinWorkerplane(state resources.StorageInfrastructure) error {
 	fmt.Println("[K3s] Adding WorkerPlane....")
 	return nil
 }

@@ -94,7 +94,7 @@ type Credential struct {
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
 // TODO: add the steps to transfer data
-func (client *CivoProvider) GetStateForHACluster(storage resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
+func (client *CivoProvider) GetStateForHACluster(storage resources.StorageInfrastructure) (cloud.CloudResourceState, error) {
 	payload := cloud.CloudResourceState{
 		SSHState:          cloud.SSHPayload{PathPrivateKey: "abcd/rdcewcf"},
 		Metadata:          cloud.Metadata{ClusterName: client.ClusterName},
@@ -104,7 +104,7 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StateManageme
 	return payload, nil
 }
 
-func (obj *CivoProvider) InitState(storage resources.StateManagementInfrastructure, operation string) error {
+func (obj *CivoProvider) InitState(storage resources.StorageInfrastructure, operation string) error {
 
 	clusterDirName = obj.ClusterName + " " + obj.Region
 	if obj.HACluster {

@@ -83,47 +83,47 @@ var (
 )
 
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (client *AzureProvider) CreateUploadSSHKeyPair(state resources.StateManagementInfrastructure) error {
+func (client *AzureProvider) CreateUploadSSHKeyPair(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelFirewall implements resources.CloudInfrastructure.
-func (*AzureProvider) DelFirewall(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) DelFirewall(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelManagedCluster implements resources.CloudInfrastructure.
-func (*AzureProvider) DelManagedCluster(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) DelManagedCluster(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelNetwork implements resources.CloudInfrastructure.
-func (*AzureProvider) DelNetwork(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) DelNetwork(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*AzureProvider) DelSSHKeyPair(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) DelSSHKeyPair(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // DelVM implements resources.CloudInfrastructure.
-func (*AzureProvider) DelVM(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) DelVM(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*AzureProvider) GetManagedKubernetes(state resources.StateManagementInfrastructure) {
+func (*AzureProvider) GetManagedKubernetes(state resources.StorageInfrastructure) {
 	panic("unimplemented")
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (*AzureProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
+func (*AzureProvider) GetStateForHACluster(state resources.StorageInfrastructure) (cloud.CloudResourceState, error) {
 	panic("unimplemented")
 }
 
 // InitState implements resources.CloudInfrastructure.
-func (*AzureProvider) InitState(state resources.StateManagementInfrastructure, operation string) error {
+func (*AzureProvider) InitState(state resources.StorageInfrastructure, operation string) error {
 	if currCloudState != nil {
 		return errors.New("[FATAL] already initialized")
 	}
@@ -132,22 +132,22 @@ func (*AzureProvider) InitState(state resources.StateManagementInfrastructure, o
 }
 
 // NewFirewall implements resources.CloudInfrastructure.
-func (*AzureProvider) NewFirewall(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) NewFirewall(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (*AzureProvider) NewManagedCluster(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) NewManagedCluster(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewNetwork implements resources.CloudInfrastructure.
-func (*AzureProvider) NewNetwork(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) NewNetwork(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
 }
 
 // NewVM implements resources.CloudInfrastructure.
-func (*AzureProvider) NewVM(state resources.StateManagementInfrastructure) error {
+func (*AzureProvider) NewVM(state resources.StorageInfrastructure) error {
 	return errors.New("unimplemented")
 }
 

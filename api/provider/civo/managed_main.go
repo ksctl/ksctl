@@ -11,7 +11,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-func watchManagedCluster(obj *CivoProvider, storage resources.StateManagementInfrastructure, id string) error {
+func watchManagedCluster(obj *CivoProvider, storage resources.StorageInfrastructure, id string) error {
 
 	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
@@ -38,7 +38,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StateManagementInf
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (obj *CivoProvider) NewManagedCluster(storage resources.StateManagementInfrastructure) error {
+func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructure) error {
 
 	if len(civoCloudState.ManagedClusterID) != 0 {
 		fmt.Println("[skip] managed cluster creation found", civoCloudState.ManagedClusterID)
@@ -88,7 +88,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StateManagementInfr
 }
 
 // DelManagedCluster implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelManagedCluster(storage resources.StateManagementInfrastructure) error {
+func (obj *CivoProvider) DelManagedCluster(storage resources.StorageInfrastructure) error {
 	if len(civoCloudState.ManagedClusterID) == 0 {
 		storage.Logger().Success("[skip] network deletion found")
 		return nil
@@ -109,7 +109,7 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StateManagementInfr
 }
 
 // GetManagedKubernetes implements resources.CloudInfrastructure.
-func (obj *CivoProvider) GetManagedKubernetes(storage resources.StateManagementInfrastructure) {
+func (obj *CivoProvider) GetManagedKubernetes(storage resources.StorageInfrastructure) {
 	// TODO: used for getting information on all the clusters created with all the types
 	// ha and managed in some form of predefined json format
 	fmt.Printf("[civo] Got Managed %s cluster....", obj.Metadata.ResName)

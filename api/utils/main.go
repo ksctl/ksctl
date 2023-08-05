@@ -124,7 +124,7 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	}
 }
 
-func SaveCred(storage resources.StateManagementInfrastructure, config interface{}, provider string) error {
+func SaveCred(storage resources.StorageInfrastructure, config interface{}, provider string) error {
 
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
@@ -146,7 +146,7 @@ func SaveCred(storage resources.StateManagementInfrastructure, config interface{
 	return nil
 }
 
-func GetCred(storage resources.StateManagementInfrastructure, provider string) (i map[string]string, err error) {
+func GetCred(storage resources.StorageInfrastructure, provider string) (i map[string]string, err error) {
 
 	fileBytes, err := storage.Path(GetPath(CREDENTIAL_PATH, provider)).Load()
 	if err != nil {
