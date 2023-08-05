@@ -61,8 +61,8 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructu
 		NumTargetNodes:  obj.NoOfManagedNodes,
 		TargetNodesSize: obj.Metadata.VmType,
 		NetworkID:       network.ID,
-		Applications:    "",       // make the use of application and cni via some method
-		CNIPlugin:       "cilium", // make it use install application in the civo
+		Applications:    obj.Metadata.Apps, // make the use of application and cni via some method
+		CNIPlugin:       obj.Metadata.Cni,  // make it use install application in the civo
 	}
 	resp, err := civoClient.NewKubernetesClusters(configK8s)
 	if err != nil {

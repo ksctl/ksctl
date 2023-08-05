@@ -118,9 +118,19 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 		// need to verify wrt to other providers wrt network creation
 		return err
 	}
-	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").
-		VMType(client.Metadata.ManagedNodeType).
-		NewManagedCluster(client.Storage); err != nil {
+
+	managedClient := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").
+		VMType(client.Metadata.ManagedNodeType)
+
+	if client.Cloud.SupportForApplications() {
+		managedClient = managedClient.Application(client.Metadata.Applications)
+	}
+
+	if client.Cloud.SupportForCNI() {
+		managedClient = managedClient.CNI(client.Metadata.CNIPlugin)
+	}
+
+	if err := managedClient.NewManagedCluster(client.Storage); err != nil {
 		return err
 	}
 	return nil

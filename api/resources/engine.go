@@ -35,8 +35,8 @@ type Metadata struct {
 	NoCP int // No of Controlplane VMs
 	NoDS int // No of DataStore VMs
 
-	Applications []string `json:"application"`
-	CNIPlugin    *string  `json:"cni_plugin"`
+	Applications string `json:"application"`
+	CNIPlugin    string `json:"cni_plugin"`
 }
 
 type CloudInfrastructure interface {
@@ -69,6 +69,10 @@ type CloudInfrastructure interface {
 
 	SupportForApplications() bool
 	SupportForCNI() bool
+
+	// these are meant to be used for managed clusters
+	Application(string) CloudInfrastructure
+	CNI(string) CloudInfrastructure
 }
 
 type KubernetesInfrastructure interface {
@@ -91,6 +95,7 @@ type KubernetesInfrastructure interface {
 	// DestroyDataStore(StorageInfrastructure)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
+	// meant to be used for the HA clusters
 	InstallApplication(StorageInfrastructure)
 
 	GetKubeConfig(StorageInfrastructure) (string, error)
