@@ -24,19 +24,19 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 	case "local":
 		client.Storage = localstate.InitStorage()
 	default:
-		panic("Currently Local state is supported!")
+		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
 
 	switch client.Metadata.Provider {
 	case "civo":
 		err := civo_pkg.GetInputCredential(client.Storage)
 		if err != nil {
-			panic(err)
+			client.Storage.Logger().Err(err.Error())
 		}
 	case "azure", "aws":
-		panic("Currently not supported!")
+		client.Storage.Logger().Err("Currently not supported!")
 	default:
-		panic("Currently not supported!")
+		client.Storage.Logger().Err("Currently not supported!")
 	}
 }
 
@@ -46,14 +46,14 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	case "local":
 		client.Storage = localstate.InitStorage()
 	default:
-		panic("Currently Local state is supported!")
+		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
 
 	cloud.HydrateCloud(client, "create")
 
 	cloudResErr := cloud.CreateManagedCluster(client)
 	if cloudResErr != nil {
-		panic(cloudResErr)
+		client.Storage.Logger().Err(cloudResErr.Error())
 	}
 	client.Storage.Logger().Success("[ksctl] Created the managed cluster")
 }
@@ -82,12 +82,12 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	case "local":
 		client.Storage = localstate.InitStorage()
 	default:
-		panic("Currently Local state is supported!")
+		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
 	cloud.HydrateCloud(client, "delete")
 	cloudResErr := cloud.DeleteManagedCluster(client)
 	if cloudResErr != nil {
-		panic(cloudResErr)
+		client.Storage.Logger().Err(cloudResErr.Error())
 	}
 	client.Storage.Logger().Success("[ksctl] Deleted the managed cluster")
 }
@@ -99,7 +99,7 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 	case "local":
 		client.Storage = &localstate.LocalStorageProvider{}
 	default:
-		panic("Currently Local state is supported!")
+		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
 
 	var printerTable []cloudController.AllClusterData
@@ -107,15 +107,15 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 	case "civo":
 		data, err := civo_pkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			panic(err)
+			client.Storage.Logger().Err(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 	case "azure", "aws", "local":
-		panic("Not yet implemtned")
+		client.Storage.Logger().Err("Not yet implemtned")
 	case "all":
 		data, err := civo_pkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			panic(err)
+			client.Storage.Logger().Err(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 	}
@@ -133,7 +133,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	case "local":
 		client.Storage = &localstate.LocalStorageProvider{}
 	default:
-		panic("Currently Local state is supported!")
+		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
 
 	cloudResErr := cloud.CreateHACluster(client)
@@ -174,7 +174,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	case "local":
 		client.Storage = &localstate.LocalStorageProvider{}
 	default:
-		panic("Currently Local state is supported!")
+		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
 	cloud.HydrateCloud(client, "delete")
 
