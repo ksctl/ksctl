@@ -116,6 +116,7 @@ type StorageInfrastructure interface {
 	Permission(mode os.FileMode) StorageInfrastructure
 	CreateDir() error
 	DeleteDir() error
+	GetFolders() ([][]string, error)
 
 	// to access logger
 	Logger() logger.LogFactory

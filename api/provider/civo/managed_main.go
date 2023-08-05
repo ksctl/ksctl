@@ -54,6 +54,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructu
 	if err != nil {
 		return err
 	}
+
 	configK8s := &civogo.KubernetesClusterConfig{
 		Name:            obj.Metadata.ResName,
 		Region:          obj.Region,
@@ -75,7 +76,10 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructu
 			return fmt.Errorf("UNKNOWN ERR")
 		}
 	}
+
+	civoCloudState.NoManagedNodes = obj.NoOfManagedNodes
 	civoCloudState.ManagedClusterID = resp.ID
+
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 	if err := saveStateHelper(storage, path); err != nil {
 		return err

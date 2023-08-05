@@ -8,7 +8,7 @@ type Controller interface {
 
 	SwitchCluster()
 
-	GetCluster()
+	GetCluster(*resources.KsctlClient)
 
 	Credentials(*resources.KsctlClient)
 

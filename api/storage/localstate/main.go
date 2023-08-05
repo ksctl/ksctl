@@ -2,6 +2,7 @@ package localstate
 
 import (
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/kubesimplify/ksctl/api/logger"
@@ -78,6 +79,22 @@ func (storage *LocalStorageProvider) Save(data []byte) error {
 
 func (s *LocalStorageProvider) Destroy() error {
 	return nil
+}
+
+func (s *LocalStorageProvider) GetFolders() ([][]string, error) {
+	folders, err := os.ReadDir(s.Metadata.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	var info [][]string
+	for _, file := range folders {
+		if file.IsDir() {
+			info = append(info, strings.Split(file.Name(), " "))
+		}
+	}
+
+	return info, nil
 }
 
 func (s *LocalStorageProvider) Logger() logger.LogFactory {

@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"fmt"
-	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 	"strings"
+
+	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 
 	"github.com/kubesimplify/ksctl/api/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/controllers/kubernetes"
@@ -93,7 +94,33 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 
 func (ksctlControlCli *KsctlControllerClient) SwitchCluster() {}
 
-func (ksctlControlCli *KsctlControllerClient) GetCluster() {}
+func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.KsctlClient) {
+	switch client.Metadata.StateLocation {
+	case "local":
+		client.Storage = &localstate.LocalStorageProvider{}
+	default:
+		panic("Currently Local state is supported!")
+	}
+
+	var printerTable []cloudController.AllClusterData
+	switch client.Metadata.Provider {
+	case "civo":
+		data, err := civo_pkg.GetRAWClusterInfos(client.Storage)
+		if err != nil {
+			panic(err)
+		}
+		printerTable = append(printerTable, data...)
+	case "azure", "aws", "local":
+		panic("Not yet implemtned")
+	case "all":
+		data, err := civo_pkg.GetRAWClusterInfos(client.Storage)
+		if err != nil {
+			panic(err)
+		}
+		printerTable = append(printerTable, data...)
+	}
+	fmt.Println(printerTable)
+}
 
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) {
 	fmt.Println("Create HA Cluster triggered successfully")
