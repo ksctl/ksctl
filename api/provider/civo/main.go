@@ -1,13 +1,14 @@
 package civo
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
@@ -45,6 +46,7 @@ type StateConfiguration struct {
 	ClusterName      string     `json:"clustername"`
 	Region           string     `json:"region"`
 	ManagedClusterID string     `json:"managed_cluster_id"`
+	NoManagedNodes   int        `json:"no_managed_cluster_nodes"`
 	SSHID            string     `json:"ssh_id"`
 	InstanceIDs      InstanceID `json:"instanceids"`
 	NetworkIDs       NetworkID  `json:"networkids"`
@@ -94,10 +96,10 @@ type Credential struct {
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
 // TODO: add the steps to transfer data
-func (client *CivoProvider) GetStateForHACluster(storage resources.StorageInfrastructure) (cloud.CloudResourceState, error) {
-	payload := cloud.CloudResourceState{
-		SSHState:          cloud.SSHPayload{PathPrivateKey: "abcd/rdcewcf"},
-		Metadata:          cloud.Metadata{ClusterName: client.ClusterName},
+func (client *CivoProvider) GetStateForHACluster(storage resources.StorageInfrastructure) (cloud_control_res.CloudResourceState, error) {
+	payload := cloud_control_res.CloudResourceState{
+		SSHState:          cloud_control_res.SSHPayload{PathPrivateKey: "abcd/rdcewcf"},
+		Metadata:          cloud_control_res.Metadata{ClusterName: client.ClusterName},
 		IPv4ControlPlanes: civoCloudState.InstanceIDs.ControlNodes,
 	}
 	storage.Logger().Success("Transferred Data, it's ready to be shipped!")
@@ -212,4 +214,56 @@ func (cloud *CivoProvider) SupportForApplications() bool {
 
 func (cloud *CivoProvider) SupportForCNI() bool {
 	return true
+}
+
+func GetRAWClusterInfos(storage resources.StorageInfrastructure) ([]cloud_control_res.AllClusterData, error) {
+	var data []cloud_control_res.AllClusterData
+
+	// // first get all the directories of ha
+	// haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "ha")).GetFolders()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// for _, haFolder := range haFolders {
+	// 	data = append(data,
+	// 		cloud_control_res.AllClusterData{
+	// 			Provider: "civo",
+	// 			Name:     haFolder[0],
+	// 			Region:   haFolder[1],
+	// 			Type:     "ha",
+	// 		})
+	// 	// to fetch more info we need to read the state files
+	// }
+
+	managedFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "managed")).GetFolders()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, haFolder := range managedFolders {
+
+		path := generatePath(utils.CLUSTER_PATH, "managed", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
+		raw, err := storage.Path(path).Load()
+		if err != nil {
+			return nil, err
+		}
+		var clusterState *StateConfiguration
+		if err := json.Unmarshal(raw, &clusterState); err != nil {
+			return nil, err
+		}
+
+		data = append(data,
+			cloud_control_res.AllClusterData{
+				Provider: "civo",
+				Name:     haFolder[0],
+				Region:   haFolder[1],
+				Type:     "managed",
+				NoWP:     len(clusterState.InstanceIDs.WorkerNodes),
+				NoCP:     len(clusterState.InstanceIDs.ControlNodes),
+				NoDS:     len(clusterState.InstanceIDs.DatabaseNode),
+				NoMgt:    clusterState.NoManagedNodes,
+			})
+	}
+	return data, nil
 }

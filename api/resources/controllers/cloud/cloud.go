@@ -28,3 +28,14 @@ type SSHPayload struct {
 	PathPrivateKey string
 	Output         string
 }
+
+type AllClusterData struct {
+	Name     string
+	Provider string
+	Type     string
+	Region   string
+	NoWP     int
+	NoCP     int
+	NoDS     int
+	NoMgt    int
+}

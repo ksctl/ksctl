@@ -46,6 +46,7 @@ func main() {
 [2] Delete HA
 [3] Create Managed
 [4] Delete Managed
+[5] Get Clusters
 
 Your Choice`)
 	_, err := fmt.Scanf("%d", &choice)
@@ -63,9 +64,12 @@ Your Choice`)
 
 		controller.DeleteHACluster(&cmd.Client)
 	case 3:
-		cmd.Client.Metadata.NoWP = 1
+		cmd.Client.Metadata.NoWP = 2
 		controller.CreateManagedCluster(&cmd.Client)
 	case 4:
 		controller.DeleteManagedCluster(&cmd.Client)
+
+	case 5:
+		controller.GetCluster(&cmd.Client)
 	}
 }
