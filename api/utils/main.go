@@ -61,12 +61,6 @@ func GetUserName() string {
 	return os.Getenv("HOME")
 }
 
-//
-//type PrinterKubeconfigPATH interface {
-//	Printer(logger.Logger, bool, int)
-//}
-//
-
 func IsValidName(clusterName string) error {
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
 
@@ -148,7 +142,7 @@ func SaveCred(storage resources.StateManagementInfrastructure, config interface{
 		return err
 	}
 
-	storage.Logger().Info("[secrets] configuration")
+	storage.Logger().Success("[secrets] configuration")
 	return nil
 }
 
@@ -164,7 +158,7 @@ func GetCred(storage resources.StateManagementInfrastructure, provider string) (
 	if err != nil {
 		return
 	}
-	storage.Logger().Info("🔄 configuration")
+	storage.Logger().Success("🔄 configuration")
 
 	return
 }
@@ -190,7 +184,7 @@ func GetCred(storage resources.StateManagementInfrastructure, provider string) (
 //	if err != nil {
 //		return err
 //	}
-//	logging.Info("💾 configuration", "")
+//	logging.Succe("💾 configuration", "")
 //	return nil
 //}
 
@@ -346,7 +340,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	if err != nil {
 		return err
 	}
-	logging.Info("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+	logging.Success("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
@@ -394,7 +388,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
 	}
 
-	logging.Info("🤖 Exec Scripts", "")
+	logging.Success("🤖 Exec Scripts", "")
 	defer conn.Close()
 
 	session, err := conn.NewSession()

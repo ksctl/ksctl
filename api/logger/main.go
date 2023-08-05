@@ -6,7 +6,7 @@ type Logger struct {
 
 type LogFactory interface {
 	// will accept a string to be highlignted
-	Info(...string)
+	Success(...string)
 	Warn(...string)
 	Print(...string)
 	Err(...string)

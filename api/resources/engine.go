@@ -1,9 +1,10 @@
 package resources
 
 import (
+	"os"
+
 	"github.com/kubesimplify/ksctl/api/logger"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	"os"
 )
 
 type KsctlClient struct {
@@ -22,6 +23,8 @@ type Metadata struct {
 	StateLocation string
 	IsHA          bool
 
+	// TODO: is it required?
+	// try to see if string could be replaced by pointer to reduce memory
 	ManagedNodeType      string
 	WorkerPlaneNodeType  string
 	ControlPlaneNodeType string
@@ -31,9 +34,11 @@ type Metadata struct {
 	NoWP int // No of woerkplane VMs
 	NoCP int // No of Controlplane VMs
 	NoDS int // No of DataStore VMs
+
+	Applications []string `json:"application"`
+	CNIPlugin    *string  `json:"cni_plugin"`
 }
 
-// NOTE: local cluster are also supported but with feature flags only managedcluster available
 type CloudInfrastructure interface {
 	NewVM(StateManagementInfrastructure) error
 	DelVM(StateManagementInfrastructure) error
@@ -61,6 +66,9 @@ type CloudInfrastructure interface {
 	Role(string) CloudInfrastructure
 	VMType(string) CloudInfrastructure
 	Visibility(bool) CloudInfrastructure
+
+	SupportForApplications() bool
+	SupportForCNI() bool
 }
 
 type KubernetesInfrastructure interface {

@@ -63,7 +63,7 @@ Your Choice`)
 
 		controller.DeleteHACluster(&cmd.Client)
 	case 3:
-		cmd.Client.Metadata.NoWP = 2
+		cmd.Client.Metadata.NoWP = 1
 		controller.CreateManagedCluster(&cmd.Client)
 	case 4:
 		controller.DeleteManagedCluster(&cmd.Client)

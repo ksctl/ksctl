@@ -51,7 +51,10 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	cloud.HydrateCloud(client, "create")
 
 	cloudResErr := cloud.CreateManagedCluster(client)
-	fmt.Println("Called Create Cloud managed cluster; Err->", cloudResErr)
+	if cloudResErr != nil {
+		panic(cloudResErr)
+	}
+	client.State.Logger().Success("[ksctl] Created the managed cluster")
 }
 
 func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resources.KsctlClient) {
@@ -82,7 +85,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	}
 	cloud.HydrateCloud(client, "delete")
 	cloudResErr := cloud.DeleteManagedCluster(client)
-	fmt.Println("Called Delete Cloud managed cluster; Err->", cloudResErr)
+	if cloudResErr != nil {
+		panic(cloudResErr)
+	}
+	client.State.Logger().Success("[ksctl] Deleted the managed cluster")
 }
 
 func (ksctlControlCli *KsctlControllerClient) SwitchCluster() {}
