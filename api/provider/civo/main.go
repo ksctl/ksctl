@@ -58,6 +58,7 @@ var (
 	civoClient     *civogo.Client
 	clusterDirName string
 	clusterType    string // it stores the ha or managed
+
 )
 
 const (
@@ -73,6 +74,10 @@ type Metadata struct {
 	Role    string
 	VmType  string
 	Public  bool
+
+	// purpose: application in managed cluster
+	Apps string
+	Cni  string
 }
 
 type CivoProvider struct {
@@ -214,6 +219,25 @@ func (cloud *CivoProvider) SupportForApplications() bool {
 
 func (cloud *CivoProvider) SupportForCNI() bool {
 	return true
+}
+
+func (client *CivoProvider) Application(s string) resources.CloudInfrastructure {
+	if len(s) == 0 {
+		client.Metadata.Apps = "Traefik-v2-nodeport,metrics-server" // default: applications
+	} else {
+		client.Metadata.Apps += ",Traefik-v2-nodeport,metrics-server"
+	}
+
+	return client
+}
+
+func (client *CivoProvider) CNI(s string) resources.CloudInfrastructure {
+	if len(s) == 0 {
+		client.Metadata.Cni = "flannel"
+	} else {
+		client.Metadata.Cni = s
+	}
+	return client
 }
 
 func GetRAWClusterInfos(storage resources.StorageInfrastructure) ([]cloud_control_res.AllClusterData, error) {

@@ -32,6 +32,7 @@ func main() {
 	cmd.Client.Metadata.StateLocation = "local"
 	cmd.Client.Metadata.ClusterName = "dummy-name"
 	cmd.Client.Metadata.ManagedNodeType = "g4s.kube.medium"
+	cmd.Client.Metadata.CNIPlugin = "cilium"
 
 	cmd.Client.Metadata.Region = "LON1"
 	cmd.Client.Metadata.NoCP = 5

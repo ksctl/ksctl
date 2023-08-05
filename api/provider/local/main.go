@@ -14,6 +14,10 @@ type Metadata struct {
 	Role    string
 	VmType  string
 	Public  bool
+
+	// purpose: application in managed cluster
+	Apps string
+	Cni  string
 }
 
 type LocalProvider struct {
@@ -119,9 +123,19 @@ func (cloud *LocalProvider) Visibility(toBePublic bool) resources.CloudInfrastru
 
 // if its ha its always false instead it tells whether the provider has support in their managed offerering
 func (cloud *LocalProvider) SupportForApplications() bool {
-	return true
+	return false
 }
 
 func (cloud *LocalProvider) SupportForCNI() bool {
-	return true
+	return false
+}
+
+func (client *LocalProvider) Application(s string) resources.CloudInfrastructure {
+	client.Metadata.Apps = s
+	return client
+}
+
+func (client *LocalProvider) CNI(s string) resources.CloudInfrastructure {
+	client.Metadata.Cni = s
+	return client
 }
