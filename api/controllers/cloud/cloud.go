@@ -2,7 +2,6 @@ package cloud
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
@@ -17,7 +16,7 @@ func HydrateCloud(client *resources.KsctlClient, operation string) {
 	case "civo":
 		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
 		if err != nil {
-			log.Fatal(err)
+			panic("[cloud] " + err.Error())
 		}
 	case "azure":
 		client.Cloud = azure_pkg.ReturnAzureStruct(client.Metadata)
@@ -27,7 +26,11 @@ func HydrateCloud(client *resources.KsctlClient, operation string) {
 		panic("Invalid Cloud provider")
 	}
 	// call the init state for cloud providers
-	_ = client.Cloud.InitState(client.State, operation)
+	err = client.Cloud.InitState(client.State, operation)
+	if err != nil {
+		panic("[cloud] " + err.Error())
+	}
+
 }
 
 func DeleteHACluster(client *resources.KsctlClient) error {
@@ -115,7 +118,12 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 		// need to verify wrt to other providers wrt network creation
 		return err
 	}
-	return client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").VMType(client.Metadata.ManagedNodeType).NewManagedCluster(client.State)
+	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").
+		VMType(client.Metadata.ManagedNodeType).
+		NewManagedCluster(client.State); err != nil {
+		return err
+	}
+	return nil
 }
 
 func DeleteManagedCluster(client *resources.KsctlClient) error {
@@ -129,5 +137,6 @@ func DeleteManagedCluster(client *resources.KsctlClient) error {
 	if err := client.Cloud.DelNetwork(client.State); err != nil {
 		return err
 	}
+	client.State.Logger().Success("[cloud] Deleted the managed cluster")
 	return nil
 }

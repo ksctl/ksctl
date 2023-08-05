@@ -3,9 +3,11 @@ package civo
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"os"
+	"runtime"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -31,6 +33,16 @@ func GetInputCredential(storage resources.StateManagementInfrastructure) error {
 	if err != nil {
 		return err
 	}
+	client, err := civogo.NewClient(token, "LON1")
+	if err != nil {
+		return err
+	}
+	id := client.GetAccountID()
+
+	if len(id) == 0 {
+		return fmt.Errorf("Invalid user")
+	}
+	fmt.Println(id)
 
 	if err := utils.SaveCred(storage, Credential{token}, "civo"); err != nil {
 		return err
@@ -42,17 +54,17 @@ func generatePath(flag int, path ...string) string {
 	return utils.GetPath(flag, "civo", path...)
 }
 
-func saveStateHelper(state resources.StateManagementInfrastructure, path string) error {
+func saveStateHelper(storage resources.StateManagementInfrastructure, path string) error {
 	rawState, err := convertStateToBytes(*civoCloudState)
 	if err != nil {
 		return err
 	}
-	return state.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
-func loadStateHelper(state resources.StateManagementInfrastructure, path string) error {
+func loadStateHelper(storage resources.StateManagementInfrastructure, path string) error {
 	fmt.Println(path)
-	raw, err := state.Path(path).Load()
+	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
 	}
@@ -60,10 +72,10 @@ func loadStateHelper(state resources.StateManagementInfrastructure, path string)
 	return convertStateFromBytes(raw)
 }
 
-func saveKubeconfigHelper(state resources.StateManagementInfrastructure, path string, kubeconfig string) error {
+func saveKubeconfigHelper(storage resources.StateManagementInfrastructure, path string, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
 
-	return state.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
 }
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {
@@ -99,7 +111,7 @@ func isValidRegion(reg string) error {
 		return err
 	}
 	for _, region := range regions {
-		if region.Name == reg {
+		if region.Code == reg {
 			return nil
 		}
 	}
@@ -117,4 +129,27 @@ func isValidVMSize(size string) error {
 		}
 	}
 	return fmt.Errorf("INVALID VM SIZE")
+}
+
+func printKubeconfig(storage resources.StateManagementInfrastructure, operation string) {
+	env := ""
+	storage.Logger().Note("KUBECONFIG env var")
+	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	switch runtime.GOOS {
+	case "windows":
+		switch operation {
+		case "create":
+			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
+		case "delete":
+			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+		}
+	case "linux", "macos":
+		switch operation {
+		case "create":
+			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
+		case "delete":
+			env = "unset KUBECONFIG"
+		}
+	}
+	storage.Logger().Note(env)
 }

@@ -3,7 +3,6 @@ package civo
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/civo/civogo"
@@ -12,45 +11,43 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-func watchManagedCluster(obj *CivoProvider, state resources.StateManagementInfrastructure, id string) error {
+func watchManagedCluster(obj *CivoProvider, storage resources.StateManagementInfrastructure, id string) error {
 
 	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
 		clusterDS, _ := civoClient.GetKubernetesCluster(id)
 		if clusterDS.Ready {
 			fmt.Println("[civo] Booted Instance", obj.Metadata.ResName)
-			log.Default().Println(clusterDS.KubeConfig)
 			civoCloudState.IsCompleted = true
 			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
-			if err := saveStateHelper(state, path); err != nil {
+			if err := saveStateHelper(storage, path); err != nil {
 				return err
 			}
 			path = generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-			err := saveKubeconfigHelper(state, path, clusterDS.KubeConfig)
+			err := saveKubeconfigHelper(storage, path, clusterDS.KubeConfig)
 			if err != nil {
 				return err
 			}
+			printKubeconfig(storage, "create")
 			break
 		}
-		fmt.Println("[civo] creating cluster..", clusterDS.Status)
+		storage.Logger().Print("[civo] creating cluster..", clusterDS.Status)
 		time.Sleep(10 * time.Second)
 	}
 	return nil
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (obj *CivoProvider) NewManagedCluster(state resources.StateManagementInfrastructure) error {
-	fmt.Printf("[civo] creating managed %s cluster...", obj.Metadata.ResName)
+func (obj *CivoProvider) NewManagedCluster(storage resources.StateManagementInfrastructure) error {
 
 	if len(civoCloudState.ManagedClusterID) != 0 {
 		fmt.Println("[skip] managed cluster creation found", civoCloudState.ManagedClusterID)
-		//check the state of creation via some watcher()
 
-		if err := watchManagedCluster(obj, state, civoCloudState.ManagedClusterID); err != nil {
+		if err := watchManagedCluster(obj, storage, civoCloudState.ManagedClusterID); err != nil {
 			return err
 		}
 
-		return nil // its a part of play back
+		return nil
 	}
 
 	network, err := civoClient.GetNetwork(civoCloudState.NetworkIDs.NetworkID)
@@ -63,8 +60,8 @@ func (obj *CivoProvider) NewManagedCluster(state resources.StateManagementInfras
 		NumTargetNodes:  obj.NoOfManagedNodes,
 		TargetNodesSize: obj.Metadata.VmType,
 		NetworkID:       network.ID,
-		Applications:    "",
-		CNIPlugin:       "cilium",
+		Applications:    "",       // make the use of application and cni via some method
+		CNIPlugin:       "cilium", // make it use install application in the civo
 	}
 	resp, err := civoClient.NewKubernetesClusters(configK8s)
 	if err != nil {
@@ -80,60 +77,40 @@ func (obj *CivoProvider) NewManagedCluster(state resources.StateManagementInfras
 	}
 	civoCloudState.ManagedClusterID = resp.ID
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
-	if err := saveStateHelper(state, path); err != nil {
+	if err := saveStateHelper(storage, path); err != nil {
 		return err
 	}
 
-	// save the stateID here so that we dont rcreate a new one
-	// for {
-	// 	// clusterDS fetches the current state of kubernetes cluster given its id
-	// 	clusterDS, _ := civoClient.GetKubernetesCluster(resp.ID)
-	// 	if clusterDS.Ready {
-	// 		fmt.Println("[civo] Booted Instance", obj.Metadata.ResName)
-	// 		log.Default().Println(clusterDS.KubeConfig)
-	// 		civoCloudState.IsCompleted = true
-	// 		path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
-	// 		if err := saveStateHelper(state, path); err != nil {
-	// 			return err
-	// 		}
-	// 		path = generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-	// 		err := saveKubeconfigHelper(state, path, clusterDS.KubeConfig)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		break
-	// 	}
-	// 	fmt.Println("[civo] creating cluster..", clusterDS.Status)
-	// 	time.Sleep(10 * time.Second)
-	// }
-	if err := watchManagedCluster(obj, state, resp.ID); err != nil {
+	if err := watchManagedCluster(obj, storage, resp.ID); err != nil {
 		return err
 	}
-	fmt.Println("[civo] Created your managed civo cluster!!🥳 🎉 ")
 	return nil
 }
 
 // DelManagedCluster implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelManagedCluster(state resources.StateManagementInfrastructure) error {
-	fmt.Printf("[civo] Del Managed %s cluster....", obj.Metadata.ResName)
+func (obj *CivoProvider) DelManagedCluster(storage resources.StateManagementInfrastructure) error {
 	if len(civoCloudState.ManagedClusterID) == 0 {
-		fmt.Println("[skip] network deletion found")
+		storage.Logger().Success("[skip] network deletion found")
 		return nil
 	}
 	_, err := civoClient.DeleteKubernetesCluster(civoCloudState.ManagedClusterID)
 	if err != nil {
 		return err
 	}
+	storage.Logger().Success("[civo] Deleted Managed cluster", civoCloudState.ManagedClusterID)
 	civoCloudState.ManagedClusterID = ""
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
-	if err := saveStateHelper(state, path); err != nil {
+	if err := saveStateHelper(storage, path); err != nil {
 		return err
 	}
+	printKubeconfig(storage, "delete")
 
 	return nil
 }
 
 // GetManagedKubernetes implements resources.CloudInfrastructure.
-func (obj *CivoProvider) GetManagedKubernetes(state resources.StateManagementInfrastructure) {
+func (obj *CivoProvider) GetManagedKubernetes(storage resources.StateManagementInfrastructure) {
+	// TODO: used for getting information on all the clusters created with all the types
+	// ha and managed in some form of predefined json format
 	fmt.Printf("[civo] Got Managed %s cluster....", obj.Metadata.ResName)
 }

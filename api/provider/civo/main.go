@@ -74,15 +74,18 @@ type Metadata struct {
 }
 
 type CivoProvider struct {
-	ClusterName      string `json:"cluster_name"`
-	APIKey           string `json:"api_key"`
-	HACluster        bool   `json:"ha_cluster"`
-	Region           string `json:"region"`
-	Application      string `json:"application"`
-	CNIPlugin        string `json:"cni_plugin"`
+	ClusterName string `json:"cluster_name"`
+	APIKey      string `json:"api_key"`
+	HACluster   bool   `json:"ha_cluster"`
+	Region      string `json:"region"`
+
 	SSHPath          string `json:"ssh_key"` // do check what need to be here
 	NoOfManagedNodes int
+
 	Metadata
+
+	// Application      string `json:"application"`
+	// CNIPlugin        string `json:"cni_plugin"`
 }
 
 type Credential struct {
@@ -90,16 +93,18 @@ type Credential struct {
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-func (client *CivoProvider) GetStateForHACluster(state resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
+// TODO: add the steps to transfer data
+func (client *CivoProvider) GetStateForHACluster(storage resources.StateManagementInfrastructure) (cloud.CloudResourceState, error) {
 	payload := cloud.CloudResourceState{
 		SSHState:          cloud.SSHPayload{PathPrivateKey: "abcd/rdcewcf"},
 		Metadata:          cloud.Metadata{ClusterName: client.ClusterName},
 		IPv4ControlPlanes: civoCloudState.InstanceIDs.ControlNodes,
 	}
+	storage.Logger().Success("Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
 
-func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure, operation string) error {
+func (obj *CivoProvider) InitState(storage resources.StateManagementInfrastructure, operation string) error {
 
 	clusterDirName = obj.ClusterName + " " + obj.Region
 	if obj.HACluster {
@@ -110,7 +115,7 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 
 	var err error
 	civoCloudState = &StateConfiguration{}
-	errLoadState := loadStateHelper(state, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
+	errLoadState := loadStateHelper(storage, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
 
 	switch operation {
 	case "create":
@@ -124,9 +129,9 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 
 		if errLoadState == nil && !civoCloudState.IsCompleted {
 			// file present but not completed
-			fmt.Println("RESUME triggered!!")
+			storage.Logger().Note("RESUME triggered!!")
 		} else {
-			fmt.Println("Fresh state!!")
+			storage.Logger().Note("Fresh state!!")
 			civoCloudState = &StateConfiguration{
 				IsCompleted: false,
 				Region:      obj.Region,
@@ -139,12 +144,12 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		fmt.Println("Delete resource(s)")
+		storage.Logger().Note("Delete resource(s)")
 	default:
 		return errors.New("Invalid operation for init state")
 	}
 
-	civoClient, err = civogo.NewClient(fetchAPIKey(state), obj.Region)
+	civoClient, err = civogo.NewClient(fetchAPIKey(storage), obj.Region)
 	if err != nil {
 		return err
 	}
@@ -152,7 +157,7 @@ func (obj *CivoProvider) InitState(state resources.StateManagementInfrastructure
 	if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
 		return err
 	}
-	fmt.Println("[civo] init cloud state", civoCloudState)
+	storage.Logger().Success("[civo] init cloud state")
 	return nil
 }
 
@@ -176,8 +181,13 @@ func (cloud *CivoProvider) Name(resName string) resources.CloudInfrastructure {
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole string) resources.CloudInfrastructure {
-	cloud.Metadata.Role = resRole
-	return cloud
+	switch resRole {
+	case "controlplane", "workerplane", "loadbalancer", "datastore":
+		cloud.Metadata.Role = resRole
+		return cloud
+	default:
+		return nil
+	}
 }
 
 // it will contain which vmType to create
@@ -193,4 +203,13 @@ func (cloud *CivoProvider) VMType(size string) resources.CloudInfrastructure {
 func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudInfrastructure {
 	cloud.Metadata.Public = toBePublic
 	return cloud
+}
+
+// if its ha its always false instead it tells whether the provider has support in their managed offerering
+func (cloud *CivoProvider) SupportForApplications() bool {
+	return true
+}
+
+func (cloud *CivoProvider) SupportForCNI() bool {
+	return true
 }

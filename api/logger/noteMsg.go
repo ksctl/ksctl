@@ -19,7 +19,7 @@ const (
 
 // Info information message to stdout
 // in green colour
-func (logger *Logger) Info(message ...string) {
+func (logger *Logger) Success(message ...string) {
 
 	outputMsg := strings.Join(message, " ")
 

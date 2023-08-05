@@ -116,3 +116,12 @@ func (cloud *LocalProvider) Visibility(toBePublic bool) resources.CloudInfrastru
 	cloud.Metadata.Public = toBePublic
 	return cloud
 }
+
+// if its ha its always false instead it tells whether the provider has support in their managed offerering
+func (cloud *LocalProvider) SupportForApplications() bool {
+	return true
+}
+
+func (cloud *LocalProvider) SupportForCNI() bool {
+	return true
+}
