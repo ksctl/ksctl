@@ -4,29 +4,21 @@ import (
 	"fmt"
 	"log"
 	"strings"
-)
 
-const (
-	GREEN      = "\033[1;32m"
-	RED        = "\033[1;31m"
-	YELLOW     = "\033[1;33m"
-	BLUE       = "\033[0;34m"
-	BLUE_BOLD  = "\033[1;34m"
-	WHITE      = "\033[0;0m"
-	WHITE_BOLD = "\033[1;1m"
-	RESET      = "\033[0m"
+	"github.com/fatih/color"
 )
 
 // Info information message to stdout
 // in green colour
 func (logger *Logger) Success(message ...string) {
-
+	color.Set(color.FgGreen, color.Bold)
+	defer color.Unset()
 	outputMsg := strings.Join(message, " ")
 
 	if logger.Verbose {
-		log.Printf("%s[INFO] %v%s", GREEN, outputMsg, RESET)
+		log.Printf("[SUCCESS] %v", outputMsg)
 	} else {
-		fmt.Printf("%s[INFO] %v%s\n", GREEN, outputMsg, RESET)
+		fmt.Printf("[SUCCESS] %v\n", outputMsg)
 	}
 }
 
@@ -34,9 +26,9 @@ func (logger *Logger) Success(message ...string) {
 func (logger *Logger) Print(message ...string) {
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Println("[TXT] ", outputMsg)
+		log.Println("[LOG] ", outputMsg)
 	} else {
-		fmt.Println("[TXT] ", outputMsg)
+		fmt.Println("[LOG] ", outputMsg)
 	}
 }
 
@@ -44,32 +36,41 @@ func (logger *Logger) Print(message ...string) {
 // in blue colour
 func (logger *Logger) Note(message ...string) {
 
+	color.Set(color.FgBlue, color.Bold)
+	defer color.Unset()
+
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[NOTE] %v%s", BLUE_BOLD, outputMsg, RESET)
+		log.Printf("[NOTE] %v", outputMsg)
 	} else {
-		fmt.Printf("%s[NOTE] %v%s\n", BLUE_BOLD, outputMsg, RESET)
+		fmt.Printf("[NOTE] %v\n", outputMsg)
 	}
 }
 
 // Warn warning message to stdout
 // in yellow colour
 func (logger *Logger) Warn(message ...string) {
+	color.Set(color.FgYellow, color.Bold)
+	defer color.Unset()
+
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[WARN] %v%s", YELLOW, outputMsg, RESET)
+		log.Printf("[WARN] %v", outputMsg)
 	} else {
-		fmt.Printf("%s[WARN] %v%s\n", YELLOW, outputMsg, RESET)
+		fmt.Printf("[WARN] %v\n", outputMsg)
 	}
 }
 
 // Err error message to stdout
 // in red color
 func (logger *Logger) Err(message ...string) {
+	color.Set(color.FgHiRed, color.Bold)
+	defer color.Unset()
+
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Printf("%s[ERR] %v%s", RED, outputMsg, RESET)
+		log.Printf("[ERR] %v", outputMsg)
 	} else {
-		fmt.Printf("%s[ERR] %v%s\n", RED, outputMsg, RESET)
+		fmt.Printf("[ERR] %v\n", outputMsg)
 	}
 }
