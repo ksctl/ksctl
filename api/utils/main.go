@@ -1,4 +1,3 @@
-// ////////////// THIS FILE IS NOT READY ////////////////
 package utils
 
 import (
@@ -24,12 +23,12 @@ import (
 	"golang.org/x/term"
 )
 
-type Machine struct {
-	ManagedNodes        int    `json:"managed_nodes"`
-	MachineType         string `json:"machine_type"`
-	HAControlPlaneNodes int    `json:"no_cp"`
-	HAWorkerNodes       int    `json:"no_wp"`
-}
+// type Machine struct {
+// 	ManagedNodes        int    `json:"managed_nodes"`
+// 	MachineType         string `json:"machine_type"`
+// 	HAControlPlaneNodes int    `json:"no_cp"`
+// 	HAWorkerNodes       int    `json:"no_wp"`
+// }
 
 type SSHPayload struct {
 	UserName       string `json:"user_name"`
@@ -169,47 +168,6 @@ func GetCred(storage resources.StorageInfrastructure, provider string) (i map[st
 	return
 }
 
-//func SaveState(logging logger.Logger, config interface{}, provider, clusterType string, clusterDir string) error {
-//	if strings.Compare(provider, "civo") != 0 &&
-//		strings.Compare(provider, "azure") != 0 &&
-//		strings.Compare(provider, "aws") != 0 {
-//		return fmt.Errorf("invalid Provider (given): Unable to save configuration")
-//	}
-//	storeBytes, err := json.Marshal(config)
-//	if err != nil {
-//		return err
-//	}
-//	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir), 0755); err != nil && !os.IsExist(err) {
-//		return err
-//	}
-//	_, err = os.Create(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
-//	if err != nil && !os.IsExist(err) {
-//		return err
-//	}
-//	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"), storeBytes, 0640)
-//	if err != nil {
-//		return err
-//	}
-//	logging.Succe("💾 configuration", "")
-//	return nil
-//}
-
-//func GetState(logging logger.Logger, provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
-//	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
-//
-//	if err != nil {
-//		return
-//	}
-//
-//	err = json.Unmarshal(fileBytes, &i)
-//
-//	if err != nil {
-//		return
-//	}
-//	logging.Info("🔄 configuration", "")
-//	return
-//}
-
 // getSSHPath generate the SSH keypair location and subsequent fetch
 func getSSHPath(provider string, params ...string) string {
 	var ret strings.Builder
@@ -249,12 +207,12 @@ func getPaths(provider string, params ...string) string {
 	return ret.String()
 }
 
-func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
+func CreateSSHKeyPair(storage resources.StorageInfrastructure, provider, clusterDir string) (string, error) {
 
 	pathTillFolder := ""
 	pathTillFolder = getPaths(provider, "ha", clusterDir)
 
-	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair")
+	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair") // WARN: it requires the os to have these dependencies
 	cmd.Dir = pathTillFolder
 	out, err := cmd.Output()
 	if err != nil {
@@ -263,8 +221,8 @@ func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
 
 	fmt.Println(string(out))
 
-	keyPairToUpload := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
-	fileBytePub, err := os.ReadFile(keyPairToUpload)
+	path := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
+	fileBytePub, err := storage.Path(path).Load()
 	if err != nil {
 		return "", err
 	}
@@ -293,8 +251,8 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 }
 
 func returnServerPublicKeys(publicIP string) (string, error) {
-	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
-	c2 := exec.Command("ssh-keygen", "-lf", "-")
+	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP) // WARN: it requires the os to have these dependencies
+	c2 := exec.Command("ssh-keygen", "-lf", "-")             // WARN: it requires the os to have these dependencies
 
 	r, w := io.Pipe()
 	c1.Stdout = w
@@ -333,10 +291,9 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 	return fingerprint[1], nil
 }
 
-func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
+func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageInfrastructure, flag int, script string, fastMode bool) error {
 
-	// TODO: Try to use the state Get()
-	privateKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey)
+	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
 	if err != nil {
 		return err
 	}
@@ -346,7 +303,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	if err != nil {
 		return err
 	}
-	logging.Success("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+	storage.Logger().Success("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
@@ -385,7 +342,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		if err == nil {
 			break
 		} else {
-			logging.Err(fmt.Sprintln("RETRYING", err))
+			storage.Logger().Err(fmt.Sprintln("RETRYING", err))
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
@@ -394,7 +351,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
 	}
 
-	logging.Success("🤖 Exec Scripts", "")
+	storage.Logger().Success("🤖 Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()

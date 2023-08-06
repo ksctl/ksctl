@@ -33,26 +33,36 @@ func HydrateCloud(client *resources.KsctlClient, operation string) {
 
 func DeleteHACluster(client *resources.KsctlClient) error {
 
+	var err error
 	// TODO: ADD THE OTHER RESOURCE DESTRICTION
 
-	_ = client.Cloud.Name("demo-fw-lb").
-		Role(utils.ROLE_LB).
-		NewFirewall(client.Storage)
+	err = client.Cloud.Role(utils.ROLE_LB).DelFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
 
-	_ = client.Cloud.Name("demo-fw-db").
-		Role(utils.ROLE_DS).
-		NewFirewall(client.Storage)
+	err = client.Cloud.Role(utils.ROLE_DS).DelFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
 
-	_ = client.Cloud.Name("demo-fw-cp").
-		Role(utils.ROLE_CP).
-		NewFirewall(client.Storage)
+	err = client.Cloud.Role(utils.ROLE_CP).DelFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
 
-	_ = client.Cloud.Name("demo-fw-wp").
-		Role(utils.ROLE_WP).
-		NewFirewall(client.Storage)
+	err = client.Cloud.Role(utils.ROLE_WP).DelFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
+
+	err = client.Cloud.DelSSHKeyPair(client.Storage)
+	if err != nil {
+		return err
+	}
 
 	// last one to delete is network
-	err := client.Cloud.DelNetwork(client.Storage)
+	err = client.Cloud.DelNetwork(client.Storage)
 	if err != nil {
 		return err
 	}
@@ -65,23 +75,39 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	if err != nil {
 		return err
 	}
-	// _ = client.Cloud.Name("demo-ssh").CreateUploadSSHKeyPair(client.Storage)
 
-	_ = client.Cloud.Name("demo-fw-lb").
+	err = client.Cloud.Name(client.ClusterName + "-ssh").CreateUploadSSHKeyPair(client.Storage)
+	if err != nil {
+		return err
+	}
+
+	err = client.Cloud.Name(client.ClusterName + "-fw-lb").
 		Role(utils.ROLE_LB).
 		NewFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
 
-	_ = client.Cloud.Name("demo-fw-db").
+	err = client.Cloud.Name(client.ClusterName + "-fw-db").
 		Role(utils.ROLE_DS).
 		NewFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
 
-	_ = client.Cloud.Name("demo-fw-cp").
+	err = client.Cloud.Name(client.ClusterName + "-fw-cp").
 		Role(utils.ROLE_CP).
 		NewFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
 
-	_ = client.Cloud.Name("demo-fw-wp").
+	err = client.Cloud.Name(client.ClusterName + "-fw-wp").
 		Role(utils.ROLE_WP).
 		NewFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
 	//
 	// _ = client.Cloud.Name("demo-vm-lb").
 	// 	Role(utils.ROLE_LB).
