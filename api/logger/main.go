@@ -1,5 +1,7 @@
 package logger
 
+import cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+
 type Logger struct {
 	Verbose bool
 }
@@ -11,4 +13,5 @@ type LogFactory interface {
 	Print(...string)
 	Err(...string)
 	Note(...string)
+	Table([]cloudController.AllClusterData)
 }

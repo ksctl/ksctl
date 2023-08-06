@@ -38,7 +38,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageInfrastruct
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructure) error {
+func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructure, noOfNodes int) error {
 
 	if len(civoCloudState.ManagedClusterID) != 0 {
 		fmt.Println("[skip] managed cluster creation found", civoCloudState.ManagedClusterID)
@@ -56,13 +56,14 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructu
 	}
 
 	configK8s := &civogo.KubernetesClusterConfig{
-		Name:            obj.Metadata.ResName,
-		Region:          obj.Region,
-		NumTargetNodes:  obj.NoOfManagedNodes,
-		TargetNodesSize: obj.Metadata.VmType,
-		NetworkID:       network.ID,
-		Applications:    obj.Metadata.Apps, // make the use of application and cni via some method
-		CNIPlugin:       obj.Metadata.Cni,  // make it use install application in the civo
+		KubernetesVersion: obj.Metadata.Version,
+		Name:              obj.Metadata.ResName,
+		Region:            obj.Region,
+		NumTargetNodes:    noOfNodes,
+		TargetNodesSize:   obj.Metadata.VmType,
+		NetworkID:         network.ID,
+		Applications:      obj.Metadata.Apps, // make the use of application and cni via some method
+		CNIPlugin:         obj.Metadata.Cni,  // make it use install application in the civo
 	}
 	resp, err := civoClient.NewKubernetesClusters(configK8s)
 	if err != nil {
@@ -75,9 +76,12 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructu
 		if errors.Is(err, civogo.UnknownError) {
 			return fmt.Errorf("UNKNOWN ERR")
 		}
+		return err
 	}
 
-	civoCloudState.NoManagedNodes = obj.NoOfManagedNodes
+	civoCloudState.NoManagedNodes = noOfNodes
+	civoCloudState.KubernetesDistro = "k3s"
+	civoCloudState.KubernetesVer = obj.Metadata.Version
 	civoCloudState.ManagedClusterID = resp.ID
 
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)

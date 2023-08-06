@@ -26,6 +26,11 @@ type LocalProvider struct {
 	Metadata
 }
 
+// Version implements resources.CloudInfrastructure.
+func (*LocalProvider) Version(string) resources.CloudInfrastructure {
+	panic("unimplemented")
+}
+
 // CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
 func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StorageInfrastructure) error {
 	panic("unimplemented")
@@ -77,7 +82,7 @@ func (*LocalProvider) NewFirewall(state resources.StorageInfrastructure) error {
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (*LocalProvider) NewManagedCluster(state resources.StorageInfrastructure) error {
+func (*LocalProvider) NewManagedCluster(state resources.StorageInfrastructure, noOfNodes int) error {
 	panic("unimplemented")
 }
 

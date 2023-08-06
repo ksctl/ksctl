@@ -130,7 +130,13 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 		managedClient = managedClient.CNI(client.Metadata.CNIPlugin)
 	}
 
-	if err := managedClient.NewManagedCluster(client.Storage); err != nil {
+	managedClient = managedClient.Version(client.Metadata.K8sVersion) // for kubernetes version
+
+	if managedClient == nil {
+		client.Storage.Logger().Err("Invalid version")
+	}
+
+	if err := managedClient.NewManagedCluster(client.Storage, client.Metadata.NoMP); err != nil {
 		return err
 	}
 	return nil
