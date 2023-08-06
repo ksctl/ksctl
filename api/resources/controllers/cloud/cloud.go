@@ -3,7 +3,7 @@ package cloud
 // CloudResourceState provides the state which cloud provider creates
 // and which is consumed by the kubernetes to configure them
 type CloudResourceState struct {
-	SSHState          SSHPayload
+	SSHState          SSHInfo
 	IPv4ControlPlanes []string
 	IPv4WorkerPlanes  []string
 	IPv4DataStores    []string
@@ -23,10 +23,9 @@ type Metadata struct {
 	Provider      string
 }
 
-type SSHPayload struct {
+type SSHInfo struct {
 	UserName       string
 	PathPrivateKey string
-	Output         string
 }
 
 type AllClusterData struct {

@@ -26,7 +26,7 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageInfrastructure) er
 		civoCloudState.NetworkIDs.FirewallIDControlPlaneNode = ""
 
 	case utils.ROLE_WP:
-		if len(civoCloudState.NetworkIDs.FirewallIDWorkerNode) != 0 {
+		if len(civoCloudState.NetworkIDs.FirewallIDWorkerNode) == 0 {
 			storage.Logger().Success("[skip] firewall for workerplane already deleted")
 			return nil
 		}
@@ -40,7 +40,7 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageInfrastructure) er
 
 		civoCloudState.NetworkIDs.FirewallIDWorkerNode = ""
 	case utils.ROLE_DS:
-		if len(civoCloudState.NetworkIDs.FirewallIDDatabaseNode) != 0 {
+		if len(civoCloudState.NetworkIDs.FirewallIDDatabaseNode) == 0 {
 			storage.Logger().Success("[skip] firewall for datastore already deleted")
 			return nil
 		}
@@ -54,7 +54,7 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageInfrastructure) er
 
 		civoCloudState.NetworkIDs.FirewallIDDatabaseNode = ""
 	case utils.ROLE_LB:
-		if len(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode) != 0 {
+		if len(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode) == 0 {
 			storage.Logger().Success("[skip] firewall for loadbalancer already deleted")
 			return nil
 		}

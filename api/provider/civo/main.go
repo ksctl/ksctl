@@ -45,14 +45,18 @@ type StateConfiguration struct {
 	// it has "DONE" status otherwise "BUILDING"
 	IsCompleted bool `json:"status"`
 
-	ClusterName      string     `json:"clustername"`
-	Region           string     `json:"region"`
-	ManagedClusterID string     `json:"managed_cluster_id"`
-	NoManagedNodes   int        `json:"no_managed_cluster_nodes"`
-	SSHID            string     `json:"ssh_id"`
-	InstanceIDs      InstanceID `json:"instanceids"`
-	NetworkIDs       NetworkID  `json:"networkids"`
-	IPv4             InstanceIP `json:"ipv4_addr"`
+	ClusterName      string `json:"clustername"`
+	Region           string `json:"region"`
+	ManagedClusterID string `json:"managed_cluster_id"`
+	NoManagedNodes   int    `json:"no_managed_cluster_nodes"`
+
+	SSHID            string `json:"ssh_id"`
+	SSHUser          string `json:"ssh_usr"`
+	SSHPrivateKeyLoc string `json:"ssh_private_key_location"`
+
+	InstanceIDs InstanceID `json:"instanceids"`
+	NetworkIDs  NetworkID  `json:"networkids"`
+	IPv4        InstanceIP `json:"ipv4_addr"`
 
 	KubernetesDistro string `json:"k8s_distro"`
 	KubernetesVer    string `json:"k8s_version"`
@@ -105,18 +109,43 @@ type Credential struct {
 }
 
 // GetStateForHACluster implements resources.CloudInfrastructure.
-// TODO: add the steps to transfer data
 func (client *CivoProvider) GetStateForHACluster(storage resources.StorageInfrastructure) (cloud_control_res.CloudResourceState, error) {
+
+	// TODO: add checks for any state is missing!!
+
 	payload := cloud_control_res.CloudResourceState{
-		SSHState:          cloud_control_res.SSHPayload{PathPrivateKey: "abcd/rdcewcf"},
-		Metadata:          cloud_control_res.Metadata{ClusterName: client.ClusterName},
-		IPv4ControlPlanes: civoCloudState.InstanceIDs.ControlNodes,
+		SSHState: cloud_control_res.SSHInfo{
+			PathPrivateKey: civoCloudState.SSHPrivateKeyLoc,
+			UserName:       civoCloudState.SSHUser,
+		},
+		Metadata: cloud_control_res.Metadata{
+			ClusterName:   client.ClusterName,
+			Provider:      "civo",
+			Region:        client.Region,
+			ResourceGroup: nil, //azure specific
+			VPC:           nil, // aws specific // TODO: CHECK: if its required
+		},
+		// Public IPs
+		IPv4ControlPlanes: civoCloudState.IPv4.IPControlplane,
+		IPv4DataStores:    civoCloudState.IPv4.IPDataStore,
+		IPv4WorkerPlanes:  civoCloudState.IPv4.IPWorkerPlane,
+		IPv4LoadBalancer:  civoCloudState.IPv4.IPLoadbalancer,
+
+		// Private IPs
+		PrivateIPv4ControlPlanes: civoCloudState.IPv4.PrivateIPControlplane,
+		PrivateIPv4DataStores:    civoCloudState.IPv4.PrivateIPDataStore,
+		PrivateIPv4LoadBalancer:  civoCloudState.IPv4.PrivateIPLoadbalancer,
 	}
 	storage.Logger().Success("Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
 
 func (obj *CivoProvider) InitState(storage resources.StorageInfrastructure, operation string) error {
+
+	// if len(clusterDirName) != 0 {
+	// 	// already has been called
+	// 	return fmt.Errorf("[civo] already initialized")
+	// }
 
 	clusterDirName = obj.ClusterName + " " + obj.Region
 	if obj.HACluster {
@@ -190,7 +219,7 @@ func (cloud *CivoProvider) Name(resName string) resources.CloudInfrastructure {
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole string) resources.CloudInfrastructure {
 	switch resRole {
-	case "controlplane", "workerplane", "loadbalancer", "datastore":
+	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
 		cloud.Metadata.Role = resRole
 		return cloud
 	default:
@@ -290,7 +319,6 @@ func GetRAWClusterInfos(storage resources.StorageInfrastructure) ([]cloud_contro
 				K8sDistro:  clusterState.KubernetesDistro,
 				K8sVersion: clusterState.KubernetesVer,
 			})
-		// to fetch more info we need to read the state files
 	}
 
 	managedFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "managed")).GetFolders()
