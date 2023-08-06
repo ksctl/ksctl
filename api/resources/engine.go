@@ -8,9 +8,9 @@ import (
 )
 
 type KsctlClient struct {
-	Cloud   CloudInfrastructure
-	Distro  Distributions
-	Storage StorageInfrastructure
+	Cloud   CloudFactory
+	Distro  DistroFactory
+	Storage StorageFactory
 	Metadata
 }
 
@@ -41,67 +41,67 @@ type Metadata struct {
 	CNIPlugin    string `json:"cni_plugin"`
 }
 
-type CloudInfrastructure interface {
-	NewVM(StorageInfrastructure) error
-	DelVM(StorageInfrastructure) error
+type CloudFactory interface {
+	NewVM(StorageFactory) error
+	DelVM(StorageFactory) error
 
-	NewFirewall(StorageInfrastructure) error
-	DelFirewall(StorageInfrastructure) error
+	NewFirewall(StorageFactory) error
+	DelFirewall(StorageFactory) error
 
-	NewNetwork(StorageInfrastructure) error
-	DelNetwork(StorageInfrastructure) error
+	NewNetwork(StorageFactory) error
+	DelNetwork(StorageFactory) error
 
-	InitState(StorageInfrastructure, string) error
+	InitState(StorageFactory, string) error
 
-	CreateUploadSSHKeyPair(StorageInfrastructure) error
-	DelSSHKeyPair(StorageInfrastructure) error
+	CreateUploadSSHKeyPair(StorageFactory) error
+	DelSSHKeyPair(StorageFactory) error
 
 	// get the state required for the kubernetes dributions to configure
-	GetStateForHACluster(StorageInfrastructure) (cloud.CloudResourceState, error)
+	GetStateForHACluster(StorageFactory) (cloud.CloudResourceState, error)
 
-	NewManagedCluster(StorageInfrastructure, int) error
-	DelManagedCluster(StorageInfrastructure) error
-	GetManagedKubernetes(StorageInfrastructure)
+	NewManagedCluster(StorageFactory, int) error
+	DelManagedCluster(StorageFactory) error
+	GetManagedKubernetes(StorageFactory)
 
 	// used by controller
-	Name(string) CloudInfrastructure
-	Role(string) CloudInfrastructure
-	VMType(string) CloudInfrastructure
-	Visibility(bool) CloudInfrastructure
+	Name(string) CloudFactory
+	Role(string) CloudFactory
+	VMType(string) CloudFactory
+	Visibility(bool) CloudFactory
 
 	SupportForApplications() bool
 	SupportForCNI() bool
 
 	// these are meant to be used for managed clusters
-	Application(string) CloudInfrastructure
-	CNI(string) CloudInfrastructure
-	Version(string) CloudInfrastructure
+	Application(string) CloudFactory
+	CNI(string) CloudFactory
+	Version(string) CloudFactory
 }
 
-type KubernetesInfrastructure interface {
+type KubernetesFactory interface {
 	InitState(cloud.CloudResourceState)
 
 	// it recieves no of controlplane to which we want to configure
 	// NOTE: make the first controlplane return server token as possible
-	ConfigureControlPlane(int, StorageInfrastructure)
-	// DestroyControlPlane(StorageInfrastructure)  // NOTE: [FEATURE] destroy not available
+	ConfigureControlPlane(int, StorageFactory)
+	// DestroyControlPlane(StorageFactory)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	JoinWorkerplane(StorageInfrastructure) error
-	DestroyWorkerPlane(StorageInfrastructure)
+	JoinWorkerplane(StorageFactory) error
+	DestroyWorkerPlane(StorageFactory)
 
-	ConfigureLoadbalancer(StorageInfrastructure)
-	// DestroyLoadbalancer(StorageInfrastructure)  // NOTE: [FEATURE] destroy not available
+	ConfigureLoadbalancer(StorageFactory)
+	// DestroyLoadbalancer(StorageFactory)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	ConfigureDataStore(StorageInfrastructure)
-	// DestroyDataStore(StorageInfrastructure)  // NOTE: [FEATURE] destroy not available
+	ConfigureDataStore(StorageFactory)
+	// DestroyDataStore(StorageFactory)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
 	// meant to be used for the HA clusters
-	InstallApplication(StorageInfrastructure)
+	InstallApplication(StorageFactory)
 
-	GetKubeConfig(StorageInfrastructure) (string, error)
+	GetKubeConfig(StorageFactory) (string, error)
 }
 
 // FEATURE: non kubernetes distrobutions like nomad
@@ -109,19 +109,19 @@ type KubernetesInfrastructure interface {
 // 	InstallApplications()
 // }
 
-type Distributions interface {
-	KubernetesInfrastructure
+type DistroFactory interface {
+	KubernetesFactory
 	// NonKubernetesInfrastructure
 }
 
-type StorageInfrastructure interface {
+type StorageFactory interface {
 	Save([]byte) error
 	Destroy() error
 	Load() ([]byte, error) // try to make the return type defined
 
 	// for modifier
-	Path(string) StorageInfrastructure
-	Permission(mode os.FileMode) StorageInfrastructure
+	Path(string) StorageFactory
+	Permission(mode os.FileMode) StorageFactory
 	CreateDir() error
 	DeleteDir() error
 	GetFolders() ([][]string, error)

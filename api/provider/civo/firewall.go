@@ -6,8 +6,8 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-// DelFirewall implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelFirewall(storage resources.StorageInfrastructure) error {
+// DelFirewall implements resources.CloudFactory.
+func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 
 	var firewallID string
 	switch obj.Metadata.Role {
@@ -76,8 +76,8 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageInfrastructure) er
 	return saveStateHelper(storage, path)
 }
 
-// NewFirewall implements resources.CloudInfrastructure.
-func (obj *CivoProvider) NewFirewall(storage resources.StorageInfrastructure) error {
+// NewFirewall implements resources.CloudFactory.
+func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	firewallConfig := &civogo.FirewallConfig{
 		Name:      obj.Metadata.ResName,

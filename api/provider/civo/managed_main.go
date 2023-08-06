@@ -11,7 +11,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-func watchManagedCluster(obj *CivoProvider, storage resources.StorageInfrastructure, id string) error {
+func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id string) error {
 
 	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
@@ -37,8 +37,8 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageInfrastruct
 	return nil
 }
 
-// NewManagedCluster implements resources.CloudInfrastructure.
-func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructure, noOfNodes int) error {
+// NewManagedCluster implements resources.CloudFactory.
+func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
 
 	if len(civoCloudState.ManagedClusterID) != 0 {
 		fmt.Println("[skip] managed cluster creation found", civoCloudState.ManagedClusterID)
@@ -95,8 +95,8 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageInfrastructu
 	return nil
 }
 
-// DelManagedCluster implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelManagedCluster(storage resources.StorageInfrastructure) error {
+// DelManagedCluster implements resources.CloudFactory.
+func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) error {
 	if len(civoCloudState.ManagedClusterID) == 0 {
 		storage.Logger().Success("[skip] network deletion found")
 		return nil
@@ -116,8 +116,8 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageInfrastructu
 	return nil
 }
 
-// GetManagedKubernetes implements resources.CloudInfrastructure.
-func (obj *CivoProvider) GetManagedKubernetes(storage resources.StorageInfrastructure) {
+// GetManagedKubernetes implements resources.CloudFactory.
+func (obj *CivoProvider) GetManagedKubernetes(storage resources.StorageFactory) {
 	// TODO: used for getting information on all the clusters created with all the types
 	// ha and managed in some form of predefined json format
 	fmt.Printf("[civo] Got Managed %s cluster....", obj.Metadata.ResName)

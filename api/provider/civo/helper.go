@@ -12,7 +12,7 @@ import (
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey(storage resources.StorageInfrastructure) string {
+func fetchAPIKey(storage resources.StorageFactory) string {
 
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if civoToken != "" {
@@ -27,7 +27,7 @@ func fetchAPIKey(storage resources.StorageInfrastructure) string {
 	return token["token"]
 }
 
-func GetInputCredential(storage resources.StorageInfrastructure) error {
+func GetInputCredential(storage resources.StorageFactory) error {
 
 	storage.Logger().Print("Enter CIVO TOKEN")
 	token, err := utils.UserInputCredentials(storage.Logger())
@@ -55,7 +55,7 @@ func generatePath(flag int, path ...string) string {
 	return utils.GetPath(flag, "civo", path...)
 }
 
-func saveStateHelper(storage resources.StorageInfrastructure, path string) error {
+func saveStateHelper(storage resources.StorageFactory, path string) error {
 	rawState, err := convertStateToBytes(*civoCloudState)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func saveStateHelper(storage resources.StorageInfrastructure, path string) error
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
-func loadStateHelper(storage resources.StorageInfrastructure, path string) error {
+func loadStateHelper(storage resources.StorageFactory, path string) error {
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func loadStateHelper(storage resources.StorageInfrastructure, path string) error
 	return convertStateFromBytes(raw)
 }
 
-func saveKubeconfigHelper(storage resources.StorageInfrastructure, path string, kubeconfig string) error {
+func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
 
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
@@ -145,7 +145,7 @@ func isValidVMSize(size string) error {
 	return fmt.Errorf("INVALID VM SIZE\nValid options: %v\n", nodeSizes)
 }
 
-func printKubeconfig(storage resources.StorageInfrastructure, operation string) {
+func printKubeconfig(storage resources.StorageFactory, operation string) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)

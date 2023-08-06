@@ -27,12 +27,12 @@ func InitStorage() *LocalStorageProvider {
 	}
 }
 
-func (s *LocalStorageProvider) Path(path string) resources.StorageInfrastructure {
+func (s *LocalStorageProvider) Path(path string) resources.StorageFactory {
 	s.Metadata.Path = path
 	return s
 }
 
-func (s *LocalStorageProvider) Permission(perm os.FileMode) resources.StorageInfrastructure {
+func (s *LocalStorageProvider) Permission(perm os.FileMode) resources.StorageFactory {
 	s.Metadata.Perm = perm
 	return s
 }
@@ -56,7 +56,7 @@ func (s *LocalStorageProvider) DeleteDir() error {
 	return nil
 }
 
-// Load implements resources.StorageInfrastructure.
+// Load implements resources.StorageFactory.
 func (storage *LocalStorageProvider) Load() ([]byte, error) {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
@@ -64,7 +64,7 @@ func (storage *LocalStorageProvider) Load() ([]byte, error) {
 	return os.ReadFile(storage.Metadata.Path)
 }
 
-// Save implements resources.StorageInfrastructure.
+// Save implements resources.StorageFactory.
 func (storage *LocalStorageProvider) Save(data []byte) error {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()

@@ -129,7 +129,7 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	}
 }
 
-func SaveCred(storage resources.StorageInfrastructure, config interface{}, provider string) error {
+func SaveCred(storage resources.StorageFactory, config interface{}, provider string) error {
 
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "azure") != 0 &&
@@ -151,7 +151,7 @@ func SaveCred(storage resources.StorageInfrastructure, config interface{}, provi
 	return nil
 }
 
-func GetCred(storage resources.StorageInfrastructure, provider string) (i map[string]string, err error) {
+func GetCred(storage resources.StorageFactory, provider string) (i map[string]string, err error) {
 
 	fileBytes, err := storage.Path(GetPath(CREDENTIAL_PATH, provider)).Load()
 	if err != nil {
@@ -207,7 +207,7 @@ func getPaths(provider string, params ...string) string {
 	return ret.String()
 }
 
-func CreateSSHKeyPair(storage resources.StorageInfrastructure, provider, clusterDir string) (string, error) {
+func CreateSSHKeyPair(storage resources.StorageFactory, provider, clusterDir string) (string, error) {
 
 	pathTillFolder := ""
 	pathTillFolder = getPaths(provider, "ha", clusterDir)
@@ -291,7 +291,7 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 	return fingerprint[1], nil
 }
 
-func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageInfrastructure, flag int, script string, fastMode bool) error {
+func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, flag int, script string, fastMode bool) error {
 
 	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
 	if err != nil {

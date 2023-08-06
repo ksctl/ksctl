@@ -7,8 +7,8 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-// DelSSHKeyPair implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageInfrastructure) error {
+// DelSSHKeyPair implements resources.CloudFactory.
+func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 	if len(civoCloudState.SSHID) == 0 {
 		storage.Logger().Success("[skip] ssh keypair already deleted")
 		return nil
@@ -29,8 +29,8 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageInfrastructure) 
 	return saveStateHelper(storage, path)
 }
 
-// CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageInfrastructure) error {
+// CreateUploadSSHKeyPair implements resources.CloudFactory.
+func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
 	if len(civoCloudState.SSHID) != 0 {
 		storage.Logger().Success("[skip] ssh keypair already uploaded")
 		return nil
@@ -47,7 +47,7 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageInfrast
 	return nil
 }
 
-func (obj *CivoProvider) uploadSSH(storage resources.StorageInfrastructure, resName, pubKey string) error {
+func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pubKey string) error {
 	sshResp, err := civoClient.NewSSHKey(strings.ToLower(resName), pubKey)
 	if err != nil {
 		return err

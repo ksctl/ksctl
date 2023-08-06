@@ -5,8 +5,8 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-// NewNetwork implements resources.CloudInfrastructure.
-func (obj *CivoProvider) NewNetwork(storage resources.StorageInfrastructure) error {
+// NewNetwork implements resources.CloudFactory.
+func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 
 	// check if the networkID already exist
 	if len(civoCloudState.NetworkIDs.NetworkID) != 0 {
@@ -34,8 +34,8 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageInfrastructure) err
 	return saveStateHelper(storage, path)
 }
 
-// DelNetwork implements resources.CloudInfrastructure.
-func (obj *CivoProvider) DelNetwork(storage resources.StorageInfrastructure) error {
+// DelNetwork implements resources.CloudFactory.
+func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 
 	if len(civoCloudState.NetworkIDs.NetworkID) == 0 {
 		storage.Logger().Success("[skip] network already deleted")
