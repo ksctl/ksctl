@@ -26,73 +26,73 @@ type LocalProvider struct {
 	Metadata
 }
 
-// Version implements resources.CloudInfrastructure.
-func (*LocalProvider) Version(string) resources.CloudInfrastructure {
+// Version implements resources.CloudFactory.
+func (*LocalProvider) Version(string) resources.CloudFactory {
 	panic("unimplemented")
 }
 
-// CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StorageInfrastructure) error {
+// CreateUploadSSHKeyPair implements resources.CloudFactory.
+func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelFirewall implements resources.CloudInfrastructure.
-func (*LocalProvider) DelFirewall(state resources.StorageInfrastructure) error {
+// DelFirewall implements resources.CloudFactory.
+func (*LocalProvider) DelFirewall(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelManagedCluster implements resources.CloudInfrastructure.
-func (*LocalProvider) DelManagedCluster(state resources.StorageInfrastructure) error {
+// DelManagedCluster implements resources.CloudFactory.
+func (*LocalProvider) DelManagedCluster(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelNetwork implements resources.CloudInfrastructure.
-func (*LocalProvider) DelNetwork(state resources.StorageInfrastructure) error {
+// DelNetwork implements resources.CloudFactory.
+func (*LocalProvider) DelNetwork(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*LocalProvider) DelSSHKeyPair(state resources.StorageInfrastructure) error {
+// DelSSHKeyPair implements resources.CloudFactory.
+func (*LocalProvider) DelSSHKeyPair(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelVM implements resources.CloudInfrastructure.
-func (*LocalProvider) DelVM(state resources.StorageInfrastructure) error {
+// DelVM implements resources.CloudFactory.
+func (*LocalProvider) DelVM(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*LocalProvider) GetManagedKubernetes(state resources.StorageInfrastructure) {
+// GetManagedKubernetes implements resources.CloudFactory.
+func (*LocalProvider) GetManagedKubernetes(state resources.StorageFactory) {
 	panic("unimplemented")
 }
 
-// GetStateForHACluster implements resources.CloudInfrastructure.
-func (*LocalProvider) GetStateForHACluster(state resources.StorageInfrastructure) (cloud.CloudResourceState, error) {
+// GetStateForHACluster implements resources.CloudFactory.
+func (*LocalProvider) GetStateForHACluster(state resources.StorageFactory) (cloud.CloudResourceState, error) {
 	panic("unimplemented")
 }
 
-// InitState implements resources.CloudInfrastructure.
-func (*LocalProvider) InitState(state resources.StorageInfrastructure, operation string) error {
+// InitState implements resources.CloudFactory.
+func (*LocalProvider) InitState(state resources.StorageFactory, operation string) error {
 	panic("unimplemented")
 }
 
-// NewFirewall implements resources.CloudInfrastructure.
-func (*LocalProvider) NewFirewall(state resources.StorageInfrastructure) error {
+// NewFirewall implements resources.CloudFactory.
+func (*LocalProvider) NewFirewall(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// NewManagedCluster implements resources.CloudInfrastructure.
-func (*LocalProvider) NewManagedCluster(state resources.StorageInfrastructure, noOfNodes int) error {
+// NewManagedCluster implements resources.CloudFactory.
+func (*LocalProvider) NewManagedCluster(state resources.StorageFactory, noOfNodes int) error {
 	panic("unimplemented")
 }
 
-// NewNetwork implements resources.CloudInfrastructure.
-func (*LocalProvider) NewNetwork(state resources.StorageInfrastructure) error {
+// NewNetwork implements resources.CloudFactory.
+func (*LocalProvider) NewNetwork(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// NewVM implements resources.CloudInfrastructure.
-func (*LocalProvider) NewVM(state resources.StorageInfrastructure) error {
+// NewVM implements resources.CloudFactory.
+func (*LocalProvider) NewVM(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
@@ -103,25 +103,25 @@ func ReturnLocalStruct(metadata resources.Metadata) *LocalProvider {
 }
 
 // it will contain the name of the resource to be created
-func (cloud *LocalProvider) Name(resName string) resources.CloudInfrastructure {
+func (cloud *LocalProvider) Name(resName string) resources.CloudFactory {
 	cloud.Metadata.ResName = resName
 	return cloud
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *LocalProvider) Role(resRole string) resources.CloudInfrastructure {
+func (cloud *LocalProvider) Role(resRole string) resources.CloudFactory {
 	cloud.Metadata.Role = resRole
 	return cloud
 }
 
 // it will contain which vmType to create
-func (cloud *LocalProvider) VMType(size string) resources.CloudInfrastructure {
+func (cloud *LocalProvider) VMType(size string) resources.CloudFactory {
 	cloud.Metadata.VmType = size
 	return cloud
 }
 
 // whether to have the resource as public or private (i.e. VMs)
-func (cloud *LocalProvider) Visibility(toBePublic bool) resources.CloudInfrastructure {
+func (cloud *LocalProvider) Visibility(toBePublic bool) resources.CloudFactory {
 	cloud.Metadata.Public = toBePublic
 	return cloud
 }
@@ -135,12 +135,12 @@ func (cloud *LocalProvider) SupportForCNI() bool {
 	return false
 }
 
-func (client *LocalProvider) Application(s string) resources.CloudInfrastructure {
+func (client *LocalProvider) Application(s string) resources.CloudFactory {
 	client.Metadata.Apps = s
 	return client
 }
 
-func (client *LocalProvider) CNI(s string) resources.CloudInfrastructure {
+func (client *LocalProvider) CNI(s string) resources.CloudFactory {
 	client.Metadata.Cni = s
 	return client
 }

@@ -108,8 +108,8 @@ type Credential struct {
 	Token string `json:"token"`
 }
 
-// GetStateForHACluster implements resources.CloudInfrastructure.
-func (client *CivoProvider) GetStateForHACluster(storage resources.StorageInfrastructure) (cloud_control_res.CloudResourceState, error) {
+// GetStateForHACluster implements resources.CloudFactory.
+func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	// TODO: add checks for any state is missing!!
 
@@ -140,7 +140,7 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageInfras
 	return payload, nil
 }
 
-func (obj *CivoProvider) InitState(storage resources.StorageInfrastructure, operation string) error {
+func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation string) error {
 
 	// if len(clusterDirName) != 0 {
 	// 	// already has been called
@@ -208,7 +208,7 @@ func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
 }
 
 // it will contain the name of the resource to be created
-func (cloud *CivoProvider) Name(resName string) resources.CloudInfrastructure {
+func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
 	if err := utils.IsValidName(resName); err != nil {
 		return nil
 	}
@@ -217,7 +217,7 @@ func (cloud *CivoProvider) Name(resName string) resources.CloudInfrastructure {
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *CivoProvider) Role(resRole string) resources.CloudInfrastructure {
+func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 	switch resRole {
 	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
 		cloud.Metadata.Role = resRole
@@ -228,7 +228,7 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudInfrastructure {
 }
 
 // it will contain which vmType to create
-func (cloud *CivoProvider) VMType(size string) resources.CloudInfrastructure {
+func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
 	if err := isValidVMSize(size); err != nil {
 		return nil
 	}
@@ -237,7 +237,7 @@ func (cloud *CivoProvider) VMType(size string) resources.CloudInfrastructure {
 }
 
 // whether to have the resource as public or private (i.e. VMs)
-func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudInfrastructure {
+func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudFactory {
 	cloud.Metadata.Public = toBePublic
 	return cloud
 }
@@ -251,7 +251,7 @@ func (cloud *CivoProvider) SupportForCNI() bool {
 	return true
 }
 
-func (client *CivoProvider) Application(s string) resources.CloudInfrastructure {
+func (client *CivoProvider) Application(s string) resources.CloudFactory {
 	if len(s) == 0 {
 		client.Metadata.Apps = "Traefik-v2-nodeport,metrics-server" // default: applications
 	} else {
@@ -261,7 +261,7 @@ func (client *CivoProvider) Application(s string) resources.CloudInfrastructure 
 	return client
 }
 
-func (client *CivoProvider) CNI(s string) resources.CloudInfrastructure {
+func (client *CivoProvider) CNI(s string) resources.CloudFactory {
 	if len(s) == 0 {
 		client.Metadata.Cni = "flannel"
 	} else {
@@ -270,8 +270,8 @@ func (client *CivoProvider) CNI(s string) resources.CloudInfrastructure {
 	return client
 }
 
-// Version implements resources.CloudInfrastructure.
-func (obj *CivoProvider) Version(ver string) resources.CloudInfrastructure {
+// Version implements resources.CloudFactory.
+func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
 	if len(ver) == 0 {
 		obj.Metadata.Version = "1.26.4-k3s1"
 	} else {
@@ -286,7 +286,7 @@ func (obj *CivoProvider) Version(ver string) resources.CloudInfrastructure {
 	return obj
 }
 
-func GetRAWClusterInfos(storage resources.StorageInfrastructure) ([]cloud_control_res.AllClusterData, error) {
+func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
 	var data []cloud_control_res.AllClusterData
 
 	// first get all the directories of ha

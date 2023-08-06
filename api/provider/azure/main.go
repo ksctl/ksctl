@@ -75,8 +75,8 @@ type AzureProvider struct {
 	Metadata
 }
 
-// Version implements resources.CloudInfrastructure.
-func (*AzureProvider) Version(string) resources.CloudInfrastructure {
+// Version implements resources.CloudFactory.
+func (*AzureProvider) Version(string) resources.CloudFactory {
 	panic("unimplemented")
 }
 
@@ -91,48 +91,48 @@ var (
 	currCloudState *StateConfiguration
 )
 
-// CreateUploadSSHKeyPair implements resources.CloudInfrastructure.
-func (client *AzureProvider) CreateUploadSSHKeyPair(state resources.StorageInfrastructure) error {
+// CreateUploadSSHKeyPair implements resources.CloudFactory.
+func (client *AzureProvider) CreateUploadSSHKeyPair(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelFirewall implements resources.CloudInfrastructure.
-func (*AzureProvider) DelFirewall(state resources.StorageInfrastructure) error {
+// DelFirewall implements resources.CloudFactory.
+func (*AzureProvider) DelFirewall(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelManagedCluster implements resources.CloudInfrastructure.
-func (*AzureProvider) DelManagedCluster(state resources.StorageInfrastructure) error {
+// DelManagedCluster implements resources.CloudFactory.
+func (*AzureProvider) DelManagedCluster(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelNetwork implements resources.CloudInfrastructure.
-func (*AzureProvider) DelNetwork(state resources.StorageInfrastructure) error {
+// DelNetwork implements resources.CloudFactory.
+func (*AzureProvider) DelNetwork(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelSSHKeyPair implements resources.CloudInfrastructure.
-func (*AzureProvider) DelSSHKeyPair(state resources.StorageInfrastructure) error {
+// DelSSHKeyPair implements resources.CloudFactory.
+func (*AzureProvider) DelSSHKeyPair(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// DelVM implements resources.CloudInfrastructure.
-func (*AzureProvider) DelVM(state resources.StorageInfrastructure) error {
+// DelVM implements resources.CloudFactory.
+func (*AzureProvider) DelVM(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// GetManagedKubernetes implements resources.CloudInfrastructure.
-func (*AzureProvider) GetManagedKubernetes(state resources.StorageInfrastructure) {
+// GetManagedKubernetes implements resources.CloudFactory.
+func (*AzureProvider) GetManagedKubernetes(state resources.StorageFactory) {
 	panic("unimplemented")
 }
 
-// GetStateForHACluster implements resources.CloudInfrastructure.
-func (*AzureProvider) GetStateForHACluster(state resources.StorageInfrastructure) (cloud.CloudResourceState, error) {
+// GetStateForHACluster implements resources.CloudFactory.
+func (*AzureProvider) GetStateForHACluster(state resources.StorageFactory) (cloud.CloudResourceState, error) {
 	panic("unimplemented")
 }
 
-// InitState implements resources.CloudInfrastructure.
-func (*AzureProvider) InitState(state resources.StorageInfrastructure, operation string) error {
+// InitState implements resources.CloudFactory.
+func (*AzureProvider) InitState(state resources.StorageFactory, operation string) error {
 	if currCloudState != nil {
 		return errors.New("[FATAL] already initialized")
 	}
@@ -140,23 +140,23 @@ func (*AzureProvider) InitState(state resources.StorageInfrastructure, operation
 	return nil
 }
 
-// NewFirewall implements resources.CloudInfrastructure.
-func (*AzureProvider) NewFirewall(state resources.StorageInfrastructure) error {
+// NewFirewall implements resources.CloudFactory.
+func (*AzureProvider) NewFirewall(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// NewManagedCluster implements resources.CloudInfrastructure.
-func (*AzureProvider) NewManagedCluster(state resources.StorageInfrastructure, noOfNodes int) error {
+// NewManagedCluster implements resources.CloudFactory.
+func (*AzureProvider) NewManagedCluster(state resources.StorageFactory, noOfNodes int) error {
 	panic("unimplemented")
 }
 
-// NewNetwork implements resources.CloudInfrastructure.
-func (*AzureProvider) NewNetwork(state resources.StorageInfrastructure) error {
+// NewNetwork implements resources.CloudFactory.
+func (*AzureProvider) NewNetwork(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
-// NewVM implements resources.CloudInfrastructure.
-func (*AzureProvider) NewVM(state resources.StorageInfrastructure) error {
+// NewVM implements resources.CloudFactory.
+func (*AzureProvider) NewVM(state resources.StorageFactory) error {
 	return errors.New("unimplemented")
 }
 
@@ -168,25 +168,25 @@ func ReturnAzureStruct(metadata resources.Metadata) *AzureProvider {
 }
 
 // it will contain the name of the resource to be created
-func (cloud *AzureProvider) Name(resName string) resources.CloudInfrastructure {
+func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
 	cloud.Metadata.ResName = resName
 	return cloud
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *AzureProvider) Role(resRole string) resources.CloudInfrastructure {
+func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
 	cloud.Metadata.Role = resRole
 	return cloud
 }
 
 // it will contain which vmType to create
-func (cloud *AzureProvider) VMType(size string) resources.CloudInfrastructure {
+func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
 	cloud.Metadata.VmType = size
 	return cloud
 }
 
 // whether to have the resource as public or private (i.e. VMs)
-func (cloud *AzureProvider) Visibility(toBePublic bool) resources.CloudInfrastructure {
+func (cloud *AzureProvider) Visibility(toBePublic bool) resources.CloudFactory {
 	cloud.Metadata.Public = toBePublic
 	return cloud
 }
@@ -200,12 +200,12 @@ func (cloud *AzureProvider) SupportForCNI() bool {
 	return false
 }
 
-func (client *AzureProvider) Application(s string) resources.CloudInfrastructure {
+func (client *AzureProvider) Application(s string) resources.CloudFactory {
 	client.Metadata.Apps = s
 	return client
 }
 
-func (client *AzureProvider) CNI(s string) resources.CloudInfrastructure {
+func (client *AzureProvider) CNI(s string) resources.CloudFactory {
 	client.Metadata.Cni = s
 	return client
 }
