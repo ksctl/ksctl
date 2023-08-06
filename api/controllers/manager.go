@@ -127,10 +127,6 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) {
 	fmt.Println("Create HA Cluster triggered successfully")
-	// Builder methods directly called
-	cloud.HydrateCloud(client, "create")
-
-	kubernetes.HydrateK8sDistro(client)
 
 	switch client.Metadata.StateLocation {
 	case "local":
@@ -139,17 +135,21 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
 
+	cloud.HydrateCloud(client, "create")
+
+	kubernetes.HydrateK8sDistro(client)
+
 	cloudResErr := cloud.CreateHACluster(client)
 	fmt.Println("Called Create Cloud resources for HA setup; Err->", cloudResErr)
 
-	// Cloud done
-	var payload cloudController.CloudResourceState
-	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
-	// transfer the state
-	client.Distro.InitState(payload)
-
-	// Kubernetes controller
-	kubernetes.ConfigureCluster(client)
+	// // Cloud done
+	// var payload cloudController.CloudResourceState
+	// payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+	// // transfer the state
+	// client.Distro.InitState(payload)
+	//
+	// // Kubernetes controller
+	// kubernetes.ConfigureCluster(client)
 }
 
 func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) {
@@ -179,7 +179,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	default:
 		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
-	cloud.HydrateCloud(client, "delete")
+	cloud.HydrateCloud(client, "create")
 
 	kubernetes.HydrateK8sDistro(client)
 

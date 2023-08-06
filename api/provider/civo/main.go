@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/logger"
 	"os"
+
+	"github.com/kubesimplify/ksctl/api/logger"
 
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
@@ -266,7 +267,7 @@ func GetRAWClusterInfos(storage resources.StorageInfrastructure) ([]cloud_contro
 	}
 
 	for _, haFolder := range haFolders {
-		path := generatePath(utils.CLUSTER_PATH, "managed", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
+		path := generatePath(utils.CLUSTER_PATH, "ha", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
