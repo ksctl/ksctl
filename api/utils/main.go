@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/resources"
 	"io"
 	"net"
 	"os"
@@ -17,6 +16,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/kubesimplify/ksctl/api/resources"
 
 	"github.com/kubesimplify/ksctl/api/logger"
 	"golang.org/x/crypto/ssh"
@@ -50,6 +51,11 @@ const (
 	OTHER_PATH           = int(3)
 	EXEC_WITH_OUTPUT     = int(1)
 	EXEC_WITHOUT_OUTPUT  = int(0)
+
+	ROLE_CP = string("controlplane")
+	ROLE_WP = string("workerplane")
+	ROLE_LB = string("loadbalancer")
+	ROLE_DS = string("datastore")
 )
 
 // GetUserName returns current active username
