@@ -6,6 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.0
 	github.com/civo/civogo v0.3.42
 	github.com/fatih/color v1.15.0
+	github.com/rodaine/table v1.1.0
 	golang.org/x/crypto v0.11.0
 	golang.org/x/term v0.10.0
 	gotest.tools v2.2.0+incompatible

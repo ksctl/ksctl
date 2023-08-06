@@ -30,12 +30,14 @@ type SSHPayload struct {
 }
 
 type AllClusterData struct {
-	Name     string
-	Provider string
-	Type     string
-	Region   string
-	NoWP     int
-	NoCP     int
-	NoDS     int
-	NoMgt    int
+	Name       string
+	Provider   string
+	Type       string
+	Region     string
+	NoWP       int
+	NoCP       int
+	NoDS       int
+	NoMgt      int
+	K8sDistro  string
+	K8sVersion string
 }

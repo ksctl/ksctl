@@ -75,6 +75,11 @@ type AzureProvider struct {
 	Metadata
 }
 
+// Version implements resources.CloudInfrastructure.
+func (*AzureProvider) Version(string) resources.CloudInfrastructure {
+	panic("unimplemented")
+}
+
 type Credential struct {
 	SubscriptionID string `json:"subscription_id"`
 	TenantID       string `json:"tenant_id"`
@@ -141,7 +146,7 @@ func (*AzureProvider) NewFirewall(state resources.StorageInfrastructure) error {
 }
 
 // NewManagedCluster implements resources.CloudInfrastructure.
-func (*AzureProvider) NewManagedCluster(state resources.StorageInfrastructure) error {
+func (*AzureProvider) NewManagedCluster(state resources.StorageInfrastructure, noOfNodes int) error {
 	panic("unimplemented")
 }
 

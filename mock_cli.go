@@ -65,7 +65,8 @@ Your Choice`)
 
 		controller.DeleteHACluster(&cmd.Client)
 	case 3:
-		cmd.Client.Metadata.NoWP = 2
+		cmd.Client.Metadata.NoMP = 2
+		//cmd.Client.Metadata.K8sVersion = "1.27.1"
 		controller.CreateManagedCluster(&cmd.Client)
 	case 4:
 		controller.DeleteManagedCluster(&cmd.Client)

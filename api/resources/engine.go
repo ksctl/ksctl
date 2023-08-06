@@ -31,6 +31,8 @@ type Metadata struct {
 	DataStoreNodeType    string
 	LoadBalancerNodeType string
 
+	NoMP int // No of managed Nodes
+
 	NoWP int // No of woerkplane VMs
 	NoCP int // No of Controlplane VMs
 	NoDS int // No of DataStore VMs
@@ -57,7 +59,7 @@ type CloudInfrastructure interface {
 	// get the state required for the kubernetes dributions to configure
 	GetStateForHACluster(StorageInfrastructure) (cloud.CloudResourceState, error)
 
-	NewManagedCluster(StorageInfrastructure) error
+	NewManagedCluster(StorageInfrastructure, int) error
 	DelManagedCluster(StorageInfrastructure) error
 	GetManagedKubernetes(StorageInfrastructure)
 
@@ -73,6 +75,7 @@ type CloudInfrastructure interface {
 	// these are meant to be used for managed clusters
 	Application(string) CloudInfrastructure
 	CNI(string) CloudInfrastructure
+	Version(string) CloudInfrastructure
 }
 
 type KubernetesInfrastructure interface {

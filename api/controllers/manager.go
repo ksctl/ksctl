@@ -67,7 +67,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
 		unsafe := false
-		fmt.Scanf("%s", &choice)
+		_, err := fmt.Scanf("%s", &choice)
+		if err != nil {
+			return
+		}
 		if strings.Compare("y", choice) == 0 ||
 			strings.Compare("yes", choice) == 0 ||
 			strings.Compare("Y", choice) == 0 {
@@ -97,7 +100,7 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster() {}
 func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.KsctlClient) {
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.Storage = &localstate.LocalStorageProvider{}
+		client.Storage = localstate.InitStorage()
 	default:
 		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
@@ -119,7 +122,7 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 		}
 		printerTable = append(printerTable, data...)
 	}
-	fmt.Println(printerTable)
+	client.Storage.Logger().Table(printerTable)
 }
 
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) {
@@ -131,7 +134,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.Storage = &localstate.LocalStorageProvider{}
+		client.Storage = localstate.InitStorage()
 	default:
 		client.Storage.Logger().Err("Currently Local state is supported!")
 	}
@@ -172,7 +175,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	fmt.Println("Create HA delete triggered successfully")
 	switch client.Metadata.StateLocation {
 	case "local":
-		client.Storage = &localstate.LocalStorageProvider{}
+		client.Storage = localstate.InitStorage()
 	default:
 		client.Storage.Logger().Err("Currently Local state is supported!")
 	}

@@ -3,11 +3,12 @@ package civo
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"runtime"
+
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"os"
-	"runtime"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -63,7 +64,6 @@ func saveStateHelper(storage resources.StorageInfrastructure, path string) error
 }
 
 func loadStateHelper(storage resources.StorageInfrastructure, path string) error {
-	fmt.Println(path)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
@@ -104,6 +104,20 @@ func validationOfArguments(name, region string) error {
 	return nil
 }
 
+func isValidK8sVersion(ver string) error {
+	vers, err := civoClient.ListAvailableKubernetesVersions()
+	if err != nil {
+		return err
+	}
+
+	for _, vver := range vers {
+		if vver.ClusterType == "k3s" && vver.Label == ver {
+			return nil
+		}
+	}
+	return fmt.Errorf("Invalid k8s version\nValid options: %v\n", vers)
+}
+
 // IsValidRegionCIVO validates the region code for CIVO
 func isValidRegion(reg string) error {
 	regions, err := civoClient.ListRegions()
@@ -115,7 +129,7 @@ func isValidRegion(reg string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID REGION")
+	return fmt.Errorf("INVALID REGION\nValid options: %v\n", regions)
 }
 
 func isValidVMSize(size string) error {
@@ -128,7 +142,7 @@ func isValidVMSize(size string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID VM SIZE")
+	return fmt.Errorf("INVALID VM SIZE\nValid options: %v\n", nodeSizes)
 }
 
 func printKubeconfig(storage resources.StorageInfrastructure, operation string) {

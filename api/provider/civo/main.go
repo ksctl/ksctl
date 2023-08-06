@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kubesimplify/ksctl/api/logger"
 	"os"
 
 	"github.com/civo/civogo"
@@ -51,6 +52,9 @@ type StateConfiguration struct {
 	InstanceIDs      InstanceID `json:"instanceids"`
 	NetworkIDs       NetworkID  `json:"networkids"`
 	IPv4             InstanceIP `json:"ipv4_addr"`
+
+	KubernetesDistro string `json:"k8s_distro"`
+	KubernetesVer    string `json:"k8s_version"`
 }
 
 var (
@@ -76,8 +80,9 @@ type Metadata struct {
 	Public  bool
 
 	// purpose: application in managed cluster
-	Apps string
-	Cni  string
+	Apps    string
+	Cni     string
+	Version string
 }
 
 type CivoProvider struct {
@@ -86,8 +91,7 @@ type CivoProvider struct {
 	HACluster   bool   `json:"ha_cluster"`
 	Region      string `json:"region"`
 
-	SSHPath          string `json:"ssh_key"` // do check what need to be here
-	NoOfManagedNodes int
+	SSHPath string `json:"ssh_key"` // do check what need to be here
 
 	Metadata
 
@@ -126,9 +130,6 @@ func (obj *CivoProvider) InitState(storage resources.StorageInfrastructure, oper
 
 	switch operation {
 	case "create":
-		// if civoCloudState != nil {
-		// 	return errors.New("[FATAL] already initialized")
-		// }
 		if errLoadState == nil && civoCloudState.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
 			return fmt.Errorf("already exist")
@@ -170,10 +171,9 @@ func (obj *CivoProvider) InitState(storage resources.StorageInfrastructure, oper
 
 func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
 	return &CivoProvider{
-		ClusterName:      metadata.ClusterName,
-		Region:           metadata.Region,
-		HACluster:        metadata.IsHA,
-		NoOfManagedNodes: metadata.NoWP,
+		ClusterName: metadata.ClusterName,
+		Region:      metadata.Region,
+		HACluster:   metadata.IsHA,
 	}, nil
 }
 
@@ -240,25 +240,57 @@ func (client *CivoProvider) CNI(s string) resources.CloudInfrastructure {
 	return client
 }
 
+// Version implements resources.CloudInfrastructure.
+func (obj *CivoProvider) Version(ver string) resources.CloudInfrastructure {
+	if len(ver) == 0 {
+		obj.Metadata.Version = "1.26.4-k3s1"
+	} else {
+		ver = ver + "-k3s1"
+		if err := isValidK8sVersion(ver); err != nil {
+			var logFactory logger.LogFactory = &logger.Logger{}
+			logFactory.Err(err.Error())
+			return nil
+		}
+		obj.Metadata.Version = ver
+	}
+	return obj
+}
+
 func GetRAWClusterInfos(storage resources.StorageInfrastructure) ([]cloud_control_res.AllClusterData, error) {
 	var data []cloud_control_res.AllClusterData
 
-	// // first get all the directories of ha
-	// haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "ha")).GetFolders()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// for _, haFolder := range haFolders {
-	// 	data = append(data,
-	// 		cloud_control_res.AllClusterData{
-	// 			Provider: "civo",
-	// 			Name:     haFolder[0],
-	// 			Region:   haFolder[1],
-	// 			Type:     "ha",
-	// 		})
-	// 	// to fetch more info we need to read the state files
-	// }
+	// first get all the directories of ha
+	haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "ha")).GetFolders()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, haFolder := range haFolders {
+		path := generatePath(utils.CLUSTER_PATH, "managed", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
+		raw, err := storage.Path(path).Load()
+		if err != nil {
+			return nil, err
+		}
+		var clusterState *StateConfiguration
+		if err := json.Unmarshal(raw, &clusterState); err != nil {
+			return nil, err
+		}
+		data = append(data,
+			cloud_control_res.AllClusterData{
+				Provider: "civo",
+				Name:     haFolder[0],
+				Region:   haFolder[1],
+				Type:     "ha",
+
+				NoWP: len(clusterState.InstanceIDs.WorkerNodes),
+				NoCP: len(clusterState.InstanceIDs.ControlNodes),
+				NoDS: len(clusterState.InstanceIDs.DatabaseNode),
+
+				K8sDistro:  clusterState.KubernetesDistro,
+				K8sVersion: clusterState.KubernetesVer,
+			})
+		// to fetch more info we need to read the state files
+	}
 
 	managedFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "managed")).GetFolders()
 	if err != nil {
@@ -279,14 +311,13 @@ func GetRAWClusterInfos(storage resources.StorageInfrastructure) ([]cloud_contro
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider: "civo",
-				Name:     haFolder[0],
-				Region:   haFolder[1],
-				Type:     "managed",
-				NoWP:     len(clusterState.InstanceIDs.WorkerNodes),
-				NoCP:     len(clusterState.InstanceIDs.ControlNodes),
-				NoDS:     len(clusterState.InstanceIDs.DatabaseNode),
-				NoMgt:    clusterState.NoManagedNodes,
+				Provider:   "civo",
+				Name:       haFolder[0],
+				Region:     haFolder[1],
+				Type:       "managed",
+				K8sDistro:  clusterState.KubernetesDistro,
+				K8sVersion: clusterState.KubernetesVer,
+				NoMgt:      clusterState.NoManagedNodes,
 			})
 	}
 	return data, nil
