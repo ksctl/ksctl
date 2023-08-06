@@ -40,6 +40,9 @@ func main() {
 	cmd.Client.Metadata.NoDS = 3
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
+	if _, err := control_pkg.InitializeStorageFactory(&cmd.Client); err != nil {
+		panic(err)
+	}
 	choice := -1
 	fmt.Println(`
 [0] enter credential
@@ -56,22 +59,52 @@ Your Choice`)
 	}
 	switch choice {
 	case 0:
-		controller.Credentials(&cmd.Client)
+		stat, err := controller.Credentials(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
 	case 1:
 		cmd.Client.Metadata.IsHA = true
-		controller.CreateHACluster(&cmd.Client)
+		stat, err := controller.CreateHACluster(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
 	case 2:
 		cmd.Client.Metadata.IsHA = true
 
-		controller.DeleteHACluster(&cmd.Client)
+		stat, err := controller.DeleteHACluster(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
 	case 3:
-		cmd.Client.Metadata.NoMP = 2
-		//cmd.Client.Metadata.K8sVersion = "1.27.1"
-		controller.CreateManagedCluster(&cmd.Client)
+		cmd.Client.Metadata.NoMP = 1
+		cmd.Client.Metadata.K8sVersion = "1.27.1"
+		stat, err := controller.CreateManagedCluster(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
 	case 4:
-		controller.DeleteManagedCluster(&cmd.Client)
+		stat, err := controller.DeleteManagedCluster(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
 
 	case 5:
-		controller.GetCluster(&cmd.Client)
+		stat, err := controller.GetCluster(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
 	}
 }

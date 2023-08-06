@@ -163,7 +163,7 @@ func GetCred(storage resources.StorageInfrastructure, provider string) (i map[st
 	if err != nil {
 		return
 	}
-	storage.Logger().Success("🔄 configuration")
+	storage.Logger().Success("[utils] configuration")
 
 	return
 }
@@ -219,7 +219,7 @@ func CreateSSHKeyPair(storage resources.StorageInfrastructure, provider, cluster
 		return "", err
 	}
 
-	fmt.Println(string(out))
+	storage.Logger().Print("[utils]", string(out))
 
 	path := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
 	fileBytePub, err := storage.Path(path).Load()
@@ -303,7 +303,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageInfrastructure
 	if err != nil {
 		return err
 	}
-	storage.Logger().Success("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+	storage.Logger().Success("[ssh] SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
@@ -323,11 +323,11 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageInfrastructure
 						return err
 					}
 					if expectedFingerprint != actualFingerprint {
-						return fmt.Errorf("mismatch of fingerprint")
+						return fmt.Errorf("[ssh] mismatch of fingerprint")
 					}
 					return nil
 				}
-				return fmt.Errorf("unsupported key type: %s", keyType)
+				return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
 			})}
 
 	if !fastMode {
@@ -348,10 +348,10 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageInfrastructure
 		currRetryCounter++
 	}
 	if currRetryCounter == MAX_RETRY_COUNT {
-		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
+		return fmt.Errorf("[ssh] maximum retry count reached for ssh conn %v", err)
 	}
 
-	storage.Logger().Success("🤖 Exec Scripts")
+	storage.Logger().Success("[ssh] Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()
