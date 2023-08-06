@@ -3,15 +3,15 @@ package controllers
 import "github.com/kubesimplify/ksctl/api/resources"
 
 type Controller interface {
-	CreateManagedCluster(*resources.KsctlClient)
-	DeleteManagedCluster(*resources.KsctlClient)
+	CreateManagedCluster(*resources.KsctlClient) (string, error)
+	DeleteManagedCluster(*resources.KsctlClient) (string, error)
 
-	SwitchCluster()
+	SwitchCluster(*resources.KsctlClient) (string, error)
 
-	GetCluster(*resources.KsctlClient)
+	GetCluster(*resources.KsctlClient) (string, error)
 
-	Credentials(*resources.KsctlClient)
+	Credentials(*resources.KsctlClient) (string, error)
 
-	CreateHACluster(*resources.KsctlClient)
-	DeleteHACluster(*resources.KsctlClient)
+	CreateHACluster(*resources.KsctlClient) (string, error)
+	DeleteHACluster(*resources.KsctlClient) (string, error)
 }

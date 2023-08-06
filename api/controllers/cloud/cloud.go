@@ -1,6 +1,8 @@
 package cloud
 
 import (
+	"fmt"
+
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
@@ -8,26 +10,28 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-func HydrateCloud(client *resources.KsctlClient, operation string) {
+// make it return error
+func HydrateCloud(client *resources.KsctlClient, operation string) error {
 	var err error
 	switch client.Metadata.Provider {
 	case "civo":
 		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
 		if err != nil {
-			panic("[cloud] " + err.Error())
+			return fmt.Errorf("[cloud] " + err.Error())
 		}
 	case "azure":
 		client.Cloud = azure_pkg.ReturnAzureStruct(client.Metadata)
 	case "local":
 		client.Cloud = local_pkg.ReturnLocalStruct(client.Metadata)
 	default:
-		panic("Invalid Cloud provider")
+		return fmt.Errorf("Invalid Cloud provider")
 	}
 	// call the init state for cloud providers
 	err = client.Cloud.InitState(client.Storage, operation)
 	if err != nil {
-		panic("[cloud] " + err.Error())
+		return err
 	}
+	return nil
 
 }
 
@@ -179,6 +183,5 @@ func DeleteManagedCluster(client *resources.KsctlClient) error {
 	if err := client.Cloud.DelNetwork(client.Storage); err != nil {
 		return err
 	}
-	client.Storage.Logger().Success("[cloud] Deleted the managed cluster")
 	return nil
 }
