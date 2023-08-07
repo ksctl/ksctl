@@ -57,7 +57,7 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 // NewVM implements resources.CloudFactory.
 func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
 
-	err := obj.foundStateVM(storage, indexNo)
+	err := obj.foundStateVM(storage, indexNo, true)
 	if err == nil {
 		return nil
 	}
@@ -132,7 +132,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 
 // DelVM implements resources.CloudFactory.
 func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) error {
-	err := obj.foundStateVM(storage, indexNo)
+	err := obj.foundStateVM(storage, indexNo, false)
 	if err != nil {
 		storage.Logger().Success(err.Error())
 		return nil
@@ -198,16 +198,19 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 
 		currRetryCounter := 0
 		var getInst *civogo.Instance
-		for currRetryCounter < utils.MAX_RETRY_COUNT {
+		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
 			getInst, err = civoClient.GetInstance(instID)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
 			} else {
-				return err
+				break
 			}
 			time.Sleep(5 * time.Second)
+		}
+		if currRetryCounter == utils.MAX_WATCH_RETRY_COUNT {
+			return fmt.Errorf("[civo] failed to get the state of vm")
 		}
 
 		if getInst.Status == "ACTIVE" {
