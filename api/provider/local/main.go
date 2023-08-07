@@ -1,6 +1,8 @@
 package local
 
 import (
+	"fmt"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 )
@@ -57,7 +59,7 @@ func (*LocalProvider) DelSSHKeyPair(state resources.StorageFactory) error {
 }
 
 // DelVM implements resources.CloudFactory.
-func (*LocalProvider) DelVM(state resources.StorageFactory) error {
+func (*LocalProvider) DelVM(resources.StorageFactory, int) error {
 	panic("unimplemented")
 }
 
@@ -92,7 +94,7 @@ func (*LocalProvider) NewNetwork(state resources.StorageFactory) error {
 }
 
 // NewVM implements resources.CloudFactory.
-func (*LocalProvider) NewVM(state resources.StorageFactory) error {
+func (*LocalProvider) NewVM(resources.StorageFactory, int) error {
 	panic("unimplemented")
 }
 
@@ -143,4 +145,19 @@ func (client *LocalProvider) Application(s string) resources.CloudFactory {
 func (client *LocalProvider) CNI(s string) resources.CloudFactory {
 	client.Metadata.Cni = s
 	return client
+}
+
+// NoOfControlPlane implements resources.CloudFactory.
+func (obj *LocalProvider) NoOfControlPlane(int, bool) (int, error) {
+	return -1, fmt.Errorf("[local] not supported")
+}
+
+// NoOfDataStore implements resources.CloudFactory.
+func (obj *LocalProvider) NoOfDataStore(int, bool) (int, error) {
+	return -1, fmt.Errorf("[local] not supported")
+}
+
+// NoOfWorkerPlane implements resources.CloudFactory.
+func (obj *LocalProvider) NoOfWorkerPlane(int, bool) (int, error) {
+	return -1, fmt.Errorf("[local] not supported")
 }

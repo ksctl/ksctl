@@ -41,7 +41,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
 
 	if len(civoCloudState.ManagedClusterID) != 0 {
-		fmt.Println("[skip] managed cluster creation found", civoCloudState.ManagedClusterID)
+		storage.Logger().Success("[skip] managed cluster creation found", civoCloudState.ManagedClusterID)
 
 		if err := watchManagedCluster(obj, storage, civoCloudState.ManagedClusterID); err != nil {
 			return err

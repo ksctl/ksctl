@@ -42,8 +42,8 @@ type Metadata struct {
 }
 
 type CloudFactory interface {
-	NewVM(StorageFactory) error
-	DelVM(StorageFactory) error
+	NewVM(StorageFactory, int) error
+	DelVM(StorageFactory, int) error
 
 	NewFirewall(StorageFactory) error
 	DelFirewall(StorageFactory) error
@@ -76,6 +76,11 @@ type CloudFactory interface {
 	Application(string) CloudFactory
 	CNI(string) CloudFactory
 	Version(string) CloudFactory
+
+	// for the state of instances created and destroyed
+	NoOfWorkerPlane(int, bool) (int, error)
+	NoOfControlPlane(int, bool) (int, error)
+	NoOfDataStore(int, bool) (int, error)
 }
 
 type KubernetesFactory interface {

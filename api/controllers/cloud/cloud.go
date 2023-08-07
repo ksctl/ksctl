@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"fmt"
+	"time"
 
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
@@ -32,18 +33,61 @@ func HydrateCloud(client *resources.KsctlClient, operation string) error {
 		return err
 	}
 	return nil
+}
 
+func pauseOperation(seconds time.Duration) {
+	time.Sleep(seconds * time.Second)
 }
 
 func DeleteHACluster(client *resources.KsctlClient) error {
 
 	var err error
-	// TODO: ADD THE OTHER RESOURCE DESTRICTION
 
-	err = client.Cloud.Role(utils.ROLE_LB).DelFirewall(client.Storage)
+	noCP, err := client.Cloud.NoOfControlPlane(client.Metadata.NoCP, false)
 	if err != nil {
 		return err
 	}
+
+	noWP, err := client.Cloud.NoOfWorkerPlane(client.Metadata.NoWP, false)
+	if err != nil {
+		return err
+	}
+
+	noDS, err := client.Cloud.NoOfDataStore(client.Metadata.NoDS, false)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < noWP; i++ {
+		err = client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, i)
+		if err != nil {
+			return err
+		}
+	}
+	pauseOperation(5)
+
+	for i := 0; i < noCP; i++ {
+		err = client.Cloud.Role(utils.ROLE_CP).DelVM(client.Storage, i)
+		if err != nil {
+			return err
+		}
+	}
+	pauseOperation(5)
+
+	for i := 0; i < noDS; i++ {
+		err = client.Cloud.Role(utils.ROLE_DS).DelVM(client.Storage, i)
+		if err != nil {
+			return err
+		}
+	}
+	pauseOperation(5)
+
+	err = client.Cloud.Role(utils.ROLE_LB).DelVM(client.Storage, 0)
+	if err != nil {
+		return err
+	}
+
+	pauseOperation(5)
 
 	err = client.Cloud.Role(utils.ROLE_DS).DelFirewall(client.Storage)
 	if err != nil {
@@ -56,6 +100,11 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 	}
 
 	err = client.Cloud.Role(utils.ROLE_WP).DelFirewall(client.Storage)
+	if err != nil {
+		return err
+	}
+
+	err = client.Cloud.Role(utils.ROLE_LB).DelFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
@@ -112,36 +161,51 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	if err != nil {
 		return err
 	}
-	//
-	// _ = client.Cloud.Name("demo-vm-lb").
-	// 	Role(utils.ROLE_LB).
-	// 	VMType(client.LoadBalancerNodeType).
-	// 	Visibility(true).
-	// 	NewVM(client.Storage)
-	//
-	// for no := 0; no < client.Metadata.NoDS; no++ {
-	// 	_ = client.Cloud.Name(fmt.Sprintf("demo-vm-db-%d", no)).
-	// 		Role(utils.ROLE_DS).
-	// 		VMType(client.DataStoreNodeType).
-	// 		Visibility(true).
-	// 		NewVM(client.Storage)
-	// }
-	//
-	// for no := 0; no < client.Metadata.NoCP; no++ {
-	// 	_ = client.Cloud.Name(fmt.Sprintf("demo-vm-cp-%d", no)).
-	// 		Role(utils.ROLE_CP).
-	// 		VMType(client.ControlPlaneNodeType).
-	// 		Visibility(true).
-	// 		NewVM(client.Storage)
-	// }
-	//
-	// for no := 0; no < client.Metadata.NoWP; no++ {
-	// 	_ = client.Cloud.Name(fmt.Sprintf("demo-vm-wp-%d", no)).
-	// 		Role(utils.ROLE_WP).
-	// 		VMType(client.WorkerPlaneNodeType).
-	// 		Visibility(true).
-	// 		NewVM(client.Storage)
-	// }
+
+	if _, err := client.Cloud.NoOfControlPlane(client.Metadata.NoCP, true); err != nil {
+		return err
+	}
+
+	if _, err := client.Cloud.NoOfWorkerPlane(client.Metadata.NoWP, true); err != nil {
+		return err
+	}
+
+	if _, err := client.Cloud.NoOfDataStore(client.Metadata.NoDS, true); err != nil {
+		return err
+	}
+
+	_ = client.Cloud.Name(client.ClusterName+"-vm-lb").
+		Role(utils.ROLE_LB).
+		VMType(client.LoadBalancerNodeType).
+		Visibility(true).
+		NewVM(client.Storage, 0)
+
+	for no := 0; no < client.Metadata.NoDS; no++ {
+		name := client.ClusterName + "-vm-db"
+		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+			Role(utils.ROLE_DS).
+			VMType(client.DataStoreNodeType).
+			Visibility(true).
+			NewVM(client.Storage, no)
+	}
+
+	for no := 0; no < client.Metadata.NoCP; no++ {
+		name := client.ClusterName + "-vm-cp"
+		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+			Role(utils.ROLE_CP).
+			VMType(client.ControlPlaneNodeType).
+			Visibility(true).
+			NewVM(client.Storage, no)
+	}
+
+	for no := 0; no < client.Metadata.NoWP; no++ {
+		name := client.ClusterName + "-vm-wp"
+		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+			Role(utils.ROLE_WP).
+			VMType(client.WorkerPlaneNodeType).
+			Visibility(true).
+			NewVM(client.Storage, no)
+	}
 	return nil
 }
 

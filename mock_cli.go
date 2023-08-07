@@ -31,13 +31,22 @@ func main() {
 	cmd.Client.Metadata.K8sDistro = "k3s"
 	cmd.Client.Metadata.StateLocation = "local"
 	cmd.Client.Metadata.ClusterName = "dummy-name"
-	cmd.Client.Metadata.ManagedNodeType = "g4s.kube.medium"
+
+	// managed
+	cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"
+
+	// ha
+	cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
+	cmd.Client.Metadata.ControlPlaneNodeType = "g3.small"
+	cmd.Client.Metadata.WorkerPlaneNodeType = "g3.small"
+	cmd.Client.Metadata.DataStoreNodeType = "g3.large"
+
 	cmd.Client.Metadata.CNIPlugin = "cilium"
 
 	cmd.Client.Metadata.Region = "LON1"
-	cmd.Client.Metadata.NoCP = 5
-	cmd.Client.Metadata.NoWP = 5
-	cmd.Client.Metadata.NoDS = 3
+	cmd.Client.Metadata.NoCP = 3
+	cmd.Client.Metadata.NoWP = 1
+	cmd.Client.Metadata.NoDS = 1
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
 	if _, err := control_pkg.InitializeStorageFactory(&cmd.Client); err != nil {
