@@ -19,6 +19,8 @@ func GenKsctlController() *KsctlControllerClient {
 	return &KsctlControllerClient{}
 }
 
+// TODO: add the verbose mode
+// TODO: accept gate for creation as well for approval
 func InitializeStorageFactory(client *resources.KsctlClient) (string, error) {
 	switch client.Metadata.StateLocation {
 	case "local":
@@ -203,15 +205,60 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return "", err
 	}
 
-	//TODO: Check if we need to do anything when deleting
-	//err := kubernetes.HydrateK8sDistro(client)
-	//if err != nil {
-	//	return "", err
-	//}
-
 	cloudResErr := cloud.DeleteHACluster(client)
 	if cloudResErr != nil {
 		return "", cloudResErr
 	}
 	return "[ksctl] deleted HA cluster", nil
+}
+
+func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
+	if client.Provider == "local" {
+		return "", fmt.Errorf("ha not supported")
+	}
+	if client.Storage == nil {
+		return "", fmt.Errorf("Initalize the storage driver")
+	}
+	if !client.IsHA {
+		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
+	}
+	// TODO: implement me
+
+	return "[ksctl] added worker node(s)", nil
+
+}
+
+func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
+	if client.Provider == "local" {
+		return "", fmt.Errorf("ha not supported")
+	}
+	if client.Storage == nil {
+		return "", fmt.Errorf("Initalize the storage driver")
+	}
+	if !client.IsHA {
+		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
+	}
+	showMsg := true
+	if showMsg {
+		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
+	`, client.ClusterName+" "+client.Region))
+
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
+
+		if !unsafe {
+			return "[ksctl] approval cancelled", nil
+		}
+	}
+
+	// TODO: implement me
+
+	return "deleted worker node(s)", nil
 }
