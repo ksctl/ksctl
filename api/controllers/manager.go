@@ -152,8 +152,6 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", err
 	}
 
-	client.Storage.Logger().Warn("[ksctl] only cloud resources are having replay!")
-
 	cloudResErr := cloud.CreateHACluster(client)
 	if cloudResErr != nil {
 		return "", cloudResErr
@@ -164,6 +162,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	// transfer the state
 	client.Distro.InitState(payload, client.Storage)
 
+	client.Storage.Logger().Warn("\n[ksctl] only cloud resources are having replay!\n")
 	// Kubernetes controller
 	err = kubernetes.ConfigureCluster(client)
 	if err != nil {

@@ -18,16 +18,19 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 		//NOTE: this is prone to network failure
 		var clusterDS *civogo.KubernetesCluster
 		currRetryCounter := 0
-		for currRetryCounter < utils.MAX_RETRY_COUNT {
+		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
 			clusterDS, err = civoClient.GetKubernetesCluster(id)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
 			} else {
-				return err
+				break
 			}
 			time.Sleep(5 * time.Second)
+		}
+		if currRetryCounter == utils.MAX_WATCH_RETRY_COUNT {
+			return fmt.Errorf("[civo] failed to get the state of managed cluster")
 		}
 
 		if clusterDS.Ready {
