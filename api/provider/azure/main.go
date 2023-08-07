@@ -2,6 +2,7 @@ package azure
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources"
@@ -61,12 +62,18 @@ type Metadata struct {
 	// purpose: application in managed cluster
 	Apps string
 	Cni  string
+
+	// these are used for managing the state and are the size of the arrays
+	NoCP int
+	NoWP int
+	NoDS int
 }
 
 type AzureProvider struct {
-	ClusterName string `json:"cluster_name"`
-	HACluster   bool   `json:"ha_cluster"`
-	Region      string `json:"region"`
+	ClusterName   string `json:"cluster_name"`
+	HACluster     bool   `json:"ha_cluster"`
+	ResourceGroup string `json:"resource_group"`
+	Region        string `json:"region"`
 	// Spec           util.Machine `json:"spec"`
 	SubscriptionID string `json:"subscription_id"`
 	//Config         *AzureStateCluster     `json:"config"`
@@ -88,7 +95,7 @@ type Credential struct {
 }
 
 var (
-	currCloudState *StateConfiguration
+	azureCloudState *StateConfiguration
 )
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
@@ -117,7 +124,7 @@ func (*AzureProvider) DelSSHKeyPair(state resources.StorageFactory) error {
 }
 
 // DelVM implements resources.CloudFactory.
-func (*AzureProvider) DelVM(state resources.StorageFactory) error {
+func (*AzureProvider) DelVM(state resources.StorageFactory, indexNo int) error {
 	panic("unimplemented")
 }
 
@@ -133,10 +140,10 @@ func (*AzureProvider) GetStateForHACluster(state resources.StorageFactory) (clou
 
 // InitState implements resources.CloudFactory.
 func (*AzureProvider) InitState(state resources.StorageFactory, operation string) error {
-	if currCloudState != nil {
+	if azureCloudState != nil {
 		return errors.New("[FATAL] already initialized")
 	}
-	currCloudState = &StateConfiguration{}
+	azureCloudState = &StateConfiguration{}
 	return nil
 }
 
@@ -156,14 +163,15 @@ func (*AzureProvider) NewNetwork(state resources.StorageFactory) error {
 }
 
 // NewVM implements resources.CloudFactory.
-func (*AzureProvider) NewVM(state resources.StorageFactory) error {
+func (*AzureProvider) NewVM(state resources.StorageFactory, indexNo int) error {
 	return errors.New("unimplemented")
 }
 
 func ReturnAzureStruct(metadata resources.Metadata) *AzureProvider {
 	return &AzureProvider{
-		ClusterName: metadata.ClusterName,
-		Region:      metadata.Region,
+		ClusterName:   metadata.ClusterName,
+		Region:        metadata.Region,
+		ResourceGroup: "", // TODO: add a field for resourse group need to be created, or check the main branch what created it
 	}
 }
 
@@ -208,4 +216,40 @@ func (client *AzureProvider) Application(s string) resources.CloudFactory {
 func (client *AzureProvider) CNI(s string) resources.CloudFactory {
 	client.Metadata.Cni = s
 	return client
+}
+
+// NoOfControlPlane implements resources.CloudFactory.
+func (obj *AzureProvider) NoOfControlPlane(no int, isCreateOperation bool) (int, error) {
+	if !isCreateOperation {
+		return 0, nil
+	}
+	if no >= 3 && (no&1) == 1 {
+		obj.Metadata.NoCP = no
+		return -1, nil
+	}
+	return -1, fmt.Errorf("[azure] constrains for no of controlplane >= 3 and odd number")
+}
+
+// NoOfDataStore implements resources.CloudFactory.
+func (obj *AzureProvider) NoOfDataStore(no int, isCreateOperation bool) (int, error) {
+	if !isCreateOperation {
+		return 0, nil
+	}
+	if no >= 1 && (no&1) == 1 {
+		obj.Metadata.NoDS = no
+		return -1, nil
+	}
+	return -1, fmt.Errorf("[azure] constrains for no of Datastore>= 1 and odd number")
+}
+
+// NoOfWorkerPlane implements resources.CloudFactory.
+func (obj *AzureProvider) NoOfWorkerPlane(no int, isCreateOperation bool) (int, error) {
+	if !isCreateOperation {
+		return 0, nil
+	}
+	if no >= 0 {
+		obj.Metadata.NoWP = no
+		return -1, nil
+	}
+	return -1, fmt.Errorf("[azure] constrains for no of workplane >= 0")
 }

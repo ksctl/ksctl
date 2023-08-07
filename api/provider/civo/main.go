@@ -17,7 +17,7 @@ import (
 type InstanceID struct {
 	ControlNodes     []string `json:"controlnodeids"`
 	WorkerNodes      []string `json:"workernodeids"`
-	LoadBalancerNode []string `json:"loadbalancernodeids"`
+	LoadBalancerNode string   `json:"loadbalancernodeid"`
 	DatabaseNode     []string `json:"databasenodeids"`
 }
 
@@ -88,6 +88,11 @@ type Metadata struct {
 	Apps    string
 	Cni     string
 	Version string
+
+	// these are used for managing the state and are the size of the arrays
+	NoCP int
+	NoWP int
+	NoDS int
 }
 
 type CivoProvider struct {
@@ -210,6 +215,8 @@ func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
 	if err := utils.IsValidName(resName); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
 		return nil
 	}
 	cloud.Metadata.ResName = resName
@@ -223,6 +230,8 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 		cloud.Metadata.Role = resRole
 		return cloud
 	default:
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err("invalid role assumed")
 		return nil
 	}
 }
@@ -230,6 +239,8 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
 	if err := isValidVMSize(size); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
 		return nil
 	}
 	cloud.Metadata.VmType = size
@@ -284,6 +295,102 @@ func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
 		obj.Metadata.Version = ver
 	}
 	return obj
+}
+
+// NoOfControlPlane implements resources.CloudFactory.
+func (obj *CivoProvider) NoOfControlPlane(no int, isCreateOp bool) (int, error) {
+	if !isCreateOp {
+		// delete operation
+		if civoCloudState == nil {
+			return -1, fmt.Errorf("[civo] state init not called!")
+		}
+		if civoCloudState.InstanceIDs.ControlNodes == nil {
+			return -1, fmt.Errorf("[civo] unable to fetch controlplane instanceID")
+		}
+		return len(civoCloudState.InstanceIDs.ControlNodes), nil
+	}
+	if no >= 3 && (no&1) == 1 {
+		obj.Metadata.NoCP = no
+		if civoCloudState == nil {
+			return -1, fmt.Errorf("[civo] state init not called!")
+		}
+		if civoCloudState.InstanceIDs.ControlNodes == nil {
+			civoCloudState.InstanceIDs.ControlNodes = make([]string, no)
+		}
+		if civoCloudState.IPv4.IPControlplane == nil {
+			civoCloudState.IPv4.IPControlplane = make([]string, no)
+		}
+		if civoCloudState.IPv4.PrivateIPControlplane == nil {
+			civoCloudState.IPv4.PrivateIPControlplane = make([]string, no)
+		}
+		return -1, nil
+	}
+	return -1, fmt.Errorf("[civo] constrains for no of controlplane >= 3 and odd number")
+}
+
+// NoOfDataStore implements resources.CloudFactory.
+func (obj *CivoProvider) NoOfDataStore(no int, isCreateOp bool) (int, error) {
+	if !isCreateOp {
+		// delete operation
+		if civoCloudState == nil {
+			return -1, fmt.Errorf("[civo] state init not called!")
+		}
+		if civoCloudState.InstanceIDs.DatabaseNode == nil {
+			return -1, fmt.Errorf("[civo] unable to fetch DataStore instanceID")
+		}
+		return len(civoCloudState.InstanceIDs.DatabaseNode), nil
+	}
+	if no >= 1 && (no&1) == 1 {
+		obj.Metadata.NoDS = no
+		if civoCloudState == nil {
+			return -1, fmt.Errorf("[civo] state init not called!")
+		}
+		if civoCloudState.InstanceIDs.DatabaseNode == nil {
+			civoCloudState.InstanceIDs.DatabaseNode = make([]string, no)
+		}
+		if civoCloudState.IPv4.IPDataStore == nil {
+			civoCloudState.IPv4.IPDataStore = make([]string, no)
+		}
+		if civoCloudState.IPv4.PrivateIPDataStore == nil {
+			civoCloudState.IPv4.PrivateIPDataStore = make([]string, no)
+		}
+
+		return -1, nil
+	}
+	return -1, fmt.Errorf("[civo] constrains for no of Datastore>= 1 and odd number")
+}
+
+// NoOfWorkerPlane implements resources.CloudFactory.
+// NOTE: make it better for wokerplane to save add stuff and remove stuff
+func (obj *CivoProvider) NoOfWorkerPlane(no int, isCreateOp bool) (int, error) {
+	if !isCreateOp {
+		// delete operation
+		if civoCloudState == nil {
+			return -1, fmt.Errorf("[civo] state init not called!")
+		}
+		if civoCloudState.InstanceIDs.WorkerNodes == nil {
+			return -1, fmt.Errorf("[civo] unable to fetch workerplane instanceID")
+		}
+		return len(civoCloudState.InstanceIDs.WorkerNodes), nil
+	}
+	if no >= 0 {
+		obj.Metadata.NoWP = no
+		if civoCloudState == nil {
+			return -1, fmt.Errorf("[civo] state init not called!")
+		}
+		if civoCloudState.InstanceIDs.WorkerNodes == nil {
+			civoCloudState.InstanceIDs.WorkerNodes = make([]string, no)
+		}
+		if civoCloudState.IPv4.IPWorkerPlane == nil {
+			civoCloudState.IPv4.IPWorkerPlane = make([]string, no)
+		}
+		if civoCloudState.IPv4.PrivateIPWorkerPlane == nil {
+			civoCloudState.IPv4.PrivateIPWorkerPlane = make([]string, no)
+		}
+
+		return -1, nil
+	}
+	return -1, fmt.Errorf("[civo] constrains for no of workplane >= 0")
 }
 
 func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {

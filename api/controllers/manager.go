@@ -135,6 +135,9 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 }
 
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) (string, error) {
+	if client.Provider == "local" {
+		return "", fmt.Errorf("ha not supported")
+	}
 
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
@@ -163,6 +166,9 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) (string, error) {
 
+	if client.Provider == "local" {
+		return "", fmt.Errorf("ha not supported")
+	}
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
