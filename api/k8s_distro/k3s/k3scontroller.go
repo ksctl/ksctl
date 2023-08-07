@@ -32,7 +32,7 @@ type StateConfiguration struct {
 }
 
 type K3sDistro struct {
-	Version string // TODO: Add k3s version support
+	Version string // FIXME: Add k3s version support
 	// it will be used for SSH
 	SSHInfo utils.SSHCollection
 }

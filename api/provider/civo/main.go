@@ -58,7 +58,7 @@ type StateConfiguration struct {
 	NetworkIDs  NetworkID  `json:"networkids"`
 	IPv4        InstanceIP `json:"ipv4_addr"`
 
-	KubernetesDistro string `json:"k8s_distro"`
+	KubernetesDistro string `json:"k8s_distro"` // FIXME: its missing from the state file
 	KubernetesVer    string `json:"k8s_version"`
 }
 
