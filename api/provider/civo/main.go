@@ -124,11 +124,11 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 			UserName:       civoCloudState.SSHUser,
 		},
 		Metadata: cloud_control_res.Metadata{
-			ClusterName:   client.ClusterName,
-			Provider:      "civo",
-			Region:        client.Region,
-			ResourceGroup: nil, //azure specific
-			VPC:           nil, // aws specific // TODO: CHECK: if its required
+			ClusterName: client.ClusterName,
+			Provider:    "civo",
+			Region:      client.Region,
+			ClusterType: clusterType,
+			ClusterDir:  clusterDirName,
 		},
 		// Public IPs
 		IPv4ControlPlanes: civoCloudState.IPv4.IPControlplane,

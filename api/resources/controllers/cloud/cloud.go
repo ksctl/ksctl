@@ -16,11 +16,11 @@ type CloudResourceState struct {
 }
 
 type Metadata struct {
-	ClusterName   string
-	Region        string  // for the civo
-	ResourceGroup *string // for azure // CHECK: if its required
-	VPC           *string // for aws // CHECK: if its required
-	Provider      string
+	ClusterName string
+	Region      string
+	ClusterDir  string
+	ClusterType string
+	Provider    string
 }
 
 type SSHInfo struct {

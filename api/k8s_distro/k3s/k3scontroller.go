@@ -1,83 +1,102 @@
 package k3s
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 type Instances struct {
-	ControlPlanes []string
-	WorkerPlanes  []string
-	DataStores    []string
-	Loadbalancer  string
+	ControlPlanes []string `json:"controlplanes"`
+	WorkerPlanes  []string `json:"workerplanes"`
+	DataStores    []string `json:"datastores"`
+	Loadbalancer  string   `json:"loadbalancer"`
 }
 
 type StateConfiguration struct {
-	K3sToken   string
-	SSHUser    string
-	PublicIPs  Instances
-	PrivateIPs Instances
+	K3sToken          string        `json:"k3s_token"`
+	DataStoreEndPoint string        `json:"datastore_endpoint"`
+	SSHInfo           cloud.SSHInfo `json:"cloud_ssh_info"` // contains data from cloud
+	PublicIPs         Instances     `json:"cloud_public_ips"`
+	PrivateIPs        Instances     `json:"cloud_private_ips"`
+
+	ClusterName string `json:"cluster_name"`
+	Region      string `json:"region"`
+	ClusterType string `json:"cluster_type"`
+	ClusterDir  string `json:"cluster_dir"`
+	Provider    string `json:"provider"`
 }
 
 type K3sDistro struct {
-	Version string
+	Version string // TODO: Add k3s version support
+	// it will be used for SSH
+	SSHInfo utils.SSHCollection
 }
 
-// ConfigureControlPlane implements resources.DistroFactory.
-func (*K3sDistro) ConfigureControlPlane(noOfCP int, state resources.StorageFactory) {
-	fmt.Printf("[K3s] Configuring Controlplane[%v]....\n", noOfCP)
-}
+const (
+	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
+	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0755)
+	STATE_FILE_NAME              = string("k8s-state.json")
+	KUBECONFIG_FILE_NAME         = string("kubeconfig")
+)
 
-// ConfigureDataStore implements resources.DistroFactory.
-func (*K3sDistro) ConfigureDataStore(state resources.StorageFactory) {
-	fmt.Println("[K3s] Configuring DataStore....")
-}
-
-// ConfigureLoadbalancer implements resources.DistroFactory.
-func (k8s *K3sDistro) ConfigureLoadbalancer(state resources.StorageFactory) {
-	fmt.Println("[K3s] Configuring Loadbalancer....")
-}
-
-// DestroyWorkerPlane implements resources.DistroFactory.
-func (*K3sDistro) DestroyWorkerPlane(state resources.StorageFactory) {
-	panic("unimplemented")
-}
-
-// GetKubeConfig implements resources.DistroFactory.
-func (*K3sDistro) GetKubeConfig(state resources.StorageFactory) (string, error) {
-	fmt.Println("[K3s] Kubeconfig fetch....")
-	return "{}", nil
+func scriptKUBECONFIG() string {
+	return `#!/bin/bash
+cat /etc/rancher/k3s/k3s.yaml`
 }
 
 // InitState implements resources.DistroFactory.
 // try to achieve deepCopy
-func (*K3sDistro) InitState(cloudState cloud.CloudResourceState) {
+func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory) {
 	// add the nil check here as well
+	// TODO: first check if the cluster already exist and then add worerkplane that adding more woerkplane feature
 	k8sState = &StateConfiguration{}
+
 	k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
-	//.....
-	fmt.Println("[K3s] Initialized K3s from cloudprovider", k8sState)
+	k8sState.PrivateIPs.ControlPlanes = cloudState.PrivateIPv4ControlPlanes
+
+	k8sState.PublicIPs.DataStores = cloudState.IPv4DataStores
+	k8sState.PrivateIPs.DataStores = cloudState.PrivateIPv4DataStores
+
+	k8sState.PublicIPs.WorkerPlanes = cloudState.IPv4WorkerPlanes
+
+	k8sState.PublicIPs.Loadbalancer = cloudState.IPv4LoadBalancer
+	k8sState.PrivateIPs.Loadbalancer = cloudState.PrivateIPv4LoadBalancer
+
+	k8sState.DataStoreEndPoint = ""
+	k8sState.SSHInfo = cloudState.SSHState
+	k8sState.K3sToken = ""
+
+	k8sState.ClusterName = cloudState.Metadata.ClusterName
+	k8sState.Region = cloudState.Metadata.Region
+	k8sState.Provider = cloudState.Metadata.Provider
+	k8sState.ClusterDir = cloudState.Metadata.ClusterDir
+	k8sState.ClusterType = cloudState.Metadata.ClusterType
+
+	k3s.SSHInfo.LocPrivateKey(k8sState.SSHInfo.PathPrivateKey)
+	k3s.SSHInfo.Username(k8sState.SSHInfo.UserName)
+
+	a, _ := json.MarshalIndent(k8sState, "", " ")
+	fmt.Println(string(a))
+
+	storage.Logger().Success("[k3s] Initialized from Cloud")
 }
 
 // InstallApplication implements resources.DistroFactory.
-func (*K3sDistro) InstallApplication(state resources.StorageFactory) {
+func (*K3sDistro) InstallApplication(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
-
-// JoinWorkerplane implements resources.DistroFactory.
-func (*K3sDistro) JoinWorkerplane(state resources.StorageFactory) error {
-	fmt.Println("[K3s] Adding WorkerPlane....")
-	return nil
-}
-
-// TODO: Add the SSH functionality here
 
 var (
 	k8sState *StateConfiguration
 )
 
 func ReturnK3sStruct() *K3sDistro {
-	return &K3sDistro{}
+	return &K3sDistro{
+		SSHInfo: &utils.SSHPayload{},
+	}
 }

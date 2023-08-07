@@ -15,7 +15,21 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 
 	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
-		clusterDS, _ := civoClient.GetKubernetesCluster(id)
+		//NOTE: this is prone to network failure
+		var clusterDS *civogo.KubernetesCluster
+		currRetryCounter := 0
+		for currRetryCounter < utils.MAX_RETRY_COUNT {
+			var err error
+			clusterDS, err = civoClient.GetKubernetesCluster(id)
+			if err != nil {
+				currRetryCounter++
+				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
+			} else {
+				return err
+			}
+			time.Sleep(5 * time.Second)
+		}
+
 		if clusterDS.Ready {
 			fmt.Println("[civo] Booted Instance", obj.Metadata.ResName)
 			civoCloudState.IsCompleted = true

@@ -9,7 +9,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int) error {
+func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int, creationMode bool) error {
 
 	var instID string = ""
 	var pubIP string = ""
@@ -37,8 +37,9 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int)
 		// instance id present
 		if len(pubIP) != 0 && len(pvIP) != 0 {
 			// all info present
-
-			storage.Logger().Success("[skip] vm found", instID)
+			if creationMode {
+				storage.Logger().Success("[skip] vm found", instID)
+			}
 			return nil
 		} else {
 			// either one or > 1 info are absent
@@ -46,7 +47,10 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int)
 			return err
 		}
 	}
-	return fmt.Errorf("[civo] not found or [skip] already deleted vm role:", obj.Metadata.Role)
+	if creationMode {
+		return fmt.Errorf("[civo] vm not found")
+	}
+	return fmt.Errorf("[skip] already deleted vm having role:", obj.Metadata.Role)
 
 }
 
@@ -190,15 +194,26 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID string, idx int) error {
 	for {
-		getInstance, err := civoClient.GetInstance(instID)
-		if err != nil {
-			return err
+		//NOTE: this is prone to network failure
+
+		currRetryCounter := 0
+		var getInst *civogo.Instance
+		for currRetryCounter < utils.MAX_RETRY_COUNT {
+			var err error
+			getInst, err = civoClient.GetInstance(instID)
+			if err != nil {
+				currRetryCounter++
+				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
+			} else {
+				return err
+			}
+			time.Sleep(5 * time.Second)
 		}
 
-		if getInstance.Status == "ACTIVE" {
+		if getInst.Status == "ACTIVE" {
 
-			pubIP := getInstance.PublicIP
-			pvIP := getInstance.PrivateIP
+			pubIP := getInst.PublicIP
+			pvIP := getInst.PrivateIP
 
 			switch obj.Metadata.Role {
 			case utils.ROLE_CP:
