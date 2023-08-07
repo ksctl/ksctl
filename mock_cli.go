@@ -60,6 +60,8 @@ func main() {
 [3] Create Managed
 [4] Delete Managed
 [5] Get Clusters
+[6] add workerplane node(s)
+[7] delete workerplane node(s)
 
 Your Choice`)
 	_, err := fmt.Scanf("%d", &choice)
@@ -110,6 +112,24 @@ Your Choice`)
 
 	case 5:
 		stat, err := controller.GetCluster(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
+	case 6:
+		cmd.Client.Metadata.IsHA = true
+
+		stat, err := controller.AddWorkerPlaneNode(&cmd.Client)
+		if err != nil {
+			cmd.Client.Storage.Logger().Err(err.Error())
+			return
+		}
+		cmd.Client.Storage.Logger().Success(stat)
+	case 7:
+		cmd.Client.Metadata.IsHA = true
+
+		stat, err := controller.DelWorkerPlaneNode(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())
 			return

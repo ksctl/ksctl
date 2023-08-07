@@ -14,4 +14,7 @@ type Controller interface {
 
 	CreateHACluster(*resources.KsctlClient) (string, error)
 	DeleteHACluster(*resources.KsctlClient) (string, error)
+
+	AddWorkerPlaneNode(*resources.KsctlClient) (string, error)
+	DelWorkerPlaneNode(*resources.KsctlClient) (string, error)
 }
