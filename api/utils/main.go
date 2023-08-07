@@ -31,25 +31,56 @@ import (
 // }
 
 type SSHPayload struct {
-	UserName       string `json:"user_name"`
-	PathPrivateKey string `json:"path_private_key"`
-	PublicIP       string `json:"public_ip"`
-	Output         string `json:"output"`
+	UserName       string
+	PathPrivateKey string
+	PublicIP       string
+	Output         string
+
+	flag     int
+	script   string
+	fastMode bool
+}
+
+func (ssh *SSHPayload) Username(s string) {
+	ssh.UserName = s
+}
+
+func (ssh *SSHPayload) LocPrivateKey(s string) {
+	ssh.PathPrivateKey = s
+}
+
+func (ssh *SSHPayload) GetOutput() string {
+	out := ssh.Output
+	ssh.Output = ""
+	return out
+}
+
+func (ssh *SSHPayload) IPv4(ip string) SSHCollection {
+	ssh.PublicIP = ip
+	return ssh
 }
 
 type SSHCollection interface {
-	SSHExecute(int, *string, bool)
+	SSHExecute(resources.StorageFactory) error
+	Flag(int) SSHCollection
+	Script(string) SSHCollection
+	FastMode(bool) SSHCollection
+	Username(string)
+	LocPrivateKey(string)
+	GetOutput() string
+	IPv4(ip string) SSHCollection
 }
 
 const (
-	SSH_PAUSE_IN_SECONDS = 20
-	MAX_RETRY_COUNT      = 8
-	CREDENTIAL_PATH      = int(0)
-	CLUSTER_PATH         = int(1)
-	SSH_PATH             = int(2)
-	OTHER_PATH           = int(3)
-	EXEC_WITH_OUTPUT     = int(1)
-	EXEC_WITHOUT_OUTPUT  = int(0)
+	SSH_PAUSE_IN_SECONDS  = 20
+	MAX_RETRY_COUNT       = 8
+	MAX_WATCH_RETRY_COUNT = 4
+	CREDENTIAL_PATH       = int(0)
+	CLUSTER_PATH          = int(1)
+	SSH_PATH              = int(2)
+	OTHER_PATH            = int(3)
+	EXEC_WITH_OUTPUT      = int(1)
+	EXEC_WITHOUT_OUTPUT   = int(0)
 
 	ROLE_CP = string("controlplane")
 	ROLE_WP = string("workerplane")
@@ -291,7 +322,24 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 	return fingerprint[1], nil
 }
 
-func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, flag int, script string, fastMode bool) error {
+func (ssh *SSHPayload) Flag(execMethod int) SSHCollection {
+	if execMethod == EXEC_WITH_OUTPUT || execMethod == EXEC_WITHOUT_OUTPUT {
+		ssh.flag = execMethod
+		return ssh
+	}
+	return nil
+}
+func (ssh *SSHPayload) Script(s string) SSHCollection {
+	ssh.script = s
+	return ssh
+}
+
+func (ssh *SSHPayload) FastMode(mode bool) SSHCollection {
+	ssh.fastMode = mode
+	return ssh
+}
+
+func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error {
 
 	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
 	if err != nil {
@@ -330,7 +378,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, flag 
 				return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
 			})}
 
-	if !fastMode {
+	if !sshPayload.fastMode {
 		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
 	}
 
@@ -364,11 +412,11 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, flag 
 	var buff bytes.Buffer
 
 	sshPayload.Output = ""
-	if flag == EXEC_WITH_OUTPUT {
+	if sshPayload.flag == EXEC_WITH_OUTPUT {
 		session.Stdout = &buff
 	}
-	err = session.Run(script)
-	if flag == EXEC_WITH_OUTPUT {
+	err = session.Run(sshPayload.script)
+	if sshPayload.flag == EXEC_WITH_OUTPUT {
 		sshPayload.Output = buff.String()
 	}
 	if err != nil {

@@ -8,9 +8,16 @@ import (
 )
 
 type KsctlClient struct {
-	Cloud   CloudFactory
-	Distro  DistroFactory
+	// Cloud is the CloudProvider's factory interface
+	Cloud CloudFactory
+
+	// Distro is the Distrobution's factory interface
+	Distro DistroFactory
+
+	// Storage is the Storage's factory interface
 	Storage StorageFactory
+
+	// Metadata is used by the cloudController and manager to use data from cli
 	Metadata
 }
 
@@ -84,29 +91,29 @@ type CloudFactory interface {
 }
 
 type KubernetesFactory interface {
-	InitState(cloud.CloudResourceState)
+	InitState(cloud.CloudResourceState, StorageFactory)
 
 	// it recieves no of controlplane to which we want to configure
 	// NOTE: make the first controlplane return server token as possible
-	ConfigureControlPlane(int, StorageFactory)
+	ConfigureControlPlane(int, StorageFactory) error
 	// DestroyControlPlane(StorageFactory)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	JoinWorkerplane(StorageFactory) error
-	DestroyWorkerPlane(StorageFactory)
+	JoinWorkerplane(int, StorageFactory) error
+	DestroyWorkerPlane(StorageFactory) error
 
-	ConfigureLoadbalancer(StorageFactory)
+	ConfigureLoadbalancer(StorageFactory) error
 	// DestroyLoadbalancer(StorageFactory)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
-	ConfigureDataStore(StorageFactory)
+	ConfigureDataStore(int, StorageFactory) error
 	// DestroyDataStore(StorageFactory)  // NOTE: [FEATURE] destroy not available
 	// only able to remove the VirtualMachine
 
 	// meant to be used for the HA clusters
-	InstallApplication(StorageFactory)
+	InstallApplication(StorageFactory) error
 
-	GetKubeConfig(StorageFactory) (string, error)
+	//GetKubeConfig(StorageFactory) (string, error)
 }
 
 // FEATURE: non kubernetes distrobutions like nomad

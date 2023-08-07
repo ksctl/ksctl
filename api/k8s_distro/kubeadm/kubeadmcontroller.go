@@ -26,22 +26,22 @@ type KubeadmDistro struct {
 }
 
 // ConfigureControlPlane implements resources.DistroFactory.
-func (*KubeadmDistro) ConfigureControlPlane(noOfCP int, state resources.StorageFactory) {
+func (*KubeadmDistro) ConfigureControlPlane(noOfCP int, state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
 // ConfigureDataStore implements resources.DistroFactory.
-func (*KubeadmDistro) ConfigureDataStore(state resources.StorageFactory) {
+func (*KubeadmDistro) ConfigureDataStore(int, resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
 // ConfigureLoadbalancer implements resources.DistroFactory.
-func (*KubeadmDistro) ConfigureLoadbalancer(state resources.StorageFactory) {
+func (*KubeadmDistro) ConfigureLoadbalancer(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
 // DestroyWorkerPlane implements resources.DistroFactory.
-func (*KubeadmDistro) DestroyWorkerPlane(state resources.StorageFactory) {
+func (*KubeadmDistro) DestroyWorkerPlane(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
@@ -51,17 +51,17 @@ func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (string, err
 }
 
 // InitState implements resources.DistroFactory.
-func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState) {
+func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory) {
 	k8sState = &StateConfiguration{}
 }
 
 // InstallApplication implements resources.DistroFactory.
-func (*KubeadmDistro) InstallApplication(state resources.StorageFactory) {
+func (*KubeadmDistro) InstallApplication(state resources.StorageFactory) error {
 	panic("unimplemented")
 }
 
 // JoinWorkerplane implements resources.DistroFactory.
-func (*KubeadmDistro) JoinWorkerplane(state resources.StorageFactory) error {
+func (*KubeadmDistro) JoinWorkerplane(int, resources.StorageFactory) error {
 	panic("unimplemented")
 }
 

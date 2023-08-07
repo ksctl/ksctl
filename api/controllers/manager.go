@@ -147,21 +147,29 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", err
 	}
 
-	kubernetes.HydrateK8sDistro(client)
+	err := kubernetes.HydrateK8sDistro(client)
+	if err != nil {
+		return "", err
+	}
+
+	client.Storage.Logger().Warn("[ksctl] only cloud resources are having replay!")
 
 	cloudResErr := cloud.CreateHACluster(client)
 	if cloudResErr != nil {
 		return "", cloudResErr
 	}
+	// Cloud done
+	var payload cloudController.CloudResourceState
+	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+	// transfer the state
+	client.Distro.InitState(payload, client.Storage)
+
+	// Kubernetes controller
+	err = kubernetes.ConfigureCluster(client)
+	if err != nil {
+		return "", err
+	}
 	return "[ksctl] created HA cluster", nil
-	// // Cloud done
-	// var payload cloudController.CloudResourceState
-	// payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
-	// // transfer the state
-	// client.Distro.InitState(payload)
-	//
-	// // Kubernetes controller
-	// kubernetes.ConfigureCluster(client)
 }
 
 func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) (string, error) {
@@ -196,7 +204,11 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return "", err
 	}
 
-	kubernetes.HydrateK8sDistro(client)
+	//TODO: Check if we need to do anything when deleting
+	//err := kubernetes.HydrateK8sDistro(client)
+	//if err != nil {
+	//	return "", err
+	//}
 
 	cloudResErr := cloud.DeleteHACluster(client)
 	if cloudResErr != nil {
