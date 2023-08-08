@@ -93,7 +93,7 @@ type CloudFactory interface {
 }
 
 type KubernetesFactory interface {
-	InitState(cloud.CloudResourceState, StorageFactory) error
+	InitState(cloud.CloudResourceState, StorageFactory, string) error
 
 	// it recieves no of controlplane to which we want to configure
 	// NOTE: make the first controlplane return server token as possible

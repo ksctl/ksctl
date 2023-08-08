@@ -26,6 +26,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 		return err
 	}
 
+	storage.Logger().Note("[k3s] fetching k3s token")
 	k8sState.K3sToken = strings.Trim(k3s.SSHInfo.GetOutput(), "\n")
 
 	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
@@ -62,9 +63,9 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		}
 
 		if noOfCP+1 == len(k8sState.PublicIPs.ControlPlanes) {
-			// fetch kubeconfig
 
-			err := k3s.SSHInfo.Flag(utils.EXEC_WITH_OUTPUT).Script(scriptKUBECONFIG()).
+			storage.Logger().Note("[k3s] fetching kubeconfig")
+			err = k3s.SSHInfo.Flag(utils.EXEC_WITH_OUTPUT).Script(scriptKUBECONFIG()).
 				IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 				FastMode(true).SSHExecute(storage)
 
@@ -79,6 +80,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 			}
 			printKubeconfig(storage, "create")
 		}
+
 	}
 	storage.Logger().Success("[k3s] configured ControlPlane", string(noOfCP))
 

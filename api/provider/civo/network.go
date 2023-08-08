@@ -1,8 +1,10 @@
 package civo
 
 import (
+	"fmt"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	"time"
 )
 
 // NewNetwork implements resources.CloudFactory.
@@ -40,10 +42,23 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 	if len(civoCloudState.NetworkIDs.NetworkID) == 0 {
 		storage.Logger().Success("[skip] network already deleted")
 	} else {
-		_, err := civoClient.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
-		if err != nil {
-			return err
+
+		currRetryCounter := 0
+		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
+			var err error
+			_, err = civoClient.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
+			if err != nil {
+				currRetryCounter++
+				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
+			} else {
+				break
+			}
+			time.Sleep(5 * time.Second)
 		}
+		if currRetryCounter == utils.MAX_WATCH_RETRY_COUNT {
+			return fmt.Errorf("[civo] failed to delete network timeout")
+		}
+
 		civoCloudState.NetworkIDs.NetworkID = ""
 		if err := saveStateHelper(storage, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
 			return err
