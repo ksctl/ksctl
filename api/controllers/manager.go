@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/kubesimplify/ksctl/api/k8s_distro/universal"
 	"strings"
 
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
@@ -161,8 +162,11 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	// Cloud done
 	var payload cloudController.CloudResourceState
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
-	// transfer the state
-	client.Distro.InitState(payload, client.Storage)
+
+	err = client.Distro.InitState(payload, client.Storage)
+	if err != nil {
+		return "", err
+	}
 
 	client.Storage.Logger().Warn("\n[ksctl] only cloud resources are having replay!\n")
 	// Kubernetes controller
@@ -222,10 +226,38 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	if !client.IsHA {
 		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
 	}
-	// TODO: implement me
+	if err := cloud.HydrateCloud(client, "get"); err != nil {
+		return "", err
+	}
+
+	err := kubernetes.HydrateK8sDistro(client)
+	if err != nil {
+		return "", err
+	}
+
+	currWP, cloudResErr := cloud.AddWorkerNodes(client)
+	if cloudResErr != nil {
+		return "", cloudResErr
+	}
+
+	// Cloud done
+	var payload cloudController.CloudResourceState
+	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+	// transfer the state
+
+	err = client.Distro.InitState(payload, client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	client.Storage.Logger().Warn("\n[ksctl] only cloud resources are having replay!\n")
+	// Kubernetes controller
+	err = kubernetes.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
+	if err != nil {
+		return "", err
+	}
 
 	return "[ksctl] added worker node(s)", nil
-
 }
 
 func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
@@ -258,7 +290,41 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		}
 	}
 
-	// TODO: implement me
+	if err := cloud.HydrateCloud(client, "get"); err != nil {
+		return "", err
+	}
 
-	return "deleted worker node(s)", nil
+	err := kubernetes.HydrateK8sDistro(client)
+	if err != nil {
+		return "", err
+	}
+
+	hostnames, err := cloud.DelWorkerNodes(client)
+	if err != nil {
+		return "", err
+	}
+
+	// Cloud done
+	var payload cloudController.CloudResourceState
+	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+	// transfer the state
+
+	err = client.Distro.InitState(payload, client.Storage)
+	if err != nil {
+		return "", err
+	}
+	// here it stored the required information back to the kubernetes state
+
+	kubeconfigPath, err := client.Distro.GetKubeConfig(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	for _, hostname := range hostnames {
+		if err := universal.DeleteNode(client.Storage, hostname, kubeconfigPath); err != nil {
+			return "", err
+		}
+	}
+
+	return "[ksctl] deleted worker node(s)", nil
 }

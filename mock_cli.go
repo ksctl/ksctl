@@ -5,7 +5,6 @@ import (
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/k8s_distro/universal"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers"
 )
@@ -63,7 +62,6 @@ func main() {
 [5] Get Clusters
 [6] add workerplane node(s)
 [7] delete workerplane node(s)
-[8] delete a specific node
 
 Your Choice`)
 	_, err := fmt.Scanf("%d", &choice)
@@ -138,12 +136,12 @@ Your Choice`)
 		}
 		cmd.Client.Storage.Logger().Success(stat)
 
-	case 8:
-		err := universal.DeleteNode(cmd.Client.Storage, "dummy-name-vm-wp-0", "/home/dipankar/.ksctl/config/civo/ha/dummy-name LON1/kubeconfig")
-		if err != nil {
-			cmd.Client.Storage.Logger().Err(err.Error())
-			return
-		}
-		cmd.Client.Storage.Logger().Success("done")
+		// case 8:
+		// 	err := universal.DeleteNode(cmd.Client.Storage, "dummy-name-vm-wp-0", "/home/dipankar/.ksctl/config/civo/ha/dummy-name LON1/kubeconfig")
+		// 	if err != nil {
+		// 		cmd.Client.Storage.Logger().Err(err.Error())
+		// 		return
+		// 	}
+		// 	cmd.Client.Storage.Logger().Success("config")
 	}
 }

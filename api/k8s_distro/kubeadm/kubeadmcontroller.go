@@ -41,7 +41,7 @@ func (*KubeadmDistro) ConfigureLoadbalancer(state resources.StorageFactory) erro
 }
 
 // DestroyWorkerPlane implements resources.DistroFactory.
-func (*KubeadmDistro) DestroyWorkerPlane(state resources.StorageFactory) error {
+func (*KubeadmDistro) DestroyWorkerPlane(state resources.StorageFactory) ([]string, error) {
 	panic("unimplemented")
 }
 
@@ -51,8 +51,9 @@ func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (string, err
 }
 
 // InitState implements resources.DistroFactory.
-func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory) {
+func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory) error {
 	k8sState = &StateConfiguration{}
+	return nil
 }
 
 // InstallApplication implements resources.DistroFactory.

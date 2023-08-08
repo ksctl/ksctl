@@ -159,11 +159,6 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 
 func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation string) error {
 
-	// if len(clusterDirName) != 0 {
-	// 	// already has been called
-	// 	return fmt.Errorf("[civo] already initialized")
-	// }
-
 	clusterDirName = obj.ClusterName + " " + obj.Region
 	if obj.HACluster {
 		clusterType = "ha"
@@ -188,10 +183,18 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 		} else {
 			storage.Logger().Note("Fresh state!!")
 			civoCloudState = &StateConfiguration{
-				IsCompleted: false,
-				Region:      obj.Region,
-				ClusterName: obj.ClusterName,
+				IsCompleted:      false,
+				Region:           obj.Region,
+				ClusterName:      obj.ClusterName,
+				KubernetesDistro: obj.K8sName,
+				KubernetesVer:    obj.K8sVersion,
 			}
+		}
+
+	case "get":
+
+		if errLoadState != nil {
+			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 
 	case "delete":
@@ -313,9 +316,14 @@ func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
 	return obj
 }
 
+func (*CivoProvider) GetHostNameAllWorkerNode() []string {
+	hostnames := civoCloudState.HostNames.WorkerNodes
+	return hostnames
+}
+
 // NoOfControlPlane implements resources.CloudFactory.
-func (obj *CivoProvider) NoOfControlPlane(no int, isCreateOp bool) (int, error) {
-	if !isCreateOp {
+func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
+	if !setter {
 		// delete operation
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
@@ -330,25 +338,22 @@ func (obj *CivoProvider) NoOfControlPlane(no int, isCreateOp bool) (int, error) 
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
 		}
-		if civoCloudState.InstanceIDs.ControlNodes == nil {
-			civoCloudState.InstanceIDs.ControlNodes = make([]string, no)
-		}
-		if civoCloudState.IPv4.IPControlplane == nil {
-			civoCloudState.IPv4.IPControlplane = make([]string, no)
-		}
-		if civoCloudState.IPv4.PrivateIPControlplane == nil {
-			civoCloudState.IPv4.PrivateIPControlplane = make([]string, no)
-		}
 
-		civoCloudState.HostNames.ControlNodes = make([]string, no)
+		currLen := len(civoCloudState.InstanceIDs.ControlNodes)
+		if currLen == 0 {
+			civoCloudState.InstanceIDs.ControlNodes = make([]string, no)
+			civoCloudState.IPv4.IPControlplane = make([]string, no)
+			civoCloudState.IPv4.PrivateIPControlplane = make([]string, no)
+			civoCloudState.HostNames.ControlNodes = make([]string, no)
+		}
 		return -1, nil
 	}
 	return -1, fmt.Errorf("[civo] constrains for no of controlplane >= 3 and odd number")
 }
 
 // NoOfDataStore implements resources.CloudFactory.
-func (obj *CivoProvider) NoOfDataStore(no int, isCreateOp bool) (int, error) {
-	if !isCreateOp {
+func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
+	if !setter {
 		// delete operation
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
@@ -360,20 +365,19 @@ func (obj *CivoProvider) NoOfDataStore(no int, isCreateOp bool) (int, error) {
 	}
 	if no >= 1 && (no&1) == 1 {
 		obj.Metadata.NoDS = no
+
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
 		}
-		if civoCloudState.InstanceIDs.DatabaseNode == nil {
+
+		currLen := len(civoCloudState.InstanceIDs.DatabaseNode)
+		if currLen == 0 {
 			civoCloudState.InstanceIDs.DatabaseNode = make([]string, no)
-		}
-		if civoCloudState.IPv4.IPDataStore == nil {
 			civoCloudState.IPv4.IPDataStore = make([]string, no)
-		}
-		if civoCloudState.IPv4.PrivateIPDataStore == nil {
 			civoCloudState.IPv4.PrivateIPDataStore = make([]string, no)
+			civoCloudState.HostNames.DatabaseNode = make([]string, no)
 		}
 
-		civoCloudState.HostNames.DatabaseNode = make([]string, no)
 		return -1, nil
 	}
 	return -1, fmt.Errorf("[civo] constrains for no of Datastore>= 1 and odd number")
@@ -381,8 +385,8 @@ func (obj *CivoProvider) NoOfDataStore(no int, isCreateOp bool) (int, error) {
 
 // NoOfWorkerPlane implements resources.CloudFactory.
 // NOTE: make it better for wokerplane to save add stuff and remove stuff
-func (obj *CivoProvider) NoOfWorkerPlane(no int, isCreateOp bool) (int, error) {
-	if !isCreateOp {
+func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
+	if !setter {
 		// delete operation
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
@@ -397,17 +401,40 @@ func (obj *CivoProvider) NoOfWorkerPlane(no int, isCreateOp bool) (int, error) {
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
 		}
-		if civoCloudState.InstanceIDs.WorkerNodes == nil {
-			civoCloudState.InstanceIDs.WorkerNodes = make([]string, no)
-		}
-		if civoCloudState.IPv4.IPWorkerPlane == nil {
-			civoCloudState.IPv4.IPWorkerPlane = make([]string, no)
-		}
-		if civoCloudState.IPv4.PrivateIPWorkerPlane == nil {
-			civoCloudState.IPv4.PrivateIPWorkerPlane = make([]string, no)
-		}
+		currLen := len(civoCloudState.InstanceIDs.WorkerNodes)
 
-		civoCloudState.HostNames.WorkerNodes = make([]string, no)
+		newLen := no
+
+		if currLen == 0 {
+			civoCloudState.InstanceIDs.WorkerNodes = make([]string, no)
+			civoCloudState.IPv4.IPWorkerPlane = make([]string, no)
+			civoCloudState.IPv4.PrivateIPWorkerPlane = make([]string, no)
+			civoCloudState.HostNames.WorkerNodes = make([]string, no)
+		} else {
+			if currLen == newLen {
+				// no changes needed
+				return -1, nil
+			} else if currLen < newLen {
+				// for upscaling
+				for i := currLen; i < newLen; i++ {
+					civoCloudState.InstanceIDs.WorkerNodes = append(civoCloudState.InstanceIDs.WorkerNodes, "")
+					civoCloudState.IPv4.IPWorkerPlane = append(civoCloudState.IPv4.IPWorkerPlane, "")
+					civoCloudState.IPv4.PrivateIPWorkerPlane = append(civoCloudState.IPv4.PrivateIPWorkerPlane, "")
+					civoCloudState.HostNames.WorkerNodes = append(civoCloudState.HostNames.WorkerNodes, "")
+				}
+			} else {
+				// for downscaling
+				civoCloudState.InstanceIDs.WorkerNodes = civoCloudState.InstanceIDs.WorkerNodes[:newLen]
+				civoCloudState.IPv4.IPWorkerPlane = civoCloudState.IPv4.IPWorkerPlane[:newLen]
+				civoCloudState.IPv4.PrivateIPWorkerPlane = civoCloudState.IPv4.PrivateIPWorkerPlane[:newLen]
+				civoCloudState.HostNames.WorkerNodes = civoCloudState.HostNames.WorkerNodes[:newLen]
+			}
+		}
+		path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+
+		if err := saveStateHelper(storage, path); err != nil {
+			return -1, err
+		}
 
 		return -1, nil
 	}

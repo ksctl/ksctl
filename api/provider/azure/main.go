@@ -82,6 +82,11 @@ type AzureProvider struct {
 	Metadata
 }
 
+func (*AzureProvider) GetHostNameAllWorkerNode() []string {
+	//TODO implement me
+	panic("implement me")
+}
+
 // Version implements resources.CloudFactory.
 func (*AzureProvider) Version(string) resources.CloudFactory {
 	panic("unimplemented")
@@ -243,7 +248,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, isCreateOperation bool) (int, er
 }
 
 // NoOfWorkerPlane implements resources.CloudFactory.
-func (obj *AzureProvider) NoOfWorkerPlane(no int, isCreateOperation bool) (int, error) {
+func (obj *AzureProvider) NoOfWorkerPlane(factory resources.StorageFactory, no int, isCreateOperation bool) (int, error) {
 	if !isCreateOperation {
 		return 0, nil
 	}

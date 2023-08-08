@@ -85,13 +85,15 @@ type CloudFactory interface {
 	Version(string) CloudFactory
 
 	// for the state of instances created and destroyed
-	NoOfWorkerPlane(int, bool) (int, error)
+	NoOfWorkerPlane(StorageFactory, int, bool) (int, error)
 	NoOfControlPlane(int, bool) (int, error)
 	NoOfDataStore(int, bool) (int, error)
+
+	GetHostNameAllWorkerNode() []string
 }
 
 type KubernetesFactory interface {
-	InitState(cloud.CloudResourceState, StorageFactory)
+	InitState(cloud.CloudResourceState, StorageFactory) error
 
 	// it recieves no of controlplane to which we want to configure
 	// NOTE: make the first controlplane return server token as possible
@@ -100,7 +102,7 @@ type KubernetesFactory interface {
 	// only able to remove the VirtualMachine
 
 	JoinWorkerplane(int, StorageFactory) error
-	DestroyWorkerPlane(StorageFactory) error
+	//DestroyWorkerPlane(StorageFactory) ([]string, error)
 
 	ConfigureLoadbalancer(StorageFactory) error
 	// DestroyLoadbalancer(StorageFactory)  // NOTE: [FEATURE] destroy not available
@@ -113,7 +115,8 @@ type KubernetesFactory interface {
 	// meant to be used for the HA clusters
 	InstallApplication(StorageFactory) error
 
-	//GetKubeConfig(StorageFactory) (string, error)
+	// GetKubeConfig returns the path for kubeconfig
+	GetKubeConfig(StorageFactory) (string, error)
 }
 
 // FEATURE: non kubernetes distrobutions like nomad
