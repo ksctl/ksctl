@@ -51,7 +51,7 @@ func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (string, err
 }
 
 // InitState implements resources.DistroFactory.
-func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory) error {
+func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory, string) error {
 	k8sState = &StateConfiguration{}
 	return nil
 }

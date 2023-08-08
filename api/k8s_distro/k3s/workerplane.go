@@ -7,6 +7,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
+// fixme: NOT WORKING !!!!!!!!!!!!!
 // JoinWorkerplane implements resources.DistroFactory.
 func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
 	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
@@ -27,13 +28,6 @@ func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory)
 
 	return nil
 }
-
-//
-//// DestroyWorkerPlane implements resources.DistroFactory.
-//func (*K3sDistro) DestroyWorkerPlane(storage resources.StorageFactory) ([]string, error) {
-//
-//	return nil, nil
-//}
 
 func scriptWP(privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash

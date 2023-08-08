@@ -163,7 +163,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	var payload cloudController.CloudResourceState
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 
-	err = client.Distro.InitState(payload, client.Storage)
+	err = client.Distro.InitState(payload, client.Storage, "create")
 	if err != nil {
 		return "", err
 	}
@@ -245,7 +245,7 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 	// transfer the state
 
-	err = client.Distro.InitState(payload, client.Storage)
+	err = client.Distro.InitState(payload, client.Storage, "get")
 	if err != nil {
 		return "", err
 	}
@@ -309,7 +309,7 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 	// transfer the state
 
-	err = client.Distro.InitState(payload, client.Storage)
+	err = client.Distro.InitState(payload, client.Storage, "get")
 	if err != nil {
 		return "", err
 	}
