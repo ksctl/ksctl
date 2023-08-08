@@ -21,6 +21,13 @@ type InstanceID struct {
 	DatabaseNode     []string `json:"databasenodeids"`
 }
 
+type HostNames struct {
+	ControlNodes     []string `json:"controlnode"`
+	WorkerNodes      []string `json:"workernode"`
+	LoadBalancerNode string   `json:"loadbalancernode"`
+	DatabaseNode     []string `json:"databasenodes"`
+}
+
 type NetworkID struct {
 	FirewallIDControlPlaneNode string `json:"fwidcontrolplanenode"`
 	FirewallIDWorkerNode       string `json:"fwidworkernode"`
@@ -57,6 +64,7 @@ type StateConfiguration struct {
 	InstanceIDs InstanceID `json:"instanceids"`
 	NetworkIDs  NetworkID  `json:"networkids"`
 	IPv4        InstanceIP `json:"ipv4_addr"`
+	HostNames   `json:"hostnames"`
 
 	KubernetesDistro string `json:"k8s_distro"` // FIXME: its missing from the state file
 	KubernetesVer    string `json:"k8s_version"`
@@ -93,6 +101,9 @@ type Metadata struct {
 	NoCP int
 	NoWP int
 	NoDS int
+
+	K8sName    string
+	K8sVersion string
 }
 
 type CivoProvider struct {
@@ -114,6 +125,7 @@ type Credential struct {
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
+// TODO: add get kubeconfig and hostname when deleting a vm for later configuration (deleting the node via kubernetes)
 func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	// TODO: add checks for any state is missing!!
@@ -209,6 +221,10 @@ func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
 		ClusterName: metadata.ClusterName,
 		Region:      metadata.Region,
 		HACluster:   metadata.IsHA,
+		Metadata: Metadata{
+			K8sName:    metadata.K8sDistro,
+			K8sVersion: metadata.K8sVersion,
+		},
 	}, nil
 }
 
@@ -323,6 +339,8 @@ func (obj *CivoProvider) NoOfControlPlane(no int, isCreateOp bool) (int, error) 
 		if civoCloudState.IPv4.PrivateIPControlplane == nil {
 			civoCloudState.IPv4.PrivateIPControlplane = make([]string, no)
 		}
+
+		civoCloudState.HostNames.ControlNodes = make([]string, no)
 		return -1, nil
 	}
 	return -1, fmt.Errorf("[civo] constrains for no of controlplane >= 3 and odd number")
@@ -355,6 +373,7 @@ func (obj *CivoProvider) NoOfDataStore(no int, isCreateOp bool) (int, error) {
 			civoCloudState.IPv4.PrivateIPDataStore = make([]string, no)
 		}
 
+		civoCloudState.HostNames.DatabaseNode = make([]string, no)
 		return -1, nil
 	}
 	return -1, fmt.Errorf("[civo] constrains for no of Datastore>= 1 and odd number")
@@ -387,6 +406,8 @@ func (obj *CivoProvider) NoOfWorkerPlane(no int, isCreateOp bool) (int, error) {
 		if civoCloudState.IPv4.PrivateIPWorkerPlane == nil {
 			civoCloudState.IPv4.PrivateIPWorkerPlane = make([]string, no)
 		}
+
+		civoCloudState.HostNames.WorkerNodes = make([]string, no)
 
 		return -1, nil
 	}
