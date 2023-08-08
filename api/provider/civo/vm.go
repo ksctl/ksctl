@@ -97,7 +97,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 		NetworkID:        networkID,
 		SSHKeyID:         civoCloudState.SSHID,
 		PublicIPRequired: publicIP,
-		// Script:           initializationScript,
+		// Script:           initializationScript,  // TODO: add the os updates and other non necessary things before we try to configure in kubernetes may be security fixes
 	}
 
 	inst, err := civoClient.CreateInstance(instanceConfig)
@@ -150,6 +150,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 		civoCloudState.InstanceIDs.ControlNodes[indexNo] = ""
 		civoCloudState.IPv4.IPControlplane[indexNo] = ""
 		civoCloudState.IPv4.PrivateIPControlplane[indexNo] = ""
+		civoCloudState.HostNames.ControlNodes[indexNo] = ""
 
 	case utils.ROLE_WP:
 		instID = civoCloudState.InstanceIDs.WorkerNodes[indexNo]
@@ -160,6 +161,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 		civoCloudState.InstanceIDs.WorkerNodes[indexNo] = ""
 		civoCloudState.IPv4.IPWorkerPlane[indexNo] = ""
 		civoCloudState.IPv4.PrivateIPWorkerPlane[indexNo] = ""
+		civoCloudState.HostNames.WorkerNodes[indexNo] = ""
 
 	case utils.ROLE_DS:
 		instID = civoCloudState.InstanceIDs.DatabaseNode[indexNo]
@@ -170,6 +172,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 		civoCloudState.InstanceIDs.DatabaseNode[indexNo] = ""
 		civoCloudState.IPv4.IPDataStore[indexNo] = ""
 		civoCloudState.IPv4.PrivateIPDataStore[indexNo] = ""
+		civoCloudState.HostNames.DatabaseNode[indexNo] = ""
 
 	case utils.ROLE_LB:
 		instID = civoCloudState.InstanceIDs.LoadBalancerNode
@@ -180,6 +183,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 		civoCloudState.InstanceIDs.LoadBalancerNode = ""
 		civoCloudState.IPv4.IPLoadbalancer = ""
 		civoCloudState.IPv4.PrivateIPLoadbalancer = ""
+		civoCloudState.HostNames.LoadBalancerNode = ""
 	}
 
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
@@ -217,14 +221,17 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 
 			pubIP := getInst.PublicIP
 			pvIP := getInst.PrivateIP
+			hostNam := getInst.Hostname
 
 			switch obj.Metadata.Role {
 			case utils.ROLE_CP:
 				civoCloudState.IPv4.IPControlplane[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPControlplane[idx] = pvIP
+				civoCloudState.HostNames.ControlNodes[idx] = hostNam
 			case utils.ROLE_WP:
 				civoCloudState.IPv4.IPWorkerPlane[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPWorkerPlane[idx] = pvIP
+				civoCloudState.HostNames.WorkerNodes[idx] = hostNam
 
 				// make it isComplete when the workernode [idx -1] == len of it
 				if len(civoCloudState.InstanceIDs.WorkerNodes) == idx+1 {
@@ -233,9 +240,11 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 			case utils.ROLE_DS:
 				civoCloudState.IPv4.IPDataStore[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPDataStore[idx] = pvIP
+				civoCloudState.HostNames.DatabaseNode[idx] = hostNam
 			case utils.ROLE_LB:
 				civoCloudState.IPv4.IPLoadbalancer = pubIP
 				civoCloudState.IPv4.PrivateIPLoadbalancer = pvIP
+				civoCloudState.HostNames.LoadBalancerNode = hostNam
 			}
 
 			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
