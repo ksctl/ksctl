@@ -2,9 +2,10 @@ package k3s
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"strings"
 )
 
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
@@ -25,7 +26,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 		return err
 	}
 
-	k8sState.K3sToken = k3s.SSHInfo.GetOutput()
+	k8sState.K3sToken = strings.Trim(k3s.SSHInfo.GetOutput(), "\n")
 
 	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err = saveStateHelper(storage, path)
@@ -143,4 +144,14 @@ curl -sfL https://get.k3s.io | sh -s - server \
 	//		--tls-san %s
 	//
 	// `, token, dbEndpoint, privateIPlb)
+}
+
+func (k3s *K3sDistro) GetKubeConfig(resources.StorageFactory) (string, error) {
+
+	if len(k8sState.Provider) == 0 || len(k8sState.ClusterDir) == 0 || len(k8sState.ClusterDir) == 0 {
+		return "", fmt.Errorf("[k3s] status is not correct")
+	}
+
+	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+	return path, nil
 }

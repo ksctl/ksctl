@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+
 	k3s_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/k3s"
 	kubeadm_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
 	"github.com/kubesimplify/ksctl/api/resources"
@@ -39,6 +40,17 @@ func ConfigureCluster(client *resources.KsctlClient) error {
 	}
 
 	for no := 0; no < int(client.Metadata.NoWP); no++ {
+		err := client.Distro.JoinWorkerplane(no, client.Storage)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// its [start, end)
+func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
+	for no := start; no < end; no++ {
 		err := client.Distro.JoinWorkerplane(no, client.Storage)
 		if err != nil {
 			return err

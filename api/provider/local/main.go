@@ -28,6 +28,11 @@ type LocalProvider struct {
 	Metadata
 }
 
+func (*LocalProvider) GetHostNameAllWorkerNode() []string {
+	//TODO implement me
+	panic("implement me")
+}
+
 // Version implements resources.CloudFactory.
 func (*LocalProvider) Version(string) resources.CloudFactory {
 	panic("unimplemented")
@@ -158,6 +163,6 @@ func (obj *LocalProvider) NoOfDataStore(int, bool) (int, error) {
 }
 
 // NoOfWorkerPlane implements resources.CloudFactory.
-func (obj *LocalProvider) NoOfWorkerPlane(int, bool) (int, error) {
+func (obj *LocalProvider) NoOfWorkerPlane(resources.StorageFactory, int, bool) (int, error) {
 	return -1, fmt.Errorf("[local] not supported")
 }

@@ -1,7 +1,6 @@
 package k3s
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -51,7 +50,7 @@ cat /etc/rancher/k3s/k3s.yaml`
 
 // InitState implements resources.DistroFactory.
 // try to achieve deepCopy
-func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory) {
+func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory) error {
 	// add the nil check here as well
 	// TODO: first check if the cluster already exist and then add worerkplane that adding more woerkplane feature
 	k8sState = &StateConfiguration{}
@@ -80,10 +79,14 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 	k3s.SSHInfo.LocPrivateKey(k8sState.SSHInfo.PathPrivateKey)
 	k3s.SSHInfo.Username(k8sState.SSHInfo.UserName)
 
-	a, _ := json.MarshalIndent(k8sState, "", " ")
-	fmt.Println(string(a))
+	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	err := saveStateHelper(storage, path)
+	if err != nil {
+		return fmt.Errorf("[k3s] failed to Initialized state from Cloud reason: %v", err)
+	}
 
-	storage.Logger().Success("[k3s] Initialized from Cloud")
+	storage.Logger().Success("[k3s] Initialized state from Cloud")
+	return nil
 }
 
 // InstallApplication implements resources.DistroFactory.

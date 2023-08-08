@@ -48,7 +48,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	noWP, err := client.Cloud.NoOfWorkerPlane(client.Metadata.NoWP, false)
+	noWP, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, false)
 	if err != nil {
 		return err
 	}
@@ -123,6 +123,66 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 	return nil
 }
 
+// the user provides the desired no of workerplane not the no of workerplanes to be added
+func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
+
+	currWP, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, false)
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, true)
+	if err != nil {
+		return -1, err
+	}
+
+	for no := currWP; no < client.Metadata.NoWP; no++ {
+		name := client.ClusterName + "-vm-wp"
+		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+			Role(utils.ROLE_WP).
+			VMType(client.WorkerPlaneNodeType).
+			Visibility(true).
+			NewVM(client.Storage, no)
+	}
+
+	// workerplane created
+	return currWP, nil
+}
+
+// it uses the noWP as the desired count of workerplane which is desired
+func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
+
+	hostnames := client.Cloud.GetHostNameAllWorkerNode()
+
+	if hostnames == nil {
+		return nil, fmt.Errorf("[cloud] hostname is empty")
+	}
+
+	currLen := len(hostnames)
+	desiredLen := client.Metadata.NoWP
+	hostnames = hostnames[:desiredLen]
+
+	if desiredLen < 0 || desiredLen > currLen {
+		return nil, fmt.Errorf("[cloud] not a valid count of wp for down scaling")
+	}
+
+	for i := desiredLen; i < currLen; i++ {
+		err := client.Cloud.Role(utils.ROLE_DS).DelVM(client.Storage, i)
+		if err != nil {
+			return nil, err
+		}
+	}
+	pauseOperation(5)
+
+	_, err := client.Cloud.NoOfWorkerPlane(client.Storage, desiredLen, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return hostnames, nil
+
+}
+
 func CreateHACluster(client *resources.KsctlClient) error {
 	err := client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.Storage)
 	if err != nil {
@@ -166,7 +226,7 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	if _, err := client.Cloud.NoOfWorkerPlane(client.Metadata.NoWP, true); err != nil {
+	if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, true); err != nil {
 		return err
 	}
 
