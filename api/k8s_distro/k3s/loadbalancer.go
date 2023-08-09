@@ -19,7 +19,7 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 		IPv4(k8sState.PublicIPs.Loadbalancer).
 		FastMode(true).SSHExecute(storage)
 	if err != nil {
-		return err
+		return fmt.Errorf("[k3s] loadbalancer%v", err)
 	}
 
 	storage.Logger().Success("[k3s] configured LoadBalancer")

@@ -160,14 +160,14 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 
 	currLen := len(hostnames)
 	desiredLen := client.Metadata.NoWP
-	hostnames = hostnames[:desiredLen]
+	hostnames = hostnames[desiredLen:]
 
 	if desiredLen < 0 || desiredLen > currLen {
 		return nil, fmt.Errorf("[cloud] not a valid count of wp for down scaling")
 	}
 
 	for i := desiredLen; i < currLen; i++ {
-		err := client.Cloud.Role(utils.ROLE_DS).DelVM(client.Storage, i)
+		err := client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, i)
 		if err != nil {
 			return nil, err
 		}

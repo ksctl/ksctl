@@ -304,6 +304,8 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		return "", err
 	}
 
+	fmt.Println("Hostnames to remove", hostnames)
+
 	// Cloud done
 	var payload cloudController.CloudResourceState
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
@@ -316,15 +318,21 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 	// here it stored the required information back to the kubernetes state
 
 	kubeconfigPath, err := client.Distro.GetKubeConfig(client.Storage)
+	fmt.Println(kubeconfigPath)
 	if err != nil {
 		return "", err
 	}
 
+	//var ch int = 0
+	//fmt.Println("Enter 1 to execute universal..")
+	//fmt.Scanf("%d", &ch)
+	//if ch == 1 {
 	for _, hostname := range hostnames {
 		if err := universal.DeleteNode(client.Storage, hostname, kubeconfigPath); err != nil {
 			return "", err
 		}
 	}
+	//}
 
 	return "[ksctl] deleted worker node(s)", nil
 }

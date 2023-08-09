@@ -179,9 +179,9 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 
 		if errLoadState == nil && !civoCloudState.IsCompleted {
 			// file present but not completed
-			storage.Logger().Note("RESUME triggered!!")
+			storage.Logger().Note("[civo] RESUME triggered!!")
 		} else {
-			storage.Logger().Note("Fresh state!!")
+			storage.Logger().Note("[civo] Fresh state!!")
 			civoCloudState = &StateConfiguration{
 				IsCompleted:      false,
 				Region:           obj.Region,
@@ -196,15 +196,16 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
+		storage.Logger().Note("[civo] Get resources")
 
 	case "delete":
 
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		storage.Logger().Note("Delete resource(s)")
+		storage.Logger().Note("[civo] Delete resource(s)")
 	default:
-		return errors.New("Invalid operation for init state")
+		return errors.New("[civo] Invalid operation for init state")
 	}
 
 	civoClient, err = civogo.NewClient(fetchAPIKey(storage), obj.Region)
@@ -317,7 +318,8 @@ func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
 }
 
 func (*CivoProvider) GetHostNameAllWorkerNode() []string {
-	hostnames := civoCloudState.HostNames.WorkerNodes
+	var hostnames []string = make([]string, len(civoCloudState.HostNames.WorkerNodes))
+	copy(hostnames, civoCloudState.HostNames.WorkerNodes)
 	return hostnames
 }
 

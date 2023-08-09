@@ -21,7 +21,7 @@ func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory)
 		IPv4(k8sState.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute(storage)
 	if err != nil {
-		return err
+		return fmt.Errorf("[k3s] workerplane%v", err)
 	}
 
 	storage.Logger().Success("[k3s] configured WorkerPlane")
