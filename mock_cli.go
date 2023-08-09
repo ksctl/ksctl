@@ -30,7 +30,7 @@ func main() {
 	cmd.Client.Metadata.Provider = "civo"
 	cmd.Client.Metadata.K8sDistro = "k3s"
 	cmd.Client.Metadata.StateLocation = "local"
-	cmd.Client.Metadata.ClusterName = "dummy-name"
+	cmd.Client.Metadata.ClusterName = "demo"
 
 	// managed
 	cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"
@@ -39,13 +39,13 @@ func main() {
 	cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
 	cmd.Client.Metadata.ControlPlaneNodeType = "g3.small"
 	cmd.Client.Metadata.WorkerPlaneNodeType = "g3.small"
-	cmd.Client.Metadata.DataStoreNodeType = "g3.large"
+	cmd.Client.Metadata.DataStoreNodeType = "g3.medium"
 
 	cmd.Client.Metadata.CNIPlugin = "cilium"
 
-	cmd.Client.Metadata.Region = "LON1"
+	cmd.Client.Metadata.Region = "FRA1"
 	cmd.Client.Metadata.NoCP = 3
-	cmd.Client.Metadata.NoWP = 1
+	cmd.Client.Metadata.NoWP = 0
 	cmd.Client.Metadata.NoDS = 1
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()

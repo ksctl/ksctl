@@ -56,34 +56,12 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 	// add the nil check here as well
 	path := utils.GetPath(utils.CLUSTER_PATH, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
 
-	k8sState = &StateConfiguration{}
-
 	switch operation {
 	case "create":
-		k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
-		k8sState.PrivateIPs.ControlPlanes = cloudState.PrivateIPv4ControlPlanes
-
-		k8sState.PublicIPs.DataStores = cloudState.IPv4DataStores
-		k8sState.PrivateIPs.DataStores = cloudState.PrivateIPv4DataStores
-
-		k8sState.PublicIPs.WorkerPlanes = cloudState.IPv4WorkerPlanes
-
-		k8sState.PublicIPs.Loadbalancer = cloudState.IPv4LoadBalancer
-		k8sState.PrivateIPs.Loadbalancer = cloudState.PrivateIPv4LoadBalancer
-
+		// add  a flag of completion check
+		k8sState = &StateConfiguration{}
 		k8sState.DataStoreEndPoint = ""
-		k8sState.SSHInfo = cloudState.SSHState
 		k8sState.K3sToken = ""
-
-		k8sState.ClusterName = cloudState.Metadata.ClusterName
-		k8sState.Region = cloudState.Metadata.Region
-		k8sState.Provider = cloudState.Metadata.Provider
-		k8sState.ClusterDir = cloudState.Metadata.ClusterDir
-		k8sState.ClusterType = cloudState.Metadata.ClusterType
-		err := saveStateHelper(storage, path)
-		if err != nil {
-			return fmt.Errorf("[k3s] failed to Initialized state from Cloud reason: %v", err)
-		}
 	case "get":
 		raw, err := storage.Path(path).Load()
 		if err != nil {
@@ -93,11 +71,33 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 		if err != nil {
 			return err
 		}
+
 	}
 	// TODO: first check if the cluster already exist and then add worerkplane that adding more woerkplane feature
+	k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
+	k8sState.PrivateIPs.ControlPlanes = cloudState.PrivateIPv4ControlPlanes
+
+	k8sState.PublicIPs.DataStores = cloudState.IPv4DataStores
+	k8sState.PrivateIPs.DataStores = cloudState.PrivateIPv4DataStores
+
+	k8sState.PublicIPs.WorkerPlanes = cloudState.IPv4WorkerPlanes
+
+	k8sState.PublicIPs.Loadbalancer = cloudState.IPv4LoadBalancer
+	k8sState.PrivateIPs.Loadbalancer = cloudState.PrivateIPv4LoadBalancer
+	k8sState.SSHInfo = cloudState.SSHState
 
 	k3s.SSHInfo.LocPrivateKey(k8sState.SSHInfo.PathPrivateKey)
 	k3s.SSHInfo.Username(k8sState.SSHInfo.UserName)
+
+	k8sState.ClusterName = cloudState.Metadata.ClusterName
+	k8sState.Region = cloudState.Metadata.Region
+	k8sState.Provider = cloudState.Metadata.Provider
+	k8sState.ClusterDir = cloudState.Metadata.ClusterDir
+	k8sState.ClusterType = cloudState.Metadata.ClusterType
+	err := saveStateHelper(storage, path)
+	if err != nil {
+		return fmt.Errorf("[k3s] failed to Initialized state from Cloud reason: %v", err)
+	}
 
 	storage.Logger().Success("[k3s] Initialized state from Cloud")
 	return nil
