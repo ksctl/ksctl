@@ -228,6 +228,10 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 				civoCloudState.IPv4.IPControlplane[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPControlplane[idx] = pvIP
 				civoCloudState.HostNames.ControlNodes[idx] = hostNam
+				if len(civoCloudState.InstanceIDs.ControlNodes) == idx+1 && len(civoCloudState.InstanceIDs.WorkerNodes) == 0 {
+					// no wp set so it is the final cloud provisioning
+					civoCloudState.IsCompleted = true
+				}
 			case utils.ROLE_WP:
 				civoCloudState.IPv4.IPWorkerPlane[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPWorkerPlane[idx] = pvIP
