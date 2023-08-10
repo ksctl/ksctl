@@ -71,6 +71,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 
 			kubeconfig := k3s.SSHInfo.GetOutput()
 			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", k8sState.PublicIPs.Loadbalancer, 1)
+			kubeconfig = strings.Replace(kubeconfig, "default", k8sState.ClusterDir+"-"+k8sState.ClusterType+"-"+k8sState.Provider+"-ksctl", -1)
 
 			// modify
 			path = utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)

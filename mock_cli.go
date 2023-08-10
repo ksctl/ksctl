@@ -7,6 +7,7 @@ import (
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers"
+	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 func NewCli(cmd *resources.CobraCmd) {
@@ -27,9 +28,9 @@ func main() {
 	cmd := &resources.CobraCmd{}
 	NewCli(cmd)
 
-	cmd.Client.Metadata.Provider = "civo"
-	cmd.Client.Metadata.K8sDistro = "k3s"
-	cmd.Client.Metadata.StateLocation = "local"
+	cmd.Client.Metadata.Provider = utils.CLOUD_CIVO
+	cmd.Client.Metadata.K8sDistro = utils.K8S_K3S
+	cmd.Client.Metadata.StateLocation = utils.STORE_LOCAL
 	cmd.Client.Metadata.ClusterName = "demo"
 
 	// managed
@@ -49,7 +50,8 @@ func main() {
 	cmd.Client.Metadata.NoDS = 1
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
-	if _, err := control_pkg.InitializeStorageFactory(&cmd.Client); err != nil {
+	// verbosity set to true
+	if _, err := control_pkg.InitializeStorageFactory(&cmd.Client, true); err != nil {
 		panic(err)
 	}
 	choice := -1
@@ -120,6 +122,8 @@ Your Choice`)
 	case 6:
 		cmd.Client.Metadata.IsHA = true
 
+		// cmd.Client.Metadata.NoWP = 1
+		cmd.Client.Metadata.NoWP = 2 //first do this
 		stat, err := controller.AddWorkerPlaneNode(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())
@@ -129,19 +133,12 @@ Your Choice`)
 	case 7:
 		cmd.Client.Metadata.IsHA = true
 
+		cmd.Client.Metadata.NoWP = 1
 		stat, err := controller.DelWorkerPlaneNode(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())
 			return
 		}
 		cmd.Client.Storage.Logger().Success(stat)
-
-		// case 8:
-		// 	err := universal.DeleteNode(cmd.Client.Storage, "dummy-name-vm-wp-0", "/home/dipankar/.ksctl/config/civo/ha/dummy-name LON1/kubeconfig")
-		// 	if err != nil {
-		// 		cmd.Client.Storage.Logger().Err(err.Error())
-		// 		return
-		// 	}
-		// 	cmd.Client.Storage.Logger().Success("config")
 	}
 }

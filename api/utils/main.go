@@ -23,13 +23,6 @@ import (
 	"golang.org/x/term"
 )
 
-// type Machine struct {
-// 	ManagedNodes        int    `json:"managed_nodes"`
-// 	MachineType         string `json:"machine_type"`
-// 	HAControlPlaneNodes int    `json:"no_cp"`
-// 	HAWorkerNodes       int    `json:"no_wp"`
-// }
-
 type SSHPayload struct {
 	UserName       string
 	PathPrivateKey string
@@ -82,10 +75,27 @@ const (
 	EXEC_WITH_OUTPUT      = int(1)
 	EXEC_WITHOUT_OUTPUT   = int(0)
 
-	ROLE_CP = string("controlplane")
-	ROLE_WP = string("workerplane")
-	ROLE_LB = string("loadbalancer")
-	ROLE_DS = string("datastore")
+	ROLE_CP = "controlplane"
+	ROLE_WP = "workerplane"
+	ROLE_LB = "loadbalancer"
+	ROLE_DS = "datastore"
+
+	CLOUD_CIVO  = "civo"
+	CLOUD_AZURE = "azure"
+	CLOUD_LOCAL = "local"
+
+	K8S_K3S     = "k3s"
+	K8S_KUBEADM = "kubeadm"
+
+	STORE_LOCAL  = "local"
+	STORE_REMOTE = "remote"
+
+	OPERATION_STATE_GET    = "get"
+	OPERATION_STATE_CREATE = "create"
+	OPERATION_STATE_DELETE = "delete"
+
+	CLUSTER_TYPE_HA   = "ha"
+	CLUSTER_TYPE_MANG = "managed"
 )
 
 // GetUserName returns current active username
@@ -112,8 +122,7 @@ func IsValidName(clusterName string) error {
 func getKubeconfig(provider string, params ...string) string {
 	if strings.Compare(provider, "civo") != 0 &&
 		strings.Compare(provider, "local") != 0 &&
-		strings.Compare(provider, "azure") != 0 &&
-		strings.Compare(provider, "aws") != 0 {
+		strings.Compare(provider, "azure") != 0 {
 		return ""
 	}
 	var ret strings.Builder
@@ -163,8 +172,7 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 func SaveCred(storage resources.StorageFactory, config interface{}, provider string) error {
 
 	if strings.Compare(provider, "civo") != 0 &&
-		strings.Compare(provider, "azure") != 0 &&
-		strings.Compare(provider, "aws") != 0 {
+		strings.Compare(provider, "azure") != 0 {
 		return fmt.Errorf("invalid provider (given): Unable to save configuration")
 	}
 
