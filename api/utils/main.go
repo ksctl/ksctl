@@ -83,6 +83,7 @@ const (
 	CLOUD_CIVO  = "civo"
 	CLOUD_AZURE = "azure"
 	CLOUD_LOCAL = "local"
+	CLOUD_AWS   = "aws"
 
 	K8S_K3S     = "k3s"
 	K8S_KUBEADM = "kubeadm"
@@ -120,9 +121,9 @@ func IsValidName(clusterName string) error {
 // getKubeconfig returns the path to clusters specific to provider
 
 func getKubeconfig(provider string, params ...string) string {
-	if strings.Compare(provider, "civo") != 0 &&
-		strings.Compare(provider, "local") != 0 &&
-		strings.Compare(provider, "azure") != 0 {
+	if strings.Compare(provider, CLOUD_CIVO) != 0 &&
+		strings.Compare(provider, CLOUD_LOCAL) != 0 &&
+		strings.Compare(provider, CLOUD_AZURE) != 0 {
 		return ""
 	}
 	var ret strings.Builder
@@ -171,8 +172,8 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 
 func SaveCred(storage resources.StorageFactory, config interface{}, provider string) error {
 
-	if strings.Compare(provider, "civo") != 0 &&
-		strings.Compare(provider, "azure") != 0 {
+	if strings.Compare(provider, CLOUD_CIVO) != 0 &&
+		strings.Compare(provider, CLOUD_AZURE) != 0 {
 		return fmt.Errorf("invalid provider (given): Unable to save configuration")
 	}
 
@@ -249,7 +250,7 @@ func getPaths(provider string, params ...string) string {
 func CreateSSHKeyPair(storage resources.StorageFactory, provider, clusterDir string) (string, error) {
 
 	pathTillFolder := ""
-	pathTillFolder = getPaths(provider, "ha", clusterDir)
+	pathTillFolder = getPaths(provider, CLUSTER_TYPE_HA, clusterDir)
 
 	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair") // WARN: it requires the os to have these dependencies
 	cmd.Dir = pathTillFolder
@@ -260,7 +261,7 @@ func CreateSSHKeyPair(storage resources.StorageFactory, provider, clusterDir str
 
 	storage.Logger().Print("[utils]", string(out))
 
-	path := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
+	path := GetPath(OTHER_PATH, provider, CLUSTER_TYPE_HA, clusterDir, "keypair.pub")
 	fileBytePub, err := storage.Path(path).Load()
 	if err != nil {
 		return "", err
@@ -447,11 +448,4 @@ func UserInputCredentials(logging logger.LogFactory) (string, error) {
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
-}
-
-func IsValidNoOfControlPlanes(noCP int) error {
-	if noCP < 3 || (noCP)&1 == 0 {
-		return fmt.Errorf("no of controlplanes must be >= 3 and should be odd number")
-	}
-	return nil
 }

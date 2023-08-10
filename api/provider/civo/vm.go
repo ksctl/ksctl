@@ -203,7 +203,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID string, idx int) error {
 	for {
-		//NOTE: this is prone to network failure
+		// NOTE: this is prone to network failure
 
 		currRetryCounter := 0
 		var getInst *civogo.Instance

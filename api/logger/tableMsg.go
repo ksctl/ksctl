@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+
 	"github.com/fatih/color"
 	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/rodaine/table"

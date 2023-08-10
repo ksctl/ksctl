@@ -66,7 +66,7 @@ type StateConfiguration struct {
 	IPv4        InstanceIP `json:"ipv4_addr"`
 	HostNames   `json:"hostnames"`
 
-	KubernetesDistro string `json:"k8s_distro"` // FIXME: its missing from the state file
+	KubernetesDistro string `json:"k8s_distro"`
 	KubernetesVer    string `json:"k8s_version"`
 }
 
@@ -115,9 +115,6 @@ type CivoProvider struct {
 	SSHPath string `json:"ssh_key"` // do check what need to be here
 
 	Metadata
-
-	// Application      string `json:"application"`
-	// CNIPlugin        string `json:"cni_plugin"`
 }
 
 type Credential struct {
@@ -125,10 +122,7 @@ type Credential struct {
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
-// TODO: add get kubeconfig and hostname when deleting a vm for later configuration (deleting the node via kubernetes)
 func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
-
-	// TODO: add checks for any state is missing!!
 
 	payload := cloud_control_res.CloudResourceState{
 		SSHState: cloud_control_res.SSHInfo{
@@ -171,7 +165,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 	errLoadState := loadStateHelper(storage, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
 
 	switch operation {
-	case "create":
+	case utils.OPERATION_STATE_CREATE:
 		if errLoadState == nil && civoCloudState.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
 			return fmt.Errorf("already exist")
@@ -191,14 +185,14 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 			}
 		}
 
-	case "get":
+	case utils.OPERATION_STATE_GET:
 
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		storage.Logger().Note("[civo] Get resources")
 
-	case "delete":
+	case utils.OPERATION_STATE_DELETE:
 
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
@@ -417,7 +411,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 				// no changes needed
 				return -1, nil
 			} else if currLen < newLen {
-				// for upscaling
+				// for up-scaling
 				for i := currLen; i < newLen; i++ {
 					civoCloudState.InstanceIDs.WorkerNodes = append(civoCloudState.InstanceIDs.WorkerNodes, "")
 					civoCloudState.IPv4.IPWorkerPlane = append(civoCloudState.IPv4.IPWorkerPlane, "")
@@ -447,13 +441,13 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 	var data []cloud_control_res.AllClusterData
 
 	// first get all the directories of ha
-	haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "ha")).GetFolders()
+	haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, haFolder := range haFolders {
-		path := generatePath(utils.CLUSTER_PATH, "ha", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
+		path := generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA, haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -464,10 +458,10 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 		}
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider: "civo",
+				Provider: utils.CLOUD_CIVO,
 				Name:     haFolder[0],
 				Region:   haFolder[1],
-				Type:     "ha",
+				Type:     utils.CLUSTER_TYPE_HA,
 
 				NoWP: len(clusterState.InstanceIDs.WorkerNodes),
 				NoCP: len(clusterState.InstanceIDs.ControlNodes),
@@ -497,10 +491,10 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider:   "civo",
+				Provider:   utils.CLOUD_CIVO,
 				Name:       haFolder[0],
 				Region:     haFolder[1],
-				Type:       "managed",
+				Type:       utils.CLUSTER_TYPE_MANG,
 				K8sDistro:  clusterState.KubernetesDistro,
 				K8sVersion: clusterState.KubernetesVer,
 				NoMgt:      clusterState.NoManagedNodes,

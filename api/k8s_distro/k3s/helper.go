@@ -49,16 +49,16 @@ func printKubeconfig(storage resources.StorageFactory, operation string) {
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {
-		case "create":
+		case utils.OPERATION_STATE_CREATE:
 			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
-		case "delete":
+		case utils.OPERATION_STATE_DELETE:
 			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
 		}
 	case "linux", "macos":
 		switch operation {
-		case "create":
+		case utils.OPERATION_STATE_CREATE:
 			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
-		case "delete":
+		case utils.OPERATION_STATE_DELETE:
 			env = "unset KUBECONFIG"
 		}
 	}

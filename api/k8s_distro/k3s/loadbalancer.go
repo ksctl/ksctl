@@ -24,11 +24,6 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 
 	storage.Logger().Success("[k3s] configured LoadBalancer")
 
-	//path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
-	//err = saveStateHelper(storage, path)
-	//if err != nil {
-	//	return err
-	//}
 	return nil
 }
 

@@ -51,18 +51,17 @@ cat /etc/rancher/k3s/k3s.yaml`
 
 // InitState implements resources.DistroFactory.
 // try to achieve deepCopy
-// FIXME: NOT WORKING !!!!!!!!!!!!!!!!!!!!!!!!!!!
 func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation string) error {
 	// add the nil check here as well
 	path := utils.GetPath(utils.CLUSTER_PATH, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
 
 	switch operation {
-	case "create":
+	case utils.OPERATION_STATE_CREATE:
 		// add  a flag of completion check
 		k8sState = &StateConfiguration{}
 		k8sState.DataStoreEndPoint = ""
 		k8sState.K3sToken = ""
-	case "get":
+	case utils.OPERATION_STATE_GET:
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return err
@@ -73,7 +72,6 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 		}
 
 	}
-	// TODO: first check if the cluster already exist and then add worerkplane that adding more woerkplane feature
 	k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
 	k8sState.PrivateIPs.ControlPlanes = cloudState.PrivateIPv4ControlPlanes
 
