@@ -21,9 +21,9 @@ type LocalStorageProvider struct {
 
 var fileMutex sync.Mutex
 
-func InitStorage() *LocalStorageProvider {
+func InitStorage(verbosity bool) *LocalStorageProvider {
 	return &LocalStorageProvider{
-		Log: &logger.Logger{},
+		Log: &logger.Logger{Verbose: verbosity},
 	}
 }
 

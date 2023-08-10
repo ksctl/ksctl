@@ -44,78 +44,136 @@ type Metadata struct {
 	NoCP int // No of Controlplane VMs
 	NoDS int // No of DataStore VMs
 
-	Applications string `json:"application"`
-	CNIPlugin    string `json:"cni_plugin"`
+	Applications string
+	CNIPlugin    string
 }
 
 type CloudFactory interface {
+	// NewVM create VirtualMachine with index for storing its state
 	NewVM(StorageFactory, int) error
+
+	// DelVM delete VirtualMachine with index for storing its state
 	DelVM(StorageFactory, int) error
 
+	// NewFirewall create Firewall
 	NewFirewall(StorageFactory) error
+
+	// DelFirewall delete Firewall
 	DelFirewall(StorageFactory) error
 
+	// NewNetwork create Network
 	NewNetwork(StorageFactory) error
+
+	// DelNetwork delete Network
 	DelNetwork(StorageFactory) error
 
+	// InitState is used to initalize the state of that partular cloud provider
+	// its internal state and cloud provider's client
+	// NOTE: multiple mode of OPERATIONS
 	InitState(StorageFactory, string) error
 
+	// CreateUploadSSHKeyPair create SSH keypair in the host machine and then upload pub key
+	// and store the path of private key, username, etc.. wrt to specific cloud provider
 	CreateUploadSSHKeyPair(StorageFactory) error
+
+	// DelSSHKeyPair delete SSH keypair from the Cloud provider
 	DelSSHKeyPair(StorageFactory) error
 
-	// get the state required for the kubernetes dributions to configure
+	// GetStateForHACluster used to get the state info for transfer it to kubernetes distro
+	// for further configurations
 	GetStateForHACluster(StorageFactory) (cloud.CloudResourceState, error)
 
+	// NewManagedCluster creates managed kubernetes from cloud offering
+	// it requires the no of nodes to be created
 	NewManagedCluster(StorageFactory, int) error
+
+	// DelManagedCluster deletes managed kubernetes from cloud offering
 	DelManagedCluster(StorageFactory) error
+
+	// TODO: not used yet
+	// DEPRICATED: check if this functionality is required
 	GetManagedKubernetes(StorageFactory)
 
-	// used by controller
+	// infomation for cloud controller to interact with
+	// these are setter functions
+
+	// Name sets the name for the resource you want to operate
 	Name(string) CloudFactory
+
+	// Role specify what is its role. Ex. Controlplane or WorkerPlane or DataStore...
 	Role(string) CloudFactory
+
+	// VMType specifiy what is the VirtualMachine size to be used
 	VMType(string) CloudFactory
+
+	// Visibility whether to make the VM public or private
 	Visibility(bool) CloudFactory
 
+	// SupportForApplications whether the cloud provider supports pre-installed apps
+	// Only for Managed clusters
 	SupportForApplications() bool
+
+	// SupportForCNI whether the cloud provider supports for choosing CNI
+	// Only for Managed clusters
 	SupportForCNI() bool
 
-	// these are meant to be used for managed clusters
+	// Application for the comma seperated apps names (Managed cluster)
 	Application(string) CloudFactory
+
+	// CNI for the CNI name (Managed cluster)
 	CNI(string) CloudFactory
+
+	// Version for the Kubernetes Version (Managed cluster)
 	Version(string) CloudFactory
 
-	// for the state of instances created and destroyed
+	// NoOfWorkerPlane if setter is enabled it writes the new no of workerplane to be used
+	// if getter is enabled it returns the current no of workerplane
+	// its imp function for (shrinking, scaling)
 	NoOfWorkerPlane(StorageFactory, int, bool) (int, error)
+
+	// NoOfControlPlane Getter and setter
+	// setter to store no of controlplane nodes
+	// NOTE: it is meant to be used only for first time
+	// it has no functionalit as (shrinking, scaling) if tried it will erase existing data
 	NoOfControlPlane(int, bool) (int, error)
+
+	// NoOfDataStore Getter and setter
+	// setter to store no of datastore nodes
+	// NOTE: it is meant to be used only for first time
+	// it has no functionalit as (shrinking, scaling) if tried it will erase existing data
 	NoOfDataStore(int, bool) (int, error)
 
+	// GetHostNameAllWorkerNode it returns all the hostnames of workerplane nodes
+	// it's used for the universal kubernetes for deletion of nodes which have to scale down
 	GetHostNameAllWorkerNode() []string
 }
 
 type KubernetesFactory interface {
+	// InitState uses the cloud provider's shared state to initlaize itself
+	// NOTE: multiple mode of OPERATIONS
 	InitState(cloud.CloudResourceState, StorageFactory, string) error
 
-	// it recieves no of controlplane to which we want to configure
-	// NOTE: make the first controlplane return server token as possible
+	// ConfigureControlPlane to join or create VM as controlplane
+	// it requires controlplane number
 	ConfigureControlPlane(int, StorageFactory) error
-	// DestroyControlPlane(StorageFactory)  // NOTE: [FEATURE] destroy not available
-	// only able to remove the VirtualMachine
 
+	// JoinWorkerplane it joins to the existing cluster
+	// it requires workerplane number
 	JoinWorkerplane(int, StorageFactory) error
+
 	//DestroyWorkerPlane(StorageFactory) ([]string, error)
 
+	// ConfigureLoadbalancer it configures the Loadbalancer
 	ConfigureLoadbalancer(StorageFactory) error
-	// DestroyLoadbalancer(StorageFactory)  // NOTE: [FEATURE] destroy not available
-	// only able to remove the VirtualMachine
 
+	// ConfigureDataStore it configure the datastore
+	// it requires number
 	ConfigureDataStore(int, StorageFactory) error
-	// DestroyDataStore(StorageFactory)  // NOTE: [FEATURE] destroy not available
-	// only able to remove the VirtualMachine
 
-	// meant to be used for the HA clusters
+	// TODO: Check if its required
 	InstallApplication(StorageFactory) error
 
-	// GetKubeConfig returns the path for kubeconfig
+	// GetKubeConfig returns the path of kubeconfig
 	GetKubeConfig(StorageFactory) (string, error)
 }
 
@@ -130,18 +188,31 @@ type DistroFactory interface {
 }
 
 type StorageFactory interface {
+	// Save the data in bytes to specific location
 	Save([]byte) error
-	Destroy() error
-	Load() ([]byte, error) // try to make the return type defined
 
-	// for modifier
+	// TODO: check if required
+	Destroy() error
+
+	// Load gets contenets of file in bytes
+	Load() ([]byte, error)
+
+	// Path setter for path
 	Path(string) StorageFactory
+
+	// Permission setter for permission
 	Permission(mode os.FileMode) StorageFactory
+
+	// CreateDir creates directory
 	CreateDir() error
+
+	// DeleteDir deletes directories
 	DeleteDir() error
+
+	// GetFolders returns the folder's contents
 	GetFolders() ([][]string, error)
 
-	// to access logger
+	// Logger to access logger
 	Logger() logger.LogFactory
 }
 

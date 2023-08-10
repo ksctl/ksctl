@@ -5,14 +5,16 @@ import (
 
 	k3s_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/k3s"
 	kubeadm_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
+	"github.com/kubesimplify/ksctl/api/k8s_distro/universal"
 	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 func HydrateK8sDistro(client *resources.KsctlClient) error {
 	switch client.Metadata.K8sDistro {
-	case "k3s":
+	case utils.K8S_K3S:
 		client.Distro = k3s_pkg.ReturnK3sStruct()
-	case "kubeadm":
+	case utils.K8S_KUBEADM:
 		client.Distro = kubeadm_pkg.ReturnKubeadmStruct()
 	default:
 		return fmt.Errorf("[kubernetes] Invalid k8s provider")
@@ -48,11 +50,25 @@ func ConfigureCluster(client *resources.KsctlClient) error {
 	return nil
 }
 
-// its [start, end)
 func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 	for no := start; no < end; no++ {
 		err := client.Distro.JoinWorkerplane(no, client.Storage)
 		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func DelWorkerPlanes(client *resources.KsctlClient, hostnames []string) error {
+
+	kubeconfigPath, err := client.Distro.GetKubeConfig(client.Storage)
+	if err != nil {
+		return err
+	}
+
+	for _, hostname := range hostnames {
+		if err := universal.DeleteNode(client.Storage, hostname, kubeconfigPath); err != nil {
 			return err
 		}
 	}

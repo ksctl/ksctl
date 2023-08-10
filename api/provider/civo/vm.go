@@ -57,6 +57,11 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 // NewVM implements resources.CloudFactory.
 func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
 
+	if obj.Metadata.Role == utils.ROLE_DS && indexNo > 0 {
+		storage.Logger().Note("[skip] currently multiple datastore not supported")
+		return nil
+	}
+
 	err := obj.foundStateVM(storage, indexNo, true)
 	if err == nil {
 		return nil

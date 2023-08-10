@@ -15,14 +15,14 @@ import (
 func HydrateCloud(client *resources.KsctlClient, operation string) error {
 	var err error
 	switch client.Metadata.Provider {
-	case "civo":
+	case utils.CLOUD_CIVO:
 		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
-	case "azure":
+	case utils.CLOUD_AZURE:
 		client.Cloud = azure_pkg.ReturnAzureStruct(client.Metadata)
-	case "local":
+	case utils.CLOUD_LOCAL:
 		client.Cloud = local_pkg.ReturnLocalStruct(client.Metadata)
 	default:
 		return fmt.Errorf("Invalid Cloud provider")
@@ -114,7 +114,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	// last one to delete is network
+	// NOTE: last one to delete is network
 	err = client.Cloud.DelNetwork(client.Storage)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 	return nil
 }
 
-// the user provides the desired no of workerplane not the no of workerplanes to be added
+// AddWorkerNodes the user provides the desired no of workerplane not the no of workerplanes to be added
 func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 
 	currWP, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, false)
@@ -149,7 +149,7 @@ func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 	return currWP, nil
 }
 
-// it uses the noWP as the desired count of workerplane which is desired
+// DelWorkerNodes uses the noWP as the desired count of workerplane which is desired
 func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 
 	hostnames := client.Cloud.GetHostNameAllWorkerNode()
@@ -271,7 +271,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 
 func CreateManagedCluster(client *resources.KsctlClient) error {
 	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.Storage); err != nil {
-		// need to verify wrt to other providers wrt network creation
 		return err
 	}
 
@@ -286,7 +285,7 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 		managedClient = managedClient.CNI(client.Metadata.CNIPlugin)
 	}
 
-	managedClient = managedClient.Version(client.Metadata.K8sVersion) // for kubernetes version
+	managedClient = managedClient.Version(client.Metadata.K8sVersion)
 
 	if managedClient == nil {
 		client.Storage.Logger().Err("Invalid version")
