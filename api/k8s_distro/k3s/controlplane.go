@@ -40,8 +40,6 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 // ConfigureControlPlane implements resources.DistroFactory.
 func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
 
-	// TODO: check if any state needs to be saved?
-
 	if noOfCP == 0 {
 		err := configureCP_1(storage, k3s)
 		if err != nil {
@@ -79,11 +77,11 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 			if err != nil {
 				return err
 			}
-			printKubeconfig(storage, "create")
+			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
 		}
 
 	}
-	storage.Logger().Success("[k3s] configured ControlPlane", string(noOfCP))
+	storage.Logger().Success("[k3s] configured ControlPlane", string(rune(noOfCP)))
 
 	return nil
 }

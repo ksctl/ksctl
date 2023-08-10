@@ -20,7 +20,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	}
 	storage.Logger().Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := utils.GetCred(storage, "civo")
+	token, err := utils.GetCred(storage, utils.CLOUD_CIVO)
 	if err != nil {
 		return ""
 	}

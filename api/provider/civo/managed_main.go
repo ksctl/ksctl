@@ -45,7 +45,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 			if err != nil {
 				return err
 			}
-			printKubeconfig(storage, "create")
+			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
 			break
 		}
 		storage.Logger().Print("[civo] creating cluster..", clusterDS.Status)
@@ -97,7 +97,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 	}
 
 	civoCloudState.NoManagedNodes = noOfNodes
-	civoCloudState.KubernetesDistro = "k3s"
+	civoCloudState.KubernetesDistro = utils.K8S_K3S
 	civoCloudState.KubernetesVer = obj.Metadata.Version
 	civoCloudState.ManagedClusterID = resp.ID
 
@@ -128,7 +128,7 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) err
 	if err := saveStateHelper(storage, path); err != nil {
 		return err
 	}
-	printKubeconfig(storage, "delete")
+	printKubeconfig(storage, utils.OPERATION_STATE_DELETE)
 
 	return nil
 }

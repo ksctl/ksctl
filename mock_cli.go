@@ -31,7 +31,7 @@ func main() {
 	cmd.Client.Metadata.Provider = utils.CLOUD_CIVO
 	cmd.Client.Metadata.K8sDistro = utils.K8S_K3S
 	cmd.Client.Metadata.StateLocation = utils.STORE_LOCAL
-	cmd.Client.Metadata.ClusterName = "demo"
+	cmd.Client.Metadata.ClusterName = "benchmark"
 
 	// managed
 	cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"

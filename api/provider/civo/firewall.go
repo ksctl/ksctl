@@ -142,7 +142,6 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 	return saveStateHelper(storage, path)
 }
 
-// ///////////// REFER TO KUBERNETES DOCS for the ports to be opened///////////////
 func firewallRuleControlPlane() []civogo.FirewallRule {
 	return nil
 }

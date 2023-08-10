@@ -30,77 +30,77 @@ type LocalProvider struct {
 
 func (*LocalProvider) GetHostNameAllWorkerNode() []string {
 	//TODO implement me
-	panic("implement me")
+	panic("[local] unsupported operation")
 }
 
 // Version implements resources.CloudFactory.
 func (*LocalProvider) Version(string) resources.CloudFactory {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StorageFactory) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // DelFirewall implements resources.CloudFactory.
 func (*LocalProvider) DelFirewall(state resources.StorageFactory) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // DelManagedCluster implements resources.CloudFactory.
 func (*LocalProvider) DelManagedCluster(state resources.StorageFactory) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // DelNetwork implements resources.CloudFactory.
 func (*LocalProvider) DelNetwork(state resources.StorageFactory) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // DelSSHKeyPair implements resources.CloudFactory.
 func (*LocalProvider) DelSSHKeyPair(state resources.StorageFactory) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // DelVM implements resources.CloudFactory.
 func (*LocalProvider) DelVM(resources.StorageFactory, int) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // GetManagedKubernetes implements resources.CloudFactory.
 func (*LocalProvider) GetManagedKubernetes(state resources.StorageFactory) {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
 func (*LocalProvider) GetStateForHACluster(state resources.StorageFactory) (cloud.CloudResourceState, error) {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // InitState implements resources.CloudFactory.
 func (*LocalProvider) InitState(state resources.StorageFactory, operation string) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // NewFirewall implements resources.CloudFactory.
 func (*LocalProvider) NewFirewall(state resources.StorageFactory) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // NewManagedCluster implements resources.CloudFactory.
 func (*LocalProvider) NewManagedCluster(state resources.StorageFactory, noOfNodes int) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // NewNetwork implements resources.CloudFactory.
 func (*LocalProvider) NewNetwork(state resources.StorageFactory) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 // NewVM implements resources.CloudFactory.
 func (*LocalProvider) NewVM(resources.StorageFactory, int) error {
-	panic("unimplemented")
+	panic("[local] unsupported operation")
 }
 
 func ReturnLocalStruct(metadata resources.Metadata) *LocalProvider {
@@ -154,15 +154,15 @@ func (client *LocalProvider) CNI(s string) resources.CloudFactory {
 
 // NoOfControlPlane implements resources.CloudFactory.
 func (obj *LocalProvider) NoOfControlPlane(int, bool) (int, error) {
-	return -1, fmt.Errorf("[local] not supported")
+	return -1, fmt.Errorf("[local] unsupported operation")
 }
 
 // NoOfDataStore implements resources.CloudFactory.
 func (obj *LocalProvider) NoOfDataStore(int, bool) (int, error) {
-	return -1, fmt.Errorf("[local] not supported")
+	return -1, fmt.Errorf("[local] unsupported operation")
 }
 
 // NoOfWorkerPlane implements resources.CloudFactory.
 func (obj *LocalProvider) NoOfWorkerPlane(resources.StorageFactory, int, bool) (int, error) {
-	return -1, fmt.Errorf("[local] not supported")
+	return -1, fmt.Errorf("[local] unsupported operation")
 }

@@ -36,7 +36,7 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory
 		return nil
 	}
 
-	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, "civo", clusterDirName)
+	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, utils.CLOUD_CIVO, clusterDirName)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pu
 	// NOTE: state for the ssh
 	civoCloudState.SSHID = sshResp.ID
 	civoCloudState.SSHUser = "root"
-	civoCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, "civo", clusterType, clusterDirName)
+	civoCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_CIVO, clusterType, clusterDirName)
 
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 

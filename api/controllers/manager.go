@@ -21,11 +21,9 @@ func GenKsctlController() *KsctlControllerClient {
 	return &KsctlControllerClient{}
 }
 
-// TODO: add the verbose mode
-// TODO: accept gate for creation as well for approval
 func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) (string, error) {
 	switch client.Metadata.StateLocation {
-	case "local":
+	case utils.CLOUD_LOCAL:
 		client.Storage = localstate.InitStorage(verbosity)
 	default:
 		return "", fmt.Errorf("Currently Local state is supported!")
@@ -53,6 +51,9 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 	}
 }
 
+// TODO: accept gate for creation as well for approval
+// FIXME: move these scanf and approval to the cli it shouldn't be here
+
 func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) (string, error) {
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
@@ -75,7 +76,6 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
 
-	// FIXME: move these scanf and approval to the cli it shouldn't be here
 	showMsg := true
 	if showMsg {
 		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'

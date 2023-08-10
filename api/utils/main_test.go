@@ -7,6 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/storage/localstate"
+	"github.com/kubesimplify/ksctl/api/utils"
+
 	"gotest.tools/assert"
 )
 
@@ -90,25 +94,27 @@ func TestCreateSSHKeyPair(t *testing.T) {
 		_ = os.RemoveAll(GetPath(OTHER_PATH, provider))
 	})
 
-	path := GetPath(OTHER_PATH, provider, "ha", clusterName+" "+clusterRegion)
+	path := GetPath(OTHER_PATH, provider, utils.CLUSTER_TYPE_HA, clusterName+" "+clusterRegion)
 	err := os.MkdirAll(path, 0755)
 	if err != nil {
 		t.Fatalf("Unable to create dummy folder")
 	}
-	if _, err := CreateSSHKeyPair(provider, clusterName+" "+clusterRegion); err != nil {
+	ksctl := resources.KsctlClient{Storage: localstate.InitStorage(false)}
+	if _, err := CreateSSHKeyPair(ksctl.Storage, provider, clusterName+" "+clusterRegion); err != nil {
 		t.Fatalf("Unable to create SSH keypair")
 	}
 }
 
 func TestIsValidClusterName(T *testing.T) {
-	assert.Equal(T, true, IsValidName("demo"), "Returns false for valid cluster name")
-	assert.Equal(T, false, IsValidName("Dem-o234"), "Returns True for invalid cluster name")
-	assert.Equal(T, true, IsValidName("d-234"), "Returns false for valid cluster name")
-	assert.Equal(T, false, IsValidName("234"), "Returns true for invalid cluster name")
-	assert.Equal(T, false, IsValidName("-2342"), "Returns True for invalid cluster name")
-	assert.Equal(T, false, IsValidName("demo-"), "Returns True for invalid cluster name")
-	assert.Equal(T, false, IsValidName("dscdscsd-#$#$#"), "Returns True for invalid cluster name")
-	assert.Equal(T, false, IsValidName("ds@#$#$#"), "Returns True for invalid cluster name")
+	errorStr := fmt.Errorf("CLUSTER NAME INVALID")
+	assert.Equal(T, nil, IsValidName("demo"), "Returns false for valid cluster name")
+	assert.Equal(T, errorStr.Error(), IsValidName("Dem-o234").Error(), "Returns True for invalid cluster name")
+	assert.Equal(T, nil, IsValidName("d-234"), "Returns false for valid cluster name")
+	assert.Equal(T, errorStr.Error(), IsValidName("234").Error(), "Returns true for invalid cluster name")
+	assert.Equal(T, errorStr.Error(), IsValidName("-2342").Error(), "Returns True for invalid cluster name")
+	assert.Equal(T, errorStr.Error(), IsValidName("demo-").Error(), "Returns True for invalid cluster name")
+	assert.Equal(T, errorStr.Error(), IsValidName("dscdscsd-#$#$#").Error(), "Returns True for invalid cluster name")
+	assert.Equal(T, errorStr.Error(), IsValidName("ds@#$#$#").Error(), "Returns True for invalid cluster name")
 }
 
 func TestSSHExecute(t *testing.T) {

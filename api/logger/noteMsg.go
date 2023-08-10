@@ -26,9 +26,9 @@ func (logger *Logger) Success(message ...string) {
 func (logger *Logger) Print(message ...string) {
 	outputMsg := strings.Join(message, " ")
 	if logger.Verbose {
-		log.Println("[LOG] ", outputMsg)
+		log.Println("[LOG]", outputMsg)
 	} else {
-		fmt.Println("[LOG] ", outputMsg)
+		fmt.Println("[LOG]", outputMsg)
 	}
 }
 
