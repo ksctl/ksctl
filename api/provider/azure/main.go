@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 type AzureStateVMs struct {
@@ -20,6 +21,7 @@ type AzureStateVMs struct {
 	PrivateIPs               []string `json:"private_ips"`
 	PublicIPs                []string `json:"public_ips"`
 	NetworkInterfaceNames    []string `json:"network_interface_names"`
+	Hostnames                []string `json:"hostnames"`
 }
 
 type AzureStateVM struct {
@@ -31,12 +33,7 @@ type AzureStateVM struct {
 	NetworkInterfaceName     string `json:"network_interface_name"`
 	PrivateIP                string `json:"private_ip"`
 	PublicIP                 string `json:"public_ip"`
-}
-type HostNames struct {
-	ControlNodes     []string `json:"controlnode"`
-	WorkerNodes      []string `json:"workernode"`
-	LoadBalancerNode string   `json:"loadbalancernode"`
-	DatabaseNode     []string `json:"databasenodes"`
+	HostNames                string `json:"hostname"`
 }
 
 type StateConfiguration struct {
@@ -46,9 +43,10 @@ type StateConfiguration struct {
 	Region            string `json:"region"`
 	ResourceGroupName string `json:"resource_group_name"`
 
-	SSHID            string `json:"ssh_id"`
+	// SSHID            string `json:"ssh_id"`
 	SSHUser          string `json:"ssh_usr"`
 	SSHPrivateKeyLoc string `json:"ssh_private_key_location"`
+	SSHKeyName       string `json:"sshkey_name"`
 
 	SubnetName         string        `json:"subnet_name"`
 	SubnetID           string        `json:"subnet_id"`
@@ -140,10 +138,24 @@ func (*AzureProvider) GetStateForHACluster(state resources.StorageFactory) (clou
 }
 
 // InitState implements resources.CloudFactory.
-func (*AzureProvider) InitState(state resources.StorageFactory, operation string) error {
+func (obj *AzureProvider) InitState(state resources.StorageFactory, operation string) error {
 	if azureCloudState != nil {
 		return errors.New("[FATAL] already initialized")
 	}
+	// TODO: add operation
+	switch operation {
+	case utils.OPERATION_STATE_CREATE:
+	case utils.OPERATION_STATE_DELETE:
+	case utils.OPERATION_STATE_GET:
+	}
+	clusterDirName = obj.ClusterName + " " + obj.ResourceGroup + " " + obj.Region
+	switch obj.HACluster {
+	case false:
+		clusterType = utils.CLUSTER_TYPE_MANG
+	case true:
+		clusterType = utils.CLUSTER_TYPE_HA
+	}
+
 	azureCloudState = &StateConfiguration{}
 	ctx = context.Background()
 	return nil
@@ -153,6 +165,7 @@ func ReturnAzureStruct(metadata resources.Metadata) *AzureProvider {
 	return &AzureProvider{
 		ClusterName:   metadata.ClusterName,
 		Region:        metadata.Region,
+		HACluster:     metadata.IsHA,
 		ResourceGroup: "", // TODO: add a field for resourse group need to be created, or check the main branch what created it
 	}
 }
