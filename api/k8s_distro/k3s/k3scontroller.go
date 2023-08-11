@@ -46,7 +46,7 @@ const (
 
 func scriptKUBECONFIG() string {
 	return `#!/bin/bash
-cat /etc/rancher/k3s/k3s.yaml`
+sudo cat /etc/rancher/k3s/k3s.yaml`
 }
 
 // InitState implements resources.DistroFactory.

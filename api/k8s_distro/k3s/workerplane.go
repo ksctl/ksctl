@@ -30,7 +30,12 @@ func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory)
 
 func scriptWP(privateIPlb, token string) string {
 	return fmt.Sprintf(`#!/bin/bash
-export SECRET='%s'
-curl -sfL https://get.k3s.io | sh -s - agent --token=$SECRET --server https://%s:6443
+cat <<EOF > worker-setup.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | sh -s - agent --token %s --server https://%s:6443
+EOF
+
+sudo chmod +x worker-setup.sh
+sudo ./worker-setup.sh
 `, token, privateIPlb)
 }

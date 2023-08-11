@@ -63,33 +63,32 @@ func generateDBPassword(passwordLen int) string {
 
 func scriptDB(password string) string {
 	return fmt.Sprintf(`#!/bin/bash
-apt update
-apt install -y mysql-server
+sudo apt update
+sudo apt install -y mysql-server
 
-systemctl start mysql && systemctl enable mysql
+sudo systemctl start mysql
 
-mysql -e "create user 'ksctl' identified by '%s';"
-mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
+sudo systemctl enable mysql
 
-cat <<EOF > /etc/mysql/mysql.conf.d/mysqld.cnf
+cat <<EOF > mysqld.cnf
 [mysqld]
-user            = mysql
-pid-file        = /var/run/mysqld/mysqld.pid
-socket  = /var/run/mysqld/mysqld.sock
-port            = 3306
-datadir = /var/lib/mysql
+user		= mysql
+bind-address		= 0.0.0.0
+#mysqlx-bind-address	= 127.0.0.1
 
-bind-address            = 0.0.0.0
-mysqlx-bind-address     = 0.0.0.0
-key_buffer_size         = 16M
-
+key_buffer_size		= 16M
 myisam-recover-options  = BACKUP
-
 log_error = /var/log/mysql/error.log
 max_binlog_size   = 100M
 
 EOF
 
-systemctl restart mysql
+sudo mv mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
+
+sudo systemctl restart mysql
+
+sudo mysql -e "create user 'ksctl' identified by '%s';"
+sudo mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
+
 `, password)
 }

@@ -29,11 +29,11 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 
 func configLBscript(controlPlaneIPs []string) string {
 	script := `#!/bin/bash
-apt update
-apt install haproxy -y
-systemctl start haproxy && systemctl enable haproxy
+sudo apt update
+sudo apt install haproxy -y
+sudo systemctl start haproxy && sudo systemctl enable haproxy
 
-cat <<EOF > /etc/haproxy/haproxy.cfg
+cat <<EOF > haproxy.cfg
 frontend kubernetes-frontend
   bind *:6443
   mode tcp
@@ -56,7 +56,8 @@ backend kubernetes-backend
 
 	script += `EOF
 
-systemctl restart haproxy
+sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
+sudo systemctl restart haproxy
 `
 	return script
 }
