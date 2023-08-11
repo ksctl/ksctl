@@ -2,10 +2,34 @@ package azure
 
 import (
 	"context"
+	"os"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"os"
 )
+
+// TODO: add validation of region, disk size and more
+
+func getAzureManagedClusterClient(cred *AzureProvider) (*armcontainerservice.ManagedClustersClient, error) {
+
+	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return managedClustersClient, nil
+}
+
+func getAzureResourceGroupsClient(cred *AzureProvider) (*armresources.ResourceGroupsClient, error) {
+
+	resourceGroupClient, err := armresources.NewResourceGroupsClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resourceGroupClient, nil
+}
 
 func GetInputCredential(storage resources.StorageFactory) error {
 
