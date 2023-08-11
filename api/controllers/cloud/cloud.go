@@ -270,12 +270,18 @@ func CreateHACluster(client *resources.KsctlClient) error {
 }
 
 func CreateManagedCluster(client *resources.KsctlClient) error {
-	if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.Storage); err != nil {
-		return err
+
+	if client.Metadata.Provider != utils.CLOUD_LOCAL {
+		if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.Storage); err != nil {
+			return err
+		}
 	}
 
-	managedClient := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed").
-		VMType(client.Metadata.ManagedNodeType)
+	managedClient := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed")
+
+	if client.Metadata.Provider != utils.CLOUD_LOCAL {
+		managedClient = managedClient.VMType(client.Metadata.ManagedNodeType)
+	}
 
 	if client.Cloud.SupportForApplications() {
 		managedClient = managedClient.Application(client.Metadata.Applications)
@@ -303,8 +309,10 @@ func DeleteManagedCluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	if err := client.Cloud.DelNetwork(client.Storage); err != nil {
-		return err
+	if client.Metadata.Provider != utils.CLOUD_LOCAL {
+		if err := client.Cloud.DelNetwork(client.Storage); err != nil {
+			return err
+		}
 	}
 	return nil
 }

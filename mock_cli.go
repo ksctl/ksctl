@@ -28,7 +28,7 @@ func main() {
 	cmd := &resources.CobraCmd{}
 	NewCli(cmd)
 
-	cmd.Client.Metadata.Provider = utils.CLOUD_CIVO
+	cmd.Client.Metadata.Provider = utils.CLOUD_LOCAL
 	cmd.Client.Metadata.K8sDistro = utils.K8S_K3S
 	cmd.Client.Metadata.StateLocation = utils.STORE_LOCAL
 	cmd.Client.Metadata.ClusterName = "benchmark"
