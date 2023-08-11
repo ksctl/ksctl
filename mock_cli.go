@@ -28,7 +28,7 @@ func main() {
 	cmd := &resources.CobraCmd{}
 	NewCli(cmd)
 
-	cmd.Client.Metadata.Provider = utils.CLOUD_LOCAL
+	cmd.Client.Metadata.Provider = utils.CLOUD_CIVO
 	cmd.Client.Metadata.K8sDistro = utils.K8S_K3S
 	cmd.Client.Metadata.StateLocation = utils.STORE_LOCAL
 	cmd.Client.Metadata.ClusterName = "benchmark"
@@ -46,7 +46,7 @@ func main() {
 
 	cmd.Client.Metadata.Region = "FRA1"
 	cmd.Client.Metadata.NoCP = 3
-	cmd.Client.Metadata.NoWP = 0
+	cmd.Client.Metadata.NoWP = 1
 	cmd.Client.Metadata.NoDS = 1
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()

@@ -90,10 +90,16 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 func scriptWithoutCP_1(dbEndpoint, pubIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
-export K3S_DATASTORE_ENDPOINT='%s'
-export INSTALL_K3S_EXEC='--tls-san %s'
-curl -sfL https://get.k3s.io | sh -s - server \
-	--node-taint CriticalAddonsOnly=true:NoExecute
+cat <<EOF > control-setup.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="v1.27.1+k3s1" sh -s - server \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--datastore-endpoint "%s" \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setup.sh
+sudo ./control-setup.sh
 `, dbEndpoint, pubIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
@@ -115,18 +121,20 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 func scriptForK3sToken() string {
 	return `#!/bin/bash
-cat /var/lib/rancher/k3s/server/token
+sudo cat /var/lib/rancher/k3s/server/token
 `
 }
 
 func scriptCP_N(dbEndpoint, pubIPlb, token string) string {
+	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
 	return fmt.Sprintf(`#!/bin/bash
-export SECRET='%s'
-export K3S_DATASTORE_ENDPOINT='%s'
-export INSTALL_K3S_EXEC='--tls-san %s'
-curl -sfL https://get.k3s.io | sh -s - server \
-	--token=$SECRET \
-	--node-taint CriticalAddonsOnly=true:NoExecute
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="v1.27.1+k3s1" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
 `, token, dbEndpoint, pubIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
