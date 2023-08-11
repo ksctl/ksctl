@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -96,6 +97,7 @@ var (
 	clusterDirName string
 	clusterType    string // it stores the ha or managed
 
+	ctx context.Context
 )
 
 const (
@@ -143,6 +145,7 @@ func (*AzureProvider) InitState(state resources.StorageFactory, operation string
 		return errors.New("[FATAL] already initialized")
 	}
 	azureCloudState = &StateConfiguration{}
+	ctx = context.Background()
 	return nil
 }
 

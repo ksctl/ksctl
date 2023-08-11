@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/kubesimplify/ksctl/api/provider/azure"
 	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
 	"strings"
 
@@ -44,12 +45,15 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 		if err != nil {
 			return "", err
 		}
-		return "[ksctl] Credential added", nil
 	case utils.CLOUD_AZURE:
-		return "", fmt.Errorf("Currently not supported!")
+		err := azure.GetInputCredential(client.Storage)
+		if err != nil {
+			return "", err
+		}
 	default:
 		return "", fmt.Errorf("Currently not supported!")
 	}
+	return "[ksctl] Credential added", nil
 }
 
 // TODO: accept gate for creation as well for approval
