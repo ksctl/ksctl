@@ -132,6 +132,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 // AddWorkerNodes the user provides the desired no of workerplane not the no of workerplanes to be added
 func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 
+	var err error
 	currWP, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, false)
 	if err != nil {
 		return -1, err
@@ -144,11 +145,14 @@ func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 
 	for no := currWP; no < client.Metadata.NoWP; no++ {
 		name := client.ClusterName + "-vm-wp"
-		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
 			Role(utils.ROLE_WP).
 			VMType(client.WorkerPlaneNodeType).
 			Visibility(true).
 			NewVM(client.Storage, no)
+		if err != nil {
+			return -1, err
+		}
 	}
 
 	// workerplane created
@@ -190,7 +194,8 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 }
 
 func CreateHACluster(client *resources.KsctlClient) error {
-	err := client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.Storage)
+	var err error
+	err = client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.Storage)
 	if err != nil {
 		return err
 	}
@@ -240,37 +245,49 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	_ = client.Cloud.Name(client.ClusterName+"-vm-lb").
+	err = client.Cloud.Name(client.ClusterName+"-vm-lb").
 		Role(utils.ROLE_LB).
 		VMType(client.LoadBalancerNodeType).
 		Visibility(true).
 		NewVM(client.Storage, 0)
+	if err != nil {
+		return err
+	}
 
 	for no := 0; no < client.Metadata.NoDS; no++ {
 		name := client.ClusterName + "-vm-db"
-		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
 			Role(utils.ROLE_DS).
 			VMType(client.DataStoreNodeType).
 			Visibility(true).
 			NewVM(client.Storage, no)
+		if err != nil {
+			return err
+		}
 	}
 
 	for no := 0; no < client.Metadata.NoCP; no++ {
 		name := client.ClusterName + "-vm-cp"
-		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
 			Role(utils.ROLE_CP).
 			VMType(client.ControlPlaneNodeType).
 			Visibility(true).
 			NewVM(client.Storage, no)
+		if err != nil {
+			return err
+		}
 	}
 
 	for no := 0; no < client.Metadata.NoWP; no++ {
 		name := client.ClusterName + "-vm-wp"
-		_ = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
+		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
 			Role(utils.ROLE_WP).
 			VMType(client.WorkerPlaneNodeType).
 			Visibility(true).
 			NewVM(client.Storage, no)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/provider/azure"
-	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
 	"strings"
+
+	"github.com/kubesimplify/ksctl/api/provider/azure"
+	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
+	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
 
 	"github.com/kubesimplify/ksctl/api/utils"
 
@@ -140,7 +142,11 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 		printerTable = append(printerTable, data...)
 
 	case utils.CLOUD_AZURE:
-		return "", fmt.Errorf("Not yet implemtned")
+		data, err := azure_pkg.GetRAWClusterInfos(client.Storage)
+		if err != nil {
+			return "", err
+		}
+		printerTable = append(printerTable, data...)
 
 	case "all":
 		data, err := civo_pkg.GetRAWClusterInfos(client.Storage)

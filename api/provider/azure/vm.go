@@ -2,12 +2,13 @@ package azure
 
 import (
 	"context"
+	"os"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"os"
 )
 
 func (obj *AzureProvider) virtualMachineClient() (*armcompute.VirtualMachinesClient, error) {
@@ -79,6 +80,7 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) e
 		if err != nil {
 			return err
 		}
+		storage.Logger().Print("[azure] deleting vm...", vmName)
 		// TODO: Add the entry for name before polling starts so that state is present
 
 		_, err = pollerResponse.PollUntilDone(ctx, nil)
@@ -258,7 +260,21 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 		return err
 	}
 	// TODO: Add the entry for name before polling starts so that state is present
+	switch obj.Metadata.Role {
+	case utils.ROLE_WP:
+		azureCloudState.InfoWorkerPlanes.Names[indexNo] = obj.Metadata.ResName
+	case utils.ROLE_CP:
+		azureCloudState.InfoControlPlanes.Names[indexNo] = obj.Metadata.ResName
+	case utils.ROLE_LB:
+		azureCloudState.InfoLoadBalancer.Name = obj.Metadata.ResName
+	case utils.ROLE_DS:
+		azureCloudState.InfoDatabase.Names[indexNo] = obj.Metadata.ResName
+	}
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
 
+	storage.Logger().Print("[azure] creating vm...", obj.Metadata.ResName)
 	resp, err := pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
 		return err
@@ -266,19 +282,15 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 
 	switch obj.Metadata.Role {
 	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.Names[indexNo] = *resp.Name
 		azureCloudState.InfoWorkerPlanes.DiskNames[indexNo] = diskName
 		azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
 	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.Names[indexNo] = *resp.Name
 		azureCloudState.InfoControlPlanes.DiskNames[indexNo] = diskName
 		azureCloudState.InfoControlPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
 	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.Name = *resp.Name
 		azureCloudState.InfoLoadBalancer.DiskName = diskName
 		azureCloudState.InfoLoadBalancer.HostName = *resp.Properties.OSProfile.ComputerName
 	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.Names[indexNo] = *resp.Name
 		azureCloudState.InfoDatabase.DiskNames[indexNo] = diskName
 		azureCloudState.InfoDatabase.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
 	}
@@ -375,6 +387,19 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		return err
 	}
 	// TODO: Add the entry for name before polling starts so that state is present
+	switch obj.Metadata.Role {
+	case utils.ROLE_WP:
+		azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = publicIPName
+	case utils.ROLE_CP:
+		azureCloudState.InfoControlPlanes.PublicIPNames[index] = publicIPName
+	case utils.ROLE_LB:
+		azureCloudState.InfoLoadBalancer.PublicIPName = publicIPName
+	case utils.ROLE_DS:
+		azureCloudState.InfoDatabase.PublicIPNames[index] = publicIPName
+	}
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
 
 	resp, err := pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -383,19 +408,15 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 
 	switch obj.Metadata.Role {
 	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = *resp.Name
 		azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = *resp.ID
 		azureCloudState.InfoWorkerPlanes.PublicIPs[index] = *resp.Properties.IPAddress
 	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.PublicIPNames[index] = *resp.Name
 		azureCloudState.InfoControlPlanes.PublicIPIDs[index] = *resp.ID
 		azureCloudState.InfoControlPlanes.PublicIPs[index] = *resp.Properties.IPAddress
 	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.PublicIPName = *resp.Name
 		azureCloudState.InfoLoadBalancer.PublicIPID = *resp.ID
 		azureCloudState.InfoLoadBalancer.PublicIP = *resp.Properties.IPAddress
 	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.PublicIPNames[index] = *resp.Name
 		azureCloudState.InfoDatabase.PublicIPIDs[index] = *resp.ID
 		azureCloudState.InfoDatabase.PublicIPs[index] = *resp.Properties.IPAddress
 	}
@@ -519,6 +540,20 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		return err
 	}
 	// TODO: Add the entry for name before polling starts so that state is present
+	switch obj.Metadata.Role {
+	case utils.ROLE_WP:
+		azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = nicName
+	case utils.ROLE_CP:
+		azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = nicName
+
+	case utils.ROLE_LB:
+		azureCloudState.InfoLoadBalancer.NetworkInterfaceName = nicName
+	case utils.ROLE_DS:
+		azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = nicName
+	}
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
 
 	resp, err := pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -526,20 +561,16 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	}
 	switch obj.Metadata.Role {
 	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = *resp.Name
 		azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = *resp.ID
 		azureCloudState.InfoWorkerPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = *resp.Name
 		azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = *resp.ID
 		azureCloudState.InfoControlPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 
 	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.NetworkInterfaceName = *resp.Name
 		azureCloudState.InfoLoadBalancer.NetworkInterfaceID = *resp.ID
 		azureCloudState.InfoLoadBalancer.PrivateIP = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = *resp.Name
 		azureCloudState.InfoDatabase.NetworkInterfaceIDs[index] = *resp.ID
 		azureCloudState.InfoDatabase.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 	}

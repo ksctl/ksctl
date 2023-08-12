@@ -38,10 +38,16 @@ func main() {
 	cmd.Client.Metadata.ManagedNodeType = "Standard_DS2_v2"
 
 	// ha
-	cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
-	cmd.Client.Metadata.ControlPlaneNodeType = "g3.small"
-	cmd.Client.Metadata.WorkerPlaneNodeType = "g3.small"
-	cmd.Client.Metadata.DataStoreNodeType = "g3.medium"
+	//cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
+	cmd.Client.Metadata.LoadBalancerNodeType = "Standard_F2s"
+	//cmd.Client.Metadata.ControlPlaneNodeType = "g3.small"
+	cmd.Client.Metadata.ControlPlaneNodeType = "Standard_F2s"
+
+	//cmd.Client.Metadata.WorkerPlaneNodeType = "g3.small"
+	cmd.Client.Metadata.WorkerPlaneNodeType = "Standard_F2s"
+
+	//cmd.Client.Metadata.DataStoreNodeType = "g3.medium"
+	cmd.Client.Metadata.DataStoreNodeType = "Standard_F2s"
 
 	cmd.Client.Metadata.CNIPlugin = "cilium"
 
@@ -49,7 +55,7 @@ func main() {
 	cmd.Client.Metadata.Region = "eastus"
 
 	cmd.Client.Metadata.NoCP = 3
-	cmd.Client.Metadata.NoWP = 1
+	cmd.Client.Metadata.NoWP = 0
 	cmd.Client.Metadata.NoDS = 1
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
@@ -125,8 +131,7 @@ Your Choice`)
 	case 6:
 		cmd.Client.Metadata.IsHA = true
 
-		// cmd.Client.Metadata.NoWP = 1
-		cmd.Client.Metadata.NoWP = 2 //first do this
+		cmd.Client.Metadata.NoWP = 1
 		stat, err := controller.AddWorkerPlaneNode(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())
@@ -136,7 +141,7 @@ Your Choice`)
 	case 7:
 		cmd.Client.Metadata.IsHA = true
 
-		cmd.Client.Metadata.NoWP = 1
+		cmd.Client.Metadata.NoWP = 0
 		stat, err := controller.DelWorkerPlaneNode(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())
