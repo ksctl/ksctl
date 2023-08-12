@@ -75,7 +75,6 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	}
 	storage.Logger().Success("[azure] created the resource group", *resourceGroup.Name)
 
-	// TODO: create subnet and virtual network
 	if obj.HACluster {
 		virtNet := obj.ClusterName + "-vnet"
 		subNet := obj.ClusterName + "-subnet"
@@ -121,13 +120,18 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 	if err != nil {
 		return err
 	}
+	azureCloudState.VirtualNetworkName = resName
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+	storage.Logger().Print("[azure] creating virtual network...", resName)
 
 	resp, err := pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	azureCloudState.VirtualNetworkName = *resp.Name
 	azureCloudState.VirtualNetworkID = *resp.ID
 	if err := saveStateHelper(storage); err != nil {
 		return err
@@ -160,12 +164,17 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.St
 	if err != nil {
 		return err
 	}
+	azureCloudState.SubnetName = subnetName
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	storage.Logger().Print("[azure] creating subnet...", subnetName)
 
 	resp, err := pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
 		return err
 	}
-	azureCloudState.SubnetName = subnetName
 	azureCloudState.SubnetID = *resp.ID
 	if err := saveStateHelper(storage); err != nil {
 		return err

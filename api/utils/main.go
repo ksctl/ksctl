@@ -399,7 +399,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 		if err == nil {
 			break
 		} else {
-			storage.Logger().Err(fmt.Sprintln("RETRYING", err))
+			storage.Logger().Warn(fmt.Sprintln("RETRYING", err))
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++

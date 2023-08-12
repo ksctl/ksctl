@@ -106,7 +106,6 @@ type AzureProvider struct {
 var (
 	azureCloudState *StateConfiguration
 
-	//azClient     *civogo.Client
 	clusterDirName string
 	clusterType    string // it stores the ha or managed
 

@@ -81,7 +81,6 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) e
 			return err
 		}
 		storage.Logger().Print("[azure] deleting vm...", vmName)
-		// TODO: Add the entry for name before polling starts so that state is present
 
 		_, err = pollerResponse.PollUntilDone(ctx, nil)
 		if err != nil {

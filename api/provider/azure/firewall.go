@@ -46,6 +46,7 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	if err != nil {
 		return err
 	}
+	storage.Logger().Print("[azure] firewall deleting...", nsg)
 
 	_, err = pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -124,6 +125,22 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	if err != nil {
 		return err
 	}
+	switch obj.Metadata.Role {
+	case utils.ROLE_CP:
+		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = obj.Metadata.ResName
+	case utils.ROLE_WP:
+		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = obj.Metadata.ResName
+	case utils.ROLE_LB:
+		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = obj.Metadata.ResName
+	case utils.ROLE_DS:
+		azureCloudState.InfoDatabase.NetworkSecurityGroupName = obj.Metadata.ResName
+	}
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	storage.Logger().Print("[azure] creating firewall...", obj.Metadata.ResName)
 
 	resp, err := pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -131,17 +148,13 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 	switch obj.Metadata.Role {
 	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = *resp.Name
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
 	case utils.ROLE_WP:
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID = *resp.ID
-		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = *resp.Name
 	case utils.ROLE_LB:
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID = *resp.ID
-		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = *resp.Name
 	case utils.ROLE_DS:
 		azureCloudState.InfoDatabase.NetworkSecurityGroupID = *resp.ID
-		azureCloudState.InfoDatabase.NetworkSecurityGroupName = *resp.Name
 	}
 
 	if err := saveStateHelper(storage); err != nil {
