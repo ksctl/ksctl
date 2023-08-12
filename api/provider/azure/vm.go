@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -11,6 +12,8 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
+
+// //////// TODO: implement it
 
 // DelVM implements resources.CloudFactory.
 func (*AzureProvider) DelVM(state resources.StorageFactory, indexNo int) error {
@@ -143,5 +146,112 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		return err
 	}
 	storage.Logger().Success("Deleted disk", diskName)
+	return nil
+}
+
+func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string) (*armnetwork.PublicIPAddress, error) {
+	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	parameters := armnetwork.PublicIPAddress{
+		Location: to.Ptr(obj.Region),
+		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+			PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic), // Static or Dynamic
+		},
+	}
+
+	pollerResponse, err := publicIPAddressClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName, publicIPName, parameters, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	storage.Logger().Success("Created public IP address", *resp.Name)
+	return &resp.PublicIPAddress, err
+}
+
+func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string) error {
+	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return err
+	}
+
+	pollerResponse, err := publicIPAddressClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, publicIPName, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	storage.Logger().Success("Deleted the pubIP", publicIPName)
+	return nil
+}
+
+func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resourceName, nicName string, subnetID string, publicIPID string, networkSecurityGroupID string) (*armnetwork.Interface, error) {
+	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	parameters := armnetwork.Interface{
+		Location: to.Ptr(obj.Region),
+		Properties: &armnetwork.InterfacePropertiesFormat{
+			IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+				{
+					Name: to.Ptr(resourceName),
+					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+						PrivateIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodDynamic),
+						Subnet: &armnetwork.Subnet{
+							ID: to.Ptr(subnetID),
+						},
+						PublicIPAddress: &armnetwork.PublicIPAddress{
+							ID: to.Ptr(publicIPID),
+						},
+					},
+				},
+			},
+			NetworkSecurityGroup: &armnetwork.SecurityGroup{
+				ID: to.Ptr(networkSecurityGroupID),
+			},
+		},
+	}
+
+	pollerResponse, err := nicClient.BeginCreateOrUpdate(ctx, obj.ResourceGroup, nicName, parameters, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	storage.Logger().Success("Created network interface", *resp.Name)
+	return &resp.Interface, err
+}
+
+func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, nicName string) error {
+	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return err
+	}
+
+	pollerResponse, err := nicClient.BeginDelete(ctx, obj.ResourceGroup, nicName, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+	storage.Logger().Success("Deleted the nic", nicName)
+
 	return nil
 }
