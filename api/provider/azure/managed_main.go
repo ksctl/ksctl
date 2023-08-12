@@ -62,6 +62,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			Location: to.Ptr(azureCloudState.Region),
 			Properties: &armcontainerservice.ManagedClusterProperties{
 				DNSPrefix: to.Ptr("aksgosdk"),
+				//KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 					{
 						Name:              to.Ptr("askagent"),
@@ -87,16 +88,19 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	if err != nil {
 		return err
 	}
-	storage.Logger().Print("[azure] Creating AKS cluster...")
+	azureCloudState.ManagedClusterName = obj.Metadata.ResName
 
-	// TODO: check if we can adding logging during polling?
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	storage.Logger().Print("[azure] Creating AKS cluster...")
 
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	azureCloudState.ManagedClusterName = *resp.Name
 	azureCloudState.IsCompleted = true
 	if err := saveStateHelper(storage); err != nil {
 		return err
