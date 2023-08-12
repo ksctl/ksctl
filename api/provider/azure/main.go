@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"os"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources"
@@ -237,9 +238,9 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	}
 	obj.AzureTokenCred = cred
 
-	//if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
-	//	return err
-	//}
+	if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
+		return err
+	}
 
 	storage.Logger().Success("[azure] init cloud state")
 
@@ -275,6 +276,9 @@ func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
 // VMType it will contain which vmType to create
 func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
 	cloud.Metadata.VmType = size
+	if err := isValidVMSize(size); err != nil {
+		return nil
+	}
 	return cloud
 }
 
@@ -324,7 +328,7 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		currLen := len(azureCloudState.InfoControlPlanes.Names)
 		if currLen == 0 {
 			azureCloudState.InfoControlPlanes.Names = make([]string, no)
-			//azureCloudState.InfoControlPlanes.Hostnames = make([]string, no)  // as we don't need it now
+			azureCloudState.InfoControlPlanes.Hostnames = make([]string, no) // as we don't need it now
 			azureCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
 			azureCloudState.InfoControlPlanes.PrivateIPs = make([]string, no)
 			azureCloudState.InfoControlPlanes.DiskNames = make([]string, no)
@@ -360,7 +364,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		currLen := len(azureCloudState.InfoDatabase.Names)
 		if currLen == 0 {
 			azureCloudState.InfoDatabase.Names = make([]string, no)
-			//azureCloudState.InfoDatabase.Hostnames = make([]string, no)   // as we don't need it now
+			azureCloudState.InfoDatabase.Hostnames = make([]string, no) // TODO: remove it: as we don't need it now
 			azureCloudState.InfoDatabase.PublicIPs = make([]string, no)
 			azureCloudState.InfoDatabase.PrivateIPs = make([]string, no)
 			azureCloudState.InfoDatabase.DiskNames = make([]string, no)
@@ -467,7 +471,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 		}
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider: utils.CLOUD_CIVO,
+				Provider: utils.CLOUD_AZURE,
 				Name:     haFolder[0],
 				Region:   haFolder[2],
 				Type:     utils.CLUSTER_TYPE_HA,
@@ -500,7 +504,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider:   utils.CLOUD_CIVO,
+				Provider:   utils.CLOUD_AZURE,
 				Name:       haFolder[0],
 				Region:     haFolder[2],
 				Type:       utils.CLUSTER_TYPE_MANG,
