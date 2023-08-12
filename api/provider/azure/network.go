@@ -2,7 +2,6 @@ package azure
 
 import (
 	"context"
-	"fmt"
 	"github.com/kubesimplify/ksctl/api/utils"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -21,43 +20,20 @@ func (obj *AzureProvider) resourceGroupsClient() (*armresources.ResourceGroupsCl
 	return resourceGroupClient, nil
 }
 
-// DelNetwork implements resources.CloudFactory.
-func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
-
-	if len(azureCloudState.ResourceGroupName) == 0 {
-		storage.Logger().Success("[skip] already deleted the resource group")
-		return nil
-	} else {
-		rgclient, err := obj.resourceGroupsClient()
-		if err != nil {
-			return err
-		}
-		pollerResp, err := rgclient.BeginDelete(ctx, azureCloudState.ResourceGroupName, nil)
-		if err != nil {
-			return err
-		}
-		_, err = pollerResp.PollUntilDone(ctx, nil)
-		if err != nil {
-			return err
-		}
-
-		rgname := azureCloudState.ResourceGroupName
-
-		azureCloudState.ResourceGroupName = ""
-		if err := saveStateHelper(storage); err != nil {
-			return err
-		}
-		storage.Logger().Success("[azure] deleted the resource group", rgname)
-
+func (obj *AzureProvider) virtualNetworkClient() (*armnetwork.VirtualNetworksClient, error) {
+	vnetClient, err := armnetwork.NewVirtualNetworksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
 	}
+	return vnetClient, nil
+}
 
-	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
-		DeleteDir(); err != nil {
-		return err
+func (obj *AzureProvider) subnetClient() (*armnetwork.SubnetsClient, error) {
+	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
 	}
-
-	return nil
-
+	return subnetClient, nil
 }
 
 // NewNetwork implements resources.CloudFactory.
@@ -97,233 +73,36 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
-	if obj.HACluster {
-		// create Virtual network, subnet, nsg, ....
-		return fmt.Errorf("[azure] ha is not added")
-	}
 	storage.Logger().Success("[azure] created the resource group", *resourceGroup.Name)
 
-	return nil
-}
+	// TODO: create subnet and virtual network
+	if obj.HACluster {
+		virtNet := obj.ClusterName + "-vnet"
+		subNet := obj.ClusterName + "-subnet"
+		// virtual net
+		if err := obj.CreateVirtualNetwork(ctx, storage, virtNet); err != nil {
+			return err
+		}
 
-func (obj *AzureProvider) CreateResourceGroup(ctx context.Context, storage resources.StorageFactory) (*armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
-	resourceGroupClient, err := obj.resourceGroupsClient()
-	if err != nil {
-		return nil, err
+		// subnet
+		if err := obj.CreateSubnet(ctx, storage, subNet); err != nil {
+			return err
+		}
 	}
-	resourceGroup, err := resourceGroupClient.CreateOrUpdate(
-		ctx,
-		azCloudState.ResourceGroupName,
-		armresources.ResourceGroup{
-			Location: to.Ptr(obj.Region),
-		},
-		nil)
-	if err != nil {
-		return nil, err
-	}
-	storage.Logger().Success("Created resource group", *resourceGroup.Name)
-	return &resourceGroup, nil
-}
-
-func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context, storage resources.StorageFactory) error {
-	resourceGroupClient, err := obj.resourceGroupsClient()
-	if err != nil {
-		return err
-	}
-	pollerResp, err := resourceGroupClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, nil)
-	if err != nil {
-		return err
-	}
-	_, err = pollerResp.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	storage.Logger().Success("Deleted resource group", azureCloudState.ResourceGroupName)
-	return nil
-}
-
-func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) (*armnetwork.Subnet, error) {
-	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	parameters := armnetwork.Subnet{
-		Properties: &armnetwork.SubnetPropertiesFormat{
-			AddressPrefix: to.Ptr("10.1.0.0/16"),
-		},
-	}
-
-	pollerResponse, err := subnetClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName, subnetName, parameters, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	azureCloudState.SubnetName = subnetName
-	azureCloudState.SubnetID = *resp.ID
-
-	storage.Logger().Success("Created subnet", *resp.Name)
-	return &resp.Subnet, nil
-}
-
-func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
-	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := subnetClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName, subnetName, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	storage.Logger().Success("Deleted subnet", subnetName)
-	return nil
-}
-
-func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string) (*armnetwork.PublicIPAddress, error) {
-	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	parameters := armnetwork.PublicIPAddress{
-		Location: to.Ptr(obj.Region),
-		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-			PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic), // Static or Dynamic
-		},
-	}
-
-	pollerResponse, err := publicIPAddressClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName, publicIPName, parameters, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	storage.Logger().Success("Created public IP address", *resp.Name)
-	return &resp.PublicIPAddress, err
-}
-
-func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string) error {
-	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := publicIPAddressClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, publicIPName, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	storage.Logger().Success("Deleted the pubIP", publicIPName)
-	return nil
-}
-
-func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resourceName, nicName string, subnetID string, publicIPID string, networkSecurityGroupID string) (*armnetwork.Interface, error) {
-	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	parameters := armnetwork.Interface{
-		Location: to.Ptr(obj.Region),
-		Properties: &armnetwork.InterfacePropertiesFormat{
-			IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
-				{
-					Name: to.Ptr(resourceName),
-					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodDynamic),
-						Subnet: &armnetwork.Subnet{
-							ID: to.Ptr(subnetID),
-						},
-						PublicIPAddress: &armnetwork.PublicIPAddress{
-							ID: to.Ptr(publicIPID),
-						},
-					},
-				},
-			},
-			NetworkSecurityGroup: &armnetwork.SecurityGroup{
-				ID: to.Ptr(networkSecurityGroupID),
-			},
-		},
-	}
-
-	pollerResponse, err := nicClient.BeginCreateOrUpdate(ctx, obj.ResourceGroup, nicName, parameters, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	storage.Logger().Success("Created network interface", *resp.Name)
-	return &resp.Interface, err
-}
-
-func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, nicName string) error {
-	nicClient, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := nicClient.BeginDelete(ctx, obj.ResourceGroup, nicName, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-	storage.Logger().Success("Deleted the nic", nicName)
 
 	return nil
 }
 
-func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage resources.StorageFactory) error {
-	vnetClient, err := armnetwork.NewVirtualNetworksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return err
+func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage resources.StorageFactory, resName string) error {
+
+	if len(azureCloudState.VirtualNetworkName) != 0 {
+		storage.Logger().Success("[skip] virtualNetwork already created", azureCloudState.VirtualNetworkName)
+		return nil
 	}
 
-	pollerResponse, err := vnetClient.BeginDelete(ctx, obj.ResourceGroup, azureCloudState.VirtualNetworkName, nil)
+	vnetClient, err := obj.virtualNetworkClient()
 	if err != nil {
 		return err
-	}
-
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-	storage.Logger().Success("Deleted virtual network", azureCloudState.VirtualNetworkName)
-	return nil
-}
-
-func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage resources.StorageFactory, virtualNetworkName string) (*armnetwork.VirtualNetwork, error) {
-	vnetClient, err := armnetwork.NewVirtualNetworksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, err
 	}
 
 	parameters := armnetwork.VirtualNetwork{
@@ -337,18 +116,177 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 		},
 	}
 
-	pollerResponse, err := vnetClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName, virtualNetworkName, parameters, nil)
+	pollerResponse, err := vnetClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName,
+		resName, parameters, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	resp, err := pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	azureCloudState.VirtualNetworkName = *resp.Name
 	azureCloudState.VirtualNetworkID = *resp.ID
-	storage.Logger().Success("Created virtual network", *resp.Name)
-	return &resp.VirtualNetwork, nil
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+	storage.Logger().Success("[azure] Created virtual network", *resp.Name)
+	return nil
+}
+
+func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
+
+	if len(azureCloudState.SubnetName) != 0 {
+		storage.Logger().Success("[skip] subnet already created", azureCloudState.VirtualNetworkName)
+		return nil
+	}
+
+	subnetClient, err := obj.subnetClient()
+	if err != nil {
+		return err
+	}
+
+	parameters := armnetwork.Subnet{
+		Properties: &armnetwork.SubnetPropertiesFormat{
+			AddressPrefix: to.Ptr("10.1.0.0/16"),
+		},
+	}
+
+	pollerResponse, err := subnetClient.BeginCreateOrUpdate(ctx,
+		azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName,
+		subnetName, parameters, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+	azureCloudState.SubnetName = subnetName
+	azureCloudState.SubnetID = *resp.ID
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+	storage.Logger().Success("[azure] Created subnet", *resp.Name)
+	return nil
+}
+
+// DelNetwork implements resources.CloudFactory.
+func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
+
+	if len(azureCloudState.ResourceGroupName) == 0 {
+		storage.Logger().Success("[skip] already deleted the resource group")
+		return nil
+	} else {
+		if obj.HACluster {
+			// delete subnet
+			if err := obj.DeleteSubnet(ctx, storage); err != nil {
+				return err
+			}
+
+			// delete vnet
+			if err := obj.DeleteVirtualNetwork(ctx, storage); err != nil {
+				return err
+			}
+		}
+		rgclient, err := obj.resourceGroupsClient()
+		if err != nil {
+			return err
+		}
+		pollerResp, err := rgclient.BeginDelete(ctx, azureCloudState.ResourceGroupName, nil)
+		if err != nil {
+			return err
+		}
+		_, err = pollerResp.PollUntilDone(ctx, nil)
+		if err != nil {
+			return err
+		}
+
+		rgname := azureCloudState.ResourceGroupName
+
+		azureCloudState.ResourceGroupName = ""
+		if err := saveStateHelper(storage); err != nil {
+			return err
+		}
+		storage.Logger().Success("[azure] deleted the resource group", rgname)
+
+	}
+
+	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+		DeleteDir(); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage resources.StorageFactory) error {
+
+	subnet := azureCloudState.SubnetName
+	if len(subnet) == 0 {
+		storage.Logger().Success("[skip] subnet already deleted", subnet)
+		return nil
+	}
+
+	subnetClient, err := obj.subnetClient()
+	if err != nil {
+		return err
+	}
+
+	pollerResponse, err := subnetClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName, subnet, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	azureCloudState.SubnetName = ""
+	azureCloudState.SubnetID = ""
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	storage.Logger().Success("[azure] Deleted subnet", subnet)
+	return nil
+}
+
+func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage resources.StorageFactory) error {
+
+	vnet := azureCloudState.VirtualNetworkName
+	if len(vnet) == 0 {
+		storage.Logger().Success("[skip] subnet already deleted", vnet)
+		return nil
+	}
+
+	vnetClient, err := obj.virtualNetworkClient()
+	if err != nil {
+		return err
+	}
+
+	pollerResponse, err := vnetClient.BeginDelete(ctx, obj.ResourceGroup, vnet, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	azureCloudState.VirtualNetworkID = ""
+	azureCloudState.VirtualNetworkName = ""
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	storage.Logger().Success("[azure] Deleted virtual network", vnet)
+	return nil
 }
