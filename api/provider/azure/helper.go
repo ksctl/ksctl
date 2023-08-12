@@ -2,34 +2,16 @@ package azure
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
+	"runtime"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 // TODO: add validation of region, disk size and more
-
-func getAzureManagedClusterClient(cred *AzureProvider) (*armcontainerservice.ManagedClustersClient, error) {
-
-	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return managedClustersClient, nil
-}
-
-func getAzureResourceGroupsClient(cred *AzureProvider) (*armresources.ResourceGroupsClient, error) {
-
-	resourceGroupClient, err := armresources.NewResourceGroupsClient(cred.SubscriptionID, cred.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return resourceGroupClient, nil
-}
 
 func GetInputCredential(storage resources.StorageFactory) error {
 
@@ -89,36 +71,36 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	return nil
 }
 
-func setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context, cred *AzureProvider) error {
+func (obj *AzureProvider) setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context) error {
 
-	env_tenant := os.Getenv("AZURE_TENANT_ID")
-	env_sub := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	env_clientid := os.Getenv("AZURE_CLIENT_ID")
-	env_clientsec := os.Getenv("AZURE_CLIENT_SECRET")
+	envTenant := os.Getenv("AZURE_TENANT_ID")
+	envSub := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	envClientid := os.Getenv("AZURE_CLIENT_ID")
+	envClientsec := os.Getenv("AZURE_CLIENT_SECRET")
 
-	if len(env_tenant) != 0 &&
-		len(env_sub) != 0 &&
-		len(env_clientid) != 0 &&
-		len(env_clientsec) != 0 {
+	if len(envTenant) != 0 &&
+		len(envSub) != 0 &&
+		len(envClientid) != 0 &&
+		len(envClientsec) != 0 {
 
-		cred.SubscriptionID = env_sub
+		obj.SubscriptionID = envSub
 		return nil
 	}
 
 	msg := "environment vars not set:"
-	if len(env_tenant) == 0 {
+	if len(envTenant) == 0 {
 		msg = msg + " AZURE_TENANT_ID"
 	}
 
-	if len(env_sub) == 0 {
+	if len(envSub) == 0 {
 		msg = msg + " AZURE_SUBSCRIPTION_ID"
 	}
 
-	if len(env_clientid) == 0 {
+	if len(envClientid) == 0 {
 		msg = msg + " AZURE_CLIENT_ID"
 	}
 
-	if len(env_clientsec) == 0 {
+	if len(envClientsec) == 0 {
 		msg = msg + " AZURE_CLIENT_SECRET"
 	}
 
@@ -129,7 +111,7 @@ func setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context, c
 		return err
 	}
 
-	cred.SubscriptionID = tokens["subscription_id"]
+	obj.SubscriptionID = tokens["subscription_id"]
 
 	err = os.Setenv("AZURE_SUBSCRIPTION_ID", tokens["subscription_id"])
 	if err != nil {
@@ -151,4 +133,70 @@ func setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context, c
 		return err
 	}
 	return nil
+}
+
+func generatePath(flag int, path ...string) string {
+	return utils.GetPath(flag, utils.CLOUD_AZURE, path...)
+}
+
+func saveStateHelper(storage resources.StorageFactory) error {
+	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)
+	rawState, err := convertStateToBytes(*azureCloudState)
+	if err != nil {
+		return err
+	}
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
+}
+
+func loadStateHelper(storage resources.StorageFactory) error {
+	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)
+	raw, err := storage.Path(path).Load()
+	if err != nil {
+		return err
+	}
+
+	return convertStateFromBytes(raw)
+}
+
+func saveKubeconfigHelper(storage resources.StorageFactory, kubeconfig string) error {
+	rawState := []byte(kubeconfig)
+	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
+}
+
+func convertStateToBytes(state StateConfiguration) ([]byte, error) {
+	return json.Marshal(state)
+}
+
+func convertStateFromBytes(raw []byte) error {
+	var data *StateConfiguration
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return err
+	}
+	azureCloudState = data
+	return nil
+}
+
+func printKubeconfig(storage resources.StorageFactory, operation string) {
+	env := ""
+	storage.Logger().Note("KUBECONFIG env var")
+	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	switch runtime.GOOS {
+	case "windows":
+		switch operation {
+		case "create":
+			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
+		case "delete":
+			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+		}
+	case "linux", "macos":
+		switch operation {
+		case "create":
+			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
+		case "delete":
+			env = "unset KUBECONFIG"
+		}
+	}
+	storage.Logger().Note(env)
 }

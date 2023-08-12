@@ -34,7 +34,8 @@ func main() {
 	cmd.Client.Metadata.ClusterName = "benchmark"
 
 	// managed
-	cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"
+	//cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"
+	cmd.Client.Metadata.ManagedNodeType = "Standard_DS2_v2"
 
 	// ha
 	cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
@@ -44,7 +45,9 @@ func main() {
 
 	cmd.Client.Metadata.CNIPlugin = "cilium"
 
-	cmd.Client.Metadata.Region = "FRA1"
+	//cmd.Client.Metadata.Region = "FRA1"
+	cmd.Client.Metadata.Region = "eastus"
+
 	cmd.Client.Metadata.NoCP = 3
 	cmd.Client.Metadata.NoWP = 1
 	cmd.Client.Metadata.NoDS = 1

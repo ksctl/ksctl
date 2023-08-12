@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -48,6 +49,9 @@ type StateConfiguration struct {
 	SSHPrivateKeyLoc string `json:"ssh_private_key_location"`
 	SSHKeyName       string `json:"sshkey_name"`
 
+	// ManagedCluster
+	ManagedClusterName string `json:"managed_cluster_name"`
+
 	SubnetName         string        `json:"subnet_name"`
 	SubnetID           string        `json:"subnet_id"`
 	VirtualNetworkName string        `json:"virtual_network_name"`
@@ -86,7 +90,7 @@ type AzureProvider struct {
 	SubscriptionID string                 `json:"subscription_id"`
 	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"`
 	SSHPath        string                 `json:"ssh_key"`
-	Metadata
+	Metadata       Metadata
 }
 
 var (
@@ -112,8 +116,9 @@ func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 }
 
 // Version implements resources.CloudFactory.
-func (*AzureProvider) Version(string) resources.CloudFactory {
-	panic("unimplemented")
+func (obj *AzureProvider) Version(ver string) resources.CloudFactory {
+	obj.Metadata.K8sVersion = ver
+	return obj
 }
 
 type Credential struct {
@@ -128,46 +133,97 @@ var (
 )
 
 // GetManagedKubernetes implements resources.CloudFactory.
-func (*AzureProvider) GetManagedKubernetes(state resources.StorageFactory) {
+func (*AzureProvider) GetManagedKubernetes(resources.StorageFactory) {
 	panic("unimplemented")
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
-func (*AzureProvider) GetStateForHACluster(state resources.StorageFactory) (cloud.CloudResourceState, error) {
+func (*AzureProvider) GetStateForHACluster(resources.StorageFactory) (cloud.CloudResourceState, error) {
 	panic("unimplemented")
 }
 
 // InitState implements resources.CloudFactory.
-func (obj *AzureProvider) InitState(state resources.StorageFactory, operation string) error {
-	if azureCloudState != nil {
-		return errors.New("[FATAL] already initialized")
-	}
-	// TODO: add operation
-	switch operation {
-	case utils.OPERATION_STATE_CREATE:
-	case utils.OPERATION_STATE_DELETE:
-	case utils.OPERATION_STATE_GET:
-	}
-	clusterDirName = obj.ClusterName + " " + obj.ResourceGroup + " " + obj.Region
+func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation string) error {
+
 	switch obj.HACluster {
 	case false:
 		clusterType = utils.CLUSTER_TYPE_MANG
 	case true:
 		clusterType = utils.CLUSTER_TYPE_HA
 	}
+	obj.ResourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.ClusterName, clusterType)
+	clusterDirName = obj.ClusterName + " " + obj.ResourceGroup + " " + obj.Region
 
-	azureCloudState = &StateConfiguration{}
+	if azureCloudState != nil {
+		return errors.New("[FATAL] already initialized")
+	}
+	errLoadState := loadStateHelper(storage)
+	// TODO: add operations
+	switch operation {
+	case utils.OPERATION_STATE_CREATE:
+		if errLoadState == nil && azureCloudState.IsCompleted {
+			return fmt.Errorf("[azure] already exist")
+		}
+		if errLoadState == nil && !azureCloudState.IsCompleted {
+			storage.Logger().Note("[azure] RESUME triggered!!")
+		} else {
+			storage.Logger().Note("[azure] Fresh state!!")
+			azureCloudState = &StateConfiguration{
+				IsCompleted: false,
+				ClusterName: obj.ClusterName,
+				Region:      obj.Region,
+			}
+		}
+
+	case utils.OPERATION_STATE_DELETE:
+		if errLoadState != nil {
+			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
+		}
+		storage.Logger().Note("[azure] Delete resource(s)")
+
+	case utils.OPERATION_STATE_GET:
+		if errLoadState != nil {
+			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
+		}
+		storage.Logger().Note("[azure] Get resources")
+		clusterDirName = azureCloudState.ClusterName + " " + azureCloudState.ResourceGroupName + " " + azureCloudState.Region
+	default:
+		return errors.New("[azure] Invalid operation for init state")
+
+	}
+
 	ctx = context.Background()
+	err := obj.setRequiredENV_VAR(storage, ctx)
+	if err != nil {
+		return err
+	}
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return err
+	}
+	obj.AzureTokenCred = cred
+
+	//if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
+	//	return err
+	//}
+
+	storage.Logger().Success("[azure] init cloud state")
+
 	return nil
 }
 
-func ReturnAzureStruct(metadata resources.Metadata) *AzureProvider {
+func ReturnAzureStruct(metadata resources.Metadata) (*AzureProvider, error) {
+
 	return &AzureProvider{
-		ClusterName:   metadata.ClusterName,
-		Region:        metadata.Region,
-		HACluster:     metadata.IsHA,
-		ResourceGroup: "", // TODO: add a field for resourse group need to be created, or check the main branch what created it
-	}
+		ClusterName: metadata.ClusterName,
+		Region:      metadata.Region,
+		HACluster:   metadata.IsHA,
+		//ResourceGroup: metadata.ClusterName + "-azure-ha-ksctl",
+		Metadata: Metadata{
+			K8sVersion: metadata.K8sVersion,
+			K8sName:    metadata.K8sDistro,
+		},
+	}, nil
 }
 
 // Name it will contain the name of the resource to be created
