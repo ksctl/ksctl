@@ -168,7 +168,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 	case utils.OPERATION_STATE_CREATE:
 		if errLoadState == nil && civoCloudState.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
-			return fmt.Errorf("already exist")
+			return fmt.Errorf("[civo] already exist")
 		}
 
 		if errLoadState == nil && !civoCloudState.IsCompleted {

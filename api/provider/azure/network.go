@@ -2,6 +2,8 @@ package azure
 
 import (
 	"context"
+	"fmt"
+	"github.com/kubesimplify/ksctl/api/utils"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
@@ -9,20 +11,103 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-// FIXME: all the resourcegoup getter should use the state file
+func (obj *AzureProvider) resourceGroupsClient() (*armresources.ResourceGroupsClient, error) {
+
+	resourceGroupClient, err := armresources.NewResourceGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resourceGroupClient, nil
+}
 
 // DelNetwork implements resources.CloudFactory.
-func (*AzureProvider) DelNetwork(state resources.StorageFactory) error {
-	panic("unimplemented")
+func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
+
+	if len(azureCloudState.ResourceGroupName) == 0 {
+		storage.Logger().Success("[skip] already deleted the resource group")
+		return nil
+	} else {
+		rgclient, err := obj.resourceGroupsClient()
+		if err != nil {
+			return err
+		}
+		pollerResp, err := rgclient.BeginDelete(ctx, azureCloudState.ResourceGroupName, nil)
+		if err != nil {
+			return err
+		}
+		_, err = pollerResp.PollUntilDone(ctx, nil)
+		if err != nil {
+			return err
+		}
+
+		rgname := azureCloudState.ResourceGroupName
+
+		azureCloudState.ResourceGroupName = ""
+		if err := saveStateHelper(storage); err != nil {
+			return err
+		}
+		storage.Logger().Success("[azure] deleted the resource group", rgname)
+
+	}
+
+	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+		DeleteDir(); err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 // NewNetwork implements resources.CloudFactory.
-func (*AzureProvider) NewNetwork(state resources.StorageFactory) error {
-	panic("unimplemented")
+func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
+
+	if len(azureCloudState.ResourceGroupName) != 0 {
+		storage.Logger().Success("[skip] already created the resource group", azureCloudState.ResourceGroupName)
+		return nil
+	}
+	var err error
+	var resourceGroup armresources.ResourceGroupsClientCreateOrUpdateResponse
+
+	rgclient, err := obj.resourceGroupsClient()
+	if err != nil {
+		return err
+	}
+
+	// NOTE: for the azure resource group we are not using the resName field
+	resourceGroup, err = rgclient.CreateOrUpdate(
+		ctx,
+		obj.ResourceGroup,
+		armresources.ResourceGroup{
+			Location: to.Ptr(obj.Region),
+		},
+		nil)
+	if err != nil {
+		return err
+	}
+
+	azureCloudState.ResourceGroupName = *resourceGroup.Name
+
+	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
+		return err
+	}
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+	if obj.HACluster {
+		// create Virtual network, subnet, nsg, ....
+		return fmt.Errorf("[azure] ha is not added")
+	}
+	storage.Logger().Success("[azure] created the resource group", *resourceGroup.Name)
+
+	return nil
 }
 
 func (obj *AzureProvider) CreateResourceGroup(ctx context.Context, storage resources.StorageFactory) (*armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
-	resourceGroupClient, err := getAzureResourceGroupsClient(obj)
+	resourceGroupClient, err := obj.resourceGroupsClient()
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +126,7 @@ func (obj *AzureProvider) CreateResourceGroup(ctx context.Context, storage resou
 }
 
 func (obj *AzureProvider) DeleteResourceGroup(ctx context.Context, storage resources.StorageFactory) error {
-	resourceGroupClient, err := getAzureResourceGroupsClient(obj)
+	resourceGroupClient, err := obj.resourceGroupsClient()
 	if err != nil {
 		return err
 	}

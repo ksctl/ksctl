@@ -21,9 +21,15 @@ func HydrateCloud(client *resources.KsctlClient, operation string) error {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
 	case utils.CLOUD_AZURE:
-		client.Cloud = azure_pkg.ReturnAzureStruct(client.Metadata)
+		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata)
+		if err != nil {
+			return fmt.Errorf("[cloud] " + err.Error())
+		}
 	case utils.CLOUD_LOCAL:
-		client.Cloud = local_pkg.ReturnLocalStruct(client.Metadata)
+		client.Cloud, err = local_pkg.ReturnLocalStruct(client.Metadata)
+		if err != nil {
+			return fmt.Errorf("[cloud] " + err.Error())
+		}
 	default:
 		return fmt.Errorf("Invalid Cloud provider")
 	}

@@ -41,10 +41,10 @@ const (
 	KUBECONFIG = "kubeconfig"
 )
 
-func ReturnLocalStruct(metadata resources.Metadata) *LocalProvider {
+func ReturnLocalStruct(metadata resources.Metadata) (*LocalProvider, error) {
 	return &LocalProvider{
 		ClusterName: metadata.ClusterName,
-	}
+	}, nil
 }
 
 // InitState implements resources.CloudFactory.

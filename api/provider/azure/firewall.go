@@ -8,6 +8,14 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
+func (obj *AzureProvider) NSGClient() (*armnetwork.SecurityGroupsClient, error) {
+	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return nsgClient, nil
+}
+
 // DelFirewall implements resources.CloudFactory.
 func (*AzureProvider) DelFirewall(state resources.StorageFactory) error {
 	panic("unimplemented")
@@ -19,7 +27,7 @@ func (*AzureProvider) NewFirewall(state resources.StorageFactory) error {
 }
 
 func (obj *AzureProvider) DeleteNSG(ctx context.Context, storage resources.StorageFactory, nsgName string) error {
-	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	nsgClient, err := obj.NSGClient()
 	if err != nil {
 		return err
 	}
@@ -38,7 +46,7 @@ func (obj *AzureProvider) DeleteNSG(ctx context.Context, storage resources.Stora
 }
 
 func (obj *AzureProvider) CreateNSG(ctx context.Context, storage resources.StorageFactory, nsgName string, securityRules []*armnetwork.SecurityRule) (*armnetwork.SecurityGroup, error) {
-	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	nsgClient, err := obj.NSGClient()
 	if err != nil {
 		return nil, err
 	}
