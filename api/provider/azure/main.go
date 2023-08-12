@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -9,7 +10,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
@@ -19,9 +20,11 @@ type AzureStateVMs struct {
 	NetworkSecurityGroupID   string   `json:"network_security_group_id"`
 	DiskNames                []string `json:"disk_names"`
 	PublicIPNames            []string `json:"public_ip_names"`
+	PublicIPIDs              []string `json:"public_ip_ids"`
 	PrivateIPs               []string `json:"private_ips"`
 	PublicIPs                []string `json:"public_ips"`
 	NetworkInterfaceNames    []string `json:"network_interface_names"`
+	NetworkInterfaceIDs      []string `json:"network_interface_ids"`
 	Hostnames                []string `json:"hostnames"`
 }
 
@@ -31,10 +34,12 @@ type AzureStateVM struct {
 	NetworkSecurityGroupID   string `json:"network_security_group_id"`
 	DiskName                 string `json:"disk_name"`
 	PublicIPName             string `json:"public_ip_name"`
+	PublicIPID               string `json:"public_ip_id"`
 	NetworkInterfaceName     string `json:"network_interface_name"`
+	NetworkInterfaceID       string `json:"network_interface_id"`
 	PrivateIP                string `json:"private_ip"`
 	PublicIP                 string `json:"public_ip"`
-	HostNames                string `json:"hostname"`
+	HostName                 string `json:"hostname"`
 }
 
 type StateConfiguration struct {
@@ -51,6 +56,7 @@ type StateConfiguration struct {
 
 	// ManagedCluster
 	ManagedClusterName string `json:"managed_cluster_name"`
+	NoManagedNodes     int    `json:"no_managed_cluster_nodes"`
 
 	SubnetName         string        `json:"subnet_name"`
 	SubnetID           string        `json:"subnet_id"`
@@ -60,6 +66,9 @@ type StateConfiguration struct {
 	InfoWorkerPlanes   AzureStateVMs `json:"info_worker_planes"`
 	InfoDatabase       AzureStateVMs `json:"info_database"`
 	InfoLoadBalancer   AzureStateVM  `json:"info_load_balancer"`
+
+	KubernetesDistro string `json:"k8s_distro"`
+	KubernetesVer    string `json:"k8s_version"`
 }
 
 type Metadata struct {
@@ -94,7 +103,8 @@ type AzureProvider struct {
 }
 
 var (
-	azCloudState *StateConfiguration
+	azureCloudState *StateConfiguration
+
 	//azClient     *civogo.Client
 	clusterDirName string
 	clusterType    string // it stores the ha or managed
@@ -111,8 +121,9 @@ const (
 )
 
 func (*AzureProvider) GetHostNameAllWorkerNode() []string {
-	//TODO implement me
-	panic("implement me")
+	var hostnames []string = make([]string, len(azureCloudState.InfoWorkerPlanes.Hostnames))
+	copy(hostnames, azureCloudState.InfoWorkerPlanes.Hostnames)
+	return hostnames
 }
 
 // Version implements resources.CloudFactory.
@@ -128,18 +139,39 @@ type Credential struct {
 	ClientSecret   string `json:"client_secret"`
 }
 
-var (
-	azureCloudState *StateConfiguration
-)
-
 // GetManagedKubernetes implements resources.CloudFactory.
 func (*AzureProvider) GetManagedKubernetes(resources.StorageFactory) {
 	panic("unimplemented")
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
-func (*AzureProvider) GetStateForHACluster(resources.StorageFactory) (cloud.CloudResourceState, error) {
-	panic("unimplemented")
+// WARN: the array copy is a shallow copy
+func (*AzureProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
+	payload := cloud_control_res.CloudResourceState{
+		SSHState: cloud_control_res.SSHInfo{
+			PathPrivateKey: azureCloudState.SSHPrivateKeyLoc,
+			UserName:       azureCloudState.SSHUser,
+		},
+		Metadata: cloud_control_res.Metadata{
+			ClusterName: azureCloudState.ClusterName,
+			Provider:    "azure",
+			Region:      azureCloudState.Region,
+			ClusterType: clusterType,
+			ClusterDir:  clusterDirName,
+		},
+		// Public IPs
+		IPv4ControlPlanes: azureCloudState.InfoControlPlanes.PublicIPs,
+		IPv4DataStores:    azureCloudState.InfoDatabase.PublicIPs,
+		IPv4WorkerPlanes:  azureCloudState.InfoWorkerPlanes.PublicIPs,
+		IPv4LoadBalancer:  azureCloudState.InfoLoadBalancer.PublicIP,
+
+		// Private IPs
+		PrivateIPv4ControlPlanes: azureCloudState.InfoControlPlanes.PrivateIPs,
+		PrivateIPv4DataStores:    azureCloudState.InfoDatabase.PrivateIPs,
+		PrivateIPv4LoadBalancer:  azureCloudState.InfoLoadBalancer.PrivateIP,
+	}
+	storage.Logger().Success("[azure] Transferred Data, it's ready to be shipped!")
+	return payload, nil
 }
 
 // InitState implements resources.CloudFactory.
@@ -169,9 +201,11 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 		} else {
 			storage.Logger().Note("[azure] Fresh state!!")
 			azureCloudState = &StateConfiguration{
-				IsCompleted: false,
-				ClusterName: obj.ClusterName,
-				Region:      obj.Region,
+				IsCompleted:      false,
+				ClusterName:      obj.ClusterName,
+				Region:           obj.Region,
+				KubernetesDistro: obj.Metadata.K8sName,
+				KubernetesVer:    obj.Metadata.K8sVersion,
 			}
 		}
 
@@ -270,37 +304,210 @@ func (cloud *AzureProvider) CNI(s string) resources.CloudFactory {
 }
 
 // NoOfControlPlane implements resources.CloudFactory.
-func (cloud *AzureProvider) NoOfControlPlane(no int, isCreateOperation bool) (int, error) {
-	if !isCreateOperation {
-		return 0, nil
+func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
+	if !setter {
+		// delete operation
+		if azureCloudState == nil {
+			return -1, fmt.Errorf("[azure] state init not called")
+		}
+		if azureCloudState.InfoControlPlanes.Names == nil {
+			return -1, fmt.Errorf("[azure] unable to fetch controlplane instanceID")
+		}
+		return len(azureCloudState.InfoControlPlanes.Names), nil
 	}
 	if no >= 3 && (no&1) == 1 {
-		cloud.Metadata.NoCP = no
+		obj.Metadata.NoCP = no
+		if azureCloudState == nil {
+			return -1, fmt.Errorf("[azure] state init not called")
+		}
+
+		currLen := len(azureCloudState.InfoControlPlanes.Names)
+		if currLen == 0 {
+			azureCloudState.InfoControlPlanes.Names = make([]string, no)
+			//azureCloudState.InfoControlPlanes.Hostnames = make([]string, no)  // as we don't need it now
+			azureCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
+			azureCloudState.InfoControlPlanes.PrivateIPs = make([]string, no)
+			azureCloudState.InfoControlPlanes.DiskNames = make([]string, no)
+			azureCloudState.InfoControlPlanes.NetworkInterfaceNames = make([]string, no)
+			azureCloudState.InfoControlPlanes.NetworkInterfaceIDs = make([]string, no)
+			azureCloudState.InfoControlPlanes.PublicIPNames = make([]string, no)
+			azureCloudState.InfoControlPlanes.PublicIPIDs = make([]string, no)
+		}
 		return -1, nil
 	}
 	return -1, fmt.Errorf("[azure] constrains for no of controlplane >= 3 and odd number")
 }
 
 // NoOfDataStore implements resources.CloudFactory.
-func (cloud *AzureProvider) NoOfDataStore(no int, isCreateOperation bool) (int, error) {
-	if !isCreateOperation {
-		return 0, nil
+func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
+	if !setter {
+		// delete operation
+		if azureCloudState == nil {
+			return -1, fmt.Errorf("[azure] state init not called")
+		}
+		if azureCloudState.InfoDatabase.Names == nil {
+			return -1, fmt.Errorf("[azure] unable to fetch DataStore instanceID")
+		}
+		return len(azureCloudState.InfoDatabase.Names), nil
 	}
 	if no >= 1 && (no&1) == 1 {
-		cloud.Metadata.NoDS = no
+		obj.Metadata.NoDS = no
+
+		if azureCloudState == nil {
+			return -1, fmt.Errorf("[azure] state init not called")
+		}
+
+		currLen := len(azureCloudState.InfoDatabase.Names)
+		if currLen == 0 {
+			azureCloudState.InfoDatabase.Names = make([]string, no)
+			//azureCloudState.InfoDatabase.Hostnames = make([]string, no)   // as we don't need it now
+			azureCloudState.InfoDatabase.PublicIPs = make([]string, no)
+			azureCloudState.InfoDatabase.PrivateIPs = make([]string, no)
+			azureCloudState.InfoDatabase.DiskNames = make([]string, no)
+			azureCloudState.InfoDatabase.NetworkInterfaceNames = make([]string, no)
+			azureCloudState.InfoDatabase.NetworkInterfaceIDs = make([]string, no)
+			azureCloudState.InfoDatabase.PublicIPNames = make([]string, no)
+			azureCloudState.InfoDatabase.PublicIPIDs = make([]string, no)
+		}
+
 		return -1, nil
 	}
 	return -1, fmt.Errorf("[azure] constrains for no of Datastore>= 1 and odd number")
 }
 
 // NoOfWorkerPlane implements resources.CloudFactory.
-func (cloud *AzureProvider) NoOfWorkerPlane(factory resources.StorageFactory, no int, isCreateOperation bool) (int, error) {
-	if !isCreateOperation {
-		return 0, nil
+func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
+	if !setter {
+		// delete operation
+		if azureCloudState == nil {
+			return -1, fmt.Errorf("[azure] state init not called")
+		}
+		if azureCloudState.InfoWorkerPlanes.Names == nil {
+			return -1, fmt.Errorf("[azure] unable to fetch workerplane instanceID")
+		}
+		return len(azureCloudState.InfoWorkerPlanes.Names), nil
 	}
 	if no >= 0 {
-		cloud.Metadata.NoWP = no
+		obj.Metadata.NoWP = no
+		if azureCloudState == nil {
+			return -1, fmt.Errorf("[azure] state init not called")
+		}
+		currLen := len(azureCloudState.InfoWorkerPlanes.Names)
+
+		newLen := no
+
+		if currLen == 0 {
+			azureCloudState.InfoWorkerPlanes.Names = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.Hostnames = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.PublicIPs = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.PrivateIPs = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.DiskNames = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.PublicIPNames = make([]string, no)
+			azureCloudState.InfoWorkerPlanes.PublicIPIDs = make([]string, no)
+		} else {
+			if currLen == newLen {
+				// no changes needed
+				return -1, nil
+			} else if currLen < newLen {
+				// for up-scaling
+				for i := currLen; i < newLen; i++ {
+					azureCloudState.InfoWorkerPlanes.Names = append(azureCloudState.InfoWorkerPlanes.Names, "")
+					azureCloudState.InfoWorkerPlanes.Hostnames = append(azureCloudState.InfoWorkerPlanes.Hostnames, "")
+					azureCloudState.InfoWorkerPlanes.PublicIPs = append(azureCloudState.InfoWorkerPlanes.PublicIPs, "")
+					azureCloudState.InfoWorkerPlanes.PrivateIPs = append(azureCloudState.InfoWorkerPlanes.PrivateIPs, "")
+					azureCloudState.InfoWorkerPlanes.DiskNames = append(azureCloudState.InfoWorkerPlanes.DiskNames, "")
+					azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames, "")
+					azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = append(azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs, "")
+					azureCloudState.InfoWorkerPlanes.PublicIPNames = append(azureCloudState.InfoWorkerPlanes.PublicIPNames, "")
+					azureCloudState.InfoWorkerPlanes.PublicIPIDs = append(azureCloudState.InfoWorkerPlanes.PublicIPIDs, "")
+				}
+			} else {
+				// for downscaling
+				azureCloudState.InfoWorkerPlanes.Names = azureCloudState.InfoWorkerPlanes.Names[:newLen]
+				azureCloudState.InfoWorkerPlanes.Hostnames = azureCloudState.InfoWorkerPlanes.Hostnames[:newLen]
+				azureCloudState.InfoWorkerPlanes.PublicIPs = azureCloudState.InfoWorkerPlanes.PublicIPs[:newLen]
+				azureCloudState.InfoWorkerPlanes.PrivateIPs = azureCloudState.InfoWorkerPlanes.PrivateIPs[:newLen]
+				azureCloudState.InfoWorkerPlanes.DiskNames = azureCloudState.InfoWorkerPlanes.DiskNames[:newLen]
+				azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames = azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[:newLen]
+				azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[:newLen]
+				azureCloudState.InfoWorkerPlanes.PublicIPNames = azureCloudState.InfoWorkerPlanes.PublicIPNames[:newLen]
+				azureCloudState.InfoWorkerPlanes.PublicIPIDs = azureCloudState.InfoWorkerPlanes.PublicIPIDs[:newLen]
+			}
+		}
+
+		if err := saveStateHelper(storage); err != nil {
+			return -1, err
+		}
+
 		return -1, nil
 	}
 	return -1, fmt.Errorf("[azure] constrains for no of workplane >= 0")
+}
+
+func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
+	var data []cloud_control_res.AllClusterData
+
+	// first get all the directories of ha
+	haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA)).GetFolders()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, haFolder := range haFolders {
+		path := generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		raw, err := storage.Path(path).Load()
+		if err != nil {
+			return nil, err
+		}
+		var clusterState *StateConfiguration
+		if err := json.Unmarshal(raw, &clusterState); err != nil {
+			return nil, err
+		}
+		data = append(data,
+			cloud_control_res.AllClusterData{
+				Provider: utils.CLOUD_CIVO,
+				Name:     haFolder[0],
+				Region:   haFolder[2],
+				Type:     utils.CLUSTER_TYPE_HA,
+
+				NoWP: len(clusterState.InfoWorkerPlanes.Names),
+				NoCP: len(clusterState.InfoControlPlanes.Names),
+				NoDS: len(clusterState.InfoDatabase.Names),
+
+				K8sDistro:  clusterState.KubernetesDistro,
+				K8sVersion: clusterState.KubernetesVer,
+			})
+	}
+
+	managedFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "managed")).GetFolders()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, haFolder := range managedFolders {
+
+		path := generatePath(utils.CLUSTER_PATH, "managed", haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		raw, err := storage.Path(path).Load()
+		if err != nil {
+			return nil, err
+		}
+		var clusterState *StateConfiguration
+		if err := json.Unmarshal(raw, &clusterState); err != nil {
+			return nil, err
+		}
+
+		data = append(data,
+			cloud_control_res.AllClusterData{
+				Provider:   utils.CLOUD_CIVO,
+				Name:       haFolder[0],
+				Region:     haFolder[2],
+				Type:       utils.CLUSTER_TYPE_MANG,
+				K8sDistro:  clusterState.KubernetesDistro,
+				K8sVersion: clusterState.KubernetesVer,
+				NoMgt:      clusterState.NoManagedNodes,
+			})
+	}
+	return data, nil
 }
