@@ -122,6 +122,7 @@ type Credential struct {
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
+// WARN: the array copy is a shallow copy
 func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	payload := cloud_control_res.CloudResourceState{
@@ -147,7 +148,7 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 		PrivateIPv4DataStores:    civoCloudState.IPv4.PrivateIPDataStore,
 		PrivateIPv4LoadBalancer:  civoCloudState.IPv4.PrivateIPLoadbalancer,
 	}
-	storage.Logger().Success("Transferred Data, it's ready to be shipped!")
+	storage.Logger().Success("[civo] Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
 

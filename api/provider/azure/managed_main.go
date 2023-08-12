@@ -52,6 +52,8 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
+	azureCloudState.NoManagedNodes = noOfNodes
+
 	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
 		ctx,
 		azureCloudState.ResourceGroupName,
