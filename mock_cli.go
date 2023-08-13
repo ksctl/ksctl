@@ -24,45 +24,88 @@ func HandleError(err error) {
 	}
 }
 
-func main() {
-	cmd := &resources.CobraCmd{}
-	NewCli(cmd)
-
+func AzureInit(cmd *resources.CobraCmd) {
 	cmd.Client.Metadata.Provider = utils.CLOUD_AZURE
 	cmd.Client.Metadata.K8sDistro = utils.K8S_K3S
 	cmd.Client.Metadata.StateLocation = utils.STORE_LOCAL
 	cmd.Client.Metadata.ClusterName = "benchmark"
 
 	// managed
-	//cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"
 	cmd.Client.Metadata.ManagedNodeType = "Standard_DS2_v2"
 
 	// ha
-	//cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
 	cmd.Client.Metadata.LoadBalancerNodeType = "Standard_F2s"
-	//cmd.Client.Metadata.ControlPlaneNodeType = "g3.small"
 	cmd.Client.Metadata.ControlPlaneNodeType = "Standard_F2s"
 
-	//cmd.Client.Metadata.WorkerPlaneNodeType = "g3.small"
 	cmd.Client.Metadata.WorkerPlaneNodeType = "Standard_F2s"
 
-	//cmd.Client.Metadata.DataStoreNodeType = "g3.medium"
 	cmd.Client.Metadata.DataStoreNodeType = "Standard_F2s"
 
 	cmd.Client.Metadata.CNIPlugin = "cilium"
 
-	//cmd.Client.Metadata.Region = "FRA1"
 	cmd.Client.Metadata.Region = "eastus"
+}
+
+func CivoInit(cmd *resources.CobraCmd) {
+	cmd.Client.Metadata.Provider = utils.CLOUD_CIVO
+	cmd.Client.Metadata.K8sDistro = utils.K8S_K3S
+	cmd.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	cmd.Client.Metadata.ClusterName = "benchmark"
+
+	// managed
+	cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"
+
+	// ha
+	cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
+	cmd.Client.Metadata.ControlPlaneNodeType = "g3.small"
+
+	cmd.Client.Metadata.WorkerPlaneNodeType = "g3.small"
+
+	cmd.Client.Metadata.DataStoreNodeType = "g3.medium"
+
+	cmd.Client.Metadata.CNIPlugin = "cilium"
+
+	cmd.Client.Metadata.Region = "FRA1"
+}
+func main() {
+	cmd := &resources.CobraCmd{}
+	NewCli(cmd)
+
+	// // AZURE
+	// // CIVO
+	// cmd.Client.Metadata.Provider = utils.CLOUD_AZURE
+	// cmd.Client.Metadata.K8sDistro = utils.K8S_K3S
+	// cmd.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	// cmd.Client.Metadata.ClusterName = "benchmark"
+	// // managed
+	// //cmd.Client.Metadata.ManagedNodeType = "g4s.kube.small"
+	// cmd.Client.Metadata.ManagedNodeType = "Standard_DS2_v2"
+	// // ha
+	// //cmd.Client.Metadata.LoadBalancerNodeType = "g3.small"
+	// cmd.Client.Metadata.LoadBalancerNodeType = "Standard_F2s"
+	// //cmd.Client.Metadata.ControlPlaneNodeType = "g3.small"
+	// cmd.Client.Metadata.ControlPlaneNodeType = "Standard_F2s"
+	// //cmd.Client.Metadata.WorkerPlaneNodeType = "g3.small"
+	// cmd.Client.Metadata.WorkerPlaneNodeType = "Standard_F2s"
+	// //cmd.Client.Metadata.DataStoreNodeType = "g3.medium"
+	// cmd.Client.Metadata.DataStoreNodeType = "Standard_F2s"
+	// cmd.Client.Metadata.CNIPlugin = "cilium"
+	// //cmd.Client.Metadata.Region = "FRA1"
+	// cmd.Client.Metadata.Region = "eastus"
+
+	CivoInit(cmd)
+	// AzureInit(cmd)
 
 	cmd.Client.Metadata.NoCP = 3
-	cmd.Client.Metadata.NoWP = 0
+	cmd.Client.Metadata.NoWP = 1
 	cmd.Client.Metadata.NoDS = 1
 
 	var controller controllers.Controller = control_pkg.GenKsctlController()
-	// verbosity set to true
+	// NOTE: verbosity set to true
 	if _, err := control_pkg.InitializeStorageFactory(&cmd.Client, true); err != nil {
 		panic(err)
 	}
+
 	choice := -1
 	fmt.Println(`
 [0] enter credential
@@ -89,6 +132,8 @@ Your Choice`)
 		cmd.Client.Storage.Logger().Success(stat)
 	case 1:
 		cmd.Client.Metadata.IsHA = true
+
+		cmd.Client.Metadata.K8sVersion = "1.27.1"
 		stat, err := controller.CreateHACluster(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())
@@ -106,8 +151,8 @@ Your Choice`)
 		cmd.Client.Storage.Logger().Success(stat)
 	case 3:
 		cmd.Client.Metadata.NoMP = 2
-		//cmd.Client.Metadata.K8sVersion = "1.27.1"
-		cmd.Client.Metadata.K8sVersion = "1.27"
+		//cmd.Client.Metadata.K8sVersion = "1.27.1" // TODO: for civo managed
+		cmd.Client.Metadata.K8sVersion = "1.27" // TODO: for Azure managed
 		stat, err := controller.CreateManagedCluster(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())

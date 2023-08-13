@@ -11,7 +11,7 @@ import (
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	err := k3s.SSHInfo.Flag(utils.EXEC_WITHOUT_OUTPUT).Script(
-		scriptWithoutCP_1(k8sState.DataStoreEndPoint, k8sState.PublicIPs.ControlPlanes[0])).
+		scriptWithoutCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.ControlPlanes[0])).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 		FastMode(true).SSHExecute(storage)
 	if err != nil {
@@ -48,7 +48,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 	} else {
 
 		err := k3s.SSHInfo.Flag(utils.EXEC_WITHOUT_OUTPUT).Script(
-			scriptCP_N(k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)).
+			scriptCP_N(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)).
 			IPv4(k8sState.PublicIPs.ControlPlanes[noOfCP]).
 			FastMode(true).SSHExecute(storage)
 		if err != nil {
@@ -66,6 +66,9 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 			err = k3s.SSHInfo.Flag(utils.EXEC_WITH_OUTPUT).Script(scriptKUBECONFIG()).
 				IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 				FastMode(true).SSHExecute(storage)
+			if err != nil {
+				return err
+			}
 
 			kubeconfig := k3s.SSHInfo.GetOutput()
 			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", k8sState.PublicIPs.Loadbalancer, 1)
@@ -87,12 +90,12 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 }
 
 // scriptWithoutCP_1 script used to configure the control-plane-1 with no need of output inital
-func scriptWithoutCP_1(dbEndpoint, pubIPlb string) string {
+func scriptWithoutCP_1(ver string, dbEndpoint, pubIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setup.sh
 #!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="v1.27.1+k3s1" sh -s - server \
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
 	--tls-san %s
@@ -100,7 +103,7 @@ EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, dbEndpoint, pubIPlb)
+`, ver, dbEndpoint, pubIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
 	// Add it when the installApplication() feature is added so that it could install cni plugins
@@ -125,17 +128,17 @@ sudo cat /var/lib/rancher/k3s/server/token
 `
 }
 
-func scriptCP_N(dbEndpoint, pubIPlb, token string) string {
+func scriptCP_N(ver string, dbEndpoint, pubIPlb, token string) string {
 	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setupN.sh
 #!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="v1.27.1+k3s1" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, token, dbEndpoint, pubIPlb)
+`, ver, token, dbEndpoint, pubIPlb)
 
 	// NOTE: Feature to add other CNI like Cilium
 	// Add these tags for having different CNI

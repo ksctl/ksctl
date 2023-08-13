@@ -32,7 +32,7 @@ type StateConfiguration struct {
 }
 
 type K3sDistro struct {
-	Version string // FIXME: Add k3s version support
+	K3sVer string // FIXME: Add k3s version support
 	// it will be used for SSH
 	SSHInfo utils.SSHCollection
 }
@@ -114,4 +114,13 @@ func ReturnK3sStruct() *K3sDistro {
 	return &K3sDistro{
 		SSHInfo: &utils.SSHPayload{},
 	}
+}
+
+func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {
+	if isValidK3sVersion(ver) {
+		// valid
+		k3s.K3sVer = fmt.Sprintf("v%s+k3s1", ver)
+		return k3s
+	}
+	return nil
 }
