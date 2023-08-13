@@ -1,11 +1,12 @@
 package azure
 
 import (
+	"os"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"os"
 )
 
 // DelManagedCluster implements resources.CloudFactory.
@@ -53,6 +54,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	}
 
 	azureCloudState.NoManagedNodes = noOfNodes
+	azureCloudState.KubernetesVer = obj.Metadata.K8sVersion
 
 	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
 		ctx,
@@ -61,8 +63,8 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		armcontainerservice.ManagedCluster{
 			Location: to.Ptr(azureCloudState.Region),
 			Properties: &armcontainerservice.ManagedClusterProperties{
-				DNSPrefix: to.Ptr("aksgosdk"),
-				//KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
+				DNSPrefix:         to.Ptr("aksgosdk"),
+				KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 					{
 						Name:              to.Ptr("askagent"),
