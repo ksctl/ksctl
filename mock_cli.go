@@ -105,8 +105,9 @@ Your Choice`)
 		}
 		cmd.Client.Storage.Logger().Success(stat)
 	case 3:
-		cmd.Client.Metadata.NoMP = 1
-		cmd.Client.Metadata.K8sVersion = "1.27.1"
+		cmd.Client.Metadata.NoMP = 2
+		//cmd.Client.Metadata.K8sVersion = "1.27.1"
+		cmd.Client.Metadata.K8sVersion = "1.27"
 		stat, err := controller.CreateManagedCluster(&cmd.Client)
 		if err != nil {
 			cmd.Client.Storage.Logger().Err(err.Error())
