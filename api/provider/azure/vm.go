@@ -68,6 +68,10 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) e
 	}
 
 	// check if vm is deleted?
+	//if obj.Metadata.Role != utils.ROLE_LB && len(vm) == 0 {
+	//	storage.Logger().Success("[skip] vm already deleted")
+	//	return nil
+	//} else if len(vmName) == 0 {
 	if len(vmName) == 0 {
 		storage.Logger().Success("[skip] vm already deleted")
 	} else {
