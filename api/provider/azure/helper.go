@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"log"
 	"os"
 	"runtime"
@@ -219,8 +220,24 @@ func validationOfArguments(obj *AzureProvider) error {
 
 // TODO: Add for managed kubernetes version
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
-	return nil
-	//return fmt.Errorf("Invalid k8s version\nValid options: %v\n", vers)
+	clientFactory, err := armcontainerservice.NewClientFactory(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %v", err)
+	}
+	var vers []string
+	res, err := clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, obj.Region, nil)
+	if err != nil {
+		return fmt.Errorf("failed to finish the request: %v", err)
+	}
+	for _, version := range res.Values {
+		vers = append(vers, *version.Version)
+	}
+	for _, valver := range vers {
+		if valver == ver {
+			return nil
+		}
+	}
+	return fmt.Errorf("Invalid k8s version\nValid options: %v\n", vers)
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {

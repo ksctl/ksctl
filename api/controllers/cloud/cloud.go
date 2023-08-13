@@ -329,7 +329,7 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 	managedClient = managedClient.Version(client.Metadata.K8sVersion)
 
 	if managedClient == nil {
-		client.Storage.Logger().Err("Invalid version")
+		return fmt.Errorf("[azure] invalid version")
 	}
 
 	if err := managedClient.NewManagedCluster(client.Storage, client.Metadata.NoMP); err != nil {

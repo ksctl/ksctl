@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kubesimplify/ksctl/api/logger"
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -128,6 +129,12 @@ func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 
 // Version implements resources.CloudFactory.
 func (obj *AzureProvider) Version(ver string) resources.CloudFactory {
+	if err := isValidK8sVersion(obj, ver); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
+		return nil
+	}
+
 	obj.Metadata.K8sVersion = ver
 	return obj
 }
@@ -276,6 +283,8 @@ func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
 func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
 	cloud.Metadata.VmType = size
 	if err := isValidVMSize(cloud, size); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
 		return nil
 	}
 	return cloud
