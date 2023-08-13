@@ -175,6 +175,9 @@ type KubernetesFactory interface {
 
 	// GetKubeConfig returns the path of kubeconfig
 	GetKubeConfig(StorageFactory) (string, error)
+
+	// Version setter for version to be used
+	Version(string) DistroFactory
 }
 
 // FEATURE: non kubernetes distrobutions like nomad

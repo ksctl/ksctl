@@ -3,9 +3,12 @@ package k3s
 import (
 	"encoding/json"
 	"fmt"
+	"runtime"
+	"strings"
+
+	"github.com/kubesimplify/ksctl/api/logger"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"runtime"
 )
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
@@ -63,4 +66,17 @@ func printKubeconfig(storage resources.StorageFactory, operation string) {
 		}
 	}
 	storage.Logger().Note(env)
+}
+
+func isValidK3sVersion(ver string) bool {
+	validVersion := []string{"1.27.4", "1.27.1", "1.26.9"} // TODO: check
+
+	for _, vver := range validVersion {
+		if vver == ver {
+			return true
+		}
+	}
+	var log logger.LogFactory
+	log.Err(strings.Join(validVersion, " "))
+	return false
 }

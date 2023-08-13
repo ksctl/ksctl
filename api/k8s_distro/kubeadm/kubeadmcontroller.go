@@ -22,7 +22,7 @@ type StateConfiguration struct {
 }
 
 type KubeadmDistro struct {
-	Version string
+	KubeadmVer string
 }
 
 // ConfigureControlPlane implements resources.DistroFactory.
@@ -72,4 +72,9 @@ var (
 
 func ReturnKubeadmStruct() *KubeadmDistro {
 	return &KubeadmDistro{}
+}
+
+func (kubeadm *KubeadmDistro) Version(string) resources.DistroFactory {
+	// TODO: Implement
+	return kubeadm
 }
