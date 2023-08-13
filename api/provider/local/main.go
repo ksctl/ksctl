@@ -3,7 +3,6 @@ package local
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/kubesimplify/ksctl/api/utils"
 
 	"github.com/kubesimplify/ksctl/api/resources"
@@ -231,4 +230,13 @@ func (cloud *LocalProvider) NoOfDataStore(int, bool) (int, error) {
 // NoOfWorkerPlane implements resources.CloudFactory.
 func (cloud *LocalProvider) NoOfWorkerPlane(resources.StorageFactory, int, bool) (int, error) {
 	return -1, fmt.Errorf("[local] unsupported operation")
+}
+
+func (obj *LocalProvider) SwitchCluster(storage resources.StorageFactory) error {
+
+	if isPresent(storage, obj.ClusterName) {
+		printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+		return nil
+	}
+	return fmt.Errorf("[local] Cluster not found")
 }

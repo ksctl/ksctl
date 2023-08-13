@@ -503,3 +503,31 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 	}
 	return data, nil
 }
+
+func isPresent(storage resources.StorageFactory) bool {
+	_, err := storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func (obj *CivoProvider) SwitchCluster(storage resources.StorageFactory) error {
+	switch obj.HACluster {
+	case true:
+		clusterDirName = obj.ClusterName + " " + obj.Region
+		clusterType = utils.CLUSTER_TYPE_HA
+		if isPresent(storage) {
+			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+			return nil
+		}
+	case false:
+		clusterDirName = obj.ClusterName + " " + obj.Region
+		clusterType = utils.CLUSTER_TYPE_MANG
+		if isPresent(storage) {
+			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+			return nil
+		}
+	}
+	return fmt.Errorf("[civo] Cluster not found")
+}

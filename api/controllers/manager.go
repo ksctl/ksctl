@@ -117,6 +117,28 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
+	var err error
+	switch client.Metadata.Provider {
+	case utils.CLOUD_CIVO:
+		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
+		if err != nil {
+			return "", fmt.Errorf("[cloud] " + err.Error())
+		}
+	case utils.CLOUD_AZURE:
+		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata)
+		if err != nil {
+			return "", fmt.Errorf("[cloud] " + err.Error())
+		}
+	case utils.CLOUD_LOCAL:
+		client.Cloud, err = local_pkg.ReturnLocalStruct(client.Metadata)
+		if err != nil {
+			return "", fmt.Errorf("[cloud] " + err.Error())
+		}
+	}
+
+	if err := client.Cloud.SwitchCluster(client.Storage); err != nil {
+		return "", err
+	}
 	return "[ksctl] switched cluster", nil
 }
 

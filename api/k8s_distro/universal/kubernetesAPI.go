@@ -57,9 +57,9 @@ func DeleteNode(storage resources.StorageFactory, nodeName string, kubeconfigPat
 
 func initApps() {
 	apps = map[string]Data{
-		"cilium":  Data{},
-		"flannel": Data{},
-		"argocd":  Data{},
+		"cilium":  {},
+		"flannel": {},
+		"argocd":  {},
 	}
 }
 
