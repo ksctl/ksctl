@@ -1,66 +1,46 @@
-// package cmd
-//
-// /*
-// Kubesimplify
-// @maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
-// 				Anurag Kumar <contact.anurag7@gmail.com>
-// 				Avinesh Tripathi <avineshtripathi1@gmail.com>
-// */
-// import (
-// 	log "github.com/kubesimplify/ksctl/api/provider/logger"
-//
-// 	"github.com/kubesimplify/ksctl/api/provider/azure"
-// 	"github.com/kubesimplify/ksctl/api/provider/utils"
-// 	"github.com/spf13/cobra"
-// )
-//
-// var addMoreWorkerNodesHAAzure = &cobra.Command{
-// 	Use:   "add-nodes",
-// 	Short: "Use to add more worker nodes in HA CIVO k3s cluster",
-// 	Long: `It is used to add nodes to worker nodes in cluster with the given name from user. For example:
-//
-// ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
-// `,
-// 	Run: func(cmd *cobra.Command, args []string) {
-// 		isSet := cmd.Flags().Lookup("verbose").Changed
-// 		logger := log.Logger{Verbose: true}
-// 		if !isSet {
-// 			logger.Verbose = false
-// 		}
-//
-// 		payload := azure.AzureProvider{
-// 			ClusterName: azhncclustername,
-// 			Region:      azhncregion,
-// 			HACluster:   true,
-// 			Spec: utils.Machine{
-// 				Disk:          azhncnodesize,
-// 				HAWorkerNodes: azhncwp,
-// 			},
-// 		}
-// 		err := payload.AddMoreWorkerNodes(logger)
-// 		if err != nil {
-// 			logger.Err(err.Error())
-// 			return
-// 		}
-// 		logger.Info("ADDED WORKKER NODE(s)")
-// 	},
-// }
-//
-// var (
-// 	// aw hc -> add workernodes to ha-civo
-// 	azhncregion      string
-// 	azhncclustername string
-// 	azhncnodesize    string
-// 	azhncwp          int
-// )
-//
-// func init() {
-// 	createClusterHAAzure.AddCommand(addMoreWorkerNodesHAAzure)
-// 	addMoreWorkerNodesHAAzure.Flags().StringVarP(&azhncclustername, "name", "n", "", "Cluster name")
-// 	addMoreWorkerNodesHAAzure.Flags().StringVarP(&azhncnodesize, "node-size", "s", "Standard_F2s", "Node size")
-// 	addMoreWorkerNodesHAAzure.Flags().StringVarP(&azhncregion, "region", "r", "", "Region")
-// 	addMoreWorkerNodesHAAzure.Flags().IntVarP(&azhncwp, "worker-nodes", "w", 1, "no of worker nodes to be added")
-// 	addMoreWorkerNodesHAAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
-// 	addMoreWorkerNodesHAAzure.MarkFlagRequired("name")
-// 	addMoreWorkerNodesHAAzure.MarkFlagRequired("region")
-// }
+package cmd
+
+// maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
+
+import (
+	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
+	"github.com/kubesimplify/ksctl/api/utils"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+var addMoreWorkerNodesHAAzure = &cobra.Command{
+	Use:   "add-nodes",
+	Short: "Use to add more worker nodes in HA CIVO k3s cluster",
+	Long: `It is used to add nodes to worker nodes in cluster with the given name from user. For example:
+
+ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
+		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
+			panic(err)
+		}
+		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
+
+		cli.Client.Metadata.IsHA = true
+
+		stat, err := controller.AddWorkerPlaneNode(&cli.Client)
+		if err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
+		}
+		cli.Client.Storage.Logger().Success(stat)
+	},
+}
+
+func init() {
+	createClusterHAAzure.AddCommand(addMoreWorkerNodesHAAzure)
+	clusterNameFlag(addMoreWorkerNodesHAAzure)
+	noOfWPFlag(addMoreWorkerNodesHAAzure, -1)
+	nodeSizeWPFlag(addMoreWorkerNodesHAAzure, "Standard_F2s")
+	regionFlag(addMoreWorkerNodesHAAzure, "eastus")
+
+	addMoreWorkerNodesHAAzure.MarkFlagRequired("name")
+	addMoreWorkerNodesHAAzure.MarkFlagRequired("region")
+}

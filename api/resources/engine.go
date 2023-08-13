@@ -146,6 +146,8 @@ type CloudFactory interface {
 	// GetHostNameAllWorkerNode it returns all the hostnames of workerplane nodes
 	// it's used for the universal kubernetes for deletion of nodes which have to scale down
 	GetHostNameAllWorkerNode() []string
+
+	SwitchCluster(StorageFactory) error
 }
 
 type KubernetesFactory interface {
