@@ -3,6 +3,7 @@ package local
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/kubesimplify/ksctl/api/utils"
 
 	"github.com/kubesimplify/ksctl/api/resources"
@@ -106,6 +107,7 @@ func (cloud *LocalProvider) CNI(s string) resources.CloudFactory {
 
 // Version implements resources.CloudFactory.
 func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
+	// TODO: validation of version
 	cloud.Metadata.Version = ver
 	return cloud
 }
