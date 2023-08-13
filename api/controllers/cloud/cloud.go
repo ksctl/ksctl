@@ -200,6 +200,18 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
+	if _, err := client.Cloud.NoOfControlPlane(client.Metadata.NoCP, true); err != nil {
+		return err
+	}
+
+	if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, true); err != nil {
+		return err
+	}
+
+	if _, err := client.Cloud.NoOfDataStore(client.Metadata.NoDS, true); err != nil {
+		return err
+	}
+
 	err = client.Cloud.Name(client.ClusterName + "-ssh").CreateUploadSSHKeyPair(client.Storage)
 	if err != nil {
 		return err
@@ -233,17 +245,17 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	if _, err := client.Cloud.NoOfControlPlane(client.Metadata.NoCP, true); err != nil {
-		return err
-	}
-
-	if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, true); err != nil {
-		return err
-	}
-
-	if _, err := client.Cloud.NoOfDataStore(client.Metadata.NoDS, true); err != nil {
-		return err
-	}
+	// if _, err := client.Cloud.NoOfControlPlane(client.Metadata.NoCP, true); err != nil {
+	// 	return err
+	// }
+	//
+	// if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, true); err != nil {
+	// 	return err
+	// }
+	//
+	// if _, err := client.Cloud.NoOfDataStore(client.Metadata.NoDS, true); err != nil {
+	// 	return err
+	// }
 
 	err = client.Cloud.Name(client.ClusterName+"-vm-lb").
 		Role(utils.ROLE_LB).

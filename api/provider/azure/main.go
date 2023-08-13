@@ -237,7 +237,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	}
 	obj.AzureTokenCred = cred
 
-	if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
+	if err := validationOfArguments(obj); err != nil {
 		return err
 	}
 
@@ -275,7 +275,7 @@ func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
 // VMType it will contain which vmType to create
 func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
 	cloud.Metadata.VmType = size
-	if err := isValidVMSize(size); err != nil {
+	if err := isValidVMSize(cloud, size); err != nil {
 		return nil
 	}
 	return cloud
@@ -314,7 +314,9 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			return -1, fmt.Errorf("[azure] state init not called")
 		}
 		if azureCloudState.InfoControlPlanes.Names == nil {
-			return -1, fmt.Errorf("[azure] unable to fetch controlplane instanceID")
+			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
+			// it happens when the resource groups and network is created but interrup occurs before setter is called
+			return -1, nil
 		}
 		return len(azureCloudState.InfoControlPlanes.Names), nil
 	}
@@ -349,7 +351,9 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			return -1, fmt.Errorf("[azure] state init not called")
 		}
 		if azureCloudState.InfoDatabase.Names == nil {
-			return -1, fmt.Errorf("[azure] unable to fetch DataStore instanceID")
+			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
+			// it happens when the resource groups and network is created but interrup occurs before setter is called
+			return -1, nil
 		}
 		return len(azureCloudState.InfoDatabase.Names), nil
 	}
@@ -386,7 +390,9 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no i
 			return -1, fmt.Errorf("[azure] state init not called")
 		}
 		if azureCloudState.InfoWorkerPlanes.Names == nil {
-			return -1, fmt.Errorf("[azure] unable to fetch workerplane instanceID")
+			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
+			// it happens when the resource groups and network is created but interrup occurs before setter is called
+			return -1, nil
 		}
 		return len(azureCloudState.InfoWorkerPlanes.Names), nil
 	}
