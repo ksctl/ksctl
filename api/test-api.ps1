@@ -12,7 +12,7 @@ Write-Output "-----------------------------------"
 Write-Output "|   Testing (api/utils)"
 Write-Output "-----------------------------------"
 
-Set-Location provider\utils
+Set-Location utils
 go test . -v && Set-Location -
 
 Write-Output "-----------------------------------"
