@@ -2,10 +2,9 @@ package logger
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"log"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
 // Info information message to stdout

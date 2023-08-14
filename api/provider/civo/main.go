@@ -75,7 +75,6 @@ var (
 	civoClient     *civogo.Client
 	clusterDirName string
 	clusterType    string // it stores the ha or managed
-
 )
 
 const (
@@ -132,7 +131,7 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 		},
 		Metadata: cloud_control_res.Metadata{
 			ClusterName: client.ClusterName,
-			Provider:    "civo",
+			Provider:    utils.CLOUD_CIVO,
 			Region:      client.Region,
 			ClusterType: clusterType,
 			ClusterDir:  clusterDirName,
@@ -156,9 +155,9 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 
 	clusterDirName = obj.ClusterName + " " + obj.Region
 	if obj.HACluster {
-		clusterType = "ha"
+		clusterType = utils.CLUSTER_TYPE_HA
 	} else {
-		clusterType = "managed"
+		clusterType = utils.CLUSTER_TYPE_MANG
 	}
 
 	var err error
@@ -253,7 +252,7 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
-	if err := isValidVMSize(size); err != nil {
+	if err := isValidVMSize(getValidVMSizesClient(), size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
 		return nil
@@ -277,13 +276,17 @@ func (cloud *CivoProvider) SupportForCNI() bool {
 	return true
 }
 
-func (client *CivoProvider) Application(s string) resources.CloudFactory {
+func aggregratedApps(s string) (ret string) {
 	if len(s) == 0 {
-		client.Metadata.Apps = "Traefik-v2-nodeport,metrics-server" // default: applications
+		ret = "Traefik-v2-nodeport,metrics-server" // default: applications
 	} else {
-		client.Metadata.Apps += ",Traefik-v2-nodeport,metrics-server"
+		ret = s + ",Traefik-v2-nodeport,metrics-server"
 	}
+	return
+}
 
+func (client *CivoProvider) Application(s string) resources.CloudFactory {
+	client.Metadata.Apps = aggregratedApps(s)
 	return client
 }
 
@@ -296,18 +299,25 @@ func (client *CivoProvider) CNI(s string) resources.CloudFactory {
 	return client
 }
 
+func k8sVersion(ver string, validVersions func() []string) string {
+	if len(ver) == 0 {
+		return "1.26.4-k3s1"
+	}
+
+	ver = ver + "-k3s1"
+	if err := isValidK8sVersion(validVersions(), ver); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
+		return ""
+	}
+	return ver
+}
+
 // Version implements resources.CloudFactory.
 func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
-	if len(ver) == 0 {
-		obj.Metadata.Version = "1.26.4-k3s1"
-	} else {
-		ver = ver + "-k3s1"
-		if err := isValidK8sVersion(ver); err != nil {
-			var logFactory logger.LogFactory = &logger.Logger{}
-			logFactory.Err(err.Error())
-			return nil
-		}
-		obj.Metadata.Version = ver
+	obj.Metadata.K8sVersion = k8sVersion(ver, getValidK8sVersionClient)
+	if len(obj.Metadata.K8sVersion) == 0 {
+		return nil
 	}
 	return obj
 }

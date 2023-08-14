@@ -9,10 +9,41 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
-	"github.com/kubesimplify/ksctl/api/utils"
 
 	"gotest.tools/assert"
 )
+
+func TestConsts(t *testing.T) {
+	assert.Equal(t, CLOUD_CIVO, "civo", "civo constant not correct assigned")
+	assert.Equal(t, CLOUD_AZURE, "azure", "azure constant not correct assgined")
+	assert.Equal(t, CLOUD_LOCAL, "local", "local constant not correct assgined")
+	assert.Equal(t, CLOUD_AWS, "aws", "aws constant not correct assgined")
+
+	assert.Equal(t, K8S_K3S, "k3s", "k3s constant not correct assgined")
+	assert.Equal(t, K8S_KUBEADM, "kubeadm", "kubeadm constant not correct assgined")
+
+	assert.Equal(t, STORE_LOCAL, "local", "local constant not correct assgined")
+	assert.Equal(t, STORE_REMOTE, "remote", "remote constant not correct assgined")
+
+	assert.Equal(t, ROLE_CP, "controlplane", "controlplane constant not correct assgined")
+	assert.Equal(t, ROLE_LB, "loadbalancer", "loadbalancer constant not correct assgined")
+	assert.Equal(t, ROLE_DS, "datastore", "datastore constant not correct assgined")
+	assert.Equal(t, ROLE_WP, "workerplane", "workerplane constant not correct assgined")
+
+	assert.Equal(t, CLUSTER_TYPE_HA, "ha", "HA constant not correct assgined")
+	assert.Equal(t, CLUSTER_TYPE_MANG, "managed", "Managed constant not correct assgined")
+
+	assert.Equal(t, OPERATION_STATE_CREATE, "create", "operation create constant not correct assgined")
+	assert.Equal(t, OPERATION_STATE_GET, "get", "operation get constant not correct assgined")
+	assert.Equal(t, OPERATION_STATE_DELETE, "delete", "operation delete constant not correct assgined")
+
+	assert.Equal(t, CLUSTER_PATH, 1, "cluster_path constant not correct assgined")
+	assert.Equal(t, OTHER_PATH, 3, "other_path constant not correct assgined")
+	assert.Equal(t, SSH_PATH, 2, "ssh_path constant not correct assgined")
+	assert.Equal(t, CREDENTIAL_PATH, 0, "credential_path constant not correct assgined")
+	assert.Equal(t, EXEC_WITHOUT_OUTPUT, 0, "exec_without_output constant not correct assgined")
+	assert.Equal(t, EXEC_WITH_OUTPUT, 1, "exec_without_output constant not correct assgined")
+}
 
 func TestGetUsername(t *testing.T) {
 	if runtime.GOOS == "windows" {
@@ -94,7 +125,7 @@ func TestCreateSSHKeyPair(t *testing.T) {
 		_ = os.RemoveAll(GetPath(OTHER_PATH, provider))
 	})
 
-	path := GetPath(OTHER_PATH, provider, utils.CLUSTER_TYPE_HA, clusterName+" "+clusterRegion)
+	path := GetPath(OTHER_PATH, provider, CLUSTER_TYPE_HA, clusterName+" "+clusterRegion)
 	err := os.MkdirAll(path, 0755)
 	if err != nil {
 		t.Fatalf("Unable to create dummy folder")

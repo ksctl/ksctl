@@ -13,7 +13,7 @@ import (
 func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
 
 	if idx > 0 {
-		storage.Logger().Note("[k3s] cluster of datastore not enabled!", string(idx))
+		storage.Logger().Note("[k3s] cluster of datastore not enabled!", string(rune(idx)))
 		return nil
 	}
 

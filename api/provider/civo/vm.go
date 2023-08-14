@@ -50,7 +50,7 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 	if creationMode {
 		return fmt.Errorf("[civo] vm not found")
 	}
-	return fmt.Errorf("[skip] already deleted vm having role:", obj.Metadata.Role)
+	return fmt.Errorf("[skip] already deleted vm having role: %s", obj.Metadata.Role)
 
 }
 

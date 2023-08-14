@@ -8,40 +8,37 @@ if (($PSVersionTable.PSVersion.Major) -lt 5) {
   break
 }
 
-Write-Output "+-------------------------+"
-Write-Output "|   Testing (api/util)    |"
-Write-Output "+-------------------------+"
+Write-Output "-----------------------------------"
+Write-Output "|   Testing (api/utils)"
+Write-Output "-----------------------------------"
 
-Write-Output "TODO"
+Set-Location provider\utils
+go test . -v && Set-Location -
 
-# Set-Location utils
-# go test . -v && Set-Location -
+Write-Output "-----------------------------------"
+Write-Output "|   Testing (api/k8s_distro/k3s)"
+Write-Output "-----------------------------------"
 
+Set-Location k8s_distro\k3s
+go test . -v && Set-Location -
 
+Write-Output "-----------------------------------"
+Write-Output "|   Testing (api/provider/local)"
+Write-Output "-----------------------------------"
 
-Write-Output "+-------------------------+"
-Write-Output "|   Testing (api/local)   |"
-Write-Output "+-------------------------+"
+Set-Location provider\local
+go test . -v && Set-Location -
 
+Write-Output "-----------------------------------"
+Write-Output "|   Testing (api/provider/civo)"
+Write-Output "-----------------------------------"
 
-Write-Output "TODO"
+Set-Location provider\civo
+go test . -v && Set-Location -
 
-# Set-Location local
-# go test . -v && Set-Location -
+Write-Output "-----------------------------------"
+Write-Output "|   Testing (api/provider/azure)"
+Write-Output "-----------------------------------"
 
-
-Write-Output "+-------------------------+"
-Write-Output "|   Testing (api/civo)    |"
-Write-Output "+-------------------------+"
-
-Write-Output "TODO"
-# Set-Location civo
-# go test . -v && Set-Location -
-
-Write-Output "+-------------------------+"
-Write-Output "|   Testing (api/azure)    |"
-Write-Output "+-------------------------+"
-
-Write-Output "TODO"
-# Set-Location azure
-# go test . -v && Set-Location -
+Set-Location provider\azure
+go test . -v && Set-Location -
