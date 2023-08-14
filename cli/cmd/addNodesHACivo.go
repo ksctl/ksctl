@@ -3,9 +3,10 @@ package cmd
 // maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
 
 import (
+	"os"
+
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -24,9 +25,19 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 		}
 		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
 		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
-		cli.Client.Metadata.NoMP = -1 // for overriding
+		cli.Client.Metadata.NoWP = noWP
+		cli.Client.Metadata.WorkerPlaneNodeType = nodeSizeWP
+		cli.Client.Metadata.ClusterName = clusterName
+		cli.Client.Metadata.Region = region
+		cli.Client.Metadata.K8sDistro = distro
+		cli.Client.Metadata.K8sVersion = k8sVer
 
 		cli.Client.Metadata.IsHA = true
+
+		if err := createApproval(); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
+		}
 
 		stat, err := controller.AddWorkerPlaneNode(&cli.Client)
 		if err != nil {
@@ -43,6 +54,8 @@ func init() {
 	noOfWPFlag(addMoreWorkerNodesHACivo)
 	nodeSizeWPFlag(addMoreWorkerNodesHACivo)
 	regionFlag(addMoreWorkerNodesHACivo)
+	k8sVerFlag(addMoreWorkerNodesHACivo)
+	distroFlag(addMoreWorkerNodesHACivo)
 
 	addMoreWorkerNodesHACivo.MarkFlagRequired("name")
 	addMoreWorkerNodesHACivo.MarkFlagRequired("region")

@@ -58,9 +58,6 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 	return "[ksctl] Credential added", nil
 }
 
-// TODO: accept gate for creation as well for approval
-// FIXME: move these scanf and approval to the cli it shouldn't be here
-
 func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) (string, error) {
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
@@ -81,26 +78,6 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
-	}
-
-	showMsg := true
-	if showMsg {
-		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-	`, client.ClusterName+" "+client.Region))
-
-		fmt.Println("Enter your choice to continue..[y/N]")
-		choice := "n"
-		unsafe := false
-		fmt.Scanf("%s", &choice)
-		if strings.Compare("y", choice) == 0 ||
-			strings.Compare("yes", choice) == 0 ||
-			strings.Compare("Y", choice) == 0 {
-			unsafe = true
-		}
-
-		if !unsafe {
-			return "[ksctl] cancelled", nil
-		}
 	}
 
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE); err != nil {
@@ -182,6 +159,12 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 			return "", err
 		}
 		printerTable = append(printerTable, data...)
+
+		data, err = azure_pkg.GetRAWClusterInfos(client.Storage)
+		if err != nil {
+			return "", err
+		}
+		printerTable = append(printerTable, data...)
 	}
 	client.Storage.Logger().Table(printerTable)
 	return "[ksctl] get clusters", nil
@@ -236,25 +219,6 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
 
-	showMsg := true
-	if showMsg {
-		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-	`, client.ClusterName+" "+client.Region))
-
-		fmt.Println("Enter your choice to continue..[y/N]")
-		choice := "n"
-		unsafe := false
-		fmt.Scanf("%s", &choice)
-		if strings.Compare("y", choice) == 0 ||
-			strings.Compare("yes", choice) == 0 ||
-			strings.Compare("Y", choice) == 0 {
-			unsafe = true
-		}
-
-		if !unsafe {
-			return "[ksctl] approval cancelled", nil
-		}
-	}
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE); err != nil {
 		return "", err
 	}
@@ -319,25 +283,6 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 	}
 	if !client.IsHA {
 		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
-	}
-	showMsg := true
-	if showMsg {
-		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER '%s'
-	`, client.ClusterName+" "+client.Region))
-
-		fmt.Println("Enter your choice to continue..[y/N]")
-		choice := "n"
-		unsafe := false
-		fmt.Scanf("%s", &choice)
-		if strings.Compare("y", choice) == 0 ||
-			strings.Compare("yes", choice) == 0 ||
-			strings.Compare("Y", choice) == 0 {
-			unsafe = true
-		}
-
-		if !unsafe {
-			return "[ksctl] approval cancelled", nil
-		}
 	}
 
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_GET); err != nil {

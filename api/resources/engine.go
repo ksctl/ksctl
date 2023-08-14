@@ -22,30 +22,30 @@ type KsctlClient struct {
 }
 
 type Metadata struct {
-	ClusterName   string
-	Region        string
-	Provider      string
-	K8sDistro     string
-	K8sVersion    string
-	StateLocation string
-	IsHA          bool
+	ClusterName   string `json:"cluster_name"`
+	Region        string `json:"region"`
+	Provider      string `json:"cloud_provider"`
+	K8sDistro     string `json:"kubernetes_distro"`
+	K8sVersion    string `json:"kubernetes_version"`
+	StateLocation string `json:"storage_type"`
+	IsHA          bool   `json:"ha_cluster"`
 
 	// TODO: is it required?
 	// try to see if string could be replaced by pointer to reduce memory
-	ManagedNodeType      string
-	WorkerPlaneNodeType  string
-	ControlPlaneNodeType string
-	DataStoreNodeType    string
-	LoadBalancerNodeType string
+	ManagedNodeType      string `json:"node_type_managed"`
+	WorkerPlaneNodeType  string `json:"node_type_workerplane"`
+	ControlPlaneNodeType string `json:"node_type_controlplane"`
+	DataStoreNodeType    string `json:"node_type_datastore"`
+	LoadBalancerNodeType string `json:"node_type_loadbalancer"`
 
-	NoMP int // No of managed Nodes
+	NoMP int `json:"desired_no_of_managed_nodes"` // No of managed Nodes
 
-	NoWP int // No of woerkplane VMs
-	NoCP int // No of Controlplane VMs
-	NoDS int // No of DataStore VMs
+	NoWP int `json:"desired_no_of_workerplane_nodes"`  // No of woerkplane VMs
+	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
+	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
 
-	Applications string
-	CNIPlugin    string
+	Applications string `json:"preinstalled_apps"`
+	CNIPlugin    string `json:"cni_plugin"`
 }
 
 type CloudFactory interface {

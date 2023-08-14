@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func createManaged() {
@@ -17,6 +21,11 @@ func createManaged() {
 
 	cli.Client.Metadata.CNIPlugin = cni
 	cli.Client.Metadata.Applications = apps
+
+	if err := createApproval(); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
+	}
 
 	stat, err := controller.CreateManagedCluster(&cli.Client)
 	if err != nil {
@@ -46,6 +55,10 @@ func createHA() {
 	cli.Client.Metadata.CNIPlugin = cni
 	cli.Client.Metadata.Applications = apps
 
+	if err := createApproval(); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
+	}
 	stat, err := controller.CreateHACluster(&cli.Client)
 	if err != nil {
 		cli.Client.Storage.Logger().Err(err.Error())
@@ -60,6 +73,10 @@ func deleteManaged() {
 	cli.Client.Metadata.K8sDistro = distro
 	cli.Client.Metadata.Region = region
 
+	if err := deleteApproval(); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
+	}
 	stat, err := controller.DeleteManagedCluster(&cli.Client)
 	if err != nil {
 		cli.Client.Storage.Logger().Err(err.Error())
@@ -76,6 +93,11 @@ func deleteHA() {
 	cli.Client.Metadata.K8sDistro = distro
 	cli.Client.Metadata.Region = region
 
+	if err := deleteApproval(); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
+	}
+
 	stat, err := controller.DeleteHACluster(&cli.Client)
 	if err != nil {
 		cli.Client.Storage.Logger().Err(err.Error())
@@ -84,8 +106,78 @@ func deleteHA() {
 	cli.Client.Storage.Logger().Success(stat)
 }
 
+func getRequestPayload() ([]byte, error) {
+	a, err := json.MarshalIndent(cli.Client.Metadata, "", " ")
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+func deleteApproval() error {
+
+	showMsg := true
+
+	a, err := getRequestPayload()
+	if err != nil {
+		return err
+	}
+
+	if showMsg {
+		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER 
+%s
+`, string(a)))
+
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
+
+		if !unsafe {
+			return fmt.Errorf("[ksctl] approval cancelled")
+		}
+	}
+	return nil
+}
+
+func createApproval() error {
+
+	showMsg := true
+
+	a, err := getRequestPayload()
+	if err != nil {
+		return err
+	}
+
+	if showMsg {
+		fmt.Println(fmt.Sprintf(`🚨 THIS IS A CREATION STEP MAKE SURE IF YOU WANT TO CREATE THE CLUSTER 
+%s
+`, string(a)))
+
+		fmt.Println("Enter your choice to continue..[y/N]")
+		choice := "n"
+		unsafe := false
+		fmt.Scanf("%s", &choice)
+		if strings.Compare("y", choice) == 0 ||
+			strings.Compare("yes", choice) == 0 ||
+			strings.Compare("Y", choice) == 0 {
+			unsafe = true
+		}
+
+		if !unsafe {
+			return fmt.Errorf("[ksctl] approval cancelled")
+		}
+	}
+	return nil
+}
+
 func clusterNameFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&clusterName, "name", "n", "", "Cluster Name")
+	f.Flags().StringVarP(&clusterName, "name", "n", "demo", "Cluster Name") // keep it same for all
 }
 
 func nodeSizeManagedFlag(f *cobra.Command) {
@@ -101,6 +193,10 @@ func nodeSizeWPFlag(f *cobra.Command) {
 
 func nodeSizeDSFlag(f *cobra.Command) {
 	f.Flags().StringVarP(&nodeSizeDS, "nodeSizeDS", "", "", "Node size of self-managed datastore nodes")
+}
+
+func nodeSizeLBFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&nodeSizeLB, "nodeSizeLB", "", "", "Node size of self-managed loadbalancer node")
 }
 
 func regionFlag(f *cobra.Command) {
@@ -193,6 +289,9 @@ func SetDefaults(provider, clusterType string) {
 		if len(nodeSizeDS) == 0 {
 			nodeSizeDS = "Standard_F2s"
 		}
+		if len(nodeSizeLB) == 0 {
+			nodeSizeLB = "Standard_F2s"
+		}
 		if len(region) == 0 {
 			region = "eastus"
 		}
@@ -221,6 +320,9 @@ func SetDefaults(provider, clusterType string) {
 		}
 		if len(nodeSizeDS) == 0 {
 			nodeSizeDS = "g3.small"
+		}
+		if len(nodeSizeLB) == 0 {
+			nodeSizeLB = "g3.small"
 		}
 		if len(region) == 0 {
 			region = "LON1s"
