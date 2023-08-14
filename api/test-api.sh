@@ -1,37 +1,39 @@
 #!/bin/sh
 
-echo "+-------------------------+"
-echo "|   Testing (api/util)    |"
-echo "+-------------------------+"
+echo "-----------------------------------"
+echo "|   Testing (api/utils)"
+echo "-----------------------------------"
 
-echo "TODO"
+cd provider/utils/
+go test -v . -timeout 10s && cd -
 
-# cd utils/
-# go test -v . -timeout 10s && cd -
+echo "-----------------------------------"
+echo "|   Testing (api/k8s_distro/k3s)    |"
+echo "-----------------------------------"
 
-echo "+-------------------------+"
-echo "|   Testing (api/local)   |"
-echo "+-------------------------+"
+cd k8s_distro/k3s/
+go test -v . && cd -
 
-echo "TODO"
-# cd local/
-# go test . -v && cd -
+echo "-----------------------------------"
+echo "|   Testing (api/provider/local)"
+echo "-----------------------------------"
+
+cd provider/local/
+go test . -v && cd -
 
 
-echo "+-------------------------+"
-echo "|   Testing (api/civo)    |"
-echo "+-------------------------+"
+echo "-----------------------------------"
+echo "|   Testing (api/provider/civo)"
+echo "-----------------------------------"
 
-echo "TODO"
-# cd civo/
-# go test . -v && cd -
+cd provider/civo/
+go test . -v && cd -
 
-echo "+-------------------------+"
-echo "|   Testing (api/azure)    |"
-echo "+-------------------------+"
+echo "-----------------------------------"
+echo "|   Testing (api/provider/azure)"
+echo "-----------------------------------"
 
-echo "TODO"
-# cd azure/
-# go test . -v && cd -
+cd provider/azure/
+go test . -v && cd -
 
 rm -rvf ${HOME}/.ksctl

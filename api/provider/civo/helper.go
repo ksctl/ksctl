@@ -45,14 +45,14 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	}
 	fmt.Println(id)
 
-	if err := utils.SaveCred(storage, Credential{token}, "civo"); err != nil {
+	if err := utils.SaveCred(storage, Credential{token}, utils.CLOUD_CIVO); err != nil {
 		return err
 	}
 	return nil
 }
 
 func generatePath(flag int, path ...string) string {
-	return utils.GetPath(flag, "civo", path...)
+	return utils.GetPath(flag, utils.CLOUD_CIVO, path...)
 }
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
@@ -91,9 +91,49 @@ func convertStateFromBytes(raw []byte) error {
 	return nil
 }
 
+// helper functions to get resources from civogo client
+// seperation so that we can test logic by assert
+func getValidK8sVersionClient() []string {
+	vers, err := civoClient.ListAvailableKubernetesVersions()
+	if err != nil {
+		return nil
+	}
+	var val []string
+	for _, ver := range vers {
+		if ver.ClusterType == utils.K8S_K3S {
+			val = append(val, ver.Label)
+		}
+	}
+	return val
+}
+
+func getValidRegionsClient() []string {
+	regions, err := civoClient.ListRegions()
+	if err != nil {
+		return nil
+	}
+	var val []string
+	for _, region := range regions {
+		val = append(val, region.Code)
+	}
+	return val
+}
+
+func getValidVMSizesClient() []string {
+	nodeSizes, err := civoClient.ListInstanceSizes()
+	if err != nil {
+		return nil
+	}
+	var val []string
+	for _, region := range nodeSizes {
+		val = append(val, region.Name)
+	}
+	return val
+}
+
 func validationOfArguments(name, region string) error {
 
-	if err := isValidRegion(region); err != nil {
+	if err := isValidRegion(getValidRegionsClient(), region); err != nil {
 		return err
 	}
 
@@ -104,45 +144,33 @@ func validationOfArguments(name, region string) error {
 	return nil
 }
 
-func isValidK8sVersion(ver string) error {
-	vers, err := civoClient.ListAvailableKubernetesVersions()
-	if err != nil {
-		return err
-	}
-
-	for _, vver := range vers {
-		if vver.ClusterType == "k3s" && vver.Label == ver {
+func isValidK8sVersion(valver []string, ver string) error {
+	for _, vver := range valver {
+		if vver == ver {
 			return nil
 		}
 	}
-	return fmt.Errorf("Invalid k8s version\nValid options: %v\n", vers)
+	return fmt.Errorf("Invalid k8s version\nValid options: %v\n", valver)
 }
 
 // IsValidRegionCIVO validates the region code for CIVO
-func isValidRegion(reg string) error {
-	regions, err := civoClient.ListRegions()
-	if err != nil {
-		return err
-	}
-	for _, region := range regions {
-		if region.Code == reg {
+func isValidRegion(validFromClient []string, reg string) error {
+	for _, region := range validFromClient {
+		if region == reg {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID REGION\nValid options: %v\n", regions)
+	return fmt.Errorf("INVALID REGION\nValid options: %v\n", validFromClient)
 }
 
-func isValidVMSize(size string) error {
-	nodeSizes, err := civoClient.ListInstanceSizes()
-	if err != nil {
-		return err
-	}
-	for _, nodeSize := range nodeSizes {
-		if size == nodeSize.Name {
+func isValidVMSize(validFromClient []string, size string) error {
+
+	for _, nodeSize := range validFromClient {
+		if size == nodeSize {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID VM SIZE\nValid options: %v\n", nodeSizes)
+	return fmt.Errorf("INVALID VM SIZE\nValid options: %v\n", validFromClient)
 }
 
 func printKubeconfig(storage resources.StorageFactory, operation string) {

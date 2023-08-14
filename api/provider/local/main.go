@@ -164,58 +164,58 @@ func (cloud *LocalProvider) Visibility(bool) resources.CloudFactory {
 }
 
 func (*LocalProvider) GetHostNameAllWorkerNode() []string {
-	//TODO implement me
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StorageFactory) error {
-	panic("[local] unsupported operation")
+	return nil
+
 }
 
 // DelFirewall implements resources.CloudFactory.
 func (*LocalProvider) DelFirewall(state resources.StorageFactory) error {
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // DelNetwork implements resources.CloudFactory.
 func (*LocalProvider) DelNetwork(state resources.StorageFactory) error {
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // DelSSHKeyPair implements resources.CloudFactory.
 func (*LocalProvider) DelSSHKeyPair(state resources.StorageFactory) error {
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // DelVM implements resources.CloudFactory.
 func (*LocalProvider) DelVM(resources.StorageFactory, int) error {
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // GetManagedKubernetes implements resources.CloudFactory.
 func (*LocalProvider) GetManagedKubernetes(state resources.StorageFactory) {
-	panic("[local] unsupported operation")
+	return
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
 func (*LocalProvider) GetStateForHACluster(state resources.StorageFactory) (cloud.CloudResourceState, error) {
-	panic("[local] unsupported operation")
+	return cloud.CloudResourceState{}, fmt.Errorf("[local] should not be implemented")
 }
 
 // NewFirewall implements resources.CloudFactory.
 func (*LocalProvider) NewFirewall(state resources.StorageFactory) error {
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // NewNetwork implements resources.CloudFactory.
 func (*LocalProvider) NewNetwork(state resources.StorageFactory) error {
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // NewVM implements resources.CloudFactory.
 func (*LocalProvider) NewVM(resources.StorageFactory, int) error {
-	panic("[local] unsupported operation")
+	return nil
 }
 
 // NoOfControlPlane implements resources.CloudFactory.
