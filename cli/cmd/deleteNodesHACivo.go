@@ -3,10 +3,11 @@ package cmd
 // maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
 
 import (
+	"os"
+
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var deleteNodesHACivo = &cobra.Command{
@@ -25,7 +26,15 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 		cli.Client.Metadata.IsHA = true
 
 		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
-		cli.Client.Metadata.NoWP = -1 // for overriding
+		cli.Client.Metadata.NoWP = noWP
+		cli.Client.Metadata.ClusterName = clusterName
+		cli.Client.Metadata.Region = region
+		cli.Client.Metadata.K8sDistro = distro
+
+		if err := deleteApproval(); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
+		}
 
 		stat, err := controller.DelWorkerPlaneNode(&cli.Client)
 		if err != nil {
@@ -42,6 +51,8 @@ func init() {
 	clusterNameFlag(deleteNodesHACivo)
 	noOfWPFlag(deleteNodesHACivo)
 	regionFlag(deleteNodesHACivo)
+	//k8sVerFlag(deleteNodesHACivo)
+	distroFlag(deleteNodesHACivo)
 
 	deleteNodesHACivo.MarkFlagRequired("name")
 	deleteNodesHACivo.MarkFlagRequired("region")
