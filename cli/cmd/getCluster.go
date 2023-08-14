@@ -7,9 +7,10 @@ Kubesimplify
 */
 
 import (
+	"os"
+
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 type printer struct {
@@ -31,6 +32,7 @@ ksctl get-clusters `,
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		cli.Client.Metadata.Provider = "all"
 		stat, err := controller.GetCluster(&cli.Client)
 		if err != nil {
 			cli.Client.Storage.Logger().Err(err.Error())

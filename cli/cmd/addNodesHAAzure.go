@@ -22,8 +22,10 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 			panic(err)
 		}
 		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
+		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
 
 		cli.Client.Metadata.IsHA = true
+		cli.Client.Metadata.NoWP = -1 // for overriding
 
 		stat, err := controller.AddWorkerPlaneNode(&cli.Client)
 		if err != nil {
@@ -37,9 +39,9 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 func init() {
 	createClusterHAAzure.AddCommand(addMoreWorkerNodesHAAzure)
 	clusterNameFlag(addMoreWorkerNodesHAAzure)
-	noOfWPFlag(addMoreWorkerNodesHAAzure, -1)
-	nodeSizeWPFlag(addMoreWorkerNodesHAAzure, "Standard_F2s")
-	regionFlag(addMoreWorkerNodesHAAzure, "eastus")
+	noOfWPFlag(addMoreWorkerNodesHAAzure)
+	nodeSizeWPFlag(addMoreWorkerNodesHAAzure)
+	regionFlag(addMoreWorkerNodesHAAzure)
 
 	addMoreWorkerNodesHAAzure.MarkFlagRequired("name")
 	addMoreWorkerNodesHAAzure.MarkFlagRequired("region")

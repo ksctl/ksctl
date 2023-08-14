@@ -11,7 +11,7 @@ var switchCluster = &cobra.Command{
 	Use:     "switch-cluster",
 	Aliases: []string{"switch"},
 	Short:   "Use to switch between clusters",
-	Long: `It is used to switch cluster with the given clusterName from user. For example:
+	Long: `It is used to switch cluster with the given ClusterName from user. For example:
 
 ksctl switch-context -p <civo,local,civo-ha,azure-ha,azure>  -n <clustername> -r <region> <arguments to civo cloud provider>
 `,
@@ -54,7 +54,7 @@ ksctl switch-context -p <civo,local,civo-ha,azure-ha,azure>  -n <clustername> -r
 func init() {
 	rootCmd.AddCommand(switchCluster)
 	clusterNameFlag(switchCluster)
-	regionFlag(switchCluster, "")
+	regionFlag(switchCluster)
 	switchCluster.Flags().StringVarP(&provider, "provider", "p", "", "Provider")
 	switchCluster.MarkFlagRequired("name")
 	switchCluster.MarkFlagRequired("provider")

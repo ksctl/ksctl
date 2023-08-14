@@ -40,7 +40,7 @@ func TestIsValidRegion(t *testing.T) {
 	}
 	for region, expected := range testSet {
 		// FIXME: want to use fakeClient but it uses real client
-		if err := isValidRegion(region); (expected != nil && err == nil) || (expected == nil && err != nil) {
+		if err := isValidRegion(region); !errors.Is(expected, err) {
 			t.Fatalf("Region code mismatch %s\n", region)
 		}
 	}

@@ -24,6 +24,9 @@ ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
 		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
 		cli.Client.Metadata.IsHA = true
 
+		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.NoWP = -1 // for overriding
+
 		stat, err := controller.DelWorkerPlaneNode(&cli.Client)
 		if err != nil {
 			cli.Client.Storage.Logger().Err(err.Error())
@@ -37,8 +40,8 @@ func init() {
 	deleteClusterHAAzure.AddCommand(deleteNodesHAAzure)
 
 	clusterNameFlag(deleteNodesHAAzure)
-	noOfWPFlag(deleteNodesHAAzure, -1)
-	regionFlag(deleteNodesHAAzure, "eastus")
+	noOfWPFlag(deleteNodesHAAzure)
+	regionFlag(deleteNodesHAAzure)
 
 	deleteNodesHAAzure.MarkFlagRequired("name")
 	deleteNodesHAAzure.MarkFlagRequired("region")

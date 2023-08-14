@@ -23,6 +23,8 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 			panic(err)
 		}
 		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
+		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.NoMP = -1 // for overriding
 
 		cli.Client.Metadata.IsHA = true
 
@@ -38,9 +40,9 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 func init() {
 	createClusterHACivo.AddCommand(addMoreWorkerNodesHACivo)
 	clusterNameFlag(addMoreWorkerNodesHACivo)
-	noOfWPFlag(addMoreWorkerNodesHACivo, -1)
-	nodeSizeWPFlag(addMoreWorkerNodesHACivo, "g3.small")
-	regionFlag(addMoreWorkerNodesHACivo, "LON1")
+	noOfWPFlag(addMoreWorkerNodesHACivo)
+	nodeSizeWPFlag(addMoreWorkerNodesHACivo)
+	regionFlag(addMoreWorkerNodesHACivo)
 
 	addMoreWorkerNodesHACivo.MarkFlagRequired("name")
 	addMoreWorkerNodesHACivo.MarkFlagRequired("region")
