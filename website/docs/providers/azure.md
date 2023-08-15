@@ -1,13 +1,9 @@
----
-sidebar_position: 1
----
-
 # Azure
 
-AZURE support for the HA and Managed Cluster
+Azure support for the HA and Managed Cluster
 
 
-## Prequisites
+## Usage Prequisites
 
 :::note
 we need credentials to access clusters
@@ -122,8 +118,7 @@ clusters which are managed by the cloud provider
 
 **HA cluster**
 - addition and deletion of new workerplane node
-- SSH access to each cluster node (DB, LB, Controplane) _Public Access_, secured by private key
-- SSH access to each workplane _Private Access_ via local network, secured by private key
+- SSH access to each cluster node (DB, LB, Controplane, WorkerPlane) _Public Access_, secured by private key
 :::
 
 :::success DEMO

@@ -1,8 +1,4 @@
----
-sidebar_position: 1
----
-
-# Getting Started
+# Installation
 
 Lets begin with installation of the tools
 their are various method
