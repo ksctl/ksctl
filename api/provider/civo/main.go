@@ -92,10 +92,8 @@ type Metadata struct {
 	Public  bool
 
 	// purpose: application in managed cluster
-	Apps    string
-	Cni     string
-	Version string
-
+	Apps string
+	Cni  string
 	// these are used for managing the state and are the size of the arrays
 	NoCP int
 	NoWP int

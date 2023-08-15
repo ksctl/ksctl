@@ -35,7 +35,7 @@ ksctl create-cluster azure <arguments to civo cloud provider>
 		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
 		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG)
 
-		deleteManaged()
+		deleteManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
 
@@ -55,7 +55,7 @@ ksctl delete-cluster civo
 		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
 		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_MANG)
 
-		deleteManaged()
+		deleteManaged(cmd.Flags().Lookup("approve").Changed)
 
 	},
 }
@@ -76,7 +76,7 @@ var deleteClusterHAAzure = &cobra.Command{
 		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
 		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
 
-		deleteHA()
+		deleteHA(cmd.Flags().Lookup("approve").Changed)
 	},
 }
 
@@ -96,7 +96,7 @@ ksctl delete-cluster ha-civo <arguments to civo cloud provider>
 		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
 		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
 
-		deleteHA()
+		deleteHA(cmd.Flags().Lookup("approve").Changed)
 	},
 }
 
@@ -116,7 +116,7 @@ ksctl delete-cluster local <arguments to local/Docker provider>
 		cli.Client.Metadata.Provider = utils.CLOUD_LOCAL
 		SetDefaults(utils.CLOUD_LOCAL, utils.CLUSTER_TYPE_MANG)
 
-		deleteManaged()
+		deleteManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
 

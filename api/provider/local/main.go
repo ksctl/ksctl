@@ -236,7 +236,8 @@ func (cloud *LocalProvider) NoOfWorkerPlane(resources.StorageFactory, int, bool)
 func (obj *LocalProvider) SwitchCluster(storage resources.StorageFactory) error {
 
 	if isPresent(storage, obj.ClusterName) {
-		printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+
+		printKubeconfig(storage, utils.OPERATION_STATE_CREATE, obj.ClusterName)
 		return nil
 	}
 	return fmt.Errorf("[local] Cluster not found")

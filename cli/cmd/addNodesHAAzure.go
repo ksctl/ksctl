@@ -32,9 +32,11 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 		cli.Client.Metadata.K8sDistro = distro
 		cli.Client.Metadata.K8sVersion = k8sVer
 
-		if err := createApproval(); err != nil {
-			cli.Client.Storage.Logger().Err(err.Error())
-			os.Exit(1)
+		if !cmd.Flags().Lookup("approve").Changed {
+			if err := createApproval(); err != nil {
+				cli.Client.Storage.Logger().Err(err.Error())
+				os.Exit(1)
+			}
 		}
 		stat, err := controller.AddWorkerPlaneNode(&cli.Client)
 		if err != nil {

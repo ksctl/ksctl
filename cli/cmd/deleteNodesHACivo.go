@@ -31,11 +31,12 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 		cli.Client.Metadata.Region = region
 		cli.Client.Metadata.K8sDistro = distro
 
-		if err := deleteApproval(); err != nil {
-			cli.Client.Storage.Logger().Err(err.Error())
-			os.Exit(1)
+		if !cmd.Flags().Lookup("approve").Changed {
+			if err := deleteApproval(); err != nil {
+				cli.Client.Storage.Logger().Err(err.Error())
+				os.Exit(1)
+			}
 		}
-
 		stat, err := controller.DelWorkerPlaneNode(&cli.Client)
 		if err != nil {
 			cli.Client.Storage.Logger().Err(err.Error())

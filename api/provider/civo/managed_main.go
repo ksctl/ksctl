@@ -73,7 +73,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 	}
 
 	configK8s := &civogo.KubernetesClusterConfig{
-		KubernetesVersion: obj.Metadata.Version,
+		KubernetesVersion: obj.Metadata.K8sVersion,
 		Name:              obj.Metadata.ResName,
 		Region:            obj.Region,
 		NumTargetNodes:    noOfNodes,
@@ -98,7 +98,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 
 	civoCloudState.NoManagedNodes = noOfNodes
 	civoCloudState.KubernetesDistro = utils.K8S_K3S
-	civoCloudState.KubernetesVer = obj.Metadata.Version
+	civoCloudState.KubernetesVer = obj.Metadata.K8sVersion
 	civoCloudState.ManagedClusterID = resp.ID
 
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
