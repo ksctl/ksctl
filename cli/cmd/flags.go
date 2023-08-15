@@ -22,6 +22,21 @@ func verboseFlags() {
 
 	getClusterCmd.Flags().BoolP("verbose", "v", true, "for verbose output")
 	switchCluster.Flags().BoolP("verbose", "v", true, "for verbose output")
+
+	createClusterAzure.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	createClusterCivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	createClusterLocal.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	createClusterHACivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	createClusterHAAzure.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	deleteClusterAzure.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	deleteClusterCivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	deleteClusterHAAzure.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	deleteClusterHACivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	deleteClusterLocal.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	addMoreWorkerNodesHAAzure.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	addMoreWorkerNodesHACivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	deleteNodesHAAzure.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	deleteNodesHACivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
 }
 
 func argsFlags() {

@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"os"
+
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var switchCluster = &cobra.Command{
@@ -58,5 +59,4 @@ func init() {
 	switchCluster.Flags().StringVarP(&provider, "provider", "p", "", "Provider")
 	switchCluster.MarkFlagRequired("name")
 	switchCluster.MarkFlagRequired("provider")
-	switchCluster.MarkFlagRequired("region")
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func createManaged() {
+func createManaged(approval bool) {
 	cli.Client.Metadata.ManagedNodeType = nodeSizeMP
 	cli.Client.Metadata.NoMP = noMP
 
@@ -21,10 +21,11 @@ func createManaged() {
 
 	cli.Client.Metadata.CNIPlugin = cni
 	cli.Client.Metadata.Applications = apps
-
-	if err := createApproval(); err != nil {
-		cli.Client.Storage.Logger().Err(err.Error())
-		os.Exit(1)
+	if !approval {
+		if err := createApproval(); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
+		}
 	}
 
 	stat, err := controller.CreateManagedCluster(&cli.Client)
@@ -35,7 +36,7 @@ func createManaged() {
 	cli.Client.Storage.Logger().Success(stat)
 }
 
-func createHA() {
+func createHA(approval bool) {
 	cli.Client.Metadata.IsHA = true
 
 	cli.Client.Metadata.ClusterName = clusterName
@@ -55,9 +56,11 @@ func createHA() {
 	cli.Client.Metadata.CNIPlugin = cni
 	cli.Client.Metadata.Applications = apps
 
-	if err := createApproval(); err != nil {
-		cli.Client.Storage.Logger().Err(err.Error())
-		os.Exit(1)
+	if !approval {
+		if err := createApproval(); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
+		}
 	}
 	stat, err := controller.CreateHACluster(&cli.Client)
 	if err != nil {
@@ -67,15 +70,17 @@ func createHA() {
 	cli.Client.Storage.Logger().Success(stat)
 }
 
-func deleteManaged() {
+func deleteManaged(approval bool) {
 
 	cli.Client.Metadata.ClusterName = clusterName
 	cli.Client.Metadata.K8sDistro = distro
 	cli.Client.Metadata.Region = region
 
-	if err := deleteApproval(); err != nil {
-		cli.Client.Storage.Logger().Err(err.Error())
-		os.Exit(1)
+	if !approval {
+		if err := deleteApproval(); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
+		}
 	}
 	stat, err := controller.DeleteManagedCluster(&cli.Client)
 	if err != nil {
@@ -85,7 +90,7 @@ func deleteManaged() {
 	cli.Client.Storage.Logger().Success(stat)
 }
 
-func deleteHA() {
+func deleteHA(approval bool) {
 
 	cli.Client.Metadata.IsHA = true
 
@@ -93,11 +98,12 @@ func deleteHA() {
 	cli.Client.Metadata.K8sDistro = distro
 	cli.Client.Metadata.Region = region
 
-	if err := deleteApproval(); err != nil {
-		cli.Client.Storage.Logger().Err(err.Error())
-		os.Exit(1)
+	if !approval {
+		if err := deleteApproval(); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
+		}
 	}
-
 	stat, err := controller.DeleteHACluster(&cli.Client)
 	if err != nil {
 		cli.Client.Storage.Logger().Err(err.Error())
@@ -124,7 +130,7 @@ func deleteApproval() error {
 	}
 
 	if showMsg {
-		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER 
+		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER
 %s
 `, string(a)))
 
@@ -155,7 +161,7 @@ func createApproval() error {
 	}
 
 	if showMsg {
-		fmt.Println(fmt.Sprintf(`🚨 THIS IS A CREATION STEP MAKE SURE IF YOU WANT TO CREATE THE CLUSTER 
+		fmt.Println(fmt.Sprintf(`🚨 THIS IS A CREATION STEP MAKE SURE IF YOU WANT TO CREATE THE CLUSTER
 %s
 `, string(a)))
 

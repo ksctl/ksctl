@@ -35,7 +35,7 @@ Many cloud providers offer their flavor of Kubernetes. Each provider has its uni
 
 # Purpose
 
-The ksctl project by kubesimplify is a command-line tool that helps developers manage Kubernetes clusters running on different enviroment
+The ksctl project by kubesimplify is a Generic Kubernetes Management command-line tool that helps developers and administrators manage Kubernetes clusters running on different environment
 
 It provides a simple and intuitive interface for performing common tasks such as creating, deleting, and managing Kubernetes resources. ksctl is designed to be easy to use, even for developers who are new to Kubernetes.
 
@@ -55,7 +55,7 @@ Link to the [docs website](https://kubesimplify.github.io/ksctl/)
 
 - Go (if building from source)
 - Docker (if going to use Local provider)
-- Go version >1.19 for build process
+- Go version >1.20 for build process
 
 # Supported Platforms
 

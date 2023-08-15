@@ -3,10 +3,11 @@ package local
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
 	"os"
 	"runtime"
+
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/utils"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
@@ -90,10 +91,10 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 	return kpath, nil
 }
 
-func printKubeconfig(storage resources.StorageFactory, operation string) {
+func printKubeconfig(storage resources.StorageFactory, operation string, clustername string) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
-	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, localState.ClusterName, KUBECONFIG)
+	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, clustername, KUBECONFIG)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {
