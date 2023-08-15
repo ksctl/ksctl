@@ -1,26 +1,32 @@
 'area/api':
-- 'api/*'
-- 'api/**/*'
+- any: ['api/**']
+  all: ['!api/utils/**','!api/controllers/**','!api/resources/**']
 
-'area/cli':
-- 'cli/*'
-- 'cli/**/*'
+'area/cli': 'cli/**'
 
 'kind/documentation':
-- 'website/*'
-- 'website/**/*'
-- 'website/**/**/*'
-- '**/*.md'
+- any: ['website/**', '**/.md']
 
-'provider/azure':
-- 'api/provider/azure/**/*'
-- 'api/provider/azure/*'
+'cloud/azure': 'api/provider/azure/**'
 
-'provider/civo':
-- 'api/provider/civo/**/*'
-- 'api/provider/civo/*'
+'cloud/civo': 'api/provider/civo/**'
 
-'provider/local':
-- 'api/provider/local/**/*'
-- 'api/provider/local/*'
+'cloud/local': 'api/provider/local/**'
+
+'distro/k3s': 'api/k8s_distro/k3s/**'
+
+'distro/kubeadm': 'api/k8s_distro/kubeadm/**'
+
+'state/local': 'api/storage/localstate/**'
+
+'go': '**/*.go'
+
+'area/test':
+- any: ['**/*_test.go']
+
+'area/ci':
+- any: ['.goreleaser.yaml', '.github/**']
+
+'area/core':
+- any: ['api/utils/**', 'api/controllers/**', 'api/resources/**']
 
