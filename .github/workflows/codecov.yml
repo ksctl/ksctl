@@ -6,14 +6,12 @@ on:
     - 'cli/**'
     branches:
     - main
-    - dev
   pull_request:
     paths:
     - 'api/**'
     - 'cli/**'
     branches:
     - main
-    - dev
 
 jobs:
   codecov:
@@ -28,22 +26,32 @@ jobs:
         cache-dependency-path: ./website
     - uses: actions/setup-go@v2
       with:
-        go-version: '1.19'
+        go-version: '1.20'
+    - name: Run coverage (UTILS)
+      working-directory: api/utils
+      run: |
+         go test -race -coverprofile=../../coverage-utils.out -covermode=atomic -v
+         cd ../..
+    - name: Run coverage (K3S)
+      working-directory: api/k8s_distro/k3s
+      run: |
+        go test -race -coverprofile=../../../coverage-k3s.out -covermode=atomic -v
+        cd ../../..
     - name: Run coverage (CIVO)
-      working-directory: api/civo
+      working-directory: api/provider/civo
       run: |
-        go test -race -coverprofile=../../coverage-civo.out -covermode=atomic -v
-        cd ../..
+         go test -race -coverprofile=../../../coverage-civo.out -covermode=atomic -v
+         cd ../../..
     - name: Run coverage (AZURE)
-      working-directory: api/azure
+      working-directory: api/provider/azure
       run: |
-        go test -race -coverprofile=../../coverage-azure.out -covermode=atomic -v
-        cd ../..
+         go test -race -coverprofile=../../../coverage-azure.out -covermode=atomic -v
+         cd ../../..
     - name: Run coverage (LOCAL)
-      working-directory: api/local
+      working-directory: api/provider/local
       run: |
-        go test -race -coverprofile=../../coverage-local.out -covermode=atomic -v
-        cd ../..
+         go test -race -coverprofile=../../../coverage-local.out -covermode=atomic -v
+         cd ../../..
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

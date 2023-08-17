@@ -1,14 +1,15 @@
-# Tasks description :construction: 🔧 
+# Tasks description :construction:
 
-- [ ] Closes #96
+- [ ] Closes IssueNo#9999
 
 # Solution :heavy_check_mark:
 
-NONE
+<!--Add here-->
 
 # Note to reviewers :notebook:
 
-NONE
+<!--Add here-->
 
 - [ ] Ran Unit Test locally
 - [ ] Tested the website locally
+- [ ] Checked Contribution's guidelines

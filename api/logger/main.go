@@ -1,14 +1,17 @@
 package logger
 
+import cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+
 type Logger struct {
 	Verbose bool
 }
 
 type LogFactory interface {
 	// will accept a string to be highlignted
-	Info(...string)
+	Success(...string)
 	Warn(...string)
 	Print(...string)
 	Err(...string)
-    Note(...string)
+	Note(...string)
+	Table([]cloudController.AllClusterData)
 }

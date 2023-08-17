@@ -1,7 +1,6 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package main
+
+// maintainer Dipankar Das <dipankardas0115@gmail.com>
 
 import "github.com/kubesimplify/ksctl/cli/cmd"
 

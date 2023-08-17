@@ -1,15 +1,11 @@
 package cmd
 
-/*
-Kubesimplify
-@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
-				Anurag Kumar <contact.anurag7@gmail.com>
-				Avinesh Tripathi <avineshtripathi1@gmail.com>
-*/
-import (
-	log "github.com/kubesimplify/ksctl/api/logger"
+// maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
 
-	"github.com/kubesimplify/ksctl/api/civo"
+import (
+	"os"
+
+	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
@@ -23,40 +19,40 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		isSet := cmd.Flags().Lookup("verbose").Changed
-		logger := log.Logger{Verbose: true}
-		if !isSet {
-			logger.Verbose = false
+		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
+			panic(err)
 		}
+		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
+		cli.Client.Metadata.IsHA = true
 
-		payload := civo.CivoProvider{
-			ClusterName: dwhcclustername,
-			Region:      dwhcregion,
-			HACluster:   true,
-			Spec: utils.Machine{
-				HAWorkerNodes: dwhcwp,
-			},
+		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.NoWP = noWP
+		cli.Client.Metadata.ClusterName = clusterName
+		cli.Client.Metadata.Region = region
+		cli.Client.Metadata.K8sDistro = distro
+
+		if err := deleteApproval(cmd.Flags().Lookup("approve").Changed); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		err := payload.DeleteSomeWorkerNodes(logger)
+		stat, err := controller.DelWorkerPlaneNode(&cli.Client)
 		if err != nil {
-			logger.Err(err.Error())
-			return
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		logger.Info("DELETED WorkerNode(s)")
+		cli.Client.Storage.Logger().Success(stat)
 	},
 }
 
-var (
-	// dw hc -> delete worker-nodes to ha-civo
-	dwhcregion      string
-	dwhcclustername string
-	dwhcwp          int
-)
-
 func init() {
 	deleteClusterHACivo.AddCommand(deleteNodesHACivo)
-	deleteNodesHACivo.Flags().StringVarP(&dwhcclustername, "name", "n", "", "Cluster name")
-	deleteNodesHACivo.Flags().StringVarP(&dwhcregion, "region", "r", "LON1", "Region")
-	deleteNodesHACivo.Flags().IntVarP(&dwhcwp, "worker-nodes", "w", 1, "no of worker nodes to delete")
-	deleteNodesHACivo.Flags().BoolP("verbose", "v", true, "for verbose output")
+
+	clusterNameFlag(deleteNodesHACivo)
+	noOfWPFlag(deleteNodesHACivo)
+	regionFlag(deleteNodesHACivo)
+	//k8sVerFlag(deleteNodesHACivo)
+	distroFlag(deleteNodesHACivo)
+
 	deleteNodesHACivo.MarkFlagRequired("name")
+	deleteNodesHACivo.MarkFlagRequired("region")
 }

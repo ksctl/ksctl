@@ -1,10 +1,3 @@
-/*
-Kubesimplify
-@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
-				Anurag Kumar <contact.anurag7@gmail.com>
-				Avinesh Tripathi <avineshtripathi1@gmail.com>
-*/
-
 package utils
 
 import (
@@ -21,74 +14,89 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-
 	"time"
+
+	"github.com/kubesimplify/ksctl/api/resources"
 
 	"github.com/kubesimplify/ksctl/api/logger"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
-type AwsProvider struct {
-	ClusterName string  `json:"cluster_name"`
-	HACluster   bool    `json:"ha_cluster"`
-	Region      string  `json:"region"`
-	Spec        Machine `json:"spec"`
-	AccessKey   string  `json:"access_key"`
-	Secret      string  `json:"secret"`
-}
-
-type Machine struct {
-	ManagedNodes        int    `json:"managed_nodes"`
-	Disk                string `json:"disk"`
-	HAControlPlaneNodes int    `json:"no_cp"`
-	HAWorkerNodes       int    `json:"no_wp"`
-	Mem                 string `json:"memory"`
-	Cpu                 string `json:"cpu"`
-}
-
 type SSHPayload struct {
-	UserName       string `json:"user_name"`
-	PathPrivateKey string `json:"path_private_key"`
-	PublicIP       string `json:"public_ip"`
-	Output         string `json:"output"`
+	UserName       string
+	PathPrivateKey string
+	PublicIP       string
+	Output         string
+
+	flag     int
+	script   string
+	fastMode bool
+}
+
+func (ssh *SSHPayload) Username(s string) {
+	ssh.UserName = s
+}
+
+func (ssh *SSHPayload) LocPrivateKey(s string) {
+	ssh.PathPrivateKey = s
+}
+
+func (ssh *SSHPayload) GetOutput() string {
+	out := ssh.Output
+	ssh.Output = ""
+	return out
+}
+
+func (ssh *SSHPayload) IPv4(ip string) SSHCollection {
+	ssh.PublicIP = ip
+	return ssh
 }
 
 type SSHCollection interface {
-	SSHExecute(int, *string, bool)
-}
-
-type LocalProvider struct {
-	ClusterName string  `json:"cluster_name"`
-	HACluster   bool    `json:"ha_cluster"`
-	Spec        Machine `json:"spec"`
-}
-
-type CivoCredential struct {
-	Token string `json:"token"`
-}
-
-type AzureCredential struct {
-	SubscriptionID string `json:"subscription_id"`
-	TenantID       string `json:"tenant_id"`
-	ClientID       string `json:"client_id"`
-	ClientSecret   string `json:"client_secret"`
-}
-
-type AwsCredential struct {
-	AccesskeyID string `json:"access_key_id"`
-	Secret      string `json:"secret_access_key"`
+	SSHExecute(resources.StorageFactory) error
+	Flag(int) SSHCollection
+	Script(string) SSHCollection
+	FastMode(bool) SSHCollection
+	Username(string)
+	LocPrivateKey(string)
+	GetOutput() string
+	IPv4(ip string) SSHCollection
 }
 
 const (
-	SSH_PAUSE_IN_SECONDS = 20
-	MAX_RETRY_COUNT      = 8
-	CREDENTIAL_PATH      = int(0)
-	CLUSTER_PATH         = int(1)
-	SSH_PATH             = int(2)
-	OTHER_PATH           = int(3)
-	EXEC_WITH_OUTPUT     = int(1)
-	EXEC_WITHOUT_OUTPUT  = int(0)
+	SSH_PAUSE_IN_SECONDS  = 20
+	MAX_RETRY_COUNT       = 8
+	MAX_WATCH_RETRY_COUNT = 4
+	CREDENTIAL_PATH       = int(0)
+	CLUSTER_PATH          = int(1)
+	SSH_PATH              = int(2)
+	OTHER_PATH            = int(3)
+	EXEC_WITH_OUTPUT      = int(1)
+	EXEC_WITHOUT_OUTPUT   = int(0)
+
+	ROLE_CP = "controlplane"
+	ROLE_WP = "workerplane"
+	ROLE_LB = "loadbalancer"
+	ROLE_DS = "datastore"
+
+	CLOUD_CIVO  = "civo"
+	CLOUD_AZURE = "azure"
+	CLOUD_LOCAL = "local"
+	CLOUD_AWS   = "aws"
+
+	K8S_K3S     = "k3s"
+	K8S_KUBEADM = "kubeadm"
+
+	STORE_LOCAL  = "local"
+	STORE_REMOTE = "remote"
+
+	OPERATION_STATE_GET    = "get"
+	OPERATION_STATE_CREATE = "create"
+	OPERATION_STATE_DELETE = "delete"
+
+	CLUSTER_TYPE_HA   = "ha"
+	CLUSTER_TYPE_MANG = "managed"
 )
 
 // GetUserName returns current active username
@@ -100,38 +108,22 @@ func GetUserName() string {
 	return os.Getenv("HOME")
 }
 
-type PrinterKubeconfigPATH interface {
-	Printer(logger.Logger, bool, int)
-}
+func IsValidName(clusterName string) error {
+	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
 
-type CivoHandlers interface {
-	CreateCluster() error
-	DeleteCluster() error
-	SwitchContext(logger.Logger) error
-	AddMoreWorkerNodes() error
-	DeleteSomeWorkerNodes() error
-}
+	if !matched || err != nil {
+		return fmt.Errorf("CLUSTER NAME INVALID")
+	}
 
-// IsValidRegionCIVO validates the region code for CIVO
-func IsValidRegionCIVO(reg string) bool {
-	return strings.Compare(reg, "FRA1") == 0 ||
-		strings.Compare(reg, "NYC1") == 0 ||
-		strings.Compare(reg, "PHX1") == 0 ||
-		strings.Compare(reg, "LON1") == 0
-}
-
-func IsValidName(clusterName string) bool {
-	matched, _ := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
-
-	return matched
+	return nil
 }
 
 // getKubeconfig returns the path to clusters specific to provider
+
 func getKubeconfig(provider string, params ...string) string {
-	if strings.Compare(provider, "civo") != 0 &&
-		strings.Compare(provider, "local") != 0 &&
-		strings.Compare(provider, "azure") != 0 &&
-		strings.Compare(provider, "aws") != 0 {
+	if strings.Compare(provider, CLOUD_CIVO) != 0 &&
+		strings.Compare(provider, CLOUD_LOCAL) != 0 &&
+		strings.Compare(provider, CLOUD_AZURE) != 0 {
 		return ""
 	}
 	var ret strings.Builder
@@ -151,6 +143,7 @@ func getKubeconfig(provider string, params ...string) string {
 }
 
 // getCredentials generate the path to the credentials of different providers
+
 func getCredentials(provider string) string {
 	if runtime.GOOS == "windows" {
 		return fmt.Sprintf("%s\\.ksctl\\cred\\%s.json", GetUserName(), provider)
@@ -159,7 +152,9 @@ func getCredentials(provider string) string {
 	}
 }
 
+//
 // GetPath use this in every function and differentiate the logic by using if-else
+
 func GetPath(flag int, provider string, subfolders ...string) string {
 	switch flag {
 	case SSH_PATH:
@@ -175,59 +170,30 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	}
 }
 
-func SaveCred(logging logger.Logger, config interface{}, provider string) error {
-	if strings.Compare(provider, "civo") != 0 &&
-		strings.Compare(provider, "azure") != 0 &&
-		strings.Compare(provider, "aws") != 0 {
-		return fmt.Errorf("Invalid Provider (given): Unable to save configuration")
+func SaveCred(storage resources.StorageFactory, config interface{}, provider string) error {
+
+	if strings.Compare(provider, CLOUD_CIVO) != 0 &&
+		strings.Compare(provider, CLOUD_AZURE) != 0 {
+		return fmt.Errorf("invalid provider (given): Unable to save configuration")
 	}
 
 	storeBytes, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
-	_, err = os.Create(GetPath(CREDENTIAL_PATH, provider))
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
 
-	err = os.WriteFile(GetPath(CREDENTIAL_PATH, provider), storeBytes, 0640)
+	err = storage.Permission(0640).Path(GetPath(CREDENTIAL_PATH, provider)).Save(storeBytes)
 	if err != nil {
 		return err
 	}
-	logging.Info("💾 configuration", "")
+
+	storage.Logger().Success("[secrets] configuration")
 	return nil
 }
 
-func SaveState(logging logger.Logger, config interface{}, provider, clusterType string, clusterDir string) error {
-	if strings.Compare(provider, "civo") != 0 &&
-		strings.Compare(provider, "azure") != 0 &&
-		strings.Compare(provider, "aws") != 0 {
-		return fmt.Errorf("invalid Provider (given): Unable to save configuration")
-	}
-	storeBytes, err := json.Marshal(config)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir), 0755); err != nil && !os.IsExist(err) {
-		return err
-	}
-	_, err = os.Create(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	err = os.WriteFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"), storeBytes, 0640)
-	if err != nil {
-		return err
-	}
-	logging.Info("💾 configuration", "")
-	return nil
-}
+func GetCred(storage resources.StorageFactory, provider string) (i map[string]string, err error) {
 
-func GetCred(logging logger.Logger, provider string) (i map[string]string, err error) {
-
-	fileBytes, err := os.ReadFile(GetPath(CREDENTIAL_PATH, provider))
-
+	fileBytes, err := storage.Path(GetPath(CREDENTIAL_PATH, provider)).Load()
 	if err != nil {
 		return
 	}
@@ -237,24 +203,8 @@ func GetCred(logging logger.Logger, provider string) (i map[string]string, err e
 	if err != nil {
 		return
 	}
-	logging.Info("🔄 configuration", "")
+	storage.Logger().Success("[utils] configuration")
 
-	return
-}
-
-func GetState(logging logger.Logger, provider, clusterType, clusterDir string) (i map[string]interface{}, err error) {
-	fileBytes, err := os.ReadFile(GetPath(CLUSTER_PATH, provider, clusterType, clusterDir, "info.json"))
-
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(fileBytes, &i)
-
-	if err != nil {
-		return
-	}
-	logging.Info("🔄 configuration", "")
 	return
 }
 
@@ -297,21 +247,22 @@ func getPaths(provider string, params ...string) string {
 	return ret.String()
 }
 
-func CreateSSHKeyPair(provider, clusterDir string) (string, error) {
+func CreateSSHKeyPair(storage resources.StorageFactory, provider, clusterDir string) (string, error) {
 
-	pathTillFolder := getPaths(provider, "ha", clusterDir)
+	pathTillFolder := ""
+	pathTillFolder = getPaths(provider, CLUSTER_TYPE_HA, clusterDir)
 
-	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair")
+	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair") // WARN: it requires the os to have these dependencies
 	cmd.Dir = pathTillFolder
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
 
-	fmt.Println(string(out))
+	storage.Logger().Print("[utils]", string(out))
 
-	keyPairToUpload := GetPath(OTHER_PATH, provider, "ha", clusterDir, "keypair.pub")
-	fileBytePub, err := os.ReadFile(keyPairToUpload)
+	path := GetPath(OTHER_PATH, provider, CLUSTER_TYPE_HA, clusterDir, "keypair.pub")
+	fileBytePub, err := storage.Path(path).Load()
 	if err != nil {
 		return "", err
 	}
@@ -340,8 +291,8 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 }
 
 func returnServerPublicKeys(publicIP string) (string, error) {
-	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
-	c2 := exec.Command("ssh-keygen", "-lf", "-")
+	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP) // WARN: it requires the os to have these dependencies
+	c2 := exec.Command("ssh-keygen", "-lf", "-")             // WARN: it requires the os to have these dependencies
 
 	r, w := io.Pipe()
 	c1.Stdout = w
@@ -380,9 +331,26 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 	return fingerprint[1], nil
 }
 
-func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script string, fastMode bool) error {
+func (ssh *SSHPayload) Flag(execMethod int) SSHCollection {
+	if execMethod == EXEC_WITH_OUTPUT || execMethod == EXEC_WITHOUT_OUTPUT {
+		ssh.flag = execMethod
+		return ssh
+	}
+	return nil
+}
+func (ssh *SSHPayload) Script(s string) SSHCollection {
+	ssh.script = s
+	return ssh
+}
 
-	privateKeyBytes, err := os.ReadFile(sshPayload.PathPrivateKey)
+func (ssh *SSHPayload) FastMode(mode bool) SSHCollection {
+	ssh.fastMode = mode
+	return ssh
+}
+
+func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error {
+
+	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
 	if err != nil {
 		return err
 	}
@@ -392,7 +360,7 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	if err != nil {
 		return err
 	}
-	logging.Info("SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+	storage.Logger().Success("[ssh] SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
@@ -412,14 +380,14 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 						return err
 					}
 					if expectedFingerprint != actualFingerprint {
-						return fmt.Errorf("mismatch of fingerprint")
+						return fmt.Errorf("[ssh] mismatch of fingerprint")
 					}
 					return nil
 				}
-				return fmt.Errorf("unsupported key type: %s", keyType)
+				return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
 			})}
 
-	if !fastMode {
+	if !sshPayload.fastMode {
 		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
 	}
 
@@ -431,16 +399,16 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 		if err == nil {
 			break
 		} else {
-			logging.Err(fmt.Sprintln("RETRYING", err))
+			storage.Logger().Warn(fmt.Sprintln("RETRYING", err))
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
 	}
 	if currRetryCounter == MAX_RETRY_COUNT {
-		return fmt.Errorf("🚨 💀 COULDN'T RETRY: %v", err)
+		return fmt.Errorf("[ssh] maximum retry count reached for ssh conn %v", err)
 	}
 
-	logging.Info("🤖 Exec Scripts", "")
+	storage.Logger().Success("[ssh] Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -453,11 +421,11 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	var buff bytes.Buffer
 
 	sshPayload.Output = ""
-	if flag == EXEC_WITH_OUTPUT {
+	if sshPayload.flag == EXEC_WITH_OUTPUT {
 		session.Stdout = &buff
 	}
-	err = session.Run(script)
-	if flag == EXEC_WITH_OUTPUT {
+	err = session.Run(sshPayload.script)
+	if sshPayload.flag == EXEC_WITH_OUTPUT {
 		sshPayload.Output = buff.String()
 	}
 	if err != nil {
@@ -467,10 +435,10 @@ func (sshPayload *SSHPayload) SSHExecute(logging logger.Logger, flag int, script
 	return nil
 }
 
-func UserInputCredentials(logging logger.Logger) (string, error) {
+func UserInputCredentials(logging logger.LogFactory) (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
-	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
@@ -480,11 +448,4 @@ func UserInputCredentials(logging logger.Logger) (string, error) {
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
-}
-
-func IsValidNoOfControlPlanes(noCP int) error {
-	if noCP < 3 || (noCP)&1 == 0 {
-		return fmt.Errorf("no of controlplanes must be >= 3 and should be odd number")
-	}
-	return nil
 }

@@ -1,0 +1,116 @@
+pipeline {
+    agent any
+    environment {
+        AZURE_CLIENT_ID = credentials("client_id")
+        AZURE_CLIENT_SECRET = credentials("client_secret")
+        AZURE_SUBSCRIPTION_ID = credentials("subscriptionid")
+        AZURE_TENANT_ID = credentials("tenantid")
+        DISCORD_SEC = credentials("discord_secret")
+    }
+
+    stages {
+
+        stage('create managed') {
+            steps{
+                sh '''
+                    #!/bin/bash
+
+                    ksctl create azure -n demo -r eastus --approve
+
+                    ksctl get
+                    tree "/var/lib/jenkins/.ksctl/config"
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/managed/demo\\ demo-ksctl-managed-resgrp\\ eastus
+
+                    jq . cloud-state.json
+
+                    sleep 5s
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/managed/demo demo-ksctl-managed-resgrp eastus/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+
+        stage('ha cluster') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    ksctl create ha-azure -n demo -r eastus2 --approve
+
+                    ksctl get
+                    tree "/var/lib/jenkins/.ksctl/config"
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/demo\\ demo-ksctl-ha-resgrp\\ eastus2
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                    sleep 5s
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/demo demo-ksctl-ha-resgrp eastus2/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+
+        stage('switch') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    ksctl switch -p azure -n demo -r eastus
+                    ksctl switch -p ha-azure -n demo -r eastus2
+                '''
+            }
+        }
+
+        stage('ha-del-nodes') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    sleep 15s
+                    ksctl delete ha-azure delete-nodes --noWP 0 -n demo -r eastus2 --approve
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/demo demo-ksctl-ha-resgrp eastus2/kubeconfig"
+                    kubectl get nodes -owide
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/demo\\ demo-ksctl-ha-resgrp\\ eastus2
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                '''
+            }
+        }
+
+        stage('ha-add-nodes') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    sleep 1m
+                    ksctl create ha-azure add-nodes --noWP 1 -n demo -r eastus2 --approve
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/demo demo-ksctl-ha-resgrp eastus2/kubeconfig"
+                    kubectl get nodes -owide
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/demo\\ demo-ksctl-ha-resgrp\\ eastus2
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                #!/bin/bash
+                ksctl delete azure -n demo -r eastus --approve || exit 0
+                ksctl delete ha-azure -n demo -r eastus2 --approve || exit 0
+            '''
+        }
+        success {
+            discordSend description: 'e2e test of azure provider (success)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
+        }
+        failure {
+            discordSend description: 'e2e test of azure provider (failure)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
+        }
+    }
+}

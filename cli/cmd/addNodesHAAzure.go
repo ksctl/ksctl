@@ -1,15 +1,11 @@
 package cmd
 
-/*
-Kubesimplify
-@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
-				Anurag Kumar <contact.anurag7@gmail.com>
-				Avinesh Tripathi <avineshtripathi1@gmail.com>
-*/
-import (
-	log "github.com/kubesimplify/ksctl/api/logger"
+// maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
 
-	"github.com/kubesimplify/ksctl/api/azure"
+import (
+	"os"
+
+	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
@@ -23,44 +19,41 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		isSet := cmd.Flags().Lookup("verbose").Changed
-		logger := log.Logger{Verbose: true}
-		if !isSet {
-			logger.Verbose = false
+		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
+			panic(err)
 		}
+		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
+		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.NoWP = noWP
+		cli.Client.Metadata.WorkerPlaneNodeType = nodeSizeWP
+		cli.Client.Metadata.ClusterName = clusterName
+		cli.Client.Metadata.Region = region
+		cli.Client.Metadata.IsHA = true
+		cli.Client.Metadata.K8sDistro = distro
+		cli.Client.Metadata.K8sVersion = k8sVer
 
-		payload := azure.AzureProvider{
-			ClusterName: azhncclustername,
-			Region:      azhncregion,
-			HACluster:   true,
-			Spec: utils.Machine{
-				Disk:          azhncnodesize,
-				HAWorkerNodes: azhncwp,
-			},
+		if err := createApproval(cmd.Flags().Lookup("approve").Changed); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		err := payload.AddMoreWorkerNodes(logger)
+		stat, err := controller.AddWorkerPlaneNode(&cli.Client)
 		if err != nil {
-			logger.Err(err.Error())
-			return
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		logger.Info("ADDED WORKKER NODE(s)")
+		cli.Client.Storage.Logger().Success(stat)
 	},
 }
 
-var (
-	// aw hc -> add workernodes to ha-civo
-	azhncregion      string
-	azhncclustername string
-	azhncnodesize    string
-	azhncwp          int
-)
-
 func init() {
 	createClusterHAAzure.AddCommand(addMoreWorkerNodesHAAzure)
-	addMoreWorkerNodesHAAzure.Flags().StringVarP(&azhncclustername, "name", "n", "", "Cluster name")
-	addMoreWorkerNodesHAAzure.Flags().StringVarP(&azhncnodesize, "node-size", "s", "Standard_F2s", "Node size")
-	addMoreWorkerNodesHAAzure.Flags().StringVarP(&azhncregion, "region", "r", "", "Region")
-	addMoreWorkerNodesHAAzure.Flags().IntVarP(&azhncwp, "worker-nodes", "w", 1, "no of worker nodes to be added")
-	addMoreWorkerNodesHAAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
+	clusterNameFlag(addMoreWorkerNodesHAAzure)
+	noOfWPFlag(addMoreWorkerNodesHAAzure)
+	nodeSizeWPFlag(addMoreWorkerNodesHAAzure)
+	regionFlag(addMoreWorkerNodesHAAzure)
+	k8sVerFlag(addMoreWorkerNodesHAAzure)
+	distroFlag(addMoreWorkerNodesHAAzure)
+
 	addMoreWorkerNodesHAAzure.MarkFlagRequired("name")
 	addMoreWorkerNodesHAAzure.MarkFlagRequired("region")
 }

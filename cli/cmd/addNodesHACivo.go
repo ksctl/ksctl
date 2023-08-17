@@ -1,16 +1,13 @@
 package cmd
 
-/*
-Kubesimplify
-@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
-				Anurag Kumar <contact.anurag7@gmail.com>
-				Avinesh Tripathi <avineshtripathi1@gmail.com>
-*/
-import (
-	log "github.com/kubesimplify/ksctl/api/logger"
+// maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
 
-	"github.com/kubesimplify/ksctl/api/civo"
+import (
+	"os"
+
+	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
+
 	"github.com/spf13/cobra"
 )
 
@@ -23,43 +20,43 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		isSet := cmd.Flags().Lookup("verbose").Changed
-		logger := log.Logger{Verbose: true}
-		if !isSet {
-			logger.Verbose = false
+		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
+			panic(err)
 		}
-		payload := civo.CivoProvider{
-			ClusterName: awhcclustername,
-			Region:      awhcregion,
-			HACluster:   true,
-			Spec: utils.Machine{
-				Disk:          awhcnodesize,
-				HAWorkerNodes: awhcnowp,
-			},
+		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
+		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.NoWP = noWP
+		cli.Client.Metadata.WorkerPlaneNodeType = nodeSizeWP
+		cli.Client.Metadata.ClusterName = clusterName
+		cli.Client.Metadata.Region = region
+		cli.Client.Metadata.K8sDistro = distro
+		cli.Client.Metadata.K8sVersion = k8sVer
+
+		cli.Client.Metadata.IsHA = true
+
+		if err := createApproval(cmd.Flags().Lookup("approve").Changed); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		err := payload.AddMoreWorkerNodes(logger)
+
+		stat, err := controller.AddWorkerPlaneNode(&cli.Client)
 		if err != nil {
-			logger.Err(err.Error())
-			return
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		logger.Info("ADDED WORKKER NODE(s)")
+		cli.Client.Storage.Logger().Success(stat)
 	},
 }
 
-var (
-	// aw hc -> add workernodes to ha-civo
-	awhcregion      string
-	awhcclustername string
-	awhcnodesize    string
-	awhcnowp        int
-)
-
 func init() {
 	createClusterHACivo.AddCommand(addMoreWorkerNodesHACivo)
-	addMoreWorkerNodesHACivo.Flags().StringVarP(&awhcclustername, "name", "n", "", "Cluster name")
-	addMoreWorkerNodesHACivo.Flags().StringVarP(&awhcnodesize, "nodeSize", "s", "g3.small", "Node size")
-	addMoreWorkerNodesHACivo.Flags().StringVarP(&awhcregion, "region", "r", "", "Region")
-	addMoreWorkerNodesHACivo.Flags().IntVarP(&awhcnowp, "worker-nodes", "w", 1, "no of worker nodes to be added")
-	addMoreWorkerNodesHACivo.Flags().BoolP("verbose", "v", true, "for verbose output")
+	clusterNameFlag(addMoreWorkerNodesHACivo)
+	noOfWPFlag(addMoreWorkerNodesHACivo)
+	nodeSizeWPFlag(addMoreWorkerNodesHACivo)
+	regionFlag(addMoreWorkerNodesHACivo)
+	k8sVerFlag(addMoreWorkerNodesHACivo)
+	distroFlag(addMoreWorkerNodesHACivo)
+
 	addMoreWorkerNodesHACivo.MarkFlagRequired("name")
 	addMoreWorkerNodesHACivo.MarkFlagRequired("region")
 }
