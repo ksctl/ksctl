@@ -21,11 +21,9 @@ func createManaged(approval bool) {
 
 	cli.Client.Metadata.CNIPlugin = cni
 	cli.Client.Metadata.Applications = apps
-	if !approval {
-		if err := createApproval(); err != nil {
-			cli.Client.Storage.Logger().Err(err.Error())
-			os.Exit(1)
-		}
+	if err := createApproval(approval); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
 	}
 
 	stat, err := controller.CreateManagedCluster(&cli.Client)
@@ -56,11 +54,9 @@ func createHA(approval bool) {
 	cli.Client.Metadata.CNIPlugin = cni
 	cli.Client.Metadata.Applications = apps
 
-	if !approval {
-		if err := createApproval(); err != nil {
-			cli.Client.Storage.Logger().Err(err.Error())
-			os.Exit(1)
-		}
+	if err := createApproval(approval); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
 	}
 	stat, err := controller.CreateHACluster(&cli.Client)
 	if err != nil {
@@ -76,11 +72,9 @@ func deleteManaged(approval bool) {
 	cli.Client.Metadata.K8sDistro = distro
 	cli.Client.Metadata.Region = region
 
-	if !approval {
-		if err := deleteApproval(); err != nil {
-			cli.Client.Storage.Logger().Err(err.Error())
-			os.Exit(1)
-		}
+	if err := deleteApproval(approval); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
 	}
 	stat, err := controller.DeleteManagedCluster(&cli.Client)
 	if err != nil {
@@ -98,11 +92,9 @@ func deleteHA(approval bool) {
 	cli.Client.Metadata.K8sDistro = distro
 	cli.Client.Metadata.Region = region
 
-	if !approval {
-		if err := deleteApproval(); err != nil {
-			cli.Client.Storage.Logger().Err(err.Error())
-			os.Exit(1)
-		}
+	if err := deleteApproval(approval); err != nil {
+		cli.Client.Storage.Logger().Err(err.Error())
+		os.Exit(1)
 	}
 	stat, err := controller.DeleteHACluster(&cli.Client)
 	if err != nil {
@@ -120,19 +112,16 @@ func getRequestPayload() ([]byte, error) {
 	return a, nil
 }
 
-func deleteApproval() error {
-
-	showMsg := true
+func deleteApproval(showMsg bool) error {
 
 	a, err := getRequestPayload()
 	if err != nil {
 		return err
 	}
+	fmt.Println(string(a))
 
-	if showMsg {
-		fmt.Println(fmt.Sprintf(`🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER
-%s
-`, string(a)))
+	if !showMsg {
+		fmt.Println(fmt.Sprintf("🚨 THIS IS A DESTRUCTIVE STEP MAKE SURE IF YOU WANT TO DELETE THE CLUSTER"))
 
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"
@@ -151,19 +140,16 @@ func deleteApproval() error {
 	return nil
 }
 
-func createApproval() error {
-
-	showMsg := true
+func createApproval(showMsg bool) error {
 
 	a, err := getRequestPayload()
 	if err != nil {
 		return err
 	}
+	fmt.Println(string(a))
 
-	if showMsg {
-		fmt.Println(fmt.Sprintf(`🚨 THIS IS A CREATION STEP MAKE SURE IF YOU WANT TO CREATE THE CLUSTER
-%s
-`, string(a)))
+	if !showMsg {
+		fmt.Println(fmt.Sprintf("🚨 THIS IS A CREATION STEP MAKE SURE IF YOU WANT TO CREATE THE CLUSTER"))
 
 		fmt.Println("Enter your choice to continue..[y/N]")
 		choice := "n"

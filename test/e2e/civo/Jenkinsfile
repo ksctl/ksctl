@@ -1,0 +1,108 @@
+pipeline {
+    agent any
+    environment {
+        CIVO_TOKEN = credentials("civo token")
+        DISCORD_SEC = credentials("discord_secret")
+    }
+
+    stages {
+        stage('create managed') {
+            steps{
+                sh '''
+                    #!/bin/bash
+
+                    ksctl create civo -n demo1 -r LON1 --approve
+
+
+                    ksctl get
+                    tree "/var/lib/jenkins/.ksctl/config"
+
+                    cd /var/lib/jenkins/.ksctl/config/civo/managed/demo1\\ LON1
+
+                    jq . cloud-state.json
+
+                    sleep 5s
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/managed/demo1 LON1/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+
+        stage('ha cluster') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    ksctl create ha-civo -n demo -r FRA1 --approve
+
+                    ksctl get
+                    tree "/var/lib/jenkins/.ksctl/config"
+
+                    cd /var/lib/jenkins/.ksctl/config/civo/ha/demo\\ FRA1
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+
+                    sleep 5s
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/demo FRA1/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+
+        stage ('switch') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    ksctl switch -p civo -n demo1 -r LON1
+                    ksctl switch -p ha-civo -n demo -r FRA1
+                '''
+            }
+        }
+
+        stage('ha-del-nodes') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    ksctl delete ha-civo delete-nodes -n demo -r FRA1 --noWP 0 --approve
+                    sleep 5s
+                    kubectl get nodes -owide
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                '''
+            }
+        }
+
+        stage('ha-add-nodes') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    ksctl create ha-civo add-nodes -n demo -r FRA1 --noWP 1 --approve
+                    sleep 5s
+                    kubectl get nodes -owide
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                #!/bin/bash
+                ksctl delete civo -n demo1 -r LON1 --approve
+                ksctl delete ha-civo -n demo -r FRA1 --approve
+            '''
+        }
+        success {
+            discordSend description: 'e2e test of civo provider (success)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: '${DISCORD_SEC}'
+        }
+        failure {
+            discordSend description: 'e2e test of civo provider (failure)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: '${DISCORD_SEC}'
+        }
+    }
+}

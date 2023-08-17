@@ -28,14 +28,14 @@ ksctl switch-context -p <civo,local,civo-ha,azure-ha,azure>  -n <clustername> -r
 		case utils.CLOUD_LOCAL:
 			cli.Client.Metadata.Provider = utils.STORE_LOCAL
 
-		case utils.CLOUD_CIVO + "-" + utils.CLUSTER_TYPE_HA:
+		case utils.CLUSTER_TYPE_HA + "-" + utils.CLOUD_CIVO:
 			cli.Client.Metadata.Provider = utils.CLOUD_CIVO
 			cli.Client.Metadata.IsHA = true
 
 		case utils.CLOUD_CIVO:
 			cli.Client.Metadata.Provider = utils.CLOUD_CIVO
 
-		case utils.CLOUD_AZURE + "-" + utils.CLUSTER_TYPE_HA:
+		case utils.CLUSTER_TYPE_HA + "-" + utils.CLOUD_AZURE:
 			cli.Client.Metadata.Provider = utils.CLOUD_AZURE
 			cli.Client.Metadata.IsHA = true
 
