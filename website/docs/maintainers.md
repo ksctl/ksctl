@@ -1,12 +1,4 @@
----
-sidebar_position: 2
----
 
 # Maintainers
-- Dipanakar (Core Developer and Maintainer)
-[Twitter Profile](https://twitter.com/DipankarDas011)
 
-- Avinesh (Core Developer and Maintainer)
-[Twitter Profile](https://twitter.com/Avinesh__T)
-
-
+- Dipanakar (Core Developer and Maintainer) [Twitter](https://twitter.com/DipankarDas011) [Github](https://github.com/dipankardas011)

@@ -1,15 +1,11 @@
 package cmd
 
-/*
-Kubesimplify
-@maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
-				Anurag Kumar <contact.anurag7@gmail.com>
-				Avinesh Tripathi <avineshtripathi1@gmail.com>
-*/
-import (
-	log "github.com/kubesimplify/ksctl/api/logger"
+// maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
 
-	"github.com/kubesimplify/ksctl/api/azure"
+import (
+	"os"
+
+	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"github.com/spf13/cobra"
 )
@@ -23,41 +19,39 @@ ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		isSet := cmd.Flags().Lookup("verbose").Changed
-		logger := log.Logger{Verbose: true}
-		if !isSet {
-			logger.Verbose = false
+		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
+			panic(err)
 		}
+		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
+		cli.Client.Metadata.IsHA = true
 
-		payload := azure.AzureProvider{
-			ClusterName: azdhdclustername,
-			Region:      azdhdregion,
-			HACluster:   true,
-			Spec: utils.Machine{
-				HAWorkerNodes: azdhdwp,
-			},
+		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.NoWP = noWP
+		cli.Client.Metadata.ClusterName = clusterName
+		cli.Client.Metadata.Region = region
+		cli.Client.Metadata.K8sDistro = distro
+
+		if err := deleteApproval(cmd.Flags().Lookup("approve").Changed); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		err := payload.DeleteSomeWorkerNodes(logger)
+		stat, err := controller.DelWorkerPlaneNode(&cli.Client)
 		if err != nil {
-			logger.Err(err.Error())
-			return
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
-		logger.Info("DELETED WorkerNode(s)")
+		cli.Client.Storage.Logger().Success(stat)
 	},
 }
 
-var (
-	// dw hc -> delete worker-nodes to ha-civo
-	azdhdregion      string
-	azdhdclustername string
-	azdhdwp          int
-)
-
 func init() {
 	deleteClusterHAAzure.AddCommand(deleteNodesHAAzure)
-	deleteNodesHAAzure.Flags().StringVarP(&azdhdclustername, "name", "n", "", "Cluster name")
-	deleteNodesHAAzure.Flags().StringVarP(&azdhdregion, "region", "r", "eastus", "Region")
-	deleteNodesHAAzure.Flags().IntVarP(&azdhdwp, "worker-nodes", "w", 1, "no of worker nodes to delete")
-	deleteNodesHAAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
+
+	clusterNameFlag(deleteNodesHAAzure)
+	noOfWPFlag(deleteNodesHAAzure)
+	regionFlag(deleteNodesHAAzure)
+	distroFlag(deleteNodesHAAzure)
+
 	deleteNodesHAAzure.MarkFlagRequired("name")
 	deleteNodesHAAzure.MarkFlagRequired("region")
 }

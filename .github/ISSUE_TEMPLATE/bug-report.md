@@ -2,12 +2,12 @@
 name: Bug report
 about: Create a report to help us improve
 title: 'bug: Title'
-labels: help wanted, kind/bug, priority/high, status/not-planned, triage/waiting-to-be-accepted
+labels: help wanted, kind/bug, priority/high, needs-triage
 assignees: ''
 
 ---
 
-# Describe 🐞 
+# Describe 🐞
 <!--A clear and concise description of what the bug is. -->
 ## Provider in effect
 - [ ] Azure
@@ -15,10 +15,10 @@ assignees: ''
 - [ ] Local
 - [ ] AWS
 
-# Reproduce 💻 ➡️  💻 
+# Reproduce 💻 ➡️  💻
 <!-- Steps to reproduce the behavior -->
 
-# Possible Fix & Expected behavior🔧 
+# Possible Fix & Expected behavior🔧
 <!-- A clear and concise description of what you expected to happen. -->
 
 # Screenshots :framed_picture:
@@ -33,3 +33,4 @@ assignees: ''
 
 # Additional context
 Add any other context about the problem here.
+Check Contribution's guidelines

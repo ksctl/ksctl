@@ -1,10 +1,6 @@
----
-sidebar_position: 4
----
-
 # Local Machine
 
-LOCAL support
+Kind Support
 
 :::note
 **Prequisites**: Docker
@@ -15,5 +11,6 @@ LOCAL support
 currently using Kind `Kubernetes in Docker`
 
 :::caution HA cluster
-local system are constrained to fewer CPUs and memory so no cluster
+local system are constrained to fewer CPUs and memory so no HA cluster
 :::
+

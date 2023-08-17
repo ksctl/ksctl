@@ -1,10 +1,6 @@
----
-sidebar_position: 2
----
-
 # Civo
 
-CIVO support for HA and Managed Clusters
+Civo support for HA and Managed Clusters
 
 :::note
 we need credentials to access clusters

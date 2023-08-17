@@ -2,12 +2,12 @@
 name: Feature request
 about: Suggest an idea for this project
 title: 'feat: <Title>'
-labels: help wanted, kind/enhancement, status/not-planned, triage/waiting-to-be-accepted
+labels: help wanted, kind/enhancement, status/not-planned, needs-triage
 assignees: ''
 
 ---
 
-# Is your feature request related to a problem?📖 
+# Is your feature request related to a problem?📖
 <!-- A clear and concise description of what the problem is. Ex. I'm always frustrated when [...] -->
 
 # Describe the solution you'd like 👨‍💻👩‍💻
@@ -15,11 +15,13 @@ assignees: ''
 
 # Describe alternatives you've considered💠
 <!-- A clear and concise description of any alternative solutions or features you've considered. -->
+
 # Provider in question
 - [ ] Civo
-- [ ] AWS
 - [ ] Local
 - [ ] Azure
+- [ ] K3s
+- [ ] Kubeadm
 
 ## Additional context
-<!-- Add any other context or screenshots about the feature request here. -->
+Check Contribution's guidelines

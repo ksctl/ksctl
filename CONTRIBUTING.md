@@ -2,6 +2,7 @@
 - must follow PR template
 - need to sign-off each commits
 - add all the significant changes to the PR description
+
 - their should be atleast one Issue associated with each PR
 
 # Issues
