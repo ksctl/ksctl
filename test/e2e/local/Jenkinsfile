@@ -38,17 +38,17 @@ pipeline {
 
     post {
         always {
-        sh '''
-            #!/bin/bash
-            ksctl delete local -n demo1 --approve -v
-            ksctl delete local -n demo2 --approve -v
-        '''
+            sh '''
+                #!/bin/bash
+                ksctl delete local -n demo1 --approve -v || exit 0
+                ksctl delete local -n demo2 --approve -v || exit 0
+            '''
         }
         success {
-            discordSend description: 'e2e test of local provider (success)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: '${DISCORD_SEC}'
+            discordSend description: 'e2e test of local provider (success)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
         }
         failure {
-            discordSend description: 'e2e test of local provider (failure)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: '${DISCORD_SEC}'
+            discordSend description: 'e2e test of local provider (failure)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
         }
     }
 }

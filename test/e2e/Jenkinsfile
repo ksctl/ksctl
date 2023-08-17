@@ -57,13 +57,10 @@ pipeline {
             }
         }
 
-        post {
-            success {
-                discordSend description: 'e2e test of ksctl provider (success)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: '${DISCORD_SEC}'
-            }
-            failure {
-                discordSend description: 'e2e test of ksctl provider (failure)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: '${DISCORD_SEC}'
-            }
-        }
     }
+    post {
+		always {
+			discordSend description: 'e2e test of ksctl provider', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
+		}
+	}
 }

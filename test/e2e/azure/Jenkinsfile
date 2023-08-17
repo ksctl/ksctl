@@ -67,9 +67,12 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    sleep 15s
                     ksctl delete ha-azure delete-nodes --noWP 0 -n demo -r eastus2 --approve
-                    sleep 5s
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/demo demo-ksctl-ha-resgrp eastus2/kubeconfig"
                     kubectl get nodes -owide
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/demo\\ demo-ksctl-ha-resgrp\\ eastus2
 
                     jq . cloud-state.json
                     jq . k8s-state.json
@@ -81,9 +84,12 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    sleep 1m
                     ksctl create ha-azure add-nodes --noWP 1 -n demo -r eastus2 --approve
-                    sleep 5s
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/demo demo-ksctl-ha-resgrp eastus2/kubeconfig"
                     kubectl get nodes -owide
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/demo\\ demo-ksctl-ha-resgrp\\ eastus2
 
                     jq . cloud-state.json
                     jq . k8s-state.json
@@ -96,15 +102,15 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete azure -n demo -r eastus --approve
-                ksctl delete ha-azure -n demo -r eastus2 --approve
+                ksctl delete azure -n demo -r eastus --approve || exit 0
+                ksctl delete ha-azure -n demo -r eastus2 --approve || exit 0
             '''
         }
         success {
-            discordSend description: 'e2e test of azure provider (success)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: '${DISCORD_SEC}'
+            discordSend description: 'e2e test of azure provider (success)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
         }
         failure {
-            discordSend description: 'e2e test of azure provider (failure)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: '${DISCORD_SEC}'
+            discordSend description: 'e2e test of azure provider (failure)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
         }
     }
 }
