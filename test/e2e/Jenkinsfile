@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('Git-Checkout') {
             steps {
-                git branch: '111-feature-migration-to-new-architecture', url: 'https://github.com/kubesimplify/ksctl.git'
+                git branch: 'main', url: 'https://github.com/kubesimplify/ksctl.git'
             }
         }
 
