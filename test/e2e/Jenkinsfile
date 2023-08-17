@@ -1,0 +1,69 @@
+pipeline {
+    agent any
+    environment {
+        DISCORD_SEC = credentials("discord_secret")
+    }
+    stages {
+        stage('Git-Checkout') {
+            steps {
+                git branch: '111-feature-migration-to-new-architecture', url: 'https://github.com/kubesimplify/ksctl.git'
+            }
+        }
+
+        stage('Build') {
+            steps{
+                sh '''
+                #!/bin/bash
+
+                export PATH="$PATH:/usr/local/go/bin"
+
+                sudo apt install tree -y
+
+                go version || exit 1
+
+                cd ./cli
+                ls -laR
+                # Check if sudo access
+                go get -d
+                go build -v -o ksctl .
+
+                ls -la
+                chmod +x ksctl
+                sudo mv ksctl /usr/local/bin
+                # Setup the configurations dir
+                rm -rf ${HOME}/.ksctl
+                mkdir -p ${HOME}/.ksctl/cred
+
+                mkdir -p ${HOME}/.ksctl/config/civo/ha
+                mkdir -p ${HOME}/.ksctl/config/azure/ha
+                mkdir ${HOME}/.ksctl/config/azure/managed
+                mkdir ${HOME}/.ksctl/config/civo/managed
+                mkdir ${HOME}/.ksctl/config/aws
+                mkdir ${HOME}/.ksctl/config/local
+
+                echo "SETUP DONE"
+                '''
+            }
+        }
+
+        stage('version') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    echo "local managed"
+                    cd ~
+                    ksctl version || exit 1
+                '''
+            }
+        }
+
+        post {
+            success {
+                discordSend description: 'e2e test of ksctl provider (success)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: '${DISCORD_SEC}'
+            }
+            failure {
+                discordSend description: 'e2e test of ksctl provider (failure)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: '${DISCORD_SEC}'
+            }
+        }
+    }
+}

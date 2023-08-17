@@ -34,11 +34,9 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 
 		cli.Client.Metadata.IsHA = true
 
-		if !cmd.Flags().Lookup("approve").Changed {
-			if err := createApproval(); err != nil {
-				cli.Client.Storage.Logger().Err(err.Error())
-				os.Exit(1)
-			}
+		if err := createApproval(cmd.Flags().Lookup("approve").Changed); err != nil {
+			cli.Client.Storage.Logger().Err(err.Error())
+			os.Exit(1)
 		}
 
 		stat, err := controller.AddWorkerPlaneNode(&cli.Client)
