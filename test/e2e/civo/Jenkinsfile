@@ -65,9 +65,12 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    sleep 30s
                     ksctl delete ha-civo delete-nodes -n demo -r FRA1 --noWP 0 --approve
-                    sleep 5s
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/demo FRA1/kubeconfig"
                     kubectl get nodes -owide
+                    cd /var/lib/jenkins/.ksctl/config/civo/ha/demo\\ FRA1
 
                     jq . cloud-state.json
                     jq . k8s-state.json
@@ -79,9 +82,12 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    sleep 1m
                     ksctl create ha-civo add-nodes -n demo -r FRA1 --noWP 1 --approve
-                    sleep 5s
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/demo FRA1/kubeconfig"
                     kubectl get nodes -owide
+                    cd /var/lib/jenkins/.ksctl/config/civo/ha/demo\\ FRA1
 
                     jq . cloud-state.json
                     jq . k8s-state.json
@@ -94,15 +100,15 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete civo -n demo1 -r LON1 --approve
-                ksctl delete ha-civo -n demo -r FRA1 --approve
+                ksctl delete civo -n demo1 -r LON1 --approve || exit 0
+                ksctl delete ha-civo -n demo -r FRA1 --approve || exit 0
             '''
         }
         success {
-            discordSend description: 'e2e test of civo provider (success)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: '${DISCORD_SEC}'
+            discordSend description: 'e2e test of civo provider (success)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
         }
         failure {
-            discordSend description: 'e2e test of civo provider (failure)', footer: '', image: '', link: env.BUILD_URL, result: currentBuild.currentResult, scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: '${DISCORD_SEC}'
+            discordSend description: 'e2e test of civo provider (failure)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
         }
     }
 }
