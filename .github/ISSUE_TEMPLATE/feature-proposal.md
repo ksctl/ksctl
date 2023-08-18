@@ -1,8 +1,8 @@
 ---
-name: Feature request
+name: Feature Proposal
 about: Suggest an idea for this project
-title: 'feat: <Title>'
-labels: help wanted, kind/enhancement, needs-triage
+title: 'FP(<Context>): <Title>'
+labels: help wanted, kind/feature, needs-triage
 assignees: ''
 
 ---
