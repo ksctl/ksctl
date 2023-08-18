@@ -4,13 +4,22 @@ pipeline {
         DISCORD_SEC = credentials("discord_secret")
     }
     stages {
-        stage('Git-Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/kubesimplify/ksctl.git'
-            }
-        }
+        // stage('Git-Checkout') {
+        //     steps {
+        //         git branch: 'main', url: 'https://github.com/kubesimplify/ksctl.git'
+        //     }
+        // }
 
-        stage('Build') {
+        stage('Build binary') {
+            when {
+                anyOf {
+                    changeset "**/go.mod"
+                    changeset "**/go.sum"
+                    changeset "api/**"
+                    changeset "cli/**"
+                    changeset "test/e2e/**"
+                }
+            }
             steps{
                 sh '''
                 #!/bin/bash
@@ -19,7 +28,7 @@ pipeline {
 
                 sudo apt install tree -y
 
-                go version || exit 1
+                go version
 
                 cd ./cli
                 ls -laR
@@ -52,15 +61,47 @@ pipeline {
                     #!/bin/bash
                     echo "local managed"
                     cd ~
-                    ksctl version || exit 1
+                    ksctl version
                 '''
             }
         }
-
+        stage('Trigger Other Pipelines') {
+            when {
+                anyOf {
+                    changeset "**/go.mod"
+                    changeset "**/go.sum"
+                    changeset "api/**"
+                    changeset "cli/**"
+                    changeset "test/e2e/**"
+                }
+            }
+            failFast true
+            parallel {
+                stage('cloud provider') {
+                    stages {
+                        stage('trigger local') {
+                            steps {
+                                build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                            }
+                        }
+                        stage('trigger civo') {
+                            steps {
+                                build job: 'ksctl (civo)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                            }
+                        }
+                        stage('trigger azure') {
+                            steps {
+                                build job: 'ksctl (azure)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     post {
 		always {
-			discordSend description: 'e2e test of ksctl provider', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
+			discordSend description: 'e2e test', footer: 'ksctl', image: '', link: "Link: ${env.BUILD_URL}", result: "e2e test: ${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
 		}
 	}
 }
