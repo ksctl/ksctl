@@ -101,7 +101,7 @@ pipeline {
     }
     post {
 		always {
-			discordSend description: 'e2e test', footer: 'ksctl', image: '', link: "Link: ${env.BUILD_URL}", result: "e2e test: ${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
+			discordSend description: 'e2e test', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
 		}
 	}
 }

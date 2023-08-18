@@ -105,10 +105,10 @@ pipeline {
             '''
         }
         success {
-            discordSend description: 'e2e test of civo provider (success)', footer: 'ksctl', image: '', link: "Link: ${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
+            discordSend description: 'e2e test of civo provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
         }
         failure {
-            discordSend description: 'e2e test of civo provider (failure)', footer: 'ksctl', image: '', link: "Link: ${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
+            discordSend description: 'e2e test of civo provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
         }
     }
 }
