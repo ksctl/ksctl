@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: 'bug: Title'
-labels: help wanted, kind/bug, priority/high, needs-triage
+labels: help wanted, kind/bug, needs-triage, priority/high
 assignees: ''
 
 ---

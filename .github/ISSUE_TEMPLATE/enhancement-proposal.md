@@ -1,7 +1,7 @@
 ---
-name: enhancement issue template
+name: Enhancement Proposal
 about: Describe this enhancement pruposal template's purpose here.
-title: 'enhancement: <Title>'
+title: 'ep(<Affected subsection>): <Title>'
 labels: kind/enhancement, needs-triage
 assignees: ''
 
