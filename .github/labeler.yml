@@ -4,8 +4,9 @@
 
 'area/cli': 'cli/**'
 
-'kind/documentation':
-- any: ['website/**', '**/.md']
+kind/documentation:
+- 'website/**'
+- '**/*.md'
 
 'cloud/azure': 'api/provider/azure/**'
 
