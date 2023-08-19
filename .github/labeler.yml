@@ -1,32 +1,49 @@
 'area/api':
-- any: ['api/**']
+- any: ['api/**', 'api/*']
   all: ['!api/utils/**','!api/controllers/**','!api/resources/**']
 
-'area/cli': 'cli/**'
+'area/cli':
+- 'cli/*'
+- 'cli/**/*'
 
 'kind/documentation':
-- any: ['website/**', '**/.md']
+- 'website/*'
+- 'website/**/*'
+- 'website/**/**/*'
+- '**/*.md'
 
-'cloud/azure': 'api/provider/azure/**'
+'cloud/azure':
+- 'api/provider/azure/*'
 
-'cloud/civo': 'api/provider/civo/**'
+'cloud/civo':
+- 'api/provider/civo/*'
 
-'cloud/local': 'api/provider/local/**'
+'cloud/local':
+- 'api/provider/local/*'
 
-'distro/k3s': 'api/k8s_distro/k3s/**'
+'distro/k3s':
+- 'api/k8s_distro/k3s/*'
 
-'distro/kubeadm': 'api/k8s_distro/kubeadm/**'
+'distro/kubeadm':
+- 'api/k8s_distro/kubeadm/*'
 
-'state/local': 'api/storage/localstate/**'
+'state/local':
+- 'api/storage/localstate/*'
 
-'go': '**/*.go'
+'go':
+- '**/*.go'
 
 'area/test':
-- any: ['**/*_test.go']
+- '**/*_test.go'
 
 'area/ci':
-- any: ['.goreleaser.yaml', '.github/**']
+- '.goreleaser.yaml'
+- '.github/*'
+- '.github/**/*'
 
 'area/core':
-- any: ['api/utils/**', 'api/controllers/**', 'api/resources/**']
+- 'api/utils/*'
+- 'api/controllers/*'
+- 'api/controllers/**/*'
+- 'api/resources/**'
 
