@@ -8,7 +8,7 @@ const FeatureList = [
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        it does not depends on any cli and hence its more is lightweight
+        It does not depends on any cli. just built from grounnd up
       </>
     ),
   },
@@ -17,7 +17,7 @@ const FeatureList = [
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        it creates cluster within matters of seconds
+        It creates clusters within a matter of minutes.
       </>
     ),
   },
@@ -26,7 +26,7 @@ const FeatureList = [
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        customize all the aspects of cluster from size of nodes, k8s version, to pre-installed apps and many more
+        customize all the aspects of cluster from size of nodes, k8s version, to pre-installed apps
       </>
     ),
   },
