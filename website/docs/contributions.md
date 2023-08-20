@@ -47,32 +47,53 @@ what? why? How?
 
 **each commits must be sign-off**
 
+# Development
+First you have to fork the ksctl repository. [fork](https://github.com/kubesimplify/ksctl/fork)
+```bash
+cd <path> # to you directory where you want to clone ksctl
+mkdir <directory name> # create a directory
+cd <directory name> # go inside the directory
+git clone git@github.com:${YOUR_GITHUB_USERNAME}/ksctl.git # clone you fork repository
+cd ksctl # go inside the ksctl directory
+git remote add upstream https://github.com/kubesimplify/ksctl.git # set upstream
+git remote set-url --push upstream no_push # no push to upstream
+```
 
+# Making Build
+### Linux
+```bash
+make install_linux # for linux
+```
+### Mac OS
+```bash
+make install_macos # for macos
+```
+### Windows
+```bash
+.\builder.ps1 # for windows
+```
+## for website
+```bash
+cd website # to go inside the directory
+```
+### Install Dependencies
+```bash
+npm install # install npm  
+npm install --global yarn # install yarn
+```
+
+### Start the Server
+```bash
+yarn start # to run a development server
+```
 ## Trying out code changes
 
 Before submitting a code change, it is important to test your changes thoroughly. You can do this by running the unit tests and integration tests.
 
-Unit tests you can do my
+### Unit tests
 ```bash
 make test
 ```
-
-Trying out latest code by installing
-```bash
-make install_linux # for linux
-
-make install_macos # for macos
-
-.\builder.ps1 # for windows
-```
-
-for website
-```bash
-cd website
-npm install
-yarn start # to run a development server
-```
-
 
 ## Submitting changes
 
