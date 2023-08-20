@@ -97,7 +97,7 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	var err error
 	switch client.Metadata.Provider {
 	case utils.CLOUD_CIVO:
-		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
+		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
 		if err != nil {
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}

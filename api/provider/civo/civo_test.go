@@ -3,12 +3,10 @@ package civo
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
@@ -16,21 +14,19 @@ import (
 )
 
 var (
-	fakeClient *civogo.FakeClient
+	fakeClient *CivoProvider
 	demoClient *resources.KsctlClient
 )
 
-// TODO: seperate the api calls so that we can add mocks
-
 func TestMain(m *testing.M) {
-	var err error
-	fakeClient, err = civogo.NewFakeClient()
-	if err != nil {
-		panic("unable to start fake client")
-	}
+
 	demoClient = &resources.KsctlClient{}
 	civoCloudState = &StateConfiguration{}
-	demoClient.Cloud, _ = ReturnCivoStruct(demoClient.Metadata)
+	demoClient.Cloud, _ = ReturnCivoStruct(demoClient.Metadata, ProvideClient)
+
+	fakeClient, _ = ReturnCivoStruct(demoClient.Metadata, func() CivoGo {
+		return &CivoGoMockClient{}
+	})
 
 	demoClient.ClusterName = "demo"
 	demoClient.Region = "demoRegion"
@@ -59,7 +55,7 @@ func TestGenPath(t *testing.T) {
 }
 
 func TestIsValidK8sVersion(t *testing.T) {
-	ver, _ := fakeClient.ListAvailableKubernetesVersions()
+	ver, _ := fakeClient.Client.ListAvailableKubernetesVersions()
 	for _, vver := range ver {
 		t.Log(vver)
 	}
@@ -77,64 +73,6 @@ func TestConvertStateToBytes(t *testing.T) {
 
 func TestCivoProvider_InitState(t *testing.T) {
 	//TODO: add
-}
-
-func TestCivoProvider_VMType(t *testing.T) {
-	VMType := make(map[string]error)
-	var availableVMTypes []string
-
-	VMType["g4s.kube.small"] = nil // making it valid
-
-	fakeInstances, _ := fakeClient.ListInstanceSizes()
-	for _, r := range fakeInstances {
-		VMType[r.ID] = nil
-	}
-	for k, _ := range VMType {
-		availableVMTypes = append(availableVMTypes, k)
-	}
-
-	// input and output
-	forTesting := map[string]error{
-		"g3.dca":         errors.New("invalid"),
-		"":               errors.New("invalid"),
-		"dca":            errors.New("invalid"),
-		"g4s.kube.small": nil,
-	}
-	for key, val := range forTesting {
-		if err := isValidRegion(availableVMTypes, key); (err != nil && val == nil) || (err == nil && val != nil) {
-			t.Fatalf("VM ID: `%s` Expected `%v` got `%v`", key, val, err)
-		}
-	}
-}
-
-// Mock the return of ValidListOfRegions
-func TestIsValidRegion(t *testing.T) {
-	valRegions := make(map[string]error)
-	var availableRegions []string
-
-	valRegions = map[string]error{
-		"LON1": nil,
-		"FRA1": nil,
-		"NYC1": nil,
-	}
-	reg, _ := fakeClient.ListRegions()
-	for _, r := range reg {
-		valRegions[r.Code] = nil
-	}
-	for k, _ := range valRegions {
-		availableRegions = append(availableRegions, k)
-	}
-
-	forTesting := map[string]error{
-		"Lon!": fmt.Errorf("invalid"),
-		"":     fmt.Errorf("invalid"),
-		"NYC1": nil,
-	}
-	for key, val := range forTesting {
-		if err := isValidRegion(availableRegions, key); (err != nil && val == nil) || (err == nil && val != nil) {
-			t.Fatalf("Region Code: `%s` Expected `%v` got `%v`", key, val, err)
-		}
-	}
 }
 
 func TestFetchAPIKey(t *testing.T) {
@@ -168,34 +106,6 @@ func TestApplications(t *testing.T) {
 	for apps, setVal := range testPreInstalled {
 		if retApps := aggregratedApps(apps); strings.Compare(retApps, setVal) != 0 {
 			t.Fatalf("apps dont match `%s` Expected `%s` but got `%s`", apps, setVal, retApps)
-		}
-	}
-}
-
-func TestK8sVersion(t *testing.T) {
-	testK8sVer := map[string]string{
-		"1.26.4": "1.26.4-k3s1",
-		"1.27.4": "1.27.4-k3s1",
-	}
-	var validVersion = func() []string {
-		var ret []string
-		for _, val := range testK8sVer {
-			ret = append(ret, val)
-		}
-		return ret
-	}
-
-	// these are invalid
-	// input and output
-	forTesting := map[string]string{
-		"":       "1.26.4-k3s1",
-		"1.28":   "",
-		"1.27.4": "1.27.4-k3s1",
-	}
-
-	for ver, Rver := range forTesting {
-		if version := k8sVersion(ver, validVersion); version != Rver {
-			t.Fatalf("version dont match `%s` Expected `%s` but got `%s`", ver, Rver, version)
 		}
 	}
 }
@@ -275,5 +185,55 @@ func TestCivoProvider_NoOfWorkerPlane(t *testing.T) {
 	no, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, -1, false)
 	if no != 2 {
 		t.Fatalf("Getter failed to get updated no of workerplane array got no: %d and err: %v", no, err)
+	}
+}
+
+// Mock the return of ValidListOfRegions
+func TestRegion(t *testing.T) {
+
+	forTesting := map[string]error{
+		"Lon!": errors.New(""),
+		"":     errors.New(""),
+		"NYC1": nil,
+	}
+
+	for key, val := range forTesting {
+		if err := isValidRegion(fakeClient, key); (err == nil && val != nil) || (err != nil && val == nil) {
+			t.Fatalf("Input region :`%s`. expected `%v` but got `%v`", key, val, err)
+		}
+	}
+}
+
+func TestK8sVersion(t *testing.T) {
+	// these are invalid
+	// input and output
+	forTesting := map[string]error{
+		"":            errors.New(""),
+		"1.28":        errors.New(""),
+		"1.27.4-k3s1": nil,
+		"1.27-k3s1":   errors.New(""),
+		"1.27.1-k3s1": nil,
+	}
+
+	for ver, Rver := range forTesting {
+		if err := isValidK8sVersion(fakeClient, ver); (err == nil && Rver != nil) || (err != nil && Rver == nil) {
+			t.Fatalf("version dont match we have `%s` Expected `%s` but got `%s`", ver, Rver, err)
+		}
+	}
+}
+
+func TestVMType(t *testing.T) {
+
+	// input and output
+	forTesting := map[string]error{
+		"g3.dca":         errors.New(""),
+		"":               errors.New(""),
+		"dca":            errors.New(""),
+		"g4s.kube.small": nil,
+	}
+	for key, val := range forTesting {
+		if err := isValidVMSize(fakeClient, key); (err != nil && val == nil) || (err == nil && val != nil) {
+			t.Fatalf("VM type: `%s` Expected `%v` got `%v`", key, val, err)
+		}
 	}
 }

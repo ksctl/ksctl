@@ -8,7 +8,6 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/logger"
 
-	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
@@ -72,7 +71,6 @@ type StateConfiguration struct {
 
 var (
 	civoCloudState *StateConfiguration
-	civoClient     *civogo.Client
 	clusterDirName string
 	clusterType    string // it stores the ha or managed
 )
@@ -112,6 +110,8 @@ type CivoProvider struct {
 	SSHPath string `json:"ssh_key"` // do check what need to be here
 
 	Metadata
+
+	Client CivoGo
 }
 
 type Credential struct {
@@ -158,7 +158,6 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 		clusterType = utils.CLUSTER_TYPE_MANG
 	}
 
-	var err error
 	civoCloudState = &StateConfiguration{}
 	errLoadState := loadStateHelper(storage, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
 
@@ -200,19 +199,22 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 		return errors.New("[civo] Invalid operation for init state")
 	}
 
-	civoClient, err = civogo.NewClient(fetchAPIKey(storage), obj.Region)
-	if err != nil {
+	if err := obj.Client.InitClient(fetchAPIKey(storage), obj.Region); err != nil {
 		return err
 	}
 
-	if err := validationOfArguments(obj.ClusterName, obj.Region); err != nil {
+	if err := validationOfArguments(obj); err != nil {
 		return err
 	}
 	storage.Logger().Success("[civo] init cloud state")
 	return nil
 }
 
-func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
+func ProvideClient() CivoGo {
+	return &CivoGoClient{}
+}
+
+func ReturnCivoStruct(metadata resources.Metadata, ClientOption func() CivoGo) (*CivoProvider, error) {
 	return &CivoProvider{
 		ClusterName: metadata.ClusterName,
 		Region:      metadata.Region,
@@ -221,6 +223,7 @@ func ReturnCivoStruct(metadata resources.Metadata) (*CivoProvider, error) {
 			K8sName:    metadata.K8sDistro,
 			K8sVersion: metadata.K8sVersion,
 		},
+		Client: ClientOption(),
 	}, nil
 }
 
@@ -250,7 +253,7 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
-	if err := isValidVMSize(getValidVMSizesClient(), size); err != nil {
+	if err := isValidVMSize(cloud, size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
 		return nil
@@ -297,13 +300,13 @@ func (client *CivoProvider) CNI(s string) resources.CloudFactory {
 	return client
 }
 
-func k8sVersion(ver string, validVersions func() []string) string {
+func k8sVersion(obj *CivoProvider, ver string) string {
 	if len(ver) == 0 {
 		return "1.26.4-k3s1"
 	}
 
 	ver = ver + "-k3s1"
-	if err := isValidK8sVersion(validVersions(), ver); err != nil {
+	if err := isValidK8sVersion(obj, ver); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
 		return ""
@@ -313,7 +316,7 @@ func k8sVersion(ver string, validVersions func() []string) string {
 
 // Version implements resources.CloudFactory.
 func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
-	obj.Metadata.K8sVersion = k8sVersion(ver, getValidK8sVersionClient)
+	obj.Metadata.K8sVersion = k8sVersion(obj, ver)
 	if len(obj.Metadata.K8sVersion) == 0 {
 		return nil
 	}
