@@ -12,11 +12,16 @@ import (
 )
 
 // make it return error
-func HydrateCloud(client *resources.KsctlClient, operation string) error {
+func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bool) error {
 	var err error
 	switch client.Metadata.Provider {
 	case utils.CLOUD_CIVO:
-		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
+		if !fakeClient {
+			client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
+		} else {
+			client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideMockCivoClient)
+		}
+
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}

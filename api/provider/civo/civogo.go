@@ -2,6 +2,7 @@ package civo
 
 import (
 	"github.com/civo/civogo"
+	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ type CivoGo interface {
 
 	GetDiskImageByName(name string) (*civogo.DiskImage, error)
 
-	InitClient(token, region string) error
+	InitClient(factory resources.StorageFactory, region string) error
 
 	GetKubernetesCluster(id string) (*civogo.KubernetesCluster, error)
 	NewKubernetesClusters(kc *civogo.KubernetesClusterConfig) (*civogo.KubernetesCluster, error)
@@ -39,6 +40,10 @@ type CivoGo interface {
 type CivoGoClient struct {
 	client *civogo.Client
 	region string
+}
+
+func ProvideMockCivoClient() CivoGo {
+	return &CivoGoMockClient{}
 }
 
 func (client *CivoGoClient) ListAvailableKubernetesVersions() ([]civogo.KubernetesVersion, error) {
@@ -109,8 +114,8 @@ func (client *CivoGoClient) DeleteInstance(id string) (*civogo.SimpleResponse, e
 	return client.client.DeleteInstance(id)
 }
 
-func (client *CivoGoClient) InitClient(token, region string) (err error) {
-	client.client, err = civogo.NewClient(token, region)
+func (client *CivoGoClient) InitClient(factory resources.StorageFactory, region string) (err error) {
+	client.client, err = civogo.NewClient(fetchAPIKey(factory), region)
 	if err != nil {
 		return
 	}
@@ -310,7 +315,7 @@ func (client *CivoGoMockClient) DeleteInstance(id string) (*civogo.SimpleRespons
 	}, nil
 }
 
-func (client *CivoGoMockClient) InitClient(_, region string) (err error) {
+func (client *CivoGoMockClient) InitClient(factory resources.StorageFactory, region string) (err error) {
 	client.client, err = civogo.NewFakeClient()
 	if err != nil {
 		return

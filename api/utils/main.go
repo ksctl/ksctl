@@ -97,6 +97,8 @@ const (
 
 	CLUSTER_TYPE_HA   = "ha"
 	CLUSTER_TYPE_MANG = "managed"
+
+	FAKE_CLIENT = "FAKE"
 )
 
 // GetUserName returns current active username
@@ -361,6 +363,18 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 		return err
 	}
 	storage.Logger().Success("[ssh] SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+
+	// NOTE: when the fake environment variable is set //
+	if fake := os.Getenv(FAKE_CLIENT); len(fake) != 0 {
+		storage.Logger().Success("[ssh] Exec Scripts")
+		sshPayload.Output = ""
+
+		if sshPayload.flag == EXEC_WITH_OUTPUT {
+			sshPayload.Output = "random fake"
+		}
+		return nil
+	}
+
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{

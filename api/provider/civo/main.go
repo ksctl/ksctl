@@ -199,7 +199,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 		return errors.New("[civo] Invalid operation for init state")
 	}
 
-	if err := obj.Client.InitClient(fetchAPIKey(storage), obj.Region); err != nil {
+	if err := obj.Client.InitClient(storage, obj.Region); err != nil {
 		return err
 	}
 

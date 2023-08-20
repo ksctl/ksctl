@@ -24,3 +24,14 @@ unit_test_api:
 	cd api/ && \
 		chmod u+x test-api.sh && \
 		./test-api.sh
+
+mock_civo:
+	rm -rf ~/.ksctl && \
+	mkdir -p ~/.ksctl/config/civo/managed && \
+	mkdir -p ~/.ksctl/config/civo/ha
+
+	cd test/ && go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover
+
+test: unit_test_api mock_civo
+	echo "Done"
+
