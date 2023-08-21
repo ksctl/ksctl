@@ -210,10 +210,6 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 	return nil
 }
 
-func ProvideClient() CivoGo {
-	return &CivoGoClient{}
-}
-
 func ReturnCivoStruct(metadata resources.Metadata, ClientOption func() CivoGo) (*CivoProvider, error) {
 	return &CivoProvider{
 		ClusterName: metadata.ClusterName,

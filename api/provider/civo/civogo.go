@@ -46,6 +46,10 @@ func ProvideMockCivoClient() CivoGo {
 	return &CivoGoMockClient{}
 }
 
+func ProvideClient() CivoGo {
+	return &CivoGoClient{}
+}
+
 func (client *CivoGoClient) ListAvailableKubernetesVersions() ([]civogo.KubernetesVersion, error) {
 	return client.client.ListAvailableKubernetesVersions()
 }

@@ -15,8 +15,6 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-// TODO: add validation of region, disk size and more
-
 func GetInputCredential(storage resources.StorageFactory) error {
 
 	storage.Logger().Print("Enter your SUBSCRIPTION ID")
@@ -218,13 +216,13 @@ func validationOfArguments(obj *AzureProvider) error {
 	return nil
 }
 
-// TODO: Add for managed kubernetes version
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
 	clientFactory, err := armcontainerservice.NewClientFactory(obj.SubscriptionID, obj.AzureTokenCred, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
 	var vers []string
+	// TODO: make this entire thing in to one function call
 	res, err := clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, obj.Region, nil)
 	if err != nil {
 		return fmt.Errorf("failed to finish the request: %v", err)
@@ -246,6 +244,7 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 		return fmt.Errorf("failed to create client: %v", err)
 	}
 	var validReg []string
+	// TODO: make this entire thing in to one function call
 	pager := clientFactory.NewClient().NewListLocationsPager(obj.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
 	for pager.More() {
 		page, err := pager.NextPage(ctx)

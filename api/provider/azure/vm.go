@@ -262,7 +262,8 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
+
 	switch obj.Metadata.Role {
 	case utils.ROLE_WP:
 		azureCloudState.InfoWorkerPlanes.Names[indexNo] = obj.Metadata.ResName
@@ -389,7 +390,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
 	switch obj.Metadata.Role {
 	case utils.ROLE_WP:
 		azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = publicIPName
@@ -460,7 +461,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
 
 	_, err = pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
@@ -612,7 +613,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 		return err
 	}
 
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
 
 	_, err = pollerResponse.PollUntilDone(ctx, nil)
 	if err != nil {
