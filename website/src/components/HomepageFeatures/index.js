@@ -17,7 +17,7 @@ const FeatureList = [
     Svg: require('@site/static/img/fast.svg').default,
     description: (
       <>
-        Instantly generates clusters in a matter of seconds.
+        Instantly generates clusters in a matter of minutes.
       </>
     ),
   },
