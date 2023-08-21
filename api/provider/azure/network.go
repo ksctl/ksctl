@@ -52,13 +52,10 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	}
 
 	// NOTE: for the azure resource group we are not using the resName field
-	resourceGroup, err = rgclient.CreateOrUpdate(
-		ctx,
-		obj.ResourceGroup,
-		armresources.ResourceGroup{
-			Location: to.Ptr(obj.Region),
-		},
-		nil)
+	parameter := armresources.ResourceGroup{
+		Location: to.Ptr(obj.Region),
+	}
+	resourceGroup, err = rgclient.CreateOrUpdate(ctx, obj.ResourceGroup, parameter, nil)
 	if err != nil {
 		return err
 	}

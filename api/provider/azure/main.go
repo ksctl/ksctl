@@ -8,8 +8,6 @@ import (
 	"github.com/kubesimplify/ksctl/api/logger"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
@@ -94,14 +92,19 @@ type Metadata struct {
 }
 
 type AzureProvider struct {
-	ClusterName    string                 `json:"cluster_name"`
-	HACluster      bool                   `json:"ha_cluster"`
-	ResourceGroup  string                 `json:"resource_group"`
-	Region         string                 `json:"region"`
+	ClusterName   string `json:"cluster_name"`
+	HACluster     bool   `json:"ha_cluster"`
+	ResourceGroup string `json:"resource_group"`
+	Region        string `json:"region"`
+
+	// DEPRICATION: move to the az client
 	SubscriptionID string                 `json:"subscription_id"`
-	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"`
-	SSHPath        string                 `json:"ssh_key"`
-	Metadata       Metadata
+	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"
+`
+	SSHPath  string `json:"ssh_key"`
+	Metadata Metadata
+
+	Client AzureGo
 }
 
 var (
@@ -197,7 +200,6 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 		return errors.New("[FATAL] already initialized")
 	}
 	errLoadState := loadStateHelper(storage)
-	// TODO: add operations
 	switch operation {
 	case utils.OPERATION_STATE_CREATE:
 		if errLoadState == nil && azureCloudState.IsCompleted {
@@ -234,15 +236,24 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	}
 
 	ctx = context.Background()
-	err := obj.setRequiredENV_VAR(storage, ctx)
-	if err != nil {
+
+	// replace
+
+	if err := obj.Client.InitClient(storage); err != nil {
 		return err
 	}
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return err
-	}
-	obj.AzureTokenCred = cred
+
+	obj.Client.SetRegion(obj.Region)
+	//
+	//err := obj.setRequiredENV_VAR(storage, ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//cred, err := azidentity.NewDefaultAzureCredential(nil)
+	//if err != nil {
+	//	return err
+	//}
+	//obj.AzureTokenCred = cred
 
 	if err := validationOfArguments(obj); err != nil {
 		return err
@@ -253,7 +264,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	return nil
 }
 
-func ReturnAzureStruct(metadata resources.Metadata) (*AzureProvider, error) {
+func ReturnAzureStruct(metadata resources.Metadata, ClientOption func() AzureGo) (*AzureProvider, error) {
 
 	return &AzureProvider{
 		ClusterName: metadata.ClusterName,
@@ -264,6 +275,7 @@ func ReturnAzureStruct(metadata resources.Metadata) (*AzureProvider, error) {
 			K8sVersion: metadata.K8sVersion,
 			K8sName:    metadata.K8sDistro,
 		},
+		Client: ClientOption(),
 	}, nil
 }
 
