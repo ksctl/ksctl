@@ -5,29 +5,28 @@ import styles from './styles.module.css';
 const FeatureList = [
   {
     title: 'Lightweight',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    Svg: require('@site/static/img/lightweight.svg').default,
     description: (
       <>
-        It does not depends on any cli. just built from grounnd up
+        Ksctl is free from other CLI dependencies, it offers a lightweight solution for seamless user experience.
       </>
     ),
   },
   {
     title: 'Fast',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    Svg: require('@site/static/img/fast.svg').default,
     description: (
       <>
-        It creates clusters within a matter of minutes.
+        Instantly generates clusters in a matter of minutes.
       </>
     ),
   },
   {
     title: 'Customize',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    Svg: require('@site/static/img/customize.svg').default,
     description: (
       <>
-        customize all the aspects of cluster from size of nodes, k8s version, to pre-installed apps
-      </>
+      Customize every cluster element, from node size, Kubernetes version, to included applications – all easily managed through our tool.     </>
     ),
   },
 ];
