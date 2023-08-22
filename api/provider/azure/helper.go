@@ -3,7 +3,6 @@ package azure
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"runtime"
 
 	"github.com/kubesimplify/ksctl/api/resources"
@@ -165,21 +164,10 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {
-	pager, err := obj.Client.ListLocations()
+	validReg, err := obj.Client.ListLocations()
 	if err != nil {
-		return fmt.Errorf("failed to create client: %v", err)
+		return err
 	}
-	var validReg []string
-	for pager.More() {
-		page, err := pager.NextPage(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to advance page: %v", err)
-		}
-		for _, v := range page.Value {
-			validReg = append(validReg, *v.Name)
-		}
-	}
-
 	for _, valid := range validReg {
 		if valid == reg {
 			return nil
@@ -190,20 +178,9 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 
 func isValidVMSize(obj *AzureProvider, size string) error {
 
-	pager, err := obj.Client.ListVMTypes()
+	validSize, err := obj.Client.ListVMTypes()
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
-	}
-	var validSize []string
-	for pager.More() {
-
-		page, err := pager.NextPage(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to advance page: %v", err)
-		}
-		for _, v := range page.Value {
-			validSize = append(validSize, *v.Name)
-		}
+		return err
 	}
 
 	for _, valid := range validSize {

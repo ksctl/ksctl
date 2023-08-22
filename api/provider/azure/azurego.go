@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -19,6 +21,14 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
+func ProvideClient() AzureGo {
+	return &AzureGoClient{}
+}
+
+func ProvideMockClient() AzureGo {
+	return &AzureGoMockClient{}
+}
+
 type AzureGo interface {
 	InitClient(storage resources.StorageFactory) error
 
@@ -26,11 +36,11 @@ type AzureGo interface {
 
 	SetResourceGrp(string)
 
-	ListLocations() (*runtime.Pager[armsubscriptions.ClientListLocationsResponse], error)
+	ListLocations() ([]string, error)
 
 	ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error)
 
-	ListVMTypes() (*runtime.Pager[armcomputev5.VirtualMachineSizesClientListResponse], error)
+	ListVMTypes() ([]string, error)
 
 	// Resource group
 
@@ -172,12 +182,6 @@ type AzureGoClient struct {
 	AzureTokenCred azcore.TokenCredential
 	Region         string
 	ResourceGrp    string
-}
-
-type AzureGoMockClient struct{}
-
-func ProvideClient() AzureGo {
-	return &AzureGoClient{}
 }
 
 // PollUntilDoneCreateNetInterface implements AzureGo.
@@ -336,12 +340,24 @@ func (azclient *AzureGoClient) SetResourceGrp(grp string) {
 	azclient.ResourceGrp = grp
 }
 
-func (azclient *AzureGoClient) ListLocations() (*runtime.Pager[armsubscriptions.ClientListLocationsResponse], error) {
+func (azclient *AzureGoClient) ListLocations() ([]string, error) {
 	clientFactory, err := armsubscriptions.NewClientFactory(azclient.AzureTokenCred, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %v", err)
 	}
-	return clientFactory.NewClient().NewListLocationsPager(azclient.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil}), nil
+	pager := clientFactory.NewClient().NewListLocationsPager(azclient.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
+
+	var validReg []string
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to advance page: %v", err)
+		}
+		for _, v := range page.Value {
+			validReg = append(validReg, *v.Name)
+		}
+	}
+	return validReg, nil
 }
 
 func (azclient *AzureGoClient) ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error) {
@@ -353,12 +369,25 @@ func (azclient *AzureGoClient) ListKubernetesVersions() (armcontainerservicev4.M
 	return clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, azclient.Region, nil)
 }
 
-func (azclient *AzureGoClient) ListVMTypes() (*runtime.Pager[armcomputev5.VirtualMachineSizesClientListResponse], error) {
+func (azclient *AzureGoClient) ListVMTypes() ([]string, error) {
 	clientFactory, err := armcomputev5.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %v", err)
 	}
-	return clientFactory.NewVirtualMachineSizesClient().NewListPager(azclient.Region, nil), nil
+	pager := clientFactory.NewVirtualMachineSizesClient().NewListPager(azclient.Region, nil)
+
+	var validSize []string
+	for pager.More() {
+
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to advance page: %v", err)
+		}
+		for _, v := range page.Value {
+			validSize = append(validSize, *v.Name)
+		}
+	}
+	return validSize, nil
 }
 
 func (azclient *AzureGoClient) PublicIPClient() (*armnetwork.PublicIPAddressesClient, error) {
@@ -528,4 +557,265 @@ func (azclient *AzureGoClient) ListClusterAdminCredentials(resourceName string, 
 		return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{}, err
 	}
 	return client.ListClusterAdminCredentials(ctx, azclient.ResourceGrp, resourceName, options)
+}
+
+type AzureGoMockClient struct {
+	SubscriptionID string
+	AzureTokenCred azcore.TokenCredential
+	Region         string
+	ResourceGrp    string
+}
+
+func (mock *AzureGoMockClient) InitClient(storage resources.StorageFactory) error {
+	mock.SubscriptionID = "XUZE"
+	mock.AzureTokenCred = nil
+	return nil
+}
+
+func (mock *AzureGoMockClient) SetRegion(s string) {
+	mock.Region = s
+}
+
+func (mock *AzureGoMockClient) SetResourceGrp(s string) {
+	mock.ResourceGrp = s
+}
+
+// ListLocations: TODO: unable to mock the Pager so moved on with more work for ListLocation method
+// instead of it returning (*runtime.Pager[armsubscriptions.ClientListLocationsResponse], error)
+// it will return the ([]string, error)
+func (mock *AzureGoMockClient) ListLocations() ([]string, error) {
+	return []string{"eastus2", "centralindia", "fake"}, nil
+}
+
+func (mock *AzureGoMockClient) ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error) {
+	return armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse{
+		KubernetesVersionListResult: armcontainerservicev4.KubernetesVersionListResult{
+			Values: []*armcontainerservicev4.KubernetesVersion{
+				&armcontainerservicev4.KubernetesVersion{
+					Version: to.Ptr("1.27.1"),
+				},
+				&armcontainerservicev4.KubernetesVersion{
+					Version: to.Ptr("1.26"),
+				},
+				&armcontainerservicev4.KubernetesVersion{
+					Version: to.Ptr("1.27"),
+				},
+			},
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) ListVMTypes() ([]string, error) {
+	return []string{"Standard_DS2_v2", "fake"}, nil
+}
+
+func (mock *AzureGoMockClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
+	return armresources.ResourceGroupsClientCreateOrUpdateResponse{
+		ResourceGroup: armresources.ResourceGroup{
+			Name: to.Ptr(mock.ResourceGrp),
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteResourceGrp(options *armresources.ResourceGroupsClientBeginDeleteOptions) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error) {
+	return &runtime.Poller[armresources.ResourceGroupsClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginCreateVirtNet(virtualNetworkName string, parameters armnetwork.VirtualNetwork, options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error) {
+	return &runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteVirtNet(virtualNetworkName string, options *armnetwork.VirtualNetworksClientBeginDeleteOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], error) {
+	return &runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginCreateSubNet(virtualNetworkName string, subnetName string, subnetParameters armnetwork.Subnet, options *armnetwork.SubnetsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], error) {
+	return &runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteSubNet(virtualNetworkName string, subnetName string, options *armnetwork.SubnetsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SubnetsClientDeleteResponse], error) {
+	return &runtime.Poller[armnetwork.SubnetsClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteSecurityGrp(networkSecurityGroupName string, options *armnetwork.SecurityGroupsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], error) {
+	return &runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginCreateSecurityGrp(networkSecurityGroupName string, parameters armnetwork.SecurityGroup, options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error) {
+	return &runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) CreateSSHKey(sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource, options *armcompute.SSHPublicKeysClientCreateOptions) (armcompute.SSHPublicKeysClientCreateResponse, error) {
+	return armcompute.SSHPublicKeysClientCreateResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) DeleteSSHKey(sshPublicKeyName string, options *armcompute.SSHPublicKeysClientDeleteOptions) (armcompute.SSHPublicKeysClientDeleteResponse, error) {
+	return armcompute.SSHPublicKeysClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginCreateVM(vmName string, parameters armcompute.VirtualMachine, options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
+	return &runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteVM(vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (*runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], error) {
+	return &runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteDisk(diskName string, options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error) {
+	return &runtime.Poller[armcompute.DisksClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginCreatePubIP(publicIPAddressName string, parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error) {
+	return &runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeletePubIP(publicIPAddressName string, options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error) {
+	return &runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginCreateNIC(networkInterfaceName string, parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error) {
+	return &runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteNIC(networkInterfaceName string, options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error) {
+	return &runtime.Poller[armnetwork.InterfacesClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginDeleteAKS(resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
+	return &runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) BeginCreateAKS(resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
+	return &runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse]{}, nil
+}
+
+func (mock *AzureGoMockClient) ListClusterAdminCredentials(resourceName string, options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error) {
+	return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{
+		CredentialResults: armcontainerservice.CredentialResults{
+			Kubeconfigs: []*armcontainerservice.CredentialResult{
+				&armcontainerservice.CredentialResult{
+					Name:  to.Ptr("fake-kubeconfig"),
+					Value: []byte("fake kubeconfig"),
+				},
+			},
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientDeleteResponse, error) {
+	// as the result is not used
+	return armnetwork.SecurityGroupsClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
+	return armnetwork.SecurityGroupsClientCreateOrUpdateResponse{
+		SecurityGroup: armnetwork.SecurityGroup{
+			ID:   to.Ptr("XXYY"),
+			Name: to.Ptr("fake-firewall-123"),
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelResourceGrp(ctx context.Context, poll *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armresources.ResourceGroupsClientDeleteResponse, error) {
+	// as the result is not used
+	return armresources.ResourceGroupsClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error) {
+	return armnetwork.SubnetsClientCreateOrUpdateResponse{
+		Subnet: armnetwork.Subnet{
+			ID:   to.Ptr("XXYY"),
+			Name: to.Ptr("fake-subnet-123"),
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientDeleteResponse, error) {
+	// as the result is not used
+	return armnetwork.SubnetsClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneCreateVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error) {
+	return armnetwork.VirtualNetworksClientCreateOrUpdateResponse{
+		VirtualNetwork: armnetwork.VirtualNetwork{
+			ID:   to.Ptr("XXYY"),
+			Name: to.Ptr("fake-virt-net-123"),
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientDeleteResponse, error) {
+	// as the result is not used
+	return armnetwork.VirtualNetworksClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneCreateAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientCreateOrUpdateResponse, error) {
+	return armcontainerservice.ManagedClustersClientCreateOrUpdateResponse{
+		ManagedCluster: armcontainerservice.ManagedCluster{
+			Name: to.Ptr("fake-ksctl-managed-resgrp"),
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientDeleteResponse, error) {
+	return armcontainerservice.ManagedClustersClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientDeleteResponse, error) {
+	return armcompute.VirtualMachinesClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneCreateVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientCreateOrUpdateResponse, error) {
+	return armcompute.VirtualMachinesClientCreateOrUpdateResponse{
+		VirtualMachine: armcompute.VirtualMachine{
+			Properties: &armcompute.VirtualMachineProperties{
+				OSProfile: &armcompute.OSProfile{
+					ComputerName: to.Ptr("fake-hostname"),
+				},
+			},
+			Name: to.Ptr("fake-vm-123"),
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelDisk(ctx context.Context, poll *runtime.Poller[armcompute.DisksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.DisksClientDeleteResponse, error) {
+	return armcompute.DisksClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneCreatePubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error) {
+	return armnetwork.PublicIPAddressesClientCreateOrUpdateResponse{
+		PublicIPAddress: armnetwork.PublicIPAddress{
+			ID:   to.Ptr("fake-XXYYY"),
+			Name: to.Ptr("fake-pubip"),
+			Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+				IPAddress: to.Ptr("A.B.C.D"),
+			},
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientDeleteResponse, error) {
+	return armnetwork.PublicIPAddressesClientDeleteResponse{}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneCreateNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientCreateOrUpdateResponse, error) {
+	return armnetwork.InterfacesClientCreateOrUpdateResponse{
+		Interface: armnetwork.Interface{
+			ID:   to.Ptr("XYYY"),
+			Name: to.Ptr("fake-nic-123"),
+			Properties: &armnetwork.InterfacePropertiesFormat{
+				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+					&armnetwork.InterfaceIPConfiguration{
+						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+							PrivateIPAddress: to.Ptr("192.168.X.Y"),
+						},
+					},
+				},
+			},
+		},
+	}, nil
+}
+
+func (mock *AzureGoMockClient) PollUntilDoneDelNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientDeleteResponse, error) {
+	return armnetwork.InterfacesClientDeleteResponse{}, nil
 }

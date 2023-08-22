@@ -25,13 +25,38 @@ unit_test_api:
 		chmod u+x test-api.sh && \
 		./test-api.sh
 
-mock_civo:
+mock_test:
 	rm -rf ~/.ksctl && \
 	mkdir -p ~/.ksctl/config/civo/managed && \
+	mkdir -p ~/.ksctl/config/civo/ha && \
+	mkdir -p ~/.ksctl/config/azure/managed && \
+	mkdir -p ~/.ksctl/config/azure/ha
+	cd test/ && go test -bench=. -benchtime=1x -cover -v
+	rm -rf ~/.ksctl
+
+
+mock_civo_ha:
+	rm -rf ~/.ksctl && \
 	mkdir -p ~/.ksctl/config/civo/ha
+	cd test/ && go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
 
-	cd test/ && go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover
 
-test: unit_test_api mock_civo
+mock_civo_managed:
+	rm -rf ~/.ksctl && \
+	mkdir -p ~/.ksctl/config/civo/managed
+	cd test/ && go test -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
+
+
+mock_azure_managed:
+	rm -rf ~/.ksctl && \
+	mkdir -p ~/.ksctl/config/azure/managed
+	cd test/ && go test -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
+
+mock_azure_ha:
+	rm -rf ~/.ksctl && \
+	mkdir -p ~/.ksctl/config/azure/ha
+	cd test/ && go test -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
+
+test: unit_test_api mock_test
 	echo "Done"
 

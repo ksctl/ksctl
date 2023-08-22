@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	demoClient = &resources.KsctlClient{}
 	azureCloudState = &StateConfiguration{}
 	// FIXME: make it use the Provider Mock Client
-	demoClient.Cloud, _ = ReturnAzureStruct(demoClient.Metadata, ProvideClient)
+	demoClient.Cloud, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
 
 	demoClient.ClusterName = "demo"
 	demoClient.Region = "demoRegion"

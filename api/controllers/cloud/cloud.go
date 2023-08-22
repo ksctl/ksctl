@@ -28,10 +28,9 @@ func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bo
 	case utils.CLOUD_AZURE:
 		if !fakeClient {
 			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideClient)
+		} else {
+			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideMockClient)
 		}
-		//else {
-		//	client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, civo_pkg.ProvideMockCivoClient)
-		//}
 
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())

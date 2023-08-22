@@ -192,9 +192,6 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	obj.ResourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.ClusterName, clusterType)
 	clusterDirName = obj.ClusterName + " " + obj.ResourceGroup + " " + obj.Region
 
-	if azureCloudState != nil {
-		return errors.New("[FATAL] already initialized")
-	}
 	errLoadState := loadStateHelper(storage)
 	switch operation {
 	case utils.OPERATION_STATE_CREATE:

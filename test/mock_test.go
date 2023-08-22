@@ -1,9 +1,10 @@
 package test
 
 import (
-	"github.com/kubesimplify/ksctl/api/utils"
 	"os"
 	"testing"
+
+	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 func BenchmarkCivoTestingManaged(b *testing.B) {
@@ -27,6 +28,32 @@ func BenchmarkCivoTestingHA(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		if err := CivoTestingHA(); err != nil {
+			b.Fatalf("failed, err: %v", err)
+		}
+	}
+}
+
+func BenchmarkAzureTestingHA(b *testing.B) {
+	if err := os.Setenv(utils.FAKE_CLIENT, "1"); err != nil {
+		b.Fatalf("Failed to set fake env %v", err)
+	}
+	StartCloud()
+
+	for i := 0; i < b.N; i++ {
+		if err := AzureTestingHA(); err != nil {
+			b.Fatalf("failed, err: %v", err)
+		}
+	}
+}
+
+func BenchmarkAzureTestingManaged(b *testing.B) {
+	if err := os.Setenv(utils.FAKE_CLIENT, "1"); err != nil {
+		b.Fatalf("Failed to set fake env %v", err)
+	}
+	StartCloud()
+
+	for i := 0; i < b.N; i++ {
+		if err := AzureTestingManaged(); err != nil {
 			b.Fatalf("failed, err: %v", err)
 		}
 	}
