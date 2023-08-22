@@ -11,38 +11,6 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-func (obj *AzureProvider) virtualMachineClient() (*armcompute.VirtualMachinesClient, error) {
-	vmClient, err := armcompute.NewVirtualMachinesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return vmClient, nil
-}
-
-func (obj *AzureProvider) diskClient() (*armcompute.DisksClient, error) {
-	diskClient, err := armcompute.NewDisksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return diskClient, nil
-}
-
-func (obj *AzureProvider) netInterfaceClient() (*armnetwork.InterfacesClient, error) {
-	client, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
-func (obj *AzureProvider) publicIPClient() (*armnetwork.PublicIPAddressesClient, error) {
-	client, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
 // Sequence
 // creation
 // 1. PublicIP
@@ -67,26 +35,21 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) e
 		vmName = azureCloudState.InfoWorkerPlanes.Names[indexNo]
 	}
 
-	// check if vm is deleted?
-	//if obj.Metadata.Role != utils.ROLE_LB && len(vm) == 0 {
-	//	storage.Logger().Success("[skip] vm already deleted")
-	//	return nil
-	//} else if len(vmName) == 0 {
 	if len(vmName) == 0 {
 		storage.Logger().Success("[skip] vm already deleted")
 	} else {
-		vmClient, err := obj.virtualMachineClient()
+		vmClient, err := obj.Client.VirtualMachineClient()
 		if err != nil {
 			return err
 		}
 
-		pollerResponse, err := vmClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, vmName, nil)
+		pollerResponse, err := obj.Client.BeginDeleteVM(ctx, vmClient, azureCloudState.ResourceGroupName, vmName, nil)
 		if err != nil {
 			return err
 		}
 		storage.Logger().Print("[azure] deleting vm...", vmName)
 
-		_, err = pollerResponse.PollUntilDone(ctx, nil)
+		_, err = obj.Client.PollUntilDoneDelVM(ctx, pollerResponse, nil)
 		if err != nil {
 			return err
 		}
@@ -180,7 +143,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 		return nil
 	}
 
-	vmClient, err := obj.virtualMachineClient()
+	vmClient, err := obj.Client.VirtualMachineClient()
 	if err != nil {
 		return err
 	}
@@ -258,7 +221,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 			},
 		},
 	}
-	pollerResponse, err := vmClient.BeginCreateOrUpdate(ctx, obj.ResourceGroup, obj.Metadata.ResName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateVM(ctx, vmClient, obj.ResourceGroup, obj.Metadata.ResName, parameters, nil)
 	if err != nil {
 		return err
 	}
@@ -279,7 +242,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 	}
 
 	storage.Logger().Print("[azure] creating vm...", obj.Metadata.ResName)
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreateVM(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -323,18 +286,18 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		storage.Logger().Success("[skip] disk already deleted")
 		return nil
 	}
-	diskClient, err := obj.diskClient()
+	diskClient, err := obj.Client.DiskClient()
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := diskClient.BeginDelete(ctx, obj.ResourceGroup, diskName, nil)
+	pollerResponse, err := obj.Client.BeginDeleteDisk(ctx, diskClient, obj.ResourceGroup, diskName, nil)
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelDisk(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -374,7 +337,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		storage.Logger().Success("[skip] pub ip already created", publicIP)
 		return nil
 	}
-	publicIPAddressClient, err := obj.publicIPClient()
+	publicIPAddressClient, err := obj.Client.PublicIPClient()
 	if err != nil {
 		return err
 	}
@@ -386,7 +349,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		},
 	}
 
-	pollerResponse, err := publicIPAddressClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName, publicIPName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreatePubIP(ctx, publicIPAddressClient, azureCloudState.ResourceGroupName, publicIPName, parameters, nil)
 	if err != nil {
 		return err
 	}
@@ -405,7 +368,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		return err
 	}
 
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreatePubIP(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -452,18 +415,18 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 		return nil
 	}
 
-	publicIPAddressClient, err := obj.publicIPClient()
+	publicIPAddressClient, err := obj.Client.PublicIPClient()
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := publicIPAddressClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, publicIP, nil)
+	pollerResponse, err := obj.Client.BeginDeletePubIP(ctx, publicIPAddressClient, azureCloudState.ResourceGroupName, publicIP, nil)
 	if err != nil {
 		return err
 	}
 	// NOTE: Add the entry for name before polling starts so that state is present
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelPubIP(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -512,7 +475,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		storage.Logger().Success("[skip] network interface already created", interfaceName)
 		return nil
 	}
-	nicClient, err := obj.netInterfaceClient()
+	nicClient, err := obj.Client.NetInterfaceClient()
 	if err != nil {
 		return err
 	}
@@ -539,11 +502,11 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		},
 	}
 
-	pollerResponse, err := nicClient.BeginCreateOrUpdate(ctx, obj.ResourceGroup, nicName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateNIC(ctx, nicClient, obj.ResourceGroup, nicName, parameters, nil)
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
 	switch obj.Metadata.Role {
 	case utils.ROLE_WP:
 		azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = nicName
@@ -559,7 +522,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		return err
 	}
 
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreateNetInterface(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -603,19 +566,19 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 		return nil
 	}
 
-	nicClient, err := obj.netInterfaceClient()
+	nicClient, err := obj.Client.NetInterfaceClient()
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := nicClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, interfaceName, nil)
+	pollerResponse, err := obj.Client.BeginDeleteNIC(ctx, nicClient, azureCloudState.ResourceGroupName, interfaceName, nil)
 	if err != nil {
 		return err
 	}
 
 	// NOTE: Add the entry for name before polling starts so that state is present
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelNetInterface(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}

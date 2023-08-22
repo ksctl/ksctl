@@ -110,7 +110,7 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}
 	case utils.CLOUD_AZURE:
-		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata)
+		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideClient)
 		if err != nil {
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}

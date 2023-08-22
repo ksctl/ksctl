@@ -1,12 +1,13 @@
 package azure
 
 import (
+	"os"
+	"testing"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"gotest.tools/assert"
-	"os"
-	"testing"
 )
 
 // TODO: seperate the api calls so that we can add mocks
@@ -22,7 +23,8 @@ func TestMain(m *testing.M) {
 	}
 	demoClient = &resources.KsctlClient{}
 	azureCloudState = &StateConfiguration{}
-	demoClient.Cloud, _ = ReturnAzureStruct(demoClient.Metadata)
+	// FIXME: make it use the Provider Mock Client
+	demoClient.Cloud, _ = ReturnAzureStruct(demoClient.Metadata, ProvideClient)
 
 	demoClient.ClusterName = "demo"
 	demoClient.Region = "demoRegion"

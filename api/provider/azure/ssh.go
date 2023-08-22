@@ -7,14 +7,6 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-func (obj *AzureProvider) azureSSHKeyClient() (*armcompute.SSHPublicKeysClient, error) {
-	client, err := armcompute.NewSSHPublicKeysClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
 
@@ -23,7 +15,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		return nil
 	}
 
-	sshClient, err := obj.azureSSHKeyClient()
+	sshClient, err := obj.Client.SSHKeyClient()
 	if err != nil {
 		return err
 	}
@@ -33,13 +25,15 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		return err
 	}
 
-	_, err = sshClient.Create(ctx, azureCloudState.ResourceGroupName,
-		obj.Metadata.ResName, armcompute.SSHPublicKeyResource{
-			Location: to.Ptr(obj.Region),
-			Properties: &armcompute.SSHPublicKeyResourceProperties{
-				PublicKey: to.Ptr(keyPairToUpload),
-			},
-		}, nil)
+	parameters := armcompute.SSHPublicKeyResource{
+		Location: to.Ptr(obj.Region),
+		Properties: &armcompute.SSHPublicKeyResourceProperties{
+			PublicKey: to.Ptr(keyPairToUpload),
+		},
+	}
+
+	_, err = obj.Client.CreateSSHKey(ctx, sshClient, azureCloudState.ResourceGroupName,
+		obj.Metadata.ResName, parameters, nil)
 
 	azureCloudState.SSHKeyName = obj.Metadata.ResName
 
@@ -62,17 +56,20 @@ func (obj *AzureProvider) DelSSHKeyPair(storage resources.StorageFactory) error 
 		return nil
 	}
 
-	sshClient, err := obj.azureSSHKeyClient()
+	sshClient, err := obj.Client.SSHKeyClient()
 	if err != nil {
 		return err
 	}
-	_, err = sshClient.Delete(ctx, azureCloudState.ResourceGroupName, azureCloudState.SSHKeyName, nil)
+	_, err = obj.Client.DeleteSSHKey(ctx, sshClient, azureCloudState.ResourceGroupName,
+		azureCloudState.SSHKeyName, nil)
 	if err != nil {
 		return err
 	}
+
 	azureCloudState.SSHKeyName = ""
 	azureCloudState.SSHUser = ""
 	azureCloudState.SSHPrivateKeyLoc = ""
+
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}

@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/logger"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/kubesimplify/ksctl/api/logger"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
@@ -97,10 +97,6 @@ type AzureProvider struct {
 	ResourceGroup string `json:"resource_group"`
 	Region        string `json:"region"`
 
-	// DEPRICATION: move to the az client
-	SubscriptionID string                 `json:"subscription_id"`
-	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"
-`
 	SSHPath  string `json:"ssh_key"`
 	Metadata Metadata
 
@@ -237,23 +233,11 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 
 	ctx = context.Background()
 
-	// replace
-
 	if err := obj.Client.InitClient(storage); err != nil {
 		return err
 	}
 
 	obj.Client.SetRegion(obj.Region)
-	//
-	//err := obj.setRequiredENV_VAR(storage, ctx)
-	//if err != nil {
-	//	return err
-	//}
-	//cred, err := azidentity.NewDefaultAzureCredential(nil)
-	//if err != nil {
-	//	return err
-	//}
-	//obj.AzureTokenCred = cred
 
 	if err := validationOfArguments(obj); err != nil {
 		return err
@@ -270,7 +254,6 @@ func ReturnAzureStruct(metadata resources.Metadata, ClientOption func() AzureGo)
 		ClusterName: metadata.ClusterName,
 		Region:      metadata.Region,
 		HACluster:   metadata.IsHA,
-		//ResourceGroup: metadata.ClusterName + "-azure-ha-ksctl",
 		Metadata: Metadata{
 			K8sVersion: metadata.K8sVersion,
 			K8sName:    metadata.K8sDistro,
@@ -350,7 +333,7 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		currLen := len(azureCloudState.InfoControlPlanes.Names)
 		if currLen == 0 {
 			azureCloudState.InfoControlPlanes.Names = make([]string, no)
-			azureCloudState.InfoControlPlanes.Hostnames = make([]string, no) // as we don't need it now
+			azureCloudState.InfoControlPlanes.Hostnames = make([]string, no)
 			azureCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
 			azureCloudState.InfoControlPlanes.PrivateIPs = make([]string, no)
 			azureCloudState.InfoControlPlanes.DiskNames = make([]string, no)
@@ -388,7 +371,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		currLen := len(azureCloudState.InfoDatabase.Names)
 		if currLen == 0 {
 			azureCloudState.InfoDatabase.Names = make([]string, no)
-			azureCloudState.InfoDatabase.Hostnames = make([]string, no) // TODO: remove it: as we don't need it now
+			azureCloudState.InfoDatabase.Hostnames = make([]string, no)
 			azureCloudState.InfoDatabase.PublicIPs = make([]string, no)
 			azureCloudState.InfoDatabase.PrivateIPs = make([]string, no)
 			azureCloudState.InfoDatabase.DiskNames = make([]string, no)

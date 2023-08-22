@@ -2,20 +2,13 @@ package azure
 
 import (
 	"fmt"
+
 	"github.com/kubesimplify/ksctl/api/utils"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/kubesimplify/ksctl/api/resources"
 )
-
-func (obj *AzureProvider) NSGClient() (*armnetwork.SecurityGroupsClient, error) {
-	nsgClient, err := armnetwork.NewSecurityGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return nsgClient, nil
-}
 
 // DelFirewall implements resources.CloudFactory.
 func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
@@ -37,18 +30,18 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	nsgClient, err := obj.NSGClient()
+	nsgClient, err := obj.Client.NSGClient()
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := nsgClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, nsg, nil)
+	pollerResponse, err := obj.Client.BeginDeleteSecurityGrp(ctx, nsgClient, azureCloudState.ResourceGroupName, nsg, nil)
 	if err != nil {
 		return err
 	}
 	storage.Logger().Print("[azure] firewall deleting...", nsg)
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelNSG(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -95,7 +88,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	nsgClient, err := obj.NSGClient()
+	nsgClient, err := obj.Client.NSGClient()
 	if err != nil {
 		return err
 	}
@@ -120,8 +113,8 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		},
 	}
 
-	pollerResponse, err := nsgClient.BeginCreateOrUpdate(ctx, obj.ResourceGroup,
-		obj.Metadata.ResName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateSecurityGrp(ctx, nsgClient, obj.ResourceGroup, obj.Metadata.ResName, parameters, nil)
+
 	if err != nil {
 		return err
 	}
@@ -142,7 +135,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	storage.Logger().Print("[azure] creating firewall...", obj.Metadata.ResName)
 
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreateNSG(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}

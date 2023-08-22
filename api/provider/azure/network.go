@@ -10,32 +10,6 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-func (obj *AzureProvider) resourceGroupsClient() (*armresources.ResourceGroupsClient, error) {
-
-	resourceGroupClient, err := armresources.NewResourceGroupsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return resourceGroupClient, nil
-}
-
-func (obj *AzureProvider) virtualNetworkClient() (*armnetwork.VirtualNetworksClient, error) {
-	vnetClient, err := armnetwork.NewVirtualNetworksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return vnetClient, nil
-}
-
-func (obj *AzureProvider) subnetClient() (*armnetwork.SubnetsClient, error) {
-	subnetClient, err := armnetwork.NewSubnetsClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return subnetClient, nil
-}
-
 // NewNetwork implements resources.CloudFactory.
 func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 
@@ -46,7 +20,7 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	var err error
 	var resourceGroup armresources.ResourceGroupsClientCreateOrUpdateResponse
 
-	rgclient, err := obj.resourceGroupsClient()
+	rgclient, err := obj.Client.ResourceGroupsClient()
 	if err != nil {
 		return err
 	}
@@ -55,7 +29,7 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	parameter := armresources.ResourceGroup{
 		Location: to.Ptr(obj.Region),
 	}
-	resourceGroup, err = rgclient.CreateOrUpdate(ctx, obj.ResourceGroup, parameter, nil)
+	resourceGroup, err = obj.Client.CreateResourceGrp(ctx, rgclient, obj.ResourceGroup, parameter, nil)
 	if err != nil {
 		return err
 	}
@@ -96,7 +70,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 		return nil
 	}
 
-	vnetClient, err := obj.virtualNetworkClient()
+	vnetClient, err := obj.Client.VirtualNetworkClient()
 	if err != nil {
 		return err
 	}
@@ -112,7 +86,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 		},
 	}
 
-	pollerResponse, err := vnetClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName,
+	pollerResponse, err := obj.Client.BeginCreateVirtNet(ctx, vnetClient, azureCloudState.ResourceGroupName,
 		resName, parameters, nil)
 	if err != nil {
 		return err
@@ -124,7 +98,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 	}
 	storage.Logger().Print("[azure] creating virtual network...", resName)
 
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreateVirtNet(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -144,7 +118,7 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.St
 		return nil
 	}
 
-	subnetClient, err := obj.subnetClient()
+	subnetClient, err := obj.Client.SubnetClient()
 	if err != nil {
 		return err
 	}
@@ -155,9 +129,9 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.St
 		},
 	}
 
-	pollerResponse, err := subnetClient.BeginCreateOrUpdate(ctx,
-		azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName,
+	pollerResponse, err := obj.Client.BeginCreateSubNet(ctx, subnetClient, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName,
 		subnetName, parameters, nil)
+
 	if err != nil {
 		return err
 	}
@@ -168,7 +142,8 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.St
 
 	storage.Logger().Print("[azure] creating subnet...", subnetName)
 
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreateSubNet(ctx, pollerResponse, nil)
+
 	if err != nil {
 		return err
 	}
@@ -198,15 +173,15 @@ func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
 				return err
 			}
 		}
-		rgclient, err := obj.resourceGroupsClient()
+		rgclient, err := obj.Client.ResourceGroupsClient()
 		if err != nil {
 			return err
 		}
-		pollerResp, err := rgclient.BeginDelete(ctx, azureCloudState.ResourceGroupName, nil)
+		pollerResp, err := obj.Client.BeginDeleteResourceGrp(ctx, rgclient, azureCloudState.ResourceGroupName, nil)
 		if err != nil {
 			return err
 		}
-		_, err = pollerResp.PollUntilDone(ctx, nil)
+		_, err = obj.Client.PollUntilDoneDelResourceGrp(ctx, pollerResp, nil)
 		if err != nil {
 			return err
 		}
@@ -238,17 +213,17 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage resources.St
 		return nil
 	}
 
-	subnetClient, err := obj.subnetClient()
+	subnetClient, err := obj.Client.SubnetClient()
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := subnetClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName, subnet, nil)
+	pollerResponse, err := obj.Client.BeginDeleteSubNet(ctx, subnetClient, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName, subnet, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelSubNet(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
@@ -272,17 +247,17 @@ func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage reso
 		return nil
 	}
 
-	vnetClient, err := obj.virtualNetworkClient()
+	vnetClient, err := obj.Client.VirtualNetworkClient()
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := vnetClient.BeginDelete(ctx, obj.ResourceGroup, vnet, nil)
+	pollerResponse, err := obj.Client.BeginDeleteVirtNet(ctx, vnetClient, obj.ResourceGroup, vnet, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelVirtNet(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}

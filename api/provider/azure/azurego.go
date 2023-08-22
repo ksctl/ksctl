@@ -3,17 +3,20 @@ package azure
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev5 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
+	armcontainerservicev4 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	"os"
 )
 
 type AzureGo interface {
@@ -27,9 +30,9 @@ type AzureGo interface {
 
 	ListLocations() (*runtime.Pager[armsubscriptions.ClientListLocationsResponse], error)
 
-	ListKubernetesVersions(ctx context.Context) (armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse, error)
+	ListKubernetesVersions(ctx context.Context) (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error)
 
-	ListVMTypes() (*runtime.Pager[armcompute.VirtualMachineSizesClientListResponse], error)
+	ListVMTypes() (*runtime.Pager[armcomputev5.VirtualMachineSizesClientListResponse], error)
 
 	ResourceGroupsClient() (*armresources.ResourceGroupsClient, error)
 	VirtualNetworkClient() (*armnetwork.VirtualNetworksClient, error)
@@ -139,33 +142,144 @@ type AzureGo interface {
 		resourceName string,
 		options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error)
 
-	// Polling
+	//-------------------
+	//|	 Pollers
+	//-------------------
 
-	Poller
+	// NSG
+
+	PollUntilDoneDelNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientDeleteResponse, error)
+
+	PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error)
+
+	// Resource grp
+
+	PollUntilDoneDelResourceGrp(ctx context.Context, poll *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armresources.ResourceGroupsClientDeleteResponse, error)
+
+	// Subnet
+
+	PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error)
+
+	PollUntilDoneDelSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientDeleteResponse, error)
+
+	// virtual net
+
+	PollUntilDoneCreateVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error)
+
+	PollUntilDoneDelVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientDeleteResponse, error)
+
+	// AKS
+
+	PollUntilDoneCreateAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientCreateOrUpdateResponse, error)
+
+	PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientDeleteResponse, error)
+
+	// VM
+
+	PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientDeleteResponse, error)
+
+	PollUntilDoneCreateVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientCreateOrUpdateResponse, error)
+
+	// Disk
+
+	PollUntilDoneDelDisk(ctx context.Context, poll *runtime.Poller[armcompute.DisksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.DisksClientDeleteResponse, error)
+
+	// Pub IP
+
+	PollUntilDoneCreatePubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error)
+
+	PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientDeleteResponse, error)
+
+	// net interface
+
+	PollUntilDoneCreateNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientCreateOrUpdateResponse, error)
+
+	PollUntilDoneDelNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientDeleteResponse, error)
 }
 
-type Poller interface {
-	PollUntilDone(ctx context.Context, p *runtime.Poller[any], options *runtime.PollUntilDoneOptions) (any, error)
-}
-
-// TODO: moved the data to here
 type AzureGoClient struct {
 	SubscriptionID string
 	AzureTokenCred azcore.TokenCredential
 	Region         string
 }
 
-type AzureGoMockClient struct{}
+// PollUntilDoneCreateNetInterface implements AzureGo.
+func (*AzureGoClient) PollUntilDoneCreateNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientCreateOrUpdateResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
 
-//	func ProvideMockAzureClient() AzureGo {
-//		return &AzureGoMockClient{}
-//	}
+// PollUntilDoneCreatePubIP implements AzureGo.
+func (*AzureGoClient) PollUntilDoneCreatePubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+// PollUntilDoneCreateVM implements AzureGo.
+func (*AzureGoClient) PollUntilDoneCreateVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientCreateOrUpdateResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+// PollUntilDoneDelDisk implements AzureGo.
+func (*AzureGoClient) PollUntilDoneDelDisk(ctx context.Context, poll *runtime.Poller[armcompute.DisksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.DisksClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+// PollUntilDoneDelNetInterface implements AzureGo.
+func (*AzureGoClient) PollUntilDoneDelNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+// PollUntilDoneDelPubIP implements AzureGo.
+func (*AzureGoClient) PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+// PollUntilDoneDelVM implements AzureGo.
+func (*AzureGoClient) PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+//type AzureGoMockClient struct{}
 
 func ProvideClient() AzureGo {
 	return &AzureGoClient{}
 }
 
-// TODO: remove the other variant
+func (obj *AzureGoClient) PollUntilDoneDelNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneDelResourceGrp(ctx context.Context, poll *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armresources.ResourceGroupsClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneDelSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneCreateVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneDelVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneCreateAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientCreateOrUpdateResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
+func (obj *AzureGoClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientDeleteResponse, error) {
+	return poll.PollUntilDone(ctx, options)
+}
+
 func (obj *AzureGoClient) setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context) error {
 
 	envTenant := os.Getenv("AZURE_TENANT_ID")
@@ -271,17 +385,17 @@ func (azclient *AzureGoClient) ListLocations() (*runtime.Pager[armsubscriptions.
 	return clientFactory.NewClient().NewListLocationsPager(azclient.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil}), nil
 }
 
-func (azclient *AzureGoClient) ListKubernetesVersions(ctx context.Context) (armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse, error) {
-	clientFactory, err := armcontainerservice.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+func (azclient *AzureGoClient) ListKubernetesVersions(ctx context.Context) (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error) {
+	clientFactory, err := armcontainerservicev4.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse{}, fmt.Errorf("failed to create client: %v", err)
+		return armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse{}, fmt.Errorf("failed to create client: %v", err)
 	}
 
 	return clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, azclient.Region, nil)
 }
 
-func (azclient *AzureGoClient) ListVMTypes() (*runtime.Pager[armcompute.VirtualMachineSizesClientListResponse], error) {
-	clientFactory, err := armcompute.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+func (azclient *AzureGoClient) ListVMTypes() (*runtime.Pager[armcomputev5.VirtualMachineSizesClientListResponse], error) {
+	clientFactory, err := armcomputev5.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %v", err)
 	}
@@ -432,8 +546,4 @@ func (azclient *AzureGoClient) BeginCreateAKS(ctx context.Context, client *armco
 
 func (azclient *AzureGoClient) ListClusterAdminCredentials(ctx context.Context, client *armcontainerservice.ManagedClustersClient, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error) {
 	return client.ListClusterAdminCredentials(ctx, resourceGroupName, resourceName, options)
-}
-
-func (azclient *AzureGoClient) PollUntilDone(ctx context.Context, p *runtime.Poller[any], options *runtime.PollUntilDoneOptions) (any, error) {
-	return p.PollUntilDone(ctx, options)
 }

@@ -15,17 +15,17 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 		storage.Logger().Success("[skip] already deleted AKS cluster")
 		return nil
 	}
-	managedClustersClient, err := obj.managedClusterClient()
+	managedClustersClient, err := obj.Client.AKSClient()
 	if err != nil {
 		return err
 	}
 	storage.Logger().Print("[azure] Deleting AKS cluster...")
 
-	pollerResp, err := managedClustersClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, azureCloudState.ManagedClusterName, nil)
+	pollerResp, err := obj.Client.BeginDeleteAKS(ctx, managedClustersClient, azureCloudState.ResourceGroupName, azureCloudState.ManagedClusterName, nil)
 	if err != nil {
 		return err
 	}
-	_, err = pollerResp.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return nil
 	}
 
-	managedClustersClient, err := obj.managedClusterClient()
+	managedClustersClient, err := obj.Client.AKSClient()
 	if err != nil {
 		return err
 	}
@@ -81,13 +81,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			},
 		},
 	}
-	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
-		ctx,
-		azureCloudState.ResourceGroupName,
-		obj.Metadata.ResName,
-		parameter,
-		nil,
-	)
+	pollerResp, err := obj.Client.BeginCreateAKS(ctx, managedClustersClient, azureCloudState.ResourceGroupName, obj.Metadata.ResName, parameter, nil)
 	if err != nil {
 		return err
 	}
@@ -99,7 +93,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 
 	storage.Logger().Print("[azure] Creating AKS cluster...")
 
-	resp, err := pollerResp.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreateAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
@@ -109,7 +103,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
-	kubeconfig, err := managedClustersClient.ListClusterAdminCredentials(ctx, azureCloudState.ResourceGroupName, obj.Metadata.ResName, nil)
+	kubeconfig, err := obj.Client.ListClusterAdminCredentials(ctx, managedClustersClient, azureCloudState.ResourceGroupName, obj.Metadata.ResName, nil)
 	if err != nil {
 		return err
 	}
@@ -123,12 +117,4 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 
 	storage.Logger().Success("[azure] created AKS", *resp.Name)
 	return nil
-}
-
-func (obj *AzureProvider) managedClusterClient() (*armcontainerservice.ManagedClustersClient, error) {
-	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return managedClustersClient, nil
 }
