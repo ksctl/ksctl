@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 
 var (
 	demoClient *resources.KsctlClient
+	fakeAzure  *AzureProvider
 )
 
 func TestMain(m *testing.M) {
@@ -23,8 +25,9 @@ func TestMain(m *testing.M) {
 	}
 	demoClient = &resources.KsctlClient{}
 	azureCloudState = &StateConfiguration{}
-	// FIXME: make it use the Provider Mock Client
 	demoClient.Cloud, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
+
+	fakeAzure, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
 
 	demoClient.ClusterName = "demo"
 	demoClient.Region = "demoRegion"
@@ -131,5 +134,19 @@ func TestNoOfWorkerPlane(t *testing.T) {
 	no, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, -1, false)
 	if no != 2 {
 		t.Fatalf("Getter failed to get updated no of workerplane array got no: %d and err: %v", no, err)
+	}
+}
+
+func TestValidRegion(t *testing.T) {
+	fortesting := map[string]error{
+		"fake":    nil,
+		"eastus":  errors.New("Error"),
+		"eastus2": nil,
+	}
+
+	for key, val := range fortesting {
+		if aErr := isValidRegion(fakeAzure, key); (aErr != nil && val == nil) || (aErr == nil && val != nil) {
+			t.Fatalf("For Region `%s`. Expected `%v` but got `%v`", key, val, aErr)
+		}
 	}
 }
