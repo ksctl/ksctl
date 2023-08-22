@@ -237,7 +237,9 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 		return err
 	}
 
+	// added the resource grp and region for easy of use for the client library
 	obj.Client.SetRegion(obj.Region)
+	obj.Client.SetResourceGrp(obj.ResourceGroup)
 
 	if err := validationOfArguments(obj); err != nil {
 		return err

@@ -68,71 +68,6 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	return nil
 }
 
-//
-// func (obj *AzureProvider) setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context) error {
-//
-// 	envTenant := os.Getenv("AZURE_TENANT_ID")
-// 	envSub := os.Getenv("AZURE_SUBSCRIPTION_ID")
-// 	envClientid := os.Getenv("AZURE_CLIENT_ID")
-// 	envClientsec := os.Getenv("AZURE_CLIENT_SECRET")
-//
-// 	if len(envTenant) != 0 &&
-// 		len(envSub) != 0 &&
-// 		len(envClientid) != 0 &&
-// 		len(envClientsec) != 0 {
-//
-// 		obj.SubscriptionID = envSub
-// 		return nil
-// 	}
-//
-// 	msg := "environment vars not set:"
-// 	if len(envTenant) == 0 {
-// 		msg = msg + " AZURE_TENANT_ID"
-// 	}
-//
-// 	if len(envSub) == 0 {
-// 		msg = msg + " AZURE_SUBSCRIPTION_ID"
-// 	}
-//
-// 	if len(envClientid) == 0 {
-// 		msg = msg + " AZURE_CLIENT_ID"
-// 	}
-//
-// 	if len(envClientsec) == 0 {
-// 		msg = msg + " AZURE_CLIENT_SECRET"
-// 	}
-//
-// 	storage.Logger().Warn(msg)
-//
-// 	tokens, err := utils.GetCred(storage, "azure")
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	obj.SubscriptionID = tokens["subscription_id"]
-//
-// 	err = os.Setenv("AZURE_SUBSCRIPTION_ID", tokens["subscription_id"])
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
 func generatePath(flag int, path ...string) string {
 	return utils.GetPath(flag, utils.CLOUD_AZURE, path...)
 }
@@ -213,7 +148,7 @@ func validationOfArguments(obj *AzureProvider) error {
 }
 
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
-	res, err := obj.Client.ListKubernetesVersions(ctx)
+	res, err := obj.Client.ListKubernetesVersions()
 	if err != nil {
 		return fmt.Errorf("failed to finish the request: %v", err)
 	}

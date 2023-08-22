@@ -30,12 +30,7 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	nsgClient, err := obj.Client.NSGClient()
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := obj.Client.BeginDeleteSecurityGrp(ctx, nsgClient, azureCloudState.ResourceGroupName, nsg, nil)
+	pollerResponse, err := obj.Client.BeginDeleteSecurityGrp(nsg, nil)
 	if err != nil {
 		return err
 	}
@@ -88,10 +83,6 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	nsgClient, err := obj.Client.NSGClient()
-	if err != nil {
-		return err
-	}
 	var securityRules []*armnetwork.SecurityRule
 	switch obj.Metadata.Role {
 	case utils.ROLE_CP:
@@ -113,7 +104,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		},
 	}
 
-	pollerResponse, err := obj.Client.BeginCreateSecurityGrp(ctx, nsgClient, obj.ResourceGroup, obj.Metadata.ResName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateSecurityGrp(obj.Metadata.ResName, parameters, nil)
 
 	if err != nil {
 		return err

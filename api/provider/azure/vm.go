@@ -38,12 +38,8 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) e
 	if len(vmName) == 0 {
 		storage.Logger().Success("[skip] vm already deleted")
 	} else {
-		vmClient, err := obj.Client.VirtualMachineClient()
-		if err != nil {
-			return err
-		}
 
-		pollerResponse, err := obj.Client.BeginDeleteVM(ctx, vmClient, azureCloudState.ResourceGroupName, vmName, nil)
+		pollerResponse, err := obj.Client.BeginDeleteVM(vmName, nil)
 		if err != nil {
 			return err
 		}
@@ -143,13 +139,9 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 		return nil
 	}
 
-	vmClient, err := obj.Client.VirtualMachineClient()
-	if err != nil {
-		return err
-	}
 	sshPublicKeyPath := utils.GetPath(utils.OTHER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, "keypair.pub")
 	var sshBytes []byte
-	_, err = os.Stat(sshPublicKeyPath)
+	_, err := os.Stat(sshPublicKeyPath)
 	if err != nil {
 		return err
 	}
@@ -221,7 +213,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 			},
 		},
 	}
-	pollerResponse, err := obj.Client.BeginCreateVM(ctx, vmClient, obj.ResourceGroup, obj.Metadata.ResName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateVM(obj.Metadata.ResName, parameters, nil)
 	if err != nil {
 		return err
 	}
@@ -286,12 +278,8 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		storage.Logger().Success("[skip] disk already deleted")
 		return nil
 	}
-	diskClient, err := obj.Client.DiskClient()
-	if err != nil {
-		return err
-	}
 
-	pollerResponse, err := obj.Client.BeginDeleteDisk(ctx, diskClient, obj.ResourceGroup, diskName, nil)
+	pollerResponse, err := obj.Client.BeginDeleteDisk(diskName, nil)
 	if err != nil {
 		return err
 	}
@@ -337,10 +325,6 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		storage.Logger().Success("[skip] pub ip already created", publicIP)
 		return nil
 	}
-	publicIPAddressClient, err := obj.Client.PublicIPClient()
-	if err != nil {
-		return err
-	}
 
 	parameters := armnetwork.PublicIPAddress{
 		Location: to.Ptr(obj.Region),
@@ -349,7 +333,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		},
 	}
 
-	pollerResponse, err := obj.Client.BeginCreatePubIP(ctx, publicIPAddressClient, azureCloudState.ResourceGroupName, publicIPName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreatePubIP(publicIPName, parameters, nil)
 	if err != nil {
 		return err
 	}
@@ -415,12 +399,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 		return nil
 	}
 
-	publicIPAddressClient, err := obj.Client.PublicIPClient()
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := obj.Client.BeginDeletePubIP(ctx, publicIPAddressClient, azureCloudState.ResourceGroupName, publicIP, nil)
+	pollerResponse, err := obj.Client.BeginDeletePubIP(publicIP, nil)
 	if err != nil {
 		return err
 	}
@@ -475,10 +454,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		storage.Logger().Success("[skip] network interface already created", interfaceName)
 		return nil
 	}
-	nicClient, err := obj.Client.NetInterfaceClient()
-	if err != nil {
-		return err
-	}
+
 	parameters := armnetwork.Interface{
 		Location: to.Ptr(obj.Region),
 		Properties: &armnetwork.InterfacePropertiesFormat{
@@ -502,7 +478,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		},
 	}
 
-	pollerResponse, err := obj.Client.BeginCreateNIC(ctx, nicClient, obj.ResourceGroup, nicName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateNIC(nicName, parameters, nil)
 	if err != nil {
 		return err
 	}
@@ -566,12 +542,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 		return nil
 	}
 
-	nicClient, err := obj.Client.NetInterfaceClient()
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := obj.Client.BeginDeleteNIC(ctx, nicClient, azureCloudState.ResourceGroupName, interfaceName, nil)
+	pollerResponse, err := obj.Client.BeginDeleteNIC(interfaceName, nil)
 	if err != nil {
 		return err
 	}

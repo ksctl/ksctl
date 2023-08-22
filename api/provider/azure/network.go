@@ -20,16 +20,11 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	var err error
 	var resourceGroup armresources.ResourceGroupsClientCreateOrUpdateResponse
 
-	rgclient, err := obj.Client.ResourceGroupsClient()
-	if err != nil {
-		return err
-	}
-
 	// NOTE: for the azure resource group we are not using the resName field
 	parameter := armresources.ResourceGroup{
 		Location: to.Ptr(obj.Region),
 	}
-	resourceGroup, err = obj.Client.CreateResourceGrp(ctx, rgclient, obj.ResourceGroup, parameter, nil)
+	resourceGroup, err = obj.Client.CreateResourceGrp(parameter, nil)
 	if err != nil {
 		return err
 	}
@@ -70,11 +65,6 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 		return nil
 	}
 
-	vnetClient, err := obj.Client.VirtualNetworkClient()
-	if err != nil {
-		return err
-	}
-
 	parameters := armnetwork.VirtualNetwork{
 		Location: to.Ptr(obj.Region),
 		Properties: &armnetwork.VirtualNetworkPropertiesFormat{
@@ -86,8 +76,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 		},
 	}
 
-	pollerResponse, err := obj.Client.BeginCreateVirtNet(ctx, vnetClient, azureCloudState.ResourceGroupName,
-		resName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateVirtNet(resName, parameters, nil)
 	if err != nil {
 		return err
 	}
@@ -118,19 +107,13 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.St
 		return nil
 	}
 
-	subnetClient, err := obj.Client.SubnetClient()
-	if err != nil {
-		return err
-	}
-
 	parameters := armnetwork.Subnet{
 		Properties: &armnetwork.SubnetPropertiesFormat{
 			AddressPrefix: to.Ptr("10.1.0.0/16"),
 		},
 	}
 
-	pollerResponse, err := obj.Client.BeginCreateSubNet(ctx, subnetClient, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName,
-		subnetName, parameters, nil)
+	pollerResponse, err := obj.Client.BeginCreateSubNet(azureCloudState.VirtualNetworkName, subnetName, parameters, nil)
 
 	if err != nil {
 		return err
@@ -173,11 +156,8 @@ func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
 				return err
 			}
 		}
-		rgclient, err := obj.Client.ResourceGroupsClient()
-		if err != nil {
-			return err
-		}
-		pollerResp, err := obj.Client.BeginDeleteResourceGrp(ctx, rgclient, azureCloudState.ResourceGroupName, nil)
+
+		pollerResp, err := obj.Client.BeginDeleteResourceGrp(nil)
 		if err != nil {
 			return err
 		}
@@ -213,12 +193,7 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage resources.St
 		return nil
 	}
 
-	subnetClient, err := obj.Client.SubnetClient()
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := obj.Client.BeginDeleteSubNet(ctx, subnetClient, azureCloudState.ResourceGroupName, azureCloudState.VirtualNetworkName, subnet, nil)
+	pollerResponse, err := obj.Client.BeginDeleteSubNet(azureCloudState.VirtualNetworkName, subnet, nil)
 	if err != nil {
 		return err
 	}
@@ -247,12 +222,7 @@ func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage reso
 		return nil
 	}
 
-	vnetClient, err := obj.Client.VirtualNetworkClient()
-	if err != nil {
-		return err
-	}
-
-	pollerResponse, err := obj.Client.BeginDeleteVirtNet(ctx, vnetClient, obj.ResourceGroup, vnet, nil)
+	pollerResponse, err := obj.Client.BeginDeleteVirtNet(vnet, nil)
 	if err != nil {
 		return err
 	}

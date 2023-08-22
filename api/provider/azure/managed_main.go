@@ -15,16 +15,13 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 		storage.Logger().Success("[skip] already deleted AKS cluster")
 		return nil
 	}
-	managedClustersClient, err := obj.Client.AKSClient()
+
+	pollerResp, err := obj.Client.BeginDeleteAKS(azureCloudState.ManagedClusterName, nil)
 	if err != nil {
 		return err
 	}
 	storage.Logger().Print("[azure] Deleting AKS cluster...")
 
-	pollerResp, err := obj.Client.BeginDeleteAKS(ctx, managedClustersClient, azureCloudState.ResourceGroupName, azureCloudState.ManagedClusterName, nil)
-	if err != nil {
-		return err
-	}
 	_, err = obj.Client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return err
@@ -46,11 +43,6 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	if len(azureCloudState.ManagedClusterName) != 0 {
 		storage.Logger().Success("[skip] already created AKS cluster %s", azureCloudState.ManagedClusterName)
 		return nil
-	}
-
-	managedClustersClient, err := obj.Client.AKSClient()
-	if err != nil {
-		return err
 	}
 
 	azureCloudState.NoManagedNodes = noOfNodes
@@ -81,7 +73,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			},
 		},
 	}
-	pollerResp, err := obj.Client.BeginCreateAKS(ctx, managedClustersClient, azureCloudState.ResourceGroupName, obj.Metadata.ResName, parameter, nil)
+	pollerResp, err := obj.Client.BeginCreateAKS(obj.Metadata.ResName, parameter, nil)
 	if err != nil {
 		return err
 	}
@@ -103,7 +95,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
-	kubeconfig, err := obj.Client.ListClusterAdminCredentials(ctx, managedClustersClient, azureCloudState.ResourceGroupName, obj.Metadata.ResName, nil)
+	kubeconfig, err := obj.Client.ListClusterAdminCredentials(obj.Metadata.ResName, nil)
 	if err != nil {
 		return err
 	}

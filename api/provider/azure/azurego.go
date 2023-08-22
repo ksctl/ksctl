@@ -24,122 +24,92 @@ type AzureGo interface {
 
 	SetRegion(string)
 
-	NSGClient() (*armnetwork.SecurityGroupsClient, error)
-
-	AKSClient() (*armcontainerservice.ManagedClustersClient, error)
+	SetResourceGrp(string)
 
 	ListLocations() (*runtime.Pager[armsubscriptions.ClientListLocationsResponse], error)
 
-	ListKubernetesVersions(ctx context.Context) (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error)
+	ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error)
 
 	ListVMTypes() (*runtime.Pager[armcomputev5.VirtualMachineSizesClientListResponse], error)
 
-	ResourceGroupsClient() (*armresources.ResourceGroupsClient, error)
-	VirtualNetworkClient() (*armnetwork.VirtualNetworksClient, error)
-	SubnetClient() (*armnetwork.SubnetsClient, error)
-	SSHKeyClient() (*armcompute.SSHPublicKeysClient, error)
-	VirtualMachineClient() (*armcompute.VirtualMachinesClient, error)
-	DiskClient() (*armcompute.DisksClient, error)
-	NetInterfaceClient() (*armnetwork.InterfacesClient, error)
-	PublicIPClient() (*armnetwork.PublicIPAddressesClient, error)
-
 	// Resource group
 
-	CreateResourceGrp(ctx context.Context, client *armresources.ResourceGroupsClient,
-		resourceGroupName string, parameters armresources.ResourceGroup,
+	CreateResourceGrp(parameters armresources.ResourceGroup,
 		options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error)
 
-	BeginDeleteResourceGrp(ctx context.Context, client *armresources.ResourceGroupsClient,
-		resourceGroupName string,
+	BeginDeleteResourceGrp(
 		options *armresources.ResourceGroupsClientBeginDeleteOptions) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error)
 
 	// VirtualNet
 
-	BeginCreateVirtNet(ctx context.Context, client *armnetwork.VirtualNetworksClient,
-		resourceGroupName string, virtualNetworkName string,
-		parameters armnetwork.VirtualNetwork,
+	BeginCreateVirtNet(virtualNetworkName string, parameters armnetwork.VirtualNetwork,
 		options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error)
 
-	BeginDeleteVirtNet(ctx context.Context, client *armnetwork.VirtualNetworksClient,
-		resourceGroupName string, virtualNetworkName string,
+	BeginDeleteVirtNet(virtualNetworkName string,
 		options *armnetwork.VirtualNetworksClientBeginDeleteOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], error)
 
 	// Subnet
 
-	BeginCreateSubNet(ctx context.Context, client *armnetwork.SubnetsClient,
-		resourceGroupName string, virtualNetworkName string, subnetName string,
-		subnetParameters armnetwork.Subnet,
+	BeginCreateSubNet(virtualNetworkName string, subnetName string, subnetParameters armnetwork.Subnet,
 		options *armnetwork.SubnetsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], error)
 
-	BeginDeleteSubNet(ctx context.Context, client *armnetwork.SubnetsClient,
-		resourceGroupName string, virtualNetworkName string,
-		subnetName string,
+	BeginDeleteSubNet(virtualNetworkName string, subnetName string,
 		options *armnetwork.SubnetsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SubnetsClientDeleteResponse], error)
 
 	// Firewall
 
-	BeginDeleteSecurityGrp(ctx context.Context, client *armnetwork.SecurityGroupsClient,
-		resourceGroupName string, networkSecurityGroupName string,
+	BeginDeleteSecurityGrp(networkSecurityGroupName string,
 		options *armnetwork.SecurityGroupsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], error)
 
-	BeginCreateSecurityGrp(ctx context.Context, client *armnetwork.SecurityGroupsClient,
-		resourceGroupName string, networkSecurityGroupName string,
-		parameters armnetwork.SecurityGroup,
+	BeginCreateSecurityGrp(networkSecurityGroupName string, parameters armnetwork.SecurityGroup,
 		options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error)
 
 	// SSH Key
 
-	CreateSSHKey(ctx context.Context, client *armcompute.SSHPublicKeysClient,
-		resourceGroupName string, sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource,
+	CreateSSHKey(sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource,
 		options *armcompute.SSHPublicKeysClientCreateOptions) (armcompute.SSHPublicKeysClientCreateResponse, error)
 
-	DeleteSSHKey(ctx context.Context, client *armcompute.SSHPublicKeysClient,
-		resourceGroupName string, sshPublicKeyName string,
+	DeleteSSHKey(sshPublicKeyName string,
 		options *armcompute.SSHPublicKeysClientDeleteOptions) (armcompute.SSHPublicKeysClientDeleteResponse, error)
 
 	// Virtual Machine
 
-	BeginCreateVM(ctx context.Context, client *armcompute.VirtualMachinesClient, resourceGroupName string,
-		vmName string, parameters armcompute.VirtualMachine,
+	BeginCreateVM(vmName string, parameters armcompute.VirtualMachine,
 		options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error)
 
-	BeginDeleteVM(ctx context.Context, client *armcompute.VirtualMachinesClient, resourceGroupName string, vmName string,
+	BeginDeleteVM(vmName string,
 		options *armcompute.VirtualMachinesClientBeginDeleteOptions) (*runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], error)
 
 	// Virtual Disks
 
-	BeginDeleteDisk(ctx context.Context, client *armcompute.DisksClient, resourceGroupName string,
-		diskName string, options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error)
+	BeginDeleteDisk(diskName string,
+		options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error)
 
 	// PublicIP
 
-	BeginCreatePubIP(ctx context.Context, client *armnetwork.PublicIPAddressesClient, resourceGroupName string,
-		publicIPAddressName string, parameters armnetwork.PublicIPAddress,
+	BeginCreatePubIP(publicIPAddressName string, parameters armnetwork.PublicIPAddress,
 		options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error)
 
-	BeginDeletePubIP(ctx context.Context, client *armnetwork.PublicIPAddressesClient, resourceGroupName string,
-		publicIPAddressName string, options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error)
+	BeginDeletePubIP(publicIPAddressName string,
+		options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error)
 
 	// Network interface card
 
-	BeginCreateNIC(ctx context.Context, client *armnetwork.InterfacesClient,
-		resourceGroupName string, networkInterfaceName string, parameters armnetwork.Interface,
+	BeginCreateNIC(networkInterfaceName string, parameters armnetwork.Interface,
 		options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error)
 
-	BeginDeleteNIC(ctx context.Context, client *armnetwork.InterfacesClient, resourceGroupName string,
-		networkInterfaceName string, options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error)
+	BeginDeleteNIC(networkInterfaceName string,
+		options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error)
 
 	// AKS
 
-	BeginDeleteAKS(ctx context.Context, client *armcontainerservice.ManagedClustersClient, resourceGroupName string,
-		resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error)
+	BeginDeleteAKS(resourceName string,
+		options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error)
 
-	BeginCreateAKS(ctx context.Context, client *armcontainerservice.ManagedClustersClient,
-		resourceGroupName string, resourceName string, parameters armcontainerservice.ManagedCluster,
+	BeginCreateAKS(resourceName string, parameters armcontainerservice.ManagedCluster,
 		options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error)
 
-	ListClusterAdminCredentials(ctx context.Context, client *armcontainerservice.ManagedClustersClient, resourceGroupName string,
-		resourceName string,
+	ListClusterAdminCredentials(resourceName string,
 		options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error)
 
 	//-------------------
@@ -201,6 +171,13 @@ type AzureGoClient struct {
 	SubscriptionID string
 	AzureTokenCred azcore.TokenCredential
 	Region         string
+	ResourceGrp    string
+}
+
+type AzureGoMockClient struct{}
+
+func ProvideClient() AzureGo {
+	return &AzureGoClient{}
 }
 
 // PollUntilDoneCreateNetInterface implements AzureGo.
@@ -236,12 +213,6 @@ func (*AzureGoClient) PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.P
 // PollUntilDoneDelVM implements AzureGo.
 func (*AzureGoClient) PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientDeleteResponse, error) {
 	return poll.PollUntilDone(ctx, options)
-}
-
-//type AzureGoMockClient struct{}
-
-func ProvideClient() AzureGo {
-	return &AzureGoClient{}
 }
 
 func (obj *AzureGoClient) PollUntilDoneDelNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientDeleteResponse, error) {
@@ -361,20 +332,8 @@ func (azclient *AzureGoClient) SetRegion(reg string) {
 	azclient.Region = reg
 }
 
-func (azclient *AzureGoClient) NSGClient() (*armnetwork.SecurityGroupsClient, error) {
-	nsgClient, err := armnetwork.NewSecurityGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return nsgClient, nil
-}
-
-func (azclient *AzureGoClient) AKSClient() (*armcontainerservice.ManagedClustersClient, error) {
-	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return managedClustersClient, nil
+func (azclient *AzureGoClient) SetResourceGrp(grp string) {
+	azclient.ResourceGrp = grp
 }
 
 func (azclient *AzureGoClient) ListLocations() (*runtime.Pager[armsubscriptions.ClientListLocationsResponse], error) {
@@ -385,7 +344,7 @@ func (azclient *AzureGoClient) ListLocations() (*runtime.Pager[armsubscriptions.
 	return clientFactory.NewClient().NewListLocationsPager(azclient.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil}), nil
 }
 
-func (azclient *AzureGoClient) ListKubernetesVersions(ctx context.Context) (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error) {
+func (azclient *AzureGoClient) ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error) {
 	clientFactory, err := armcontainerservicev4.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
 		return armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse{}, fmt.Errorf("failed to create client: %v", err)
@@ -402,63 +361,6 @@ func (azclient *AzureGoClient) ListVMTypes() (*runtime.Pager[armcomputev5.Virtua
 	return clientFactory.NewVirtualMachineSizesClient().NewListPager(azclient.Region, nil), nil
 }
 
-func (azclient *AzureGoClient) ResourceGroupsClient() (*armresources.ResourceGroupsClient, error) {
-	resourceGroupClient, err := armresources.NewResourceGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return resourceGroupClient, nil
-}
-
-func (azclient *AzureGoClient) VirtualNetworkClient() (*armnetwork.VirtualNetworksClient, error) {
-	vnetClient, err := armnetwork.NewVirtualNetworksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return vnetClient, nil
-}
-
-func (azclient *AzureGoClient) SubnetClient() (*armnetwork.SubnetsClient, error) {
-	subnetClient, err := armnetwork.NewSubnetsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return subnetClient, nil
-}
-
-func (azclient *AzureGoClient) SSHKeyClient() (*armcompute.SSHPublicKeysClient, error) {
-	client, err := armcompute.NewSSHPublicKeysClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
-func (azclient *AzureGoClient) VirtualMachineClient() (*armcompute.VirtualMachinesClient, error) {
-	vmClient, err := armcompute.NewVirtualMachinesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return vmClient, nil
-}
-
-func (azclient *AzureGoClient) DiskClient() (*armcompute.DisksClient, error) {
-	diskClient, err := armcompute.NewDisksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return diskClient, nil
-}
-
-func (azclient *AzureGoClient) NetInterfaceClient() (*armnetwork.InterfacesClient, error) {
-	client, err := armnetwork.NewInterfacesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
 func (azclient *AzureGoClient) PublicIPClient() (*armnetwork.PublicIPAddressesClient, error) {
 	client, err := armnetwork.NewPublicIPAddressesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
@@ -467,83 +369,163 @@ func (azclient *AzureGoClient) PublicIPClient() (*armnetwork.PublicIPAddressesCl
 	return client, nil
 }
 
-func (azclient *AzureGoClient) CreateResourceGrp(ctx context.Context, client *armresources.ResourceGroupsClient, resourceGroupName string, parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
-	return client.CreateOrUpdate(ctx, resourceGroupName, parameters, options)
+func (azclient *AzureGoClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
+	client, err := armresources.NewResourceGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return armresources.ResourceGroupsClientCreateOrUpdateResponse{}, err
+	}
+	return client.CreateOrUpdate(ctx, azclient.ResourceGrp, parameters, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteResourceGrp(ctx context.Context, client *armresources.ResourceGroupsClient, resourceGroupName string, options *armresources.ResourceGroupsClientBeginDeleteOptions) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, options)
+func (azclient *AzureGoClient) BeginDeleteResourceGrp(options *armresources.ResourceGroupsClientBeginDeleteOptions) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error) {
+	client, err := armresources.NewResourceGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, options)
 }
 
-func (azclient *AzureGoClient) BeginCreateVirtNet(ctx context.Context, client *armnetwork.VirtualNetworksClient, resourceGroupName string, virtualNetworkName string, parameters armnetwork.VirtualNetwork, options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error) {
-	return client.BeginCreateOrUpdate(ctx, resourceGroupName, virtualNetworkName, parameters, options)
+func (azclient *AzureGoClient) BeginCreateVirtNet(virtualNetworkName string, parameters armnetwork.VirtualNetwork, options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error) {
+	client, err := armnetwork.NewVirtualNetworksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginCreateOrUpdate(ctx, azclient.ResourceGrp, virtualNetworkName, parameters, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteVirtNet(ctx context.Context, client *armnetwork.VirtualNetworksClient, resourceGroupName string, virtualNetworkName string, options *armnetwork.VirtualNetworksClientBeginDeleteOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, virtualNetworkName, options)
+func (azclient *AzureGoClient) BeginDeleteVirtNet(virtualNetworkName string, options *armnetwork.VirtualNetworksClientBeginDeleteOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], error) {
+	client, err := armnetwork.NewVirtualNetworksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, virtualNetworkName, options)
 }
 
-func (azclient *AzureGoClient) BeginCreateSubNet(ctx context.Context, client *armnetwork.SubnetsClient, resourceGroupName string, virtualNetworkName string, subnetName string, subnetParameters armnetwork.Subnet, options *armnetwork.SubnetsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], error) {
-	return client.BeginCreateOrUpdate(ctx, resourceGroupName, virtualNetworkName,
+func (azclient *AzureGoClient) BeginCreateSubNet(virtualNetworkName string, subnetName string, subnetParameters armnetwork.Subnet, options *armnetwork.SubnetsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], error) {
+	client, err := armnetwork.NewSubnetsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginCreateOrUpdate(ctx, azclient.ResourceGrp, virtualNetworkName,
 		subnetName, subnetParameters, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteSubNet(ctx context.Context, client *armnetwork.SubnetsClient, resourceGroupName string, virtualNetworkName string, subnetName string, options *armnetwork.SubnetsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SubnetsClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, virtualNetworkName, subnetName, options)
+func (azclient *AzureGoClient) BeginDeleteSubNet(virtualNetworkName string, subnetName string, options *armnetwork.SubnetsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SubnetsClientDeleteResponse], error) {
+	client, err := armnetwork.NewSubnetsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, virtualNetworkName, subnetName, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteSecurityGrp(ctx context.Context, client *armnetwork.SecurityGroupsClient, resourceGroupName string, networkSecurityGroupName string, options *armnetwork.SecurityGroupsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, networkSecurityGroupName, options)
+func (azclient *AzureGoClient) BeginDeleteSecurityGrp(networkSecurityGroupName string, options *armnetwork.SecurityGroupsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], error) {
+	client, err := armnetwork.NewSecurityGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, networkSecurityGroupName, options)
 }
 
-func (azclient *AzureGoClient) BeginCreateSecurityGrp(ctx context.Context, client *armnetwork.SecurityGroupsClient, resourceGroupName string, networkSecurityGroupName string, parameters armnetwork.SecurityGroup, options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error) {
-	return client.BeginCreateOrUpdate(ctx, resourceGroupName, networkSecurityGroupName, parameters, options)
+func (azclient *AzureGoClient) BeginCreateSecurityGrp(networkSecurityGroupName string, parameters armnetwork.SecurityGroup, options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error) {
+	client, err := armnetwork.NewSecurityGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginCreateOrUpdate(ctx, azclient.ResourceGrp, networkSecurityGroupName, parameters, options)
 }
 
-func (azclient *AzureGoClient) CreateSSHKey(ctx context.Context, client *armcompute.SSHPublicKeysClient, resourceGroupName string, sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource, options *armcompute.SSHPublicKeysClientCreateOptions) (armcompute.SSHPublicKeysClientCreateResponse, error) {
-	return client.Create(ctx, resourceGroupName, sshPublicKeyName, parameters, options)
+func (azclient *AzureGoClient) CreateSSHKey(sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource, options *armcompute.SSHPublicKeysClientCreateOptions) (armcompute.SSHPublicKeysClientCreateResponse, error) {
+	client, err := armcompute.NewSSHPublicKeysClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return armcompute.SSHPublicKeysClientCreateResponse{}, err
+	}
+	return client.Create(ctx, azclient.ResourceGrp, sshPublicKeyName, parameters, options)
 }
 
-func (azclient *AzureGoClient) DeleteSSHKey(ctx context.Context, client *armcompute.SSHPublicKeysClient, resourceGroupName string, sshPublicKeyName string, options *armcompute.SSHPublicKeysClientDeleteOptions) (armcompute.SSHPublicKeysClientDeleteResponse, error) {
-	return client.Delete(ctx, resourceGroupName, sshPublicKeyName, options)
+func (azclient *AzureGoClient) DeleteSSHKey(sshPublicKeyName string, options *armcompute.SSHPublicKeysClientDeleteOptions) (armcompute.SSHPublicKeysClientDeleteResponse, error) {
+	client, err := armcompute.NewSSHPublicKeysClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return armcompute.SSHPublicKeysClientDeleteResponse{}, err
+	}
+	return client.Delete(ctx, azclient.ResourceGrp, sshPublicKeyName, options)
 }
 
-func (azclient *AzureGoClient) BeginCreateVM(ctx context.Context, client *armcompute.VirtualMachinesClient, resourceGroupName string, vmName string, parameters armcompute.VirtualMachine, options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
-	return client.BeginCreateOrUpdate(ctx, resourceGroupName, vmName, parameters, options)
+func (azclient *AzureGoClient) BeginCreateVM(vmName string, parameters armcompute.VirtualMachine, options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
+	client, err := armcompute.NewVirtualMachinesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginCreateOrUpdate(ctx, azclient.ResourceGrp, vmName, parameters, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteVM(ctx context.Context, client *armcompute.VirtualMachinesClient, resourceGroupName string, vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (*runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, vmName, options)
+func (azclient *AzureGoClient) BeginDeleteVM(vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (*runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], error) {
+	client, err := armcompute.NewVirtualMachinesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, vmName, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteDisk(ctx context.Context, client *armcompute.DisksClient, resourceGroupName string, diskName string, options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, diskName, options)
+func (azclient *AzureGoClient) BeginDeleteDisk(diskName string, options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error) {
+	client, err := armcompute.NewDisksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, diskName, options)
 }
 
-func (azclient *AzureGoClient) BeginCreatePubIP(ctx context.Context, client *armnetwork.PublicIPAddressesClient, resourceGroupName string, publicIPAddressName string, parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error) {
-	return client.BeginCreateOrUpdate(ctx, resourceGroupName, publicIPAddressName, parameters, options)
+func (azclient *AzureGoClient) BeginCreatePubIP(publicIPAddressName string, parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error) {
+	client, err := armnetwork.NewPublicIPAddressesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginCreateOrUpdate(ctx, azclient.ResourceGrp, publicIPAddressName, parameters, options)
 }
 
-func (azclient *AzureGoClient) BeginDeletePubIP(ctx context.Context, client *armnetwork.PublicIPAddressesClient, resourceGroupName string, publicIPAddressName string, options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, publicIPAddressName, options)
+func (azclient *AzureGoClient) BeginDeletePubIP(publicIPAddressName string, options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error) {
+	client, err := armnetwork.NewPublicIPAddressesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, publicIPAddressName, options)
 }
 
-func (azclient *AzureGoClient) BeginCreateNIC(ctx context.Context, client *armnetwork.InterfacesClient, resourceGroupName string, networkInterfaceName string, parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error) {
-	return client.BeginCreateOrUpdate(ctx, resourceGroupName, networkInterfaceName, parameters, options)
+func (azclient *AzureGoClient) BeginCreateNIC(networkInterfaceName string, parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error) {
+	client, err := armnetwork.NewInterfacesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginCreateOrUpdate(ctx, azclient.ResourceGrp, networkInterfaceName, parameters, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteNIC(ctx context.Context, client *armnetwork.InterfacesClient, resourceGroupName string, networkInterfaceName string, options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, networkInterfaceName, options)
+func (azclient *AzureGoClient) BeginDeleteNIC(networkInterfaceName string, options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error) {
+	client, err := armnetwork.NewInterfacesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, networkInterfaceName, options)
 }
 
-func (azclient *AzureGoClient) BeginDeleteAKS(ctx context.Context, client *armcontainerservice.ManagedClustersClient, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
-	return client.BeginDelete(ctx, resourceGroupName, resourceName, options)
+func (azclient *AzureGoClient) BeginDeleteAKS(resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
+	client, err := armcontainerservice.NewManagedClustersClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginDelete(ctx, azclient.ResourceGrp, resourceName, options)
 }
 
-func (azclient *AzureGoClient) BeginCreateAKS(ctx context.Context, client *armcontainerservice.ManagedClustersClient, resourceGroupName string, resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
-	return client.BeginCreateOrUpdate(ctx, resourceGroupName, resourceName, parameters, options)
+func (azclient *AzureGoClient) BeginCreateAKS(resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
+	client, err := armcontainerservice.NewManagedClustersClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return nil, err
+	}
+	return client.BeginCreateOrUpdate(ctx, azclient.ResourceGrp, resourceName, parameters, options)
 }
 
-func (azclient *AzureGoClient) ListClusterAdminCredentials(ctx context.Context, client *armcontainerservice.ManagedClustersClient, resourceGroupName string, resourceName string, options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error) {
-	return client.ListClusterAdminCredentials(ctx, resourceGroupName, resourceName, options)
+func (azclient *AzureGoClient) ListClusterAdminCredentials(resourceName string, options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error) {
+	client, err := armcontainerservice.NewManagedClustersClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	if err != nil {
+		return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{}, err
+	}
+	return client.ListClusterAdminCredentials(ctx, azclient.ResourceGrp, resourceName, options)
 }

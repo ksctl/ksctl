@@ -15,11 +15,6 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		return nil
 	}
 
-	sshClient, err := obj.Client.SSHKeyClient()
-	if err != nil {
-		return err
-	}
-
 	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, utils.CLOUD_AZURE, clusterDirName)
 	if err != nil {
 		return err
@@ -32,8 +27,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		},
 	}
 
-	_, err = obj.Client.CreateSSHKey(ctx, sshClient, azureCloudState.ResourceGroupName,
-		obj.Metadata.ResName, parameters, nil)
+	_, err = obj.Client.CreateSSHKey(obj.Metadata.ResName, parameters, nil)
 
 	azureCloudState.SSHKeyName = obj.Metadata.ResName
 
@@ -56,13 +50,7 @@ func (obj *AzureProvider) DelSSHKeyPair(storage resources.StorageFactory) error 
 		return nil
 	}
 
-	sshClient, err := obj.Client.SSHKeyClient()
-	if err != nil {
-		return err
-	}
-	_, err = obj.Client.DeleteSSHKey(ctx, sshClient, azureCloudState.ResourceGroupName,
-		azureCloudState.SSHKeyName, nil)
-	if err != nil {
+	if _, err := obj.Client.DeleteSSHKey(azureCloudState.SSHKeyName, nil); err != nil {
 		return err
 	}
 
