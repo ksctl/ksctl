@@ -263,14 +263,26 @@ func ReturnAzureStruct(metadata resources.Metadata, ClientOption func() AzureGo)
 
 // Name it will contain the name of the resource to be created
 func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
+	if err := utils.IsValidName(resName); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
+		return nil
+	}
 	cloud.Metadata.ResName = resName
 	return cloud
 }
 
 // Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
-	cloud.Metadata.Role = resRole
-	return cloud
+	switch resRole {
+	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
+		cloud.Metadata.Role = resRole
+		return cloud
+	default:
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err("invalid role assumed")
+		return nil
+	}
 }
 
 // VMType it will contain which vmType to create

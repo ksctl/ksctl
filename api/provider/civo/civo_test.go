@@ -17,7 +17,7 @@ import (
 var (
 	fakeClient *CivoProvider
 	demoClient *resources.KsctlClient
-	dir        = fmt.Sprintf("%s/ksctl-test", os.TempDir())
+	dir        = fmt.Sprintf("%s/ksctl-civo-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
