@@ -55,11 +55,6 @@ jobs:
     - name: Run coverage (TESTS)
       working-directory: test
       run: |
-        rm -rf ~/.ksctl && \
-        mkdir -p ~/.ksctl/config/civo/managed && \
-        mkdir -p ~/.ksctl/config/civo/ha && \
-        mkdir -p ~/.ksctl/config/azure/managed && \
-        mkdir -p ~/.ksctl/config/azure/ha
         go test -bench=. -benchtime=1x -race -coverprofile=../coverage-mock-test.out -covermode=atomic -v
         cd ../
     - name: Upload coverage to Codecov

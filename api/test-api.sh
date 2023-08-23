@@ -36,4 +36,3 @@ echo "-----------------------------------"
 cd provider/azure/
 go test . -v && cd -
 
-rm -rvf ${HOME}/.ksctl

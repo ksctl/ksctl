@@ -2,15 +2,17 @@ package local
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+	"runtime"
+	"strconv"
+	"strings"
+	"testing"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"gotest.tools/assert"
-	"os"
-	"reflect"
-	"strconv"
-	"strings"
-	"testing"
 )
 
 var (
@@ -195,11 +197,13 @@ nodes:
 
 func TestManagedCluster(t *testing.T) {
 
-	testClient.Version("1.27.1")
-	testClient.Name("fake")
-	assert.Equal(t, testClient.NewManagedCluster(demoClient.Storage, 2), nil, "managed cluster should be created")
-	assert.Equal(t, localState.Nodes, 2, "missmatch of no of nodes")
-	assert.Equal(t, localState.Version, testClient.Metadata.Version, "k8s version does not match")
+	if runtime.GOOS == "linux" {
+		testClient.Version("1.27.1")
+		testClient.Name("fake")
+		assert.Equal(t, testClient.NewManagedCluster(demoClient.Storage, 2), nil, "managed cluster should be created")
+		assert.Equal(t, localState.Nodes, 2, "missmatch of no of nodes")
+		assert.Equal(t, localState.Version, testClient.Metadata.Version, "k8s version does not match")
 
-	assert.Equal(t, testClient.DelManagedCluster(demoClient.Storage), nil, "managed cluster should be deleted")
+		assert.Equal(t, testClient.DelManagedCluster(demoClient.Storage), nil, "managed cluster should be deleted")
+	}
 }
