@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/logger"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/kubesimplify/ksctl/api/logger"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
@@ -94,14 +92,15 @@ type Metadata struct {
 }
 
 type AzureProvider struct {
-	ClusterName    string                 `json:"cluster_name"`
-	HACluster      bool                   `json:"ha_cluster"`
-	ResourceGroup  string                 `json:"resource_group"`
-	Region         string                 `json:"region"`
-	SubscriptionID string                 `json:"subscription_id"`
-	AzureTokenCred azcore.TokenCredential `json:"azure_token_cred"`
-	SSHPath        string                 `json:"ssh_key"`
-	Metadata       Metadata
+	ClusterName   string `json:"cluster_name"`
+	HACluster     bool   `json:"ha_cluster"`
+	ResourceGroup string `json:"resource_group"`
+	Region        string `json:"region"`
+
+	SSHPath  string `json:"ssh_key"`
+	Metadata Metadata
+
+	Client AzureGo
 }
 
 var (
@@ -193,11 +192,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	obj.ResourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.ClusterName, clusterType)
 	clusterDirName = obj.ClusterName + " " + obj.ResourceGroup + " " + obj.Region
 
-	if azureCloudState != nil {
-		return errors.New("[FATAL] already initialized")
-	}
 	errLoadState := loadStateHelper(storage)
-	// TODO: add operations
 	switch operation {
 	case utils.OPERATION_STATE_CREATE:
 		if errLoadState == nil && azureCloudState.IsCompleted {
@@ -234,15 +229,14 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	}
 
 	ctx = context.Background()
-	err := obj.setRequiredENV_VAR(storage, ctx)
-	if err != nil {
+
+	if err := obj.Client.InitClient(storage); err != nil {
 		return err
 	}
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return err
-	}
-	obj.AzureTokenCred = cred
+
+	// added the resource grp and region for easy of use for the client library
+	obj.Client.SetRegion(obj.Region)
+	obj.Client.SetResourceGrp(obj.ResourceGroup)
 
 	if err := validationOfArguments(obj); err != nil {
 		return err
@@ -253,30 +247,42 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	return nil
 }
 
-func ReturnAzureStruct(metadata resources.Metadata) (*AzureProvider, error) {
+func ReturnAzureStruct(metadata resources.Metadata, ClientOption func() AzureGo) (*AzureProvider, error) {
 
 	return &AzureProvider{
 		ClusterName: metadata.ClusterName,
 		Region:      metadata.Region,
 		HACluster:   metadata.IsHA,
-		//ResourceGroup: metadata.ClusterName + "-azure-ha-ksctl",
 		Metadata: Metadata{
 			K8sVersion: metadata.K8sVersion,
 			K8sName:    metadata.K8sDistro,
 		},
+		Client: ClientOption(),
 	}, nil
 }
 
 // Name it will contain the name of the resource to be created
 func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
+	if err := utils.IsValidName(resName); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
+		return nil
+	}
 	cloud.Metadata.ResName = resName
 	return cloud
 }
 
 // Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
-	cloud.Metadata.Role = resRole
-	return cloud
+	switch resRole {
+	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
+		cloud.Metadata.Role = resRole
+		return cloud
+	default:
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err("invalid role assumed")
+		return nil
+	}
 }
 
 // VMType it will contain which vmType to create
@@ -338,7 +344,7 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		currLen := len(azureCloudState.InfoControlPlanes.Names)
 		if currLen == 0 {
 			azureCloudState.InfoControlPlanes.Names = make([]string, no)
-			azureCloudState.InfoControlPlanes.Hostnames = make([]string, no) // as we don't need it now
+			azureCloudState.InfoControlPlanes.Hostnames = make([]string, no)
 			azureCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
 			azureCloudState.InfoControlPlanes.PrivateIPs = make([]string, no)
 			azureCloudState.InfoControlPlanes.DiskNames = make([]string, no)
@@ -376,7 +382,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		currLen := len(azureCloudState.InfoDatabase.Names)
 		if currLen == 0 {
 			azureCloudState.InfoDatabase.Names = make([]string, no)
-			azureCloudState.InfoDatabase.Hostnames = make([]string, no) // TODO: remove it: as we don't need it now
+			azureCloudState.InfoDatabase.Hostnames = make([]string, no)
 			azureCloudState.InfoDatabase.PublicIPs = make([]string, no)
 			azureCloudState.InfoDatabase.PrivateIPs = make([]string, no)
 			azureCloudState.InfoDatabase.DiskNames = make([]string, no)

@@ -16,7 +16,7 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	res, err := civoClient.NewNetwork(obj.Metadata.ResName)
+	res, err := obj.Client.CreateNetwork(obj.Metadata.ResName)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 		currRetryCounter := 0
 		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
-			_, err = civoClient.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
+			_, err = obj.Client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))

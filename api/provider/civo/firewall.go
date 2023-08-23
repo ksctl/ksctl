@@ -18,7 +18,7 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 		}
 		firewallID = civoCloudState.NetworkIDs.FirewallIDControlPlaneNode
 
-		_, err := civoClient.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDControlPlaneNode)
+		_, err := obj.Client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDControlPlaneNode)
 		if err != nil {
 			return err
 		}
@@ -33,7 +33,7 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 
 		firewallID = civoCloudState.NetworkIDs.FirewallIDWorkerNode
 
-		_, err := civoClient.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDWorkerNode)
+		_, err := obj.Client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDWorkerNode)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 
 		firewallID = civoCloudState.NetworkIDs.FirewallIDDatabaseNode
 
-		_, err := civoClient.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDDatabaseNode)
+		_, err := obj.Client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDDatabaseNode)
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,7 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 
 		firewallID = civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode
 
-		_, err := civoClient.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode)
+		_, err := obj.Client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode)
 		if err != nil {
 			return err
 		}
@@ -120,7 +120,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	}
 
-	firew, err := civoClient.NewFirewall(firewallConfig)
+	firew, err := obj.Client.NewFirewall(firewallConfig)
 	if err != nil {
 		return err
 	}

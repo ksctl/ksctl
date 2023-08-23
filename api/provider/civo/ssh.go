@@ -1,8 +1,6 @@
 package civo
 
 import (
-	"strings"
-
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
@@ -14,7 +12,7 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	_, err := civoClient.DeleteSSHKey(civoCloudState.SSHID)
+	_, err := obj.Client.DeleteSSHKey(civoCloudState.SSHID)
 	if err != nil {
 		return err
 	}
@@ -48,7 +46,7 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory
 }
 
 func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pubKey string) error {
-	sshResp, err := civoClient.NewSSHKey(strings.ToLower(resName), pubKey)
+	sshResp, err := obj.Client.NewSSHKey(resName, pubKey)
 	if err != nil {
 		return err
 	}

@@ -15,17 +15,14 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 		storage.Logger().Success("[skip] already deleted AKS cluster")
 		return nil
 	}
-	managedClustersClient, err := obj.managedClusterClient()
+
+	pollerResp, err := obj.Client.BeginDeleteAKS(azureCloudState.ManagedClusterName, nil)
 	if err != nil {
 		return err
 	}
 	storage.Logger().Print("[azure] Deleting AKS cluster...")
 
-	pollerResp, err := managedClustersClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, azureCloudState.ManagedClusterName, nil)
-	if err != nil {
-		return err
-	}
-	_, err = pollerResp.PollUntilDone(ctx, nil)
+	_, err = obj.Client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
@@ -48,45 +45,35 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return nil
 	}
 
-	managedClustersClient, err := obj.managedClusterClient()
-	if err != nil {
-		return err
-	}
-
 	azureCloudState.NoManagedNodes = noOfNodes
 	azureCloudState.KubernetesVer = obj.Metadata.K8sVersion
 
-	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
-		ctx,
-		azureCloudState.ResourceGroupName,
-		obj.Metadata.ResName,
-		armcontainerservice.ManagedCluster{
-			Location: to.Ptr(azureCloudState.Region),
-			Properties: &armcontainerservice.ManagedClusterProperties{
-				DNSPrefix:         to.Ptr("aksgosdk"),
-				KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
-				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
-					{
-						Name:              to.Ptr("askagent"),
-						Count:             to.Ptr[int32](int32(noOfNodes)),
-						VMSize:            to.Ptr(obj.Metadata.VmType),
-						MaxPods:           to.Ptr[int32](110),
-						MinCount:          to.Ptr[int32](1),
-						MaxCount:          to.Ptr[int32](100),
-						OSType:            to.Ptr(armcontainerservice.OSTypeLinux),
-						Type:              to.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
-						EnableAutoScaling: to.Ptr(true),
-						Mode:              to.Ptr(armcontainerservice.AgentPoolModeSystem),
-					},
-				},
-				ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{
-					ClientID: to.Ptr(os.Getenv("AZURE_CLIENT_ID")),
-					Secret:   to.Ptr(os.Getenv("AZURE_CLIENT_SECRET")),
+	parameter := armcontainerservice.ManagedCluster{
+		Location: to.Ptr(azureCloudState.Region),
+		Properties: &armcontainerservice.ManagedClusterProperties{
+			DNSPrefix:         to.Ptr("aksgosdk"),
+			KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
+			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
+				{
+					Name:              to.Ptr("askagent"),
+					Count:             to.Ptr[int32](int32(noOfNodes)),
+					VMSize:            to.Ptr(obj.Metadata.VmType),
+					MaxPods:           to.Ptr[int32](110),
+					MinCount:          to.Ptr[int32](1),
+					MaxCount:          to.Ptr[int32](100),
+					OSType:            to.Ptr(armcontainerservice.OSTypeLinux),
+					Type:              to.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
+					EnableAutoScaling: to.Ptr(true),
+					Mode:              to.Ptr(armcontainerservice.AgentPoolModeSystem),
 				},
 			},
+			ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{
+				ClientID: to.Ptr(os.Getenv("AZURE_CLIENT_ID")),
+				Secret:   to.Ptr(os.Getenv("AZURE_CLIENT_SECRET")),
+			},
 		},
-		nil,
-	)
+	}
+	pollerResp, err := obj.Client.BeginCreateAKS(obj.Metadata.ResName, parameter, nil)
 	if err != nil {
 		return err
 	}
@@ -98,7 +85,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 
 	storage.Logger().Print("[azure] Creating AKS cluster...")
 
-	resp, err := pollerResp.PollUntilDone(ctx, nil)
+	resp, err := obj.Client.PollUntilDoneCreateAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
@@ -108,7 +95,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
-	kubeconfig, err := managedClustersClient.ListClusterAdminCredentials(ctx, azureCloudState.ResourceGroupName, obj.Metadata.ResName, nil)
+	kubeconfig, err := obj.Client.ListClusterAdminCredentials(obj.Metadata.ResName, nil)
 	if err != nil {
 		return err
 	}
@@ -122,12 +109,4 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 
 	storage.Logger().Success("[azure] created AKS", *resp.Name)
 	return nil
-}
-
-func (obj *AzureProvider) managedClusterClient() (*armcontainerservice.ManagedClustersClient, error) {
-	managedClustersClient, err := armcontainerservice.NewManagedClustersClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return managedClustersClient, nil
 }

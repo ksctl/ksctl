@@ -1,36 +1,51 @@
 package local
 
 import (
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/storage/localstate"
+	"fmt"
 	"os"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/storage/localstate"
+	"github.com/kubesimplify/ksctl/api/utils"
+	"gotest.tools/assert"
 )
 
 var (
 	demoClient *resources.KsctlClient
+	testClient *LocalProvider
+	dir        = fmt.Sprintf("%s/ksctl-local-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
-	var err error
-
-	if err != nil {
-		panic("unable to start fake client")
-	}
 	demoClient = &resources.KsctlClient{}
+	demoClient.Metadata.ClusterName = "demo"
+	demoClient.Metadata.Region = "demoRegion"
+	demoClient.Metadata.Provider = "demoProvider"
+	demoClient.Storage = localstate.InitStorage(false)
 	localState = &StateConfiguration{}
 	demoClient.Cloud, _ = ReturnLocalStruct(demoClient.Metadata)
 
-	demoClient.ClusterName = "demo"
-	demoClient.Region = "demoRegion"
-	demoClient.Provider = "demoProvider"
-	demoClient.Storage = localstate.InitStorage(false)
+	testClient, _ = ReturnLocalStruct(demoClient.Metadata)
+
+	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
+	civoManaged := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, "managed")
+
+	if err := os.MkdirAll(civoManaged, 0755); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Created tmp directories")
 
 	exitVal := m.Run()
-
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
 	os.Exit(exitVal)
 }
 
@@ -177,5 +192,18 @@ nodes:
 		if raw, _ := generateConfig(noWP, noCP); !reflect.DeepEqual(raw, []byte(val)) {
 			t.Fatalf("Data missmatch for noCP: %d, noWP: %d expected %s but got %s", noCP, noWP, val, string(raw))
 		}
+	}
+}
+
+func TestManagedCluster(t *testing.T) {
+
+	if runtime.GOOS == "linux" {
+		testClient.Version("1.27.1")
+		testClient.Name("fake")
+		assert.Equal(t, testClient.NewManagedCluster(demoClient.Storage, 2), nil, "managed cluster should be created")
+		assert.Equal(t, localState.Nodes, 2, "missmatch of no of nodes")
+		assert.Equal(t, localState.Version, testClient.Metadata.Version, "k8s version does not match")
+
+		assert.Equal(t, testClient.DelManagedCluster(demoClient.Storage), nil, "managed cluster should be deleted")
 	}
 }

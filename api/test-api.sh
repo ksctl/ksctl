@@ -4,7 +4,7 @@ echo "-----------------------------------"
 echo "|   Testing (api/utils)"
 echo "-----------------------------------"
 
-cd provider/utils/
+cd utils/
 go test -v . -timeout 10s && cd -
 
 echo "-----------------------------------"
@@ -36,4 +36,3 @@ echo "-----------------------------------"
 cd provider/azure/
 go test . -v && cd -
 
-rm -rvf ${HOME}/.ksctl
