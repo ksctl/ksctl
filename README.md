@@ -1,29 +1,36 @@
 # ![CoverPage Social Media](./img/ksctl-cover.png)
 
+<h4 align="center">
+    <a href="https://discord.com/invite/kubesimplify">Discord</a> |
+    <a href="https://kubesimplify.github.io/ksctl/">Website</a><br/><br/>
+    <a href="https://kubesimplify.github.io/ksctl/docs/intro">Intro</a> |
+    <a href="https://kubesimplify.github.io/ksctl/docs/contributions">Contribute</a> |
+    <a href="https://kubesimplify.github.io/ksctl/docs/roadmap">Roadmap</a><br/><br/>
+</h4>
 
 **CLI which can manage Kubernetes cluster on different environment**
 
-<div align="center"> 
-  
-   <img src="https://img.shields.io/github/repo-size/kubesimplify/ksctl?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/issues/kubesimplify/ksctl?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/issues-pr/kubesimplify/ksctl?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/issues-pr-closed-raw/kubesimplify/ksctl?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/license/kubesimplify/ksctl?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/forks/kubesimplify/ksctl?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/stars/kubesimplify/ksctl?style=for-the-badge" /> 
-   <img src="https://img.shields.io/github/contributors/kubesimplify/ksctl?style=for-the-badge" /> 
+<div align="center">
+
+   <img src="https://img.shields.io/github/repo-size/kubesimplify/ksctl?style=for-the-badge" />
+   <img src="https://img.shields.io/github/issues/kubesimplify/ksctl?style=for-the-badge" />
+   <img src="https://img.shields.io/github/issues-pr/kubesimplify/ksctl?style=for-the-badge" />
+   <img src="https://img.shields.io/github/issues-pr-closed-raw/kubesimplify/ksctl?style=for-the-badge" />
+   <img src="https://img.shields.io/github/license/kubesimplify/ksctl?style=for-the-badge" />
+   <img src="https://img.shields.io/github/forks/kubesimplify/ksctl?style=for-the-badge" />
+   <img src="https://img.shields.io/github/stars/kubesimplify/ksctl?style=for-the-badge" />
+   <img src="https://img.shields.io/github/contributors/kubesimplify/ksctl?style=for-the-badge" />
    <img src="https://img.shields.io/github/last-commit/kubesimplify/ksctl?style=for-the-badge" />
-   
+
    <br>
-   
-   [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml) 
-  [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml) 
-  [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml) 
-  [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml) 
-  [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl) 
+
+   [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml)
+  [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml)
+  [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml)
+  [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml)
+  [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl)
   [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
-  
+
 </div>
 
 
@@ -49,6 +56,12 @@ Here are some of the specific features of ksctl:
 # Documentations
 
 Link to the [docs website](https://kubesimplify.github.io/ksctl/)
+
+## Getting Started Azure
+Connect ksctl cli to you [Azure](https://kubesimplify.github.io/ksctl/docs/providers/azure) account.
+
+## Getting Started Civo
+Connect ksctl cli to your [Civo](https://kubesimplify.github.io/ksctl/docs/providers/civo) account. Watch the installation video here
 
 
 # Prerequisites
@@ -78,9 +91,9 @@ Please refer to the [usage guide](USAGE.md) also [Docs Website](https://kubesimp
 # Contribution Guidelines
 Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
 
-<!-- # Software Requirement Specification Docs
-
- [Google Doc Link](https://docs.google.com/document/d/1qLGcJly0qWK0dnno6tKXUsm3dd_BpyKl7oi7PLqi6J0/edit?usp=sharing) -->
-
 ## Thanks to all the contributors ❤️
 [Link to Contributors](https://github.com/kubesimplify/ksctl/graphs/contributors)
+
+<a href="https://github.com/kubesimplify/ksctl/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kubesimplify/ksctl" />
+</a>
