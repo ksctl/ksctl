@@ -105,7 +105,12 @@ const (
 )
 
 var (
-	KSCTL_CONFIG_DIR string
+	KSCTL_CONFIG_DIR = func() string {
+		if runtime.GOOS == "windows" {
+			return fmt.Sprintf("%s\\.ksctl", GetUserName())
+		}
+		return fmt.Sprintf("%s/.ksctl", GetUserName())
+	}()
 )
 
 // GetUserName returns current active username
@@ -168,12 +173,6 @@ func GetPath(flag int, provider string, subfolders ...string) string {
 	// for using different KSCTL DIRECTORY
 	if dirName := os.Getenv(KSCTL_TEST_DIR_ENABLED); len(dirName) != 0 {
 		KSCTL_CONFIG_DIR = dirName
-	} else {
-		if runtime.GOOS == "windows" {
-			KSCTL_CONFIG_DIR = fmt.Sprintf("%s\\.ksctl", GetUserName())
-		} else {
-			KSCTL_CONFIG_DIR = fmt.Sprintf("%s/.ksctl", GetUserName())
-		}
 	}
 	switch flag {
 	case SSH_PATH:
@@ -251,6 +250,9 @@ func getSSHPath(provider string, params ...string) string {
 // its a free flowing (Provider field has not much significance)
 func getPaths(provider string, params ...string) string {
 	var ret strings.Builder
+	if dirName := os.Getenv(KSCTL_TEST_DIR_ENABLED); len(dirName) != 0 {
+		KSCTL_CONFIG_DIR = dirName
+	}
 
 	if runtime.GOOS == "windows" {
 		ret.WriteString(fmt.Sprintf("%s\\config\\%s", KSCTL_CONFIG_DIR, provider))
