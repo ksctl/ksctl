@@ -12,16 +12,26 @@ import (
 )
 
 // make it return error
-func HydrateCloud(client *resources.KsctlClient, operation string) error {
+func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bool) error {
 	var err error
 	switch client.Metadata.Provider {
 	case utils.CLOUD_CIVO:
-		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
+		if !fakeClient {
+			client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
+		} else {
+			client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideMockCivoClient)
+		}
+
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
 	case utils.CLOUD_AZURE:
-		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata)
+		if !fakeClient {
+			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideClient)
+		} else {
+			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideMockClient)
+		}
+
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
@@ -244,18 +254,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	if err != nil {
 		return err
 	}
-
-	// if _, err := client.Cloud.NoOfControlPlane(client.Metadata.NoCP, true); err != nil {
-	// 	return err
-	// }
-	//
-	// if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, true); err != nil {
-	// 	return err
-	// }
-	//
-	// if _, err := client.Cloud.NoOfDataStore(client.Metadata.NoDS, true); err != nil {
-	// 	return err
-	// }
 
 	err = client.Cloud.Name(client.ClusterName+"-vm-lb").
 		Role(utils.ROLE_LB).

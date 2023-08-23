@@ -72,7 +72,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 		publicIP = "none"
 	}
 
-	diskImg, err := civoClient.GetDiskImageByName("ubuntu-focal")
+	diskImg, err := obj.Client.GetDiskImageByName("ubuntu-focal")
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 		// Script:           initializationScript,  // TODO: add the os updates and other non necessary things before we try to configure in kubernetes may be security fixes
 	}
 
-	inst, err := civoClient.CreateInstance(instanceConfig)
+	inst, err := obj.Client.CreateInstance(instanceConfig)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 	switch obj.Metadata.Role {
 	case utils.ROLE_CP:
 		instID = civoCloudState.InstanceIDs.ControlNodes[indexNo]
-		_, err := civoClient.DeleteInstance(instID)
+		_, err := obj.Client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -159,7 +159,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 	case utils.ROLE_WP:
 		instID = civoCloudState.InstanceIDs.WorkerNodes[indexNo]
-		_, err := civoClient.DeleteInstance(instID)
+		_, err := obj.Client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 	case utils.ROLE_DS:
 		instID = civoCloudState.InstanceIDs.DatabaseNode[indexNo]
-		_, err := civoClient.DeleteInstance(instID)
+		_, err := obj.Client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 	case utils.ROLE_LB:
 		instID = civoCloudState.InstanceIDs.LoadBalancerNode
-		_, err := civoClient.DeleteInstance(instID)
+		_, err := obj.Client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -209,7 +209,8 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 		var getInst *civogo.Instance
 		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
-			getInst, err = civoClient.GetInstance(instID)
+
+			getInst, err = obj.Client.GetInstance(instID)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))

@@ -52,6 +52,11 @@ jobs:
       run: |
          go test -race -coverprofile=../../../coverage-local.out -covermode=atomic -v
          cd ../../..
+    - name: Run coverage (TESTS)
+      working-directory: test
+      run: |
+        go test -bench=. -benchtime=1x -race -coverprofile=../coverage-mock-test.out -covermode=atomic -v
+        cd ../
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

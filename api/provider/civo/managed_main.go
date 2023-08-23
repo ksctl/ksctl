@@ -20,7 +20,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 		currRetryCounter := 0
 		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
-			clusterDS, err = civoClient.GetKubernetesCluster(id)
+			clusterDS, err = obj.Client.GetKubernetesCluster(id)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
@@ -67,7 +67,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 		return nil
 	}
 
-	network, err := civoClient.GetNetwork(civoCloudState.NetworkIDs.NetworkID)
+	network, err := obj.Client.GetNetwork(civoCloudState.NetworkIDs.NetworkID)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 		Applications:      obj.Metadata.Apps, // make the use of application and cni via some method
 		CNIPlugin:         obj.Metadata.Cni,  // make it use install application in the civo
 	}
-	resp, err := civoClient.NewKubernetesClusters(configK8s)
+	resp, err := obj.Client.NewKubernetesClusters(configK8s)
 	if err != nil {
 		if errors.Is(err, civogo.DatabaseKubernetesClusterDuplicateError) {
 			return fmt.Errorf("DUPLICATE Cluster FOUND")
@@ -118,7 +118,7 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) err
 		storage.Logger().Success("[skip] network deletion found")
 		return nil
 	}
-	_, err := civoClient.DeleteKubernetesCluster(civoCloudState.ManagedClusterID)
+	_, err := obj.Client.DeleteKubernetesCluster(civoCloudState.ManagedClusterID)
 	if err != nil {
 		return err
 	}
