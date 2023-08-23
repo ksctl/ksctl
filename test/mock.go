@@ -1,15 +1,18 @@
 package test
 
 import (
+	"fmt"
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers"
 	"github.com/kubesimplify/ksctl/api/utils"
+	"os"
 )
 
 var (
 	cli        *resources.CobraCmd
 	controller controllers.Controller
+	dir        = fmt.Sprintf("%s/ksctl-black-box-test", os.TempDir())
 )
 
 func StartCloud() {
@@ -47,6 +50,16 @@ func AzureTestingManaged() error {
 	cli.Client.Metadata.ManagedNodeType = "fake"
 	cli.Client.Metadata.NoMP = 2
 	cli.Client.Metadata.K8sVersion = "1.27"
+
+	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
+	azManaged := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG)
+
+	if err := os.MkdirAll(azManaged, 0755); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Created tmp directories")
+
 	return ExecuteManagedRun()
 }
 
@@ -55,6 +68,15 @@ func CivoTestingManaged() error {
 	cli.Client.Metadata.Provider = utils.CLOUD_CIVO
 	cli.Client.Metadata.ManagedNodeType = "g4s.kube.small"
 	cli.Client.Metadata.NoMP = 2
+
+	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
+	azManaged := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_MANG)
+
+	if err := os.MkdirAll(azManaged, 0755); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Created tmp directories")
 
 	return ExecuteManagedRun()
 }
@@ -74,6 +96,14 @@ func CivoTestingHA() error {
 	cli.Client.Metadata.NoWP = 1
 	cli.Client.Metadata.NoDS = 1
 	cli.Client.Metadata.K8sVersion = "1.27.4"
+
+	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
+	azHA := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
+
+	if err := os.MkdirAll(azHA, 0755); err != nil {
+		panic(err)
+	}
+	fmt.Println("Created tmp directories")
 
 	_, err = controller.CreateHACluster(&cli.Client)
 	if err != nil {
@@ -99,6 +129,14 @@ func AzureTestingHA() error {
 	cli.Client.Metadata.NoWP = 1
 	cli.Client.Metadata.NoDS = 1
 	cli.Client.Metadata.K8sVersion = "1.27.4"
+
+	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
+	azHA := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
+
+	if err := os.MkdirAll(azHA, 0755); err != nil {
+		panic(err)
+	}
+	fmt.Println("Created tmp directories")
 
 	_, err = controller.CreateHACluster(&cli.Client)
 	if err != nil {

@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -18,6 +19,11 @@ func BenchmarkCivoTestingManaged(b *testing.B) {
 			b.Fatalf("failed, err: %v", err)
 		}
 	}
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
 }
 
 func BenchmarkCivoTestingHA(b *testing.B) {
@@ -30,6 +36,11 @@ func BenchmarkCivoTestingHA(b *testing.B) {
 		if err := CivoTestingHA(); err != nil {
 			b.Fatalf("failed, err: %v", err)
 		}
+	}
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
 	}
 }
 
@@ -44,6 +55,11 @@ func BenchmarkAzureTestingHA(b *testing.B) {
 			b.Fatalf("failed, err: %v", err)
 		}
 	}
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
 }
 
 func BenchmarkAzureTestingManaged(b *testing.B) {
@@ -56,5 +72,10 @@ func BenchmarkAzureTestingManaged(b *testing.B) {
 		if err := AzureTestingManaged(); err != nil {
 			b.Fatalf("failed, err: %v", err)
 		}
+	}
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
 	}
 }
