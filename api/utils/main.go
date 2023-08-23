@@ -98,7 +98,14 @@ const (
 	CLUSTER_TYPE_HA   = "ha"
 	CLUSTER_TYPE_MANG = "managed"
 
-	FAKE_CLIENT = "FAKE"
+	// makes the fake client
+	KSCTL_FAKE_FLAG = "KSCTL_FAKE_FLAG_ENABLED"
+	// KSCTL_TEST_DIR_ENABLED use this as environment variable to set a different home directory for ksctl during testing
+	KSCTL_TEST_DIR_ENABLED = "KSCTL_TEST_DIR_ENABLED"
+)
+
+var (
+	KSCTL_CONFIG_DIR string
 )
 
 // GetUserName returns current active username
@@ -131,12 +138,12 @@ func getKubeconfig(provider string, params ...string) string {
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
-		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\%s", GetUserName(), provider))
+		ret.WriteString(fmt.Sprintf("%s\\config\\%s", KSCTL_CONFIG_DIR, provider))
 		for _, item := range params {
 			ret.WriteString("\\" + item)
 		}
 	} else {
-		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/%s", GetUserName(), provider))
+		ret.WriteString(fmt.Sprintf("%s/config/%s", KSCTL_CONFIG_DIR, provider))
 		for _, item := range params {
 			ret.WriteString("/" + item)
 		}
@@ -148,9 +155,9 @@ func getKubeconfig(provider string, params ...string) string {
 
 func getCredentials(provider string) string {
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s\\.ksctl\\cred\\%s.json", GetUserName(), provider)
+		return fmt.Sprintf("%s\\cred\\%s.json", KSCTL_CONFIG_DIR, provider)
 	} else {
-		return fmt.Sprintf("%s/.ksctl/cred/%s.json", GetUserName(), provider)
+		return fmt.Sprintf("%s/cred/%s.json", KSCTL_CONFIG_DIR, provider)
 	}
 }
 
@@ -158,6 +165,16 @@ func getCredentials(provider string) string {
 // GetPath use this in every function and differentiate the logic by using if-else
 
 func GetPath(flag int, provider string, subfolders ...string) string {
+	// for using different KSCTL DIRECTORY
+	if dirName := os.Getenv(KSCTL_TEST_DIR_ENABLED); len(dirName) != 0 {
+		KSCTL_CONFIG_DIR = dirName
+	} else {
+		if runtime.GOOS == "windows" {
+			KSCTL_CONFIG_DIR = fmt.Sprintf("%s\\.ksctl", GetUserName())
+		} else {
+			KSCTL_CONFIG_DIR = fmt.Sprintf("%s/.ksctl", GetUserName())
+		}
+	}
 	switch flag {
 	case SSH_PATH:
 		return getSSHPath(provider, subfolders...)
@@ -215,13 +232,13 @@ func getSSHPath(provider string, params ...string) string {
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
-		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\%s", GetUserName(), provider))
+		ret.WriteString(fmt.Sprintf("%s\\config\\%s", KSCTL_CONFIG_DIR, provider))
 		for _, item := range params {
 			ret.WriteString("\\" + item)
 		}
 		ret.WriteString("\\keypair")
 	} else {
-		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/%s", GetUserName(), provider))
+		ret.WriteString(fmt.Sprintf("%s/config/%s", KSCTL_CONFIG_DIR, provider))
 		for _, item := range params {
 			ret.WriteString("/" + item)
 		}
@@ -236,12 +253,12 @@ func getPaths(provider string, params ...string) string {
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
-		ret.WriteString(fmt.Sprintf("%s\\.ksctl\\config\\%s", GetUserName(), provider))
+		ret.WriteString(fmt.Sprintf("%s\\config\\%s", KSCTL_CONFIG_DIR, provider))
 		for _, item := range params {
 			ret.WriteString("\\" + item)
 		}
 	} else {
-		ret.WriteString(fmt.Sprintf("%s/.ksctl/config/%s", GetUserName(), provider))
+		ret.WriteString(fmt.Sprintf("%s/config/%s", KSCTL_CONFIG_DIR, provider))
 		for _, item := range params {
 			ret.WriteString("/" + item)
 		}
@@ -365,7 +382,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 	storage.Logger().Success("[ssh] SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
 	// NOTE: when the fake environment variable is set //
-	if fake := os.Getenv(FAKE_CLIENT); len(fake) != 0 {
+	if fake := os.Getenv(KSCTL_FAKE_FLAG); len(fake) != 0 {
 		storage.Logger().Success("[ssh] Exec Scripts")
 		sshPayload.Output = ""
 

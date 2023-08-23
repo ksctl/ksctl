@@ -291,7 +291,12 @@ func (client *CivoProvider) CNI(s string) resources.CloudFactory {
 	if len(s) == 0 {
 		client.Metadata.Cni = "flannel"
 	} else {
-		client.Metadata.Cni = s
+		switch s {
+		case "cilium":
+			client.Metadata.Cni = s
+		default:
+			return nil
+		}
 	}
 	return client
 }

@@ -1,39 +1,57 @@
 package civo
 
 import (
-	"encoding/json"
 	"errors"
-	"os"
-	"strings"
-	"testing"
-
+	"fmt"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"gotest.tools/assert"
+	"os"
+	"strings"
+	"testing"
 )
 
 var (
 	fakeClient *CivoProvider
 	demoClient *resources.KsctlClient
+	dir        = fmt.Sprintf("%s/ksctl-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
 
 	demoClient = &resources.KsctlClient{}
-	civoCloudState = &StateConfiguration{}
-	demoClient.Cloud, _ = ReturnCivoStruct(demoClient.Metadata, ProvideClient)
 
-	fakeClient, _ = ReturnCivoStruct(demoClient.Metadata, func() CivoGo {
-		return &CivoGoMockClient{}
-	})
+	demoClient.Metadata.ClusterName = "demo"
+	demoClient.Metadata.Region = "demoRegion"
+	demoClient.Metadata.Provider = "demoProvider"
 
-	demoClient.ClusterName = "demo"
-	demoClient.Region = "demoRegion"
-	demoClient.Provider = "demoProvider"
+	demoClient.Cloud, _ = ReturnCivoStruct(demoClient.Metadata, ProvideMockCivoClient)
+
+	fakeClient, _ = ReturnCivoStruct(demoClient.Metadata, ProvideMockCivoClient)
+
 	demoClient.Storage = localstate.InitStorage(false)
 
+	// setup temporary folder
+	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
+	civoHA := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, "ha")
+	civoManaged := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, "managed")
+
+	if err := os.MkdirAll(civoManaged, 0755); err != nil {
+		panic(err)
+	}
+
+	if err := os.MkdirAll(civoHA, 0755); err != nil {
+		panic(err)
+	}
+	fmt.Println("Created tmp directories")
+
 	exitVal := m.Run()
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
 
 	os.Exit(exitVal)
 }
@@ -61,23 +79,56 @@ func TestIsValidK8sVersion(t *testing.T) {
 	}
 }
 
-func TestConvertStateToBytes(t *testing.T) {
-	civoCloudState.ClusterName = "demo"
-	bytes, err := convertStateToBytes(*civoCloudState)
-	if err != nil {
-		t.Fatal("missmatch in conversion of state to bytes")
-	}
-	a, err := json.Marshal(civoCloudState)
-	assert.DeepEqual(t, bytes, a, nil)
-}
-
 func TestCivoProvider_InitState(t *testing.T) {
-	//TODO: add
+
+	// get the data
+	fakeClient.Region = "LON1"
+
+	t.Run("Create state", func(t *testing.T) {
+
+		if err := fakeClient.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
+		}
+
+		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_MANG, "clustertype should be managed")
+		assert.Equal(t, clusterDirName, fakeClient.ClusterName+" "+fakeClient.Region, "clusterdir not equal")
+		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
+		assert.Equal(t, fakeClient.NewNetwork(demoClient.Storage), nil, "Network should be created")
+		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
+	})
+
+	t.Run("Try to resume", func(t *testing.T) {
+		civoCloudState.IsCompleted = true
+		assert.Equal(t, civoCloudState.IsCompleted, true, "cluster should not be completed")
+
+		if err := fakeClient.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+			t.Fatalf("Unable to resume state, Reason: %v", err)
+		}
+	})
+
+	t.Run("try to Trigger Get request", func(t *testing.T) {
+
+		if err := fakeClient.InitState(demoClient.Storage, utils.OPERATION_STATE_GET); err != nil {
+			t.Fatalf("Unable to get state, Reason: %v", err)
+		}
+	})
+
+	t.Run("try to Trigger Delete request", func(t *testing.T) {
+
+		if err := fakeClient.InitState(demoClient.Storage, utils.OPERATION_STATE_DELETE); err != nil {
+			t.Fatalf("Unable to Delete state, Reason: %v", err)
+		}
+	})
+
+	t.Run("try to Trigger Invalid request", func(t *testing.T) {
+
+		if err := fakeClient.InitState(demoClient.Storage, "test"); err == nil {
+			t.Fatalf("Expected error but not got: %v", err)
+		}
+	})
 }
 
 func TestFetchAPIKey(t *testing.T) {
-	t.Logf("try checking for env")
-
 	environmentTest := [][3]string{
 		{"CIVO_TOKEN", "12", "12"},
 		{"AZ_TOKEN", "234", ""},
@@ -104,8 +155,12 @@ func TestApplications(t *testing.T) {
 	}
 
 	for apps, setVal := range testPreInstalled {
-		if retApps := aggregratedApps(apps); strings.Compare(retApps, setVal) != 0 {
-			t.Fatalf("apps dont match `%s` Expected `%s` but got `%s`", apps, setVal, retApps)
+		if retApps := fakeClient.Application(apps); retApps == nil {
+			t.Fatalf("application returned nil for valid applications as input")
+		} else {
+			if fakeClient.Metadata.Apps != setVal {
+				t.Fatalf("apps dont match `%s` Expected `%s` but got `%s`", apps, setVal, retApps)
+			}
 		}
 	}
 }
@@ -182,9 +237,67 @@ func TestCivoProvider_NoOfWorkerPlane(t *testing.T) {
 		t.Fatalf("setter should return nil when no changes happen workerplane err: %v", err)
 	}
 
+	_, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, 3, true)
+	if err != nil {
+		t.Fatalf("setter should return nil when upscaling changes happen workerplane err: %v", err)
+	}
+
+	_, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, 1, true)
+	if err != nil {
+		t.Fatalf("setter should return nil when upscaling changes happen workerplane err: %v", err)
+	}
+
 	no, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, -1, false)
-	if no != 2 {
+	if no != 1 {
 		t.Fatalf("Getter failed to get updated no of workerplane array got no: %d and err: %v", no, err)
+	}
+}
+
+func TestResName(t *testing.T) {
+
+	if ret := fakeClient.Name("demo"); ret == nil {
+		t.Fatalf("returned nil for valid res name")
+	}
+	if fakeClient.Metadata.ResName != "demo" {
+		t.Fatalf("Correct assignment missing")
+	}
+
+	if ret := fakeClient.Name("12demo"); ret != nil {
+		t.Fatalf("returned interface for invalid res name")
+	}
+}
+
+func TestRole(t *testing.T) {
+	validSet := []string{utils.ROLE_CP, utils.ROLE_LB, utils.ROLE_DS, utils.ROLE_WP}
+	for _, val := range validSet {
+		if ret := fakeClient.Role(val); ret == nil {
+			t.Fatalf("returned nil for valid role")
+		}
+		if fakeClient.Metadata.Role != val {
+			t.Fatalf("Correct assignment missing")
+		}
+	}
+	if ret := fakeClient.Role("fake"); ret != nil {
+		t.Fatalf("returned interface for invalid role")
+	}
+}
+
+func TestVMType(t *testing.T) {
+	if ret := fakeClient.VMType("g4s.kube.small"); ret == nil {
+		t.Fatalf("returned nil for valid vm type")
+	}
+	if fakeClient.Metadata.VmType != "g4s.kube.small" {
+		t.Fatalf("Correct assignment missing")
+	}
+
+	if ret := fakeClient.VMType(""); ret != nil {
+		t.Fatalf("returned interface for invalid vm type")
+	}
+}
+
+func TestVisibility(t *testing.T) {
+	if fakeClient.Visibility(true); !fakeClient.Metadata.Public {
+		t.Fatalf("Visibility setting not working")
 	}
 }
 
@@ -207,33 +320,85 @@ func TestRegion(t *testing.T) {
 func TestK8sVersion(t *testing.T) {
 	// these are invalid
 	// input and output
-	forTesting := map[string]error{
-		"":            errors.New(""),
-		"1.28":        errors.New(""),
-		"1.27.4-k3s1": nil,
-		"1.27-k3s1":   errors.New(""),
-		"1.27.1-k3s1": nil,
+	forTesting := []string{
+		"1.27.4",
+		"1.27.1",
+		"1.28",
 	}
 
-	for ver, Rver := range forTesting {
-		if err := isValidK8sVersion(fakeClient, ver); (err == nil && Rver != nil) || (err != nil && Rver == nil) {
-			t.Fatalf("version dont match we have `%s` Expected `%s` but got `%s`", ver, Rver, err)
+	for i := 0; i < len(forTesting); i++ {
+		var ver string = forTesting[i]
+		if i < 2 {
+			if ret := fakeClient.Version(ver); ret == nil {
+				t.Fatalf("returned nil for valid version")
+			}
+			if ver+"-k3s1" != fakeClient.Metadata.K8sVersion {
+				t.Fatalf("set value is not equal to input value")
+			}
+		} else {
+			if ret := fakeClient.Version(ver); ret != nil {
+				t.Fatalf("returned interface for invalid version")
+			}
 		}
+	}
+
+	if ret := fakeClient.Version(""); ret == nil {
+		t.Fatalf("returned nil for valid version")
+	}
+	if "1.26.4-k3s1" != fakeClient.Metadata.K8sVersion {
+		t.Fatalf("set value is not equal to input value")
 	}
 }
 
-func TestVMType(t *testing.T) {
-
-	// input and output
-	forTesting := map[string]error{
-		"g3.dca":         errors.New(""),
-		"":               errors.New(""),
-		"dca":            errors.New(""),
-		"g4s.kube.small": nil,
-	}
-	for key, val := range forTesting {
-		if err := isValidVMSize(fakeClient, key); (err != nil && val == nil) || (err == nil && val != nil) {
-			t.Fatalf("VM type: `%s` Expected `%v` got `%v`", key, val, err)
+func TestCniAndOthers(t *testing.T) {
+	t.Run("CNI Support flag", func(t *testing.T) {
+		if !fakeClient.SupportForCNI() {
+			t.Fatal("Support for CNI must be true")
 		}
-	}
+	})
+
+	t.Run("Application support flag", func(t *testing.T) {
+		if !fakeClient.SupportForApplications() {
+			t.Fatal("Support for Application must be true")
+		}
+	})
+
+	t.Run("CNI set functionality", func(t *testing.T) {
+		if ret := fakeClient.CNI("cilium"); ret == nil {
+			t.Fatalf("returned nil for valid CNI")
+		}
+		if ret := fakeClient.CNI(""); ret == nil {
+			t.Fatalf("returned nil for valid CNI")
+		}
+
+		if ret := fakeClient.CNI("abcd"); ret != nil {
+			t.Fatalf("returned interface for invalid CNI")
+		}
+	})
+}
+
+func TestFirewallRules(t *testing.T) {
+	t.Run("Controlplane fw rules", func(t *testing.T) {
+		if firewallRuleControlPlane() != nil {
+			t.Fatalf("missmatch firewall rule")
+		}
+	})
+
+	t.Run("Workerplane fw rules", func(t *testing.T) {
+		if firewallRuleWorkerPlane() != nil {
+			t.Fatalf("missmatch firewall rule")
+		}
+	})
+
+	t.Run("Loadbalancer fw rules", func(t *testing.T) {
+		if firewallRuleLoadBalancer() != nil {
+			t.Fatalf("missmatch firewall rule")
+		}
+	})
+
+	t.Run("Datastore fw rules", func(t *testing.T) {
+		if firewallRuleDataStore() != nil {
+			t.Fatalf("missmatch firewall rule")
+		}
+	})
 }

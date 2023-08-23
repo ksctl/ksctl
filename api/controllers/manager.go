@@ -65,7 +65,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	}
 
 	fakeClient := false
-	if str := os.Getenv(utils.FAKE_CLIENT); len(str) != 0 {
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_CREATE, fakeClient); err != nil {
@@ -84,7 +84,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
 	fakeClient := false
-	if str := os.Getenv(utils.FAKE_CLIENT); len(str) != 0 {
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE, fakeClient); err != nil {
@@ -188,7 +188,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	}
 
 	fakeClient := false
-	if str := os.Getenv(utils.FAKE_CLIENT); len(str) != 0 {
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_CREATE, fakeClient); err != nil {
@@ -231,7 +231,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	}
 
 	fakeClient := false
-	if str := os.Getenv(utils.FAKE_CLIENT); len(str) != 0 {
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE, fakeClient); err != nil {
@@ -256,7 +256,7 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	}
 
 	fakeClient := false
-	if str := os.Getenv(utils.FAKE_CLIENT); len(str) != 0 {
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_GET, fakeClient); err != nil {
@@ -305,7 +305,7 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 	}
 
 	fakeClient := false
-	if str := os.Getenv(utils.FAKE_CLIENT); len(str) != 0 {
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_GET, fakeClient); err != nil {
