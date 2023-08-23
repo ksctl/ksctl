@@ -1,12 +1,14 @@
 package azure
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"os"
 	"testing"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
@@ -453,8 +455,509 @@ func TestFirewallRules(t *testing.T) {
 	})
 }
 
+func checkCurrentStateFile(t *testing.T) {
+
+	raw, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
+	if err != nil {
+		t.Fatalf("Unable to access statefile")
+	}
+	var data *StateConfiguration
+	if err := json.Unmarshal(raw, &data); err != nil {
+		t.Fatalf("Reason: %v", err)
+	}
+
+	assert.DeepEqual(t, azureCloudState, data)
+}
+
+func checkCurrentStateFileHA(t *testing.T) {
+
+	raw, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA, clusterDirName, STATE_FILE_NAME)).Load()
+	if err != nil {
+		t.Fatalf("Unable to access statefile")
+	}
+	var data *StateConfiguration
+	if err := json.Unmarshal(raw, &data); err != nil {
+		t.Fatalf("Reason: %v", err)
+	}
+
+	assert.DeepEqual(t, azureCloudState, data)
+}
+
 func TestManagedCluster(t *testing.T) {
+	fakeAzure.Version("1.27")
+	fakeAzure.VMType("fake")
+	t.Run("init state", func(t *testing.T) {
+
+		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
+		}
+
+		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_MANG, "clustertype should be managed")
+		assert.Equal(t, clusterDirName, fakeAzure.ClusterName+" "+fakeAzure.ResourceGroup+" "+fakeAzure.Region, "clusterdir not equal")
+		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
+
+		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
+		if os.IsExist(err) {
+			t.Fatalf("State file and cluster directory present where it should not be")
+		}
+	})
+
+	t.Run("Create network", func(t *testing.T) {
+		assert.Equal(t, fakeAzure.NewNetwork(demoClient.Storage), nil, "resource grp should be created")
+		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
+		assert.Assert(t, len(azureCloudState.ResourceGroupName) > 0)
+		checkCurrentStateFile(t)
+	})
+
+	t.Run("Create managed cluster", func(t *testing.T) {
+
+		assert.Equal(t, fakeAzure.NewManagedCluster(demoClient.Storage, 5), nil, "managed cluster should be created")
+		assert.Equal(t, azureCloudState.IsCompleted, true, "cluster should not be completed")
+
+		assert.Equal(t, azureCloudState.NoManagedNodes, 5)
+		//assert.Equal(t, azureCloudState.KubernetesDistro, utils.K8S_K3S)
+		assert.Equal(t, azureCloudState.KubernetesVer, fakeAzure.Metadata.K8sVersion)
+		assert.Assert(t, len(azureCloudState.ManagedClusterName) > 0, "Managed cluster Name not saved")
+
+		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
+		if os.IsNotExist(err) {
+			t.Fatalf("kubeconfig should not be absent")
+		}
+		checkCurrentStateFile(t)
+	})
+
+	t.Run("Delete managed cluster", func(t *testing.T) {
+		assert.Equal(t, fakeAzure.DelManagedCluster(demoClient.Storage), nil, "managed cluster should be deleted")
+
+		assert.Equal(t, len(azureCloudState.ManagedClusterName), 0, "managed cluster id still present")
+
+		checkCurrentStateFile(t)
+	})
+
+	t.Run("Delete Network cluster", func(t *testing.T) {
+		assert.Equal(t, fakeAzure.DelNetwork(demoClient.Storage), nil, "Network should be deleted")
+
+		assert.Equal(t, len(azureCloudState.ResourceGroupName), 0, "resource grp still present")
+		// at this moment the file is not present
+		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
+		if os.IsExist(err) {
+			t.Fatalf("State file and cluster directory still present")
+		}
+	})
 }
 
 func TestHACluster(t *testing.T) {
+
+	fakeAzure.Region = "fake"
+	fakeAzure.ClusterName = "fakeazure"
+	fakeAzure.HACluster = true
+
+	// size
+	fakeAzure.Metadata.NoCP = 7
+	fakeAzure.Metadata.NoDS = 5
+	fakeAzure.Metadata.NoWP = 10
+	fakeAzure.Metadata.Public = true
+	fakeAzure.Metadata.VmType = "fake"
+	fakeAzure.Metadata.K8sName = utils.K8S_K3S
+	fakeAzure.VMType("fake")
+
+	t.Run("init state", func(t *testing.T) {
+
+		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
+		}
+
+		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_HA, "clustertype should be managed")
+		assert.Equal(t, clusterDirName, fakeAzure.ClusterName+" "+fakeAzure.ResourceGroup+" "+fakeAzure.Region, "clusterdir not equal")
+		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
+
+		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA, clusterDirName, STATE_FILE_NAME)).Load()
+		if os.IsExist(err) {
+			t.Fatalf("State file and cluster directory present where it should not be")
+		}
+	})
+
+	t.Run("Create network", func(t *testing.T) {
+		assert.Equal(t, fakeAzure.NewNetwork(demoClient.Storage), nil, "Network should be created")
+		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
+
+		assert.Equal(t, azureCloudState.ResourceGroupName, fakeAzure.ResourceGroup, "resource group not saved")
+		assert.Equal(t, azureCloudState.VirtualNetworkName, fakeAzure.ClusterName+"-vnet", "virtual net should be created")
+		assert.Equal(t, azureCloudState.SubnetName, fakeAzure.ClusterName+"-subnet", "subnet should be created")
+
+		assert.Assert(t, len(azureCloudState.VirtualNetworkID) > 0, "virtual net should be created")
+		assert.Assert(t, len(azureCloudState.SubnetID) > 0, "subnet should be created")
+
+		checkCurrentStateFileHA(t)
+	})
+
+	t.Run("Create ssh", func(t *testing.T) {
+
+		fakeAzure.Name("fake-ssh-key") // only to test the name working
+		assert.Equal(t, fakeAzure.CreateUploadSSHKeyPair(demoClient.Storage), nil, "ssh key failed")
+
+		assert.Equal(t, azureCloudState.SSHKeyName, fakeAzure.Metadata.ResName, "sshid must be present")
+
+		assert.Equal(t, azureCloudState.SSHUser, "azureuser", "ssh user not set")
+		assert.Equal(t, azureCloudState.SSHPrivateKeyLoc, utils.GetPath(utils.SSH_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName), "ssh private key loc missing")
+
+		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
+		checkCurrentStateFileHA(t)
+	})
+
+	t.Run("Create Firewalls", func(t *testing.T) {
+
+		t.Run("Controlplane", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_CP)
+			fakeAzure.Name("fake-fw-cp")
+
+			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
+
+			assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for controlplane absent")
+			assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkSecurityGroupID) > 0, "fw id for controlplane missing")
+		})
+		t.Run("Workerplane", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_WP)
+			fakeAzure.Name("fake-fw-wp")
+
+			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
+			assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for workerplane absent")
+			assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID) > 0, "fw id for workerplane missing")
+		})
+		t.Run("Loadbalancer", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_LB)
+			fakeAzure.Name("fake-fw-lb")
+
+			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for loadbalacer absent")
+			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID) > 0, "fw id for loadbalacer missing")
+		})
+		t.Run("Datastore", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_DS)
+			fakeAzure.Name("fake-fw-ds")
+
+			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
+			assert.Equal(t, azureCloudState.InfoDatabase.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for datastore absent")
+			assert.Assert(t, len(azureCloudState.InfoDatabase.NetworkSecurityGroupID) > 0, "fw id for datastore missing")
+		})
+
+		checkCurrentStateFileHA(t)
+	})
+
+	t.Run("Create VMs", func(t *testing.T) {
+		t.Run("Loadbalancer", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_LB)
+			fakeAzure.Name("fake-lb")
+
+			assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, 0), nil, "new vm failed")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.Name, fakeAzure.Metadata.ResName, "missmatch of Loadbalancer VM name")
+			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.HostName) > 0, "missmatch of Loadbalancer vm hostname")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.DiskName, fakeAzure.Metadata.ResName+"-disk", "missmatch of Loadbalancer disk name")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.PublicIPName, fakeAzure.Metadata.ResName+"-pub", "missmatch of Loadbalancer pub ip name")
+			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.PublicIPID) > 0, "missmatch of Loadbalancer pub ip id must be created")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.PublicIP, "A.B.C.D", "missmatch of Loadbalancer pub ip")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkInterfaceName, fakeAzure.Metadata.ResName+"-nic", "missmatch of Loadbalancer nic name")
+			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkInterfaceID) > 0, "missmatch of Loadbalancer nic must be created")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.PrivateIP, "192.168.X.Y", "missmatch of Loadbalancer private ip NIC")
+
+			checkCurrentStateFileHA(t)
+		})
+		t.Run("Controlplanes", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_CP)
+
+			if _, err := fakeAzure.NoOfControlPlane(fakeAzure.Metadata.NoCP, true); err != nil {
+				t.Fatalf("Failed to set the controlplane")
+			}
+
+			for i := 0; i < fakeAzure.Metadata.NoCP; i++ {
+				t.Run("controlplane", func(t *testing.T) {
+
+					fakeAzure.Name(fmt.Sprintf("fake-cp-%d", i))
+
+					assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, i), nil, "new vm failed")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.Names[i], fakeAzure.Metadata.ResName, "missmatch of controlplane VM name")
+					assert.Assert(t, len(azureCloudState.InfoControlPlanes.Hostnames[i]) > 0, "missmatch of controlplane vm hostname")
+
+					assert.Equal(t, azureCloudState.InfoControlPlanes.DiskNames[i], fakeAzure.Metadata.ResName+"-disk", "missmatch of controlplane disk name")
+
+					assert.Equal(t, azureCloudState.InfoControlPlanes.PublicIPNames[i], fakeAzure.Metadata.ResName+"-pub", "missmatch of controlplane pub ip name")
+					assert.Assert(t, len(azureCloudState.InfoControlPlanes.PublicIPIDs[i]) > 0, "missmatch of controlplane pub ip id must be created")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.PublicIPs[i], "A.B.C.D", "missmatch of controlplane pub ip")
+
+					assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkInterfaceNames[i], fakeAzure.Metadata.ResName+"-nic", "missmatch of controlplane nic name")
+					assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of controlplane nic must be created")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of controlplane private ip NIC")
+
+					checkCurrentStateFileHA(t)
+				})
+			}
+		})
+
+		t.Run("Datastores", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_DS)
+			// NOTE: the noDS is set to 1 becuase current implementation is only for single datastore
+			// TODO: use the 1 as limit
+
+			fakeAzure.Metadata.NoDS = 1
+
+			if _, err := fakeAzure.NoOfDataStore(fakeAzure.Metadata.NoDS, true); err != nil {
+				t.Fatalf("Failed to set the datastore")
+			}
+
+			for i := 0; i < fakeAzure.Metadata.NoDS; i++ {
+				t.Run("datastore", func(t *testing.T) {
+
+					fakeAzure.Name(fmt.Sprintf("fake-ds-%d", i))
+
+					assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, i), nil, "new vm failed")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.Names[i], fakeAzure.Metadata.ResName, "missmatch of datastore VM name")
+					assert.Assert(t, len(azureCloudState.InfoDatabase.Hostnames[i]) > 0, "missmatch of datastore vm hostname")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.DiskNames[i], fakeAzure.Metadata.ResName+"-disk", "missmatch of datastore disk name")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.PublicIPNames[i], fakeAzure.Metadata.ResName+"-pub", "missmatch of datastore pub ip name")
+					assert.Assert(t, len(azureCloudState.InfoDatabase.PublicIPIDs[i]) > 0, "missmatch of datastore pub ip id must be created")
+					assert.Equal(t, azureCloudState.InfoDatabase.PublicIPs[i], "A.B.C.D", "missmatch of datastore pub ip")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.NetworkInterfaceNames[i], fakeAzure.Metadata.ResName+"-nic", "missmatch of datastore nic name")
+					assert.Assert(t, len(azureCloudState.InfoDatabase.NetworkInterfaceIDs[i]) > 0, "missmatch of datastore nic must be created")
+					assert.Equal(t, azureCloudState.InfoDatabase.PrivateIPs[i], "192.168.X.Y", "missmatch of datastore private ip NIC")
+
+					checkCurrentStateFileHA(t)
+				})
+			}
+		})
+		t.Run("Workplanes", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_WP)
+
+			if _, err := fakeAzure.NoOfWorkerPlane(demoClient.Storage, fakeAzure.Metadata.NoWP, true); err != nil {
+				t.Fatalf("Failed to set the workerplane")
+			}
+
+			for i := 0; i < fakeAzure.Metadata.NoWP; i++ {
+				t.Run("workerplane", func(t *testing.T) {
+
+					fakeAzure.Name(fmt.Sprintf("fake-wp-%d", i))
+
+					assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, i), nil, "new vm failed")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.Names[i], fakeAzure.Metadata.ResName, "missmatch of workerplane VM name")
+					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.Hostnames[i]) > 0, "missmatch of workerplane vm hostname")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.DiskNames[i], fakeAzure.Metadata.ResName+"-disk", "missmatch of workerplane disk name")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PublicIPNames[i], fakeAzure.Metadata.ResName+"-pub", "missmatch of workerplane pub ip name")
+					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.PublicIPIDs[i]) > 0, "missmatch of workerplane pub ip id must be created")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PublicIPs[i], "A.B.C.D", "missmatch of workerplane pub ip")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[i], fakeAzure.Metadata.ResName+"-nic", "missmatch of workerplane nic name")
+					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of workerplane nic must be created")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of workerplane private ip NIC")
+
+					checkCurrentStateFileHA(t)
+				})
+			}
+
+			assert.Equal(t, azureCloudState.IsCompleted, true, "cluster should be completed")
+		})
+	})
+
+	fmt.Println(fakeAzure.GetHostNameAllWorkerNode())
+	t.Run("get hostname of workerplanes", func(t *testing.T) {
+		expected := azureCloudState.InfoWorkerPlanes.Hostnames
+
+		got := fakeAzure.GetHostNameAllWorkerNode()
+		assert.DeepEqual(t, got, expected)
+	})
+
+	// explicit clean
+	azureCloudState = nil
+
+	// TODO: check for the Passing the state to the kubernetes distribution function GetStateForHACluster
+
+	// use init state firest
+	t.Run("init state deletion", func(t *testing.T) {
+
+		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_DELETE); err != nil {
+			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
+		}
+
+		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_HA, "clustertype should be managed")
+		assert.Equal(t, clusterDirName, fakeAzure.ClusterName+" "+fakeAzure.ResourceGroup+" "+fakeAzure.Region, "clusterdir not equal")
+	})
+
+	t.Run("Get all counters", func(t *testing.T) {
+		var err error
+		fakeAzure.Metadata.NoCP, err = fakeAzure.NoOfControlPlane(-1, false)
+		assert.Assert(t, err == nil)
+
+		fakeAzure.Metadata.NoWP, err = fakeAzure.NoOfWorkerPlane(demoClient.Storage, -1, false)
+		assert.Assert(t, err == nil)
+
+		fakeAzure.Metadata.NoDS, err = fakeAzure.NoOfDataStore(-1, false)
+		assert.Assert(t, err == nil)
+	})
+
+	t.Run("Delete VMs", func(t *testing.T) {
+		t.Run("Loadbalancer", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_LB)
+
+			assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, 0), nil, "del vm failed")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.Name, "", "missmatch of Loadbalancer VM name")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.HostName, "", "missmatch of Loadbalancer vm hostname")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.DiskName, "", "missmatch of Loadbalancer disk name")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.PublicIPName, "", "missmatch of Loadbalancer pub ip name")
+			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.PublicIPID) == 0, "missmatch of Loadbalancer pub ip id must be created")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.PublicIP, "", "missmatch of Loadbalancer pub ip")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkInterfaceName, "", "missmatch of Loadbalancer nic name")
+			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkInterfaceID) == 0, "missmatch of Loadbalancer nic must be created")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.PrivateIP, "", "missmatch of Loadbalancer private ip NIC")
+			checkCurrentStateFileHA(t)
+		})
+
+		t.Run("Workerplane", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_WP)
+
+			for i := 0; i < fakeAzure.Metadata.NoWP; i++ {
+				t.Run("workerplane", func(t *testing.T) {
+
+					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.Names[i], "", "missmatch of workerplane VM name")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.Hostnames[i], "", "missmatch of workerplane vm hostname")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.DiskNames[i], "", "missmatch of workerplane disk name")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PublicIPNames[i], "", "missmatch of workerplane pub ip name")
+					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.PublicIPIDs[i]) == 0, "missmatch of workerplane pub ip id must be created")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PublicIPs[i], "", "missmatch of workerplane pub ip")
+
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[i], "", "missmatch of workerplane nic name")
+					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[i]) == 0, "missmatch of workerplane nic must be created")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PrivateIPs[i], "", "missmatch of workerplane private ip NIC")
+
+					checkCurrentStateFileHA(t)
+				})
+			}
+		})
+		t.Run("Controlplane", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_CP)
+
+			for i := 0; i < fakeAzure.Metadata.NoCP; i++ {
+				t.Run("controlplane", func(t *testing.T) {
+
+					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
+
+					assert.Equal(t, azureCloudState.InfoControlPlanes.Names[i], "", "missmatch of controlplane VM name")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.Hostnames[i], "", "missmatch of controlplane vm hostname")
+
+					assert.Equal(t, azureCloudState.InfoControlPlanes.DiskNames[i], "", "missmatch of controlplane disk name")
+
+					assert.Equal(t, azureCloudState.InfoControlPlanes.PublicIPNames[i], "", "missmatch of controlplane pub ip name")
+					assert.Assert(t, len(azureCloudState.InfoControlPlanes.PublicIPIDs[i]) == 0, "missmatch of controlplane pub ip id must be created")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.PublicIPs[i], "", "missmatch of controlplane pub ip")
+
+					assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkInterfaceNames[i], "", "missmatch of controlplane nic name")
+					assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[i]) == 0, "missmatch of controlplane nic must be created")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.PrivateIPs[i], "", "missmatch of controlplane private ip NIC")
+
+					checkCurrentStateFileHA(t)
+				})
+			}
+		})
+		t.Run("DataStore", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_DS)
+
+			for i := 0; i < fakeAzure.Metadata.NoDS; i++ {
+				t.Run("datastore", func(t *testing.T) {
+
+					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.Names[i], "", "missmatch of datastore VM name")
+					assert.Equal(t, azureCloudState.InfoDatabase.Hostnames[i], "", "missmatch of datastore vm hostname")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.DiskNames[i], "", "missmatch of datastore disk name")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.PublicIPNames[i], "", "missmatch of datastore pub ip name")
+					assert.Assert(t, len(azureCloudState.InfoDatabase.PublicIPIDs[i]) == 0, "missmatch of datastore pub ip id must be created")
+					assert.Equal(t, azureCloudState.InfoDatabase.PublicIPs[i], "", "missmatch of datastore pub ip")
+
+					assert.Equal(t, azureCloudState.InfoDatabase.NetworkInterfaceNames[i], "", "missmatch of datastore nic name")
+					assert.Assert(t, len(azureCloudState.InfoDatabase.NetworkInterfaceIDs[i]) == 0, "missmatch of datastore nic must be created")
+					assert.Equal(t, azureCloudState.InfoDatabase.PrivateIPs[i], "", "missmatch of datastore private ip NIC")
+
+					checkCurrentStateFileHA(t)
+				})
+			}
+		})
+	})
+
+	t.Run("Delete Firewalls", func(t *testing.T) {
+
+		t.Run("Controlplane", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_CP)
+
+			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "del firewall failed")
+
+			assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkSecurityGroupName, "", "firewallID for controlplane absent")
+			assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkSecurityGroupID) == 0, "fw id for controlplane missing")
+		})
+		t.Run("Workerplane", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_WP)
+
+			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "new firewall failed")
+
+			assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName, "", "firewallID for workerplane absent")
+			assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID) == 0, "fw id for workerplane missing")
+		})
+		t.Run("Loadbalancer", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_LB)
+
+			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "new firewall failed")
+
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName, "", "firewallID for loadbalacer absent")
+			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID) == 0, "fw id for loadbalacer missing")
+		})
+		t.Run("Datastore", func(t *testing.T) {
+			fakeAzure.Role(utils.ROLE_DS)
+
+			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "new firewall failed")
+
+			assert.Equal(t, azureCloudState.InfoDatabase.NetworkSecurityGroupName, "", "firewallID for datastore absent")
+			assert.Assert(t, len(azureCloudState.InfoDatabase.NetworkSecurityGroupID) == 0, "fw id for datastore missing")
+		})
+
+		checkCurrentStateFileHA(t)
+	})
+
+	t.Run("Delete ssh", func(t *testing.T) {
+
+		assert.Equal(t, fakeAzure.DelSSHKeyPair(demoClient.Storage), nil, "ssh key failed")
+
+		assert.Equal(t, azureCloudState.SSHKeyName, "", "sshid must be present")
+
+		assert.Equal(t, azureCloudState.SSHUser, "", "ssh user not set")
+		assert.Equal(t, azureCloudState.SSHPrivateKeyLoc, "", "ssh private key loc missing")
+
+		checkCurrentStateFileHA(t)
+	})
+
+	t.Run("Delete network", func(t *testing.T) {
+		assert.Equal(t, fakeAzure.DelNetwork(demoClient.Storage), nil, "Network should be deleted")
+
+		assert.Equal(t, azureCloudState.ResourceGroupName, "", "resource group not saved")
+		assert.Equal(t, azureCloudState.VirtualNetworkName, "", "virtual net should be created")
+		assert.Equal(t, azureCloudState.SubnetName, "", "subnet should be created")
+
+		assert.Assert(t, len(azureCloudState.VirtualNetworkID) == 0, "virtual net should be created")
+		assert.Assert(t, len(azureCloudState.SubnetID) == 0, "subnet should be created")
+	})
 }

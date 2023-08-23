@@ -243,9 +243,17 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 	case utils.ROLE_WP:
 		azureCloudState.InfoWorkerPlanes.DiskNames[indexNo] = diskName
 		azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
+
+		if len(azureCloudState.InfoWorkerPlanes.Names) == indexNo+1 {
+			azureCloudState.IsCompleted = true
+		}
 	case utils.ROLE_CP:
 		azureCloudState.InfoControlPlanes.DiskNames[indexNo] = diskName
 		azureCloudState.InfoControlPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
+		if len(azureCloudState.InfoControlPlanes.Names) == indexNo+1 && len(azureCloudState.InfoWorkerPlanes.Names) == 0 {
+			// when its the last resource to be created and we are done with the last controlplane creation
+			azureCloudState.IsCompleted = true
+		}
 	case utils.ROLE_LB:
 		azureCloudState.InfoLoadBalancer.DiskName = diskName
 		azureCloudState.InfoLoadBalancer.HostName = *resp.Properties.OSProfile.ComputerName
