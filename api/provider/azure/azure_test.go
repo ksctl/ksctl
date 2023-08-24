@@ -189,8 +189,18 @@ func TestNoOfWorkerPlane(t *testing.T) {
 		t.Fatalf("setter should return nil when no changes happen workerplane err: %v", err)
 	}
 
+	_, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, 3, true)
+	if err != nil {
+		t.Fatalf("setter should return nil when upscaling changes happen workerplane err: %v", err)
+	}
+
+	_, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, 1, true)
+	if err != nil {
+		t.Fatalf("setter should return nil when upscaling changes happen workerplane err: %v", err)
+	}
+
 	no, err = demoClient.Cloud.NoOfWorkerPlane(demoClient.Storage, -1, false)
-	if no != 2 {
+	if no != 1 {
 		t.Fatalf("Getter failed to get updated no of workerplane array got no: %d and err: %v", no, err)
 	}
 }

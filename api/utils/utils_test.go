@@ -13,6 +13,10 @@ import (
 	"gotest.tools/assert"
 )
 
+var (
+	dir = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
+)
+
 func TestConsts(t *testing.T) {
 	assert.Equal(t, CLOUD_CIVO, "civo", "civo constant not correct assigned")
 	assert.Equal(t, CLOUD_AZURE, "azure", "azure constant not correct assgined")
@@ -149,9 +153,32 @@ func TestIsValidClusterName(T *testing.T) {
 }
 
 func TestSSHExecute(t *testing.T) {
-	// make a dummy ssh server with ssh keypair auth
-	// payloadSSH := SSHPayload{UserName: "dipankar", PathPrivateKey: GetPath(SSH_PATH, "dcs"), PublicIP: "0.0.0.0", Output: ""}
-	// payloadSSH.SSHExecute()
+	var storage resources.StorageFactory = localstate.InitStorage(false)
+	assert.Equal(t, os.MkdirAll(GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd"), 0755), nil, "create folders")
+	_ = os.Setenv(KSCTL_TEST_DIR_ENABLED, dir)
+	azHA := GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd")
+
+	if err := os.MkdirAll(azHA, 0755); err != nil {
+		t.Fatalf("Reason: %v", err)
+	}
+	fmt.Println("Created tmp directories")
+
+	_, err := CreateSSHKeyPair(storage, CLOUD_AZURE, "abcd")
+	if err != nil {
+		t.Fatalf("Reason: %v", err)
+	}
+	var sshTest SSHCollection = &SSHPayload{}
+	sshTest.LocPrivateKey(GetPath(SSH_PATH, CLOUD_AZURE, "ha", "abcd"))
+	sshTest.Username("fake")
+	assert.Assert(t, sshTest.Flag(EXEC_WITHOUT_OUTPUT).Script("").
+		IPv4("A.A.A.A").
+		FastMode(true).SSHExecute(storage) != nil, "ssh should fail")
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
+
 }
 
 // TODO: Add testing for credentials

@@ -5,14 +5,21 @@ echo "|   Testing (api/utils)"
 echo "-----------------------------------"
 
 cd utils/
-go test -v . -timeout 10s && cd -
+go test . -v && cd -
+
+echo "-----------------------------------"
+echo "|   Testing (api/logger)"
+echo "-----------------------------------"
+
+cd logger/
+go test . -v -timeout 10s && cd -
 
 echo "-----------------------------------"
 echo "|   Testing (api/k8s_distro/k3s)    |"
 echo "-----------------------------------"
 
 cd k8s_distro/k3s/
-go test -v . && cd -
+go test . -v && cd -
 
 echo "-----------------------------------"
 echo "|   Testing (api/provider/local)"
