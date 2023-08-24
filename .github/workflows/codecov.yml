@@ -32,6 +32,11 @@ jobs:
       run: |
          go test -race -coverprofile=../../coverage-utils.out -covermode=atomic -v
          cd ../..
+    - name: Run coverage (LOGGER)
+      working-directory: api/logger
+      run: |
+        go test -race -coverprofile=../../coverage-logger.out -covermode=atomic -v
+        cd ../..
     - name: Run coverage (K3S)
       working-directory: api/k8s_distro/k3s
       run: |
