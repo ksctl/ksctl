@@ -80,13 +80,11 @@ Windows | :heavy_check_mark:
 
 # Getting Started guide
 
-[Getting Started guide](https://kubesimplify.github.io/ksctl/docs/getting-started/install)
-
+[Getting Started guide](https://kubesimplify.github.io/ksctl/docs/category/getting-started)
 
 # Usage
 
-Please refer to the [usage guide](USAGE.md) also [Docs Website](https://kubesimplify.github.io/ksctl) to know how you can use ksctl
-
+Please refer to the [CLI Reference guide](https://kubesimplify.github.io/ksctl/docs/cli/CLI%20command%20reference) also [Docs Website](https://kubesimplify.github.io/ksctl) to know how you can use ksctl
 
 # Contribution Guidelines
 Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
