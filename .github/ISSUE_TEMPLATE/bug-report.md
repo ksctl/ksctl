@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: 'bug: Title'
+title: 'bug(<section>): Title'
 labels: help wanted, kind/bug, needs-triage, priority/high
 assignees: ''
 
@@ -13,7 +13,7 @@ assignees: ''
 - [ ] Azure
 - [ ] Civo
 - [ ] Local
-- [ ] AWS
+- [ ] Local
 
 # Reproduce 💻 ➡️  💻
 <!-- Steps to reproduce the behavior -->
@@ -29,8 +29,11 @@ assignees: ''
    - [ ] MacOS
    - [ ] Windows
    - [ ] Linux
- - ksctl version `<Version>`
+ - ksctl version 
+    ```
+    <!-- Add here -->
+    ```
 
 # Additional context
 Add any other context about the problem here.
-Check Contribution's guidelines
+Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl/docs/contributions)
