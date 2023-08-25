@@ -2,7 +2,11 @@ package aws
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"log"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
@@ -25,7 +29,10 @@ type AwsProvider struct {
 	VPC         string `json:"vpc"`
 	AccessKeyID string `json:"access_key_id"`
 	Secret      string `json:"secret_access_key"`
+	Session     *session.Session
 	Metadata    Metadata
+
+	SSHPath string `json:"ssh_key"`
 }
 type AWSStateVms struct {
 	Vpc           string `json:"vpc"`
@@ -90,7 +97,19 @@ func ReturnAwsStruct(metadata resources.Metadata) (*AwsProvider, error) {
 	}, nil
 }
 
-func (cloud *AwsProvider) Name(resName string) resources.CloudFactory {
-	cloud.Metadata.ResName = resName
+func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
+	obj.Metadata.ResName = resName
 	return nil
+}
+
+func (obj *AwsProvider) NEWCLIENT() (*session.Session, error) {
+
+	NewSession, err := session.NewSession(&aws.Config{
+		Region:      aws.String(AWS_REGION),
+		Credentials: credentials.NewStaticCredentials(obj.AccessKeyID, obj.Secret, ""),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return NewSession, nil
 }
