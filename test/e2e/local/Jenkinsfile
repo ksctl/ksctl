@@ -10,15 +10,10 @@ pipeline {
                 sh '''
                     #!/bin/bash
 
-                    ksctl create local -n demo1 --approve -v
-                    ksctl create local -n demo2 --approve -v
+                    ksctl create local -n demo --approve -v
 
                     ksctl get
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/demo1/kubeconfig"
-
-                    kubectl get nodes -owide
-
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/demo2/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/demo/kubeconfig"
 
                     kubectl get nodes -owide
                 '''
@@ -29,8 +24,7 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl switch -p local -n demo1
-                    ksctl switch -p local -n demo2
+                    ksctl switch -p local -n demo
                 '''
             }
         }
@@ -40,15 +34,14 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete local -n demo1 --approve -v || exit 0
-                ksctl delete local -n demo2 --approve -v || exit 0
+                ksctl delete local -n demo --approve -v || exit 0
             '''
         }
         success {
-            discordSend description: 'e2e test of local provider (success)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
+            discordSend description: 'e2e test of local provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
         }
         failure {
-            discordSend description: 'e2e test of local provider (failure)', footer: '', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
+            discordSend description: 'e2e test of local provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
         }
     }
 }

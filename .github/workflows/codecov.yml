@@ -32,6 +32,11 @@ jobs:
       run: |
          go test -race -coverprofile=../../coverage-utils.out -covermode=atomic -v
          cd ../..
+    - name: Run coverage (LOGGER)
+      working-directory: api/logger
+      run: |
+        go test -race -coverprofile=../../coverage-logger.out -covermode=atomic -v
+        cd ../..
     - name: Run coverage (K3S)
       working-directory: api/k8s_distro/k3s
       run: |
@@ -52,6 +57,11 @@ jobs:
       run: |
          go test -race -coverprofile=../../../coverage-local.out -covermode=atomic -v
          cd ../../..
+    - name: Run coverage (TESTS)
+      working-directory: test
+      run: |
+        go test -bench=. -benchtime=1x -race -coverprofile=../coverage-mock-test.out -covermode=atomic -v
+        cd ../
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

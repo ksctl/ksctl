@@ -19,7 +19,36 @@ Phases a change / feature goes through
 4. If its about adding Cloud Support then usages of CloudFactory is needed and sperate the logic of vm, firewall, etc. to their respective files and do have a helper file for behind the scenes logic for ease of use
 5. If its about adding Distribution support do check its compatability with different cloud providers vm configs and firewall rules which needs to be done
 
-## Testing code changes
+## Formating for PR & Issue subject line
+
+### Subject / Title
+
+```markdown
+# Releated to enhancement
+enhancement: <Title>
+
+# Related to feature
+feat: <Title>
+
+# Related to Bug fix or other types of fixes
+fix: <Title>
+
+# Related to update
+update: <Title>
+```
+
+### Body
+Follow the PR or Issue template
+add all the significant changes to the PR description
+
+### Commit messages
+mention the detailed description in the git commits.
+what? why? How?
+
+**each commits must be sign-off**
+
+
+## Trying out code changes
 
 Before submitting a code change, it is important to test your changes thoroughly. You can do this by running the unit tests and integration tests.
 
@@ -28,18 +57,16 @@ Unit tests you can do my
 make test
 ```
 
-for others
-**TODO**
-
 Trying out latest code by installing
 ```bash
 make install_linux # for linux
+
 make install_macos # for macos
+
 .\builder.ps1 # for windows
 ```
 
 for website
-
 ```bash
 cd website
 npm install

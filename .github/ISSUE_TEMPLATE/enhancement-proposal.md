@@ -1,7 +1,7 @@
 ---
 name: Enhancement Proposal
 about: Describe this enhancement pruposal template's purpose here.
-title: 'EP(<Affected subsection>): <Title>'
+title: 'enhancement(<Affected subsection>): <Title>'
 labels: kind/enhancement, needs-triage
 assignees: ''
 
@@ -13,4 +13,4 @@ assignees: ''
 
 ## Additional context
 
-Check Contribution's guidelines
+Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl/docs/contributions)

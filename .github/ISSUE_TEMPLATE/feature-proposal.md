@@ -1,7 +1,7 @@
 ---
 name: Feature Proposal
 about: Suggest an idea for this project
-title: 'FP(<Context>): <Title>'
+title: 'feature(<Context>): <Title>'
 labels: help wanted, kind/feature, needs-triage
 assignees: ''
 
@@ -24,4 +24,4 @@ assignees: ''
 - [ ] Kubeadm
 
 ## Additional context
-Check Contribution's guidelines
+Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl/docs/contributions)

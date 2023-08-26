@@ -52,7 +52,7 @@ flowchart LR;
   kubeadm:::blue--HA-->kubeadmha[Create & Delete]:::red;
 
   web3--Local-Store-->slocal{Local}:::green;
-  web3--Remote-Store-->rlocal{Remote}:::green;
+  web3--Remote-Store-->rlocal{Remote}:::red;
 
 ```
 
