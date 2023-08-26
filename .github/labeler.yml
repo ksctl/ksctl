@@ -32,6 +32,8 @@
 
 'go':
 - '**/*.go'
+- 'go.mod'
+- 'go.sum'
 
 'area/test':
 - '**/*_test.go'
