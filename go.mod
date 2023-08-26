@@ -12,7 +12,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.2.0
-	github.com/civo/civogo v0.3.42
+	github.com/civo/civogo v0.3.43
 	github.com/fatih/color v1.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/rodaine/table v1.1.0
@@ -26,16 +26,7 @@ require (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
-	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest v0.11.29 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
-	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
-	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
-	github.com/Azure/go-autorest/logger v0.2.1 // indirect
-	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
 	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
