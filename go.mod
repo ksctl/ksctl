@@ -16,7 +16,7 @@ require (
 	github.com/fatih/color v1.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/rodaine/table v1.1.0
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.11.0
 	golang.org/x/term v0.10.0
 	gotest.tools v2.2.0+incompatible
@@ -26,16 +26,7 @@ require (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
-	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest v0.11.29 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
-	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
-	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
-	github.com/Azure/go-autorest/logger v0.2.1 // indirect
-	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
 	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
@@ -56,7 +47,7 @@ require (
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
