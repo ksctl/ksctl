@@ -1,21 +1,22 @@
 package aws
 
 import (
-	"context"
+	"fmt"
+	"log"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"log"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-var (
-	awsCloudState  *StateConfiguration
-	clusterDirName string
-	clusterType    string
-	ctx            context.Context
-)
+// var (
+// 	awsCloudState  *StateConfiguration
+// 	clusterDirName string
+// 	clusterType    string
+// 	ctx            context.Context
+// )
 
 type Credential struct {
 	AccessKeyID string `json:"access_key_id"`
@@ -88,12 +89,14 @@ type Metadata struct {
 func ReturnAwsStruct(metadata resources.Metadata) (*AwsProvider, error) {
 	return &AwsProvider{
 		ClusterName: metadata.ClusterName,
-		Region:      metadata.Region,
+		Region:      "ap-south-1",
 		HACluster:   metadata.IsHA,
 		Metadata: Metadata{
 			K8sVersion: metadata.K8sVersion,
 			K8sName:    metadata.K8sDistro,
 		},
+		AccessKeyID: "temporary todo add from json",
+		Secret:      "temporary todo add from json",
 	}, nil
 }
 
@@ -105,11 +108,16 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 func (obj *AwsProvider) NEWCLIENT() (*session.Session, error) {
 
 	NewSession, err := session.NewSession(&aws.Config{
-		Region:      aws.String(AWS_REGION),
+		Region:      aws.String(obj.Region),
 		Credentials: credentials.NewStaticCredentials(obj.AccessKeyID, obj.Secret, ""),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	obj.Session = NewSession
+	fmt.Println("AWS Session Created Successfully")
+
 	return NewSession, nil
+
 }
