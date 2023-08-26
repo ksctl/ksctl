@@ -1,7 +1,6 @@
 module github.com/kubesimplify/ksctl
 
-go 1.21
-toolchain go1.21.0
+go 1.21.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.0
