@@ -49,7 +49,7 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 			_, err = obj.client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
 			if err != nil {
 				currRetryCounter++
-				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
+				storage.Logger().Warn(fmt.Sprintln("RETRYING", err))
 			} else {
 				break
 			}

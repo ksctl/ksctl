@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
@@ -255,38 +256,94 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
+	//////
+	//gLB := new(errgroup.Group)
+	//gLB.Go(func() error {
 	err = client.Cloud.Name(client.ClusterName+"-vm-lb").
 		Role(utils.ROLE_LB).
 		VMType(client.LoadBalancerNodeType).
 		Visibility(true).
 		NewVM(client.Storage, 0)
+	//})
 	if err != nil {
 		return err
 	}
+	//////
+
+	//////
+	var wg sync.WaitGroup
+	errChan := make(chan error, client.Metadata.NoDS)
 
 	for no := 0; no < client.Metadata.NoDS; no++ {
-		name := client.ClusterName + "-vm-db"
-		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
-			Role(utils.ROLE_DS).
-			VMType(client.DataStoreNodeType).
-			Visibility(true).
-			NewVM(client.Storage, no)
-		if err != nil {
-			return err
-		}
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-db-%d", client.ClusterName, no)).
+				Role(utils.ROLE_DS).
+				VMType(client.DataStoreNodeType).
+				Visibility(true).
+				NewVM(client.Storage, no)
+			if err != nil {
+				errChan <- err
+			}
+		}(no)
 	}
 
-	for no := 0; no < client.Metadata.NoCP; no++ {
-		name := client.ClusterName + "-vm-cp"
-		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
-			Role(utils.ROLE_CP).
-			VMType(client.ControlPlaneNodeType).
-			Visibility(true).
-			NewVM(client.Storage, no)
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
 		if err != nil {
 			return err
 		}
 	}
+	//gDS := new(errgroup.Group)
+	//
+	//for i := 0; i < client.Metadata.NoDS; i++ {
+	//	gDS.Go(func() error {
+	//		fmt.Println(i)
+	//		return client.Cloud.Name(fmt.Sprintf("%s-vm-db-%d", client.ClusterName, i)).
+	//			Role(utils.ROLE_DS).
+	//			VMType(client.DataStoreNodeType).
+	//			Visibility(true).
+	//			NewVM(client.Storage, i)
+	//	})
+	//}
+	//
+	//if err := gDS.Wait(); err != nil {
+	//	return err
+	//}
+	//////
+
+	//////
+	errChan = make(chan error, client.Metadata.NoCP)
+
+	for no := 0; no < client.Metadata.NoCP; no++ {
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-cp-%d", client.ClusterName, no)).
+				Role(utils.ROLE_CP).
+				VMType(client.ControlPlaneNodeType).
+				Visibility(true).
+				NewVM(client.Storage, no)
+			if err != nil {
+				errChan <- err
+			}
+		}(no)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
+	}
+	//////
 
 	for no := 0; no < client.Metadata.NoWP; no++ {
 		name := client.ClusterName + "-vm-wp"

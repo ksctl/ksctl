@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/kubesimplify/ksctl/api/logger"
 
@@ -108,6 +109,7 @@ type CivoProvider struct {
 	region      string
 
 	sshPath string
+	mx      sync.Mutex
 
 	metadata
 
@@ -225,6 +227,8 @@ func ReturnCivoStruct(meta resources.Metadata, ClientOption func() CivoGo) (*Civ
 
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
+	cloud.mx.Lock()
+	defer cloud.mx.Unlock()
 	if err := utils.IsValidName(resName); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
@@ -236,6 +240,8 @@ func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
+	cloud.mx.Lock()
+	defer cloud.mx.Unlock()
 	switch resRole {
 	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
 		cloud.metadata.role = resRole
@@ -249,6 +255,8 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
+	cloud.mx.Lock()
+	defer cloud.mx.Unlock()
 	if err := isValidVMSize(cloud, size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
@@ -260,6 +268,8 @@ func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
 
 // whether to have the resource as public or private (i.e. VMs)
 func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudFactory {
+	cloud.mx.Lock()
+	defer cloud.mx.Unlock()
 	cloud.metadata.public = toBePublic
 	return cloud
 }

@@ -55,16 +55,23 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 }
 
 // NewVM implements resources.CloudFactory.
-func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
+func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) error {
+
+	obj.mx.Lock()
+	name := obj.metadata.resName
+	indexNo := index
+	vmtype := obj.metadata.vmType
+	obj.mx.Unlock()
 
 	if obj.metadata.role == utils.ROLE_DS && indexNo > 0 {
-		storage.Logger().Note("[skip] currently multiple datastore not supported")
+		storage.Logger().Note("[skip] currently multiple datastore not supported", name)
 		return nil
 	}
 
 	err := obj.foundStateVM(storage, indexNo, true)
 	if err == nil {
-		return nil
+		return err
+
 	}
 
 	publicIP := "create"
@@ -93,11 +100,11 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 	networkID := civoCloudState.NetworkIDs.NetworkID
 
 	instanceConfig := &civogo.InstanceConfig{
-		Hostname:         obj.metadata.resName,
+		Hostname:         name,
 		InitialUser:      civoCloudState.SSHUser,
 		Region:           obj.region,
 		FirewallID:       firewallID,
-		Size:             obj.metadata.vmType,
+		Size:             vmtype,
 		TemplateID:       diskImg.ID,
 		NetworkID:        networkID,
 		SSHKeyID:         civoCloudState.SSHID,
@@ -105,34 +112,54 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 		// Script:           initializationScript,  // TODO: add the os updates and other non necessary things before we try to configure in kubernetes may be security fixes
 	}
 
-	inst, err := obj.client.CreateInstance(instanceConfig)
+	storage.Logger().Print("[civo] Creating vm", name)
+
+	var inst *civogo.Instance
+	inst, err = obj.client.CreateInstance(instanceConfig)
 	if err != nil {
 		return err
 	}
 
-	switch obj.metadata.role {
-	case utils.ROLE_CP:
-		civoCloudState.InstanceIDs.ControlNodes[indexNo] = inst.ID
-	case utils.ROLE_WP:
-		civoCloudState.InstanceIDs.WorkerNodes[indexNo] = inst.ID
-	case utils.ROLE_DS:
-		civoCloudState.InstanceIDs.DatabaseNode[indexNo] = inst.ID
-	case utils.ROLE_LB:
-		civoCloudState.InstanceIDs.LoadBalancerNode = inst.ID
-	}
+	done := make(chan struct{})
+	var errCreateVM error
 
-	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+	go func() {
+		obj.mx.Lock()
+		defer obj.mx.Unlock()
 
-	if err := saveStateHelper(storage, path); err != nil {
-		return err
-	}
+		switch obj.metadata.role {
+		case utils.ROLE_CP:
+			civoCloudState.InstanceIDs.ControlNodes[indexNo] = inst.ID
+		case utils.ROLE_WP:
+			civoCloudState.InstanceIDs.WorkerNodes[indexNo] = inst.ID
+		case utils.ROLE_DS:
+			civoCloudState.InstanceIDs.DatabaseNode[indexNo] = inst.ID
+		case utils.ROLE_LB:
+			civoCloudState.InstanceIDs.LoadBalancerNode = inst.ID
+		}
 
-	if err := watchInstance(obj, storage, inst.ID, indexNo); err != nil {
-		return err
-	}
+		path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
-	storage.Logger().Success("[civo] Created vm", obj.metadata.resName)
-	return nil
+		if err := saveStateHelper(storage, path); err != nil {
+			errCreateVM = err
+			close(done)
+			return
+		}
+
+		if err := watchInstance(obj, storage, inst.ID, indexNo); err != nil {
+			errCreateVM = err
+			close(done)
+			return
+		}
+
+		storage.Logger().Success("[civo] Created vm", name)
+
+		close(done)
+	}()
+
+	<-done
+
+	return errCreateVM
 }
 
 // DelVM implements resources.CloudFactory.
