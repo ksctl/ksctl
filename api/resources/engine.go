@@ -90,13 +90,6 @@ type CloudFactory interface {
 	// DelManagedCluster deletes managed kubernetes from cloud offering
 	DelManagedCluster(StorageFactory) error
 
-	// TODO: not used yet
-	// DEPRICATED: check if this functionality is required
-	GetManagedKubernetes(StorageFactory)
-
-	// infomation for cloud controller to interact with
-	// these are setter functions
-
 	// Name sets the name for the resource you want to operate
 	Name(string) CloudFactory
 
