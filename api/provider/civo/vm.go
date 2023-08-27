@@ -127,7 +127,6 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 
 	go func() {
 		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
 
 		switch role {
 		case utils.ROLE_CP:
@@ -147,6 +146,8 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 			close(done)
 			return
 		}
+		// Critical section
+		obj.mxState.Unlock()
 
 		if err := watchInstance(obj, storage, inst.ID, indexNo, role, name); err != nil {
 			errCreateVM = err
@@ -318,6 +319,9 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 			pvIP := getInst.PrivateIP
 			hostNam := getInst.Hostname
 
+			obj.mxState.Lock()
+			defer obj.mxState.Unlock()
+			// critical section
 			switch role {
 			case utils.ROLE_CP:
 				civoCloudState.IPv4.IPControlplane[idx] = pubIP
