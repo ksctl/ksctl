@@ -16,12 +16,12 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	res, err := obj.Client.CreateNetwork(obj.Metadata.ResName)
+	res, err := obj.client.CreateNetwork(obj.metadata.resName)
 	if err != nil {
 		return err
 	}
 	civoCloudState.NetworkIDs.NetworkID = res.ID
-	storage.Logger().Success("[civo] Created network", obj.Metadata.ResName)
+	storage.Logger().Success("[civo] Created network", obj.metadata.resName)
 
 	// NOTE: as network creation marks first resource we should create the directoy
 	// when its success
@@ -46,7 +46,7 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 		currRetryCounter := 0
 		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
-			_, err = obj.Client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
+			_, err = obj.client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))

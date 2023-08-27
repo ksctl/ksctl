@@ -110,12 +110,6 @@ func TestDelVM(t *testing.T) {
 	}
 }
 
-// GetManagedKubernetes implements resources.CloudFactory.
-func TestGetManagedKubernetes(t *testing.T) {
-	demoClient.Cloud.GetManagedKubernetes(nil)
-
-}
-
 // GetStateForHACluster implements resources.CloudFactory.
 func TestGetStateForHACluster(t *testing.T) {
 	if _, err := demoClient.Cloud.GetStateForHACluster(nil); err == nil {
