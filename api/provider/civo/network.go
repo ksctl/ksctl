@@ -9,6 +9,8 @@ import (
 
 // NewNetwork implements resources.CloudFactory.
 func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
+	name := obj.metadata.resName
+	obj.mxName.Unlock()
 
 	// check if the networkID already exist
 	if len(civoCloudState.NetworkIDs.NetworkID) != 0 {
@@ -16,12 +18,12 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	res, err := obj.client.CreateNetwork(obj.metadata.resName)
+	res, err := obj.client.CreateNetwork(name)
 	if err != nil {
 		return err
 	}
 	civoCloudState.NetworkIDs.NetworkID = res.ID
-	storage.Logger().Success("[civo] Created network", obj.metadata.resName)
+	storage.Logger().Success("[civo] Created network", name)
 
 	// NOTE: as network creation marks first resource we should create the directoy
 	// when its success

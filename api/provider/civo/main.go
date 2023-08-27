@@ -102,14 +102,21 @@ type metadata struct {
 	k8sVersion string
 }
 
+func (m metadata) String() string {
+	return fmt.Sprintf("{ resName: '%s', role: '%s', vmtype: '%s' }\n", m.resName, m.role, m.vmType)
+}
+
 type CivoProvider struct {
 	clusterName string
 	apiKey      string
 	haCluster   bool
 	region      string
 
-	sshPath string
-	mx      sync.Mutex
+	sshPath  string
+	mxName   sync.Mutex
+	mxRole   sync.Mutex
+	mxVMType sync.Mutex
+	mxState  sync.Mutex
 
 	metadata
 
@@ -227,24 +234,26 @@ func ReturnCivoStruct(meta resources.Metadata, ClientOption func() CivoGo) (*Civ
 
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
-	cloud.mx.Lock()
-	defer cloud.mx.Unlock()
+	cloud.mxName.Lock()
+	//defer cloud.mxName.Unlock()
 	if err := utils.IsValidName(resName); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
 		return nil
 	}
 	cloud.metadata.resName = resName
+	//fmt.Println("[trigger] Name", cloud.metadata)
 	return cloud
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
-	cloud.mx.Lock()
-	defer cloud.mx.Unlock()
+	cloud.mxRole.Lock()
+	//defer cloud.mxRole.Unlock()
 	switch resRole {
 	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
 		cloud.metadata.role = resRole
+		//fmt.Println("[trigger] Role", cloud.metadata)
 		return cloud
 	default:
 		var logFactory logger.LogFactory = &logger.Logger{}
@@ -255,21 +264,21 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
-	cloud.mx.Lock()
-	defer cloud.mx.Unlock()
+	cloud.mxVMType.Lock()
+	//defer cloud.mxVMType.Unlock()
 	if err := isValidVMSize(cloud, size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
+
 		return nil
 	}
 	cloud.metadata.vmType = size
+	//fmt.Println("[trigger] VMType", cloud.metadata)
 	return cloud
 }
 
 // whether to have the resource as public or private (i.e. VMs)
 func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudFactory {
-	cloud.mx.Lock()
-	defer cloud.mx.Unlock()
 	cloud.metadata.public = toBePublic
 	return cloud
 }

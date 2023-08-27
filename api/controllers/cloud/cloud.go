@@ -75,28 +75,80 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
+	var wg sync.WaitGroup
+
+	errChan := make(chan error, noWP)
+
 	for i := 0; i < noWP; i++ {
-		err = client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, i)
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, no)
+			if err != nil {
+				errChan <- err
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
 		if err != nil {
 			return err
 		}
 	}
 	pauseOperation(5)
+
+	errChan = make(chan error, noCP)
 
 	for i := 0; i < noCP; i++ {
-		err = client.Cloud.Role(utils.ROLE_CP).DelVM(client.Storage, i)
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Role(utils.ROLE_CP).DelVM(client.Storage, no)
+			if err != nil {
+				errChan <- err
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
 		if err != nil {
 			return err
 		}
 	}
+
 	pauseOperation(5)
 
+	errChan = make(chan error, noDS)
+
 	for i := 0; i < noDS; i++ {
-		err = client.Cloud.Role(utils.ROLE_DS).DelVM(client.Storage, i)
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Role(utils.ROLE_DS).DelVM(client.Storage, no)
+			if err != nil {
+				errChan <- err
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
 		if err != nil {
 			return err
 		}
 	}
+
 	pauseOperation(5)
 
 	err = client.Cloud.Role(utils.ROLE_LB).DelVM(client.Storage, 0)
@@ -257,14 +309,11 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	}
 
 	//////
-	//gLB := new(errgroup.Group)
-	//gLB.Go(func() error {
 	err = client.Cloud.Name(client.ClusterName+"-vm-lb").
 		Role(utils.ROLE_LB).
 		VMType(client.LoadBalancerNodeType).
 		Visibility(true).
 		NewVM(client.Storage, 0)
-	//})
 	if err != nil {
 		return err
 	}
@@ -344,18 +393,33 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		}
 	}
 	//////
+	errChan = make(chan error, client.Metadata.NoWP)
 
 	for no := 0; no < client.Metadata.NoWP; no++ {
-		name := client.ClusterName + "-vm-wp"
-		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
-			Role(utils.ROLE_WP).
-			VMType(client.WorkerPlaneNodeType).
-			Visibility(true).
-			NewVM(client.Storage, no)
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.ClusterName, no)).
+				Role(utils.ROLE_WP).
+				VMType(client.WorkerPlaneNodeType).
+				Visibility(true).
+				NewVM(client.Storage, no)
+			if err != nil {
+				errChan <- err
+			}
+		}(no)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	for err := range errChan {
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
