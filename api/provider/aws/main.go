@@ -36,6 +36,19 @@ type AwsProvider struct {
 	SSHPath string `json:"ssh_key"`
 }
 type AWSStateVms struct {
+	Names                 []string `json:"names"`
+	SecurityGroupName     string   `json:"network_security_group_name"`
+	SecurityGroupID       string   `json:"network_security_group_id"`
+	DiskNames             []string `json:"disk_name"`
+	PublicIPNames         []string `json:"public_ip_"`
+	PrivateIPs            []string `json:"private_ip"`
+	PublicIPs             []string `json:"public_ip"`
+	NetworkInterfaceNames []string `json:"network_interface_name"`
+	NetworkInterfaceIDs   []string `json:"network_interface_id"`
+	Hostnames             []string `json:"hostname"`
+}
+
+type AWSStateVm struct {
 	Vpc           string `json:"vpc"`
 	Name          string `json:"name"`
 	DiskSize      string `json:"disk_size"`
@@ -58,11 +71,13 @@ type StateConfiguration struct {
 	NoManagedNodes     int    `json:"no_managed_nodes"`
 	SubnetName         string `json:"subnet_name"`
 	SubnetID           string `json:"subnet_id"`
+	SecurityGroupName  string `json:"security_group_name"`
+	SecurityGroupID    string `json:"security_group_id"`
 
 	InfoControlPlanes AWSStateVms `json:"info_control_planes"`
 	InfoWorkerPlanes  AWSStateVms `json:"info_worker_planes"`
 	InfoDatabase      AWSStateVms `json:"info_database"`
-	InfoLoadBalancer  AWSStateVms `json:"info_load_balancer"`
+	InfoLoadBalancer  AWSStateVm  `json:"info_load_balancer"`
 
 	KubernetesDistro string `json:"k8s_distro"`
 	KubernetesVer    string `json:"k8s_version"`
@@ -95,8 +110,8 @@ func ReturnAwsStruct(metadata resources.Metadata) (*AwsProvider, error) {
 			K8sVersion: metadata.K8sVersion,
 			K8sName:    metadata.K8sDistro,
 		},
-		AccessKeyID: "temporary todo add from json",
-		Secret:      "temporary todo add from json",
+		AccessKeyID: "",
+		Secret:      "",
 	}, nil
 }
 
