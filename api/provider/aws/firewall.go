@@ -26,30 +26,36 @@ func (obj AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	switch obj.Metadata.Role {
 	case utils.ROLE_CP:
-		firewallRuleControlPlane(obj.ec2Client(), obj.VPC)
+		GroupID, err := obj.CreateSecurityGroup(obj.Metadata.Role)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		firewallRuleControlPlane(obj.ec2Client(), GroupID)
+		awsCloudState.SecurityGroupID = GroupID
+
 	case utils.ROLE_WP:
 		firewallRuleWorkerPlane()
+
 	case utils.ROLE_LB:
-		firewallRuleLoadBalancer()
+		Groupid, err := obj.CreateSecurityGroup(obj.Metadata.Role)
+		if err != nil {
+			fmt.Println(err)
+		}
+		firewallRuleLoadBalancer(obj.ec2Client(), Groupid)
+
 	case utils.ROLE_DS:
 		firewallRuleDataStore()
 	default:
 		return fmt.Errorf("invalid role")
 	}
 
-	// ec2client := obj.ec2Client()
-
-	// creategroup := ec2client.CreateSecurityGroup(ec2client)
-	// createfirewall.CreateFirewall(&networkfirewall.CreateFirewallInput{
-	// 	FirewallName: &obj.ClusterName,
-	// })
-
 	return nil
 }
 
-func (obj AwsProvider) CreateSecurityGroup() (string, error) {
+func (obj AwsProvider) CreateSecurityGroup(Role string) (string, error) {
 	SecurityGroup, err := obj.ec2Client().CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
-		GroupName:   aws.String(obj.ClusterName + obj.Metadata.Role + "securitygroup"),
+		GroupName:   aws.String(obj.ClusterName + Role + "securitygroup"),
 		Description: aws.String(obj.ClusterName + "securitygroup"),
 		VpcId:       aws.String(obj.VPC),
 	})
@@ -64,10 +70,10 @@ func (obj AwsProvider) CreateSecurityGroup() (string, error) {
 }
 
 // TODO ADD FIREWALL RULES
-func firewallRuleControlPlane(client *ec2.EC2, vpcid string) {
+func firewallRuleControlPlane(client *ec2.EC2, GroupId string) {
 	// inbound rules
 	client.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId:    &awsCloudState.SecurityGroupID,
+		GroupId:    &GroupId,
 		IpProtocol: aws.String("tcp"),
 		FromPort:   aws.Int64(22),
 		ToPort:     aws.Int64(22),
@@ -87,7 +93,7 @@ func firewallRuleControlPlane(client *ec2.EC2, vpcid string) {
 
 	// outbound rules
 	client.AuthorizeSecurityGroupEgress(&ec2.AuthorizeSecurityGroupEgressInput{
-		GroupId:    &awsCloudState.SecurityGroupID,
+		GroupId:    &GroupId,
 		IpProtocol: aws.String("tcp"),
 		FromPort:   aws.Int64(22),
 		ToPort:     aws.Int64(22),
@@ -110,12 +116,27 @@ func firewallRuleWorkerPlane() {
 
 }
 
-func firewallRuleLoadBalancer() {
-	// creating firewall rule for loadbalancer
+func firewallRuleDataStore() {
+	// creating firewall rule for dataservices
 
 }
 
-func firewallRuleDataStore() {
-	// creating firewall rule for dataservices
+func firewallRuleLoadBalancer(client *ec2.EC2, GroupId string) {
+
+	client.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+		GroupId:    &GroupId,
+		IpProtocol: aws.String("tcp"),
+		FromPort:   aws.Int64(0),
+		ToPort:     aws.Int64(65535),
+		CidrIp:     aws.String("0.0.0.0/0"),
+	})
+
+	client.AuthorizeSecurityGroupEgress(&ec2.AuthorizeSecurityGroupEgressInput{
+		GroupId:    &GroupId,
+		IpProtocol: aws.String("tcp"),
+		FromPort:   aws.Int64(0),
+		ToPort:     aws.Int64(65535),
+		CidrIp:     aws.String("0.0.0.0/0"),
+	})
 
 }
