@@ -135,11 +135,11 @@ func printKubeconfig(storage resources.StorageFactory, operation string) {
 
 func validationOfArguments(obj *AzureProvider) error {
 
-	if err := isValidRegion(obj, obj.Region); err != nil {
+	if err := isValidRegion(obj, obj.region); err != nil {
 		return err
 	}
 
-	if err := utils.IsValidName(obj.ClusterName); err != nil {
+	if err := utils.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 
@@ -147,7 +147,7 @@ func validationOfArguments(obj *AzureProvider) error {
 }
 
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
-	res, err := obj.Client.ListKubernetesVersions()
+	res, err := obj.client.ListKubernetesVersions()
 	if err != nil {
 		return fmt.Errorf("failed to finish the request: %v", err)
 	}
@@ -164,7 +164,7 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {
-	validReg, err := obj.Client.ListLocations()
+	validReg, err := obj.client.ListLocations()
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 
 func isValidVMSize(obj *AzureProvider, size string) error {
 
-	validSize, err := obj.Client.ListVMTypes()
+	validSize, err := obj.client.ListVMTypes()
 	if err != nil {
 		return err
 	}

@@ -127,7 +127,7 @@ func (client *CivoGoClient) InitClient(factory resources.StorageFactory, region 
 	return
 }
 
-// CivoGoMockClient ///////// Mock Client
+// CivoGoMockClient ///////// Mock client
 type CivoGoMockClient struct {
 	client *civogo.FakeClient
 	region string

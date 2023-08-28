@@ -12,7 +12,7 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	_, err := obj.Client.DeleteSSHKey(civoCloudState.SSHID)
+	_, err := obj.client.DeleteSSHKey(civoCloudState.SSHID)
 	if err != nil {
 		return err
 	}
@@ -38,15 +38,15 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory
 	if err != nil {
 		return err
 	}
-	if err := obj.uploadSSH(storage, obj.Metadata.ResName, keyPairToUpload); err != nil {
+	if err := obj.uploadSSH(storage, obj.metadata.resName, keyPairToUpload); err != nil {
 		return err
 	}
-	storage.Logger().Success("[civo] ssh keypair created and uploaded", obj.Metadata.ResName)
+	storage.Logger().Success("[civo] ssh keypair created and uploaded", obj.metadata.resName)
 	return nil
 }
 
 func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pubKey string) error {
-	sshResp, err := obj.Client.NewSSHKey(resName, pubKey)
+	sshResp, err := obj.client.NewSSHKey(resName, pubKey)
 	if err != nil {
 		return err
 	}

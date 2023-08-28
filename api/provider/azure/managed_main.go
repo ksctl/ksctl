@@ -16,13 +16,13 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 		return nil
 	}
 
-	pollerResp, err := obj.Client.BeginDeleteAKS(azureCloudState.ManagedClusterName, nil)
+	pollerResp, err := obj.client.BeginDeleteAKS(azureCloudState.ManagedClusterName, nil)
 	if err != nil {
 		return err
 	}
 	storage.Logger().Print("[azure] Deleting AKS cluster...")
 
-	_, err = obj.Client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
+	_, err = obj.client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	}
 
 	azureCloudState.NoManagedNodes = noOfNodes
-	azureCloudState.KubernetesVer = obj.Metadata.K8sVersion
+	azureCloudState.KubernetesVer = obj.metadata.k8sVersion
 
 	parameter := armcontainerservice.ManagedCluster{
 		Location: to.Ptr(azureCloudState.Region),
@@ -57,7 +57,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 				{
 					Name:              to.Ptr("askagent"),
 					Count:             to.Ptr[int32](int32(noOfNodes)),
-					VMSize:            to.Ptr(obj.Metadata.VmType),
+					VMSize:            to.Ptr(obj.metadata.vmType),
 					MaxPods:           to.Ptr[int32](110),
 					MinCount:          to.Ptr[int32](1),
 					MaxCount:          to.Ptr[int32](100),
@@ -73,11 +73,11 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			},
 		},
 	}
-	pollerResp, err := obj.Client.BeginCreateAKS(obj.Metadata.ResName, parameter, nil)
+	pollerResp, err := obj.client.BeginCreateAKS(obj.metadata.resName, parameter, nil)
 	if err != nil {
 		return err
 	}
-	azureCloudState.ManagedClusterName = obj.Metadata.ResName
+	azureCloudState.ManagedClusterName = obj.metadata.resName
 
 	if err := saveStateHelper(storage); err != nil {
 		return err
@@ -85,7 +85,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 
 	storage.Logger().Print("[azure] Creating AKS cluster...")
 
-	resp, err := obj.Client.PollUntilDoneCreateAKS(ctx, pollerResp, nil)
+	resp, err := obj.client.PollUntilDoneCreateAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
-	kubeconfig, err := obj.Client.ListClusterAdminCredentials(obj.Metadata.ResName, nil)
+	kubeconfig, err := obj.client.ListClusterAdminCredentials(obj.metadata.resName, nil)
 	if err != nil {
 		return err
 	}
