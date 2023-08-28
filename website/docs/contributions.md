@@ -53,13 +53,13 @@ First you have to fork the ksctl repository. [fork](https://github.com/kubesimpl
 cd <path> # to you directory where you want to clone ksctl
 mkdir <directory name> # create a directory
 cd <directory name> # go inside the directory
-git clone git@github.com:${YOUR_GITHUB_USERNAME}/ksctl.git # clone you fork repository
+git clone https://github.com/${YOUR_GITHUB_USERNAME}/ksctl.git # clone you fork repository
 cd ksctl # go inside the ksctl directory
 git remote add upstream https://github.com/kubesimplify/ksctl.git # set upstream
 git remote set-url --push upstream no_push # no push to upstream
 ```
 
-# Making Build
+# Building from source
 ### Linux
 ```bash
 make install_linux # for linux
@@ -72,14 +72,14 @@ make install_macos # for macos
 ```bash
 .\builder.ps1 # for windows
 ```
-## for website
+## Website
 ```bash
 cd website # to go inside the directory
 ```
 ### Install Dependencies
 ```bash
 npm install # install npm  
-npm install --global yarn # install yarn
+npm start # install yarn
 ```
 
 ### Start the Server
