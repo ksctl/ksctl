@@ -173,10 +173,9 @@ func (obj *AwsProvider) CreateRouteTable() {
 
 /*
 	create lb   				DONE
-	create target group
-	register target group
-	create listener
-	created successfully
+	create target group			DONE
+	register target group		DONE
+	create listener				DONE
 */
 
 func (obj *AwsProvider) ElbClient() *elbv2.ELBV2 {
@@ -331,23 +330,6 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 
 	// TODO its just a pool create the public ip
 
-	////////////////////////////////////////////////////////
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = *resp.ID
-		azureCloudState.InfoWorkerPlanes.PublicIPs[index] = *resp.Properties.IPAddress
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.PublicIPIDs[index] = *resp.ID
-		azureCloudState.InfoControlPlanes.PublicIPs[index] = *resp.Properties.IPAddress
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.PublicIPID = *resp.ID
-		azureCloudState.InfoLoadBalancer.PublicIP = *resp.Properties.IPAddress
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.PublicIPIDs[index] = *resp.ID
-		azureCloudState.InfoDatabase.PublicIPs[index] = *ip.PoolId
-	}
-
-	//////////////////////////////////////////////////////
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
