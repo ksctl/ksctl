@@ -14,7 +14,7 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 	var instID string = ""
 	var pubIP string = ""
 	var pvIP string = ""
-	switch obj.Metadata.Role {
+	switch obj.metadata.role {
 	case utils.ROLE_CP:
 		instID = civoCloudState.InstanceIDs.ControlNodes[idx]
 		pubIP = civoCloudState.IPv4.IPControlplane[idx]
@@ -50,14 +50,14 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 	if creationMode {
 		return fmt.Errorf("[civo] vm not found")
 	}
-	return fmt.Errorf("[skip] already deleted vm having role: %s", obj.Metadata.Role)
+	return fmt.Errorf("[skip] already deleted vm having role: %s", obj.metadata.role)
 
 }
 
 // NewVM implements resources.CloudFactory.
 func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
 
-	if obj.Metadata.Role == utils.ROLE_DS && indexNo > 0 {
+	if obj.metadata.role == utils.ROLE_DS && indexNo > 0 {
 		storage.Logger().Note("[skip] currently multiple datastore not supported")
 		return nil
 	}
@@ -68,18 +68,18 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 	}
 
 	publicIP := "create"
-	if !obj.Metadata.Public {
+	if !obj.metadata.public {
 		publicIP = "none"
 	}
 
-	diskImg, err := obj.Client.GetDiskImageByName("ubuntu-focal")
+	diskImg, err := obj.client.GetDiskImageByName("ubuntu-focal")
 	if err != nil {
 		return err
 	}
 
 	firewallID := ""
 
-	switch obj.Metadata.Role {
+	switch obj.metadata.role {
 	case utils.ROLE_CP:
 		firewallID = civoCloudState.NetworkIDs.FirewallIDControlPlaneNode
 	case utils.ROLE_WP:
@@ -93,11 +93,11 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 	networkID := civoCloudState.NetworkIDs.NetworkID
 
 	instanceConfig := &civogo.InstanceConfig{
-		Hostname:         obj.Metadata.ResName,
+		Hostname:         obj.metadata.resName,
 		InitialUser:      civoCloudState.SSHUser,
-		Region:           obj.Region,
+		Region:           obj.region,
 		FirewallID:       firewallID,
-		Size:             obj.Metadata.VmType,
+		Size:             obj.metadata.vmType,
 		TemplateID:       diskImg.ID,
 		NetworkID:        networkID,
 		SSHKeyID:         civoCloudState.SSHID,
@@ -105,12 +105,12 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 		// Script:           initializationScript,  // TODO: add the os updates and other non necessary things before we try to configure in kubernetes may be security fixes
 	}
 
-	inst, err := obj.Client.CreateInstance(instanceConfig)
+	inst, err := obj.client.CreateInstance(instanceConfig)
 	if err != nil {
 		return err
 	}
 
-	switch obj.Metadata.Role {
+	switch obj.metadata.role {
 	case utils.ROLE_CP:
 		civoCloudState.InstanceIDs.ControlNodes[indexNo] = inst.ID
 	case utils.ROLE_WP:
@@ -131,7 +131,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, indexNo int) er
 		return err
 	}
 
-	storage.Logger().Success("[civo] Created vm", obj.Metadata.ResName)
+	storage.Logger().Success("[civo] Created vm", obj.metadata.resName)
 	return nil
 }
 
@@ -145,10 +145,10 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 	instID := ""
 
-	switch obj.Metadata.Role {
+	switch obj.metadata.role {
 	case utils.ROLE_CP:
 		instID = civoCloudState.InstanceIDs.ControlNodes[indexNo]
-		_, err := obj.Client.DeleteInstance(instID)
+		_, err := obj.client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -159,7 +159,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 	case utils.ROLE_WP:
 		instID = civoCloudState.InstanceIDs.WorkerNodes[indexNo]
-		_, err := obj.Client.DeleteInstance(instID)
+		_, err := obj.client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 	case utils.ROLE_DS:
 		instID = civoCloudState.InstanceIDs.DatabaseNode[indexNo]
-		_, err := obj.Client.DeleteInstance(instID)
+		_, err := obj.client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, indexNo int) er
 
 	case utils.ROLE_LB:
 		instID = civoCloudState.InstanceIDs.LoadBalancerNode
-		_, err := obj.Client.DeleteInstance(instID)
+		_, err := obj.client.DeleteInstance(instID)
 		if err != nil {
 			return err
 		}
@@ -210,7 +210,7 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
 
-			getInst, err = obj.Client.GetInstance(instID)
+			getInst, err = obj.client.GetInstance(instID)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
@@ -229,7 +229,7 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 			pvIP := getInst.PrivateIP
 			hostNam := getInst.Hostname
 
-			switch obj.Metadata.Role {
+			switch obj.metadata.role {
 			case utils.ROLE_CP:
 				civoCloudState.IPv4.IPControlplane[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPControlplane[idx] = pvIP
@@ -265,7 +265,7 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 
 			return nil
 		}
-		storage.Logger().Print("[civo] waiting for vm to be ready..", obj.Metadata.ResName)
+		storage.Logger().Print("[civo] waiting for vm to be ready..", obj.metadata.resName)
 		time.Sleep(10 * time.Second)
 	}
 }

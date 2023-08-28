@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 			ClusterType: utils.CLUSTER_TYPE_HA,
 			ClusterDir:  "fake fake-resgrp fake-reg",
 		},
-		// Public IPs
+		// public IPs
 		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
 		IPv4DataStores:    []string{"A.B.C.3"},
 		IPv4WorkerPlanes:  []string{"A.B.C.2"},

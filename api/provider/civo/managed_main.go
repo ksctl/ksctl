@@ -20,7 +20,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 		currRetryCounter := 0
 		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
 			var err error
-			clusterDS, err = obj.Client.GetKubernetesCluster(id)
+			clusterDS, err = obj.client.GetKubernetesCluster(id)
 			if err != nil {
 				currRetryCounter++
 				storage.Logger().Err(fmt.Sprintln("RETRYING", err))
@@ -34,7 +34,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 		}
 
 		if clusterDS.Ready {
-			fmt.Println("[civo] Booted Instance", obj.Metadata.ResName)
+			fmt.Println("[civo] Booted Instance", obj.metadata.resName)
 			civoCloudState.IsCompleted = true
 			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 			if err := saveStateHelper(storage, path); err != nil {
@@ -67,22 +67,22 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 		return nil
 	}
 
-	network, err := obj.Client.GetNetwork(civoCloudState.NetworkIDs.NetworkID)
+	network, err := obj.client.GetNetwork(civoCloudState.NetworkIDs.NetworkID)
 	if err != nil {
 		return err
 	}
 
 	configK8s := &civogo.KubernetesClusterConfig{
-		KubernetesVersion: obj.Metadata.K8sVersion,
-		Name:              obj.Metadata.ResName,
-		Region:            obj.Region,
+		KubernetesVersion: obj.metadata.k8sVersion,
+		Name:              obj.metadata.resName,
+		Region:            obj.region,
 		NumTargetNodes:    noOfNodes,
-		TargetNodesSize:   obj.Metadata.VmType,
+		TargetNodesSize:   obj.metadata.vmType,
 		NetworkID:         network.ID,
-		Applications:      obj.Metadata.Apps, // make the use of application and cni via some method
-		CNIPlugin:         obj.Metadata.Cni,  // make it use install application in the civo
+		Applications:      obj.metadata.apps, // make the use of application and cni via some method
+		CNIPlugin:         obj.metadata.cni,  // make it use install application in the civo
 	}
-	resp, err := obj.Client.NewKubernetesClusters(configK8s)
+	resp, err := obj.client.NewKubernetesClusters(configK8s)
 	if err != nil {
 		if errors.Is(err, civogo.DatabaseKubernetesClusterDuplicateError) {
 			return fmt.Errorf("DUPLICATE Cluster FOUND")
@@ -98,7 +98,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 
 	civoCloudState.NoManagedNodes = noOfNodes
 	civoCloudState.KubernetesDistro = utils.K8S_K3S
-	civoCloudState.KubernetesVer = obj.Metadata.K8sVersion
+	civoCloudState.KubernetesVer = obj.metadata.k8sVersion
 	civoCloudState.ManagedClusterID = resp.ID
 
 	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
@@ -118,7 +118,7 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) err
 		storage.Logger().Success("[skip] network deletion found")
 		return nil
 	}
-	_, err := obj.Client.DeleteKubernetesCluster(civoCloudState.ManagedClusterID)
+	_, err := obj.client.DeleteKubernetesCluster(civoCloudState.ManagedClusterID)
 	if err != nil {
 		return err
 	}
@@ -131,11 +131,4 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) err
 	printKubeconfig(storage, utils.OPERATION_STATE_DELETE)
 
 	return nil
-}
-
-// GetManagedKubernetes implements resources.CloudFactory.
-func (obj *CivoProvider) GetManagedKubernetes(storage resources.StorageFactory) {
-	// TODO: used for getting information on all the clusters created with all the types
-	// ha and managed in some form of predefined json format
-	fmt.Printf("[civo] Got Managed %s cluster....", obj.Metadata.ResName)
 }
