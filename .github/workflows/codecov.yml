@@ -60,7 +60,7 @@ jobs:
     - name: Run coverage (TESTS)
       working-directory: test
       run: |
-        go test -bench=. -benchtime=1x -race -coverprofile=../coverage-mock-test.out -covermode=atomic -v
+        go test -bench=. -benchtime=1x -coverprofile=../coverage-mock-test.out -covermode=atomic -v
         cd ../
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

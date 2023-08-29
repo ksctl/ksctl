@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/kubesimplify/ksctl/api/logger"
 
@@ -98,6 +99,10 @@ type AzureProvider struct {
 	region        string
 	sshPath       string
 	metadata
+	mxName   sync.Mutex
+	mxRole   sync.Mutex
+	mxVMType sync.Mutex
+	mxState  sync.Mutex
 
 	client AzureGo
 }
@@ -257,6 +262,8 @@ func ReturnAzureStruct(meta resources.Metadata, ClientOption func() AzureGo) (*A
 
 // Name it will contain the name of the resource to be created
 func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
+	cloud.mxName.Lock()
+
 	if err := utils.IsValidName(resName); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
@@ -268,6 +275,8 @@ func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
 
 // Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
+	cloud.mxRole.Lock()
+
 	switch resRole {
 	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
 		cloud.metadata.role = resRole
@@ -281,6 +290,8 @@ func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
 
 // VMType it will contain which vmType to create
 func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
+	cloud.mxVMType.Lock()
+
 	cloud.metadata.vmType = size
 	if err := isValidVMSize(cloud, size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}

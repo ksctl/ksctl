@@ -11,7 +11,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 )
 
-func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id string) error {
+func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id string, name string) error {
 
 	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
@@ -34,7 +34,7 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 		}
 
 		if clusterDS.Ready {
-			fmt.Println("[civo] Booted Instance", obj.metadata.resName)
+			fmt.Println("[civo] Booted Instance", name)
 			civoCloudState.IsCompleted = true
 			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 			if err := saveStateHelper(storage, path); err != nil {
@@ -57,10 +57,15 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 // NewManagedCluster implements resources.CloudFactory.
 func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
 
+	name := obj.metadata.resName
+	vmtype := obj.metadata.vmType
+	obj.mxName.Unlock()
+	obj.mxVMType.Unlock()
+
 	if len(civoCloudState.ManagedClusterID) != 0 {
 		storage.Logger().Success("[skip] managed cluster creation found", civoCloudState.ManagedClusterID)
 
-		if err := watchManagedCluster(obj, storage, civoCloudState.ManagedClusterID); err != nil {
+		if err := watchManagedCluster(obj, storage, civoCloudState.ManagedClusterID, name); err != nil {
 			return err
 		}
 
@@ -74,10 +79,10 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 
 	configK8s := &civogo.KubernetesClusterConfig{
 		KubernetesVersion: obj.metadata.k8sVersion,
-		Name:              obj.metadata.resName,
+		Name:              name,
 		Region:            obj.region,
 		NumTargetNodes:    noOfNodes,
-		TargetNodesSize:   obj.metadata.vmType,
+		TargetNodesSize:   vmtype,
 		NetworkID:         network.ID,
 		Applications:      obj.metadata.apps, // make the use of application and cni via some method
 		CNIPlugin:         obj.metadata.cni,  // make it use install application in the civo
@@ -106,7 +111,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 		return err
 	}
 
-	if err := watchManagedCluster(obj, storage, resp.ID); err != nil {
+	if err := watchManagedCluster(obj, storage, resp.ID, name); err != nil {
 		return err
 	}
 	return nil

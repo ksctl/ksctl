@@ -12,8 +12,11 @@ import (
 
 // DelFirewall implements resources.CloudFactory.
 func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
+	role := obj.metadata.role
+	obj.mxRole.Unlock()
+
 	nsg := ""
-	switch obj.metadata.role {
+	switch role {
 	case utils.ROLE_CP:
 		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
 	case utils.ROLE_WP:
@@ -40,7 +43,7 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	if err != nil {
 		return err
 	}
-	switch obj.metadata.role {
+	switch role {
 	case utils.ROLE_CP:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = ""
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = ""
@@ -65,8 +68,13 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 
 // NewFirewall implements resources.CloudFactory.
 func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
+	name := obj.metadata.resName
+	role := obj.metadata.role
+	obj.mxRole.Unlock()
+	obj.mxName.Unlock()
+
 	nsg := ""
-	switch obj.metadata.role {
+	switch role {
 	case utils.ROLE_CP:
 		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
 	case utils.ROLE_WP:
@@ -84,7 +92,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 
 	var securityRules []*armnetwork.SecurityRule
-	switch obj.metadata.role {
+	switch role {
 	case utils.ROLE_CP:
 		securityRules = firewallRuleControlPlane()
 	case utils.ROLE_WP:
@@ -104,33 +112,33 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		},
 	}
 
-	pollerResponse, err := obj.client.BeginCreateSecurityGrp(obj.metadata.resName, parameters, nil)
+	pollerResponse, err := obj.client.BeginCreateSecurityGrp(name, parameters, nil)
 
 	if err != nil {
 		return err
 	}
-	switch obj.metadata.role {
+	switch role {
 	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = obj.metadata.resName
+		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = name
 	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = obj.metadata.resName
+		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = name
 	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = obj.metadata.resName
+		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = name
 	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.NetworkSecurityGroupName = obj.metadata.resName
+		azureCloudState.InfoDatabase.NetworkSecurityGroupName = name
 	}
 
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
 
-	storage.Logger().Print("[azure] creating firewall...", obj.metadata.resName)
+	storage.Logger().Print("[azure] creating firewall...", name)
 
 	resp, err := obj.client.PollUntilDoneCreateNSG(ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
-	switch obj.metadata.role {
+	switch role {
 	case utils.ROLE_CP:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
 	case utils.ROLE_WP:

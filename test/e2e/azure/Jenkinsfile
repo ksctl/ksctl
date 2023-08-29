@@ -102,8 +102,8 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete azure -n demo -r eastus --approve || exit 0
-                ksctl delete ha-azure -n demo -r eastus2 --approve || exit 0
+                ksctl delete azure -n demo -r eastus --approve -v
+                ksctl delete ha-azure -n demo -r eastus2 --approve -v
             '''
         }
         success {
