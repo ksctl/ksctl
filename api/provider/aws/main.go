@@ -1,14 +1,15 @@
 package aws
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/kubesimplify/ksctl/api/resources"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 )
 
 // var (
@@ -46,7 +47,24 @@ type AWSStateVms struct {
 	NetworkInterfaceNames []string `json:"network_interface_name"`
 	NetworkInterfaceIDs   []string `json:"network_interface_id"`
 	Hostnames             []string `json:"hostname"`
+	PublicIPIDs           []string `json:"publicipids"`
 }
+
+var (
+	azureCloudState *StateConfiguration
+
+	clusterDirName string
+	clusterType    string // it stores the ha or managed
+
+)
+
+const (
+	FILE_PERM_CLUSTER_DIR        = os.FileMode(0750)
+	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
+	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0755)
+	STATE_FILE_NAME              = string("cloud-state.json")
+	KUBECONFIG_FILE_NAME         = string("kubeconfig")
+)
 
 type AWSStateVm struct {
 	Vpc           string `json:"vpc"`
@@ -55,8 +73,9 @@ type AWSStateVm struct {
 	InstanceType  string `json:"instance_type"`
 	Subnet        string `json:"subnet"`
 	SecurityGroup string `json:"security_group"`
-	PublicIP      string `json:"public_ip"`
-	PrivateIP     string `json:"private_ip"`
+	PublicIPName
+	PublicIP  string `json:"public_ip"`
+	PrivateIP string `json:"private_ip"`
 }
 
 type StateConfiguration struct {
@@ -73,6 +92,10 @@ type StateConfiguration struct {
 	SubnetID           string `json:"subnet_id"`
 	SecurityGroupName  string `json:"security_group_name"`
 	SecurityGroupID    string `json:"security_group_id"`
+	GatewayName        string `json:"gateway_name"`
+	GatewayID          string `json:"gateway_id"`
+	RouteTableName     string `json:"route_table_name"`
+	RouteTableID       string `json:"route_table_id"`
 
 	InfoControlPlanes AWSStateVms `json:"info_control_planes"`
 	InfoWorkerPlanes  AWSStateVms `json:"info_worker_planes"`
@@ -120,17 +143,27 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 	return nil
 }
 
-func (obj *AwsProvider) NEWCLIENT() (*session.Session, error) {
+func (obj *AwsProvider) NEWCLIENT() (aws.Config, error) {
 
-	NewSession, err := session.NewSession(&aws.Config{
-		Region:      aws.String(obj.Region),
-		Credentials: credentials.NewStaticCredentials(obj.AccessKeyID, obj.Secret, ""),
-	})
+	// NewSession, err := session.NewSession(&aws.Config{
+	// 	Region:      aws.String(obj.Region),
+	// 	Credentials: credentials.NewStaticCredentials(obj.AccessKeyID, obj.Secret, ""),
+	// })
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	NewSession, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion("ap-south-1"),
+		config.WithSharedConfigProfile("default"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("add key", "add token", "")),
+	)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	obj.Session = NewSession
+	NewSession.Region = obj.Region
+
 	fmt.Println("AWS Session Created Successfully")
 
 	return NewSession, nil

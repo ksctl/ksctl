@@ -311,7 +311,7 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 	}
 
 	client := obj.ec2Client()
-	ip, err := client.CreatePublicIpv4Pool(&ec2.CreatePublicIpv4PoolInput{
+	Ipv4Pool, err := client.CreatePublicIpv4Pool(&ec2.CreatePublicIpv4PoolInput{
 		TagSpecifications: []*ec2.TagSpecification{
 			{
 				ResourceType: aws.String("public--ip-pool"),
@@ -328,15 +328,83 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 		log.Println(err)
 	}
 
-	// TODO its just a pool create the public ip
-
-	if err := saveStateHelper(storage); err != nil {
+	parameters := &ec2.DescribeAddressesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("domain"),
+				Values: aws.StringSlice([]string{"vpc"}),
+			},
+		},
+		AllocationIds: []*string{
+			aws.String(*Ipv4Pool.PoolId),
+		},
+	}
+	ipaddress, err := client.DescribeAddresses(parameters)
+	if err != nil {
+		log.Println(err)
+	}
+	if ipaddress.Addresses == 0 {
+		fmt.Printf("No elastic IPs for %s region\n", obj.Region)
 		return err
 	}
-	fmt.Println("Public IP Created Successfully: ", *ip.PoolId)
+	fmt.Println("Elastic IPs")
+	for _, addr := range ipaddress.Addresses {
+		fmt.Println("*", fmtAddress(addr))
+	}
+
+	// TODO its just a pool create the public ip
+	allocateIp, err := client.AllocateAddress(&ec2.AllocateAddressInput{
+		Domain:                aws.String("vpc"),
+		CustomerOwnedIpv4Pool: aws.String(*Ipv4Pool.PoolId),
+		TagSpecifications: []*ec2.TagSpecification{
+			{
+				ResourceType: aws.String("elastic-ip"),
+				Tags: []*ec2.Tag{
+					{
+						Key:   aws.String(obj.Metadata.ResName),
+						Value: aws.String("value"),
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	if allocateIp.CustomerOwnedIpv4Pool != aws.String(*Ipv4Pool.PoolId) {
+		fmt.Println("Elastic IP is not allocated from the pool")
+		return nil
+	}
+	fmt.Println("Public IP Created Successfully: ", allocateIp.PublicIp)
+	return nil
+}
+
+func (obj *AwsProvider) AssignPublicIP(instanceid string) error {
+	client := obj.ec2Client()
+	_, err := client.AssociateAddress(&ec2.AssociateAddressInput{
+		InstanceId: aws.String(instanceid),
+		PublicIp:   aws.String(""),
+	})
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	fmt.Println("Public IP %s assigned to %s", "ip", instanceid)
 
 	return nil
 }
+
+func fmtAddress(addr *ec2.Address) string {
+	out := fmt.Sprintf("IP: %s,  allocation id: %s",
+		aws.StringValue(addr.PublicIp), aws.StringValue(addr.AllocationId))
+	if addr.InstanceId != nil {
+		out += fmt.Sprintf(", instance-id: %s", *addr.InstanceId)
+	}
+	return out
+}
+
+// TODO add EBS volume to the VM and attach it to the instance
 
 // TODO ADD A GLOBAL FUNTION THAT WILL HAVE THE ALL OUTPUTS
 
@@ -350,14 +418,14 @@ func (obj *AwsProvider) randdom() {
 }
 
 // Sequence of steps to create a VM
-// 1. Create  VPC
-// 2. Create  Subnet
-// 3. Create  Internet Gateway
-// 4. Create  Route Table
-// 5. Create  Firewall aka Security Group in AWS
-// 6. Create Load Balancer
-// 7. Create Public IP
-// 8. OS IAMGE
+// 1. Create  VPC										DONE
+// 2. Create  Subnet									DONE TODO ADD MORE PARAMETERS
+// 3. Create  Internet Gateway							DONE  TESTING PENDING
+// 4. Create  Route Table								DONE  TESTING PENDING
+// 5. Create  Firewall aka Security Group in AWS		DONE  TESTING PENDING
+// 6. Create Load Balancer								DONE  TESTING PENDING
+// 7. Create Public IP									DONE  TESTING PENDING
+// 8. OS IAMGE											TODO  TESTING PENDING
 // 9. Generate SSH Key
 // 10. Create VM
 func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
@@ -400,6 +468,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 		PrivateIpAddress: aws.String(""),
 
+		EnablePrimaryIpv6: aws.Bool(true),
 		SecurityGroupIds: []*string{
 			aws.String(awsCloudState.SecurityGroupID),
 		},
@@ -415,6 +484,15 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 				},
 			},
 		},
+
+		// capacity reservation is used to reserve the capacity for the VM aka the storage
+		// CapacityReservationSpecification: &ec2.CapacityReservationSpecification{
+		// 	CapacityReservationPreference: aws.String("open"),
+		// 	CapacityReservationTarget: &ec2.CapacityReservationTarget{
+		// 		CapacityReservationId: aws.String("string"),
+		// 		CapacityReservationResourceGroupArn: aws.String("string"),
+		// 	},
+		// },
 
 		// add disk size
 	})
