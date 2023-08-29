@@ -75,88 +75,86 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
+	//////
 	var wg sync.WaitGroup
-
-	errChan := make(chan error, noWP)
-
-	for i := 0; i < noWP; i++ {
+	errChanLB := make(chan error, 1)
+	errChanDS := make(chan error, noDS)
+	errChanCP := make(chan error, noCP)
+	errChanWP := make(chan error, noWP)
+	//////
+	for no := 0; no < noWP; no++ {
 		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
 			err := client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, no)
 			if err != nil {
-				errChan <- err
+				errChanWP <- err
 			}
-		}(i)
+		}(no)
 	}
-
-	wg.Wait()
-	close(errChan)
-
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
-	}
-	pauseOperation(5)
-
-	errChan = make(chan error, noCP)
-
-	for i := 0; i < noCP; i++ {
+	for no := 0; no < noCP; no++ {
 		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
 			err := client.Cloud.Role(utils.ROLE_CP).DelVM(client.Storage, no)
 			if err != nil {
-				errChan <- err
+				errChanCP <- err
 			}
-		}(i)
+		}(no)
 	}
-
-	wg.Wait()
-	close(errChan)
-
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
-	}
-
-	pauseOperation(5)
-
-	errChan = make(chan error, noDS)
-
-	for i := 0; i < noDS; i++ {
+	for no := 0; no < noDS; no++ {
 		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
 			err := client.Cloud.Role(utils.ROLE_DS).DelVM(client.Storage, no)
 			if err != nil {
-				errChan <- err
+				errChanDS <- err
 			}
-		}(i)
+		}(no)
 	}
 
-	wg.Wait()
-	close(errChan)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	for err := range errChan {
+		err := client.Cloud.Role(utils.ROLE_LB).DelVM(client.Storage, 0)
+		if err != nil {
+			errChanLB <- err
+		}
+	}()
+
+	////////
+	wg.Wait()
+	close(errChanDS)
+	close(errChanLB)
+	close(errChanCP)
+	close(errChanWP)
+
+	for err := range errChanLB {
+		if err != nil {
+			return err
+		}
+	}
+	for err := range errChanDS {
+		if err != nil {
+			return err
+		}
+	}
+	for err := range errChanCP {
+		if err != nil {
+			return err
+		}
+	}
+	for err := range errChanWP {
 		if err != nil {
 			return err
 		}
 	}
 
-	pauseOperation(5)
-
-	err = client.Cloud.Role(utils.ROLE_LB).DelVM(client.Storage, 0)
-	if err != nil {
-		return err
-	}
-
-	pauseOperation(5)
+	pauseOperation(20) // NOTE: experimental time to wait for generic cloud to update its state
 
 	err = client.Cloud.Role(utils.ROLE_DS).DelFirewall(client.Storage)
 	if err != nil {
@@ -205,14 +203,29 @@ func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 	if err != nil {
 		return -1, err
 	}
+	var wg sync.WaitGroup
+
+	errChanWP := make(chan error, client.Metadata.NoWP-currWP)
 
 	for no := currWP; no < client.Metadata.NoWP; no++ {
-		name := client.ClusterName + "-vm-wp"
-		err = client.Cloud.Name(fmt.Sprintf("%s-%d", name, no)).
-			Role(utils.ROLE_WP).
-			VMType(client.WorkerPlaneNodeType).
-			Visibility(true).
-			NewVM(client.Storage, no)
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.ClusterName, no)).
+				Role(utils.ROLE_WP).
+				VMType(client.WorkerPlaneNodeType).
+				Visibility(true).
+				NewVM(client.Storage, no)
+			if err != nil {
+				errChanWP <- err
+			}
+		}(no)
+	}
+	wg.Wait()
+	close(errChanWP)
+
+	for err := range errChanWP {
 		if err != nil {
 			return -1, err
 		}
@@ -239,13 +252,28 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 		return nil, fmt.Errorf("[cloud] not a valid count of wp for down scaling")
 	}
 
-	for i := desiredLen; i < currLen; i++ {
-		err := client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, i)
+	var wg sync.WaitGroup
+	errChanWP := make(chan error, currLen-desiredLen)
+
+	for no := desiredLen; no < currLen; no++ {
+		wg.Add(1)
+		go func(no int) {
+			defer wg.Done()
+
+			err := client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, no)
+			if err != nil {
+				errChanWP <- err
+			}
+		}(no)
+	}
+	wg.Wait()
+	close(errChanWP)
+
+	for err := range errChanWP {
 		if err != nil {
 			return nil, err
 		}
 	}
-	pauseOperation(5)
 
 	_, err := client.Cloud.NoOfWorkerPlane(client.Storage, desiredLen, true)
 	if err != nil {
@@ -309,19 +337,25 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	}
 
 	//////
-	err = client.Cloud.Name(client.ClusterName+"-vm-lb").
-		Role(utils.ROLE_LB).
-		VMType(client.LoadBalancerNodeType).
-		Visibility(true).
-		NewVM(client.Storage, 0)
-	if err != nil {
-		return err
-	}
-	//////
-
-	//////
 	var wg sync.WaitGroup
-	errChan := make(chan error, client.Metadata.NoDS)
+	errChanLB := make(chan error, 1)
+	errChanDS := make(chan error, client.Metadata.NoDS)
+	errChanCP := make(chan error, client.Metadata.NoCP)
+	errChanWP := make(chan error, client.Metadata.NoWP)
+	//////
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		err := client.Cloud.Name(client.ClusterName+"-vm-lb").
+			Role(utils.ROLE_LB).
+			VMType(client.LoadBalancerNodeType).
+			Visibility(true).
+			NewVM(client.Storage, 0)
+		if err != nil {
+			errChanLB <- err
+		}
+	}()
 
 	for no := 0; no < client.Metadata.NoDS; no++ {
 		wg.Add(1)
@@ -334,40 +368,10 @@ func CreateHACluster(client *resources.KsctlClient) error {
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
-				errChan <- err
+				errChanDS <- err
 			}
 		}(no)
 	}
-
-	wg.Wait()
-	close(errChan)
-
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
-	}
-	//gDS := new(errgroup.Group)
-	//
-	//for i := 0; i < client.Metadata.NoDS; i++ {
-	//	gDS.Go(func() error {
-	//		fmt.Println(i)
-	//		return client.Cloud.Name(fmt.Sprintf("%s-vm-db-%d", client.ClusterName, i)).
-	//			Role(utils.ROLE_DS).
-	//			VMType(client.DataStoreNodeType).
-	//			Visibility(true).
-	//			NewVM(client.Storage, i)
-	//	})
-	//}
-	//
-	//if err := gDS.Wait(); err != nil {
-	//	return err
-	//}
-	//////
-
-	//////
-	errChan = make(chan error, client.Metadata.NoCP)
-
 	for no := 0; no < client.Metadata.NoCP; no++ {
 		wg.Add(1)
 		go func(no int) {
@@ -379,21 +383,10 @@ func CreateHACluster(client *resources.KsctlClient) error {
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
-				errChan <- err
+				errChanCP <- err
 			}
 		}(no)
 	}
-
-	wg.Wait()
-	close(errChan)
-
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
-	}
-	//////
-	errChan = make(chan error, client.Metadata.NoWP)
 
 	for no := 0; no < client.Metadata.NoWP; no++ {
 		wg.Add(1)
@@ -406,15 +399,34 @@ func CreateHACluster(client *resources.KsctlClient) error {
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
-				errChan <- err
+				errChanWP <- err
 			}
 		}(no)
 	}
 
+	////////
 	wg.Wait()
-	close(errChan)
+	close(errChanDS)
+	close(errChanLB)
+	close(errChanCP)
+	close(errChanWP)
 
-	for err := range errChan {
+	for err := range errChanLB {
+		if err != nil {
+			return err
+		}
+	}
+	for err := range errChanDS {
+		if err != nil {
+			return err
+		}
+	}
+	for err := range errChanCP {
+		if err != nil {
+			return err
+		}
+	}
+	for err := range errChanWP {
 		if err != nil {
 			return err
 		}
