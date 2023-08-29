@@ -1,8 +1,8 @@
 # Tasks description
 
 ```[tasklist]
-### Tasks
-- [ ] Closes Issue #9999
+### Related Issues
+- [ ] #9999
 ``` 
 
 # Solution
