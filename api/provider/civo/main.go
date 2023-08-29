@@ -235,7 +235,7 @@ func ReturnCivoStruct(meta resources.Metadata, ClientOption func() CivoGo) (*Civ
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
 	cloud.mxName.Lock()
-	//defer cloud.mxName.Unlock()
+
 	if err := utils.IsValidName(resName); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
@@ -249,7 +249,7 @@ func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 	cloud.mxRole.Lock()
-	//defer cloud.mxRole.Unlock()
+
 	switch resRole {
 	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
 		cloud.metadata.role = resRole
@@ -265,7 +265,7 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
 	cloud.mxVMType.Lock()
-	//defer cloud.mxVMType.Unlock()
+
 	if err := isValidVMSize(cloud, size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())

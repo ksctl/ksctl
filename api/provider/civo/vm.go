@@ -143,10 +143,10 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 
 		if err := saveStateHelper(storage, path); err != nil {
 			errCreateVM = err
+			obj.mxState.Unlock()
 			close(done)
 			return
 		}
-		// Critical section
 		obj.mxState.Unlock()
 
 		if err := watchInstance(obj, storage, inst.ID, indexNo, role, name); err != nil {
@@ -193,12 +193,15 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				errCreateVM = err
 				return
 			}
+
 			obj.mxState.Lock()
 			defer obj.mxState.Unlock()
+
 			civoCloudState.InstanceIDs.ControlNodes[indexNo] = ""
 			civoCloudState.IPv4.IPControlplane[indexNo] = ""
 			civoCloudState.IPv4.PrivateIPControlplane[indexNo] = ""
 			civoCloudState.HostNames.ControlNodes[indexNo] = ""
+
 			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 			if err := saveStateHelper(storage, path); err != nil {

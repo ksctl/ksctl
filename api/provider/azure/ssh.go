@@ -9,6 +9,8 @@ import (
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
+	name := obj.metadata.resName
+	obj.mxName.Unlock()
 
 	if len(azureCloudState.SSHKeyName) != 0 {
 		storage.Logger().Success("[skip] ssh key already created", azureCloudState.SSHKeyName)
@@ -27,9 +29,9 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		},
 	}
 
-	_, err = obj.client.CreateSSHKey(obj.metadata.resName, parameters, nil)
+	_, err = obj.client.CreateSSHKey(name, parameters, nil)
 
-	azureCloudState.SSHKeyName = obj.metadata.resName
+	azureCloudState.SSHKeyName = name
 
 	azureCloudState.SSHUser = "azureuser"
 	azureCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName)
