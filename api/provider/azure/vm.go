@@ -25,7 +25,7 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 	obj.mxRole.Unlock()
 
 	vmName := ""
-	switch obj.metadata.role {
+	switch role {
 	case utils.ROLE_CP:
 		vmName = azureCloudState.InfoControlPlanes.Names[indexNo]
 	case utils.ROLE_DS:
@@ -59,7 +59,7 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 			obj.mxState.Lock()
 			defer obj.mxState.Unlock()
 
-			switch obj.metadata.role {
+			switch role {
 			case utils.ROLE_WP:
 				azureCloudState.InfoWorkerPlanes.Names[indexNo] = ""
 				azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = ""
