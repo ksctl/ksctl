@@ -19,8 +19,9 @@ import (
 // 4. VM
 
 // DelVM implements resources.CloudFactory.
-func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) error {
+func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) error {
 	role := obj.metadata.role
+	indexNo := index
 	obj.mxRole.Unlock()
 
 	vmName := ""
