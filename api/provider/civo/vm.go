@@ -235,6 +235,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
 			storage.Logger().Success("[civo] Deleted vm", instID)
 		}()
+		<-done
 
 	case utils.ROLE_DS:
 		go func() {
@@ -260,6 +261,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
 			storage.Logger().Success("[civo] Deleted vm", instID)
 		}()
+		<-done
 
 	case utils.ROLE_LB:
 		go func() {
@@ -286,6 +288,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
 			storage.Logger().Success("[civo] Deleted vm", instID)
 		}()
+		<-done
+
 	}
 
 	return errCreateVM
