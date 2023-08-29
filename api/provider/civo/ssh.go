@@ -54,7 +54,6 @@ func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pu
 		return err
 	}
 
-	// NOTE: state for the ssh
 	civoCloudState.SSHID = sshResp.ID
 	civoCloudState.SSHUser = "root"
 	civoCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_CIVO, clusterType, clusterDirName)

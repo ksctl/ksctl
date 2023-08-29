@@ -32,7 +32,6 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 	_, err = obj.client.CreateSSHKey(name, parameters, nil)
 
 	azureCloudState.SSHKeyName = name
-
 	azureCloudState.SSHUser = "azureuser"
 	azureCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName)
 
