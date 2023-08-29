@@ -83,6 +83,7 @@ pipeline {
                                     changeset "api/provider/local/**"
                                     changeset "api/utils/**"
                                     changeset "api/resources/**"
+									changeset "api/controllers/**"
                                 }
                             }
                             steps {
@@ -97,6 +98,7 @@ pipeline {
                                     changeset "test/e2e/**"
                                     changeset "api/provider/civo/**"
                                     changeset "api/utils/**"
+									changeset "api/controllers/**"
                                     changeset "api/resources/**"
                                 }
                             }
@@ -113,6 +115,7 @@ pipeline {
                                     changeset "api/provider/azure/**"
                                     changeset "api/utils/**"
                                     changeset "api/resources/**"
+									changeset "api/controllers/**"
                                 }
                             }
                             steps {

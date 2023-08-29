@@ -92,9 +92,9 @@ func CivoTestingHA() error {
 
 	cli.Client.Metadata.Region = "LON1"
 	cli.Client.Metadata.Provider = utils.CLOUD_CIVO
-	cli.Client.Metadata.NoCP = 3
+	cli.Client.Metadata.NoCP = 5
 	cli.Client.Metadata.NoWP = 1
-	cli.Client.Metadata.NoDS = 1
+	cli.Client.Metadata.NoDS = 3
 	cli.Client.Metadata.K8sVersion = "1.27.4"
 
 	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)

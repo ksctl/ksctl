@@ -39,6 +39,10 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 
 // NewManagedCluster implements resources.CloudFactory.
 func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
+	name := obj.metadata.resName
+	vmtype := obj.metadata.vmType
+	obj.mxName.Unlock()
+	obj.mxVMType.Unlock()
 
 	if len(azureCloudState.ManagedClusterName) != 0 {
 		storage.Logger().Success("[skip] already created AKS cluster %s", azureCloudState.ManagedClusterName)
@@ -57,7 +61,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 				{
 					Name:              to.Ptr("askagent"),
 					Count:             to.Ptr[int32](int32(noOfNodes)),
-					VMSize:            to.Ptr(obj.metadata.vmType),
+					VMSize:            to.Ptr(vmtype),
 					MaxPods:           to.Ptr[int32](110),
 					MinCount:          to.Ptr[int32](1),
 					MaxCount:          to.Ptr[int32](100),
@@ -73,11 +77,11 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			},
 		},
 	}
-	pollerResp, err := obj.client.BeginCreateAKS(obj.metadata.resName, parameter, nil)
+	pollerResp, err := obj.client.BeginCreateAKS(name, parameter, nil)
 	if err != nil {
 		return err
 	}
-	azureCloudState.ManagedClusterName = obj.metadata.resName
+	azureCloudState.ManagedClusterName = name
 
 	if err := saveStateHelper(storage); err != nil {
 		return err
@@ -95,7 +99,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
-	kubeconfig, err := obj.client.ListClusterAdminCredentials(obj.metadata.resName, nil)
+	kubeconfig, err := obj.client.ListClusterAdminCredentials(name, nil)
 	if err != nil {
 		return err
 	}

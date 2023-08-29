@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/kubesimplify/ksctl/api/logger"
 
@@ -101,13 +102,21 @@ type metadata struct {
 	k8sVersion string
 }
 
+func (m metadata) String() string {
+	return fmt.Sprintf("{ resName: '%s', role: '%s', vmtype: '%s' }\n", m.resName, m.role, m.vmType)
+}
+
 type CivoProvider struct {
 	clusterName string
 	apiKey      string
 	haCluster   bool
 	region      string
 
-	sshPath string
+	sshPath  string
+	mxName   sync.Mutex
+	mxRole   sync.Mutex
+	mxVMType sync.Mutex
+	mxState  sync.Mutex
 
 	metadata
 
@@ -225,20 +234,26 @@ func ReturnCivoStruct(meta resources.Metadata, ClientOption func() CivoGo) (*Civ
 
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
+	cloud.mxName.Lock()
+
 	if err := utils.IsValidName(resName); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
 		return nil
 	}
 	cloud.metadata.resName = resName
+	//fmt.Println("[trigger] Name", cloud.metadata)
 	return cloud
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
+	cloud.mxRole.Lock()
+
 	switch resRole {
 	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
 		cloud.metadata.role = resRole
+		//fmt.Println("[trigger] Role", cloud.metadata)
 		return cloud
 	default:
 		var logFactory logger.LogFactory = &logger.Logger{}
@@ -249,12 +264,16 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
+	cloud.mxVMType.Lock()
+
 	if err := isValidVMSize(cloud, size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
+
 		return nil
 	}
 	cloud.metadata.vmType = size
+	//fmt.Println("[trigger] VMType", cloud.metadata)
 	return cloud
 }
 
