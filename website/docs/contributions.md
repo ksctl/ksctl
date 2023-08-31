@@ -79,12 +79,13 @@ cd website # to go inside the directory
 ### Install Dependencies
 ```bash
 npm install # install npm  
-npm start # install yarn
+
 ```
 
 ### Start the Server
 ```bash
-yarn start # to run a development server
+npm start # to run a development server with npm 
+yarn start # to run a development server with yarn
 ```
 ## Trying out code changes
 
