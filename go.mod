@@ -3,7 +3,7 @@ module github.com/kubesimplify/ksctl
 go 1.20
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.1.0
@@ -19,7 +19,6 @@ require (
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.11.0
 	golang.org/x/term v0.11.0
-	golang.org/x/sync v0.1.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/apimachinery v0.27.4
 	k8s.io/client-go v0.27.4
