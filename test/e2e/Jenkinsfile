@@ -83,11 +83,12 @@ pipeline {
                                     changeset "api/provider/local/**"
                                     changeset "api/utils/**"
                                     changeset "api/resources/**"
-									changeset "api/controllers/**"
+				    changeset "api/controllers/**"
                                 }
                             }
                             steps {
-                                build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+				    // build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                                build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
                         stage('trigger civo') {
@@ -103,7 +104,7 @@ pipeline {
                                 }
                             }
                             steps {
-                                build job: 'ksctl (civo)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                                build job: 'ksctl (civo)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
                         stage('trigger azure') {
@@ -119,7 +120,7 @@ pipeline {
                                 }
                             }
                             steps {
-                                build job: 'ksctl (azure)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                                build job: 'ksctl (azure)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
                     }
