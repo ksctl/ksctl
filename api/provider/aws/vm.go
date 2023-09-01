@@ -1,12 +1,18 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	awsv1 "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/elbv2"
+	"github.com/fatih/color"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 	// "github.com/kubesimplify/ksctl/api/provider/aws"
@@ -14,26 +20,26 @@ import (
 
 var (
 	awsCloudState *StateConfiguration
+	GatewayID     string
+	RouteTableID  string
+	VPCID         string
+	SUBNETID      []string
 
 	// clusterDirName string
 	// clusterType    string // it stores the ha or managed
 	// ctx context.Context
 )
 
-func (obj *AwsProvider) ec2Client() *ec2.EC2 {
-	ec2client := ec2.New(obj.Session, &aws.Config{
-		Region: aws.String(obj.Region),
-	})
-
+func (obj *AwsProvider) ec2Client() *ec2.Client {
+	ec2client := ec2.NewFromConfig(*obj.Session)
 	//TODO ADD ERROR HANDLING
-	fmt.Println("EC2 Client Created Successfully")
 	return ec2client
 }
 
 func (obj *AwsProvider) vpcClienet() ec2.CreateVpcInput {
 
 	vpcClient := ec2.CreateVpcInput{
-		CidrBlock: aws.String("10.0.0.0/16"),
+		CidrBlock: aws.String("172.31.0.0/16"),
 		// Dry run is used to check if the request is valid
 		// without actually creating the VPC.
 	}
@@ -47,13 +53,15 @@ func (obj *AwsProvider) CreateVPC() {
 	vpcClient := obj.vpcClienet()
 	ec2Client := obj.ec2Client()
 
-	vpc, err := ec2Client.CreateVpc(&vpcClient)
+	vpc, err := ec2Client.CreateVpc(context.TODO(), &vpcClient)
 	if err != nil {
+		fmt.Println("Error Creating VPC")
 		log.Println(err)
 	}
-	awsCloudState.VPC = *vpc.Vpc.VpcId
+	VPCID = *vpc.Vpc.VpcId
+	// awsCloudState.VPC = *vpc.Vpc.VpcId
 	fmt.Print("VPC Created Successfully: ")
-	// fmt.Println(*vpc.Vpc.VpcId)
+	fmt.Println(*vpc.Vpc.VpcId)
 
 }
 
@@ -61,13 +69,14 @@ func (obj *AwsProvider) CreateSubnet() {
 
 	ec2Client := obj.ec2Client()
 
+	fmt.Print(color.BlueString("Creating Subnet...."))
 	subnetClient := ec2.CreateSubnetInput{
-		CidrBlock: aws.String("10.0.1.0/24"),
-		VpcId:     aws.String(awsCloudState.VPC),
-		TagSpecifications: []*ec2.TagSpecification{
+		CidrBlock: aws.String("172.31.16.0/20"),
+		VpcId:     aws.String(VPCID),
+		TagSpecifications: []types.TagSpecification{
 			{
-				ResourceType: aws.String("subnet"),
-				Tags: []*ec2.Tag{
+				ResourceType: types.ResourceType("subnet"),
+				Tags: []types.Tag{
 					{
 						Key:   aws.String("Name"),
 						Value: aws.String(obj.ClusterName + "-subnet"),
@@ -75,21 +84,78 @@ func (obj *AwsProvider) CreateSubnet() {
 				},
 			},
 		},
-
+		AvailabilityZone: aws.String("ap-south-1a"),
 		// TODO: Add the following parameters
-		// AvailabilityZone:   aws.String(obj.AvailabilityZone),
 		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
-		Ipv6Native: aws.Bool(true),
 	}
 
-	subnet, err := ec2Client.CreateSubnet(&subnetClient)
+	subnet, err := ec2Client.CreateSubnet(context.TODO(), &subnetClient)
+	if err != nil {
+		log.Println(err)
+	}
+	SUBNETID = append(SUBNETID, *subnet.Subnet.SubnetId)
+
+	///////////////////////
+
+	fmt.Print(color.BlueString("Creating Subnet...."))
+	subnetClient = ec2.CreateSubnetInput{
+		CidrBlock: aws.String("172.31.0.0/20"),
+		VpcId:     aws.String(VPCID),
+		TagSpecifications: []types.TagSpecification{
+			{
+				ResourceType: types.ResourceType("subnet"),
+				Tags: []types.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(obj.ClusterName + "-subnet"),
+					},
+				},
+			},
+		},
+		// TODO: Add the following parameters
+		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
+
+		AvailabilityZone: aws.String("ap-south-1b"),
+	}
+
+	subnet, err = ec2Client.CreateSubnet(context.TODO(), &subnetClient)
+	if err != nil {
+		log.Println(err)
+	}
+	SUBNETID = append(SUBNETID, *subnet.Subnet.SubnetId)
+
+	///////////////////////
+
+	fmt.Print(color.BlueString("Creating Subnet...."))
+	subnetClient = ec2.CreateSubnetInput{
+		CidrBlock: aws.String("172.31.32.0/20"),
+		VpcId:     aws.String(VPCID),
+		TagSpecifications: []types.TagSpecification{
+			{
+				ResourceType: types.ResourceType("subnet"),
+				Tags: []types.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(obj.ClusterName + "-subnet"),
+					},
+				},
+			},
+		},
+		// TODO: Add the following parameters
+		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
+
+		AvailabilityZone: aws.String("ap-south-1c"),
+	}
+
+	subnet, err = ec2Client.CreateSubnet(context.TODO(), &subnetClient)
 	if err != nil {
 		log.Println(err)
 	}
 
+	SUBNETID = append(SUBNETID, *subnet.Subnet.SubnetId)
 	fmt.Print("Subnet Created Successfully: ")
 	fmt.Println(*subnet.Subnet.SubnetId)
-	awsCloudState.SubnetID = *subnet.Subnet.SubnetId
+	// awsCloudState.SubnetID = *subnet.Subnet.SubnetId
 	// fmt.Println("fromstate", awsCloudState.SubnetID)
 }
 
@@ -97,32 +163,35 @@ func (obj *AwsProvider) CreateInternetGateway() {
 
 	ec2Client := obj.ec2Client()
 
-	internetGatewayClient := ec2.CreateInternetGatewayInput{
-		TagSpecifications: []*ec2.TagSpecification{
+	internetGateway := ec2.CreateInternetGatewayInput{
+		TagSpecifications: []types.TagSpecification{
 			{
-				ResourceType: aws.String("internet-gateway"),
-				Tags: []*ec2.Tag{
+				ResourceType: types.ResourceType("internet-gateway"),
+				Tags: []types.Tag{
 					{
 						Key:   aws.String("Name"),
-						Value: aws.String(obj.ClusterName + "-ig"),
+						Value: aws.String("DEMO" + "-ig"),
 					},
 				},
 			},
 		},
 	}
 
-	internetGateway, err := ec2Client.CreateInternetGateway(&internetGatewayClient)
+	createInternetGateway, err := ec2Client.CreateInternetGateway(context.TODO(), &internetGateway)
 	if err != nil {
 		log.Println(err)
 	}
 
-	_, err = ec2Client.AttachInternetGateway(&ec2.AttachInternetGatewayInput{
-		InternetGatewayId: aws.String(*internetGateway.InternetGateway.InternetGatewayId),
-		VpcId:             aws.String(awsCloudState.VPC),
+	_, err = ec2Client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
+		InternetGatewayId: aws.String(*createInternetGateway.InternetGateway.InternetGatewayId),
+		VpcId:             aws.String(VPCID),
 	})
-
-	fmt.Println(*internetGateway.InternetGateway.InternetGatewayId)
-	awsCloudState.GatewayID = *internetGateway.InternetGateway.InternetGatewayId
+	if err != nil {
+		log.Println(err)
+	}
+	GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
+	fmt.Println(*createInternetGateway.InternetGateway.InternetGatewayId)
+	// awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 	fmt.Print("Internet Gateway Created Successfully: ")
 }
 
@@ -131,41 +200,49 @@ func (obj *AwsProvider) CreateRouteTable() {
 	ec2Client := obj.ec2Client()
 
 	routeTableClient := ec2.CreateRouteTableInput{
-		VpcId: aws.String(awsCloudState.VPC),
-		TagSpecifications: []*ec2.TagSpecification{
+		VpcId: aws.String(VPCID),
+		TagSpecifications: []types.TagSpecification{
 			{
-				ResourceType: aws.String("route-table"),
-				Tags: []*ec2.Tag{
+				ResourceType: types.ResourceType("route-table"),
+				Tags: []types.Tag{
 					{
 						Key:   aws.String("Name"),
-						Value: aws.String(obj.ClusterName + "-rt"),
+						Value: aws.String("DEMO" + "-rt"),
 					},
 				},
 			},
 		},
 	}
 
-	routeTable, err := ec2Client.CreateRouteTable(&routeTableClient)
+	routeTable, err := ec2Client.CreateRouteTable(context.TODO(), &routeTableClient)
 	if err != nil {
 		log.Println(err)
 	}
 
 	fmt.Print("Route Table Created Successfully: ")
 	fmt.Println(*routeTable.RouteTable.RouteTableId)
-	awsCloudState.RouteTableID = *routeTable.RouteTable.RouteTableId
+	RouteTableID = *routeTable.RouteTable.RouteTableId
 
-	//  associate route table id with subnet
-	_, err = ec2Client.AssociateRouteTable(&ec2.AssociateRouteTableInput{
-		RouteTableId: aws.String(*routeTable.RouteTable.RouteTableId),
-		SubnetId:     aws.String(awsCloudState.SubnetID),
-	})
+	for _, subnet := range SUBNETID {
+		_, err = ec2Client.AssociateRouteTable(context.TODO(), &ec2.AssociateRouteTableInput{
+			RouteTableId: aws.String(*routeTable.RouteTable.RouteTableId),
+			SubnetId:     aws.String(subnet),
+		})
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 	fmt.Println("Route Table Associated Successfully....")
-	// create route
-	_, err = ec2Client.CreateRoute(&ec2.CreateRouteInput{
+	/*        create route		*/
+	_, err = ec2Client.CreateRoute(context.TODO(), &ec2.CreateRouteInput{
 		DestinationCidrBlock: aws.String("0.0.0.0/0"),
-		GatewayId:            aws.String(awsCloudState.GatewayID),
+		GatewayId:            aws.String(GatewayID),
 		RouteTableId:         aws.String(*routeTable.RouteTable.RouteTableId),
 	})
+	if err != nil {
+		log.Println(err)
+	}
 
 	fmt.Println("Route Created Successfully....")
 
@@ -178,37 +255,42 @@ func (obj *AwsProvider) CreateRouteTable() {
 	create listener				DONE
 */
 
+// TODO: Use elb v2 client
 func (obj *AwsProvider) ElbClient() *elbv2.ELBV2 {
-	LBCLIENT := elbv2.New(obj.Session, &aws.Config{
-		Region: aws.String(obj.Region),
+
+	NewSession, err := session.NewSession(&awsv1.Config{
+		Region:      aws.String("ap-south-1"),
+		Credentials: credentials.NewStaticCredentials("AKIA2KCCOMMQ3NHHI3MT", "NgiNDsA7NPMOS68abb4wIMCuKdpd9XDEfgAM7DAR", ""),
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	Session := NewSession
+
+	LBCLIENT := elbv2.New(Session, &awsv1.Config{
+		Region: aws.String("ap-south-1"),
+	})
+
 	return LBCLIENT
 }
 
 var (
-	LBARN *elbv2.CreateLoadBalancerOutput
-	ARN   *elbv2.CreateTargetGroupOutput
+	GLBARN *elbv2.CreateLoadBalancerOutput
+	GARN   *elbv2.CreateTargetGroupOutput
 )
 
-func (obj *AwsProvider) CreateLoadBalancer() (*elbv2.CreateLoadBalancerOutput, error) {
+func (obj *AwsProvider) CreateLB() (*elbv2.CreateLoadBalancerOutput, error) {
 	LBCLIENT := obj.ElbClient()
 
 	LB_ARN, err := LBCLIENT.CreateLoadBalancer(&elbv2.CreateLoadBalancerInput{
-		Name: aws.String(obj.ClusterName + "-lb"),
+		Name: aws.String("loadbalancer" + "-lb"),
 
-		SecurityGroups: []*string{
-			aws.String(awsCloudState.SecurityGroupID),
-		},
-		Subnets: []*string{
-			aws.String(awsCloudState.SubnetID),
-		},
-		Tags: []*elbv2.Tag{
-			{
-				Key:   aws.String("Name"),
-				Value: aws.String(obj.ClusterName + "-lb"),
-			},
-		},
-		Type: aws.String("application"),
+		// SecurityGroups: []*string{
+		// 	aws.String(awsCloudState.SecurityGroupID),
+		// },
+		Subnets: []*string{&SUBNETID[0], &SUBNETID[1], &SUBNETID[2]},
+		Type:    aws.String("application"),
 		// SubnetMappings: []*elbv2.SubnetMapping{},
 	})
 	if err != nil {
@@ -217,7 +299,7 @@ func (obj *AwsProvider) CreateLoadBalancer() (*elbv2.CreateLoadBalancerOutput, e
 
 	fmt.Println("Created Load Balancer Successfully: ", *LB_ARN.LoadBalancers[0].LoadBalancerArn)
 	fmt.Println("Creating required resources for Load Balancer....")
-	LBARN = LB_ARN
+	GLBARN = LB_ARN
 	return LB_ARN, nil
 
 }
@@ -225,19 +307,19 @@ func (obj *AwsProvider) CreateLoadBalancer() (*elbv2.CreateLoadBalancerOutput, e
 func (obj *AwsProvider) CreateTargetGroup() (*elbv2.CreateTargetGroupOutput, error) {
 	LBCLIENT := obj.ElbClient()
 
-	obj.CreateLoadBalancer()
+	// obj.CreateLB()
 
 	ARN, err := LBCLIENT.CreateTargetGroup(&elbv2.CreateTargetGroupInput{
-		Name:       aws.String(obj.ClusterName + "-tg"),
-		Protocol:   aws.String("tcp"),
+		Name:       aws.String("new" + "-tg"),
+		Protocol:   aws.String("TCP"),
 		Port:       aws.Int64(6443), //  port on which the target receives traffic from the load balancer
-		VpcId:      aws.String(awsCloudState.VPC),
+		VpcId:      aws.String(VPCID),
 		TargetType: aws.String("ip"),
 	})
 	if err != nil {
 		log.Println(err)
 	}
-
+	GARN = ARN
 	fmt.Println("Target Group Created Successfully: ", *ARN.TargetGroups[0].TargetGroupArn)
 
 	return ARN, nil
@@ -247,9 +329,10 @@ func (obj *AwsProvider) CreateTargetGroup() (*elbv2.CreateTargetGroupOutput, err
 func (obj *AwsProvider) RegisterTargetGroup() {
 	client := obj.ElbClient()
 
-	ARN, err := obj.CreateTargetGroup()
-	if err != nil {
-		log.Println(err)
+	ARN := GARN
+	if ARN == nil {
+		log.Println("Target Group not created")
+		return
 	}
 
 	ARNV := ARN.TargetGroups[0].TargetGroupArn
@@ -258,21 +341,19 @@ func (obj *AwsProvider) RegisterTargetGroup() {
 		TargetGroupArn: aws.String(*ARNV),
 		Targets: []*elbv2.TargetDescription{
 			{
-				Id: aws.String("id"),
+				AvailabilityZone: aws.String("ap-south-1a"),
+				Id:               aws.String("id"),
 			},
 		},
 	})
 
-	fmt.Println("Target Group Registered Successfully: ", *LBARN.LoadBalancers[0].LoadBalancerArn)
+	fmt.Println("Target Group Registered Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
 }
 
 func (obj *AwsProvider) CreateListener() {
 	client := obj.ElbClient()
 
-	ARN, err := obj.CreateTargetGroup()
-	if err != nil {
-		log.Println(err)
-	}
+	ARN := GARN
 
 	ARNV := ARN.TargetGroups[0].TargetGroupArn
 
@@ -283,12 +364,12 @@ func (obj *AwsProvider) CreateListener() {
 				Type:           aws.String("forward"),
 			},
 		},
-		LoadBalancerArn: aws.String(*LBARN.LoadBalancers[0].LoadBalancerArn),
+		LoadBalancerArn: aws.String(*GLBARN.LoadBalancers[0].LoadBalancerArn),
 		Port:            aws.Int64(6443),
 		Protocol:        aws.String("TCP"),
 	})
 
-	fmt.Println("Listener Created Successfully: ", *LBARN.LoadBalancers[0].LoadBalancerArn)
+	fmt.Println("Listener Created Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
 
 }
 
@@ -311,11 +392,10 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 	}
 
 	client := obj.ec2Client()
-	Ipv4Pool, err := client.CreatePublicIpv4Pool(&ec2.CreatePublicIpv4PoolInput{
-		TagSpecifications: []*ec2.TagSpecification{
+	Ipv4Pool, err := client.CreatePublicIpv4Pool(context.TODO(), &ec2.CreatePublicIpv4PoolInput{
+		TagSpecifications: []types.TagSpecification{
 			{
-				ResourceType: aws.String("public--ip-pool"),
-				Tags: []*ec2.Tag{
+				Tags: []types.Tag{
 					{
 						Key:   aws.String(obj.Metadata.ResName),
 						Value: aws.String("value"),
@@ -329,37 +409,37 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 	}
 
 	parameters := &ec2.DescribeAddressesInput{
-		Filters: []*ec2.Filter{
+		Filters: []types.Filter{
 			{
 				Name:   aws.String("domain"),
-				Values: aws.StringSlice([]string{"vpc"}),
+				Values: []string{"vpc"},
 			},
 		},
-		AllocationIds: []*string{
-			aws.String(*Ipv4Pool.PoolId),
+		AllocationIds: []string{
+			*Ipv4Pool.PoolId,
 		},
 	}
-	ipaddress, err := client.DescribeAddresses(parameters)
+	ipaddress, err := client.DescribeAddresses(context.Background(), parameters)
 	if err != nil {
 		log.Println(err)
 	}
-	if ipaddress.Addresses == 0 {
+	if ipaddress.Addresses == nil {
 		fmt.Printf("No elastic IPs for %s region\n", obj.Region)
 		return err
 	}
 	fmt.Println("Elastic IPs")
 	for _, addr := range ipaddress.Addresses {
-		fmt.Println("*", fmtAddress(addr))
+		fmt.Println("*", fmtAddress(&addr))
 	}
 
 	// TODO its just a pool create the public ip
-	allocateIp, err := client.AllocateAddress(&ec2.AllocateAddressInput{
-		Domain:                aws.String("vpc"),
+	allocateIp, err := client.AllocateAddress(context.Background(), &ec2.AllocateAddressInput{
+		Domain:                types.DomainType("vpc"),
 		CustomerOwnedIpv4Pool: aws.String(*Ipv4Pool.PoolId),
-		TagSpecifications: []*ec2.TagSpecification{
+		TagSpecifications: []types.TagSpecification{
 			{
-				ResourceType: aws.String("elastic-ip"),
-				Tags: []*ec2.Tag{
+				ResourceType: types.ResourceType("elastic-ip"),
+				Tags: []types.Tag{
 					{
 						Key:   aws.String(obj.Metadata.ResName),
 						Value: aws.String("value"),
@@ -381,7 +461,7 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 
 func (obj *AwsProvider) AssignPublicIP(instanceid string) error {
 	client := obj.ec2Client()
-	_, err := client.AssociateAddress(&ec2.AssociateAddressInput{
+	_, err := client.AssociateAddress(context.Background(), &ec2.AssociateAddressInput{
 		InstanceId: aws.String(instanceid),
 		PublicIp:   aws.String(""),
 	})
@@ -390,14 +470,14 @@ func (obj *AwsProvider) AssignPublicIP(instanceid string) error {
 		return err
 	}
 
-	fmt.Println("Public IP %s assigned to %s", "ip", instanceid)
+	fmt.Printf("Public IP %s is assigned to %s\n", "", instanceid)
 
 	return nil
 }
 
-func fmtAddress(addr *ec2.Address) string {
+func fmtAddress(addr *types.Address) string {
 	out := fmt.Sprintf("IP: %s,  allocation id: %s",
-		aws.StringValue(addr.PublicIp), aws.StringValue(addr.AllocationId))
+		*aws.String(*addr.PublicIp), *aws.String(*addr.PublicIp))
 	if addr.InstanceId != nil {
 		out += fmt.Sprintf(", instance-id: %s", *addr.InstanceId)
 	}
@@ -407,15 +487,6 @@ func fmtAddress(addr *ec2.Address) string {
 // TODO add EBS volume to the VM and attach it to the instance
 
 // TODO ADD A GLOBAL FUNTION THAT WILL HAVE THE ALL OUTPUTS
-
-func (obj *AwsProvider) randdom() {
-	op, err := obj.CreateLoadBalancer()
-	if err != nil {
-		log.Println(err)
-	}
-
-	fmt.Println(op.LoadBalancers[0].LoadBalancerArn)
-}
 
 // Sequence of steps to create a VM
 // 1. Create  VPC										DONE
@@ -433,13 +504,10 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		storage.Logger().Note("[skip] currently multiple datastore not supported")
 		return nil
 	}
-	// pubIPName := obj.Metadata.ResName + "-pub"
-	// nicName := obj.Metadata.ResName + "-nic"
-	// diskName := obj.Metadata.ResName + "-disk"
 
 	ec2Client := obj.ec2Client()
 
-	VM, err := ec2Client.RunInstances(&ec2.RunInstancesInput{
+	VM, err := ec2Client.RunInstances(context.TODO(), &ec2.RunInstancesInput{
 		/*
 			TODO: Add the following parameters
 			vmname
@@ -453,30 +521,30 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 			instanceprofile t2.micro
 		*/
 		ImageId:      aws.String("ami-e7527ed7"),
-		InstanceType: aws.String("t2.micro"),
+		InstanceType: types.InstanceType("t2.micro"),
 		KeyName:      aws.String(awsCloudState.SSHKeyName),
 
 		// TODO figure out add the main parameters or not
 		// MaintenanceOptions: ,
 
-		MaxCount: aws.Int64(1), //this is the number of instances you want to create
-		MinCount: aws.Int64(1), //this is the number of instances you want to create
+		MaxCount: aws.Int32(1), //this is the number of instances you want to create
+		MinCount: aws.Int32(1), //this is the number of instances you want to create
 
-		Monitoring: &ec2.RunInstancesMonitoringEnabled{
-			Enabled: aws.Bool(true),
-		},
+		// Monitoring: types.RunInstancesMonitoringEnabled{
+		// 	Enabled: aws.Bool(true),
+		// },
 
 		PrivateIpAddress: aws.String(""),
 
 		EnablePrimaryIpv6: aws.Bool(true),
-		SecurityGroupIds: []*string{
-			aws.String(awsCloudState.SecurityGroupID),
+		SecurityGroupIds: []string{
+			awsCloudState.SecurityGroupID,
 		},
 		SubnetId: aws.String(awsCloudState.SubnetID),
-		TagSpecifications: []*ec2.TagSpecification{
+		TagSpecifications: []types.TagSpecification{
 			{
-				ResourceType: aws.String("instance"),
-				Tags: []*ec2.Tag{
+				ResourceType: types.ResourceType("instance"),
+				Tags: []types.Tag{
 					{
 						Key:   aws.String("Name"),
 						Value: aws.String(obj.Metadata.ResName),
