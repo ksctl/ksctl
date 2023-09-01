@@ -18,6 +18,7 @@ require (
 	github.com/rodaine/table v1.1.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.11.0
+	golang.org/x/sync v0.1.0
 	golang.org/x/term v0.10.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/apimachinery v0.27.4

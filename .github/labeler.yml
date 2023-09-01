@@ -15,6 +15,9 @@
 'cloud/azure':
 - 'api/provider/azure/*'
 
+'cloud/aws':
+- 'api/provider/aws/*'
+
 'cloud/civo':
 - 'api/provider/civo/*'
 
