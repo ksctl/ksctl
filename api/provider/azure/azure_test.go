@@ -64,9 +64,9 @@ func TestInitState(t *testing.T) {
 		}
 
 		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_MANG, "clustertype should be managed")
-		assert.Equal(t, clusterDirName, fakeAzure.ClusterName+" "+fakeAzure.ResourceGroup+" "+fakeAzure.Region, "clusterdir not equal")
+		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
-		assert.Equal(t, fakeAzure.NewNetwork(demoClient.Storage), nil, "Network should be created")
+		assert.Equal(t, fakeAzure.Name("fake-net").NewNetwork(demoClient.Storage), nil, "Network should be created")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 	})
 
@@ -224,13 +224,15 @@ func TestResName(t *testing.T) {
 	if ret := fakeAzure.Name("demo"); ret == nil {
 		t.Fatalf("returned nil for valid res name")
 	}
-	if fakeAzure.Metadata.ResName != "demo" {
+	fakeAzure.mxName.Unlock()
+	if fakeAzure.metadata.resName != "demo" {
 		t.Fatalf("Correct assignment missing")
 	}
 
 	if ret := fakeAzure.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
+	fakeAzure.mxName.Unlock()
 }
 
 func TestRole(t *testing.T) {
@@ -239,30 +241,34 @@ func TestRole(t *testing.T) {
 		if ret := fakeAzure.Role(val); ret == nil {
 			t.Fatalf("returned nil for valid role")
 		}
-		if fakeAzure.Metadata.Role != val {
+		fakeAzure.mxRole.Unlock()
+		if fakeAzure.metadata.role != val {
 			t.Fatalf("Correct assignment missing")
 		}
 	}
 	if ret := fakeAzure.Role("fake"); ret != nil {
 		t.Fatalf("returned interface for invalid role")
 	}
+	fakeAzure.mxRole.Unlock()
 }
 
 func TestVMType(t *testing.T) {
 	if ret := fakeAzure.VMType("fake"); ret == nil {
 		t.Fatalf("returned nil for valid vm type")
 	}
-	if fakeAzure.Metadata.VmType != "fake" {
+	fakeAzure.mxVMType.Unlock()
+	if fakeAzure.metadata.vmType != "fake" {
 		t.Fatalf("Correct assignment missing")
 	}
 
 	if ret := fakeAzure.VMType(""); ret != nil {
 		t.Fatalf("returned interface for invalid vm type")
 	}
+	fakeAzure.mxVMType.Unlock()
 }
 
 func TestVisibility(t *testing.T) {
-	if fakeAzure.Visibility(true); !fakeAzure.Metadata.Public {
+	if fakeAzure.Visibility(true); !fakeAzure.metadata.public {
 		t.Fatalf("Visibility setting not working")
 	}
 }
@@ -298,7 +304,7 @@ func TestK8sVersion(t *testing.T) {
 			if ret := fakeAzure.Version(ver); ret == nil {
 				t.Fatalf("returned nil for valid version")
 			}
-			if ver != fakeAzure.Metadata.K8sVersion {
+			if ver != fakeAzure.metadata.k8sVersion {
 				t.Fatalf("set value is not equal to input value")
 			}
 		} else {
@@ -495,7 +501,6 @@ func checkCurrentStateFileHA(t *testing.T) {
 
 func TestManagedCluster(t *testing.T) {
 	fakeAzure.Version("1.27")
-	fakeAzure.VMType("fake")
 	t.Run("init state", func(t *testing.T) {
 
 		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
@@ -503,7 +508,7 @@ func TestManagedCluster(t *testing.T) {
 		}
 
 		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_MANG, "clustertype should be managed")
-		assert.Equal(t, clusterDirName, fakeAzure.ClusterName+" "+fakeAzure.ResourceGroup+" "+fakeAzure.Region, "clusterdir not equal")
+		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 
 		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
@@ -513,7 +518,7 @@ func TestManagedCluster(t *testing.T) {
 	})
 
 	t.Run("Create network", func(t *testing.T) {
-		assert.Equal(t, fakeAzure.NewNetwork(demoClient.Storage), nil, "resource grp should be created")
+		assert.Equal(t, fakeAzure.Name("fake-data-will-not-be-used").NewNetwork(demoClient.Storage), nil, "resource grp should be created")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 		assert.Assert(t, len(azureCloudState.ResourceGroupName) > 0)
 		checkCurrentStateFile(t)
@@ -521,12 +526,12 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("Create managed cluster", func(t *testing.T) {
 
-		assert.Equal(t, fakeAzure.NewManagedCluster(demoClient.Storage, 5), nil, "managed cluster should be created")
+		assert.Equal(t, fakeAzure.Name("fake-managed").VMType("fake").NewManagedCluster(demoClient.Storage, 5), nil, "managed cluster should be created")
 		assert.Equal(t, azureCloudState.IsCompleted, true, "cluster should not be completed")
 
 		assert.Equal(t, azureCloudState.NoManagedNodes, 5)
 		//assert.Equal(t, azureCloudState.KubernetesDistro, utils.K8S_K3S)
-		assert.Equal(t, azureCloudState.KubernetesVer, fakeAzure.Metadata.K8sVersion)
+		assert.Equal(t, azureCloudState.KubernetesVer, fakeAzure.metadata.k8sVersion)
 		assert.Assert(t, len(azureCloudState.ManagedClusterName) > 0, "Managed cluster Name not saved")
 
 		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
@@ -558,18 +563,16 @@ func TestManagedCluster(t *testing.T) {
 
 func TestHACluster(t *testing.T) {
 
-	fakeAzure.Region = "fake"
-	fakeAzure.ClusterName = "fakeazure"
-	fakeAzure.HACluster = true
+	fakeAzure.region = "fake"
+	fakeAzure.clusterName = "fakeazure"
+	fakeAzure.haCluster = true
 
 	// size
-	fakeAzure.Metadata.NoCP = 7
-	fakeAzure.Metadata.NoDS = 5
-	fakeAzure.Metadata.NoWP = 10
-	fakeAzure.Metadata.Public = true
-	fakeAzure.Metadata.VmType = "fake"
-	fakeAzure.Metadata.K8sName = utils.K8S_K3S
-	fakeAzure.VMType("fake")
+	fakeAzure.metadata.noCP = 7
+	fakeAzure.metadata.noDS = 5
+	fakeAzure.metadata.noWP = 10
+	fakeAzure.metadata.public = true
+	fakeAzure.metadata.k8sName = utils.K8S_K3S
 
 	t.Run("init state", func(t *testing.T) {
 
@@ -578,7 +581,7 @@ func TestHACluster(t *testing.T) {
 		}
 
 		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_HA, "clustertype should be managed")
-		assert.Equal(t, clusterDirName, fakeAzure.ClusterName+" "+fakeAzure.ResourceGroup+" "+fakeAzure.Region, "clusterdir not equal")
+		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 
 		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA, clusterDirName, STATE_FILE_NAME)).Load()
@@ -588,12 +591,12 @@ func TestHACluster(t *testing.T) {
 	})
 
 	t.Run("Create network", func(t *testing.T) {
-		assert.Equal(t, fakeAzure.NewNetwork(demoClient.Storage), nil, "Network should be created")
+		assert.Equal(t, fakeAzure.Name("fake-data-not-used").NewNetwork(demoClient.Storage), nil, "Network should be created")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 
-		assert.Equal(t, azureCloudState.ResourceGroupName, fakeAzure.ResourceGroup, "resource group not saved")
-		assert.Equal(t, azureCloudState.VirtualNetworkName, fakeAzure.ClusterName+"-vnet", "virtual net should be created")
-		assert.Equal(t, azureCloudState.SubnetName, fakeAzure.ClusterName+"-subnet", "subnet should be created")
+		assert.Equal(t, azureCloudState.ResourceGroupName, fakeAzure.resourceGroup, "resource group not saved")
+		assert.Equal(t, azureCloudState.VirtualNetworkName, fakeAzure.clusterName+"-vnet", "virtual net should be created")
+		assert.Equal(t, azureCloudState.SubnetName, fakeAzure.clusterName+"-subnet", "subnet should be created")
 
 		assert.Assert(t, len(azureCloudState.VirtualNetworkID) > 0, "virtual net should be created")
 		assert.Assert(t, len(azureCloudState.SubnetID) > 0, "subnet should be created")
@@ -603,10 +606,9 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("Create ssh", func(t *testing.T) {
 
-		fakeAzure.Name("fake-ssh-key") // only to test the name working
-		assert.Equal(t, fakeAzure.CreateUploadSSHKeyPair(demoClient.Storage), nil, "ssh key failed")
+		assert.Equal(t, fakeAzure.Name("fake-ssh").CreateUploadSSHKeyPair(demoClient.Storage), nil, "ssh key failed")
 
-		assert.Equal(t, azureCloudState.SSHKeyName, fakeAzure.Metadata.ResName, "sshid must be present")
+		assert.Equal(t, azureCloudState.SSHKeyName, fakeAzure.metadata.resName, "sshid must be present")
 
 		assert.Equal(t, azureCloudState.SSHUser, "azureuser", "ssh user not set")
 		assert.Equal(t, azureCloudState.SSHPrivateKeyLoc, utils.GetPath(utils.SSH_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName), "ssh private key loc missing")
@@ -623,7 +625,7 @@ func TestHACluster(t *testing.T) {
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
 
-			assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for controlplane absent")
+			assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkSecurityGroupName, fakeAzure.metadata.resName, "firewallID for controlplane absent")
 			assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkSecurityGroupID) > 0, "fw id for controlplane missing")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
@@ -631,7 +633,7 @@ func TestHACluster(t *testing.T) {
 			fakeAzure.Name("fake-fw-wp")
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
-			assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for workerplane absent")
+			assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName, fakeAzure.metadata.resName, "firewallID for workerplane absent")
 			assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID) > 0, "fw id for workerplane missing")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
@@ -639,7 +641,7 @@ func TestHACluster(t *testing.T) {
 			fakeAzure.Name("fake-fw-lb")
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
-			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for loadbalacer absent")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName, fakeAzure.metadata.resName, "firewallID for loadbalacer absent")
 			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID) > 0, "fw id for loadbalacer missing")
 		})
 		t.Run("Datastore", func(t *testing.T) {
@@ -647,7 +649,7 @@ func TestHACluster(t *testing.T) {
 			fakeAzure.Name("fake-fw-ds")
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
-			assert.Equal(t, azureCloudState.InfoDatabase.NetworkSecurityGroupName, fakeAzure.Metadata.ResName, "firewallID for datastore absent")
+			assert.Equal(t, azureCloudState.InfoDatabase.NetworkSecurityGroupName, fakeAzure.metadata.resName, "firewallID for datastore absent")
 			assert.Assert(t, len(azureCloudState.InfoDatabase.NetworkSecurityGroupID) > 0, "fw id for datastore missing")
 		})
 
@@ -658,46 +660,48 @@ func TestHACluster(t *testing.T) {
 		t.Run("Loadbalancer", func(t *testing.T) {
 			fakeAzure.Role(utils.ROLE_LB)
 			fakeAzure.Name("fake-lb")
+			fakeAzure.VMType("fake")
 
 			assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, 0), nil, "new vm failed")
-			assert.Equal(t, azureCloudState.InfoLoadBalancer.Name, fakeAzure.Metadata.ResName, "missmatch of Loadbalancer VM name")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.Name, fakeAzure.metadata.resName, "missmatch of Loadbalancer VM name")
 			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.HostName) > 0, "missmatch of Loadbalancer vm hostname")
 
-			assert.Equal(t, azureCloudState.InfoLoadBalancer.DiskName, fakeAzure.Metadata.ResName+"-disk", "missmatch of Loadbalancer disk name")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.DiskName, fakeAzure.metadata.resName+"-disk", "missmatch of Loadbalancer disk name")
 
-			assert.Equal(t, azureCloudState.InfoLoadBalancer.PublicIPName, fakeAzure.Metadata.ResName+"-pub", "missmatch of Loadbalancer pub ip name")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.PublicIPName, fakeAzure.metadata.resName+"-pub", "missmatch of Loadbalancer pub ip name")
 			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.PublicIPID) > 0, "missmatch of Loadbalancer pub ip id must be created")
 			assert.Equal(t, azureCloudState.InfoLoadBalancer.PublicIP, "A.B.C.D", "missmatch of Loadbalancer pub ip")
 
-			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkInterfaceName, fakeAzure.Metadata.ResName+"-nic", "missmatch of Loadbalancer nic name")
+			assert.Equal(t, azureCloudState.InfoLoadBalancer.NetworkInterfaceName, fakeAzure.metadata.resName+"-nic", "missmatch of Loadbalancer nic name")
 			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkInterfaceID) > 0, "missmatch of Loadbalancer nic must be created")
 			assert.Equal(t, azureCloudState.InfoLoadBalancer.PrivateIP, "192.168.X.Y", "missmatch of Loadbalancer private ip NIC")
 
 			checkCurrentStateFileHA(t)
 		})
 		t.Run("Controlplanes", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_CP)
 
-			if _, err := fakeAzure.NoOfControlPlane(fakeAzure.Metadata.NoCP, true); err != nil {
+			if _, err := fakeAzure.NoOfControlPlane(fakeAzure.metadata.noCP, true); err != nil {
 				t.Fatalf("Failed to set the controlplane")
 			}
 
-			for i := 0; i < fakeAzure.Metadata.NoCP; i++ {
+			for i := 0; i < fakeAzure.metadata.noCP; i++ {
 				t.Run("controlplane", func(t *testing.T) {
 
 					fakeAzure.Name(fmt.Sprintf("fake-cp-%d", i))
+					fakeAzure.Role(utils.ROLE_CP)
+					fakeAzure.VMType("fake")
 
 					assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, i), nil, "new vm failed")
-					assert.Equal(t, azureCloudState.InfoControlPlanes.Names[i], fakeAzure.Metadata.ResName, "missmatch of controlplane VM name")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.Names[i], fakeAzure.metadata.resName, "missmatch of controlplane VM name")
 					assert.Assert(t, len(azureCloudState.InfoControlPlanes.Hostnames[i]) > 0, "missmatch of controlplane vm hostname")
 
-					assert.Equal(t, azureCloudState.InfoControlPlanes.DiskNames[i], fakeAzure.Metadata.ResName+"-disk", "missmatch of controlplane disk name")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.DiskNames[i], fakeAzure.metadata.resName+"-disk", "missmatch of controlplane disk name")
 
-					assert.Equal(t, azureCloudState.InfoControlPlanes.PublicIPNames[i], fakeAzure.Metadata.ResName+"-pub", "missmatch of controlplane pub ip name")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.PublicIPNames[i], fakeAzure.metadata.resName+"-pub", "missmatch of controlplane pub ip name")
 					assert.Assert(t, len(azureCloudState.InfoControlPlanes.PublicIPIDs[i]) > 0, "missmatch of controlplane pub ip id must be created")
 					assert.Equal(t, azureCloudState.InfoControlPlanes.PublicIPs[i], "A.B.C.D", "missmatch of controlplane pub ip")
 
-					assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkInterfaceNames[i], fakeAzure.Metadata.ResName+"-nic", "missmatch of controlplane nic name")
+					assert.Equal(t, azureCloudState.InfoControlPlanes.NetworkInterfaceNames[i], fakeAzure.metadata.resName+"-nic", "missmatch of controlplane nic name")
 					assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of controlplane nic must be created")
 					assert.Equal(t, azureCloudState.InfoControlPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of controlplane private ip NIC")
 
@@ -707,33 +711,34 @@ func TestHACluster(t *testing.T) {
 		})
 
 		t.Run("Datastores", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_DS)
 			// NOTE: the noDS is set to 1 becuase current implementation is only for single datastore
 			// TODO: use the 1 as limit
 
-			fakeAzure.Metadata.NoDS = 1
+			fakeAzure.metadata.noDS = 1
 
-			if _, err := fakeAzure.NoOfDataStore(fakeAzure.Metadata.NoDS, true); err != nil {
+			if _, err := fakeAzure.NoOfDataStore(fakeAzure.metadata.noDS, true); err != nil {
 				t.Fatalf("Failed to set the datastore")
 			}
 
-			for i := 0; i < fakeAzure.Metadata.NoDS; i++ {
+			for i := 0; i < fakeAzure.metadata.noDS; i++ {
 				t.Run("datastore", func(t *testing.T) {
 
+					fakeAzure.Role(utils.ROLE_DS)
 					fakeAzure.Name(fmt.Sprintf("fake-ds-%d", i))
+					fakeAzure.VMType("fake")
 
 					assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, i), nil, "new vm failed")
 
-					assert.Equal(t, azureCloudState.InfoDatabase.Names[i], fakeAzure.Metadata.ResName, "missmatch of datastore VM name")
+					assert.Equal(t, azureCloudState.InfoDatabase.Names[i], fakeAzure.metadata.resName, "missmatch of datastore VM name")
 					assert.Assert(t, len(azureCloudState.InfoDatabase.Hostnames[i]) > 0, "missmatch of datastore vm hostname")
 
-					assert.Equal(t, azureCloudState.InfoDatabase.DiskNames[i], fakeAzure.Metadata.ResName+"-disk", "missmatch of datastore disk name")
+					assert.Equal(t, azureCloudState.InfoDatabase.DiskNames[i], fakeAzure.metadata.resName+"-disk", "missmatch of datastore disk name")
 
-					assert.Equal(t, azureCloudState.InfoDatabase.PublicIPNames[i], fakeAzure.Metadata.ResName+"-pub", "missmatch of datastore pub ip name")
+					assert.Equal(t, azureCloudState.InfoDatabase.PublicIPNames[i], fakeAzure.metadata.resName+"-pub", "missmatch of datastore pub ip name")
 					assert.Assert(t, len(azureCloudState.InfoDatabase.PublicIPIDs[i]) > 0, "missmatch of datastore pub ip id must be created")
 					assert.Equal(t, azureCloudState.InfoDatabase.PublicIPs[i], "A.B.C.D", "missmatch of datastore pub ip")
 
-					assert.Equal(t, azureCloudState.InfoDatabase.NetworkInterfaceNames[i], fakeAzure.Metadata.ResName+"-nic", "missmatch of datastore nic name")
+					assert.Equal(t, azureCloudState.InfoDatabase.NetworkInterfaceNames[i], fakeAzure.metadata.resName+"-nic", "missmatch of datastore nic name")
 					assert.Assert(t, len(azureCloudState.InfoDatabase.NetworkInterfaceIDs[i]) > 0, "missmatch of datastore nic must be created")
 					assert.Equal(t, azureCloudState.InfoDatabase.PrivateIPs[i], "192.168.X.Y", "missmatch of datastore private ip NIC")
 
@@ -742,29 +747,30 @@ func TestHACluster(t *testing.T) {
 			}
 		})
 		t.Run("Workplanes", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_WP)
 
-			if _, err := fakeAzure.NoOfWorkerPlane(demoClient.Storage, fakeAzure.Metadata.NoWP, true); err != nil {
+			if _, err := fakeAzure.NoOfWorkerPlane(demoClient.Storage, fakeAzure.metadata.noWP, true); err != nil {
 				t.Fatalf("Failed to set the workerplane")
 			}
 
-			for i := 0; i < fakeAzure.Metadata.NoWP; i++ {
+			for i := 0; i < fakeAzure.metadata.noWP; i++ {
 				t.Run("workerplane", func(t *testing.T) {
 
+					fakeAzure.Role(utils.ROLE_WP)
 					fakeAzure.Name(fmt.Sprintf("fake-wp-%d", i))
+					fakeAzure.VMType("fake")
 
 					assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, i), nil, "new vm failed")
 
-					assert.Equal(t, azureCloudState.InfoWorkerPlanes.Names[i], fakeAzure.Metadata.ResName, "missmatch of workerplane VM name")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.Names[i], fakeAzure.metadata.resName, "missmatch of workerplane VM name")
 					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.Hostnames[i]) > 0, "missmatch of workerplane vm hostname")
 
-					assert.Equal(t, azureCloudState.InfoWorkerPlanes.DiskNames[i], fakeAzure.Metadata.ResName+"-disk", "missmatch of workerplane disk name")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.DiskNames[i], fakeAzure.metadata.resName+"-disk", "missmatch of workerplane disk name")
 
-					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PublicIPNames[i], fakeAzure.Metadata.ResName+"-pub", "missmatch of workerplane pub ip name")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PublicIPNames[i], fakeAzure.metadata.resName+"-pub", "missmatch of workerplane pub ip name")
 					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.PublicIPIDs[i]) > 0, "missmatch of workerplane pub ip id must be created")
 					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PublicIPs[i], "A.B.C.D", "missmatch of workerplane pub ip")
 
-					assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[i], fakeAzure.Metadata.ResName+"-nic", "missmatch of workerplane nic name")
+					assert.Equal(t, azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[i], fakeAzure.metadata.resName+"-nic", "missmatch of workerplane nic name")
 					assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of workerplane nic must be created")
 					assert.Equal(t, azureCloudState.InfoWorkerPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of workerplane private ip NIC")
 
@@ -797,18 +803,18 @@ func TestHACluster(t *testing.T) {
 		}
 
 		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_HA, "clustertype should be managed")
-		assert.Equal(t, clusterDirName, fakeAzure.ClusterName+" "+fakeAzure.ResourceGroup+" "+fakeAzure.Region, "clusterdir not equal")
+		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 	})
 
 	t.Run("Get all counters", func(t *testing.T) {
 		var err error
-		fakeAzure.Metadata.NoCP, err = fakeAzure.NoOfControlPlane(-1, false)
+		fakeAzure.metadata.noCP, err = fakeAzure.NoOfControlPlane(-1, false)
 		assert.Assert(t, err == nil)
 
-		fakeAzure.Metadata.NoWP, err = fakeAzure.NoOfWorkerPlane(demoClient.Storage, -1, false)
+		fakeAzure.metadata.noWP, err = fakeAzure.NoOfWorkerPlane(demoClient.Storage, -1, false)
 		assert.Assert(t, err == nil)
 
-		fakeAzure.Metadata.NoDS, err = fakeAzure.NoOfDataStore(-1, false)
+		fakeAzure.metadata.noDS, err = fakeAzure.NoOfDataStore(-1, false)
 		assert.Assert(t, err == nil)
 	})
 
@@ -834,10 +840,10 @@ func TestHACluster(t *testing.T) {
 		})
 
 		t.Run("Workerplane", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_WP)
 
-			for i := 0; i < fakeAzure.Metadata.NoWP; i++ {
+			for i := 0; i < fakeAzure.metadata.noWP; i++ {
 				t.Run("workerplane", func(t *testing.T) {
+					fakeAzure.Role(utils.ROLE_WP)
 
 					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
 
@@ -859,10 +865,10 @@ func TestHACluster(t *testing.T) {
 			}
 		})
 		t.Run("Controlplane", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_CP)
 
-			for i := 0; i < fakeAzure.Metadata.NoCP; i++ {
+			for i := 0; i < fakeAzure.metadata.noCP; i++ {
 				t.Run("controlplane", func(t *testing.T) {
+					fakeAzure.Role(utils.ROLE_CP)
 
 					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
 
@@ -884,10 +890,10 @@ func TestHACluster(t *testing.T) {
 			}
 		})
 		t.Run("DataStore", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_DS)
 
-			for i := 0; i < fakeAzure.Metadata.NoDS; i++ {
+			for i := 0; i < fakeAzure.metadata.noDS; i++ {
 				t.Run("datastore", func(t *testing.T) {
+					fakeAzure.Role(utils.ROLE_DS)
 
 					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
 
