@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/kubesimplify/ksctl/api/logger"
 
@@ -83,35 +84,43 @@ const (
 	KUBECONFIG_FILE_NAME         = string("kubeconfig")
 )
 
-type Metadata struct {
-	ResName string
-	Role    string
-	VmType  string
-	Public  bool
+type metadata struct {
+	resName string
+	role    string
+	vmType  string
+	public  bool
 
 	// purpose: application in managed cluster
-	Apps string
-	Cni  string
+	apps string
+	cni  string
 	// these are used for managing the state and are the size of the arrays
-	NoCP int
-	NoWP int
-	NoDS int
+	noCP int
+	noWP int
+	noDS int
 
-	K8sName    string
-	K8sVersion string
+	k8sName    string
+	k8sVersion string
+}
+
+func (m metadata) String() string {
+	return fmt.Sprintf("{ resName: '%s', role: '%s', vmtype: '%s' }\n", m.resName, m.role, m.vmType)
 }
 
 type CivoProvider struct {
-	ClusterName string `json:"cluster_name"`
-	APIKey      string `json:"api_key"`
-	HACluster   bool   `json:"ha_cluster"`
-	Region      string `json:"region"`
+	clusterName string
+	apiKey      string
+	haCluster   bool
+	region      string
 
-	SSHPath string `json:"ssh_key"` // do check what need to be here
+	sshPath  string
+	mxName   sync.Mutex
+	mxRole   sync.Mutex
+	mxVMType sync.Mutex
+	mxState  sync.Mutex
 
-	Metadata
+	metadata
 
-	Client CivoGo
+	client CivoGo
 }
 
 type Credential struct {
@@ -128,13 +137,13 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 			UserName:       civoCloudState.SSHUser,
 		},
 		Metadata: cloud_control_res.Metadata{
-			ClusterName: client.ClusterName,
+			ClusterName: client.clusterName,
 			Provider:    utils.CLOUD_CIVO,
-			Region:      client.Region,
+			Region:      client.region,
 			ClusterType: clusterType,
 			ClusterDir:  clusterDirName,
 		},
-		// Public IPs
+		// public IPs
 		IPv4ControlPlanes: civoCloudState.IPv4.IPControlplane,
 		IPv4DataStores:    civoCloudState.IPv4.IPDataStore,
 		IPv4WorkerPlanes:  civoCloudState.IPv4.IPWorkerPlane,
@@ -151,8 +160,8 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 
 func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation string) error {
 
-	clusterDirName = obj.ClusterName + " " + obj.Region
-	if obj.HACluster {
+	clusterDirName = obj.clusterName + " " + obj.region
+	if obj.haCluster {
 		clusterType = utils.CLUSTER_TYPE_HA
 	} else {
 		clusterType = utils.CLUSTER_TYPE_MANG
@@ -175,10 +184,10 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 			storage.Logger().Note("[civo] Fresh state!!")
 			civoCloudState = &StateConfiguration{
 				IsCompleted:      false,
-				Region:           obj.Region,
-				ClusterName:      obj.ClusterName,
-				KubernetesDistro: obj.K8sName,
-				KubernetesVer:    obj.K8sVersion,
+				Region:           obj.region,
+				ClusterName:      obj.clusterName,
+				KubernetesDistro: obj.k8sName,
+				KubernetesVer:    obj.k8sVersion,
 			}
 		}
 
@@ -199,7 +208,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 		return errors.New("[civo] Invalid operation for init state")
 	}
 
-	if err := obj.Client.InitClient(storage, obj.Region); err != nil {
+	if err := obj.client.InitClient(storage, obj.region); err != nil {
 		return err
 	}
 
@@ -210,35 +219,41 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 	return nil
 }
 
-func ReturnCivoStruct(metadata resources.Metadata, ClientOption func() CivoGo) (*CivoProvider, error) {
+func ReturnCivoStruct(meta resources.Metadata, ClientOption func() CivoGo) (*CivoProvider, error) {
 	return &CivoProvider{
-		ClusterName: metadata.ClusterName,
-		Region:      metadata.Region,
-		HACluster:   metadata.IsHA,
-		Metadata: Metadata{
-			K8sName:    metadata.K8sDistro,
-			K8sVersion: metadata.K8sVersion,
+		clusterName: meta.ClusterName,
+		region:      meta.Region,
+		haCluster:   meta.IsHA,
+		metadata: metadata{
+			k8sName:    meta.K8sDistro,
+			k8sVersion: meta.K8sVersion,
 		},
-		Client: ClientOption(),
+		client: ClientOption(),
 	}, nil
 }
 
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
+	cloud.mxName.Lock()
+
 	if err := utils.IsValidName(resName); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
 		return nil
 	}
-	cloud.Metadata.ResName = resName
+	cloud.metadata.resName = resName
+	//fmt.Println("[trigger] Name", cloud.metadata)
 	return cloud
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
+	cloud.mxRole.Lock()
+
 	switch resRole {
 	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
-		cloud.Metadata.Role = resRole
+		cloud.metadata.role = resRole
+		//fmt.Println("[trigger] Role", cloud.metadata)
 		return cloud
 	default:
 		var logFactory logger.LogFactory = &logger.Logger{}
@@ -249,18 +264,22 @@ func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
+	cloud.mxVMType.Lock()
+
 	if err := isValidVMSize(cloud, size); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
+
 		return nil
 	}
-	cloud.Metadata.VmType = size
+	cloud.metadata.vmType = size
+	//fmt.Println("[trigger] VMType", cloud.metadata)
 	return cloud
 }
 
 // whether to have the resource as public or private (i.e. VMs)
 func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudFactory {
-	cloud.Metadata.Public = toBePublic
+	cloud.metadata.public = toBePublic
 	return cloud
 }
 
@@ -283,17 +302,17 @@ func aggregratedApps(s string) (ret string) {
 }
 
 func (client *CivoProvider) Application(s string) resources.CloudFactory {
-	client.Metadata.Apps = aggregratedApps(s)
+	client.metadata.apps = aggregratedApps(s)
 	return client
 }
 
 func (client *CivoProvider) CNI(s string) resources.CloudFactory {
 	if len(s) == 0 {
-		client.Metadata.Cni = "flannel"
+		client.metadata.cni = "flannel"
 	} else {
 		switch s {
 		case "cilium":
-			client.Metadata.Cni = s
+			client.metadata.cni = s
 		default:
 			return nil
 		}
@@ -317,8 +336,8 @@ func k8sVersion(obj *CivoProvider, ver string) string {
 
 // Version implements resources.CloudFactory.
 func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
-	obj.Metadata.K8sVersion = k8sVersion(obj, ver)
-	if len(obj.Metadata.K8sVersion) == 0 {
+	obj.metadata.k8sVersion = k8sVersion(obj, ver)
+	if len(obj.metadata.k8sVersion) == 0 {
 		return nil
 	}
 	return obj
@@ -343,7 +362,7 @@ func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		return len(civoCloudState.InstanceIDs.ControlNodes), nil
 	}
 	if no >= 3 && (no&1) == 1 {
-		obj.Metadata.NoCP = no
+		obj.metadata.noCP = no
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
 		}
@@ -373,7 +392,7 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		return len(civoCloudState.InstanceIDs.DatabaseNode), nil
 	}
 	if no >= 1 && (no&1) == 1 {
-		obj.Metadata.NoDS = no
+		obj.metadata.noDS = no
 
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
@@ -406,7 +425,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 		return len(civoCloudState.InstanceIDs.WorkerNodes), nil
 	}
 	if no >= 0 {
-		obj.Metadata.NoWP = no
+		obj.metadata.noWP = no
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
 		}
@@ -525,16 +544,15 @@ func isPresent(storage resources.StorageFactory) bool {
 }
 
 func (obj *CivoProvider) SwitchCluster(storage resources.StorageFactory) error {
-	switch obj.HACluster {
+	clusterDirName = obj.clusterName + " " + obj.region
+	switch obj.haCluster {
 	case true:
-		clusterDirName = obj.ClusterName + " " + obj.Region
 		clusterType = utils.CLUSTER_TYPE_HA
 		if isPresent(storage) {
 			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
 			return nil
 		}
 	case false:
-		clusterDirName = obj.ClusterName + " " + obj.Region
 		clusterType = utils.CLUSTER_TYPE_MANG
 		if isPresent(storage) {
 			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)

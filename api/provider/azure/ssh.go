@@ -9,6 +9,8 @@ import (
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
+	name := obj.metadata.resName
+	obj.mxName.Unlock()
 
 	if len(azureCloudState.SSHKeyName) != 0 {
 		storage.Logger().Success("[skip] ssh key already created", azureCloudState.SSHKeyName)
@@ -21,16 +23,15 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 	}
 
 	parameters := armcompute.SSHPublicKeyResource{
-		Location: to.Ptr(obj.Region),
+		Location: to.Ptr(obj.region),
 		Properties: &armcompute.SSHPublicKeyResourceProperties{
 			PublicKey: to.Ptr(keyPairToUpload),
 		},
 	}
 
-	_, err = obj.Client.CreateSSHKey(obj.Metadata.ResName, parameters, nil)
+	_, err = obj.client.CreateSSHKey(name, parameters, nil)
 
-	azureCloudState.SSHKeyName = obj.Metadata.ResName
-
+	azureCloudState.SSHKeyName = name
 	azureCloudState.SSHUser = "azureuser"
 	azureCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName)
 
@@ -50,7 +51,7 @@ func (obj *AzureProvider) DelSSHKeyPair(storage resources.StorageFactory) error 
 		return nil
 	}
 
-	if _, err := obj.Client.DeleteSSHKey(azureCloudState.SSHKeyName, nil); err != nil {
+	if _, err := obj.client.DeleteSSHKey(azureCloudState.SSHKeyName, nil); err != nil {
 		return err
 	}
 

@@ -94,7 +94,7 @@ func convertStateFromBytes(raw []byte) error {
 // helper functions to get resources from civogo client
 // seperation so that we can test logic by assert
 func getValidK8sVersionClient(obj *CivoProvider) []string {
-	vers, err := obj.Client.ListAvailableKubernetesVersions()
+	vers, err := obj.client.ListAvailableKubernetesVersions()
 	if err != nil {
 		return nil
 	}
@@ -108,7 +108,7 @@ func getValidK8sVersionClient(obj *CivoProvider) []string {
 }
 
 func getValidRegionsClient(obj *CivoProvider) []string {
-	regions, err := obj.Client.ListRegions()
+	regions, err := obj.client.ListRegions()
 	if err != nil {
 		return nil
 	}
@@ -120,7 +120,7 @@ func getValidRegionsClient(obj *CivoProvider) []string {
 }
 
 func getValidVMSizesClient(obj *CivoProvider) []string {
-	nodeSizes, err := obj.Client.ListInstanceSizes()
+	nodeSizes, err := obj.client.ListInstanceSizes()
 	if err != nil {
 		return nil
 	}
@@ -133,11 +133,11 @@ func getValidVMSizesClient(obj *CivoProvider) []string {
 
 func validationOfArguments(obj *CivoProvider) error {
 
-	if err := isValidRegion(obj, obj.Region); err != nil {
+	if err := isValidRegion(obj, obj.region); err != nil {
 		return err
 	}
 
-	if err := utils.IsValidName(obj.ClusterName); err != nil {
+	if err := utils.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 

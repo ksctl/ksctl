@@ -16,9 +16,10 @@ require (
 	github.com/fatih/color v1.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/rodaine/table v1.1.0
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.11.0
 	golang.org/x/term v0.11.0
+	golang.org/x/sync v0.1.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/apimachinery v0.27.4
 	k8s.io/client-go v0.27.4
@@ -47,7 +48,7 @@ require (
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect

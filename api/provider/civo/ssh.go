@@ -12,7 +12,7 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 		return nil
 	}
 
-	_, err := obj.Client.DeleteSSHKey(civoCloudState.SSHID)
+	_, err := obj.client.DeleteSSHKey(civoCloudState.SSHID)
 	if err != nil {
 		return err
 	}
@@ -29,6 +29,9 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
+	name := obj.metadata.resName
+	obj.mxName.Unlock()
+
 	if len(civoCloudState.SSHID) != 0 {
 		storage.Logger().Success("[skip] ssh keypair already uploaded")
 		return nil
@@ -38,20 +41,19 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory
 	if err != nil {
 		return err
 	}
-	if err := obj.uploadSSH(storage, obj.Metadata.ResName, keyPairToUpload); err != nil {
+	if err := obj.uploadSSH(storage, name, keyPairToUpload); err != nil {
 		return err
 	}
-	storage.Logger().Success("[civo] ssh keypair created and uploaded", obj.Metadata.ResName)
+	storage.Logger().Success("[civo] ssh keypair created and uploaded", name)
 	return nil
 }
 
 func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pubKey string) error {
-	sshResp, err := obj.Client.NewSSHKey(resName, pubKey)
+	sshResp, err := obj.client.NewSSHKey(resName, pubKey)
 	if err != nil {
 		return err
 	}
 
-	// NOTE: state for the ssh
 	civoCloudState.SSHID = sshResp.ID
 	civoCloudState.SSHUser = "root"
 	civoCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_CIVO, clusterType, clusterDirName)
