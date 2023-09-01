@@ -100,8 +100,8 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete civo -n demo1 -r LON1 --approve || exit 0
-                ksctl delete ha-civo -n demo -r FRA1 --approve || exit 0
+                ksctl delete civo -n demo1 -r LON1 --approve -v
+                ksctl delete ha-civo -n demo -r FRA1 --approve -v
             '''
         }
         success {

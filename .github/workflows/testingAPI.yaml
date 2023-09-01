@@ -1,4 +1,4 @@
-name: Testing API
+name: Unit-Testing API
 on:
   push:
     paths:
@@ -22,8 +22,6 @@ jobs:
            cd api
            chmod +x test-api.sh
            ./test-api.sh
-           cd ../test/
-           go test -bench=. -benchtime=1x -cover -v
 
   API_on_Macos:
     runs-on: macos-latest
@@ -37,8 +35,6 @@ jobs:
            cd api
            chmod +x test-api.sh
            ./test-api.sh
-           cd ../test/
-           go test -bench=. -benchtime=1x -cover -v
 
   API_on_Windows:
     runs-on: windows-latest
@@ -51,5 +47,3 @@ jobs:
         run: |
            cd api
            .\test-api.ps1
-           cd ..\test
-           go test -bench=. -benchtime=1x -cover -v
