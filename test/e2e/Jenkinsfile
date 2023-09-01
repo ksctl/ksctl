@@ -8,8 +8,8 @@ pipeline {
         stage('Build binary') {
             when {
                 anyOf {
-                    changeset "**/go.mod"
-                    changeset "**/go.sum"
+                    changeset "go.mod"
+                    changeset "go.sum"
                     changeset "api/**"
                     changeset "cli/**"
                     changeset "test/e2e/**"
@@ -63,8 +63,8 @@ pipeline {
         stage('Trigger Other Pipelines') {
             when {
                 anyOf {
-                    changeset "**/go.mod"
-                    changeset "**/go.sum"
+                    changeset "go.mod"
+                    changeset "go.sum"
                     changeset "api/**"
                     changeset "cli/**"
                     changeset "test/e2e/**"
@@ -77,8 +77,8 @@ pipeline {
                         stage('trigger local') {
                             when {
                                 anyOf {
-                                    changeset "**/go.mod"
-                                    changeset "**/go.sum"
+                                    changeset "go.mod"
+                                    changeset "go.sum"
                                     changeset "test/e2e/**"
                                     changeset "api/provider/local/**"
                                     changeset "api/utils/**"
@@ -93,8 +93,8 @@ pipeline {
                         stage('trigger civo') {
                             when {
                                 anyOf {
-                                    changeset "**/go.mod"
-                                    changeset "**/go.sum"
+                                    changeset "go.mod"
+                                    changeset "go.sum"
                                     changeset "test/e2e/**"
                                     changeset "api/provider/civo/**"
                                     changeset "api/utils/**"
@@ -109,8 +109,8 @@ pipeline {
                         stage('trigger azure') {
                             when {
                                 anyOf {
-                                    changeset "**/go.mod"
-                                    changeset "**/go.sum"
+                                    changeset "go.mod"
+                                    changeset "go.sum"
                                     changeset "test/e2e/**"
                                     changeset "api/provider/azure/**"
                                     changeset "api/utils/**"
