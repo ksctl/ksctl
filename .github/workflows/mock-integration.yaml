@@ -4,10 +4,14 @@ on:
   pull_request:
     paths:
       - 'api/**'
+      - 'go.mod'
+      - 'go.sum'
     types: [ labeled ]
   push:
     paths:
     - 'api/**'
+    - 'go.mod'
+    - 'go.sum'
     branches: [ main ]
 
 jobs:
