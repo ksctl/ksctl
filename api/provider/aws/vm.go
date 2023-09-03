@@ -8,14 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	awsv1 "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/elbv2"
+	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
+	elb_types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/fatih/color"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
-	// "github.com/kubesimplify/ksctl/api/provider/aws"
 )
 
 var (
@@ -256,66 +253,48 @@ func (obj *AwsProvider) CreateRouteTable() {
 */
 
 // TODO: Use elb v2 client
-func (obj *AwsProvider) ElbClient() *elbv2.ELBV2 {
+func (obj *AwsProvider) ElbClient() *elasticloadbalancingv2.Client {
+	elbv2Client := elasticloadbalancingv2.NewFromConfig(*obj.Session)
 
-	NewSession, err := session.NewSession(&awsv1.Config{
-		Region:      aws.String("ap-south-1"),
-		Credentials: credentials.NewStaticCredentials("AKIA2KCCOMMQ3NHHI3MT", "NgiNDsA7NPMOS68abb4wIMCuKdpd9XDEfgAM7DAR", ""),
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	Session := NewSession
-
-	LBCLIENT := elbv2.New(Session, &awsv1.Config{
-		Region: aws.String("ap-south-1"),
-	})
-
-	return LBCLIENT
+	return elbv2Client
 }
 
 var (
-	GLBARN *elbv2.CreateLoadBalancerOutput
-	GARN   *elbv2.CreateTargetGroupOutput
+	GLBARN *elasticloadbalancingv2.CreateLoadBalancerOutput
+	GARN   *elasticloadbalancingv2.CreateTargetGroupOutput
 )
 
-func (obj *AwsProvider) CreateLB() (*elbv2.CreateLoadBalancerOutput, error) {
+func (obj *AwsProvider) CreateLB() (*elasticloadbalancingv2.CreateLoadBalancerOutput, error) {
+
 	LBCLIENT := obj.ElbClient()
-
-	LB_ARN, err := LBCLIENT.CreateLoadBalancer(&elbv2.CreateLoadBalancerInput{
-		Name: aws.String("loadbalancer" + "-lb"),
-
-		// SecurityGroups: []*string{
-		// 	aws.String(awsCloudState.SecurityGroupID),
-		// },
-		Subnets: []*string{&SUBNETID[0], &SUBNETID[1], &SUBNETID[2]},
-		Type:    aws.String("application"),
-		// SubnetMappings: []*elbv2.SubnetMapping{},
+	LB_ARN, err := LBCLIENT.CreateLoadBalancer(context.TODO(), &elasticloadbalancingv2.CreateLoadBalancerInput{
+		Name:           aws.String("new" + "-lb"),
+		Scheme:         elb_types.LoadBalancerSchemeEnumInternetFacing,
+		IpAddressType:  elb_types.IpAddressType("ipv4"),
+		SecurityGroups: []string{awsCloudState.SecurityGroupID},
+		Subnets:        []string{awsCloudState.SubnetID},
+		Type:           elb_types.LoadBalancerTypeEnumApplication,
 	})
 	if err != nil {
 		log.Println(err)
 	}
-
-	fmt.Println("Created Load Balancer Successfully: ", *LB_ARN.LoadBalancers[0].LoadBalancerArn)
-	fmt.Println("Creating required resources for Load Balancer....")
 	GLBARN = LB_ARN
 	return LB_ARN, nil
 
 }
 
-func (obj *AwsProvider) CreateTargetGroup() (*elbv2.CreateTargetGroupOutput, error) {
-	LBCLIENT := obj.ElbClient()
+func (obj *AwsProvider) CreateTargetGroup() (*elasticloadbalancingv2.CreateTargetGroupOutput, error) {
 
-	// obj.CreateLB()
+	client := obj.ElbClient()
 
-	ARN, err := LBCLIENT.CreateTargetGroup(&elbv2.CreateTargetGroupInput{
+	ARN, err := client.CreateTargetGroup(context.TODO(), &elasticloadbalancingv2.CreateTargetGroupInput{
 		Name:       aws.String("new" + "-tg"),
-		Protocol:   aws.String("TCP"),
-		Port:       aws.Int64(6443), //  port on which the target receives traffic from the load balancer
+		Protocol:   elb_types.ProtocolEnumTcp,
+		Port:       aws.Int32(6443),
 		VpcId:      aws.String(VPCID),
-		TargetType: aws.String("ip"),
+		TargetType: elb_types.TargetTypeEnumIp,
 	})
+
 	if err != nil {
 		log.Println(err)
 	}
@@ -337,12 +316,12 @@ func (obj *AwsProvider) RegisterTargetGroup() {
 
 	ARNV := ARN.TargetGroups[0].TargetGroupArn
 
-	client.RegisterTargets(&elbv2.RegisterTargetsInput{
+	client.RegisterTargets(context.TODO(), &elasticloadbalancingv2.RegisterTargetsInput{
 		TargetGroupArn: aws.String(*ARNV),
-		Targets: []*elbv2.TargetDescription{
+		Targets: []elb_types.TargetDescription{
 			{
-				AvailabilityZone: aws.String("ap-south-1a"),
-				Id:               aws.String("id"),
+				Id: aws.String(""),
+				// TODO: Add the more parameters
 			},
 		},
 	})
@@ -357,16 +336,29 @@ func (obj *AwsProvider) CreateListener() {
 
 	ARNV := ARN.TargetGroups[0].TargetGroupArn
 
-	client.CreateListener(&elbv2.CreateListenerInput{
-		DefaultActions: []*elbv2.Action{
+	client.CreateListener(context.TODO(), &elasticloadbalancingv2.CreateListenerInput{
+		DefaultActions: []elb_types.Action{
 			{
-				TargetGroupArn: aws.String(*ARNV),
-				Type:           aws.String("forward"),
+				Type: elb_types.ActionTypeEnumForward,
+				ForwardConfig: &elb_types.ForwardActionConfig{
+					TargetGroups: []elb_types.TargetGroupTuple{
+						{
+							TargetGroupArn: aws.String(*ARNV),
+							// Weight:         aws.Int32(1),
+						},
+					},
+				},
 			},
 		},
 		LoadBalancerArn: aws.String(*GLBARN.LoadBalancers[0].LoadBalancerArn),
-		Port:            aws.Int64(6443),
-		Protocol:        aws.String("TCP"),
+		Port:            aws.Int32(6443), // port on which the load balancer listens
+		Protocol:        elb_types.ProtocolEnumTcp,
+		Tags: []elb_types.Tag{
+			{
+				Key:   aws.String("Name"),
+				Value: aws.String("new" + "-listener"),
+			},
+		},
 	})
 
 	fmt.Println("Listener Created Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
