@@ -95,7 +95,7 @@ func TestCivoProvider_InitState(t *testing.T) {
 		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_MANG, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeClient.clusterName+" "+fakeClient.region, "clusterdir not equal")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
-		assert.Equal(t, fakeClient.NewNetwork(demoClient.Storage), nil, "Network should be created")
+		assert.Equal(t, fakeClient.Name("fake").NewNetwork(demoClient.Storage), nil, "Network should be created")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 	})
 
@@ -260,6 +260,7 @@ func TestResName(t *testing.T) {
 	if ret := fakeClient.Name("demo"); ret == nil {
 		t.Fatalf("returned nil for valid res name")
 	}
+	fakeClient.mxName.Unlock() // to unlock the mutex lock
 	if fakeClient.metadata.resName != "demo" {
 		t.Fatalf("Correct assignment missing")
 	}
@@ -267,6 +268,7 @@ func TestResName(t *testing.T) {
 	if ret := fakeClient.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
+	fakeClient.mxName.Unlock() // to unlock the mutex lock
 }
 
 func TestRole(t *testing.T) {
@@ -275,6 +277,7 @@ func TestRole(t *testing.T) {
 		if ret := fakeClient.Role(val); ret == nil {
 			t.Fatalf("returned nil for valid role")
 		}
+		fakeClient.mxRole.Unlock()
 		if fakeClient.metadata.role != val {
 			t.Fatalf("Correct assignment missing")
 		}
@@ -282,12 +285,15 @@ func TestRole(t *testing.T) {
 	if ret := fakeClient.Role("fake"); ret != nil {
 		t.Fatalf("returned interface for invalid role")
 	}
+	fakeClient.mxRole.Unlock() // to unlock the mutex lock
 }
 
 func TestVMType(t *testing.T) {
 	if ret := fakeClient.VMType("g4s.kube.small"); ret == nil {
 		t.Fatalf("returned nil for valid vm type")
 	}
+	fakeClient.mxVMType.Unlock() // to unlock the mutex lock
+
 	if fakeClient.metadata.vmType != "g4s.kube.small" {
 		t.Fatalf("Correct assignment missing")
 	}
@@ -295,6 +301,8 @@ func TestVMType(t *testing.T) {
 	if ret := fakeClient.VMType(""); ret != nil {
 		t.Fatalf("returned interface for invalid vm type")
 	}
+	fakeClient.mxVMType.Unlock() // to unlock the mutex lock
+
 }
 
 func TestVisibility(t *testing.T) {
@@ -452,7 +460,7 @@ func TestManagedCluster(t *testing.T) {
 	})
 
 	t.Run("Create network", func(t *testing.T) {
-		assert.Equal(t, fakeClient.NewNetwork(demoClient.Storage), nil, "Network should be created")
+		assert.Equal(t, fakeClient.Name("fake-net").NewNetwork(demoClient.Storage), nil, "Network should be created")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 		assert.Assert(t, len(civoCloudState.NetworkIDs.NetworkID) > 0, "network id not saved")
 
@@ -464,7 +472,8 @@ func TestManagedCluster(t *testing.T) {
 		fakeClient.CNI("cilium")
 		fakeClient.Application("abcd")
 
-		assert.Equal(t, fakeClient.NewManagedCluster(demoClient.Storage, 5), nil, "managed cluster should be created")
+		assert.Equal(t, fakeClient.Name("fake").VMType("g4s.kube.small").NewManagedCluster(demoClient.Storage, 5), nil, "managed cluster should be created")
+
 		assert.Equal(t, civoCloudState.IsCompleted, true, "cluster should not be completed")
 
 		assert.Equal(t, civoCloudState.NoManagedNodes, 5)
@@ -513,8 +522,6 @@ func TestHACluster(t *testing.T) {
 	fakeClient.metadata.vmType = "g4s.kube.small"
 	fakeClient.metadata.k8sName = utils.K8S_K3S
 
-	fakeClient.Name("fake")
-
 	t.Run("init state", func(t *testing.T) {
 
 		if err := fakeClient.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
@@ -532,7 +539,7 @@ func TestHACluster(t *testing.T) {
 	})
 
 	t.Run("Create network", func(t *testing.T) {
-		assert.Equal(t, fakeClient.NewNetwork(demoClient.Storage), nil, "Network should be created")
+		assert.Equal(t, fakeClient.Name("fake-net").NewNetwork(demoClient.Storage), nil, "Network should be created")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 		assert.Assert(t, len(civoCloudState.NetworkIDs.NetworkID) > 0, "network id not saved")
 
@@ -541,7 +548,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("Create ssh", func(t *testing.T) {
 
-		assert.Equal(t, fakeClient.CreateUploadSSHKeyPair(demoClient.Storage), nil, "ssh key failed")
+		assert.Equal(t, fakeClient.Name("fake-ssh").CreateUploadSSHKeyPair(demoClient.Storage), nil, "ssh key failed")
 
 		assert.Assert(t, len(civoCloudState.SSHID) > 0, "sshid must be present")
 		assert.Equal(t, civoCloudState.SSHUser, "root", "ssh user not set")
@@ -555,6 +562,7 @@ func TestHACluster(t *testing.T) {
 
 		t.Run("Controlplane", func(t *testing.T) {
 			fakeClient.Role(utils.ROLE_CP)
+			fakeClient.Name("fake-cp")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
 
@@ -562,18 +570,21 @@ func TestHACluster(t *testing.T) {
 		})
 		t.Run("Workerplane", func(t *testing.T) {
 			fakeClient.Role(utils.ROLE_WP)
+			fakeClient.Name("fake-wp")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDWorkerNode) > 0, "firewallID for workerplane absent")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
 			fakeClient.Role(utils.ROLE_LB)
+			fakeClient.Name("fake-lb")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode) > 0, "firewallID for loadbalancer absent")
 		})
 		t.Run("Datastore", func(t *testing.T) {
 			fakeClient.Role(utils.ROLE_DS)
+			fakeClient.Name("fake-ds")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDDatabaseNode) > 0, "firewallID for datastore absent")
@@ -585,8 +596,8 @@ func TestHACluster(t *testing.T) {
 	t.Run("Create VMs", func(t *testing.T) {
 		t.Run("Loadbalancer", func(t *testing.T) {
 			fakeClient.Role(utils.ROLE_LB)
-
-			fakeClient.Name("fake-lb")
+			fakeClient.Name("fake-lb-vm")
+			fakeClient.VMType("g4s.kube.small")
 
 			assert.Equal(t, fakeClient.NewVM(demoClient.Storage, 0), nil, "new vm failed")
 			assert.Assert(t, len(civoCloudState.InstanceIDs.LoadBalancerNode) > 0, "loadbalancer VM id absent")
@@ -598,7 +609,6 @@ func TestHACluster(t *testing.T) {
 			checkCurrentStateFileHA(t)
 		})
 		t.Run("Controlplanes", func(t *testing.T) {
-			fakeClient.Role(utils.ROLE_CP)
 
 			if _, err := fakeClient.NoOfControlPlane(fakeClient.metadata.noCP, true); err != nil {
 				t.Fatalf("Failed to set the controlplane")
@@ -608,6 +618,8 @@ func TestHACluster(t *testing.T) {
 				t.Run("controlplane", func(t *testing.T) {
 
 					fakeClient.Name(fmt.Sprintf("fake-cp-%d", i))
+					fakeClient.VMType("g4s.kube.small")
+					fakeClient.Role(utils.ROLE_CP)
 
 					assert.Equal(t, fakeClient.NewVM(demoClient.Storage, i), nil, "new vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.ControlNodes[i]) > 0, "controlplane VM id absent")
@@ -622,7 +634,6 @@ func TestHACluster(t *testing.T) {
 		})
 
 		t.Run("Datastores", func(t *testing.T) {
-			fakeClient.Role(utils.ROLE_DS)
 			// NOTE: the noDS is set to 1 becuase current implementation is only for single datastore
 			// TODO: use the 1 as limit
 
@@ -636,6 +647,8 @@ func TestHACluster(t *testing.T) {
 				t.Run("datastore", func(t *testing.T) {
 
 					fakeClient.Name(fmt.Sprintf("fake-ds-%d", i))
+					fakeClient.VMType("g4s.kube.small")
+					fakeClient.Role(utils.ROLE_DS)
 
 					assert.Equal(t, fakeClient.NewVM(demoClient.Storage, i), nil, "new vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.DatabaseNode[i]) > 0, "datastore VM id absent")
@@ -649,7 +662,6 @@ func TestHACluster(t *testing.T) {
 			}
 		})
 		t.Run("Workplanes", func(t *testing.T) {
-			fakeClient.Role(utils.ROLE_WP)
 
 			if _, err := fakeClient.NoOfWorkerPlane(demoClient.Storage, fakeClient.metadata.noWP, true); err != nil {
 				t.Fatalf("Failed to set the workerplane")
@@ -659,6 +671,8 @@ func TestHACluster(t *testing.T) {
 				t.Run("workerplane", func(t *testing.T) {
 
 					fakeClient.Name(fmt.Sprintf("fake-wp-%d", i))
+					fakeClient.Role(utils.ROLE_WP)
+					fakeClient.VMType("g4s.kube.small")
 
 					assert.Equal(t, fakeClient.NewVM(demoClient.Storage, i), nil, "new vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.WorkerNodes[i]) > 0, "workerplane VM id absent")
@@ -726,10 +740,10 @@ func TestHACluster(t *testing.T) {
 		})
 
 		t.Run("Workerplane", func(t *testing.T) {
-			fakeClient.Role(utils.ROLE_WP)
 
 			for i := 0; i < fakeClient.metadata.noWP; i++ {
 				t.Run("workerplane", func(t *testing.T) {
+					fakeClient.Role(utils.ROLE_WP)
 
 					assert.Equal(t, fakeClient.DelVM(demoClient.Storage, i), nil, "del vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.WorkerNodes[i]) == 0, "workerplane VM id present")
@@ -743,10 +757,10 @@ func TestHACluster(t *testing.T) {
 			}
 		})
 		t.Run("Controlplane", func(t *testing.T) {
-			fakeClient.Role(utils.ROLE_CP)
 
 			for i := 0; i < fakeClient.metadata.noCP; i++ {
 				t.Run("controlplane", func(t *testing.T) {
+					fakeClient.Role(utils.ROLE_CP)
 
 					assert.Equal(t, fakeClient.DelVM(demoClient.Storage, i), nil, "del vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.ControlNodes[i]) == 0, "controlplane VM id present")
@@ -760,10 +774,10 @@ func TestHACluster(t *testing.T) {
 			}
 		})
 		t.Run("DataStore", func(t *testing.T) {
-			fakeClient.Role(utils.ROLE_DS)
 
 			for i := 0; i < fakeClient.metadata.noDS; i++ {
 				t.Run("datastore", func(t *testing.T) {
+					fakeClient.Role(utils.ROLE_DS)
 
 					assert.Equal(t, fakeClient.DelVM(demoClient.Storage, i), nil, "del vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.DatabaseNode[i]) == 0, "datastore VM id present")

@@ -13,6 +13,8 @@ import (
 
 // NewNetwork implements resources.CloudFactory.
 func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
+	_ = obj.metadata.resName
+	obj.mxName.Unlock()
 
 	if len(azureCloudState.ResourceGroupName) != 0 {
 		storage.Logger().Success("[skip] already created the resource group", azureCloudState.ResourceGroupName)
