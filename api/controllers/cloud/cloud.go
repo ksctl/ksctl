@@ -76,14 +76,15 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 	}
 
 	//////
-	var wg sync.WaitGroup
+	wg := &sync.WaitGroup{}
 	errChanLB := make(chan error, 1)
 	errChanDS := make(chan error, noDS)
 	errChanCP := make(chan error, noCP)
 	errChanWP := make(chan error, noWP)
+
+	wg.Add(1 + noDS + noCP + noWP)
 	//////
 	for no := 0; no < noWP; no++ {
-		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
@@ -94,7 +95,6 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		}(no)
 	}
 	for no := 0; no < noCP; no++ {
-		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
@@ -105,7 +105,6 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		}(no)
 	}
 	for no := 0; no < noDS; no++ {
-		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
@@ -116,7 +115,6 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		}(no)
 	}
 
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
@@ -203,7 +201,7 @@ func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	var wg sync.WaitGroup
+	wg := &sync.WaitGroup{}
 
 	errChanWP := make(chan error, client.Metadata.NoWP-currWP)
 
@@ -252,7 +250,7 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 		return nil, fmt.Errorf("[cloud] not a valid count of wp for down scaling")
 	}
 
-	var wg sync.WaitGroup
+	wg := &sync.WaitGroup{}
 	errChanWP := make(chan error, currLen-desiredLen)
 
 	for no := desiredLen; no < currLen; no++ {
@@ -337,13 +335,14 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	}
 
 	//////
-	var wg sync.WaitGroup
+	wg := &sync.WaitGroup{}
 	errChanLB := make(chan error, 1)
 	errChanDS := make(chan error, client.Metadata.NoDS)
 	errChanCP := make(chan error, client.Metadata.NoCP)
 	errChanWP := make(chan error, client.Metadata.NoWP)
+
+	wg.Add(1 + client.Metadata.NoCP + client.Metadata.NoDS + client.Metadata.NoWP)
 	//////
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
@@ -358,7 +357,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	}()
 
 	for no := 0; no < client.Metadata.NoDS; no++ {
-		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
@@ -373,7 +371,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		}(no)
 	}
 	for no := 0; no < client.Metadata.NoCP; no++ {
-		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
@@ -389,7 +386,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	}
 
 	for no := 0; no < client.Metadata.NoWP; no++ {
-		wg.Add(1)
 		go func(no int) {
 			defer wg.Done()
 
