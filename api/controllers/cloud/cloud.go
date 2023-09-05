@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	aws_pkg "github.com/kubesimplify/ksctl/api/provider/aws"
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
@@ -33,6 +34,15 @@ func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bo
 			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideMockClient)
 		}
 
+		if err != nil {
+			return fmt.Errorf("[cloud] " + err.Error())
+		}
+	case utils.CLOUD_AWS:
+		if !fakeClient {
+			client.Cloud, err = aws_pkg.ReturnAwsStruct(client.Metadata, "")
+		} else {
+			client.Cloud, err = aws.ReturnAwsStruct(client.Metadata, "")
+		}
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}

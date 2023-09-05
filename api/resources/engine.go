@@ -21,6 +21,7 @@ type KsctlClient struct {
 	Metadata
 }
 
+// this is used against the cloud provider meaning it is used to store the state of cloud provider
 type Metadata struct {
 	ClusterName   string `json:"cluster_name"`
 	Region        string `json:"region"`

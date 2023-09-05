@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -31,11 +33,12 @@ type AwsProvider struct {
 	VPC         string `json:"vpc"`
 	AccessKeyID string `json:"access_key_id"`
 	Secret      string `json:"secret_access_key"`
-	Session     *session.Session
-	Metadata    Metadata
+	Session     aws.Config
+	metadata
 
 	SSHPath string `json:"ssh_key"`
 }
+
 type AWSStateVms struct {
 	Names                 []string `json:"names"`
 	SecurityGroupName     string   `json:"network_security_group_name"`
@@ -46,6 +49,8 @@ type AWSStateVms struct {
 	PublicIPs             []string `json:"public_ip"`
 	NetworkInterfaceNames []string `json:"network_interface_name"`
 	NetworkInterfaceIDs   []string `json:"network_interface_id"`
+	SubnetNames           []string `json:"subnet_name"`
+	SubnetIDs             []string `json:"subnet_id"`
 	Hostnames             []string `json:"hostname"`
 	PublicIPIDs           []string `json:"publicipids"`
 }
@@ -73,9 +78,9 @@ type AWSStateVm struct {
 	InstanceType  string `json:"instance_type"`
 	Subnet        string `json:"subnet"`
 	SecurityGroup string `json:"security_group"`
-	PublicIPName
-	PublicIP  string `json:"public_ip"`
-	PrivateIP string `json:"private_ip"`
+	PublicIPName  string `json:"public_ip_name"`
+	PublicIP      string `json:"public_ip"`
+	PrivateIP     string `json:"private_ip"`
 }
 
 type StateConfiguration struct {
@@ -106,7 +111,7 @@ type StateConfiguration struct {
 	KubernetesVer    string `json:"k8s_version"`
 }
 
-type Metadata struct {
+type metadata struct {
 	ResName string
 	Role    string
 	VmType  string
@@ -124,48 +129,212 @@ type Metadata struct {
 	K8sVersion string
 }
 
-func ReturnAwsStruct(metadata resources.Metadata) (*AwsProvider, error) {
+func ReturnAwsStruct(Metadata resources.Metadata) (*AwsProvider, error) {
 	return &AwsProvider{
-		ClusterName: metadata.ClusterName,
+		ClusterName: Metadata.ClusterName,
 		Region:      "ap-south-1",
-		HACluster:   metadata.IsHA,
-		Metadata: Metadata{
-			K8sVersion: metadata.K8sVersion,
-			K8sName:    metadata.K8sDistro,
+		HACluster:   Metadata.IsHA,
+		metadata: metadata{
+			K8sVersion: Metadata.K8sVersion,
+			K8sName:    Metadata.K8sDistro,
 		},
+
+		Session:     NEWCLIENT(),
 		AccessKeyID: "",
 		Secret:      "",
 	}, nil
 }
 
-func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
-	obj.Metadata.ResName = resName
-	return nil
-}
-
-func (obj *AwsProvider) NEWCLIENT() (aws.Config, error) {
-
-	// NewSession, err := session.NewSession(&aws.Config{
-	// 	Region:      aws.String(obj.Region),
-	// 	Credentials: credentials.NewStaticCredentials(obj.AccessKeyID, obj.Secret, ""),
-	// })
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
+func NEWCLIENT() aws.Config {
 	NewSession, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("ap-south-1"),
 		config.WithSharedConfigProfile("default"),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("add key", "add token", "")),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("dsvvvsvrvsvrv", "vsavveawg4gave4ds4ees4ge", "")),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	NewSession.Region = obj.Region
-
+	// obj.Session = &NewSession
 	fmt.Println("AWS Session Created Successfully")
 
-	return NewSession, nil
+	return NewSession
+
+}
+
+func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
+	obj.metadata.ResName = resName
+	return nil
+}
+
+func (obj *AwsProvider) DelVM(factory resources.StorageFactory, i int) error {
+	//TODO implement me
+	fmt.Println("AWS Del VM")
+	return nil
+}
+
+func (obj *AwsProvider) NewFirewall(factory resources.StorageFactory) error {
+	//TODO implement me
+	fmt.Println("AWS New Firewall")
+	return nil
+}
+
+func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
+	//TODO implement me
+	fmt.Println("AWS Del Firewall")
+
+	return nil
+}
+
+func (obj *AwsProvider) NewNetwork(factory resources.StorageFactory) error {
+	//TODO implement me
+	_ = obj.metadata.ResName
+	fmt.Println("AWS New Network")
+	return nil
+
+}
+
+func (obj *AwsProvider) DelNetwork(factory resources.StorageFactory) error {
+	//TODO implement me
+	fmt.Println("AWS Del Network")
+	return nil
+
+}
+
+func (obj *AwsProvider) InitState(factory resources.StorageFactory, s string) error {
+	//TODO implement me
+	fmt.Println("AWS Init State")
+	return nil
+
+}
+
+func (obj *AwsProvider) CreateUploadSSHKeyPair(factory resources.StorageFactory) error {
+	//TODO implement me
+	fmt.Println("AWS Create Upload SSH Key Pair")
+	return nil
+
+}
+
+func (obj *AwsProvider) DelSSHKeyPair(factory resources.StorageFactory) error {
+	//TODO implement me
+	fmt.Println("AWS Del SSH Key Pair")
+	return nil
+
+}
+
+func (obj *AwsProvider) GetStateForHACluster(factory resources.StorageFactory) (cloud.CloudResourceState, error) {
+	//TODO implement me
+	fmt.Println("AWS Get State for HA Cluster")
+
+	str := cloud.CloudResourceState{}
+	return str, nil
+
+}
+
+func (obj *AwsProvider) NewManagedCluster(factory resources.StorageFactory, i int) error {
+	//TODO implement me
+	fmt.Println("AWS New Managed Cluster")
+	return nil
+
+}
+
+func (obj *AwsProvider) DelManagedCluster(factory resources.StorageFactory) error {
+	//TODO implement me
+	fmt.Println("AWS Del Managed Cluster")
+	return nil
+
+}
+
+func (obj *AwsProvider) Role(s string) resources.CloudFactory {
+	//TODO implement me
+	fmt.Println("AWS Role")
+	return nil
+
+}
+
+func (obj *AwsProvider) VMType(s string) resources.CloudFactory {
+	//TODO implement me
+	fmt.Println("AWS VM Type")
+	return nil
+
+}
+
+func (obj *AwsProvider) Visibility(b bool) resources.CloudFactory {
+	//TODO implement me
+	fmt.Println("AWS Visibility")
+	return nil
+
+}
+
+func (obj *AwsProvider) SupportForApplications() bool {
+	//TODO implement me
+	fmt.Println("AWS Support for Applications")
+	return true
+
+}
+
+func (obj *AwsProvider) SupportForCNI() bool {
+	//TODO implement me
+	fmt.Println("AWS Support for CNI")
+	return true
+
+}
+
+func (obj *AwsProvider) Application(s string) resources.CloudFactory {
+	//TODO implement me
+	fmt.Println("AWS Application")
+	return nil
+
+}
+
+func (obj *AwsProvider) CNI(s string) resources.CloudFactory {
+	//TODO implement me
+	fmt.Println("AWS CNI")
+	return nil
+
+}
+
+func (obj *AwsProvider) Version(s string) resources.CloudFactory {
+	//TODO implement me
+	fmt.Println("AWS Version")
+	return nil
+
+}
+
+func (obj *AwsProvider) NoOfWorkerPlane(factory resources.StorageFactory, i int, b bool) (int, error) {
+	//TODO implement me
+	fmt.Println("AWS No of Worker Plane")
+	i = 0
+	return i, nil
+
+}
+
+func (obj *AwsProvider) NoOfControlPlane(i int, b bool) (int, error) {
+	//TODO implement me
+	fmt.Println("AWS No of Control Plane")
+	i = 0
+	return i, nil
+
+}
+
+func (obj *AwsProvider) NoOfDataStore(i int, b bool) (int, error) {
+	//TODO implement me
+	fmt.Println("AWS No of Data Store")
+	i = 0
+	return i, nil
+
+}
+
+func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
+	//TODO implement me
+	fmt.Println("AWS Get Host Name All Worker Node")
+	return nil
+
+}
+
+func (obj *AwsProvider) SwitchCluster(factory resources.StorageFactory) error {
+	//TODO implement me
+	fmt.Println("AWS Switch Cluster")
+	return nil
 
 }

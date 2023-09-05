@@ -122,6 +122,23 @@ var createClusterHAAzure = &cobra.Command{
 		createHA(cmd.Flags().Lookup("approve").Changed)
 	},
 }
+var createClusterHAAws = &cobra.Command{
+	Use:   "ha-aws",
+	Short: "Use to create a HA EKS cluster in AWS",
+	Long: `It is used to create cluster with the given name from user. For example:
+	ksctl create-cluster ha-aws <arguments to civo aws provider>
+	`,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		isSet := cmd.Flags().Lookup("verbose").Changed
+		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
+			panic(err)
+		}
+		cli.Client.Metadata.Provider = utils.CLOUD_AWS
+		SetDefaults(utils.CLOUD_AWS, utils.CLUSTER_TYPE_HA)
+		createHA(cmd.Flags().Lookup("approve").Changed)
+	},
+}
 
 func init() {
 	rootCmd.AddCommand(createClusterCmd)
@@ -132,6 +149,7 @@ func init() {
 	createClusterCmd.AddCommand(createClusterLocal)
 	createClusterCmd.AddCommand(createClusterHACivo)
 	createClusterCmd.AddCommand(createClusterHAAzure)
+	createClusterCmd.AddCommand(createClusterAws)
 
 	createClusterAzure.MarkFlagRequired("name")
 	createClusterCivo.MarkFlagRequired("name")
@@ -139,4 +157,5 @@ func init() {
 	createClusterLocal.MarkFlagRequired("name")
 	createClusterHAAzure.MarkFlagRequired("name")
 	createClusterHACivo.MarkFlagRequired("name")
+
 }
