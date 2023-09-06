@@ -16,6 +16,13 @@ Set-Location utils
 go test . -v && Set-Location -
 
 Write-Output "-----------------------------------"
+Write-Output "|   Testing (api/logger)"
+Write-Output "-----------------------------------"
+
+Set-Location logger
+go test . -v && Set-Location -
+
+Write-Output "-----------------------------------"
 Write-Output "|   Testing (api/k8s_distro/k3s)"
 Write-Output "-----------------------------------"
 

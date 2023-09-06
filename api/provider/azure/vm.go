@@ -11,52 +11,21 @@ import (
 	"github.com/kubesimplify/ksctl/api/utils"
 )
 
-func (obj *AzureProvider) virtualMachineClient() (*armcompute.VirtualMachinesClient, error) {
-	vmClient, err := armcompute.NewVirtualMachinesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return vmClient, nil
-}
-
-func (obj *AzureProvider) diskClient() (*armcompute.DisksClient, error) {
-	diskClient, err := armcompute.NewDisksClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return diskClient, nil
-}
-
-func (obj *AzureProvider) netInterfaceClient() (*armnetwork.InterfacesClient, error) {
-	client, err := armnetwork.NewInterfacesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
-func (obj *AzureProvider) publicIPClient() (*armnetwork.PublicIPAddressesClient, error) {
-	client, err := armnetwork.NewPublicIPAddressesClient(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
 // Sequence
 // creation
 // 1. PublicIP
 // 2. Network Interface
 // 3. Disk
 // 4. VM
-//
-// for deletion it reverse
 
 // DelVM implements resources.CloudFactory.
-func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) error {
+func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) error {
+	role := obj.metadata.role
+	indexNo := index
+	obj.mxRole.Unlock()
 
 	vmName := ""
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_CP:
 		vmName = azureCloudState.InfoControlPlanes.Names[indexNo]
 	case utils.ROLE_DS:
@@ -67,61 +36,67 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) e
 		vmName = azureCloudState.InfoWorkerPlanes.Names[indexNo]
 	}
 
-	// check if vm is deleted?
-	//if obj.Metadata.Role != utils.ROLE_LB && len(vm) == 0 {
-	//	storage.Logger().Success("[skip] vm already deleted")
-	//	return nil
-	//} else if len(vmName) == 0 {
 	if len(vmName) == 0 {
 		storage.Logger().Success("[skip] vm already deleted")
 	} else {
-		vmClient, err := obj.virtualMachineClient()
-		if err != nil {
-			return err
-		}
 
-		pollerResponse, err := vmClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, vmName, nil)
-		if err != nil {
-			return err
-		}
-		storage.Logger().Print("[azure] deleting vm...", vmName)
+		var errDel error //just to make sure its nil
+		donePoll := make(chan struct{})
+		go func() {
+			defer close(donePoll)
+			pollerResponse, err := obj.client.BeginDeleteVM(vmName, nil)
+			if err != nil {
+				errDel = err
+				return
+			}
+			storage.Logger().Print("[azure] deleting vm...", vmName)
 
-		_, err = pollerResponse.PollUntilDone(ctx, nil)
-		if err != nil {
-			return err
-		}
+			_, err = obj.client.PollUntilDoneDelVM(ctx, pollerResponse, nil)
+			if err != nil {
+				errDel = err
+				return
+			}
+			obj.mxState.Lock()
+			defer obj.mxState.Unlock()
 
-		switch obj.Metadata.Role {
-		case utils.ROLE_WP:
-			azureCloudState.InfoWorkerPlanes.Names[indexNo] = ""
-			azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = ""
-		case utils.ROLE_CP:
-			azureCloudState.InfoControlPlanes.Names[indexNo] = ""
-			azureCloudState.InfoControlPlanes.Hostnames[indexNo] = ""
-		case utils.ROLE_LB:
-			azureCloudState.InfoLoadBalancer.Name = ""
-			azureCloudState.InfoLoadBalancer.HostName = ""
-		case utils.ROLE_DS:
-			azureCloudState.InfoDatabase.Names[indexNo] = ""
-			azureCloudState.InfoDatabase.Hostnames[indexNo] = ""
-		}
+			switch role {
+			case utils.ROLE_WP:
+				azureCloudState.InfoWorkerPlanes.Names[indexNo] = ""
+				azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = ""
+			case utils.ROLE_CP:
+				azureCloudState.InfoControlPlanes.Names[indexNo] = ""
+				azureCloudState.InfoControlPlanes.Hostnames[indexNo] = ""
+			case utils.ROLE_LB:
+				azureCloudState.InfoLoadBalancer.Name = ""
+				azureCloudState.InfoLoadBalancer.HostName = ""
+			case utils.ROLE_DS:
+				azureCloudState.InfoDatabase.Names[indexNo] = ""
+				azureCloudState.InfoDatabase.Hostnames[indexNo] = ""
+			}
 
-		if err := saveStateHelper(storage); err != nil {
-			return err
-		}
+			if err := saveStateHelper(storage); err != nil {
+				errDel = err
+				return
+			}
 
+		}()
+		<-donePoll
+		if errDel != nil {
+			return errDel
+		}
 		storage.Logger().Success("[azure] Deleted the vm", vmName)
+
 	}
 
-	if err := obj.DeleteDisk(ctx, storage, indexNo); err != nil {
+	if err := obj.DeleteDisk(ctx, storage, indexNo, role); err != nil {
 		return err
 	}
 
-	if err := obj.DeleteNetworkInterface(ctx, storage, indexNo); err != nil {
+	if err := obj.DeleteNetworkInterface(ctx, storage, indexNo, role); err != nil {
 		return err
 	}
 
-	if err := obj.DeletePublicIP(ctx, storage, indexNo); err != nil {
+	if err := obj.DeletePublicIP(ctx, storage, indexNo, role); err != nil {
 		return err
 	}
 
@@ -129,22 +104,30 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, indexNo int) e
 }
 
 // NewVM implements resources.CloudFactory.
-func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
-	if obj.Metadata.Role == utils.ROLE_DS && indexNo > 0 {
+func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) error {
+	name := obj.metadata.resName
+	indexNo := index
+	role := obj.metadata.role
+	vmtype := obj.metadata.vmType
+	obj.mxRole.Unlock()
+	obj.mxName.Unlock()
+	obj.mxVMType.Unlock()
+
+	if role == utils.ROLE_DS && indexNo > 0 {
 		storage.Logger().Note("[skip] currently multiple datastore not supported")
 		return nil
 	}
-	pubIPName := obj.Metadata.ResName + "-pub"
-	nicName := obj.Metadata.ResName + "-nic"
-	diskName := obj.Metadata.ResName + "-disk"
-	if err := obj.CreatePublicIP(ctx, storage, pubIPName, indexNo); err != nil {
+	pubIPName := name + "-pub"
+	nicName := name + "-nic"
+	diskName := name + "-disk"
+	if err := obj.CreatePublicIP(ctx, storage, pubIPName, indexNo, role); err != nil {
 		return err
 	}
 
 	pubIPID := ""
 	nsgID := ""
 
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_WP:
 		pubIPID = azureCloudState.InfoWorkerPlanes.PublicIPIDs[indexNo]
 		nsgID = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID
@@ -159,13 +142,13 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 		pubIPID = azureCloudState.InfoDatabase.PublicIPIDs[indexNo]
 	}
 
-	if err := obj.CreateNetworkInterface(ctx, storage, nicName, azureCloudState.SubnetID, pubIPID, nsgID, indexNo); err != nil {
+	if err := obj.CreateNetworkInterface(ctx, storage, nicName, azureCloudState.SubnetID, pubIPID, nsgID, indexNo, role); err != nil {
 		return err
 	}
 
 	// NOTE: check if the VM is already created
 	vmName := ""
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_CP:
 		vmName = azureCloudState.InfoControlPlanes.Names[indexNo]
 	case utils.ROLE_DS:
@@ -180,13 +163,9 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 		return nil
 	}
 
-	vmClient, err := obj.virtualMachineClient()
-	if err != nil {
-		return err
-	}
 	sshPublicKeyPath := utils.GetPath(utils.OTHER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, "keypair.pub")
 	var sshBytes []byte
-	_, err = os.Stat(sshPublicKeyPath)
+	_, err := os.Stat(sshPublicKeyPath)
 	if err != nil {
 		return err
 	}
@@ -196,7 +175,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 	}
 
 	netInterfaceID := ""
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_WP:
 		netInterfaceID = azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[indexNo]
 	case utils.ROLE_CP:
@@ -208,7 +187,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 	}
 
 	parameters := armcompute.VirtualMachine{
-		Location: to.Ptr(obj.Region),
+		Location: to.Ptr(obj.region),
 		Identity: &armcompute.VirtualMachineIdentity{
 			Type: to.Ptr(armcompute.ResourceIdentityTypeNone),
 		},
@@ -231,10 +210,10 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 				},
 			},
 			HardwareProfile: &armcompute.HardwareProfile{
-				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes(obj.Metadata.VmType)), // VM size include vCPUs,RAM,Data Disks,Temp storage.
+				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes(vmtype)), // VM size include vCPUs,RAM,Data Disks,Temp storage.
 			},
 			OSProfile: &armcompute.OSProfile{ //
-				ComputerName:  to.Ptr(obj.Metadata.ResName),
+				ComputerName:  to.Ptr(name),
 				AdminUsername: to.Ptr(azureCloudState.SSHUser),
 				//CustomData:    to.Ptr(base64.StdEncoding.EncodeToString([]byte(script))),
 				LinuxConfiguration: &armcompute.LinuxConfiguration{
@@ -258,57 +237,96 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, indexNo int) e
 			},
 		},
 	}
-	pollerResponse, err := vmClient.BeginCreateOrUpdate(ctx, obj.ResourceGroup, obj.Metadata.ResName, parameters, nil)
+	pollerResponse, err := obj.client.BeginCreateVM(name, parameters, nil)
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.Names[indexNo] = obj.Metadata.ResName
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.Names[indexNo] = obj.Metadata.ResName
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.Name = obj.Metadata.ResName
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.Names[indexNo] = obj.Metadata.ResName
-	}
-	if err := saveStateHelper(storage); err != nil {
-		return err
-	}
+	// NOTE: Add the entry for name before polling starts so that state is present
 
-	storage.Logger().Print("[azure] creating vm...", obj.Metadata.ResName)
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
+	done := make(chan struct{})
+	var errCreateVM error
+	go func() {
+		defer close(done)
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
 
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.DiskNames[indexNo] = diskName
-		azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.DiskNames[indexNo] = diskName
-		azureCloudState.InfoControlPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.DiskName = diskName
-		azureCloudState.InfoLoadBalancer.HostName = *resp.Properties.OSProfile.ComputerName
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.DiskNames[indexNo] = diskName
-		azureCloudState.InfoDatabase.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
-	}
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.Names[indexNo] = name
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.Names[indexNo] = name
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.Name = name
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.Names[indexNo] = name
+		}
+		if err := saveStateHelper(storage); err != nil {
+			errCreateVM = err
+			return
+		}
 
-	if err := saveStateHelper(storage); err != nil {
-		return err
-	}
+	}()
 
-	storage.Logger().Success("[azure] Created virtual machine", *resp.Name)
+	<-done
+	if errCreateVM != nil {
+		return errCreateVM
+	}
+	storage.Logger().Print("[azure] creating vm...", name)
+
+	errCreateVM = nil //just to make sure its nil
+	donePoll := make(chan struct{})
+	go func() {
+		defer close(donePoll)
+
+		resp, err := obj.client.PollUntilDoneCreateVM(ctx, pollerResponse, nil)
+		if err != nil {
+			errCreateVM = err
+			return
+		}
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
+
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.DiskNames[indexNo] = diskName
+			azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
+
+			if len(azureCloudState.InfoWorkerPlanes.Names) == indexNo+1 {
+				azureCloudState.IsCompleted = true
+			}
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.DiskNames[indexNo] = diskName
+			azureCloudState.InfoControlPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
+			if len(azureCloudState.InfoControlPlanes.Names) == indexNo+1 && len(azureCloudState.InfoWorkerPlanes.Names) == 0 {
+				// when its the last resource to be created and we are done with the last controlplane creation
+				azureCloudState.IsCompleted = true
+			}
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.DiskName = diskName
+			azureCloudState.InfoLoadBalancer.HostName = *resp.Properties.OSProfile.ComputerName
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.DiskNames[indexNo] = diskName
+			azureCloudState.InfoDatabase.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
+		}
+
+		if err := saveStateHelper(storage); err != nil {
+			errCreateVM = err
+			return
+		}
+
+	}()
+	<-donePoll
+	if errCreateVM != nil {
+		return errCreateVM
+	}
+	storage.Logger().Success("[azure] Created virtual machine", name)
 	return nil
 }
 
-func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.StorageFactory, index int) error {
+func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
 	diskName := ""
-	switch obj.Metadata.Role {
+	// pass the role
+	switch role {
 	case utils.ROLE_WP:
 		diskName = azureCloudState.InfoWorkerPlanes.DiskNames[index]
 	case utils.ROLE_CP:
@@ -322,43 +340,54 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		storage.Logger().Success("[skip] disk already deleted")
 		return nil
 	}
-	diskClient, err := obj.diskClient()
+
+	pollerResponse, err := obj.client.BeginDeleteDisk(diskName, nil)
 	if err != nil {
 		return err
 	}
+	storage.Logger().Print("[azure] Deleting the disk..", diskName)
 
-	pollerResponse, err := diskClient.BeginDelete(ctx, obj.ResourceGroup, diskName, nil)
-	if err != nil {
-		return err
-	}
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
+	var errDelete error //just to make sure its nil
+	donePoll := make(chan struct{})
+	go func() {
+		close(donePoll)
+		_, err = obj.client.PollUntilDoneDelDisk(ctx, pollerResponse, nil)
+		if err != nil {
+			errDelete = err
+			return
+		}
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
 
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.DiskNames[index] = ""
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.DiskNames[index] = ""
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.DiskName = ""
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.DiskNames[index] = ""
-	}
-	if err := saveStateHelper(storage); err != nil {
-		return err
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.DiskNames[index] = ""
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.DiskNames[index] = ""
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.DiskName = ""
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.DiskNames[index] = ""
+		}
+		if err := saveStateHelper(storage); err != nil {
+			errDelete = err
+			return
+		}
+	}()
+	<-donePoll
+	if errDelete != nil {
+		return errDelete
 	}
 	storage.Logger().Success("[azure] Deleted disk", diskName)
 	return nil
 }
 
-func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string, index int) error {
+func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string, index int, role string) error {
 
 	publicIP := ""
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_WP:
 		publicIP = azureCloudState.InfoWorkerPlanes.PublicIPNames[index]
 	case utils.ROLE_CP:
@@ -373,69 +402,92 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		storage.Logger().Success("[skip] pub ip already created", publicIP)
 		return nil
 	}
-	publicIPAddressClient, err := obj.publicIPClient()
-	if err != nil {
-		return err
-	}
 
 	parameters := armnetwork.PublicIPAddress{
-		Location: to.Ptr(obj.Region),
+		Location: to.Ptr(obj.region),
 		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
 			PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic), // Static or Dynamic
 		},
 	}
 
-	pollerResponse, err := publicIPAddressClient.BeginCreateOrUpdate(ctx, azureCloudState.ResourceGroupName, publicIPName, parameters, nil)
+	pollerResponse, err := obj.client.BeginCreatePubIP(publicIPName, parameters, nil)
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = publicIPName
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.PublicIPNames[index] = publicIPName
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.PublicIPName = publicIPName
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.PublicIPNames[index] = publicIPName
-	}
-	if err := saveStateHelper(storage); err != nil {
-		return err
-	}
+	// NOTE: Add the entry for name before polling starts so that state is present
+	done := make(chan struct{})
+	var errCreate error
+	go func() {
+		defer close(done)
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
 
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = publicIPName
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.PublicIPNames[index] = publicIPName
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.PublicIPName = publicIPName
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.PublicIPNames[index] = publicIPName
+		}
+		if err := saveStateHelper(storage); err != nil {
+			errCreate = err
+			return
+		}
+	}()
+	<-done
+	if errCreate != nil {
+		return errCreate
 	}
+	storage.Logger().Print("[azure] creating the pubip..", publicIPName)
 
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = *resp.ID
-		azureCloudState.InfoWorkerPlanes.PublicIPs[index] = *resp.Properties.IPAddress
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.PublicIPIDs[index] = *resp.ID
-		azureCloudState.InfoControlPlanes.PublicIPs[index] = *resp.Properties.IPAddress
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.PublicIPID = *resp.ID
-		azureCloudState.InfoLoadBalancer.PublicIP = *resp.Properties.IPAddress
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.PublicIPIDs[index] = *resp.ID
-		azureCloudState.InfoDatabase.PublicIPs[index] = *resp.Properties.IPAddress
+	var errCreatePub error //just to make sure its nil
+	donePoll := make(chan struct{})
+	go func() {
+		defer close(donePoll)
+		resp, err := obj.client.PollUntilDoneCreatePubIP(ctx, pollerResponse, nil)
+		if err != nil {
+			errCreatePub = err
+			return
+		}
+
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
+
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = *resp.ID
+			azureCloudState.InfoWorkerPlanes.PublicIPs[index] = *resp.Properties.IPAddress
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.PublicIPIDs[index] = *resp.ID
+			azureCloudState.InfoControlPlanes.PublicIPs[index] = *resp.Properties.IPAddress
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.PublicIPID = *resp.ID
+			azureCloudState.InfoLoadBalancer.PublicIP = *resp.Properties.IPAddress
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.PublicIPIDs[index] = *resp.ID
+			azureCloudState.InfoDatabase.PublicIPs[index] = *resp.Properties.IPAddress
+		}
+
+		if err := saveStateHelper(storage); err != nil {
+			errCreatePub = err
+			return
+		}
+	}()
+	<-donePoll
+	if errCreatePub != nil {
+		return errCreatePub
 	}
-
-	if err := saveStateHelper(storage); err != nil {
-		return err
-	}
-
-	storage.Logger().Success("[azure] Created public IP address", *resp.Name)
+	storage.Logger().Success("[azure] Created public IP address", publicIPName)
 	return nil
 }
 
-func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, index int) error {
+func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
 
 	publicIP := ""
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_WP:
 		publicIP = azureCloudState.InfoWorkerPlanes.PublicIPNames[index]
 	case utils.ROLE_CP:
@@ -451,53 +503,64 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 		return nil
 	}
 
-	publicIPAddressClient, err := obj.publicIPClient()
+	pollerResponse, err := obj.client.BeginDeletePubIP(publicIP, nil)
 	if err != nil {
 		return err
 	}
+	storage.Logger().Print("[azure] Deleting the pubip..", publicIP)
 
-	pollerResponse, err := publicIPAddressClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, publicIP, nil)
-	if err != nil {
-		return err
-	}
-	// TODO: Add the entry for name before polling starts so that state is present
+	// NOTE: Add the entry for name before polling starts so that state is present
 
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
+	var errDelPub error //just to make sure its nil
+	donePoll := make(chan struct{})
+	go func() {
+		defer close(donePoll)
+		_, err = obj.client.PollUntilDoneDelPubIP(ctx, pollerResponse, nil)
+		if err != nil {
+			errDelPub = err
+			return
+		}
 
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = ""
-		azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = ""
-		azureCloudState.InfoWorkerPlanes.PublicIPs[index] = ""
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.PublicIPNames[index] = ""
-		azureCloudState.InfoControlPlanes.PublicIPIDs[index] = ""
-		azureCloudState.InfoControlPlanes.PublicIPs[index] = ""
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.PublicIPID = ""
-		azureCloudState.InfoLoadBalancer.PublicIPName = ""
-		azureCloudState.InfoLoadBalancer.PublicIP = ""
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.PublicIPNames[index] = ""
-		azureCloudState.InfoDatabase.PublicIPIDs[index] = ""
-		azureCloudState.InfoDatabase.PublicIPs[index] = ""
-	}
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
 
-	if err := saveStateHelper(storage); err != nil {
-		return err
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = ""
+			azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = ""
+			azureCloudState.InfoWorkerPlanes.PublicIPs[index] = ""
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.PublicIPNames[index] = ""
+			azureCloudState.InfoControlPlanes.PublicIPIDs[index] = ""
+			azureCloudState.InfoControlPlanes.PublicIPs[index] = ""
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.PublicIPID = ""
+			azureCloudState.InfoLoadBalancer.PublicIPName = ""
+			azureCloudState.InfoLoadBalancer.PublicIP = ""
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.PublicIPNames[index] = ""
+			azureCloudState.InfoDatabase.PublicIPIDs[index] = ""
+			azureCloudState.InfoDatabase.PublicIPs[index] = ""
+		}
+
+		if err := saveStateHelper(storage); err != nil {
+			errDelPub = err
+			return
+		}
+	}()
+	<-donePoll
+	if errDelPub != nil {
+		return errDelPub
 	}
 	storage.Logger().Success("[azure] Deleted the pub IP", publicIP)
 	return nil
 }
 
 func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory,
-	nicName string, subnetID string, publicIPID string, networkSecurityGroupID string, index int) error {
+	nicName string, subnetID string, publicIPID string, networkSecurityGroupID string, index int, role string) error {
 
 	interfaceName := ""
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_WP:
 		interfaceName = azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index]
 	case utils.ROLE_CP:
@@ -511,12 +574,9 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		storage.Logger().Success("[skip] network interface already created", interfaceName)
 		return nil
 	}
-	nicClient, err := obj.netInterfaceClient()
-	if err != nil {
-		return err
-	}
+
 	parameters := armnetwork.Interface{
-		Location: to.Ptr(obj.Region),
+		Location: to.Ptr(obj.region),
 		Properties: &armnetwork.InterfacePropertiesFormat{
 			IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 				{
@@ -538,56 +598,85 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		},
 	}
 
-	pollerResponse, err := nicClient.BeginCreateOrUpdate(ctx, obj.ResourceGroup, nicName, parameters, nil)
+	pollerResponse, err := obj.client.BeginCreateNIC(nicName, parameters, nil)
 	if err != nil {
 		return err
 	}
-	// TODO: Add the entry for name before polling starts so that state is present
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = nicName
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = nicName
+	// NOTE: Add the entry for name before polling starts so that state is present
+	done := make(chan struct{})
+	var errCreate error
+	go func() {
+		defer close(done)
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
 
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.NetworkInterfaceName = nicName
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = nicName
-	}
-	if err := saveStateHelper(storage); err != nil {
-		return err
-	}
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = nicName
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = nicName
 
-	resp, err := pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.NetworkInterfaceName = nicName
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = nicName
+		}
+		if err := saveStateHelper(storage); err != nil {
+			errCreate = err
+			return
+		}
+	}()
+	<-done
+	if errCreate != nil {
+		return errCreate
 	}
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = *resp.ID
-		azureCloudState.InfoWorkerPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = *resp.ID
-		azureCloudState.InfoControlPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
+	storage.Logger().Print("[azure] Creating the network interface...", nicName)
 
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.NetworkInterfaceID = *resp.ID
-		azureCloudState.InfoLoadBalancer.PrivateIP = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.NetworkInterfaceIDs[index] = *resp.ID
-		azureCloudState.InfoDatabase.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-	}
+	var errCreatenic error //just to make sure its nil
+	donePoll := make(chan struct{})
+	go func() {
+		defer close(donePoll)
+		resp, err := obj.client.PollUntilDoneCreateNetInterface(ctx, pollerResponse, nil)
+		if err != nil {
+			errCreatenic = err
+			return
+		}
 
-	if err := saveStateHelper(storage); err != nil {
-		return err
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
+
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = *resp.ID
+			azureCloudState.InfoWorkerPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = *resp.ID
+			azureCloudState.InfoControlPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
+
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.NetworkInterfaceID = *resp.ID
+			azureCloudState.InfoLoadBalancer.PrivateIP = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.NetworkInterfaceIDs[index] = *resp.ID
+			azureCloudState.InfoDatabase.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
+		}
+
+		if err := saveStateHelper(storage); err != nil {
+			errCreatenic = err
+			return
+		}
+	}()
+	<-donePoll
+	if errCreatenic != nil {
+		return errCreatenic
 	}
-	storage.Logger().Success("[azure] Created network interface", *resp.Name)
+	storage.Logger().Success("[azure] Created network interface", nicName)
 	return nil
 }
 
-func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int) error {
+func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
 	interfaceName := ""
-	switch obj.Metadata.Role {
+	switch role {
 	case utils.ROLE_WP:
 		interfaceName = azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index]
 	case utils.ROLE_CP:
@@ -602,45 +691,54 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 		return nil
 	}
 
-	nicClient, err := obj.netInterfaceClient()
+	pollerResponse, err := obj.client.BeginDeleteNIC(interfaceName, nil)
 	if err != nil {
 		return err
 	}
+	storage.Logger().Print("[azure] Deleting the network interface...", interfaceName)
 
-	pollerResponse, err := nicClient.BeginDelete(ctx, azureCloudState.ResourceGroupName, interfaceName, nil)
-	if err != nil {
-		return err
+	// NOTE: Add the entry for name before polling starts so that state is present
+
+	var errDelnic error //just to make sure its nil
+	donePoll := make(chan struct{})
+	go func() {
+		defer close(donePoll)
+		_, err = obj.client.PollUntilDoneDelNetInterface(ctx, pollerResponse, nil)
+		if err != nil {
+			errDelnic = err
+			return
+		}
+
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
+
+		switch role {
+		case utils.ROLE_WP:
+			azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = ""
+			azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = ""
+			azureCloudState.InfoWorkerPlanes.PrivateIPs[index] = ""
+		case utils.ROLE_CP:
+			azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = ""
+			azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = ""
+			azureCloudState.InfoControlPlanes.PrivateIPs[index] = ""
+		case utils.ROLE_LB:
+			azureCloudState.InfoLoadBalancer.NetworkInterfaceName = ""
+			azureCloudState.InfoLoadBalancer.NetworkInterfaceID = ""
+			azureCloudState.InfoLoadBalancer.PrivateIP = ""
+		case utils.ROLE_DS:
+			azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = ""
+			azureCloudState.InfoDatabase.NetworkInterfaceIDs[index] = ""
+			azureCloudState.InfoDatabase.PrivateIPs[index] = ""
+		}
+		if err := saveStateHelper(storage); err != nil {
+			errDelnic = err
+			return
+		}
+	}()
+	<-donePoll
+	if errDelnic != nil {
+		return errDelnic
 	}
-
-	// TODO: Add the entry for name before polling starts so that state is present
-
-	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	switch obj.Metadata.Role {
-	case utils.ROLE_WP:
-		azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = ""
-		azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = ""
-		azureCloudState.InfoWorkerPlanes.PrivateIPs[index] = ""
-	case utils.ROLE_CP:
-		azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = ""
-		azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = ""
-		azureCloudState.InfoControlPlanes.PrivateIPs[index] = ""
-	case utils.ROLE_LB:
-		azureCloudState.InfoLoadBalancer.NetworkInterfaceName = ""
-		azureCloudState.InfoLoadBalancer.NetworkInterfaceID = ""
-		azureCloudState.InfoLoadBalancer.PrivateIP = ""
-	case utils.ROLE_DS:
-		azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = ""
-		azureCloudState.InfoDatabase.NetworkInterfaceIDs[index] = ""
-		azureCloudState.InfoDatabase.PrivateIPs[index] = ""
-	}
-	if err := saveStateHelper(storage); err != nil {
-		return err
-	}
-
 	storage.Logger().Success("[azure] Deleted the network interface", interfaceName)
 
 	return nil

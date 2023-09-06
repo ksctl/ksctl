@@ -4,17 +4,12 @@ pipeline {
         DISCORD_SEC = credentials("discord_secret")
     }
     stages {
-        // stage('Git-Checkout') {
-        //     steps {
-        //         git branch: 'main', url: 'https://github.com/kubesimplify/ksctl.git'
-        //     }
-        // }
 
         stage('Build binary') {
             when {
                 anyOf {
-                    changeset "**/go.mod"
-                    changeset "**/go.sum"
+                    changeset "go.mod"
+                    changeset "go.sum"
                     changeset "api/**"
                     changeset "cli/**"
                     changeset "test/e2e/**"
@@ -68,8 +63,8 @@ pipeline {
         stage('Trigger Other Pipelines') {
             when {
                 anyOf {
-                    changeset "**/go.mod"
-                    changeset "**/go.sum"
+                    changeset "go.mod"
+                    changeset "go.sum"
                     changeset "api/**"
                     changeset "cli/**"
                     changeset "test/e2e/**"
@@ -80,18 +75,52 @@ pipeline {
                 stage('cloud provider') {
                     stages {
                         stage('trigger local') {
+                            when {
+                                anyOf {
+                                    changeset "go.mod"
+                                    changeset "go.sum"
+                                    changeset "test/e2e/**"
+                                    changeset "api/provider/local/**"
+                                    changeset "api/utils/**"
+                                    changeset "api/resources/**"
+				    changeset "api/controllers/**"
+                                }
+                            }
                             steps {
-                                build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+				    // build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                                build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
                         stage('trigger civo') {
+                            when {
+                                anyOf {
+                                    changeset "go.mod"
+                                    changeset "go.sum"
+                                    changeset "test/e2e/**"
+                                    changeset "api/provider/civo/**"
+                                    changeset "api/utils/**"
+									changeset "api/controllers/**"
+                                    changeset "api/resources/**"
+                                }
+                            }
                             steps {
-                                build job: 'ksctl (civo)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                                build job: 'ksctl (civo)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
                         stage('trigger azure') {
+                            when {
+                                anyOf {
+                                    changeset "go.mod"
+                                    changeset "go.sum"
+                                    changeset "test/e2e/**"
+                                    changeset "api/provider/azure/**"
+                                    changeset "api/utils/**"
+                                    changeset "api/resources/**"
+									changeset "api/controllers/**"
+                                }
+                            }
                             steps {
-                                build job: 'ksctl (azure)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
+                                build job: 'ksctl (azure)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
                     }

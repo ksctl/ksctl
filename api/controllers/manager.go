@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/kubesimplify/ksctl/api/provider/azure"
@@ -63,10 +64,13 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
 
-	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_CREATE); err != nil {
+	fakeClient := false
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
+		fakeClient = true
+	}
+	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_CREATE, fakeClient); err != nil {
 		return "", err
 	}
-
 	cloudResErr := cloud.CreateManagedCluster(client)
 	if cloudResErr != nil {
 		client.Storage.Logger().Err(cloudResErr.Error())
@@ -79,10 +83,14 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
-
-	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE); err != nil {
+	fakeClient := false
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
+		fakeClient = true
+	}
+	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE, fakeClient); err != nil {
 		return "", err
 	}
+
 	cloudResErr := cloud.DeleteManagedCluster(client)
 	if cloudResErr != nil {
 		client.Storage.Logger().Err(cloudResErr.Error())
@@ -97,12 +105,12 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	var err error
 	switch client.Metadata.Provider {
 	case utils.CLOUD_CIVO:
-		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata)
+		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
 		if err != nil {
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}
 	case utils.CLOUD_AZURE:
-		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata)
+		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideClient)
 		if err != nil {
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}
@@ -179,10 +187,13 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
 
-	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_CREATE); err != nil {
+	fakeClient := false
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
+		fakeClient = true
+	}
+	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_CREATE, fakeClient); err != nil {
 		return "", err
 	}
-
 	err := kubernetes.HydrateK8sDistro(client)
 	if err != nil {
 		return "", err
@@ -219,10 +230,13 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
 
-	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE); err != nil {
+	fakeClient := false
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
+		fakeClient = true
+	}
+	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE, fakeClient); err != nil {
 		return "", err
 	}
-
 	cloudResErr := cloud.DeleteHACluster(client)
 	if cloudResErr != nil {
 		return "", cloudResErr
@@ -240,7 +254,12 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	if !client.IsHA {
 		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
 	}
-	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_GET); err != nil {
+
+	fakeClient := false
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
+		fakeClient = true
+	}
+	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_GET, fakeClient); err != nil {
 		return "", err
 	}
 
@@ -285,7 +304,11 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
 	}
 
-	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_GET); err != nil {
+	fakeClient := false
+	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
+		fakeClient = true
+	}
+	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_GET, fakeClient); err != nil {
 		return "", err
 	}
 

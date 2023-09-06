@@ -193,11 +193,6 @@ func (*LocalProvider) DelVM(resources.StorageFactory, int) error {
 	return nil
 }
 
-// GetManagedKubernetes implements resources.CloudFactory.
-func (*LocalProvider) GetManagedKubernetes(state resources.StorageFactory) {
-	return
-}
-
 // GetStateForHACluster implements resources.CloudFactory.
 func (*LocalProvider) GetStateForHACluster(state resources.StorageFactory) (cloud.CloudResourceState, error) {
 	return cloud.CloudResourceState{}, fmt.Errorf("[local] should not be implemented")

@@ -1,4 +1,4 @@
-name: Testing API
+name: Unit-Testing API
 on:
   push:
     paths:

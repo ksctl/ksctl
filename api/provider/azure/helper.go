@@ -1,21 +1,13 @@
 package azure
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
-	"log"
-	"os"
 	"runtime"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
-
-// TODO: add validation of region, disk size and more
 
 func GetInputCredential(storage resources.StorageFactory) error {
 
@@ -72,70 +64,6 @@ func GetInputCredential(storage resources.StorageFactory) error {
 		return err
 	}
 
-	return nil
-}
-
-func (obj *AzureProvider) setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context) error {
-
-	envTenant := os.Getenv("AZURE_TENANT_ID")
-	envSub := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	envClientid := os.Getenv("AZURE_CLIENT_ID")
-	envClientsec := os.Getenv("AZURE_CLIENT_SECRET")
-
-	if len(envTenant) != 0 &&
-		len(envSub) != 0 &&
-		len(envClientid) != 0 &&
-		len(envClientsec) != 0 {
-
-		obj.SubscriptionID = envSub
-		return nil
-	}
-
-	msg := "environment vars not set:"
-	if len(envTenant) == 0 {
-		msg = msg + " AZURE_TENANT_ID"
-	}
-
-	if len(envSub) == 0 {
-		msg = msg + " AZURE_SUBSCRIPTION_ID"
-	}
-
-	if len(envClientid) == 0 {
-		msg = msg + " AZURE_CLIENT_ID"
-	}
-
-	if len(envClientsec) == 0 {
-		msg = msg + " AZURE_CLIENT_SECRET"
-	}
-
-	storage.Logger().Warn(msg)
-
-	tokens, err := utils.GetCred(storage, "azure")
-	if err != nil {
-		return err
-	}
-
-	obj.SubscriptionID = tokens["subscription_id"]
-
-	err = os.Setenv("AZURE_SUBSCRIPTION_ID", tokens["subscription_id"])
-	if err != nil {
-		return err
-	}
-
-	err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
-	if err != nil {
-		return err
-	}
-
-	err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
-	if err != nil {
-		return err
-	}
-
-	err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -207,28 +135,23 @@ func printKubeconfig(storage resources.StorageFactory, operation string) {
 
 func validationOfArguments(obj *AzureProvider) error {
 
-	if err := isValidRegion(obj, obj.Region); err != nil {
+	if err := isValidRegion(obj, obj.region); err != nil {
 		return err
 	}
 
-	if err := utils.IsValidName(obj.ClusterName); err != nil {
+	if err := utils.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// TODO: Add for managed kubernetes version
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
-	clientFactory, err := armcontainerservice.NewClientFactory(obj.SubscriptionID, obj.AzureTokenCred, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create client: %v", err)
-	}
-	var vers []string
-	res, err := clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, obj.Region, nil)
+	res, err := obj.client.ListKubernetesVersions()
 	if err != nil {
 		return fmt.Errorf("failed to finish the request: %v", err)
 	}
+	var vers []string
 	for _, version := range res.Values {
 		vers = append(vers, *version.Version)
 	}
@@ -241,22 +164,10 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {
-	clientFactory, err := armsubscriptions.NewClientFactory(obj.AzureTokenCred, nil)
+	validReg, err := obj.client.ListLocations()
 	if err != nil {
-		return fmt.Errorf("failed to create client: %v", err)
+		return err
 	}
-	var validReg []string
-	pager := clientFactory.NewClient().NewListLocationsPager(obj.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
-	for pager.More() {
-		page, err := pager.NextPage(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to advance page: %v", err)
-		}
-		for _, v := range page.Value {
-			validReg = append(validReg, *v.Name)
-		}
-	}
-
 	for _, valid := range validReg {
 		if valid == reg {
 			return nil
@@ -267,21 +178,9 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 
 func isValidVMSize(obj *AzureProvider, size string) error {
 
-	clientFactory, err := armcompute.NewClientFactory(obj.SubscriptionID, obj.AzureTokenCred, nil)
+	validSize, err := obj.client.ListVMTypes()
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
-	}
-	var validSize []string
-	pager := clientFactory.NewVirtualMachineSizesClient().NewListPager(obj.Region, nil)
-	for pager.More() {
-
-		page, err := pager.NextPage(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to advance page: %v", err)
-		}
-		for _, v := range page.Value {
-			validSize = append(validSize, *v.Name)
-		}
+		return err
 	}
 
 	for _, valid := range validSize {

@@ -15,6 +15,9 @@
 'cloud/azure':
 - 'api/provider/azure/*'
 
+'cloud/aws':
+- 'api/provider/aws/*'
+
 'cloud/civo':
 - 'api/provider/civo/*'
 
@@ -32,6 +35,8 @@
 
 'go':
 - '**/*.go'
+- 'go.mod'
+- 'go.sum'
 
 'area/test':
 - '**/*_test.go'
