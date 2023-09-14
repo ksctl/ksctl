@@ -27,10 +27,10 @@ paths:
                             no_mp: 1
                             no_wp: 1
                             region: XYZ
-                            vm_size_cp: In sit repellendus nemo suscipit quas est.
-                            vm_size_ds: Odit voluptates doloribus non ducimus.
-                            vm_size_lb: Repellendus ratione est quae laudantium.
-                            vm_size_wp: Est doloremque distinctio ullam.
+                            vm_size_cp: g3.small
+                            vm_size_ds: g3.small
+                            vm_size_lb: g3.small
+                            vm_size_wp: g3.small
             responses:
                 "200":
                     description: OK response.
@@ -39,9 +39,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Response'
                             example:
-                                errors: Possimus commodi.
-                                ok: false
-                                response: Excepturi perspiciatis.
+                                errors: Minus alias hic est amet.
+                                ok: true
+                                response: Sequi et incidunt quia.
     /createha:
         put:
             tags:
@@ -63,10 +63,10 @@ paths:
                             no_mp: 1
                             no_wp: 1
                             region: XYZ
-                            vm_size_cp: Dicta voluptates odit minus quis.
-                            vm_size_ds: Quis laboriosam maxime quo aliquid alias.
-                            vm_size_lb: Sed et.
-                            vm_size_wp: Et fugiat suscipit odit quam omnis.
+                            vm_size_cp: g3.small
+                            vm_size_ds: g3.small
+                            vm_size_lb: g3.small
+                            vm_size_wp: g3.small
             responses:
                 "200":
                     description: OK response.
@@ -75,9 +75,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Response'
                             example:
-                                errors: Hic est.
-                                ok: true
-                                response: Deleniti sequi et.
+                                errors: Illum ducimus sit sed assumenda.
+                                ok: false
+                                response: Et provident pariatur dignissimos in.
     /deleteha:
         put:
             tags:
@@ -99,10 +99,10 @@ paths:
                             no_mp: 1
                             no_wp: 1
                             region: XYZ
-                            vm_size_cp: Quia laborum consequatur aliquid quo.
-                            vm_size_ds: Temporibus eveniet repellendus beatae assumenda.
-                            vm_size_lb: Sapiente dolor animi recusandae quo illum sint.
-                            vm_size_wp: Quam qui voluptatem.
+                            vm_size_cp: g3.small
+                            vm_size_ds: g3.small
+                            vm_size_lb: g3.small
+                            vm_size_wp: g3.small
             responses:
                 "200":
                     description: OK response.
@@ -111,9 +111,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Response'
                             example:
-                                errors: Molestiae voluptatem sed dolorem distinctio.
+                                errors: Eos autem et sint consequatur nam.
                                 ok: false
-                                response: Sunt ea.
+                                response: Dicta voluptates odit minus quis.
     /deletenodes:
         put:
             tags:
@@ -135,10 +135,10 @@ paths:
                             no_mp: 1
                             no_wp: 1
                             region: XYZ
-                            vm_size_cp: Alias doloribus.
-                            vm_size_ds: Magnam a.
-                            vm_size_lb: Nobis reiciendis.
-                            vm_size_wp: Architecto sit eum neque ut.
+                            vm_size_cp: g3.small
+                            vm_size_ds: g3.small
+                            vm_size_lb: g3.small
+                            vm_size_wp: g3.small
             responses:
                 "200":
                     description: OK response.
@@ -147,9 +147,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Response'
                             example:
-                                errors: Modi et nisi ut quaerat voluptatem.
-                                ok: false
-                                response: Distinctio nostrum molestias.
+                                errors: Laboriosam maxime quo aliquid alias voluptatibus et.
+                                ok: true
+                                response: Suscipit odit quam omnis cum.
     /healthz:
         get:
             tags:
@@ -164,7 +164,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Health'
                             example:
-                                msg: Eum aut.
+                                msg: Consequatur aliquid quo sint temporibus eveniet repellendus.
     /list:
         get:
             tags:
@@ -179,9 +179,9 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Response'
                             example:
-                                errors: Velit possimus iusto.
-                                ok: true
-                                response: Non iste similique deserunt minus perspiciatis.
+                                errors: Sit quam qui voluptatem.
+                                ok: false
+                                response: Sapiente dolor animi recusandae quo illum sint.
     /openapi3.json:
         get:
             tags:
@@ -254,19 +254,19 @@ components:
                 vm_size_cp:
                     type: string
                     description: virtual machine size for the controlplane
-                    example: Aliquam voluptas dolorem accusamus dolore debitis.
+                    example: g3.small
                 vm_size_ds:
                     type: string
                     description: virtual machine size for the datastore
-                    example: Consequatur ducimus corporis quae tempore voluptatibus.
+                    example: g3.small
                 vm_size_lb:
                     type: string
                     description: virtual machine size for the loadbalancer
-                    example: Doloremque quisquam totam rerum sit.
+                    example: g3.small
                 vm_size_wp:
                     type: string
                     description: virtual machine size for the workerplane
-                    example: Ut in aliquam et quasi laudantium sunt.
+                    example: g3.small
             example:
                 cloud: azure
                 cluster_name: demo
@@ -276,10 +276,10 @@ components:
                 no_mp: 1
                 no_wp: 1
                 region: XYZ
-                vm_size_cp: Commodi omnis similique velit et dolores.
-                vm_size_ds: Sit at minima.
-                vm_size_lb: Rerum minus cupiditate.
-                vm_size_wp: Maiores eveniet est quaerat officiis.
+                vm_size_cp: g3.small
+                vm_size_ds: g3.small
+                vm_size_lb: g3.small
+                vm_size_wp: g3.small
             required:
                 - cluster_name
                 - region
@@ -291,29 +291,29 @@ components:
                 msg:
                     type: string
                     description: message
-                    example: Amet quasi omnis quibusdam minima.
+                    example: Quaerat nihil enim corrupti veniam magnam in.
             example:
-                msg: Fugiat quasi iure omnis et.
+                msg: Soluta impedit vel voluptatem voluptatum inventore.
         Response:
             type: object
             properties:
                 errors:
                     type: string
                     description: reason of failure
-                    example: Necessitatibus quis possimus.
+                    example: Molestiae impedit et magni rerum iste enim.
                 ok:
                     type: boolean
                     description: successful
-                    example: false
+                    example: true
                 response:
                     type: string
                     description: response
-                    example: Excepturi quos ipsa porro exercitationem nam.
+                    example: Architecto cupiditate voluptatem porro.
                     format: binary
             example:
-                errors: Numquam labore.
-                ok: false
-                response: Ipsa maxime aliquid nemo blanditiis deserunt accusamus.
+                errors: Voluptatem repellendus illo amet fugit facere tempora.
+                ok: true
+                response: Aut possimus et numquam est dicta.
 tags:
     - name: httpserver
       description: server handlers

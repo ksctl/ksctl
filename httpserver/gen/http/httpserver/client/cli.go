@@ -23,7 +23,7 @@ func BuildCreateHaPayload(httpserverCreateHaBody string) (*httpserver.Metadata, 
 	{
 		err = json.Unmarshal([]byte(httpserverCreateHaBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"Dicta voluptates odit minus quis.\",\n      \"vm_size_ds\": \"Quis laboriosam maxime quo aliquid alias.\",\n      \"vm_size_lb\": \"Sed et.\",\n      \"vm_size_wp\": \"Et fugiat suscipit odit quam omnis.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"g3.small\",\n      \"vm_size_ds\": \"g3.small\",\n      \"vm_size_lb\": \"g3.small\",\n      \"vm_size_wp\": \"g3.small\"\n   }'")
 		}
 		if body.NoWp != nil {
 			if *body.NoWp < 0 {
@@ -90,7 +90,7 @@ func BuildDeleteHaPayload(httpserverDeleteHaBody string) (*httpserver.Metadata, 
 	{
 		err = json.Unmarshal([]byte(httpserverDeleteHaBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"Quia laborum consequatur aliquid quo.\",\n      \"vm_size_ds\": \"Temporibus eveniet repellendus beatae assumenda.\",\n      \"vm_size_lb\": \"Sapiente dolor animi recusandae quo illum sint.\",\n      \"vm_size_wp\": \"Quam qui voluptatem.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"g3.small\",\n      \"vm_size_ds\": \"g3.small\",\n      \"vm_size_lb\": \"g3.small\",\n      \"vm_size_wp\": \"g3.small\"\n   }'")
 		}
 		if body.NoWp != nil {
 			if *body.NoWp < 0 {
@@ -157,7 +157,7 @@ func BuildScaledownPayload(httpserverScaledownBody string) (*httpserver.Metadata
 	{
 		err = json.Unmarshal([]byte(httpserverScaledownBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"Alias doloribus.\",\n      \"vm_size_ds\": \"Magnam a.\",\n      \"vm_size_lb\": \"Nobis reiciendis.\",\n      \"vm_size_wp\": \"Architecto sit eum neque ut.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"g3.small\",\n      \"vm_size_ds\": \"g3.small\",\n      \"vm_size_lb\": \"g3.small\",\n      \"vm_size_wp\": \"g3.small\"\n   }'")
 		}
 		if body.NoWp != nil {
 			if *body.NoWp < 0 {
@@ -224,7 +224,7 @@ func BuildScaleupPayload(httpserverScaleupBody string) (*httpserver.Metadata, er
 	{
 		err = json.Unmarshal([]byte(httpserverScaleupBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"In sit repellendus nemo suscipit quas est.\",\n      \"vm_size_ds\": \"Odit voluptates doloribus non ducimus.\",\n      \"vm_size_lb\": \"Repellendus ratione est quae laudantium.\",\n      \"vm_size_wp\": \"Est doloremque distinctio ullam.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"g3.small\",\n      \"vm_size_ds\": \"g3.small\",\n      \"vm_size_lb\": \"g3.small\",\n      \"vm_size_wp\": \"g3.small\"\n   }'")
 		}
 		if body.NoWp != nil {
 			if *body.NoWp < 0 {

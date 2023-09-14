@@ -37,10 +37,10 @@ func UsageExamples() string {
       "no_mp": 1,
       "no_wp": 1,
       "region": "XYZ",
-      "vm_size_cp": "Dicta voluptates odit minus quis.",
-      "vm_size_ds": "Quis laboriosam maxime quo aliquid alias.",
-      "vm_size_lb": "Sed et.",
-      "vm_size_wp": "Et fugiat suscipit odit quam omnis."
+      "vm_size_cp": "g3.small",
+      "vm_size_ds": "g3.small",
+      "vm_size_lb": "g3.small",
+      "vm_size_wp": "g3.small"
    }'` + "\n" +
 		""
 }
@@ -221,10 +221,10 @@ Example:
       "no_mp": 1,
       "no_wp": 1,
       "region": "XYZ",
-      "vm_size_cp": "Dicta voluptates odit minus quis.",
-      "vm_size_ds": "Quis laboriosam maxime quo aliquid alias.",
-      "vm_size_lb": "Sed et.",
-      "vm_size_wp": "Et fugiat suscipit odit quam omnis."
+      "vm_size_cp": "g3.small",
+      "vm_size_ds": "g3.small",
+      "vm_size_lb": "g3.small",
+      "vm_size_wp": "g3.small"
    }'
 `, os.Args[0])
 }
@@ -245,10 +245,10 @@ Example:
       "no_mp": 1,
       "no_wp": 1,
       "region": "XYZ",
-      "vm_size_cp": "Quia laborum consequatur aliquid quo.",
-      "vm_size_ds": "Temporibus eveniet repellendus beatae assumenda.",
-      "vm_size_lb": "Sapiente dolor animi recusandae quo illum sint.",
-      "vm_size_wp": "Quam qui voluptatem."
+      "vm_size_cp": "g3.small",
+      "vm_size_ds": "g3.small",
+      "vm_size_lb": "g3.small",
+      "vm_size_wp": "g3.small"
    }'
 `, os.Args[0])
 }
@@ -269,10 +269,10 @@ Example:
       "no_mp": 1,
       "no_wp": 1,
       "region": "XYZ",
-      "vm_size_cp": "Alias doloribus.",
-      "vm_size_ds": "Magnam a.",
-      "vm_size_lb": "Nobis reiciendis.",
-      "vm_size_wp": "Architecto sit eum neque ut."
+      "vm_size_cp": "g3.small",
+      "vm_size_ds": "g3.small",
+      "vm_size_lb": "g3.small",
+      "vm_size_wp": "g3.small"
    }'
 `, os.Args[0])
 }
@@ -293,10 +293,10 @@ Example:
       "no_mp": 1,
       "no_wp": 1,
       "region": "XYZ",
-      "vm_size_cp": "In sit repellendus nemo suscipit quas est.",
-      "vm_size_ds": "Odit voluptates doloribus non ducimus.",
-      "vm_size_lb": "Repellendus ratione est quae laudantium.",
-      "vm_size_wp": "Est doloremque distinctio ullam."
+      "vm_size_cp": "g3.small",
+      "vm_size_ds": "g3.small",
+      "vm_size_lb": "g3.small",
+      "vm_size_wp": "g3.small"
    }'
 `, os.Args[0])
 }

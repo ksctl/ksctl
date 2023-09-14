@@ -3,20 +3,20 @@ package ksctlhttpserver
 import (
 	"context"
 	"log"
-	"os"
-
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
-	httpserver "github.com/kubesimplify/ksctl/httpserver/gen/httpserver"
 
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
+	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
+	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers"
+	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/api/utils"
+	httpserver "github.com/kubesimplify/ksctl/httpserver/gen/httpserver"
 )
 
 var (
 	cli        *resources.CobraCmd
 	controller controllers.Controller
-	dir        = "/app/ksctl-data"
 )
 
 // httpserver service example implementation.
@@ -33,25 +33,13 @@ func NewHttpserver(logger *log.Logger) httpserver.Service {
 // CreateHa implements create ha.
 func (s *httpserversrvc) CreateHa(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
 
-	// TODO: use a different const for this rather than using test
-	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
-
-	if err := os.MkdirAll(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA), 0755); err != nil {
-		return res, err
-	}
-
-	if err := os.MkdirAll(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA), 0755); err != nil {
-		return res, err
-	}
-
-	// NOTE: move the above things to the pod level or docker level
-
 	cli = &resources.CobraCmd{}
 	controller = control_pkg.GenKsctlController()
 
 	cli.Client.Metadata.ClusterName = p.ClusterName
 	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
 	cli.Client.Metadata.K8sDistro = p.Distro
+	cli.Client.Metadata.K8sVersion = "1.27.1"
 
 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
 		panic(err)
@@ -72,16 +60,15 @@ func (s *httpserversrvc) CreateHa(ctx context.Context, p *httpserver.Metadata) (
 
 	// Return
 	ok := true
+	errStr := ""
 
-	msg, errStr := controller.CreateHACluster(&cli.Client)
-	if errStr != nil {
+	msg, err := controller.CreateHACluster(&cli.Client)
+	if err != nil {
 		ok = false
-		err = errStr
+		errStr = err.Error()
 	}
 
-	resErr := errStr.Error()
-
-	res = &httpserver.Response{OK: &ok, Errors: &resErr, Response: msg}
+	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
 	s.logger.Print(msg)
 
 	return
@@ -90,16 +77,6 @@ func (s *httpserversrvc) CreateHa(ctx context.Context, p *httpserver.Metadata) (
 // DeleteHa implements delete ha.
 func (s *httpserversrvc) DeleteHa(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
 
-	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
-
-	if err := os.MkdirAll(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA), 0755); err != nil {
-		return res, err
-	}
-
-	if err := os.MkdirAll(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA), 0755); err != nil {
-		return res, err
-	}
-
 	cli = &resources.CobraCmd{}
 	controller = control_pkg.GenKsctlController()
 
@@ -107,8 +84,9 @@ func (s *httpserversrvc) DeleteHa(ctx context.Context, p *httpserver.Metadata) (
 	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
 	cli.Client.Metadata.K8sDistro = p.Distro
 
-	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
-		panic(err)
+	if _, err1 := control_pkg.InitializeStorageFactory(&cli.Client, true); err1 != nil {
+		err = err1
+		return
 	}
 
 	cli.Client.Metadata.IsHA = true
@@ -117,15 +95,15 @@ func (s *httpserversrvc) DeleteHa(ctx context.Context, p *httpserver.Metadata) (
 
 	// Return
 	ok := true
+	errStr := ""
 
-	msg, errStr := controller.DeleteHACluster(&cli.Client)
-	if errStr != nil {
+	msg, err := controller.DeleteHACluster(&cli.Client)
+	if err != nil {
 		ok = false
+		errStr = err.Error()
 	}
 
-	resErr := errStr.Error()
-
-	res = &httpserver.Response{OK: &ok, Errors: &resErr, Response: msg}
+	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
 	s.logger.Print(msg)
 
 	return
@@ -147,14 +125,47 @@ func (s *httpserversrvc) Scaleup(ctx context.Context, p *httpserver.Metadata) (r
 
 // GetHealth implements get health.
 func (s *httpserversrvc) GetHealth(ctx context.Context) (res *httpserver.Health, err error) {
-	res = &httpserver.Health{}
-	s.logger.Print("httpserver.get health")
+	abcd := "ksctl server looks good"
+	res = &httpserver.Health{Msg: &abcd}
 	return
 }
 
 // GetClusters implements get clusters.
 func (s *httpserversrvc) GetClusters(ctx context.Context) (res *httpserver.Response, err error) {
-	res = &httpserver.Response{}
+
+	cli = &resources.CobraCmd{}
+
+	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+
+	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
+		panic(err)
+	}
+
+	var printerTable []cloudController.AllClusterData
+	ok := true
+	data, err1 := civo_pkg.GetRAWClusterInfos(cli.Client.Storage)
+	if err1 != nil {
+		err = err1
+		ok = false
+		return
+	}
+	printerTable = append(printerTable, data...)
+
+	data, err1 = azure_pkg.GetRAWClusterInfos(cli.Client.Storage)
+	if err1 != nil {
+		err = err1
+		ok = false
+		return
+	}
+
+	printerTable = append(printerTable, data...)
+
+	errStr := ""
+	if err != nil {
+		errStr = err.Error()
+	}
+
+	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: printerTable}
 	s.logger.Print("httpserver.get clusters")
 	return
 }

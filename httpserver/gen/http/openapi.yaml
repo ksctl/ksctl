@@ -179,7 +179,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -195,11 +195,11 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: Error response result type (default view)
         example:
             fault: true
@@ -207,7 +207,7 @@ definitions:
             message: parameter 'p' must be an integer
             name: bad_request
             temporary: true
-            timeout: true
+            timeout: false
         required:
             - name
             - id
@@ -261,19 +261,19 @@ definitions:
             vm_size_cp:
                 type: string
                 description: virtual machine size for the controlplane
-                example: Qui dolorum deleniti ex.
+                example: g3.small
             vm_size_ds:
                 type: string
                 description: virtual machine size for the datastore
-                example: Blanditiis nesciunt ullam voluptate sequi.
+                example: g3.small
             vm_size_lb:
                 type: string
                 description: virtual machine size for the loadbalancer
-                example: Sed maiores.
+                example: g3.small
             vm_size_wp:
                 type: string
                 description: virtual machine size for the workerplane
-                example: Molestiae eveniet nobis voluptatibus quia totam dolores.
+                example: g3.small
         example:
             cloud: azure
             cluster_name: demo
@@ -283,10 +283,10 @@ definitions:
             no_mp: 1
             no_wp: 1
             region: XYZ
-            vm_size_cp: Non est non odio.
-            vm_size_ds: Deserunt tempora.
-            vm_size_lb: Molestiae impedit et magni rerum iste enim.
-            vm_size_wp: Ut occaecati excepturi.
+            vm_size_cp: g3.small
+            vm_size_ds: g3.small
+            vm_size_lb: g3.small
+            vm_size_wp: g3.small
         required:
             - cluster_name
             - region
@@ -299,7 +299,7 @@ definitions:
             errors:
                 type: string
                 description: reason of failure
-                example: Velit unde repellendus.
+                example: Sunt ea.
             ok:
                 type: boolean
                 description: successful
@@ -307,12 +307,12 @@ definitions:
             response:
                 type: string
                 description: response
-                example: Eos ut occaecati qui.
+                example: Alias doloribus.
                 format: binary
         example:
-            errors: Porro est ullam non molestiae ipsum.
+            errors: A molestias architecto sit.
             ok: true
-            response: Repudiandae voluptate et enim.
+            response: Neque ut est nobis.
     HttpserverDeleteHaRequestBody:
         title: HttpserverDeleteHaRequestBody
         type: object
@@ -359,19 +359,19 @@ definitions:
             vm_size_cp:
                 type: string
                 description: virtual machine size for the controlplane
-                example: Corrupti veniam magnam in fugit soluta.
+                example: g3.small
             vm_size_ds:
                 type: string
                 description: virtual machine size for the datastore
-                example: Vel voluptatem voluptatum inventore.
+                example: g3.small
             vm_size_lb:
                 type: string
                 description: virtual machine size for the loadbalancer
-                example: Amet sunt quidem voluptatem omnis.
+                example: g3.small
             vm_size_wp:
                 type: string
                 description: virtual machine size for the workerplane
-                example: Nemo voluptas quidem repellendus facere quasi.
+                example: g3.small
         example:
             cloud: azure
             cluster_name: demo
@@ -381,10 +381,10 @@ definitions:
             no_mp: 1
             no_wp: 1
             region: XYZ
-            vm_size_cp: Maiores non quis et rerum natus officiis.
-            vm_size_ds: Quos soluta nostrum ea.
-            vm_size_lb: Incidunt rerum aut voluptatem atque.
-            vm_size_wp: Id voluptas aliquam.
+            vm_size_cp: g3.small
+            vm_size_ds: g3.small
+            vm_size_lb: g3.small
+            vm_size_wp: g3.small
         required:
             - cluster_name
             - region
@@ -397,20 +397,20 @@ definitions:
             errors:
                 type: string
                 description: reason of failure
-                example: Cupiditate voluptatem.
+                example: Fugit modi et nisi ut.
             ok:
                 type: boolean
                 description: successful
-                example: false
+                example: true
             response:
                 type: string
                 description: response
-                example: Veniam in voluptatem repellendus illo amet.
+                example: Voluptatem neque distinctio nostrum molestias hic.
                 format: binary
         example:
-            errors: Tempora et aut.
+            errors: Repellendus nemo suscipit quas est.
             ok: false
-            response: Et numquam est dicta magni quaerat nihil.
+            response: Odit voluptates doloribus non ducimus.
     HttpserverGetClustersResponseBody:
         title: HttpserverGetClustersResponseBody
         type: object
@@ -418,7 +418,7 @@ definitions:
             errors:
                 type: string
                 description: reason of failure
-                example: Iusto ea velit cupiditate.
+                example: Nesciunt ullam voluptate sequi deleniti molestiae eveniet.
             ok:
                 type: boolean
                 description: successful
@@ -426,12 +426,12 @@ definitions:
             response:
                 type: string
                 description: response
-                example: Et doloribus omnis commodi at.
+                example: Voluptatibus quia totam dolores minima sed maiores.
                 format: binary
         example:
-            errors: Illo non quam rerum.
-            ok: false
-            response: Accusantium natus totam quo.
+            errors: Est non.
+            ok: true
+            response: Architecto deserunt tempora ipsa ut occaecati.
     HttpserverGetHealthResponseBody:
         title: HttpserverGetHealthResponseBody
         type: object
@@ -439,9 +439,9 @@ definitions:
             msg:
                 type: string
                 description: message
-                example: In culpa aliquam.
+                example: Ipsum deleniti repudiandae voluptate et enim.
         example:
-            msg: Enim qui consequatur necessitatibus omnis quis quis.
+            msg: Qui dolorum deleniti ex.
     HttpserverScaledownRequestBody:
         title: HttpserverScaledownRequestBody
         type: object
@@ -488,19 +488,19 @@ definitions:
             vm_size_cp:
                 type: string
                 description: virtual machine size for the controlplane
-                example: Optio laboriosam dolore reprehenderit corporis alias explicabo.
+                example: g3.small
             vm_size_ds:
                 type: string
                 description: virtual machine size for the datastore
-                example: Unde eligendi nemo.
+                example: g3.small
             vm_size_lb:
                 type: string
                 description: virtual machine size for the loadbalancer
-                example: Similique vitae.
+                example: g3.small
             vm_size_wp:
                 type: string
                 description: virtual machine size for the workerplane
-                example: Iusto natus quas iure magnam accusamus enim.
+                example: g3.small
         example:
             cloud: azure
             cluster_name: demo
@@ -510,10 +510,10 @@ definitions:
             no_mp: 1
             no_wp: 1
             region: XYZ
-            vm_size_cp: Dicta fugiat temporibus assumenda sunt.
-            vm_size_ds: Aliquid in quo enim.
-            vm_size_lb: Molestias dolorum rem consequatur necessitatibus aut.
-            vm_size_wp: Suscipit quasi enim enim et ratione animi.
+            vm_size_cp: g3.small
+            vm_size_ds: g3.small
+            vm_size_lb: g3.small
+            vm_size_wp: g3.small
         required:
             - cluster_name
             - region
@@ -526,7 +526,7 @@ definitions:
             errors:
                 type: string
                 description: reason of failure
-                example: Maiores consectetur ducimus sunt et veniam.
+                example: Doloremque distinctio.
             ok:
                 type: boolean
                 description: successful
@@ -534,12 +534,12 @@ definitions:
             response:
                 type: string
                 description: response
-                example: Dicta modi voluptatem deserunt dolorem laboriosam.
+                example: Quo repellendus ratione est quae laudantium quis.
                 format: binary
         example:
-            errors: Accusamus cum et et magni.
+            errors: Commodi perspiciatis excepturi perspiciatis ipsam eum aut.
             ok: true
-            response: Aut deleniti.
+            response: Vel velit possimus iusto enim non iste.
     HttpserverScaleupRequestBody:
         title: HttpserverScaleupRequestBody
         type: object
@@ -586,19 +586,19 @@ definitions:
             vm_size_cp:
                 type: string
                 description: virtual machine size for the controlplane
-                example: Dignissimos quos at ut occaecati asperiores.
+                example: g3.small
             vm_size_ds:
                 type: string
                 description: virtual machine size for the datastore
-                example: Sit deserunt sit et et quibusdam.
+                example: g3.small
             vm_size_lb:
                 type: string
                 description: virtual machine size for the loadbalancer
-                example: Similique et porro hic commodi cum ut.
+                example: g3.small
             vm_size_wp:
                 type: string
                 description: virtual machine size for the workerplane
-                example: Tenetur qui voluptatem iusto.
+                example: g3.small
         example:
             cloud: azure
             cluster_name: demo
@@ -608,10 +608,10 @@ definitions:
             no_mp: 1
             no_wp: 1
             region: XYZ
-            vm_size_cp: Unde architecto deserunt nostrum.
-            vm_size_ds: Dolorem alias reprehenderit veritatis voluptatum quis.
-            vm_size_lb: Fuga quia ad facere.
-            vm_size_wp: Quia velit at ex.
+            vm_size_cp: g3.small
+            vm_size_ds: g3.small
+            vm_size_lb: g3.small
+            vm_size_wp: g3.small
         required:
             - cluster_name
             - region
@@ -624,7 +624,7 @@ definitions:
             errors:
                 type: string
                 description: reason of failure
-                example: Rerum molestiae fugit.
+                example: Minus perspiciatis quaerat beatae dolor.
             ok:
                 type: boolean
                 description: successful
@@ -632,9 +632,9 @@ definitions:
             response:
                 type: string
                 description: response
-                example: Et officia perferendis libero dolores commodi.
+                example: Et iste aspernatur voluptas.
                 format: binary
         example:
-            errors: Assumenda omnis.
+            errors: Repellendus tempore eos ut occaecati qui.
             ok: false
-            response: Nulla voluptatem.
+            response: Fugit porro est ullam non.

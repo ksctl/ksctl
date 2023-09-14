@@ -47,18 +47,22 @@ var metadata = Type("metadata", func() {
 
 	Attribute("vm_size_cp", String, func() {
 		Description("virtual machine size for the controlplane")
+		Example("g3.small")
 	})
 
 	Attribute("vm_size_ds", String, func() {
 		Description("virtual machine size for the datastore")
+		Example("g3.small")
 	})
 
 	Attribute("vm_size_wp", String, func() {
 		Description("virtual machine size for the workerplane")
+		Example("g3.small")
 	})
 
 	Attribute("vm_size_lb", String, func() {
 		Description("virtual machine size for the loadbalancer")
+		Example("g3.small")
 	})
 
 	Attribute("cluster_name", String, func() {

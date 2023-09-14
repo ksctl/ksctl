@@ -13,6 +13,9 @@ gen_httpserver:
 build_httpserver:
 	go build -v -o ksctlserver httpserver/cmd/server/*
 
+docker_httpserver:
+	docker build -t ksctl-http . --no-cache
+
 install_linux:
 	env GOOS=${GOOS_LINUX} GOARCH=${GOARCH_LINUX} ./builder.sh
 
