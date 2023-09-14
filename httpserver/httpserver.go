@@ -111,15 +111,75 @@ func (s *httpserversrvc) DeleteHa(ctx context.Context, p *httpserver.Metadata) (
 
 // Scaledown implements scaledown.
 func (s *httpserversrvc) Scaledown(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
-	res = &httpserver.Response{}
-	s.logger.Print("httpserver.scaledown")
+	cli = &resources.CobraCmd{}
+	controller = control_pkg.GenKsctlController()
+
+	cli.Client.Metadata.ClusterName = p.ClusterName
+	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	cli.Client.Metadata.K8sDistro = p.Distro
+
+	if _, err1 := control_pkg.InitializeStorageFactory(&cli.Client, true); err1 != nil {
+		err = err1
+		return
+	}
+
+	cli.Client.Metadata.IsHA = true
+	cli.Client.Metadata.Region = p.Region
+	cli.Client.Metadata.Provider = p.Cloud
+
+	cli.Client.Metadata.NoWP = int(*p.NoWp)
+
+	// Return
+	ok := true
+	errStr := ""
+
+	msg, err := controller.DelWorkerPlaneNode(&cli.Client)
+	if err != nil {
+		ok = false
+		errStr = err.Error()
+	}
+
+	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
+	s.logger.Print(msg)
+
 	return
 }
 
 // Scaleup implements scaleup.
 func (s *httpserversrvc) Scaleup(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
-	res = &httpserver.Response{}
-	s.logger.Print("httpserver.scaleup")
+	cli = &resources.CobraCmd{}
+	controller = control_pkg.GenKsctlController()
+
+	cli.Client.Metadata.ClusterName = p.ClusterName
+	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	cli.Client.Metadata.K8sDistro = p.Distro
+
+	cli.Client.Metadata.K8sVersion = "1.27.1"
+	if _, err1 := control_pkg.InitializeStorageFactory(&cli.Client, true); err1 != nil {
+		err = err1
+		return
+	}
+
+	cli.Client.Metadata.IsHA = true
+	cli.Client.Metadata.Region = p.Region
+	cli.Client.Metadata.Provider = p.Cloud
+
+	cli.Client.Metadata.WorkerPlaneNodeType = *p.VMSizeWp
+	cli.Client.Metadata.NoWP = int(*p.NoWp)
+
+	// Return
+	ok := true
+	errStr := ""
+
+	msg, err := controller.AddWorkerPlaneNode(&cli.Client)
+	if err != nil {
+		ok = false
+		errStr = err.Error()
+	}
+
+	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
+	s.logger.Print(msg)
+
 	return
 }
 
