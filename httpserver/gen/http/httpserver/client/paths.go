@@ -7,7 +7,32 @@
 
 package client
 
+// CreateHaHttpserverPath returns the URL path to the httpserver service create ha HTTP endpoint.
+func CreateHaHttpserverPath() string {
+	return "/createha"
+}
+
+// DeleteHaHttpserverPath returns the URL path to the httpserver service delete ha HTTP endpoint.
+func DeleteHaHttpserverPath() string {
+	return "/deleteha"
+}
+
+// ScaledownHttpserverPath returns the URL path to the httpserver service scaledown HTTP endpoint.
+func ScaledownHttpserverPath() string {
+	return "/deletenodes"
+}
+
+// ScaleupHttpserverPath returns the URL path to the httpserver service scaleup HTTP endpoint.
+func ScaleupHttpserverPath() string {
+	return "/addnodes"
+}
+
 // GetHealthHttpserverPath returns the URL path to the httpserver service get health HTTP endpoint.
 func GetHealthHttpserverPath() string {
 	return "/healthz"
+}
+
+// GetClustersHttpserverPath returns the URL path to the httpserver service get clusters HTTP endpoint.
+func GetClustersHttpserverPath() string {
+	return "/list"
 }

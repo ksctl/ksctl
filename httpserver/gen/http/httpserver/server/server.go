@@ -19,7 +19,12 @@ import (
 // Server lists the httpserver service endpoint HTTP handlers.
 type Server struct {
 	Mounts              []*MountPoint
+	CreateHa            http.Handler
+	DeleteHa            http.Handler
+	Scaledown           http.Handler
+	Scaleup             http.Handler
 	GetHealth           http.Handler
+	GetClusters         http.Handler
 	GenHTTPOpenapi3JSON http.Handler
 	Swaggerui           http.Handler
 }
@@ -59,11 +64,21 @@ func New(
 	}
 	return &Server{
 		Mounts: []*MountPoint{
+			{"CreateHa", "PUT", "/createha"},
+			{"DeleteHa", "PUT", "/deleteha"},
+			{"Scaledown", "PUT", "/deletenodes"},
+			{"Scaleup", "PUT", "/addnodes"},
 			{"GetHealth", "GET", "/healthz"},
+			{"GetClusters", "GET", "/list"},
 			{"./gen/http/openapi3.json", "GET", "/openapi3.json"},
 			{"./swaggerui", "GET", "/swaggerui"},
 		},
+		CreateHa:            NewCreateHaHandler(e.CreateHa, mux, decoder, encoder, errhandler, formatter),
+		DeleteHa:            NewDeleteHaHandler(e.DeleteHa, mux, decoder, encoder, errhandler, formatter),
+		Scaledown:           NewScaledownHandler(e.Scaledown, mux, decoder, encoder, errhandler, formatter),
+		Scaleup:             NewScaleupHandler(e.Scaleup, mux, decoder, encoder, errhandler, formatter),
 		GetHealth:           NewGetHealthHandler(e.GetHealth, mux, decoder, encoder, errhandler, formatter),
+		GetClusters:         NewGetClustersHandler(e.GetClusters, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 		Swaggerui:           http.FileServer(fileSystemSwaggerui),
 	}
@@ -74,7 +89,12 @@ func (s *Server) Service() string { return "httpserver" }
 
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
+	s.CreateHa = m(s.CreateHa)
+	s.DeleteHa = m(s.DeleteHa)
+	s.Scaledown = m(s.Scaledown)
+	s.Scaleup = m(s.Scaleup)
 	s.GetHealth = m(s.GetHealth)
+	s.GetClusters = m(s.GetClusters)
 }
 
 // MethodNames returns the methods served.
@@ -82,7 +102,12 @@ func (s *Server) MethodNames() []string { return httpserver.MethodNames[:] }
 
 // Mount configures the mux to serve the httpserver endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
+	MountCreateHaHandler(mux, h.CreateHa)
+	MountDeleteHaHandler(mux, h.DeleteHa)
+	MountScaledownHandler(mux, h.Scaledown)
+	MountScaleupHandler(mux, h.Scaleup)
 	MountGetHealthHandler(mux, h.GetHealth)
+	MountGetClustersHandler(mux, h.GetClusters)
 	MountGenHTTPOpenapi3JSON(mux, goahttp.Replace("", "/./gen/http/openapi3.json", h.GenHTTPOpenapi3JSON))
 	MountSwaggerui(mux, goahttp.Replace("/swaggerui", "/./swaggerui", h.Swaggerui))
 }
@@ -90,6 +115,210 @@ func Mount(mux goahttp.Muxer, h *Server) {
 // Mount configures the mux to serve the httpserver endpoints.
 func (s *Server) Mount(mux goahttp.Muxer) {
 	Mount(mux, s)
+}
+
+// MountCreateHaHandler configures the mux to serve the "httpserver" service
+// "create ha" endpoint.
+func MountCreateHaHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/createha", f)
+}
+
+// NewCreateHaHandler creates a HTTP handler which loads the HTTP request and
+// calls the "httpserver" service "create ha" endpoint.
+func NewCreateHaHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeCreateHaRequest(mux, decoder)
+		encodeResponse = EncodeCreateHaResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "create ha")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "httpserver")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountDeleteHaHandler configures the mux to serve the "httpserver" service
+// "delete ha" endpoint.
+func MountDeleteHaHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/deleteha", f)
+}
+
+// NewDeleteHaHandler creates a HTTP handler which loads the HTTP request and
+// calls the "httpserver" service "delete ha" endpoint.
+func NewDeleteHaHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeDeleteHaRequest(mux, decoder)
+		encodeResponse = EncodeDeleteHaResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "delete ha")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "httpserver")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountScaledownHandler configures the mux to serve the "httpserver" service
+// "scaledown" endpoint.
+func MountScaledownHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/deletenodes", f)
+}
+
+// NewScaledownHandler creates a HTTP handler which loads the HTTP request and
+// calls the "httpserver" service "scaledown" endpoint.
+func NewScaledownHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeScaledownRequest(mux, decoder)
+		encodeResponse = EncodeScaledownResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "scaledown")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "httpserver")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountScaleupHandler configures the mux to serve the "httpserver" service
+// "scaleup" endpoint.
+func MountScaleupHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/addnodes", f)
+}
+
+// NewScaleupHandler creates a HTTP handler which loads the HTTP request and
+// calls the "httpserver" service "scaleup" endpoint.
+func NewScaleupHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeScaleupRequest(mux, decoder)
+		encodeResponse = EncodeScaleupResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "scaleup")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "httpserver")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
 }
 
 // MountGetHealthHandler configures the mux to serve the "httpserver" service
@@ -121,6 +350,50 @@ func NewGetHealthHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "get health")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "httpserver")
+		var err error
+		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountGetClustersHandler configures the mux to serve the "httpserver" service
+// "get clusters" endpoint.
+func MountGetClustersHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/list", f)
+}
+
+// NewGetClustersHandler creates a HTTP handler which loads the HTTP request
+// and calls the "httpserver" service "get clusters" endpoint.
+func NewGetClustersHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeGetClustersResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get clusters")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "httpserver")
 		var err error
 		res, err := endpoint(ctx, nil)

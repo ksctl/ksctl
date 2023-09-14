@@ -6,3 +6,279 @@
 // $ goa gen github.com/kubesimplify/ksctl/httpserver/design -o httpserver
 
 package client
+
+import (
+	"encoding/json"
+	"fmt"
+
+	httpserver "github.com/kubesimplify/ksctl/httpserver/gen/httpserver"
+	goa "goa.design/goa/v3/pkg"
+)
+
+// BuildCreateHaPayload builds the payload for the httpserver create ha
+// endpoint from CLI flags.
+func BuildCreateHaPayload(httpserverCreateHaBody string) (*httpserver.Metadata, error) {
+	var err error
+	var body CreateHaRequestBody
+	{
+		err = json.Unmarshal([]byte(httpserverCreateHaBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"Dicta voluptates odit minus quis.\",\n      \"vm_size_ds\": \"Quis laboriosam maxime quo aliquid alias.\",\n      \"vm_size_lb\": \"Sed et.\",\n      \"vm_size_wp\": \"Et fugiat suscipit odit quam omnis.\"\n   }'")
+		}
+		if body.NoWp != nil {
+			if *body.NoWp < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_wp", *body.NoWp, 0, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp < 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 3, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp > 10 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 10, false))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 1, true))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 3, false))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 1, true))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 3, false))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &httpserver.Metadata{
+		NoWp:        body.NoWp,
+		NoCp:        body.NoCp,
+		NoDs:        body.NoDs,
+		NoMp:        body.NoMp,
+		VMSizeCp:    body.VMSizeCp,
+		VMSizeDs:    body.VMSizeDs,
+		VMSizeWp:    body.VMSizeWp,
+		VMSizeLb:    body.VMSizeLb,
+		ClusterName: body.ClusterName,
+		Region:      body.Region,
+		Cloud:       body.Cloud,
+		Distro:      body.Distro,
+	}
+
+	return v, nil
+}
+
+// BuildDeleteHaPayload builds the payload for the httpserver delete ha
+// endpoint from CLI flags.
+func BuildDeleteHaPayload(httpserverDeleteHaBody string) (*httpserver.Metadata, error) {
+	var err error
+	var body DeleteHaRequestBody
+	{
+		err = json.Unmarshal([]byte(httpserverDeleteHaBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"Quia laborum consequatur aliquid quo.\",\n      \"vm_size_ds\": \"Temporibus eveniet repellendus beatae assumenda.\",\n      \"vm_size_lb\": \"Sapiente dolor animi recusandae quo illum sint.\",\n      \"vm_size_wp\": \"Quam qui voluptatem.\"\n   }'")
+		}
+		if body.NoWp != nil {
+			if *body.NoWp < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_wp", *body.NoWp, 0, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp < 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 3, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp > 10 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 10, false))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 1, true))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 3, false))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 1, true))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 3, false))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &httpserver.Metadata{
+		NoWp:        body.NoWp,
+		NoCp:        body.NoCp,
+		NoDs:        body.NoDs,
+		NoMp:        body.NoMp,
+		VMSizeCp:    body.VMSizeCp,
+		VMSizeDs:    body.VMSizeDs,
+		VMSizeWp:    body.VMSizeWp,
+		VMSizeLb:    body.VMSizeLb,
+		ClusterName: body.ClusterName,
+		Region:      body.Region,
+		Cloud:       body.Cloud,
+		Distro:      body.Distro,
+	}
+
+	return v, nil
+}
+
+// BuildScaledownPayload builds the payload for the httpserver scaledown
+// endpoint from CLI flags.
+func BuildScaledownPayload(httpserverScaledownBody string) (*httpserver.Metadata, error) {
+	var err error
+	var body ScaledownRequestBody
+	{
+		err = json.Unmarshal([]byte(httpserverScaledownBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"Alias doloribus.\",\n      \"vm_size_ds\": \"Magnam a.\",\n      \"vm_size_lb\": \"Nobis reiciendis.\",\n      \"vm_size_wp\": \"Architecto sit eum neque ut.\"\n   }'")
+		}
+		if body.NoWp != nil {
+			if *body.NoWp < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_wp", *body.NoWp, 0, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp < 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 3, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp > 10 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 10, false))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 1, true))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 3, false))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 1, true))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 3, false))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &httpserver.Metadata{
+		NoWp:        body.NoWp,
+		NoCp:        body.NoCp,
+		NoDs:        body.NoDs,
+		NoMp:        body.NoMp,
+		VMSizeCp:    body.VMSizeCp,
+		VMSizeDs:    body.VMSizeDs,
+		VMSizeWp:    body.VMSizeWp,
+		VMSizeLb:    body.VMSizeLb,
+		ClusterName: body.ClusterName,
+		Region:      body.Region,
+		Cloud:       body.Cloud,
+		Distro:      body.Distro,
+	}
+
+	return v, nil
+}
+
+// BuildScaleupPayload builds the payload for the httpserver scaleup endpoint
+// from CLI flags.
+func BuildScaleupPayload(httpserverScaleupBody string) (*httpserver.Metadata, error) {
+	var err error
+	var body ScaleupRequestBody
+	{
+		err = json.Unmarshal([]byte(httpserverScaleupBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"cloud\": \"azure\",\n      \"cluster_name\": \"demo\",\n      \"distro\": \"k3s\",\n      \"no_cp\": 3,\n      \"no_ds\": 1,\n      \"no_mp\": 1,\n      \"no_wp\": 1,\n      \"region\": \"XYZ\",\n      \"vm_size_cp\": \"In sit repellendus nemo suscipit quas est.\",\n      \"vm_size_ds\": \"Odit voluptates doloribus non ducimus.\",\n      \"vm_size_lb\": \"Repellendus ratione est quae laudantium.\",\n      \"vm_size_wp\": \"Est doloremque distinctio ullam.\"\n   }'")
+		}
+		if body.NoWp != nil {
+			if *body.NoWp < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_wp", *body.NoWp, 0, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp < 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 3, true))
+			}
+		}
+		if body.NoCp != nil {
+			if *body.NoCp > 10 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_cp", *body.NoCp, 10, false))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 1, true))
+			}
+		}
+		if body.NoDs != nil {
+			if *body.NoDs > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_ds", *body.NoDs, 3, false))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 1, true))
+			}
+		}
+		if body.NoMp != nil {
+			if *body.NoMp > 3 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.no_mp", *body.NoMp, 3, false))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &httpserver.Metadata{
+		NoWp:        body.NoWp,
+		NoCp:        body.NoCp,
+		NoDs:        body.NoDs,
+		NoMp:        body.NoMp,
+		VMSizeCp:    body.VMSizeCp,
+		VMSizeDs:    body.VMSizeDs,
+		VMSizeWp:    body.VMSizeWp,
+		VMSizeLb:    body.VMSizeLb,
+		ClusterName: body.ClusterName,
+		Region:      body.Region,
+		Cloud:       body.Cloud,
+		Distro:      body.Distro,
+	}
+
+	return v, nil
+}

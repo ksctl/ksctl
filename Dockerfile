@@ -8,7 +8,7 @@ RUN go mod tidy
 
 RUN CGO_ENABLED=0 make build_httpserver
 
-FROM scratch
+FROM alpine
 
 WORKDIR /app
 

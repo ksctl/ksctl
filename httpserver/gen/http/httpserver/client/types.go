@@ -11,6 +11,166 @@ import (
 	httpserver "github.com/kubesimplify/ksctl/httpserver/gen/httpserver"
 )
 
+// CreateHaRequestBody is the type of the "httpserver" service "create ha"
+// endpoint HTTP request body.
+type CreateHaRequestBody struct {
+	// desired no of workerplane nodes
+	NoWp *int `form:"no_wp,omitempty" json:"no_wp,omitempty" xml:"no_wp,omitempty"`
+	// desired no of workerplane nodes
+	NoCp *int32 `form:"no_cp,omitempty" json:"no_cp,omitempty" xml:"no_cp,omitempty"`
+	// desired no of workerplane nodes
+	NoDs *int32 `form:"no_ds,omitempty" json:"no_ds,omitempty" xml:"no_ds,omitempty"`
+	// desired no of workerplane nodes
+	NoMp *int32 `form:"no_mp,omitempty" json:"no_mp,omitempty" xml:"no_mp,omitempty"`
+	// virtual machine size for the controlplane
+	VMSizeCp *string `form:"vm_size_cp,omitempty" json:"vm_size_cp,omitempty" xml:"vm_size_cp,omitempty"`
+	// virtual machine size for the datastore
+	VMSizeDs *string `form:"vm_size_ds,omitempty" json:"vm_size_ds,omitempty" xml:"vm_size_ds,omitempty"`
+	// virtual machine size for the workerplane
+	VMSizeWp *string `form:"vm_size_wp,omitempty" json:"vm_size_wp,omitempty" xml:"vm_size_wp,omitempty"`
+	// virtual machine size for the loadbalancer
+	VMSizeLb *string `form:"vm_size_lb,omitempty" json:"vm_size_lb,omitempty" xml:"vm_size_lb,omitempty"`
+	// Cluster name
+	ClusterName string `form:"cluster_name" json:"cluster_name" xml:"cluster_name"`
+	// Region
+	Region string `form:"region" json:"region" xml:"region"`
+	// cloud provider
+	Cloud string `form:"cloud" json:"cloud" xml:"cloud"`
+	// kubernetes distribution
+	Distro string `form:"distro" json:"distro" xml:"distro"`
+}
+
+// DeleteHaRequestBody is the type of the "httpserver" service "delete ha"
+// endpoint HTTP request body.
+type DeleteHaRequestBody struct {
+	// desired no of workerplane nodes
+	NoWp *int `form:"no_wp,omitempty" json:"no_wp,omitempty" xml:"no_wp,omitempty"`
+	// desired no of workerplane nodes
+	NoCp *int32 `form:"no_cp,omitempty" json:"no_cp,omitempty" xml:"no_cp,omitempty"`
+	// desired no of workerplane nodes
+	NoDs *int32 `form:"no_ds,omitempty" json:"no_ds,omitempty" xml:"no_ds,omitempty"`
+	// desired no of workerplane nodes
+	NoMp *int32 `form:"no_mp,omitempty" json:"no_mp,omitempty" xml:"no_mp,omitempty"`
+	// virtual machine size for the controlplane
+	VMSizeCp *string `form:"vm_size_cp,omitempty" json:"vm_size_cp,omitempty" xml:"vm_size_cp,omitempty"`
+	// virtual machine size for the datastore
+	VMSizeDs *string `form:"vm_size_ds,omitempty" json:"vm_size_ds,omitempty" xml:"vm_size_ds,omitempty"`
+	// virtual machine size for the workerplane
+	VMSizeWp *string `form:"vm_size_wp,omitempty" json:"vm_size_wp,omitempty" xml:"vm_size_wp,omitempty"`
+	// virtual machine size for the loadbalancer
+	VMSizeLb *string `form:"vm_size_lb,omitempty" json:"vm_size_lb,omitempty" xml:"vm_size_lb,omitempty"`
+	// Cluster name
+	ClusterName string `form:"cluster_name" json:"cluster_name" xml:"cluster_name"`
+	// Region
+	Region string `form:"region" json:"region" xml:"region"`
+	// cloud provider
+	Cloud string `form:"cloud" json:"cloud" xml:"cloud"`
+	// kubernetes distribution
+	Distro string `form:"distro" json:"distro" xml:"distro"`
+}
+
+// ScaledownRequestBody is the type of the "httpserver" service "scaledown"
+// endpoint HTTP request body.
+type ScaledownRequestBody struct {
+	// desired no of workerplane nodes
+	NoWp *int `form:"no_wp,omitempty" json:"no_wp,omitempty" xml:"no_wp,omitempty"`
+	// desired no of workerplane nodes
+	NoCp *int32 `form:"no_cp,omitempty" json:"no_cp,omitempty" xml:"no_cp,omitempty"`
+	// desired no of workerplane nodes
+	NoDs *int32 `form:"no_ds,omitempty" json:"no_ds,omitempty" xml:"no_ds,omitempty"`
+	// desired no of workerplane nodes
+	NoMp *int32 `form:"no_mp,omitempty" json:"no_mp,omitempty" xml:"no_mp,omitempty"`
+	// virtual machine size for the controlplane
+	VMSizeCp *string `form:"vm_size_cp,omitempty" json:"vm_size_cp,omitempty" xml:"vm_size_cp,omitempty"`
+	// virtual machine size for the datastore
+	VMSizeDs *string `form:"vm_size_ds,omitempty" json:"vm_size_ds,omitempty" xml:"vm_size_ds,omitempty"`
+	// virtual machine size for the workerplane
+	VMSizeWp *string `form:"vm_size_wp,omitempty" json:"vm_size_wp,omitempty" xml:"vm_size_wp,omitempty"`
+	// virtual machine size for the loadbalancer
+	VMSizeLb *string `form:"vm_size_lb,omitempty" json:"vm_size_lb,omitempty" xml:"vm_size_lb,omitempty"`
+	// Cluster name
+	ClusterName string `form:"cluster_name" json:"cluster_name" xml:"cluster_name"`
+	// Region
+	Region string `form:"region" json:"region" xml:"region"`
+	// cloud provider
+	Cloud string `form:"cloud" json:"cloud" xml:"cloud"`
+	// kubernetes distribution
+	Distro string `form:"distro" json:"distro" xml:"distro"`
+}
+
+// ScaleupRequestBody is the type of the "httpserver" service "scaleup"
+// endpoint HTTP request body.
+type ScaleupRequestBody struct {
+	// desired no of workerplane nodes
+	NoWp *int `form:"no_wp,omitempty" json:"no_wp,omitempty" xml:"no_wp,omitempty"`
+	// desired no of workerplane nodes
+	NoCp *int32 `form:"no_cp,omitempty" json:"no_cp,omitempty" xml:"no_cp,omitempty"`
+	// desired no of workerplane nodes
+	NoDs *int32 `form:"no_ds,omitempty" json:"no_ds,omitempty" xml:"no_ds,omitempty"`
+	// desired no of workerplane nodes
+	NoMp *int32 `form:"no_mp,omitempty" json:"no_mp,omitempty" xml:"no_mp,omitempty"`
+	// virtual machine size for the controlplane
+	VMSizeCp *string `form:"vm_size_cp,omitempty" json:"vm_size_cp,omitempty" xml:"vm_size_cp,omitempty"`
+	// virtual machine size for the datastore
+	VMSizeDs *string `form:"vm_size_ds,omitempty" json:"vm_size_ds,omitempty" xml:"vm_size_ds,omitempty"`
+	// virtual machine size for the workerplane
+	VMSizeWp *string `form:"vm_size_wp,omitempty" json:"vm_size_wp,omitempty" xml:"vm_size_wp,omitempty"`
+	// virtual machine size for the loadbalancer
+	VMSizeLb *string `form:"vm_size_lb,omitempty" json:"vm_size_lb,omitempty" xml:"vm_size_lb,omitempty"`
+	// Cluster name
+	ClusterName string `form:"cluster_name" json:"cluster_name" xml:"cluster_name"`
+	// Region
+	Region string `form:"region" json:"region" xml:"region"`
+	// cloud provider
+	Cloud string `form:"cloud" json:"cloud" xml:"cloud"`
+	// kubernetes distribution
+	Distro string `form:"distro" json:"distro" xml:"distro"`
+}
+
+// CreateHaResponseBody is the type of the "httpserver" service "create ha"
+// endpoint HTTP response body.
+type CreateHaResponseBody struct {
+	// successful
+	OK *bool `form:"ok,omitempty" json:"ok,omitempty" xml:"ok,omitempty"`
+	// reason of failure
+	Errors *string `form:"errors,omitempty" json:"errors,omitempty" xml:"errors,omitempty"`
+	// response
+	Response any `form:"response,omitempty" json:"response,omitempty" xml:"response,omitempty"`
+}
+
+// DeleteHaResponseBody is the type of the "httpserver" service "delete ha"
+// endpoint HTTP response body.
+type DeleteHaResponseBody struct {
+	// successful
+	OK *bool `form:"ok,omitempty" json:"ok,omitempty" xml:"ok,omitempty"`
+	// reason of failure
+	Errors *string `form:"errors,omitempty" json:"errors,omitempty" xml:"errors,omitempty"`
+	// response
+	Response any `form:"response,omitempty" json:"response,omitempty" xml:"response,omitempty"`
+}
+
+// ScaledownResponseBody is the type of the "httpserver" service "scaledown"
+// endpoint HTTP response body.
+type ScaledownResponseBody struct {
+	// successful
+	OK *bool `form:"ok,omitempty" json:"ok,omitempty" xml:"ok,omitempty"`
+	// reason of failure
+	Errors *string `form:"errors,omitempty" json:"errors,omitempty" xml:"errors,omitempty"`
+	// response
+	Response any `form:"response,omitempty" json:"response,omitempty" xml:"response,omitempty"`
+}
+
+// ScaleupResponseBody is the type of the "httpserver" service "scaleup"
+// endpoint HTTP response body.
+type ScaleupResponseBody struct {
+	// successful
+	OK *bool `form:"ok,omitempty" json:"ok,omitempty" xml:"ok,omitempty"`
+	// reason of failure
+	Errors *string `form:"errors,omitempty" json:"errors,omitempty" xml:"errors,omitempty"`
+	// response
+	Response any `form:"response,omitempty" json:"response,omitempty" xml:"response,omitempty"`
+}
+
 // GetHealthResponseBody is the type of the "httpserver" service "get health"
 // endpoint HTTP response body.
 type GetHealthResponseBody struct {
@@ -18,11 +178,162 @@ type GetHealthResponseBody struct {
 	Msg *string `form:"msg,omitempty" json:"msg,omitempty" xml:"msg,omitempty"`
 }
 
+// GetClustersResponseBody is the type of the "httpserver" service "get
+// clusters" endpoint HTTP response body.
+type GetClustersResponseBody struct {
+	// successful
+	OK *bool `form:"ok,omitempty" json:"ok,omitempty" xml:"ok,omitempty"`
+	// reason of failure
+	Errors *string `form:"errors,omitempty" json:"errors,omitempty" xml:"errors,omitempty"`
+	// response
+	Response any `form:"response,omitempty" json:"response,omitempty" xml:"response,omitempty"`
+}
+
+// NewCreateHaRequestBody builds the HTTP request body from the payload of the
+// "create ha" endpoint of the "httpserver" service.
+func NewCreateHaRequestBody(p *httpserver.Metadata) *CreateHaRequestBody {
+	body := &CreateHaRequestBody{
+		NoWp:        p.NoWp,
+		NoCp:        p.NoCp,
+		NoDs:        p.NoDs,
+		NoMp:        p.NoMp,
+		VMSizeCp:    p.VMSizeCp,
+		VMSizeDs:    p.VMSizeDs,
+		VMSizeWp:    p.VMSizeWp,
+		VMSizeLb:    p.VMSizeLb,
+		ClusterName: p.ClusterName,
+		Region:      p.Region,
+		Cloud:       p.Cloud,
+		Distro:      p.Distro,
+	}
+	return body
+}
+
+// NewDeleteHaRequestBody builds the HTTP request body from the payload of the
+// "delete ha" endpoint of the "httpserver" service.
+func NewDeleteHaRequestBody(p *httpserver.Metadata) *DeleteHaRequestBody {
+	body := &DeleteHaRequestBody{
+		NoWp:        p.NoWp,
+		NoCp:        p.NoCp,
+		NoDs:        p.NoDs,
+		NoMp:        p.NoMp,
+		VMSizeCp:    p.VMSizeCp,
+		VMSizeDs:    p.VMSizeDs,
+		VMSizeWp:    p.VMSizeWp,
+		VMSizeLb:    p.VMSizeLb,
+		ClusterName: p.ClusterName,
+		Region:      p.Region,
+		Cloud:       p.Cloud,
+		Distro:      p.Distro,
+	}
+	return body
+}
+
+// NewScaledownRequestBody builds the HTTP request body from the payload of the
+// "scaledown" endpoint of the "httpserver" service.
+func NewScaledownRequestBody(p *httpserver.Metadata) *ScaledownRequestBody {
+	body := &ScaledownRequestBody{
+		NoWp:        p.NoWp,
+		NoCp:        p.NoCp,
+		NoDs:        p.NoDs,
+		NoMp:        p.NoMp,
+		VMSizeCp:    p.VMSizeCp,
+		VMSizeDs:    p.VMSizeDs,
+		VMSizeWp:    p.VMSizeWp,
+		VMSizeLb:    p.VMSizeLb,
+		ClusterName: p.ClusterName,
+		Region:      p.Region,
+		Cloud:       p.Cloud,
+		Distro:      p.Distro,
+	}
+	return body
+}
+
+// NewScaleupRequestBody builds the HTTP request body from the payload of the
+// "scaleup" endpoint of the "httpserver" service.
+func NewScaleupRequestBody(p *httpserver.Metadata) *ScaleupRequestBody {
+	body := &ScaleupRequestBody{
+		NoWp:        p.NoWp,
+		NoCp:        p.NoCp,
+		NoDs:        p.NoDs,
+		NoMp:        p.NoMp,
+		VMSizeCp:    p.VMSizeCp,
+		VMSizeDs:    p.VMSizeDs,
+		VMSizeWp:    p.VMSizeWp,
+		VMSizeLb:    p.VMSizeLb,
+		ClusterName: p.ClusterName,
+		Region:      p.Region,
+		Cloud:       p.Cloud,
+		Distro:      p.Distro,
+	}
+	return body
+}
+
+// NewCreateHaResponseOK builds a "httpserver" service "create ha" endpoint
+// result from a HTTP "OK" response.
+func NewCreateHaResponseOK(body *CreateHaResponseBody) *httpserver.Response {
+	v := &httpserver.Response{
+		OK:       body.OK,
+		Errors:   body.Errors,
+		Response: body.Response,
+	}
+
+	return v
+}
+
+// NewDeleteHaResponseOK builds a "httpserver" service "delete ha" endpoint
+// result from a HTTP "OK" response.
+func NewDeleteHaResponseOK(body *DeleteHaResponseBody) *httpserver.Response {
+	v := &httpserver.Response{
+		OK:       body.OK,
+		Errors:   body.Errors,
+		Response: body.Response,
+	}
+
+	return v
+}
+
+// NewScaledownResponseOK builds a "httpserver" service "scaledown" endpoint
+// result from a HTTP "OK" response.
+func NewScaledownResponseOK(body *ScaledownResponseBody) *httpserver.Response {
+	v := &httpserver.Response{
+		OK:       body.OK,
+		Errors:   body.Errors,
+		Response: body.Response,
+	}
+
+	return v
+}
+
+// NewScaleupResponseOK builds a "httpserver" service "scaleup" endpoint result
+// from a HTTP "OK" response.
+func NewScaleupResponseOK(body *ScaleupResponseBody) *httpserver.Response {
+	v := &httpserver.Response{
+		OK:       body.OK,
+		Errors:   body.Errors,
+		Response: body.Response,
+	}
+
+	return v
+}
+
 // NewGetHealthHealthOK builds a "httpserver" service "get health" endpoint
 // result from a HTTP "OK" response.
 func NewGetHealthHealthOK(body *GetHealthResponseBody) *httpserver.Health {
 	v := &httpserver.Health{
 		Msg: body.Msg,
+	}
+
+	return v
+}
+
+// NewGetClustersResponseOK builds a "httpserver" service "get clusters"
+// endpoint result from a HTTP "OK" response.
+func NewGetClustersResponseOK(body *GetClustersResponseBody) *httpserver.Response {
+	v := &httpserver.Response{
+		OK:       body.OK,
+		Errors:   body.Errors,
+		Response: body.Response,
 	}
 
 	return v

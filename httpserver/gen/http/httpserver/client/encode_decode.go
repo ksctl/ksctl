@@ -14,8 +14,277 @@ import (
 	"net/http"
 	"net/url"
 
+	httpserver "github.com/kubesimplify/ksctl/httpserver/gen/httpserver"
 	goahttp "goa.design/goa/v3/http"
 )
+
+// BuildCreateHaRequest instantiates a HTTP request object with method and path
+// set to call the "httpserver" service "create ha" endpoint
+func (c *Client) BuildCreateHaRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: CreateHaHttpserverPath()}
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("httpserver", "create ha", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeCreateHaRequest returns an encoder for requests sent to the httpserver
+// create ha server.
+func EncodeCreateHaRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*httpserver.Metadata)
+		if !ok {
+			return goahttp.ErrInvalidType("httpserver", "create ha", "*httpserver.Metadata", v)
+		}
+		body := NewCreateHaRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("httpserver", "create ha", err)
+		}
+		return nil
+	}
+}
+
+// DecodeCreateHaResponse returns a decoder for responses returned by the
+// httpserver create ha endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+func DecodeCreateHaResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body CreateHaResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("httpserver", "create ha", err)
+			}
+			res := NewCreateHaResponseOK(&body)
+			return res, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("httpserver", "create ha", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildDeleteHaRequest instantiates a HTTP request object with method and path
+// set to call the "httpserver" service "delete ha" endpoint
+func (c *Client) BuildDeleteHaRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteHaHttpserverPath()}
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("httpserver", "delete ha", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeDeleteHaRequest returns an encoder for requests sent to the httpserver
+// delete ha server.
+func EncodeDeleteHaRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*httpserver.Metadata)
+		if !ok {
+			return goahttp.ErrInvalidType("httpserver", "delete ha", "*httpserver.Metadata", v)
+		}
+		body := NewDeleteHaRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("httpserver", "delete ha", err)
+		}
+		return nil
+	}
+}
+
+// DecodeDeleteHaResponse returns a decoder for responses returned by the
+// httpserver delete ha endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+func DecodeDeleteHaResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body DeleteHaResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("httpserver", "delete ha", err)
+			}
+			res := NewDeleteHaResponseOK(&body)
+			return res, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("httpserver", "delete ha", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildScaledownRequest instantiates a HTTP request object with method and
+// path set to call the "httpserver" service "scaledown" endpoint
+func (c *Client) BuildScaledownRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ScaledownHttpserverPath()}
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("httpserver", "scaledown", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeScaledownRequest returns an encoder for requests sent to the
+// httpserver scaledown server.
+func EncodeScaledownRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*httpserver.Metadata)
+		if !ok {
+			return goahttp.ErrInvalidType("httpserver", "scaledown", "*httpserver.Metadata", v)
+		}
+		body := NewScaledownRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("httpserver", "scaledown", err)
+		}
+		return nil
+	}
+}
+
+// DecodeScaledownResponse returns a decoder for responses returned by the
+// httpserver scaledown endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+func DecodeScaledownResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ScaledownResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("httpserver", "scaledown", err)
+			}
+			res := NewScaledownResponseOK(&body)
+			return res, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("httpserver", "scaledown", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildScaleupRequest instantiates a HTTP request object with method and path
+// set to call the "httpserver" service "scaleup" endpoint
+func (c *Client) BuildScaleupRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ScaleupHttpserverPath()}
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("httpserver", "scaleup", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeScaleupRequest returns an encoder for requests sent to the httpserver
+// scaleup server.
+func EncodeScaleupRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*httpserver.Metadata)
+		if !ok {
+			return goahttp.ErrInvalidType("httpserver", "scaleup", "*httpserver.Metadata", v)
+		}
+		body := NewScaleupRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("httpserver", "scaleup", err)
+		}
+		return nil
+	}
+}
+
+// DecodeScaleupResponse returns a decoder for responses returned by the
+// httpserver scaleup endpoint. restoreBody controls whether the response body
+// should be restored after having been read.
+func DecodeScaleupResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ScaleupResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("httpserver", "scaleup", err)
+			}
+			res := NewScaleupResponseOK(&body)
+			return res, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("httpserver", "scaleup", resp.StatusCode, string(body))
+		}
+	}
+}
 
 // BuildGetHealthRequest instantiates a HTTP request object with method and
 // path set to call the "httpserver" service "get health" endpoint
@@ -64,6 +333,57 @@ func DecodeGetHealthResponse(decoder func(*http.Response) goahttp.Decoder, resto
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("httpserver", "get health", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildGetClustersRequest instantiates a HTTP request object with method and
+// path set to call the "httpserver" service "get clusters" endpoint
+func (c *Client) BuildGetClustersRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetClustersHttpserverPath()}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("httpserver", "get clusters", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeGetClustersResponse returns a decoder for responses returned by the
+// httpserver get clusters endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+func DecodeGetClustersResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetClustersResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("httpserver", "get clusters", err)
+			}
+			res := NewGetClustersResponseOK(&body)
+			return res, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("httpserver", "get clusters", resp.StatusCode, string(body))
 		}
 	}
 }

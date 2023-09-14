@@ -22,13 +22,26 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `httpserver get-health
+	return `httpserver (create-ha|delete-ha|scaledown|scaleup|get-health|get-clusters)
 `
 }
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + ` httpserver get-health` + "\n" +
+	return os.Args[0] + ` httpserver create-ha --body '{
+      "cloud": "azure",
+      "cluster_name": "demo",
+      "distro": "k3s",
+      "no_cp": 3,
+      "no_ds": 1,
+      "no_mp": 1,
+      "no_wp": 1,
+      "region": "XYZ",
+      "vm_size_cp": "Dicta voluptates odit minus quis.",
+      "vm_size_ds": "Quis laboriosam maxime quo aliquid alias.",
+      "vm_size_lb": "Sed et.",
+      "vm_size_wp": "Et fugiat suscipit odit quam omnis."
+   }'` + "\n" +
 		""
 }
 
@@ -44,10 +57,29 @@ func ParseEndpoint(
 	var (
 		httpserverFlags = flag.NewFlagSet("httpserver", flag.ContinueOnError)
 
+		httpserverCreateHaFlags    = flag.NewFlagSet("create-ha", flag.ExitOnError)
+		httpserverCreateHaBodyFlag = httpserverCreateHaFlags.String("body", "REQUIRED", "")
+
+		httpserverDeleteHaFlags    = flag.NewFlagSet("delete-ha", flag.ExitOnError)
+		httpserverDeleteHaBodyFlag = httpserverDeleteHaFlags.String("body", "REQUIRED", "")
+
+		httpserverScaledownFlags    = flag.NewFlagSet("scaledown", flag.ExitOnError)
+		httpserverScaledownBodyFlag = httpserverScaledownFlags.String("body", "REQUIRED", "")
+
+		httpserverScaleupFlags    = flag.NewFlagSet("scaleup", flag.ExitOnError)
+		httpserverScaleupBodyFlag = httpserverScaleupFlags.String("body", "REQUIRED", "")
+
 		httpserverGetHealthFlags = flag.NewFlagSet("get-health", flag.ExitOnError)
+
+		httpserverGetClustersFlags = flag.NewFlagSet("get-clusters", flag.ExitOnError)
 	)
 	httpserverFlags.Usage = httpserverUsage
+	httpserverCreateHaFlags.Usage = httpserverCreateHaUsage
+	httpserverDeleteHaFlags.Usage = httpserverDeleteHaUsage
+	httpserverScaledownFlags.Usage = httpserverScaledownUsage
+	httpserverScaleupFlags.Usage = httpserverScaleupUsage
 	httpserverGetHealthFlags.Usage = httpserverGetHealthUsage
+	httpserverGetClustersFlags.Usage = httpserverGetClustersUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -83,8 +115,23 @@ func ParseEndpoint(
 		switch svcn {
 		case "httpserver":
 			switch epn {
+			case "create-ha":
+				epf = httpserverCreateHaFlags
+
+			case "delete-ha":
+				epf = httpserverDeleteHaFlags
+
+			case "scaledown":
+				epf = httpserverScaledownFlags
+
+			case "scaleup":
+				epf = httpserverScaleupFlags
+
 			case "get-health":
 				epf = httpserverGetHealthFlags
+
+			case "get-clusters":
+				epf = httpserverGetClustersFlags
 
 			}
 
@@ -111,8 +158,23 @@ func ParseEndpoint(
 		case "httpserver":
 			c := httpserverc.NewClient(scheme, host, doer, enc, dec, restore)
 			switch epn {
+			case "create-ha":
+				endpoint = c.CreateHa()
+				data, err = httpserverc.BuildCreateHaPayload(*httpserverCreateHaBodyFlag)
+			case "delete-ha":
+				endpoint = c.DeleteHa()
+				data, err = httpserverc.BuildDeleteHaPayload(*httpserverDeleteHaBodyFlag)
+			case "scaledown":
+				endpoint = c.Scaledown()
+				data, err = httpserverc.BuildScaledownPayload(*httpserverScaledownBodyFlag)
+			case "scaleup":
+				endpoint = c.Scaleup()
+				data, err = httpserverc.BuildScaleupPayload(*httpserverScaleupBodyFlag)
 			case "get-health":
 				endpoint = c.GetHealth()
+				data = nil
+			case "get-clusters":
+				endpoint = c.GetClusters()
 				data = nil
 			}
 		}
@@ -132,12 +194,113 @@ Usage:
     %[1]s [globalflags] httpserver COMMAND [flags]
 
 COMMAND:
+    create-ha: CreateHa implements create ha.
+    delete-ha: DeleteHa implements delete ha.
+    scaledown: Scaledown implements scaledown.
+    scaleup: Scaleup implements scaleup.
     get-health: GetHealth implements get health.
+    get-clusters: GetClusters implements get clusters.
 
 Additional help:
     %[1]s httpserver COMMAND --help
 `, os.Args[0])
 }
+func httpserverCreateHaUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] httpserver create-ha -body JSON
+
+CreateHa implements create ha.
+    -body JSON: 
+
+Example:
+    %[1]s httpserver create-ha --body '{
+      "cloud": "azure",
+      "cluster_name": "demo",
+      "distro": "k3s",
+      "no_cp": 3,
+      "no_ds": 1,
+      "no_mp": 1,
+      "no_wp": 1,
+      "region": "XYZ",
+      "vm_size_cp": "Dicta voluptates odit minus quis.",
+      "vm_size_ds": "Quis laboriosam maxime quo aliquid alias.",
+      "vm_size_lb": "Sed et.",
+      "vm_size_wp": "Et fugiat suscipit odit quam omnis."
+   }'
+`, os.Args[0])
+}
+
+func httpserverDeleteHaUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] httpserver delete-ha -body JSON
+
+DeleteHa implements delete ha.
+    -body JSON: 
+
+Example:
+    %[1]s httpserver delete-ha --body '{
+      "cloud": "azure",
+      "cluster_name": "demo",
+      "distro": "k3s",
+      "no_cp": 3,
+      "no_ds": 1,
+      "no_mp": 1,
+      "no_wp": 1,
+      "region": "XYZ",
+      "vm_size_cp": "Quia laborum consequatur aliquid quo.",
+      "vm_size_ds": "Temporibus eveniet repellendus beatae assumenda.",
+      "vm_size_lb": "Sapiente dolor animi recusandae quo illum sint.",
+      "vm_size_wp": "Quam qui voluptatem."
+   }'
+`, os.Args[0])
+}
+
+func httpserverScaledownUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] httpserver scaledown -body JSON
+
+Scaledown implements scaledown.
+    -body JSON: 
+
+Example:
+    %[1]s httpserver scaledown --body '{
+      "cloud": "azure",
+      "cluster_name": "demo",
+      "distro": "k3s",
+      "no_cp": 3,
+      "no_ds": 1,
+      "no_mp": 1,
+      "no_wp": 1,
+      "region": "XYZ",
+      "vm_size_cp": "Alias doloribus.",
+      "vm_size_ds": "Magnam a.",
+      "vm_size_lb": "Nobis reiciendis.",
+      "vm_size_wp": "Architecto sit eum neque ut."
+   }'
+`, os.Args[0])
+}
+
+func httpserverScaleupUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] httpserver scaleup -body JSON
+
+Scaleup implements scaleup.
+    -body JSON: 
+
+Example:
+    %[1]s httpserver scaleup --body '{
+      "cloud": "azure",
+      "cluster_name": "demo",
+      "distro": "k3s",
+      "no_cp": 3,
+      "no_ds": 1,
+      "no_mp": 1,
+      "no_wp": 1,
+      "region": "XYZ",
+      "vm_size_cp": "In sit repellendus nemo suscipit quas est.",
+      "vm_size_ds": "Odit voluptates doloribus non ducimus.",
+      "vm_size_lb": "Repellendus ratione est quae laudantium.",
+      "vm_size_wp": "Est doloremque distinctio ullam."
+   }'
+`, os.Args[0])
+}
+
 func httpserverGetHealthUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] httpserver get-health
 
@@ -145,5 +308,15 @@ GetHealth implements get health.
 
 Example:
     %[1]s httpserver get-health
+`, os.Args[0])
+}
+
+func httpserverGetClustersUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] httpserver get-clusters
+
+GetClusters implements get clusters.
+
+Example:
+    %[1]s httpserver get-clusters
 `, os.Args[0])
 }

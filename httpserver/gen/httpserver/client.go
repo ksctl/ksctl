@@ -15,14 +15,64 @@ import (
 
 // Client is the "httpserver" service client.
 type Client struct {
-	GetHealthEndpoint goa.Endpoint
+	CreateHaEndpoint    goa.Endpoint
+	DeleteHaEndpoint    goa.Endpoint
+	ScaledownEndpoint   goa.Endpoint
+	ScaleupEndpoint     goa.Endpoint
+	GetHealthEndpoint   goa.Endpoint
+	GetClustersEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "httpserver" service client given the endpoints.
-func NewClient(getHealth goa.Endpoint) *Client {
+func NewClient(createHa, deleteHa, scaledown, scaleup, getHealth, getClusters goa.Endpoint) *Client {
 	return &Client{
-		GetHealthEndpoint: getHealth,
+		CreateHaEndpoint:    createHa,
+		DeleteHaEndpoint:    deleteHa,
+		ScaledownEndpoint:   scaledown,
+		ScaleupEndpoint:     scaleup,
+		GetHealthEndpoint:   getHealth,
+		GetClustersEndpoint: getClusters,
 	}
+}
+
+// CreateHa calls the "create ha" endpoint of the "httpserver" service.
+func (c *Client) CreateHa(ctx context.Context, p *Metadata) (res *Response, err error) {
+	var ires any
+	ires, err = c.CreateHaEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Response), nil
+}
+
+// DeleteHa calls the "delete ha" endpoint of the "httpserver" service.
+func (c *Client) DeleteHa(ctx context.Context, p *Metadata) (res *Response, err error) {
+	var ires any
+	ires, err = c.DeleteHaEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Response), nil
+}
+
+// Scaledown calls the "scaledown" endpoint of the "httpserver" service.
+func (c *Client) Scaledown(ctx context.Context, p *Metadata) (res *Response, err error) {
+	var ires any
+	ires, err = c.ScaledownEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Response), nil
+}
+
+// Scaleup calls the "scaleup" endpoint of the "httpserver" service.
+func (c *Client) Scaleup(ctx context.Context, p *Metadata) (res *Response, err error) {
+	var ires any
+	ires, err = c.ScaleupEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Response), nil
 }
 
 // GetHealth calls the "get health" endpoint of the "httpserver" service.
@@ -33,4 +83,14 @@ func (c *Client) GetHealth(ctx context.Context) (res *Health, err error) {
 		return
 	}
 	return ires.(*Health), nil
+}
+
+// GetClusters calls the "get clusters" endpoint of the "httpserver" service.
+func (c *Client) GetClusters(ctx context.Context) (res *Response, err error) {
+	var ires any
+	ires, err = c.GetClustersEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(*Response), nil
 }

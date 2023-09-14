@@ -13,8 +13,18 @@ import (
 
 // server handlers
 type Service interface {
+	// CreateHa implements create ha.
+	CreateHa(context.Context, *Metadata) (res *Response, err error)
+	// DeleteHa implements delete ha.
+	DeleteHa(context.Context, *Metadata) (res *Response, err error)
+	// Scaledown implements scaledown.
+	Scaledown(context.Context, *Metadata) (res *Response, err error)
+	// Scaleup implements scaleup.
+	Scaleup(context.Context, *Metadata) (res *Response, err error)
 	// GetHealth implements get health.
 	GetHealth(context.Context) (res *Health, err error)
+	// GetClusters implements get clusters.
+	GetClusters(context.Context) (res *Response, err error)
 }
 
 // ServiceName is the name of the service as defined in the design. This is the
@@ -25,10 +35,48 @@ const ServiceName = "httpserver"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [1]string{"get health"}
+var MethodNames = [6]string{"create ha", "delete ha", "scaledown", "scaleup", "get health", "get clusters"}
 
 // Health is the result type of the httpserver service get health method.
 type Health struct {
 	// message
 	Msg *string
+}
+
+// Metadata is the payload type of the httpserver service create ha method.
+type Metadata struct {
+	// desired no of workerplane nodes
+	NoWp *int
+	// desired no of workerplane nodes
+	NoCp *int32
+	// desired no of workerplane nodes
+	NoDs *int32
+	// desired no of workerplane nodes
+	NoMp *int32
+	// virtual machine size for the controlplane
+	VMSizeCp *string
+	// virtual machine size for the datastore
+	VMSizeDs *string
+	// virtual machine size for the workerplane
+	VMSizeWp *string
+	// virtual machine size for the loadbalancer
+	VMSizeLb *string
+	// Cluster name
+	ClusterName string
+	// Region
+	Region string
+	// cloud provider
+	Cloud string
+	// kubernetes distribution
+	Distro string
+}
+
+// Response is the result type of the httpserver service create ha method.
+type Response struct {
+	// successful
+	OK *bool
+	// reason of failure
+	Errors *string
+	// response
+	Response any
 }
