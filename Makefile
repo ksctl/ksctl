@@ -10,6 +10,9 @@ GOARCH_MACOS_INTEL = amd64
 gen_httpserver:
 	goa gen github.com/kubesimplify/ksctl/httpserver/design -o httpserver
 
+build_httpserver:
+	go build -v -o ksctlserver httpserver/cmd/server/*
+
 install_linux:
 	env GOOS=${GOOS_LINUX} GOARCH=${GOARCH_LINUX} ./builder.sh
 

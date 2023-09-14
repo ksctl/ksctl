@@ -17,7 +17,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rodaine/table v1.1.0
 	github.com/spf13/cobra v1.7.0
-	goa.design/goa/v3 v3.13.0
+	goa.design/goa/v3 v3.12.4
 	golang.org/x/crypto v0.12.0
 	golang.org/x/term v0.11.0
 	gotest.tools v2.2.0+incompatible
@@ -36,6 +36,7 @@ require (
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
+	github.com/go-chi/chi/v5 v5.0.10 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.1 // indirect
@@ -49,6 +50,7 @@ require (
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
 	github.com/google/uuid v1.3.1 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
