@@ -30,6 +30,12 @@
   [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml)
   [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl)
   [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
+  [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
+  [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
+  [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
+  [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
+  [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
+  [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=bugs)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
 
 </div>
 
