@@ -3,13 +3,14 @@ package k3s
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
 	"gotest.tools/assert"
-	"os"
-	"testing"
 )
 
 var (
@@ -235,8 +236,21 @@ func checkCurrentStateFile(t *testing.T) {
 	assert.DeepEqual(t, k8sState, data)
 }
 
+func getState(t *testing.T) {
+	t.Run("check getState()", func(t *testing.T) {
+		expected, err := fakeClient.GetStateFile(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there for getstate")
+
+		got, _ := json.Marshal(k8sState)
+		assert.DeepEqual(t, string(got), expected)
+	})
+
+}
+
 func TestOverallScriptsCreation(t *testing.T) {
 	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, utils.OPERATION_STATE_CREATE), nil, "should be initlize the state")
+
+	getState(t)
 
 	fakeClient.Version("1.27.1")
 
@@ -275,4 +289,19 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Workerplane unable to operate %v", err)
 		}
 	}
+
+	t.Run("get kubeconfig test", func(t *testing.T) {
+		a, b, err := fakeClient.GetKubeConfig(demoClient.Storage)
+		assert.NilError(t, err, "get kubeconfig should be successful")
+
+		path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+
+		var raw []byte
+		raw, err = demoClient.Storage.Path(path).Load()
+		assert.NilError(t, err, "kubeconfig missmatch")
+
+		assert.Equal(t, path, a, "path for the kubeconfig is missmatch")
+		assert.Equal(t, string(raw), b, "the kubeconfig must match")
+
+	})
 }

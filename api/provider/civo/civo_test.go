@@ -697,6 +697,14 @@ func TestHACluster(t *testing.T) {
 		assert.DeepEqual(t, got, expected)
 	})
 
+	t.Run("check getState()", func(t *testing.T) {
+		expected, err := fakeClient.GetStateFile(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there for getstate")
+
+		got, _ := json.Marshal(civoCloudState)
+		assert.DeepEqual(t, string(got), expected)
+	})
+
 	// explicit clean
 	civoCloudState = nil
 
