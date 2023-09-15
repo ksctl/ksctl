@@ -93,10 +93,10 @@ func convertStateFromBytes(raw []byte) error {
 
 // helper functions to get resources from civogo client
 // seperation so that we can test logic by assert
-func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
+func getValidK8sVersionClient(obj *CivoProvider) []string {
 	vers, err := obj.client.ListAvailableKubernetesVersions()
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	var val []string
 	for _, ver := range vers {
@@ -104,31 +104,31 @@ func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
 			val = append(val, ver.Label)
 		}
 	}
-	return val, nil
+	return val
 }
 
-func getValidRegionsClient(obj *CivoProvider) ([]string, error) {
+func getValidRegionsClient(obj *CivoProvider) []string {
 	regions, err := obj.client.ListRegions()
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	var val []string
 	for _, region := range regions {
 		val = append(val, region.Code)
 	}
-	return val, nil
+	return val
 }
 
-func getValidVMSizesClient(obj *CivoProvider) ([]string, error) {
+func getValidVMSizesClient(obj *CivoProvider) []string {
 	nodeSizes, err := obj.client.ListInstanceSizes()
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	var val []string
 	for _, region := range nodeSizes {
 		val = append(val, region.Name)
 	}
-	return val, nil
+	return val
 }
 
 func validationOfArguments(obj *CivoProvider) error {
@@ -145,10 +145,7 @@ func validationOfArguments(obj *CivoProvider) error {
 }
 
 func isValidK8sVersion(obj *CivoProvider, ver string) error {
-	valver, err := getValidK8sVersionClient(obj)
-	if err != nil {
-		return err
-	}
+	var valver []string = getValidK8sVersionClient(obj)
 	for _, vver := range valver {
 		if vver == ver {
 			return nil
@@ -159,10 +156,7 @@ func isValidK8sVersion(obj *CivoProvider, ver string) error {
 
 // IsValidRegionCIVO validates the region code for CIVO
 func isValidRegion(obj *CivoProvider, reg string) error {
-	validFromClient, err := getValidRegionsClient(obj)
-	if err != nil {
-		return err
-	}
+	var validFromClient []string = getValidRegionsClient(obj)
 	for _, region := range validFromClient {
 		if region == reg {
 			return nil
@@ -172,10 +166,7 @@ func isValidRegion(obj *CivoProvider, reg string) error {
 }
 
 func isValidVMSize(obj *CivoProvider, size string) error {
-	validFromClient, err := getValidVMSizesClient(obj)
-	if err != nil {
-		return err
-	}
+	var validFromClient []string = getValidVMSizesClient(obj)
 	for _, nodeSize := range validFromClient {
 		if size == nodeSize {
 			return nil
