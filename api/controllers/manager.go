@@ -236,18 +236,17 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", err
 	}
 
-	fmt.Println(cloudstate)
-	fmt.Println(k8sstate)
-	fmt.Println(kubeconfig)
-	fmt.Println(kubeconfigPath)
+	if len(os.Getenv(utils.KSCTL_FAKE_FLAG)) > 0 {
+		kubernetesClient := universal.Kubernetes{
+			Metadata: client.Metadata,
+		}
+		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+			return "", err
+		}
 
-	kubernetesClient := universal.Kubernetes{}
-	if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
-		return "", err
-	}
-
-	if err = kubernetesClient.KsctlConfigMap(kubeconfig, kubeconfigPath, cloudstate, k8sstate); err != nil {
-		return "", err
+		if err = kubernetesClient.KsctlConfigMap(kubeconfig, kubeconfigPath, cloudstate, k8sstate); err != nil {
+			return "", err
+		}
 	}
 
 	return "[ksctl] created HA cluster", nil
