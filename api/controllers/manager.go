@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/kubesimplify/ksctl/api/k8s_distro/universal"
 	"github.com/kubesimplify/ksctl/api/provider/azure"
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
@@ -239,7 +240,15 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	fmt.Println(k8sstate)
 	fmt.Println(kubeconfig)
 	fmt.Println(kubeconfigPath)
-	// create configmap and deploy
+
+	kubernetesClient := universal.Kubernetes{}
+	if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+		return "", err
+	}
+
+	if err = kubernetesClient.KsctlConfigMap(kubeconfig, kubeconfigPath, cloudstate, k8sstate); err != nil {
+		return "", err
+	}
 
 	return "[ksctl] created HA cluster", nil
 }

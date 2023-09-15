@@ -6,10 +6,18 @@ import (
 	"strings"
 
 	"github.com/kubesimplify/ksctl/api/resources"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+type Kubernetes struct {
+	config              *rest.Config
+	clientset           *kubernetes.Clientset
+	apiextensionsClient *clientset.Clientset
+}
 
 type Data struct {
 	Url string
@@ -74,4 +82,23 @@ func GetApps(storage resources.StorageFactory, name string) (Data, error) {
 		return Data{}, fmt.Errorf("[kubernetes] app not found %s", name)
 	}
 	return val, nil
+}
+
+func (this *Kubernetes) ClientInit(kubeconfigPath string) (err error) {
+	this.config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err != nil {
+		return err
+	}
+
+	this.apiextensionsClient, err = clientset.NewForConfig(this.config)
+	if err != nil {
+		return err
+	}
+
+	this.clientset, err = kubernetes.NewForConfig(this.config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

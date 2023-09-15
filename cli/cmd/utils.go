@@ -177,7 +177,7 @@ func nodeSizeManagedFlag(f *cobra.Command) {
 }
 
 func nodeSizeCPFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&nodeSizeMP, "nodeSizeMP", "", "", "Node size of self-managed controlplane nodes")
+	f.Flags().StringVarP(&nodeSizeCP, "nodeSizeCP", "", "", "Node size of self-managed controlplane nodes")
 }
 func nodeSizeWPFlag(f *cobra.Command) {
 	f.Flags().StringVarP(&nodeSizeWP, "nodeSizeWP", "", "", "Node size of self-managed workerplane nodes")
