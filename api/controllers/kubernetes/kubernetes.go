@@ -62,7 +62,7 @@ func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 
 func DelWorkerPlanes(client *resources.KsctlClient, hostnames []string) error {
 
-	kubeconfigPath, err := client.Distro.GetKubeConfig(client.Storage)
+	kubeconfigPath, _, err := client.Distro.GetKubeConfig(client.Storage)
 	if err != nil {
 		return err
 	}

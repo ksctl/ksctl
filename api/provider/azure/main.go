@@ -107,6 +107,15 @@ type AzureProvider struct {
 	client AzureGo
 }
 
+// GetStateFile implements resources.CloudFactory.
+func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
+	cloudstate, err := json.Marshal(azureCloudState)
+	if err != nil {
+		return "", err
+	}
+	return string(cloudstate), nil
+}
+
 var (
 	azureCloudState *StateConfiguration
 

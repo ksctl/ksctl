@@ -31,10 +31,29 @@ type StateConfiguration struct {
 	Provider    string `json:"provider"`
 }
 
+var (
+	k8sState *StateConfiguration
+)
+
+func ReturnK3sStruct() *K3sDistro {
+	return &K3sDistro{
+		SSHInfo: &utils.SSHPayload{},
+	}
+}
+
 type K3sDistro struct {
 	K3sVer string
 	// it will be used for SSH
 	SSHInfo utils.SSHCollection
+}
+
+// GetStateFiles implements resources.DistroFactory.
+func (*K3sDistro) GetStateFile(resources.StorageFactory) (string, error) {
+	state, err := json.Marshal(k8sState)
+	if err != nil {
+		return "", err
+	}
+	return string(state), nil
 }
 
 const (
@@ -104,16 +123,6 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 // InstallApplication implements resources.DistroFactory.
 func (*K3sDistro) InstallApplication(state resources.StorageFactory) error {
 	panic("unimplemented")
-}
-
-var (
-	k8sState *StateConfiguration
-)
-
-func ReturnK3sStruct() *K3sDistro {
-	return &K3sDistro{
-		SSHInfo: &utils.SSHPayload{},
-	}
 }
 
 func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {

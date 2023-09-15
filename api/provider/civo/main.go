@@ -108,11 +108,9 @@ func (m metadata) String() string {
 
 type CivoProvider struct {
 	clusterName string
-	apiKey      string
 	haCluster   bool
 	region      string
 
-	sshPath  string
 	mxName   sync.Mutex
 	mxRole   sync.Mutex
 	mxVMType sync.Mutex
@@ -121,6 +119,15 @@ type CivoProvider struct {
 	metadata
 
 	client CivoGo
+}
+
+// GetStateFile implements resources.CloudFactory.
+func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
+	cloudstate, err := json.Marshal(civoCloudState)
+	if err != nil {
+		return "", err
+	}
+	return string(cloudstate), nil
 }
 
 type Credential struct {

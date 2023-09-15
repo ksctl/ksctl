@@ -158,12 +158,18 @@ sudo ./control-setupN.sh
 	// `, token, dbEndpoint, privateIPlb)
 }
 
-func (k3s *K3sDistro) GetKubeConfig(resources.StorageFactory) (string, error) {
+func (k3s *K3sDistro) GetKubeConfig(storage resources.StorageFactory) (path string, data string, err error) {
 
 	if len(k8sState.Provider) == 0 || len(k8sState.ClusterDir) == 0 || len(k8sState.ClusterDir) == 0 {
-		return "", fmt.Errorf("[k3s] status is not correct")
+		return "", "", fmt.Errorf("[k3s] status is not correct")
 	}
 
-	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
-	return path, nil
+	path = utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+
+	var raw []byte
+	raw, err = storage.Path(path).Load()
+
+	data = string(raw)
+
+	return
 }

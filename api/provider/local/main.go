@@ -33,6 +33,11 @@ type LocalProvider struct {
 	Metadata
 }
 
+// GetStateFile implements resources.CloudFactory.
+func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
+	panic("unimplemented")
+}
+
 var (
 	localState *StateConfiguration
 )

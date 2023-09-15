@@ -218,6 +218,29 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	if err != nil {
 		return "", err
 	}
+
+	//////// Done with cluster setup
+	cloudstate, err := client.Cloud.GetStateFile(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	k8sstate, err := client.Distro.GetStateFile(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	kubeconfigPath, kubeconfig, err := client.Distro.GetKubeConfig(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println(cloudstate)
+	fmt.Println(k8sstate)
+	fmt.Println(kubeconfig)
+	fmt.Println(kubeconfigPath)
+	// create configmap and deploy
+
 	return "[ksctl] created HA cluster", nil
 }
 

@@ -25,6 +25,11 @@ type KubeadmDistro struct {
 	KubeadmVer string
 }
 
+// GetStateFile implements resources.DistroFactory.
+func (*KubeadmDistro) GetStateFile(resources.StorageFactory) (string, error) {
+	panic("unimplemented")
+}
+
 // ConfigureControlPlane implements resources.DistroFactory.
 func (*KubeadmDistro) ConfigureControlPlane(noOfCP int, state resources.StorageFactory) error {
 	panic("unimplemented")
@@ -46,7 +51,7 @@ func (*KubeadmDistro) DestroyWorkerPlane(state resources.StorageFactory) ([]stri
 }
 
 // GetKubeConfig implements resources.DistroFactory.
-func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (string, error) {
+func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (path string, data string, err error) {
 	panic("unimplemented")
 }
 

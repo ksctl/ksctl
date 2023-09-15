@@ -141,6 +141,10 @@ type CloudFactory interface {
 	GetHostNameAllWorkerNode() []string
 
 	SwitchCluster(StorageFactory) error
+
+	// GetStateFiles it returns the civo-state.json
+	// WARN: sensitive info can be present
+	GetStateFile(StorageFactory) (string, error)
 }
 
 type KubernetesFactory interface {
@@ -169,10 +173,14 @@ type KubernetesFactory interface {
 	InstallApplication(StorageFactory) error
 
 	// GetKubeConfig returns the path of kubeconfig
-	GetKubeConfig(StorageFactory) (string, error)
+	GetKubeConfig(StorageFactory) (path string, data string, err error)
 
 	// Version setter for version to be used
 	Version(string) DistroFactory
+
+	// GetStateFiles it returns the k8s-state.json
+	// WARN: sensitive info can be present
+	GetStateFile(StorageFactory) (string, error)
 }
 
 // FEATURE: non kubernetes distrobutions like nomad
