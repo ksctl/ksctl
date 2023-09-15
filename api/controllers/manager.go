@@ -236,7 +236,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", err
 	}
 
-	if len(os.Getenv(utils.KSCTL_FAKE_FLAG)) > 0 {
+	if len(os.Getenv(utils.KSCTL_FAKE_FLAG)) == 0 {
 		kubernetesClient := universal.Kubernetes{
 			Metadata: client.Metadata,
 		}
