@@ -237,6 +237,13 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	}
 
 	if len(os.Getenv(utils.KSCTL_FAKE_FLAG)) == 0 {
+
+		var cloudSecret map[string][]byte
+		cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
+		if err != nil {
+			return "", err
+		}
+
 		kubernetesClient := universal.Kubernetes{
 			Metadata: client.Metadata,
 		}
@@ -244,7 +251,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 			return "", err
 		}
 
-		if err = kubernetesClient.KsctlConfigMap(kubeconfig, kubeconfigPath, cloudstate, k8sstate); err != nil {
+		if err = kubernetesClient.KsctlConfigForController(kubeconfig, kubeconfigPath, cloudstate, k8sstate, cloudSecret); err != nil {
 			return "", err
 		}
 	}

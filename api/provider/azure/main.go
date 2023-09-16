@@ -10,6 +10,8 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/logger"
 
+	b64 "encoding/base64"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
@@ -107,15 +109,6 @@ type AzureProvider struct {
 	client AzureGo
 }
 
-// GetStateFile implements resources.CloudFactory.
-func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
-	cloudstate, err := json.Marshal(azureCloudState)
-	if err != nil {
-		return "", err
-	}
-	return string(cloudstate), nil
-}
-
 var (
 	azureCloudState *StateConfiguration
 
@@ -132,6 +125,31 @@ const (
 	STATE_FILE_NAME              = string("cloud-state.json")
 	KUBECONFIG_FILE_NAME         = string("kubeconfig")
 )
+
+// GetSecretTokens implements resources.CloudFactory.
+func (*AzureProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
+
+	envTenant := b64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_TENANT_ID")))
+	envSub := b64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_SUBSCRIPTION_ID")))
+	envClientid := b64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_CLIENT_ID")))
+	envClientsec := b64.StdEncoding.EncodeToString([]byte(os.Getenv("AZURE_CLIENT_SECRET")))
+
+	return map[string][]byte{
+		"AZURE_TENANT_ID":       []byte(envTenant),
+		"AZURE_SUBSCRIPTION_ID": []byte(envSub),
+		"AZURE_CLIENT_ID":       []byte(envClientid),
+		"AZURE_CLIENT_SECRET":   []byte(envClientsec),
+	}, nil
+}
+
+// GetStateFile implements resources.CloudFactory.
+func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
+	cloudstate, err := json.Marshal(azureCloudState)
+	if err != nil {
+		return "", err
+	}
+	return string(cloudstate), nil
+}
 
 func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 	var hostnames []string = make([]string, len(azureCloudState.InfoWorkerPlanes.Hostnames))

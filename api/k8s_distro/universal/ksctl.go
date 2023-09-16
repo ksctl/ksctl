@@ -7,7 +7,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (this *Kubernetes) KsctlConfigMap(kubeconfig string, kubeconfigpath string, cloudstate, k8sstate string) error {
+func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, cloudstate, k8sstate string, secretKeys map[string][]byte) error {
 	var state *corev1.ConfigMap = &corev1.ConfigMap{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -24,7 +24,7 @@ func (this *Kubernetes) KsctlConfigMap(kubeconfig string, kubeconfigpath string,
 		},
 	}
 
-	if err := this.ConfigMapApply(state, "default"); err != nil {
+	if err := this.configMapApply(state, "default"); err != nil {
 		return err
 	}
 
@@ -42,18 +42,15 @@ func (this *Kubernetes) KsctlConfigMap(kubeconfig string, kubeconfigpath string,
 			"CLOUD":        this.Metadata.Provider,
 			"DISTRO":       this.Metadata.K8sDistro,
 			"K8S_VER":      this.Metadata.K8sVersion,
+			"VM_SIZE":      this.Metadata.WorkerPlaneNodeType,
 			"NO_CP":        fmt.Sprint(this.Metadata.NoCP),
 			"NO_WP":        fmt.Sprint(this.Metadata.NoWP),
 		},
 	}
 
-	if err := this.ConfigMapApply(controllerInput, "default"); err != nil {
+	if err := this.configMapApply(controllerInput, "default"); err != nil {
 		return err
 	}
-
-	// secret create
-	// NOTE: get it from the cloud providers as map[string]string
-	var secretKeys map[string][]byte // the tokens has to be in base64 form
 
 	var tokenSecret *corev1.Secret = &corev1.Secret{
 		TypeMeta: v1.TypeMeta{
@@ -65,7 +62,10 @@ func (this *Kubernetes) KsctlConfigMap(kubeconfig string, kubeconfigpath string,
 		},
 		Data: secretKeys,
 	}
-	fmt.Println(tokenSecret)
+
+	if err := this.secretApply(tokenSecret, "default"); err != nil {
+		return err
+	}
 	return nil
 
 }

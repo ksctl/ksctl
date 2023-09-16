@@ -9,6 +9,8 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/logger"
 
+	b64 "encoding/base64"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
@@ -119,6 +121,14 @@ type CivoProvider struct {
 	metadata
 
 	client CivoGo
+}
+
+// GetSecretTokens implements resources.CloudFactory.
+func (this *CivoProvider) GetSecretTokens(storage resources.StorageFactory) (map[string][]byte, error) {
+	str := b64.StdEncoding.EncodeToString([]byte(fetchAPIKey(storage)))
+	return map[string][]byte{
+		"CIVO_TOKEN": []byte(str), // use base64 conversion
+	}, nil
 }
 
 // GetStateFile implements resources.CloudFactory.

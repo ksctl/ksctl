@@ -145,6 +145,7 @@ type CloudFactory interface {
 	// GetStateFiles it returns the civo-state.json
 	// WARN: sensitive info can be present
 	GetStateFile(StorageFactory) (string, error)
+	GetSecretTokens(StorageFactory) (map[string][]byte, error)
 }
 
 type KubernetesFactory interface {

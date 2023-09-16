@@ -2,6 +2,7 @@ package k3s
 
 import (
 	"fmt"
+
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
@@ -31,6 +32,7 @@ func configLBscript(controlPlaneIPs []string) string {
 	script := `#!/bin/bash
 sudo apt update
 sudo apt install haproxy -y
+sleep 2s
 sudo systemctl start haproxy && sudo systemctl enable haproxy
 
 cat <<EOF > haproxy.cfg

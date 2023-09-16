@@ -33,6 +33,11 @@ type LocalProvider struct {
 	Metadata
 }
 
+// GetSecretTokens implements resources.CloudFactory.
+func (*LocalProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
+	panic("unimplemented")
+}
+
 // GetStateFile implements resources.CloudFactory.
 func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	panic("unimplemented")
