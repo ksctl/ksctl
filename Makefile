@@ -8,7 +8,7 @@ GOARCH_MACOS = arm64
 GOARCH_MACOS_INTEL = amd64
 
 docker_httpserver:
-	docker build -f containers/Dockerfile_httpserver -t ksctl-http . --no-cache
+	docker build -f containers/httpserver_slim/Dockerfile -t ksctl-http . --no-cache
 
 install_linux:
 	env GOOS=${GOOS_LINUX} GOARCH=${GOARCH_LINUX} ./builder.sh

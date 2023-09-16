@@ -1,52 +1,68 @@
 package main
 
 import (
-	"io"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers"
+	"github.com/kubesimplify/ksctl/api/utils"
+
+	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
+	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
+	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+)
+
+var (
+	cli        *resources.CobraCmd
+	controller controllers.Controller
 )
 
 type Metadata struct {
+
+	// // desired no of workerplane nodes
+	// NoCp *int32
+	// // desired no of workerplane nodes
+	// NoDs *int32
+	// // desired no of workerplane nodes
+	// NoMp *int32
+	// // virtual machine size for the controlplane
+	// VMSizeCp *string
+	// // virtual machine size for the datastore
+	// VMSizeDs *string
+	// // virtual machine size for the loadbalancer
+	// VMSizeLb *string
+
+	//https://github.com/go-playground/validator#strings use them to use for cloud to provide contains
+
 	// desired no of workerplane nodes
-	NoWp *int
-	// desired no of workerplane nodes
-	NoCp *int32
-	// desired no of workerplane nodes
-	NoDs *int32
-	// desired no of workerplane nodes
-	NoMp *int32
-	// virtual machine size for the controlplane
-	VMSizeCp *string
-	// virtual machine size for the datastore
-	VMSizeDs *string
+	NoWp int `json:"nowp"  binding:"required,min=0"`
+
 	// virtual machine size for the workerplane
-	VMSizeWp *string
-	// virtual machine size for the loadbalancer
-	VMSizeLb *string
+	VMSizeWp string `json:"vmsize"  binding:"required"`
+
 	// Cluster name
-	ClusterName string
+	ClusterName string `json:"clustername"  binding:"required"`
+
 	// Region
-	Region string
+	Region string `json:"region"  binding:"required"`
+
 	// cloud provider
-	Cloud string
+	Cloud string `json:"cloud"  binding:"required"`
+
 	// kubernetes distribution
-	Distro string
+	Distro string `json:"distro"  binding:"required"`
 }
 
 type Response struct {
 	// successful
-	OK *bool
+	OK bool
 	// reason of failure
-	Errors *string
+	Errors string
 	// response
 	Response any
-}
-
-type Health struct {
-	// message
-	Msg *string
 }
 
 func getHealth(c *gin.Context) {
@@ -56,24 +72,116 @@ func getHealth(c *gin.Context) {
 
 }
 
-func scaleUp(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "scaling up",
-	})
+func scaleUp(context *gin.Context) {
+	req := Metadata{}
+	// using BindJson method to serialize body with struct
+	if err := context.BindJSON(&req); err != nil {
+		_ = context.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 
+	cli = &resources.CobraCmd{}
+	controller = control_pkg.GenKsctlController()
+
+	cli.Client.Metadata.ClusterName = req.ClusterName
+	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	cli.Client.Metadata.K8sDistro = req.Distro
+
+	cli.Client.Metadata.K8sVersion = "1.27.1"
+	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
+		_ = context.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	cli.Client.Metadata.IsHA = true
+	cli.Client.Metadata.Region = req.Region
+	cli.Client.Metadata.Provider = req.Cloud
+
+	cli.Client.Metadata.WorkerPlaneNodeType = req.VMSizeWp
+	cli.Client.Metadata.NoWP = int(req.NoWp)
+
+	msg, err := controller.AddWorkerPlaneNode(&cli.Client)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+	} else {
+		context.JSON(http.StatusAccepted, &Response{OK: true, Response: msg})
+	}
 }
 
-func scaleDown(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "scaling up",
-	})
+func scaleDown(context *gin.Context) {
 
+	req := Metadata{}
+	// using BindJson method to serialize body with struct
+	if err := context.BindJSON(&req); err != nil {
+		_ = context.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	cli = &resources.CobraCmd{}
+	controller = control_pkg.GenKsctlController()
+
+	cli.Client.Metadata.ClusterName = req.ClusterName
+	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	cli.Client.Metadata.K8sDistro = req.Distro
+
+	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
+		_ = context.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	cli.Client.Metadata.IsHA = true
+	cli.Client.Metadata.Region = req.Region
+	cli.Client.Metadata.Provider = req.Cloud
+
+	cli.Client.Metadata.NoWP = int(req.NoWp)
+
+	// Return
+
+	msg, err := controller.DelWorkerPlaneNode(&cli.Client)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+	} else {
+		context.JSON(http.StatusAccepted, &Response{OK: true, Response: msg})
+	}
+}
+
+func getClusters(context *gin.Context) {
+
+	cli = &resources.CobraCmd{}
+
+	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+
+	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
+		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+		return
+	}
+
+	var printerTable []cloudController.AllClusterData
+
+	data, err := civo_pkg.GetRAWClusterInfos(cli.Client.Storage)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+		return
+	}
+	printerTable = append(printerTable, data...)
+
+	data, err = azure_pkg.GetRAWClusterInfos(cli.Client.Storage)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+		return
+	}
+	printerTable = append(printerTable, data...)
+
+	context.JSON(http.StatusAccepted, &Response{OK: true, Response: printerTable})
 }
 
 func main() {
 
-	f, _ := os.Create("gin.log")
-	gin.DefaultWriter = io.MultiWriter(f)
+	if err := os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, "/app/ksctl-data"); err != nil {
+		panic(err)
+	}
+
+	// f, _ := os.Create("gin.log")
+	// gin.DefaultWriter = io.MultiWriter(f)
 
 	gin.SetMode(gin.ReleaseMode)
 
@@ -85,40 +193,11 @@ func main() {
 
 	r.PUT("/scaledown", scaleDown)
 
+	r.GET("/list", getClusters)
+
 	_ = r.Run(":8080")
 }
 
-//
-// import (
-// 	"context"
-// 	"log"
-//
-// 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-// 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
-// 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
-// 	"github.com/kubesimplify/ksctl/api/resources"
-// 	"github.com/kubesimplify/ksctl/api/resources/controllers"
-// 	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-// 	"github.com/kubesimplify/ksctl/api/utils"
-// 	httpserver "github.com/kubesimplify/ksctl/httpserver/gen/httpserver"
-// )
-//
-// var (
-// 	cli        *resources.CobraCmd
-// 	controller controllers.Controller
-// )
-//
-// // httpserver service example implementation.
-// // The example methods log the requests and return zero values.
-// type httpserversrvc struct {
-// 	logger *log.Logger
-// }
-//
-// // NewHttpserver returns the httpserver service implementation.
-// func NewHttpserver(logger *log.Logger) httpserver.Service {
-// 	return &httpserversrvc{logger}
-// }
-//
 // // CreateHa implements create ha.
 // func (s *httpserversrvc) CreateHa(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
 //
@@ -198,123 +277,3 @@ func main() {
 // 	return
 // }
 //
-// // Scaledown implements scaledown.
-// func (s *httpserversrvc) Scaledown(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
-// 	cli = &resources.CobraCmd{}
-// 	controller = control_pkg.GenKsctlController()
-//
-// 	cli.Client.Metadata.ClusterName = p.ClusterName
-// 	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
-// 	cli.Client.Metadata.K8sDistro = p.Distro
-//
-// 	if _, err1 := control_pkg.InitializeStorageFactory(&cli.Client, true); err1 != nil {
-// 		err = err1
-// 		return
-// 	}
-//
-// 	cli.Client.Metadata.IsHA = true
-// 	cli.Client.Metadata.Region = p.Region
-// 	cli.Client.Metadata.Provider = p.Cloud
-//
-// 	cli.Client.Metadata.NoWP = int(*p.NoWp)
-//
-// 	// Return
-// 	ok := true
-// 	errStr := ""
-//
-// 	msg, err := controller.DelWorkerPlaneNode(&cli.Client)
-// 	if err != nil {
-// 		ok = false
-// 		errStr = err.Error()
-// 	}
-//
-// 	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
-// 	s.logger.Print(msg)
-//
-// 	return
-// }
-//
-// // Scaleup implements scaleup.
-// func (s *httpserversrvc) Scaleup(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
-// 	cli = &resources.CobraCmd{}
-// 	controller = control_pkg.GenKsctlController()
-//
-// 	cli.Client.Metadata.ClusterName = p.ClusterName
-// 	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
-// 	cli.Client.Metadata.K8sDistro = p.Distro
-//
-// 	cli.Client.Metadata.K8sVersion = "1.27.1"
-// 	if _, err1 := control_pkg.InitializeStorageFactory(&cli.Client, true); err1 != nil {
-// 		err = err1
-// 		return
-// 	}
-//
-// 	cli.Client.Metadata.IsHA = true
-// 	cli.Client.Metadata.Region = p.Region
-// 	cli.Client.Metadata.Provider = p.Cloud
-//
-// 	cli.Client.Metadata.WorkerPlaneNodeType = *p.VMSizeWp
-// 	cli.Client.Metadata.NoWP = int(*p.NoWp)
-//
-// 	// Return
-// 	ok := true
-// 	errStr := ""
-//
-// 	msg, err := controller.AddWorkerPlaneNode(&cli.Client)
-// 	if err != nil {
-// 		ok = false
-// 		errStr = err.Error()
-// 	}
-//
-// 	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
-// 	s.logger.Print(msg)
-//
-// 	return
-// }
-//
-// // GetHealth implements get health.
-// func (s *httpserversrvc) GetHealth(ctx context.Context) (res *httpserver.Health, err error) {
-// 	abcd := "ksctl server looks good"
-// 	res = &httpserver.Health{Msg: &abcd}
-// 	return
-// }
-//
-// // GetClusters implements get clusters.
-// func (s *httpserversrvc) GetClusters(ctx context.Context) (res *httpserver.Response, err error) {
-//
-// 	cli = &resources.CobraCmd{}
-//
-// 	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
-//
-// 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
-// 		panic(err)
-// 	}
-//
-// 	var printerTable []cloudController.AllClusterData
-// 	ok := true
-// 	data, err1 := civo_pkg.GetRAWClusterInfos(cli.Client.Storage)
-// 	if err1 != nil {
-// 		err = err1
-// 		ok = false
-// 		return
-// 	}
-// 	printerTable = append(printerTable, data...)
-//
-// 	data, err1 = azure_pkg.GetRAWClusterInfos(cli.Client.Storage)
-// 	if err1 != nil {
-// 		err = err1
-// 		ok = false
-// 		return
-// 	}
-//
-// 	printerTable = append(printerTable, data...)
-//
-// 	errStr := ""
-// 	if err != nil {
-// 		errStr = err.Error()
-// 	}
-//
-// 	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: printerTable}
-// 	s.logger.Print("httpserver.get clusters")
-// 	return
-// }
