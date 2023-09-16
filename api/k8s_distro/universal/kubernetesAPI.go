@@ -15,6 +15,7 @@ import (
 
 type Kubernetes struct {
 	Metadata            resources.Metadata
+	StorageDriver       resources.StorageFactory
 	config              *rest.Config
 	clientset           *kubernetes.Clientset
 	apiextensionsClient *clientset.Clientset

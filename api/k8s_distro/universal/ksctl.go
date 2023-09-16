@@ -1,13 +1,60 @@
 package universal
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/kubesimplify/ksctl/api/provider/azure"
+	"github.com/kubesimplify/ksctl/api/provider/civo"
+	"github.com/kubesimplify/ksctl/api/utils"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, cloudstate, k8sstate string, secretKeys map[string][]byte) error {
+	rawCloudstate := []byte(cloudstate)
+
+	var sshPrivateKeyPath string
+	var sshPubKeyPath string
+	var clusterDir string
+
+	switch this.Metadata.Provider {
+	case utils.CLOUD_CIVO:
+		var data *civo.StateConfiguration
+		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
+			return err
+		}
+		sshPrivateKeyPath = data.SSHPrivateKeyLoc
+		clusterDir = data.ClusterName + " " + data.Region
+
+	case utils.CLOUD_AZURE:
+		var data *azure.StateConfiguration
+		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
+			return err
+		}
+
+		sshPrivateKeyPath = data.SSHPrivateKeyLoc
+		clusterDir = data.ClusterName + " " + data.ResourceGroupName + " " + data.Region
+	}
+
+	sshPubKeyPath = sshPrivateKeyPath + ".pub"
+
+	sshPrivate, err := this.StorageDriver.Path(sshPrivateKeyPath).Load()
+	if err != nil {
+		return err
+	}
+
+	sshPub, err := this.StorageDriver.Path(sshPubKeyPath).Load()
+	if err != nil {
+		return err
+	}
+
+	// reconstruct according to the http server
+	newPath := fmt.Sprintf("/app/ksctl-data/config/%s/ha/%s", this.Metadata.Provider, clusterDir)
+
+	fmt.Println(kubeconfigpath)
+	fmt.Println("path for configuring the deployment", newPath)
+
 	var state *corev1.ConfigMap = &corev1.ConfigMap{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -20,7 +67,8 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 			"cloud-state.json": cloudstate,
 			"k8s-state.json":   k8sstate,
 			"kubeconfig":       kubeconfig,
-			"kubeconfigpath":   kubeconfigpath,
+			"keypair.pub":      string(sshPub),
+			"keypair":          string(sshPrivate),
 		},
 	}
 

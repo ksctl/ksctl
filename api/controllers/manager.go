@@ -245,7 +245,8 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		}
 
 		kubernetesClient := universal.Kubernetes{
-			Metadata: client.Metadata,
+			Metadata:      client.Metadata,
+			StorageDriver: client.Storage,
 		}
 		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
 			return "", err
