@@ -21,10 +21,8 @@ COPY --from=builder /app/ksctlserver /app/ksctlserver
 
 RUN apk add openssh
 
-#RUN mkdir -p /app/ksctl-data/config/civo/ha && \
-#	mkdir /app/ksctl-data/config/civo/managed && \
-#	mkdir -p /app/ksctl-data/config/azure/managed && \
-#	mkdir /app/ksctl-data/config/azure/ha
+RUN mkdir -p /app/ksctl-data/config/civo/ha && \
+	mkdir -p /app/ksctl-data/config/azure/ha
 
 ENTRYPOINT [ "/app/ksctlserver" ]
 

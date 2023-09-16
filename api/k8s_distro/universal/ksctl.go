@@ -8,6 +8,8 @@ import (
 	"github.com/kubesimplify/ksctl/api/provider/civo"
 	"github.com/kubesimplify/ksctl/api/utils"
 	corev1 "k8s.io/api/core/v1"
+
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -52,8 +54,97 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	// reconstruct according to the http server
 	newPath := fmt.Sprintf("/app/ksctl-data/config/%s/ha/%s", this.Metadata.Provider, clusterDir)
 
-	fmt.Println(kubeconfigpath)
-	fmt.Println("path for configuring the deployment", newPath)
+	fmt.Println("path for container -> ", newPath)
+
+	replicas := int32(1)
+
+	var ksctlServer *appsv1.Deployment = &appsv1.Deployment{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name: "ksctl-server",
+			Labels: map[string]string{
+				"app": "ksctl",
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &v1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "ksctl",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: v1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "ksctl",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						corev1.Container{
+							Name:            "main",
+							Image:           "docker.io/dipugodocker/kubesimplify:ksctl-slim-v1",
+							ImagePullPolicy: corev1.PullAlways,
+
+							EnvFrom: []corev1.EnvFromSource{
+								corev1.EnvFromSource{
+									Prefix: "CIVO_TOKEN",
+									SecretRef: &corev1.SecretEnvSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: "cloud-secret",
+										},
+									},
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								corev1.VolumeMount{
+									Name:      "state-files",
+									MountPath: newPath,
+								},
+								// corev1.VolumeMount{
+								// 	Name:      "state-files-cloud",
+								// 	MountPath: newPath + "/cloud-state.json",
+								// },
+								// corev1.VolumeMount{
+								// 	Name:      "state-files-k8s",
+								// 	MountPath: newPath + "/k8s-state.json",
+								// },
+								// corev1.VolumeMount{
+								// 	Name:      "state-files-sshpub",
+								// 	MountPath: newPath + "/keypair.pub",
+								// },
+								// corev1.VolumeMount{
+								// 	Name:      "state-files-sshprivate",
+								// 	MountPath: newPath + "/keypair",
+								// },
+							},
+							Ports: []corev1.ContainerPort{
+								corev1.ContainerPort{
+									Name:          "server",
+									ContainerPort: 80,
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						corev1.Volume{
+							Name: "state-files",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "ksctl-state",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	var state *corev1.ConfigMap = &corev1.ConfigMap{
 		TypeMeta: v1.TypeMeta{
@@ -112,6 +203,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	}
 
 	if err := this.secretApply(tokenSecret, "default"); err != nil {
+		return err
+	}
+
+	if err := this.deploymentApply(ksctlServer, "default"); err != nil {
 		return err
 	}
 	return nil
