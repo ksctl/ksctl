@@ -7,12 +7,6 @@ GOARCH_WINDOWS = amd64
 GOARCH_MACOS = arm64
 GOARCH_MACOS_INTEL = amd64
 
-gen_httpserver:
-	goa gen github.com/kubesimplify/ksctl/httpserver/design -o httpserver
-
-build_httpserver:
-	go build -v -o ksctlserver httpserver/cmd/server/*
-
 docker_httpserver:
 	docker build -f containers/Dockerfile_httpserver -t ksctl-http . --no-cache
 
