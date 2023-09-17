@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -29,7 +30,6 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 
 	// TODO: make the node have toleration for CriticalAddonsOnly=true:NoExecute to schedule in one of the controlplane
 
-	// TODO: find some way to figure it out
 	var destroyer *corev1.Pod = &corev1.Pod{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Pod",
@@ -39,21 +39,33 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 			Name: "scale-to-0",
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyOnFailure,
-			Containers: []corev1.Container{
-				corev1.Container{
-					Name:    "destroyer",
-					Image:   "alpine",
-					Command: []string{"sh", "-c"},
-					Args:    []string{fmt.Sprintf("apk add curl && sleep 2s && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 1, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
-				},
-			},
+
 			Tolerations: []corev1.Toleration{
 				corev1.Toleration{
 					Key:      "CriticalAddonsOnly",
 					Value:    "true",
 					Operator: "Equal",
 					Effect:   "NoExecute",
+				},
+			},
+			RestartPolicy: corev1.RestartPolicyNever,
+			Containers: []corev1.Container{
+				corev1.Container{
+					Name:    "destroyer",
+					Image:   "alpine",
+					Command: []string{"sh", "-c"},
+					Args:    []string{fmt.Sprintf("apk add curl && sleep 2s && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 1, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
+
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("50m"),
+							corev1.ResourceMemory: resource.MustParse("50Mi"),
+						},
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("10m"),
+							corev1.ResourceMemory: resource.MustParse("10Mi"),
+						},
+					},
 				},
 			},
 		},
@@ -71,14 +83,14 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 			return err
 		}
 		if status.Status.Phase == corev1.PodSucceeded {
-			this.StorageDriver.Logger().Success(fmt.Sprintf("Status of Job %v", status.Status.Phase))
+			this.StorageDriver.Logger().Success(fmt.Sprintf("Status of Job [%v]", status.Status.Phase))
 			break
 		}
 		count++
 		if count == utils.MAX_RETRY_COUNT {
 			return fmt.Errorf("max retry reached")
 		}
-		this.StorageDriver.Logger().Warn(fmt.Sprintf("retrying current no of success %v", status.Status.Phase))
+		this.StorageDriver.Logger().Warn(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
 		time.Sleep(10 * time.Second)
 	}
 
@@ -287,6 +299,16 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 								corev1.ContainerPort{
 									Name:          "server",
 									ContainerPort: 80,
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("250m"),
+									corev1.ResourceMemory: resource.MustParse("250Mi"),
+								},
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("50m"),
+									corev1.ResourceMemory: resource.MustParse("50Mi"),
 								},
 							},
 						},
