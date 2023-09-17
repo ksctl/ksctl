@@ -17,7 +17,9 @@ LABEL MAINTAINER="dipankar das"
 
 RUN apk add openssh
 
-USER 1000:1000
+RUN adduser --disabled-password -s /bin/sh -u 1000 ksctl
+
+USER ksctl
 
 WORKDIR /app
 

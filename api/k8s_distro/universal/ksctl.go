@@ -27,10 +27,6 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	provider := this.Metadata.Provider
 	distro := this.Metadata.K8sDistro
 
-	// FIXME: as this pod will run on any node
-	// so when that particular node gets deleted it will cause the pod to loose
-	// so the error will come that it was unsuccessful
-
 	// TODO: make the node have toleration for CriticalAddonsOnly=true:NoExecute to schedule in one of the controlplane
 
 	// TODO: find some way to figure it out
@@ -50,6 +46,14 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 					Image:   "alpine",
 					Command: []string{"sh", "-c"},
 					Args:    []string{fmt.Sprintf("apk add curl && sleep 2s && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 1, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
+				},
+			},
+			Tolerations: []corev1.Toleration{
+				corev1.Toleration{
+					Key:      "CriticalAddonsOnly",
+					Value:    "true",
+					Operator: "Equal",
+					Effect:   "NoExecute",
 				},
 			},
 		},
@@ -234,6 +238,15 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 					},
 				},
 				Spec: corev1.PodSpec{
+					Tolerations: []corev1.Toleration{
+						corev1.Toleration{
+							Key:      "CriticalAddonsOnly",
+							Value:    "true",
+							Operator: "Equal",
+							Effect:   "NoExecute",
+						},
+					},
+
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsUser:  &userid,
 						RunAsGroup: &groupid,
