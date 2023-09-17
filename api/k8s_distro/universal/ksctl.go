@@ -17,8 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// TODO: make use of different namsepace for the ksctl workloads
-// also try to resolve the deletion process
+const (
+	KSCTL_SYS_NAMESPACE = "ksctl"
+)
 
 func (this *Kubernetes) DeleteResourcesFromController() error {
 	clusterName := this.Metadata.ClusterName
@@ -52,14 +53,14 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		},
 	}
 
-	if err := this.PodApply(destroyer, "default"); err != nil {
+	if err := this.PodApply(destroyer, KSCTL_SYS_NAMESPACE); err != nil {
 		return err
 	}
 
 	count := 0
 	for {
 
-		status, err := this.clientset.CoreV1().Pods("default").Get(context.Background(), destroyer.ObjectMeta.Name, v1.GetOptions{})
+		status, err := this.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, v1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -85,6 +86,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	var sshPrivateKeyPath string
 	var sshPubKeyPath string
 	var clusterDir string
+
+	if err := this.namespaceCreate(KSCTL_SYS_NAMESPACE); err != nil {
+		return err
+	}
 
 	switch this.Metadata.Provider {
 	case utils.CLOUD_CIVO:
@@ -147,7 +152,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
-	if err := this.configMapApply(state, "default"); err != nil {
+	if err := this.configMapApply(state, KSCTL_SYS_NAMESPACE); err != nil {
 		return err
 	}
 
@@ -171,7 +176,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
-	if err := this.configMapApply(controllerInput, "default"); err != nil {
+	if err := this.configMapApply(controllerInput, KSCTL_SYS_NAMESPACE); err != nil {
 		return err
 	}
 
@@ -186,7 +191,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		Data: secretKeys,
 	}
 
-	if err := this.secretApply(tokenSecret, "default"); err != nil {
+	if err := this.secretApply(tokenSecret, KSCTL_SYS_NAMESPACE); err != nil {
 		return err
 	}
 
@@ -250,20 +255,6 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 							Name:            "main",
 							Image:           "docker.io/dipugodocker/kubesimplify:ksctl-slim-v1",
 							ImagePullPolicy: corev1.PullAlways,
-
-							Env: []corev1.EnvVar{ // TODO: make for azure
-								corev1.EnvVar{
-									Name: "CIVO_TOKEN",
-									ValueFrom: &corev1.EnvVarSource{
-										SecretKeyRef: &corev1.SecretKeySelector{
-											Key: "CIVO_TOKEN",
-											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "cloud-secret",
-											},
-										},
-									},
-								},
-							},
 							VolumeMounts: []corev1.VolumeMount{
 								corev1.VolumeMount{
 									Name:      "main-data",
@@ -284,7 +275,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
-										Name: "ksctl-state",
+										Name: state.ObjectMeta.Name,
 									},
 								},
 							},
@@ -301,7 +292,71 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
-	if err := this.deploymentApply(ksctlServer, "default"); err != nil {
+	switch this.Metadata.Provider {
+	case utils.CLOUD_CIVO:
+		ksctlServer.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{
+			corev1.EnvVar{
+				Name: "CIVO_TOKEN",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						Key: "CIVO_TOKEN",
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: tokenSecret.ObjectMeta.Name,
+						},
+					},
+				},
+			},
+		}
+	case utils.CLOUD_AZURE:
+		ksctlServer.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{
+			corev1.EnvVar{
+				Name: "AZURE_TENANT_ID",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						Key: "AZURE_TENANT_ID",
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: tokenSecret.ObjectMeta.Name,
+						},
+					},
+				},
+			},
+			corev1.EnvVar{
+				Name: "AZURE_SUBSCRIPTION_ID",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						Key: "AZURE_SUBSCRIPTION_ID",
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: tokenSecret.ObjectMeta.Name,
+						},
+					},
+				},
+			},
+			corev1.EnvVar{
+				Name: "AZURE_CLIENT_ID",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						Key: "AZURE_CLIENT_ID",
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: tokenSecret.ObjectMeta.Name,
+						},
+					},
+				},
+			},
+			corev1.EnvVar{
+				Name: "AZURE_CLIENT_SECRET",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						Key: "AZURE_CLIENT_SECRET",
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: tokenSecret.ObjectMeta.Name,
+						},
+					},
+				},
+			},
+		}
+	}
+
+	if err := this.deploymentApply(ksctlServer, KSCTL_SYS_NAMESPACE); err != nil {
 		return err
 	}
 
@@ -331,7 +386,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
-	if err := this.serviceApply(serverService, "default"); err != nil {
+	if err := this.serviceApply(serverService, KSCTL_SYS_NAMESPACE); err != nil {
 		return err
 	}
 

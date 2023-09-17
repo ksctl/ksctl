@@ -46,6 +46,21 @@ func (this *Kubernetes) serviceApply(o *corev1.Service, ns string) error {
 	return nil
 }
 
+func (this *Kubernetes) namespaceCreate(ns string) error {
+
+	if _, err := this.clientset.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: ns}}, v1.CreateOptions{}); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			_, err = this.clientset.CoreV1().Namespaces().Update(context.Background(), &corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: ns}}, v1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
 func (this *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
 
 	_, err := this.clientset.CoreV1().Secrets(ns).Create(context.Background(), o, v1.CreateOptions{})
