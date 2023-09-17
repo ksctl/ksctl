@@ -276,10 +276,49 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_DELETE, fakeClient); err != nil {
 		return "", err
 	}
+
+	// TODO: before removing resources from the local we must remove the extra resources allocated by the controller
+	// make a /scaledown PUT request with noWP = 0
+
+	if len(os.Getenv(utils.KSCTL_FAKE_FLAG)) == 0 {
+
+		// find a better way to get the kubeconfig location
+
+		err := kubernetes.HydrateK8sDistro(client)
+		if err != nil {
+			return "", err
+		}
+		var payload cloudController.CloudResourceState
+		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+
+		err = client.Distro.InitState(payload, client.Storage, utils.OPERATION_STATE_GET)
+		if err != nil {
+			return "", err
+		}
+		kubeconfigPath, _, err := client.Distro.GetKubeConfig(client.Storage)
+		if err != nil {
+			return "", err
+		}
+
+		kubernetesClient := universal.Kubernetes{
+			Metadata:      client.Metadata,
+			StorageDriver: client.Storage,
+		}
+		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+			return "", err
+		}
+
+		if err = kubernetesClient.DeleteResourcesFromController(); err != nil {
+			return "", err
+		}
+		client.Storage.Logger().Success("[ksctl] scaled the cluster down to 0")
+	}
+
 	cloudResErr := cloud.DeleteHACluster(client)
 	if cloudResErr != nil {
 		return "", cloudResErr
 	}
+
 	return "[ksctl] deleted HA cluster", nil
 }
 

@@ -27,6 +27,25 @@ func (this *Kubernetes) configMapApply(o *corev1.ConfigMap, ns string) error {
 	return nil
 }
 
+func (this *Kubernetes) serviceApply(o *corev1.Service, ns string) error {
+
+	_, err := this.clientset.CoreV1().Services(ns).Create(context.Background(), o, v1.CreateOptions{})
+
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+
+			_, err = this.clientset.CoreV1().Services(ns).Update(context.Background(), o, v1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
 func (this *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
 
 	_, err := this.clientset.CoreV1().Secrets(ns).Create(context.Background(), o, v1.CreateOptions{})
@@ -35,6 +54,25 @@ func (this *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
 		if apierrors.IsAlreadyExists(err) {
 
 			_, err = this.clientset.CoreV1().Secrets(ns).Update(context.Background(), o, v1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func (this *Kubernetes) PodApply(o *corev1.Pod, ns string) error {
+
+	_, err := this.clientset.CoreV1().Pods(ns).Create(context.Background(), o, v1.CreateOptions{})
+
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+
+			_, err = this.clientset.CoreV1().Pods(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
