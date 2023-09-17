@@ -38,22 +38,22 @@ type Metadata struct {
 	//https://github.com/go-playground/validator#strings use them to use for cloud to provide contains
 
 	// desired no of workerplane nodes
-	NoWp int `json:"nowp"  binding:"required,min=0"`
+	NoWp int `json:"nowp"`
 
 	// virtual machine size for the workerplane
-	VMSizeWp string `json:"vmsize"  binding:"required"`
+	VMSizeWp string `json:"vmsize"`
 
 	// Cluster name
-	ClusterName string `json:"clustername"  binding:"required"`
+	ClusterName string `json:"clustername"`
 
 	// Region
-	Region string `json:"region"  binding:"required"`
+	Region string `json:"region"`
 
 	// cloud provider
-	Cloud string `json:"cloud"  binding:"required"`
+	Cloud string `json:"cloud"`
 
 	// kubernetes distribution
-	Distro string `json:"distro"  binding:"required"`
+	Distro string `json:"distro"`
 }
 
 type Response struct {

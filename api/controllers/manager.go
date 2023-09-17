@@ -277,8 +277,8 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return "", err
 	}
 
-	// TODO: before removing resources from the local we must remove the extra resources allocated by the controller
-	// make a /scaledown PUT request with noWP = 0
+	// NOTE: before removing resources from the local we must remove the extra resources allocated by the controller
+	// make a /scaledown PUT request with noWP = 1
 
 	if len(os.Getenv(utils.KSCTL_FAKE_FLAG)) == 0 {
 
@@ -311,7 +311,11 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		if err = kubernetesClient.DeleteResourcesFromController(); err != nil {
 			return "", err
 		}
-		client.Storage.Logger().Success("[ksctl] scaled the cluster down to 0")
+
+		// NOTE: explict make the count of the workernodes as 1 as we need one schedulable workload to test of the operation was successful
+		if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, 1, true); err != nil {
+			return "", err
+		}
 	}
 
 	cloudResErr := cloud.DeleteHACluster(client)

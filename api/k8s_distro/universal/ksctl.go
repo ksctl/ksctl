@@ -22,6 +22,12 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	region := this.Metadata.Region
 	provider := this.Metadata.Provider
 	distro := this.Metadata.K8sDistro
+
+	// FIXME: as this pod will run on any node
+	// so when that particular node gets deleted it will cause the pod to loose
+	// so the error will come that it was unsuccessful
+
+	// TODO: find some way to figure it out
 	var destroyer *corev1.Pod = &corev1.Pod{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Pod",
@@ -31,13 +37,13 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 			Name: "scale-to-0",
 		},
 		Spec: corev1.PodSpec{
+			RestartPolicy: corev1.RestartPolicyOnFailure,
 			Containers: []corev1.Container{
 				corev1.Container{
 					Name:    "destroyer",
 					Image:   "alpine",
 					Command: []string{"sh", "-c"},
-					Args:    []string{fmt.Sprintf("apk add curl && curl -X PUT ksctl-server:8080/scaledown -d '{\"nowp\": 0, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\", \"vmsize\": \" \"}'", clusterName, region, provider, distro)},
-					// TODO: add restart policy as never
+					Args:    []string{fmt.Sprintf("apk add curl && sleep 2s && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 1, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
 				},
 			},
 		},
@@ -47,15 +53,26 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		return err
 	}
 
-	// make the status check better as to when resume deletion of rest of the components
-	status, err := this.clientset.CoreV1().Pods("default").Get(context.Background(), "scale-to-0", v1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	fmt.Println(status.String())
-	// wait for the resources to be destroyed
-	time.Sleep(1 * time.Minute)
+	count := 0
+	for {
 
+		status, err := this.clientset.CoreV1().Pods("default").Get(context.Background(), destroyer.ObjectMeta.Name, v1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if status.Status.Phase == corev1.PodSucceeded {
+			this.StorageDriver.Logger().Success(fmt.Sprintf("Status of Job %v", status.Status.Phase))
+			break
+		}
+		count++
+		if count == utils.MAX_RETRY_COUNT {
+			return fmt.Errorf("max retry reached")
+		}
+		this.StorageDriver.Logger().Warn(fmt.Sprintf("retrying current no of success %v", status.Status.Phase))
+		time.Sleep(10 * time.Second)
+	}
+
+	this.StorageDriver.Logger().Success("[ksctl] scaled the cluster down to 1")
 	return nil
 }
 
@@ -231,7 +248,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 							Image:           "docker.io/dipugodocker/kubesimplify:ksctl-slim-v1",
 							ImagePullPolicy: corev1.PullAlways,
 
-							Env: []corev1.EnvVar{
+							Env: []corev1.EnvVar{ // TODO: make for azure
 								corev1.EnvVar{
 									Name: "CIVO_TOKEN",
 									ValueFrom: &corev1.EnvVarSource{

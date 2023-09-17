@@ -438,7 +438,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 		}
 		return len(civoCloudState.InstanceIDs.WorkerNodes), nil
 	}
-	if no >= 0 {
+	if no >= 1 {
 		obj.metadata.noWP = no
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
