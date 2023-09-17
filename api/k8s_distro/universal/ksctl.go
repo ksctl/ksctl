@@ -31,6 +31,8 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	// so when that particular node gets deleted it will cause the pod to loose
 	// so the error will come that it was unsuccessful
 
+	// TODO: make the node have toleration for CriticalAddonsOnly=true:NoExecute to schedule in one of the controlplane
+
 	// TODO: find some way to figure it out
 	var destroyer *corev1.Pod = &corev1.Pod{
 		TypeMeta: v1.TypeMeta{
@@ -203,7 +205,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	execNewPath := strings.Join(strings.Split(newPath, " "), "\\ ")
 	rootFolder := fmt.Sprintf("/app/ksctl-data/config/%s/ha", this.Metadata.Provider)
 
+	userid := int64(1000)
+	groupid := int64(1000)
 	// make it cloud provider specific
+	// TODO: make the node have toleration for CriticalAddonsOnly=true:NoExecute to schedule in one of the controlplane
 	var ksctlServer *appsv1.Deployment = &appsv1.Deployment{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Deployment",
@@ -229,6 +234,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 					},
 				},
 				Spec: corev1.PodSpec{
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsUser:  &userid,
+						RunAsGroup: &groupid,
+					},
 					InitContainers: []corev1.Container{
 						corev1.Container{
 							Name:    "mount-points",
@@ -253,7 +262,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 					Containers: []corev1.Container{
 						corev1.Container{
 							Name:            "main",
-							Image:           "docker.io/dipugodocker/kubesimplify:ksctl-slim-v1",
+							Image:           "docker.io/dipugodocker/kubesimplify:ksctl-non-root-slim-v1",
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								corev1.VolumeMount{
