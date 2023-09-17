@@ -17,6 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// TODO: make use of different namsepace for the ksctl workloads
+// also try to resolve the deletion process
+
 func (this *Kubernetes) DeleteResourcesFromController() error {
 	clusterName := this.Metadata.ClusterName
 	region := this.Metadata.Region
