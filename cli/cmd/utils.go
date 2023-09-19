@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +15,7 @@ func createManaged(approval bool) {
 	cli.Client.Metadata.NoMP = noMP
 
 	cli.Client.Metadata.ClusterName = clusterName
-	cli.Client.Metadata.K8sDistro = distro
+	cli.Client.Metadata.K8sDistro = KsctlKubernetes(distro)
 	cli.Client.Metadata.K8sVersion = k8sVer
 	cli.Client.Metadata.Region = region
 
@@ -38,7 +38,7 @@ func createHA(approval bool) {
 	cli.Client.Metadata.IsHA = true
 
 	cli.Client.Metadata.ClusterName = clusterName
-	cli.Client.Metadata.K8sDistro = distro
+	cli.Client.Metadata.K8sDistro = KsctlKubernetes(distro)
 	cli.Client.Metadata.K8sVersion = k8sVer
 	cli.Client.Metadata.Region = region
 
@@ -69,7 +69,7 @@ func createHA(approval bool) {
 func deleteManaged(approval bool) {
 
 	cli.Client.Metadata.ClusterName = clusterName
-	cli.Client.Metadata.K8sDistro = distro
+	cli.Client.Metadata.K8sDistro = KsctlKubernetes(distro)
 	cli.Client.Metadata.Region = region
 
 	if err := deleteApproval(approval); err != nil {
@@ -89,7 +89,7 @@ func deleteHA(approval bool) {
 	cli.Client.Metadata.IsHA = true
 
 	cli.Client.Metadata.ClusterName = clusterName
-	cli.Client.Metadata.K8sDistro = distro
+	cli.Client.Metadata.K8sDistro = KsctlKubernetes(distro)
 	cli.Client.Metadata.Region = region
 
 	if err := deleteApproval(approval); err != nil {
@@ -224,9 +224,9 @@ func noOfDSFlag(f *cobra.Command) {
 	f.Flags().IntVarP(&noDS, "noDS", "", -1, "Number of DataStore Nodes")
 }
 
-func SetDefaults(provider, clusterType string) {
-	switch provider + clusterType {
-	case utils.CLOUD_LOCAL + utils.CLUSTER_TYPE_MANG:
+func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
+	switch string(provider) + string(clusterType) {
+	case string(CLOUD_LOCAL) + string(CLUSTER_TYPE_MANG):
 		if noMP == -1 {
 			noMP = 2
 		}
@@ -234,10 +234,10 @@ func SetDefaults(provider, clusterType string) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = utils.K8S_K3S
+			distro = string(K8S_K3S)
 		}
 
-	case utils.CLOUD_AZURE + utils.CLUSTER_TYPE_MANG:
+	case string(CLOUD_AZURE) + string(CLUSTER_TYPE_MANG):
 		if len(nodeSizeMP) == 0 {
 			nodeSizeMP = "Standard_DS2_v2"
 		}
@@ -251,10 +251,10 @@ func SetDefaults(provider, clusterType string) {
 			k8sVer = "1.27"
 		}
 		if len(distro) == 0 {
-			distro = utils.K8S_K3S
+			distro = string(K8S_K3S)
 		}
 
-	case utils.CLOUD_CIVO + utils.CLUSTER_TYPE_MANG:
+	case string(CLOUD_CIVO) + string(CLUSTER_TYPE_MANG):
 		if len(nodeSizeMP) == 0 {
 			nodeSizeMP = "g4s.kube.small"
 		}
@@ -268,10 +268,10 @@ func SetDefaults(provider, clusterType string) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = utils.K8S_K3S
+			distro = string(K8S_K3S)
 		}
 
-	case utils.CLOUD_AZURE + utils.CLUSTER_TYPE_HA:
+	case string(CLOUD_AZURE) + string(CLUSTER_TYPE_HA):
 		if len(nodeSizeCP) == 0 {
 			nodeSizeCP = "Standard_F2s"
 		}
@@ -300,10 +300,10 @@ func SetDefaults(provider, clusterType string) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = utils.K8S_K3S
+			distro = string(K8S_K3S)
 		}
 
-	case utils.CLOUD_CIVO + utils.CLUSTER_TYPE_HA:
+	case string(CLOUD_CIVO) + string(CLUSTER_TYPE_HA):
 		if len(nodeSizeCP) == 0 {
 			nodeSizeCP = "g3.small"
 		}
@@ -332,7 +332,7 @@ func SetDefaults(provider, clusterType string) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = utils.K8S_K3S
+			distro = string(K8S_K3S)
 		}
 	}
 }

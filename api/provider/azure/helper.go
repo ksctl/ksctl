@@ -7,6 +7,7 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 func GetInputCredential(storage resources.StorageFactory) error {
@@ -60,19 +61,19 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	//}
 	// ADD SOME PING method to validate credentials
 
-	if err := utils.SaveCred(storage, apiStore, utils.CLOUD_AZURE); err != nil {
+	if err := utils.SaveCred(storage, apiStore, CLOUD_AZURE); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func generatePath(flag int, path ...string) string {
-	return utils.GetPath(flag, utils.CLOUD_AZURE, path...)
+func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
+	return utils.GetPath(flag, CLOUD_AZURE, clusterType, path...)
 }
 
 func saveStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)
 	rawState, err := convertStateToBytes(*azureCloudState)
 	if err != nil {
 		return err
@@ -81,7 +82,7 @@ func saveStateHelper(storage resources.StorageFactory) error {
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
@@ -92,7 +93,7 @@ func loadStateHelper(storage resources.StorageFactory) error {
 
 func saveKubeconfigHelper(storage resources.StorageFactory, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
-	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	path := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
 }
@@ -110,23 +111,23 @@ func convertStateFromBytes(raw []byte) error {
 	return nil
 }
 
-func printKubeconfig(storage resources.StorageFactory, operation string) {
+func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
-	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {
-		case "create":
+		case OPERATION_STATE_CREATE:
 			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
-		case "delete":
+		case OPERATION_STATE_DELETE:
 			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
 		}
 	case "linux", "macos":
 		switch operation {
-		case "create":
+		case OPERATION_STATE_CREATE:
 			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
-		case "delete":
+		case OPERATION_STATE_DELETE:
 			env = "unset KUBECONFIG"
 		}
 	}

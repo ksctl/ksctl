@@ -8,11 +8,11 @@ import (
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
 
 	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 var (
@@ -84,8 +84,8 @@ func scaleUp(context *gin.Context) {
 	controller = control_pkg.GenKsctlController()
 
 	cli.Client.Metadata.ClusterName = req.ClusterName
-	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
-	cli.Client.Metadata.K8sDistro = req.Distro
+	cli.Client.Metadata.StateLocation = STORE_LOCAL
+	cli.Client.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
 
 	cli.Client.Metadata.K8sVersion = "1.27.1"
 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
@@ -95,7 +95,7 @@ func scaleUp(context *gin.Context) {
 
 	cli.Client.Metadata.IsHA = true
 	cli.Client.Metadata.Region = req.Region
-	cli.Client.Metadata.Provider = req.Cloud
+	cli.Client.Metadata.Provider = KsctlCloud(req.Cloud)
 
 	cli.Client.Metadata.WorkerPlaneNodeType = req.VMSizeWp
 	cli.Client.Metadata.NoWP = int(req.NoWp)
@@ -120,8 +120,8 @@ func scaleDown(context *gin.Context) {
 	controller = control_pkg.GenKsctlController()
 
 	cli.Client.Metadata.ClusterName = req.ClusterName
-	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
-	cli.Client.Metadata.K8sDistro = req.Distro
+	cli.Client.Metadata.StateLocation = STORE_LOCAL
+	cli.Client.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
 
 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
 		_ = context.AbortWithError(http.StatusInternalServerError, err)
@@ -130,7 +130,7 @@ func scaleDown(context *gin.Context) {
 
 	cli.Client.Metadata.IsHA = true
 	cli.Client.Metadata.Region = req.Region
-	cli.Client.Metadata.Provider = req.Cloud
+	cli.Client.Metadata.Provider = KsctlCloud(req.Cloud)
 
 	cli.Client.Metadata.NoWP = int(req.NoWp)
 
@@ -148,7 +148,7 @@ func getClusters(context *gin.Context) {
 
 	cli = &resources.CobraCmd{}
 
-	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	cli.Client.Metadata.StateLocation = STORE_LOCAL
 
 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
@@ -176,7 +176,7 @@ func getClusters(context *gin.Context) {
 
 func main() {
 
-	if err := os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, "/app/ksctl-data"); err != nil {
+	if err := os.Setenv(string(KSCTL_TEST_DIR_ENABLED), "/app/ksctl-data"); err != nil {
 		panic(err)
 	}
 

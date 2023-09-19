@@ -10,6 +10,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -18,35 +19,29 @@ var (
 )
 
 func TestConsts(t *testing.T) {
-	assert.Equal(t, CLOUD_CIVO, "civo", "civo constant not correct assigned")
-	assert.Equal(t, CLOUD_AZURE, "azure", "azure constant not correct assgined")
-	assert.Equal(t, CLOUD_LOCAL, "local", "local constant not correct assgined")
-	assert.Equal(t, CLOUD_AWS, "aws", "aws constant not correct assgined")
-
-	assert.Equal(t, K8S_K3S, "k3s", "k3s constant not correct assgined")
-	assert.Equal(t, K8S_KUBEADM, "kubeadm", "kubeadm constant not correct assgined")
-
-	assert.Equal(t, STORE_LOCAL, "local", "local constant not correct assgined")
-	assert.Equal(t, STORE_REMOTE, "remote", "remote constant not correct assgined")
-
-	assert.Equal(t, ROLE_CP, "controlplane", "controlplane constant not correct assgined")
-	assert.Equal(t, ROLE_LB, "loadbalancer", "loadbalancer constant not correct assgined")
-	assert.Equal(t, ROLE_DS, "datastore", "datastore constant not correct assgined")
-	assert.Equal(t, ROLE_WP, "workerplane", "workerplane constant not correct assgined")
-
-	assert.Equal(t, CLUSTER_TYPE_HA, "ha", "HA constant not correct assgined")
-	assert.Equal(t, CLUSTER_TYPE_MANG, "managed", "Managed constant not correct assgined")
-
-	assert.Equal(t, OPERATION_STATE_CREATE, "create", "operation create constant not correct assgined")
-	assert.Equal(t, OPERATION_STATE_GET, "get", "operation get constant not correct assgined")
-	assert.Equal(t, OPERATION_STATE_DELETE, "delete", "operation delete constant not correct assgined")
-
-	assert.Equal(t, CLUSTER_PATH, 1, "cluster_path constant not correct assgined")
-	assert.Equal(t, OTHER_PATH, 3, "other_path constant not correct assgined")
-	assert.Equal(t, SSH_PATH, 2, "ssh_path constant not correct assgined")
-	assert.Equal(t, CREDENTIAL_PATH, 0, "credential_path constant not correct assgined")
-	assert.Equal(t, EXEC_WITHOUT_OUTPUT, 0, "exec_without_output constant not correct assgined")
-	assert.Equal(t, EXEC_WITH_OUTPUT, 1, "exec_without_output constant not correct assgined")
+	assert.Equal(t, string(CLOUD_CIVO), "civo", "civo constant not correct assigned")
+	assert.Equal(t, string(CLOUD_AZURE), "azure", "azure constant not correct assgined")
+	assert.Equal(t, string(CLOUD_LOCAL), "local", "local constant not correct assgined")
+	assert.Equal(t, string(CLOUD_AWS), "aws", "aws constant not correct assgined")
+	assert.Equal(t, string(K8S_K3S), "k3s", "k3s constant not correct assgined")
+	assert.Equal(t, string(K8S_KUBEADM), "kubeadm", "kubeadm constant not correct assgined")
+	assert.Equal(t, string(STORE_LOCAL), "local", "local constant not correct assgined")
+	assert.Equal(t, string(STORE_REMOTE), "remote", "remote constant not correct assgined")
+	assert.Equal(t, string(ROLE_CP), "controlplane", "controlplane constant not correct assgined")
+	assert.Equal(t, string(ROLE_LB), "loadbalancer", "loadbalancer constant not correct assgined")
+	assert.Equal(t, string(ROLE_DS), "datastore", "datastore constant not correct assgined")
+	assert.Equal(t, string(ROLE_WP), "workerplane", "workerplane constant not correct assgined")
+	assert.Equal(t, string(CLUSTER_TYPE_HA), "ha", "HA constant not correct assgined")
+	assert.Equal(t, string(CLUSTER_TYPE_MANG), "managed", "Managed constant not correct assgined")
+	assert.Equal(t, string(OPERATION_STATE_CREATE), "create", "operation create constant not correct assgined")
+	assert.Equal(t, string(OPERATION_STATE_GET), "get", "operation get constant not correct assgined")
+	assert.Equal(t, string(OPERATION_STATE_DELETE), "delete", "operation delete constant not correct assgined")
+	assert.Equal(t, uint8(CLUSTER_PATH), uint8(1), "cluster_path constant not correct assgined")
+	assert.Equal(t, uint8(OTHER_PATH), uint8(3), "other_path constant not correct assgined")
+	assert.Equal(t, uint8(SSH_PATH), uint8(2), "ssh_path constant not correct assgined")
+	assert.Equal(t, uint8(CREDENTIAL_PATH), uint8(0), "credential_path constant not correct assgined")
+	assert.Equal(t, uint8(EXEC_WITHOUT_OUTPUT), uint8(0), "exec_without_output constant not correct assgined")
+	assert.Equal(t, uint8(EXEC_WITH_OUTPUT), uint8(1), "exec_without_output constant not correct assgined")
 }
 
 func TestGetUsername(t *testing.T) {
@@ -93,7 +88,7 @@ func TestGetClusterPath(t *testing.T) {
 			"azure": fmt.Sprintf("%s\\.ksctl\\config\\azure\\Yy zz", GetUserName()),
 		}
 		for provider, expectedPath := range testProviders {
-			assert.Equal(t, expectedPath, getKubeconfig(provider, "Yy zz")) // must return empty string as its invalid provider
+			assert.Equal(t, expectedPath, getKubeconfig(KsctlCloud(provider), "Yy zz")) // must return empty string as its invalid provider
 		}
 	} else {
 		testProviders := map[string]string{
@@ -104,7 +99,7 @@ func TestGetClusterPath(t *testing.T) {
 			"azure": fmt.Sprintf("%s/.ksctl/config/azure/Yy zz", GetUserName()),
 		}
 		for provider, expectedPath := range testProviders {
-			assert.Equal(t, expectedPath, getKubeconfig(provider, "Yy zz")) // must return empty string as its invalid provider
+			assert.Equal(t, expectedPath, getKubeconfig(KsctlCloud(provider), "Yy zz")) // must return empty string as its invalid provider
 		}
 	}
 }
@@ -126,16 +121,16 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	clusterRegion := "RegionXYz" // with the region as well
 
 	t.Cleanup(func() {
-		_ = os.RemoveAll(GetPath(OTHER_PATH, provider))
+		_ = os.RemoveAll(GetPath(OTHER_PATH, KsctlCloud(provider), CLUSTER_TYPE_HA))
 	})
 
-	path := GetPath(OTHER_PATH, provider, CLUSTER_TYPE_HA, clusterName+" "+clusterRegion)
+	path := GetPath(OTHER_PATH, KsctlCloud(provider), CLUSTER_TYPE_HA, clusterName+" "+clusterRegion)
 	err := os.MkdirAll(path, 0755)
 	if err != nil {
 		t.Fatalf("Unable to create dummy folder")
 	}
 	ksctl := resources.KsctlClient{Storage: localstate.InitStorage(false)}
-	if _, err := CreateSSHKeyPair(ksctl.Storage, provider, clusterName+" "+clusterRegion); err != nil {
+	if _, err := CreateSSHKeyPair(ksctl.Storage, KsctlCloud(provider), clusterName+" "+clusterRegion); err != nil {
 		t.Fatalf("Unable to create SSH keypair")
 	}
 }
@@ -155,7 +150,7 @@ func TestIsValidClusterName(T *testing.T) {
 func TestSSHExecute(t *testing.T) {
 	var storage resources.StorageFactory = localstate.InitStorage(false)
 	assert.Equal(t, os.MkdirAll(GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd"), 0755), nil, "create folders")
-	_ = os.Setenv(KSCTL_TEST_DIR_ENABLED, dir)
+	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
 	azHA := GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd")
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {

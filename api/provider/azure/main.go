@@ -13,6 +13,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 type AzureStateVMs struct {
@@ -74,7 +75,7 @@ type StateConfiguration struct {
 
 type metadata struct {
 	resName string
-	role    string
+	role    KsctlRole
 	vmType  string
 	public  bool
 
@@ -88,7 +89,7 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    string
+	k8sName    KsctlKubernetes
 	k8sVersion string
 }
 
@@ -111,7 +112,7 @@ var (
 	azureCloudState *StateConfiguration
 
 	clusterDirName string
-	clusterType    string // it stores the ha or managed
+	clusterType    KsctlClusterType // it stores the ha or managed
 
 	ctx context.Context
 )
@@ -205,20 +206,20 @@ func (*AzureProvider) GetStateForHACluster(storage resources.StorageFactory) (cl
 }
 
 // InitState implements resources.CloudFactory.
-func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation string) error {
+func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
-		clusterType = utils.CLUSTER_TYPE_MANG
+		clusterType = CLUSTER_TYPE_MANG
 	case true:
-		clusterType = utils.CLUSTER_TYPE_HA
+		clusterType = CLUSTER_TYPE_HA
 	}
 	obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
 
 	errLoadState := loadStateHelper(storage)
 	switch operation {
-	case utils.OPERATION_STATE_CREATE:
+	case OPERATION_STATE_CREATE:
 		if errLoadState == nil && azureCloudState.IsCompleted {
 			return fmt.Errorf("[azure] already exist")
 		}
@@ -230,18 +231,18 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 				IsCompleted:      false,
 				ClusterName:      obj.clusterName,
 				Region:           obj.region,
-				KubernetesDistro: obj.metadata.k8sName,
+				KubernetesDistro: string(obj.metadata.k8sName),
 				KubernetesVer:    obj.metadata.k8sVersion,
 			}
 		}
 
-	case utils.OPERATION_STATE_DELETE:
+	case OPERATION_STATE_DELETE:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		storage.Logger().Note("[azure] Delete resource(s)")
 
-	case utils.OPERATION_STATE_GET:
+	case OPERATION_STATE_GET:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
@@ -299,11 +300,11 @@ func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
 }
 
 // Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *AzureProvider) Role(resRole string) resources.CloudFactory {
+func (cloud *AzureProvider) Role(resRole KsctlRole) resources.CloudFactory {
 	cloud.mxRole.Lock()
 
 	switch resRole {
-	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
+	case ROLE_CP, ROLE_DS, ROLE_LB, ROLE_WP:
 		cloud.metadata.role = resRole
 		return cloud
 	default:
@@ -504,13 +505,13 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 	var data []cloud_control_res.AllClusterData
 
 	// first get all the directories of ha
-	haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA)).GetFolders()
+	haFolders, err := storage.Path(generatePath(CLUSTER_PATH, CLUSTER_TYPE_HA)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, haFolder := range haFolders {
-		path := generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		path := generatePath(CLUSTER_PATH, CLUSTER_TYPE_HA, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -521,28 +522,28 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 		}
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider: utils.CLOUD_AZURE,
+				Provider: CLOUD_AZURE,
 				Name:     haFolder[0],
 				Region:   haFolder[2],
-				Type:     utils.CLUSTER_TYPE_HA,
+				Type:     CLUSTER_TYPE_HA,
 
 				NoWP: len(clusterState.InfoWorkerPlanes.Names),
 				NoCP: len(clusterState.InfoControlPlanes.Names),
 				NoDS: len(clusterState.InfoDatabase.Names),
 
-				K8sDistro:  clusterState.KubernetesDistro,
+				K8sDistro:  KsctlKubernetes(clusterState.KubernetesDistro),
 				K8sVersion: clusterState.KubernetesVer,
 			})
 	}
 
-	managedFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "managed")).GetFolders()
+	managedFolders, err := storage.Path(generatePath(CLUSTER_PATH, CLUSTER_TYPE_MANG)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, haFolder := range managedFolders {
 
-		path := generatePath(utils.CLUSTER_PATH, "managed", haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		path := generatePath(CLUSTER_PATH, CLUSTER_TYPE_MANG, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -554,11 +555,11 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider:   utils.CLOUD_AZURE,
+				Provider:   CLOUD_AZURE,
 				Name:       haFolder[0],
 				Region:     haFolder[2],
-				Type:       utils.CLUSTER_TYPE_MANG,
-				K8sDistro:  clusterState.KubernetesDistro,
+				Type:       CLUSTER_TYPE_MANG,
+				K8sDistro:  KsctlKubernetes(clusterState.KubernetesDistro),
 				K8sVersion: clusterState.KubernetesVer,
 				NoMgt:      clusterState.NoManagedNodes,
 			})
@@ -567,7 +568,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 }
 
 func isPresent(storage resources.StorageFactory) bool {
-	_, err := storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
+	_, err := storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -578,19 +579,19 @@ func (obj *AzureProvider) SwitchCluster(storage resources.StorageFactory) error 
 
 	switch obj.haCluster {
 	case true:
-		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, utils.CLUSTER_TYPE_HA)
+		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, CLUSTER_TYPE_HA)
 		clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
-		clusterType = utils.CLUSTER_TYPE_HA
+		clusterType = CLUSTER_TYPE_HA
 		if isPresent(storage) {
-			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OPERATION_STATE_CREATE)
 			return nil
 		}
 	case false:
-		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, utils.CLUSTER_TYPE_MANG)
+		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, CLUSTER_TYPE_MANG)
 		clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
-		clusterType = utils.CLUSTER_TYPE_MANG
+		clusterType = CLUSTER_TYPE_MANG
 		if isPresent(storage) {
-			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OPERATION_STATE_CREATE)
 			return nil
 		}
 	}

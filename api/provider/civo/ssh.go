@@ -3,6 +3,7 @@ package civo
 import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // DelSSHKeyPair implements resources.CloudFactory.
@@ -16,7 +17,7 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 	if err != nil {
 		return err
 	}
-	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 	storage.Logger().Success("[civo] ssh keypair deleted", civoCloudState.SSHID)
 
@@ -37,7 +38,7 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory
 		return nil
 	}
 
-	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, utils.CLOUD_CIVO, clusterDirName)
+	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, CLOUD_CIVO, clusterDirName)
 	if err != nil {
 		return err
 	}
@@ -56,9 +57,9 @@ func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pu
 
 	civoCloudState.SSHID = sshResp.ID
 	civoCloudState.SSHUser = "root"
-	civoCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_CIVO, clusterType, clusterDirName)
+	civoCloudState.SSHPrivateKeyLoc = utils.GetPath(SSH_PATH, CLOUD_CIVO, clusterType, clusterDirName)
 
-	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 	return saveStateHelper(storage, path)
 }

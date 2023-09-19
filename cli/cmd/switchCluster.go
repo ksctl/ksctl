@@ -4,7 +4,7 @@ import (
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"github.com/spf13/cobra"
 )
 
@@ -25,22 +25,22 @@ ksctl switch-context -p <civo,local,civo-ha,azure-ha,azure>  -n <clustername> -r
 		cli.Client.Metadata.Region = region
 
 		switch provider {
-		case utils.CLOUD_LOCAL:
-			cli.Client.Metadata.Provider = utils.STORE_LOCAL
+		case string(CLOUD_LOCAL):
+			cli.Client.Metadata.Provider = CLOUD_LOCAL
 
-		case utils.CLUSTER_TYPE_HA + "-" + utils.CLOUD_CIVO:
-			cli.Client.Metadata.Provider = utils.CLOUD_CIVO
+		case string(CLUSTER_TYPE_HA) + "-" + string(CLOUD_CIVO):
+			cli.Client.Metadata.Provider = CLOUD_CIVO
 			cli.Client.Metadata.IsHA = true
 
-		case utils.CLOUD_CIVO:
-			cli.Client.Metadata.Provider = utils.CLOUD_CIVO
+		case string(CLOUD_CIVO):
+			cli.Client.Metadata.Provider = CLOUD_CIVO
 
-		case utils.CLUSTER_TYPE_HA + "-" + utils.CLOUD_AZURE:
-			cli.Client.Metadata.Provider = utils.CLOUD_AZURE
+		case string(CLUSTER_TYPE_HA) + "-" + string(CLOUD_AZURE):
+			cli.Client.Metadata.Provider = CLOUD_AZURE
 			cli.Client.Metadata.IsHA = true
 
-		case utils.CLOUD_AZURE:
-			cli.Client.Metadata.Provider = utils.CLOUD_AZURE
+		case string(CLOUD_AZURE):
+			cli.Client.Metadata.Provider = CLOUD_AZURE
 		}
 
 		stat, err := controller.SwitchCluster(&cli.Client)

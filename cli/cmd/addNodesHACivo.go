@@ -6,8 +6,8 @@ import (
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
 
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"github.com/spf13/cobra"
 )
 
@@ -23,13 +23,13 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
-		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
-		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.Provider = CLOUD_CIVO
+		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_HA)
 		cli.Client.Metadata.NoWP = noWP
 		cli.Client.Metadata.WorkerPlaneNodeType = nodeSizeWP
 		cli.Client.Metadata.ClusterName = clusterName
 		cli.Client.Metadata.Region = region
-		cli.Client.Metadata.K8sDistro = distro
+		cli.Client.Metadata.K8sDistro = KsctlKubernetes(distro)
 		cli.Client.Metadata.K8sVersion = k8sVer
 
 		cli.Client.Metadata.IsHA = true

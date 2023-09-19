@@ -3,6 +3,7 @@ package kubeadm
 import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // OTHER CONFIGURATIONS
@@ -56,7 +57,7 @@ func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (path string
 }
 
 // InitState implements resources.DistroFactory.
-func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory, string) error {
+func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory, KsctlOperation) error {
 	k8sState = &StateConfiguration{}
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 type Instances struct {
@@ -24,11 +25,11 @@ type StateConfiguration struct {
 	PublicIPs         Instances     `json:"cloud_public_ips"`
 	PrivateIPs        Instances     `json:"cloud_private_ips"`
 
-	ClusterName string `json:"cluster_name"`
-	Region      string `json:"region"`
-	ClusterType string `json:"cluster_type"`
-	ClusterDir  string `json:"cluster_dir"`
-	Provider    string `json:"provider"`
+	ClusterName string           `json:"cluster_name"`
+	Region      string           `json:"region"`
+	ClusterType KsctlClusterType `json:"cluster_type"`
+	ClusterDir  string           `json:"cluster_dir"`
+	Provider    KsctlCloud       `json:"provider"`
 }
 
 var (
@@ -70,17 +71,17 @@ sudo cat /etc/rancher/k3s/k3s.yaml`
 
 // InitState implements resources.DistroFactory.
 // try to achieve deepCopy
-func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation string) error {
+func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation KsctlOperation) error {
 	// add the nil check here as well
-	path := utils.GetPath(utils.CLUSTER_PATH, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(CLUSTER_PATH, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
 
 	switch operation {
-	case utils.OPERATION_STATE_CREATE:
+	case OPERATION_STATE_CREATE:
 		// add  a flag of completion check
 		k8sState = &StateConfiguration{}
 		k8sState.DataStoreEndPoint = ""
 		k8sState.K3sToken = ""
-	case utils.OPERATION_STATE_GET:
+	case OPERATION_STATE_GET:
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return err

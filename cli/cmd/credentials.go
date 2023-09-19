@@ -4,7 +4,9 @@ package cmd
 
 import (
 	"fmt"
+
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +35,7 @@ var credCmd = &cobra.Command{
 			panic(err.Error())
 		}
 		if provider, ok := cloud[choice]; ok {
-			cli.Client.Metadata.Provider = provider
+			cli.Client.Metadata.Provider = KsctlCloud(provider)
 		} else {
 			cli.Client.Storage.Logger().Err("invalid provider")
 		}

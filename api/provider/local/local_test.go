@@ -12,6 +12,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -32,10 +33,10 @@ func TestMain(m *testing.M) {
 
 	testClient, _ = ReturnLocalStruct(demoClient.Metadata)
 
-	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
-	civoManaged := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, "managed")
+	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	localManaged := utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG)
 
-	if err := os.MkdirAll(civoManaged, 0755); err != nil {
+	if err := os.MkdirAll(localManaged, 0755); err != nil {
 		panic(err)
 	}
 
