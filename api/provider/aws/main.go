@@ -2,10 +2,14 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
+	"github.com/kubesimplify/ksctl/api/logger"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/api/utils"
 
 	"github.com/kubesimplify/ksctl/api/resources"
 
@@ -27,15 +31,16 @@ type Credential struct {
 }
 
 type AwsProvider struct {
-	ClusterName string `json:"cluster_name"`
-	HACluster   bool   `json:"ha_cluster"`
-	Region      string `json:"region"`
-	VPC         string `json:"vpc"`
-	AccessKeyID string `json:"access_key_id"`
-	Secret      string `json:"secret_access_key"`
-	Session     aws.Config
+	clusterName string `json:"cluster_name"`
+	haCluster   bool   `json:"ha_cluster"`
+	region      string `json:"region"`
+	vpc         string `json:"vpc"`
+	accessKeyID string `json:"access_key_id"`
+	secret      string `json:"secret_access_key"`
+	session     aws.Config
 	metadata
 
+	client  AwsGo
 	SSHPath string `json:"ssh_key"`
 }
 
@@ -112,36 +117,35 @@ type StateConfiguration struct {
 }
 
 type metadata struct {
-	ResName string
-	Role    string
-	VmType  string
-	Public  bool
+	resName string
+	role    string
+	vmType  string
+	public  bool
 
-	Apps    string
-	Cni     string
-	Version string
+	apps    string
+	cni     string
+	version string
 
-	NoCP int
-	NoWP int
-	NoDS int
+	noCP int
+	noWP int
+	noDS int
 
-	K8sName    string
-	K8sVersion string
+	k8sName    string
+	k8sVersion string
 }
 
-func ReturnAwsStruct(Metadata resources.Metadata) (*AwsProvider, error) {
+func ReturnAwsStruct(Metadata resources.Metadata, ClientOption func() *interface{}) (resources.CloudFactory, error) {
 	return &AwsProvider{
-		ClusterName: Metadata.ClusterName,
-		Region:      "ap-south-1",
-		HACluster:   Metadata.IsHA,
+		clusterName: Metadata.ClusterName,
+		region:      "ap-south-1",
+		haCluster:   Metadata.IsHA,
 		metadata: metadata{
-			K8sVersion: Metadata.K8sVersion,
-			K8sName:    Metadata.K8sDistro,
+			k8sVersion: Metadata.K8sVersion,
+			k8sName:    Metadata.K8sDistro,
 		},
 
-		Session:     NEWCLIENT(),
-		AccessKeyID: "",
-		Secret:      "",
+		session: NEWCLIENT(),
+		client:  ClientOption(),
 	}, nil
 }
 
@@ -163,7 +167,16 @@ func NEWCLIENT() aws.Config {
 }
 
 func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
-	obj.metadata.ResName = resName
+
+	if err := utils.IsValidName(resName); err != nil {
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err(err.Error())
+		return nil
+	}
+
+	obj.metadata.resName = resName
+	fmt.Println(obj.metadata.resName)
+	fmt.Println("named the resource successfully")
 	return nil
 }
 
@@ -186,14 +199,6 @@ func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
 	return nil
 }
 
-func (obj *AwsProvider) NewNetwork(factory resources.StorageFactory) error {
-	//TODO implement me
-	_ = obj.metadata.ResName
-	fmt.Println("AWS New Network")
-	return nil
-
-}
-
 func (obj *AwsProvider) DelNetwork(factory resources.StorageFactory) error {
 	//TODO implement me
 	fmt.Println("AWS Del Network")
@@ -201,21 +206,102 @@ func (obj *AwsProvider) DelNetwork(factory resources.StorageFactory) error {
 
 }
 
-func (obj *AwsProvider) InitState(factory resources.StorageFactory, s string) error {
+func convertStateFromBytes(raw []byte) error {
+	var data *StateConfiguration
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return err
+	}
+	awsCloudState = data
+	return nil
+}
+
+func loadStateHelper(storage resources.StorageFactory) error {
+	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AWS, clusterType, clusterDirName, STATE_FILE_NAME)
+	raw, err := storage.Path(path).Load()
+	if err != nil {
+		return err
+	}
+
+	return convertStateFromBytes(raw)
+}
+
+func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration string) error {
+
+	switch obj.haCluster {
+	case false:
+		clusterType = utils.CLUSTER_TYPE_MANG
+	case true:
+		clusterType = utils.CLUSTER_TYPE_HA
+
+	}
+	obj.vpc = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, clusterType)
+	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
+
+	errLoadState := loadStateHelper(storage)
+	switch opration {
+	case utils.OPERATION_STATE_CREATE:
+		if errLoadState == nil && awsCloudState.IsCompleted {
+			return fmt.Errorf("cluster %s already exists", obj.clusterName)
+		}
+		if errLoadState == nil && !awsCloudState.IsCompleted {
+			storage.Logger().Note("[aws] RESUME triggered!!")
+		} else {
+			storage.Logger().Note("[aws] NEW cluster triggered!!")
+			awsCloudState = &StateConfiguration{
+				IsCompleted:      false,
+				ClusterName:      obj.clusterName,
+				Region:           obj.region,
+				KubernetesDistro: obj.metadata.k8sName,
+				KubernetesVer:    obj.metadata.k8sVersion,
+			}
+		}
+
+	case utils.OPERATION_STATE_DELETE:
+		if errLoadState != nil {
+			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
+		}
+		storage.Logger().Note("[aws] Delete resource(s)")
+
+	case utils.OPERATION_STATE_GET:
+		if errLoadState != nil {
+			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
+		}
+		storage.Logger().Note("[aws] Get resources")
+		clusterDirName = awsCloudState.ClusterName + " " + awsCloudState.VPC + " " + awsCloudState.Region
+	default:
+		return errors.New("[aws] Invalid operation for init state")
+	}
+
+	if err := obj.client.InitClient(storage); err != nil {
+		fmt.Errorf("failed to initialize aws client reason:%s\n", err.Error())
+	}
+
+	obj.client.SetRegion(obj.region)
+	obj.client.SetVpc(obj.vpc)
+
+	if err := validationOfArguments(obj); err != nil {
+		return err
+	}
+
+	storage.Logger().Success("[aws] init cloud state")
+	return nil
+}
+
+func (obj *AwsProvider) InitClient(storage resources.StorageFactory) error {
 	//TODO implement me
-	fmt.Println("AWS Init State")
+	fmt.Println("AWS Init Client")
 	return nil
 
 }
 
-func (obj *AwsProvider) CreateUploadSSHKeyPair(factory resources.StorageFactory) error {
+func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
 	//TODO implement me
 	fmt.Println("AWS Create Upload SSH Key Pair")
 	return nil
 
 }
 
-func (obj *AwsProvider) DelSSHKeyPair(factory resources.StorageFactory) error {
+func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 	//TODO implement me
 	fmt.Println("AWS Del SSH Key Pair")
 	return nil
