@@ -280,6 +280,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	// NOTE: before removing resources from the local we must remove the extra resources allocated by the controller
 	// make a /scaledown PUT request with noWP = 1
 
+	// TODO: add a feature flag??
 	if len(os.Getenv(utils.KSCTL_FAKE_FLAG)) == 0 {
 
 		// find a better way to get the kubeconfig location

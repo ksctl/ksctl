@@ -40,12 +40,21 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		},
 		Spec: corev1.PodSpec{
 
+			// WARN: these toleration rules only tested for the K3s distribution
 			Tolerations: []corev1.Toleration{
 				corev1.Toleration{
 					Key:      "CriticalAddonsOnly",
-					Value:    "true",
-					Operator: "Equal",
-					Effect:   "NoExecute",
+					Operator: corev1.TolerationOpExists,
+				},
+				corev1.Toleration{
+					Effect:   corev1.TaintEffectNoSchedule,
+					Key:      "node-role.kubernetes.io/control-plane",
+					Operator: corev1.TolerationOpExists,
+				},
+				corev1.Toleration{
+					Effect:   corev1.TaintEffectNoSchedule,
+					Key:      "node-role.kubernetes.io/master",
+					Operator: corev1.TolerationOpExists,
 				},
 			},
 			RestartPolicy: corev1.RestartPolicyNever,
@@ -250,12 +259,21 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 					},
 				},
 				Spec: corev1.PodSpec{
+					// WARN: these toleration rules only tested for the K3s distribution
 					Tolerations: []corev1.Toleration{
 						corev1.Toleration{
 							Key:      "CriticalAddonsOnly",
-							Value:    "true",
-							Operator: "Equal",
-							Effect:   "NoExecute",
+							Operator: corev1.TolerationOpExists,
+						},
+						corev1.Toleration{
+							Effect:   corev1.TaintEffectNoSchedule,
+							Key:      "node-role.kubernetes.io/control-plane",
+							Operator: corev1.TolerationOpExists,
+						},
+						corev1.Toleration{
+							Effect:   corev1.TaintEffectNoSchedule,
+							Key:      "node-role.kubernetes.io/master",
+							Operator: corev1.TolerationOpExists,
 						},
 					},
 
