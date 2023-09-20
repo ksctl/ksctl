@@ -13,7 +13,7 @@ pipeline {
                     ksctl create local -n demo --approve -v
 
                     ksctl get
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/demo/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/managed/demo/kubeconfig"
 
                     kubectl get nodes -owide
                 '''
