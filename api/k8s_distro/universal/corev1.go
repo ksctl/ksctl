@@ -98,3 +98,19 @@ func (this *Kubernetes) PodApply(o *corev1.Pod, ns string) error {
 	}
 	return nil
 }
+
+func (this *Kubernetes) serviceaccountApply(o *corev1.ServiceAccount, ns string) error {
+
+	_, err := this.clientset.CoreV1().ServiceAccounts(ns).Create(context.Background(), o, v1.CreateOptions{})
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			_, err = this.clientset.CoreV1().ServiceAccounts(ns).Update(context.Background(), o, v1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
+}
