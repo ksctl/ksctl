@@ -19,7 +19,7 @@ type KsctlClient struct {
 	Storage StorageFactory
 
 	// Metadata is used by the cloudController and manager to use data from cli
-	Metadata
+	Metadata Metadata
 }
 
 type Metadata struct {

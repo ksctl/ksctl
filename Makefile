@@ -7,8 +7,11 @@ GOARCH_WINDOWS = amd64
 GOARCH_MACOS = arm64
 GOARCH_MACOS_INTEL = amd64
 
-docker_httpserver:
-	docker build -f containers/httpserver_slim/Dockerfile -t ksctl-http . --no-cache
+docker_build_httpserver:
+	docker build -f containers/httpserver_slim/Dockerfile -t docker.io/dipugodocker/kubesimplify:ksctl-non-root-slim-v1 .
+
+docker_push_registry_httpserver:
+	docker push docker.io/dipugodocker/kubesimplify:ksctl-non-root-slim-v1
 
 install_linux:
 	@echo "Started to Install ksctl"
@@ -40,10 +43,8 @@ mock_test:
 mock_civo_ha:
 	cd test/ && go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
 
-
 mock_civo_managed:
 	cd test/ && go test -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
-
 
 mock_azure_managed:
 	cd test/ && go test -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v

@@ -179,7 +179,7 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 }
 
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) (string, error) {
-	if client.Provider == CLOUD_LOCAL {
+	if client.Metadata.Provider == CLOUD_LOCAL {
 		return "", fmt.Errorf("ha not supported")
 	}
 
@@ -235,7 +235,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", err
 	}
 
-	if len(os.Getenv(string(KSCTL_FAKE_FLAG))) == 0 {
+	if len(os.Getenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE))) > 0 {
 
 		var cloudSecret map[string][]byte
 		cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
@@ -261,7 +261,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) (string, error) {
 
-	if client.Provider == CLOUD_LOCAL {
+	if client.Metadata.Provider == CLOUD_LOCAL {
 		return "", fmt.Errorf("ha not supported")
 	}
 	if client.Storage == nil {
@@ -279,8 +279,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	// NOTE: before removing resources from the local we must remove the extra resources allocated by the controller
 	// make a /scaledown PUT request with noWP = 1
 
-	// TODO: add a feature flag??
-	if len(os.Getenv(string(KSCTL_FAKE_FLAG))) == 0 {
+	if len(os.Getenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE))) > 0 {
 
 		// find a better way to get the kubeconfig location
 
@@ -327,13 +326,18 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 }
 
 func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
-	if client.Provider == CLOUD_LOCAL {
+
+	if client.Metadata.IsHA && len(os.Getenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE))) > 0 {
+		// disable add AddWorkerPlaneNode when this feature is being used
+		return "", fmt.Errorf("This Functionality is diabled for {HA type clusters} due to FEATURE_FLAG [%s]", KSCTL_FEATURE_FLAG_HA_AUTOSCALE)
+	}
+	if client.Metadata.Provider == CLOUD_LOCAL {
 		return "", fmt.Errorf("ha not supported")
 	}
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
-	if !client.IsHA {
+	if !client.Metadata.IsHA {
 		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
 	}
 
@@ -376,13 +380,18 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 }
 
 func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
-	if client.Provider == CLOUD_LOCAL {
+
+	if client.Metadata.IsHA && len(os.Getenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE))) > 0 {
+		return "", fmt.Errorf("This Functionality is diabled for {HA type cluster} due to FEATURE_FLAG [%s]", KSCTL_FEATURE_FLAG_HA_AUTOSCALE)
+	}
+
+	if client.Metadata.Provider == CLOUD_LOCAL {
 		return "", fmt.Errorf("ha not supported")
 	}
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
-	if !client.IsHA {
+	if !client.Metadata.IsHA {
 		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
 	}
 

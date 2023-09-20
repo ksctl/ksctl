@@ -42,6 +42,7 @@ var createClusterAzure = &cobra.Command{
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_AZURE
 		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_MANG)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
@@ -61,6 +62,7 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 			panic(err)
 		}
 
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_CIVO
 		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_MANG)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
@@ -80,6 +82,7 @@ ksctl create-cluster local <arguments to civo cloud provider>
 			panic(err)
 		}
 
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_LOCAL
 		SetDefaults(CLOUD_LOCAL, CLUSTER_TYPE_MANG)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
@@ -98,6 +101,7 @@ ksctl create-cluster ha-civo <arguments to civo cloud provider>
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 
 		cli.Client.Metadata.Provider = CLOUD_CIVO
 		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_HA)
@@ -117,6 +121,7 @@ var createClusterHAAzure = &cobra.Command{
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_AZURE
 		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_HA)
 		createHA(cmd.Flags().Lookup("approve").Changed)

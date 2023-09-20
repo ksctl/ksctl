@@ -32,6 +32,7 @@ ksctl create-cluster azure <arguments to civo cloud provider>
 			panic(err)
 		}
 
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_AZURE
 		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_MANG)
 
@@ -52,6 +53,7 @@ ksctl delete-cluster civo
 			panic(err)
 		}
 
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_CIVO
 		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_MANG)
 
@@ -73,6 +75,7 @@ var deleteClusterHAAzure = &cobra.Command{
 			panic(err)
 		}
 
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_AZURE
 		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_HA)
 
@@ -93,6 +96,7 @@ ksctl delete-cluster ha-civo <arguments to civo cloud provider>
 			panic(err)
 		}
 
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_CIVO
 		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_HA)
 
@@ -113,6 +117,7 @@ ksctl delete-cluster local <arguments to local/Docker provider>
 			panic(err)
 		}
 
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_LOCAL
 		SetDefaults(CLOUD_LOCAL, CLUSTER_TYPE_MANG)
 

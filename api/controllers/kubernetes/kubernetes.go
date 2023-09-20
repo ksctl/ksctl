@@ -35,14 +35,14 @@ func ConfigureCluster(client *resources.KsctlClient) error {
 		}
 	}
 	for no := 0; no < client.Metadata.NoCP; no++ {
-		err := client.Distro.Version(client.K8sVersion).ConfigureControlPlane(no, client.Storage)
+		err := client.Distro.Version(client.Metadata.K8sVersion).ConfigureControlPlane(no, client.Storage)
 		if err != nil {
 			return err
 		}
 	}
 
 	for no := 0; no < int(client.Metadata.NoWP); no++ {
-		err := client.Distro.Version(client.K8sVersion).JoinWorkerplane(no, client.Storage)
+		err := client.Distro.Version(client.Metadata.K8sVersion).JoinWorkerplane(no, client.Storage)
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func ConfigureCluster(client *resources.KsctlClient) error {
 
 func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 	for no := start; no < end; no++ {
-		err := client.Distro.Version(client.K8sVersion).JoinWorkerplane(no, client.Storage)
+		err := client.Distro.Version(client.Metadata.K8sVersion).JoinWorkerplane(no, client.Storage)
 		if err != nil {
 			return err
 		}

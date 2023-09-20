@@ -23,6 +23,7 @@ const (
 )
 
 func (this *Kubernetes) DeleteResourcesFromController() error {
+	this.StorageDriver.Logger().Print("[client-go] Started to configure Cluster to delete workerplanes")
 	clusterName := this.Metadata.ClusterName
 	region := this.Metadata.Region
 	provider := this.Metadata.Provider
@@ -63,7 +64,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 					Name:    "destroyer",
 					Image:   "alpine",
 					Command: []string{"sh", "-c"},
-					Args:    []string{fmt.Sprintf("apk add curl && sleep 2s && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 1, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
+					Args:    []string{fmt.Sprintf("apk add curl && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 1, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
 
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
@@ -103,11 +104,13 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		time.Sleep(10 * time.Second)
 	}
 
-	this.StorageDriver.Logger().Success("[ksctl] scaled the cluster down to 1")
+	this.StorageDriver.Logger().Success("[client-go] Done configuring Cluster to Scale down the no of workerplane to 1")
 	return nil
 }
 
 func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, cloudstate, k8sstate string, secretKeys map[string][]byte) error {
+
+	this.StorageDriver.Logger().Print("[client-go] Started to configure Cluster to add Ksctl specific resources")
 	rawCloudstate := []byte(cloudstate)
 
 	var sshPrivateKeyPath string
@@ -452,6 +455,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		return err
 	}
 
+	this.StorageDriver.Logger().Success("[client-go] Done configuring Cluster to add Ksctl specific resources")
 	return nil
 
 }

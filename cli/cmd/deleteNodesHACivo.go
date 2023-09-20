@@ -22,6 +22,7 @@ ksctl delete-cluster ha-civo delete-nodes <arguments to civo cloud provider>
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_CIVO
 		cli.Client.Metadata.IsHA = true
 

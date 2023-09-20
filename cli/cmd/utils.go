@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	. "github.com/kubesimplify/ksctl/api/utils/consts"
-	"github.com/spf13/cobra"
 )
 
 func createManaged(approval bool) {
@@ -168,62 +167,6 @@ func createApproval(showMsg bool) error {
 	return nil
 }
 
-func clusterNameFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&clusterName, "name", "n", "demo", "Cluster Name") // keep it same for all
-}
-
-func nodeSizeManagedFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&nodeSizeMP, "nodeSizeMP", "", "", "Node size of managed cluster nodes")
-}
-
-func nodeSizeCPFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&nodeSizeCP, "nodeSizeCP", "", "", "Node size of self-managed controlplane nodes")
-}
-func nodeSizeWPFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&nodeSizeWP, "nodeSizeWP", "", "", "Node size of self-managed workerplane nodes")
-}
-
-func nodeSizeDSFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&nodeSizeDS, "nodeSizeDS", "", "", "Node size of self-managed datastore nodes")
-}
-
-func nodeSizeLBFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&nodeSizeLB, "nodeSizeLB", "", "", "Node size of self-managed loadbalancer node")
-}
-
-func regionFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&region, "region", "r", "", "Region")
-}
-
-func appsFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&apps, "apps", "", "", "Pre-Installed Applications")
-}
-
-func cniFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&cni, "cni", "", "", "CNI")
-}
-
-func distroFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&distro, "distribution", "", "", "Kubernetes Distribution")
-}
-
-func k8sVerFlag(f *cobra.Command) {
-	f.Flags().StringVarP(&k8sVer, "version", "", "", "Kubernetes Version")
-}
-
-func noOfWPFlag(f *cobra.Command) {
-	f.Flags().IntVarP(&noWP, "noWP", "", -1, "Number of WorkerPlane Nodes")
-}
-func noOfCPFlag(f *cobra.Command) {
-	f.Flags().IntVarP(&noCP, "noCP", "", -1, "Number of ControlPlane Nodes")
-}
-func noOfMPFlag(f *cobra.Command) {
-	f.Flags().IntVarP(&noMP, "noMP", "", -1, "Number of Managed Nodes")
-}
-func noOfDSFlag(f *cobra.Command) {
-	f.Flags().IntVarP(&noDS, "noDS", "", -1, "Number of DataStore Nodes")
-}
-
 func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 	switch string(provider) + string(clusterType) {
 	case string(CLOUD_LOCAL) + string(CLUSTER_TYPE_MANG):
@@ -335,4 +278,108 @@ func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 			distro = string(K8S_K3S)
 		}
 	}
+}
+
+func argsFlags() {
+	// Managed Azure
+	clusterNameFlag(createClusterAzure)
+	nodeSizeManagedFlag(createClusterAzure)
+	regionFlag(createClusterAzure)
+	noOfMPFlag(createClusterAzure)
+	k8sVerFlag(createClusterAzure)
+	distroFlag(createClusterAzure)
+
+	// Managed Civo
+	clusterNameFlag(createClusterCivo)
+	nodeSizeManagedFlag(createClusterCivo)
+	regionFlag(createClusterCivo)
+	appsFlag(createClusterCivo)
+	cniFlag(createClusterCivo)
+	noOfMPFlag(createClusterCivo)
+	distroFlag(createClusterCivo)
+	k8sVerFlag(createClusterCivo)
+
+	// Managed Local
+	clusterNameFlag(createClusterLocal)
+	appsFlag(createClusterLocal)
+	cniFlag(createClusterLocal)
+	noOfMPFlag(createClusterLocal)
+	distroFlag(createClusterLocal)
+	k8sVerFlag(createClusterLocal)
+
+	// HA Civo
+	clusterNameFlag(createClusterHACivo)
+	nodeSizeCPFlag(createClusterHACivo)
+	nodeSizeDSFlag(createClusterHACivo)
+	nodeSizeWPFlag(createClusterHACivo)
+	nodeSizeLBFlag(createClusterHACivo)
+	regionFlag(createClusterHACivo)
+	appsFlag(createClusterHACivo)
+	cniFlag(createClusterHACivo)
+	noOfWPFlag(createClusterHACivo)
+	noOfCPFlag(createClusterHACivo)
+	noOfDSFlag(createClusterHACivo)
+	distroFlag(createClusterHACivo)
+	k8sVerFlag(createClusterHACivo)
+
+	// HA Azure
+	clusterNameFlag(createClusterHAAzure)
+	nodeSizeCPFlag(createClusterHAAzure)
+	nodeSizeDSFlag(createClusterHAAzure)
+	nodeSizeWPFlag(createClusterHAAzure)
+	nodeSizeLBFlag(createClusterHAAzure)
+	regionFlag(createClusterHAAzure)
+	appsFlag(createClusterHAAzure)
+	cniFlag(createClusterHAAzure)
+	noOfWPFlag(createClusterHAAzure)
+	noOfCPFlag(createClusterHAAzure)
+	noOfDSFlag(createClusterHAAzure)
+	distroFlag(createClusterHAAzure)
+	k8sVerFlag(createClusterHAAzure)
+
+	// Delete commands
+	// Managed Local
+	clusterNameFlag(deleteClusterLocal)
+
+	// managed Azure
+	clusterNameFlag(deleteClusterAzure)
+	regionFlag(deleteClusterAzure)
+
+	// Managed Civo
+	clusterNameFlag(deleteClusterCivo)
+	regionFlag(deleteClusterCivo)
+
+	// HA Civo
+	clusterNameFlag(deleteClusterHACivo)
+	regionFlag(deleteClusterHACivo)
+
+	// HA Azure
+	clusterNameFlag(deleteClusterHAAzure)
+	regionFlag(deleteClusterHAAzure)
+
+	AllFeatures()
+}
+
+func AllFeatures() {
+
+	featureFlag(createClusterAzure)
+	featureFlag(createClusterHAAzure)
+	featureFlag(createClusterCivo)
+	featureFlag(createClusterHACivo)
+	featureFlag(createClusterLocal)
+
+	featureFlag(deleteClusterAzure)
+	featureFlag(deleteClusterHAAzure)
+	featureFlag(deleteClusterCivo)
+	featureFlag(deleteClusterHACivo)
+	featureFlag(deleteClusterLocal)
+
+	featureFlag(addMoreWorkerNodesHACivo)
+	featureFlag(addMoreWorkerNodesHAAzure)
+
+	featureFlag(deleteNodesHAAzure)
+	featureFlag(deleteNodesHACivo)
+
+	featureFlag(getClusterCmd)
+	featureFlag(switchCluster)
 }

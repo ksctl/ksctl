@@ -210,9 +210,9 @@ func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.ClusterName, no)).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.Metadata.ClusterName, no)).
 				Role(ROLE_WP).
-				VMType(client.WorkerPlaneNodeType).
+				VMType(client.Metadata.WorkerPlaneNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
@@ -284,7 +284,7 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 
 func CreateHACluster(client *resources.KsctlClient) error {
 	var err error
-	err = client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.Storage)
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-net").NewNetwork(client.Storage)
 	if err != nil {
 		return err
 	}
@@ -301,33 +301,33 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-ssh").CreateUploadSSHKeyPair(client.Storage)
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-ssh").CreateUploadSSHKeyPair(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-lb").
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-lb").
 		Role(ROLE_LB).
 		NewFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-db").
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-db").
 		Role(ROLE_DS).
 		NewFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-cp").
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-cp").
 		Role(ROLE_CP).
 		NewFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-wp").
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-wp").
 		Role(ROLE_WP).
 		NewFirewall(client.Storage)
 	if err != nil {
@@ -346,9 +346,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	go func() {
 		defer wg.Done()
 
-		err := client.Cloud.Name(client.ClusterName+"-vm-lb").
+		err := client.Cloud.Name(client.Metadata.ClusterName+"-vm-lb").
 			Role(ROLE_LB).
-			VMType(client.LoadBalancerNodeType).
+			VMType(client.Metadata.LoadBalancerNodeType).
 			Visibility(true).
 			NewVM(client.Storage, 0)
 		if err != nil {
@@ -360,9 +360,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-db-%d", client.ClusterName, no)).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-db-%d", client.Metadata.ClusterName, no)).
 				Role(ROLE_DS).
-				VMType(client.DataStoreNodeType).
+				VMType(client.Metadata.DataStoreNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
@@ -374,9 +374,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-cp-%d", client.ClusterName, no)).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-cp-%d", client.Metadata.ClusterName, no)).
 				Role(ROLE_CP).
-				VMType(client.ControlPlaneNodeType).
+				VMType(client.Metadata.ControlPlaneNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
@@ -389,9 +389,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.ClusterName, no)).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.Metadata.ClusterName, no)).
 				Role(ROLE_WP).
-				VMType(client.WorkerPlaneNodeType).
+				VMType(client.Metadata.WorkerPlaneNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {

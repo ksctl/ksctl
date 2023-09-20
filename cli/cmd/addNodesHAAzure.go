@@ -23,6 +23,7 @@ ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = CLOUD_AZURE
 		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_HA)
 		cli.Client.Metadata.NoWP = noWP

@@ -76,4 +76,7 @@ const (
 
 	// KSCTL_CUSTOM_DIR_ENABLED use this as environment variable to set a different home directory for ksctl during testing
 	KSCTL_CUSTOM_DIR_ENABLED KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
+
+	// KSCTL_FEATURE_FLAG_HA_AUTOSCALE to be set if feature for AUTOSCALE is needed
+	KSCTL_FEATURE_FLAG_HA_AUTOSCALE KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_HA_AUTOSCALE"
 )

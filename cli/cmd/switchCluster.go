@@ -21,6 +21,7 @@ ksctl switch-context -p <civo,local,civo-ha,azure-ha,azure>  -n <clustername> -r
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.ClusterName = clusterName
 		cli.Client.Metadata.Region = region
 

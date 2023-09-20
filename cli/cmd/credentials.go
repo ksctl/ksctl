@@ -21,6 +21,7 @@ var credCmd = &cobra.Command{
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 
 		fmt.Println(`
 1> AWS (EKS)

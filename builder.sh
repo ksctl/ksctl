@@ -14,11 +14,12 @@ sudo mv -v ksctl /usr/local/bin/ksctl
 mkdir -p ${HOME}/.ksctl/cred
 
 mkdir -p ${HOME}/.ksctl/config/civo/ha
+mkdir -p ${HOME}/.ksctl/config/civo/managed
 mkdir -p ${HOME}/.ksctl/config/azure/ha
-mkdir ${HOME}/.ksctl/config/azure/managed
-mkdir ${HOME}/.ksctl/config/civo/managed
-mkdir ${HOME}/.ksctl/config/aws
-mkdir ${HOME}/.ksctl/config/local
+mkdir -p ${HOME}/.ksctl/config/azure/managed
+mkdir -p ${HOME}/.ksctl/config/aws/managed
+mkdir -p ${HOME}/.ksctl/config/aws/ha
+mkdir -p ${HOME}/.ksctl/config/local/managed
 
 echo -e "\033[1;32mINSTALL COMPLETE\033[0m\n"
 
