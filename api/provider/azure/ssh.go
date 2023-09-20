@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
@@ -17,7 +18,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		return nil
 	}
 
-	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, utils.CLOUD_AZURE, clusterDirName)
+	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, CLOUD_AZURE, clusterDirName)
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 
 	azureCloudState.SSHKeyName = name
 	azureCloudState.SSHUser = "azureuser"
-	azureCloudState.SSHPrivateKeyLoc = utils.GetPath(utils.SSH_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName)
+	azureCloudState.SSHPrivateKeyLoc = utils.GetPath(SSH_PATH, CLOUD_AZURE, clusterType, clusterDirName)
 
 	if err := saveStateHelper(storage); err != nil {
 		return err

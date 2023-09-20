@@ -22,7 +22,7 @@ func (logger *Logger) Table(data []cloudController.AllClusterData) {
 		} else {
 			node = fmt.Sprintf("wp: %d", row.NoMgt)
 		}
-		tbl.AddRow(row.Name, row.Provider+"("+row.Region+")", node, row.Type, row.K8sDistro)
+		tbl.AddRow(row.Name, string(row.Provider)+"("+row.Region+")", node, row.Type, string(row.K8sDistro))
 	}
 
 	tbl.Print()

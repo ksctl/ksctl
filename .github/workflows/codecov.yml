@@ -60,6 +60,7 @@ jobs:
     - name: Run coverage (TESTS)
       working-directory: test
       run: |
+        export KSCTL_FAKE_FLAG_ENABLED="1"
         go test -bench=. -benchtime=1x -coverprofile=../coverage-mock-test.out -covermode=atomic -v
         cd ../
     - name: Upload coverage to Codecov

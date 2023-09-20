@@ -12,6 +12,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 type InstanceID struct {
@@ -73,7 +74,7 @@ type StateConfiguration struct {
 var (
 	civoCloudState *StateConfiguration
 	clusterDirName string
-	clusterType    string // it stores the ha or managed
+	clusterType    KsctlClusterType // it stores the ha or managed
 )
 
 const (
@@ -86,7 +87,7 @@ const (
 
 type metadata struct {
 	resName string
-	role    string
+	role    KsctlRole
 	vmType  string
 	public  bool
 
@@ -98,7 +99,7 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    string
+	k8sName    KsctlKubernetes
 	k8sVersion string
 }
 
@@ -108,11 +109,9 @@ func (m metadata) String() string {
 
 type CivoProvider struct {
 	clusterName string
-	apiKey      string
 	haCluster   bool
 	region      string
 
-	sshPath  string
 	mxName   sync.Mutex
 	mxRole   sync.Mutex
 	mxVMType sync.Mutex
@@ -121,6 +120,22 @@ type CivoProvider struct {
 	metadata
 
 	client CivoGo
+}
+
+// GetSecretTokens implements resources.CloudFactory.
+func (this *CivoProvider) GetSecretTokens(storage resources.StorageFactory) (map[string][]byte, error) {
+	return map[string][]byte{
+		"CIVO_TOKEN": []byte(fetchAPIKey(storage)), // use base64 conversion
+	}, nil
+}
+
+// GetStateFile implements resources.CloudFactory.
+func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
+	cloudstate, err := json.Marshal(civoCloudState)
+	if err != nil {
+		return "", err
+	}
+	return string(cloudstate), nil
 }
 
 type Credential struct {
@@ -138,7 +153,7 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 		},
 		Metadata: cloud_control_res.Metadata{
 			ClusterName: client.clusterName,
-			Provider:    utils.CLOUD_CIVO,
+			Provider:    CLOUD_CIVO,
 			Region:      client.region,
 			ClusterType: clusterType,
 			ClusterDir:  clusterDirName,
@@ -158,20 +173,20 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 	return payload, nil
 }
 
-func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation string) error {
+func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation KsctlOperation) error {
 
 	clusterDirName = obj.clusterName + " " + obj.region
 	if obj.haCluster {
-		clusterType = utils.CLUSTER_TYPE_HA
+		clusterType = CLUSTER_TYPE_HA
 	} else {
-		clusterType = utils.CLUSTER_TYPE_MANG
+		clusterType = CLUSTER_TYPE_MANG
 	}
 
 	civoCloudState = &StateConfiguration{}
-	errLoadState := loadStateHelper(storage, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
+	errLoadState := loadStateHelper(storage, generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME))
 
 	switch operation {
-	case utils.OPERATION_STATE_CREATE:
+	case OPERATION_STATE_CREATE:
 		if errLoadState == nil && civoCloudState.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
 			return fmt.Errorf("[civo] already exist")
@@ -186,19 +201,19 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation s
 				IsCompleted:      false,
 				Region:           obj.region,
 				ClusterName:      obj.clusterName,
-				KubernetesDistro: obj.k8sName,
+				KubernetesDistro: string(obj.k8sName),
 				KubernetesVer:    obj.k8sVersion,
 			}
 		}
 
-	case utils.OPERATION_STATE_GET:
+	case OPERATION_STATE_GET:
 
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		storage.Logger().Note("[civo] Get resources")
 
-	case utils.OPERATION_STATE_DELETE:
+	case OPERATION_STATE_DELETE:
 
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
@@ -247,13 +262,12 @@ func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *CivoProvider) Role(resRole string) resources.CloudFactory {
+func (cloud *CivoProvider) Role(resRole KsctlRole) resources.CloudFactory {
 	cloud.mxRole.Lock()
 
 	switch resRole {
-	case utils.ROLE_CP, utils.ROLE_DS, utils.ROLE_LB, utils.ROLE_WP:
+	case ROLE_CP, ROLE_DS, ROLE_LB, ROLE_WP:
 		cloud.metadata.role = resRole
-		//fmt.Println("[trigger] Role", cloud.metadata)
 		return cloud
 	default:
 		var logFactory logger.LogFactory = &logger.Logger{}
@@ -273,7 +287,6 @@ func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
 		return nil
 	}
 	cloud.metadata.vmType = size
-	//fmt.Println("[trigger] VMType", cloud.metadata)
 	return cloud
 }
 
@@ -424,7 +437,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 		}
 		return len(civoCloudState.InstanceIDs.WorkerNodes), nil
 	}
-	if no >= 0 {
+	if no >= 1 {
 		obj.metadata.noWP = no
 		if civoCloudState == nil {
 			return -1, fmt.Errorf("[civo] state init not called!")
@@ -458,7 +471,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 				civoCloudState.HostNames.WorkerNodes = civoCloudState.HostNames.WorkerNodes[:newLen]
 			}
 		}
-		path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+		path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 		if err := saveStateHelper(storage, path); err != nil {
 			return -1, err
@@ -473,13 +486,13 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 	var data []cloud_control_res.AllClusterData
 
 	// first get all the directories of ha
-	haFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA)).GetFolders()
+	haFolders, err := storage.Path(generatePath(CLUSTER_PATH, CLUSTER_TYPE_HA)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, haFolder := range haFolders {
-		path := generatePath(utils.CLUSTER_PATH, utils.CLUSTER_TYPE_HA, haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
+		path := generatePath(CLUSTER_PATH, CLUSTER_TYPE_HA, haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -490,28 +503,28 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 		}
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider: utils.CLOUD_CIVO,
+				Provider: CLOUD_CIVO,
 				Name:     haFolder[0],
 				Region:   haFolder[1],
-				Type:     utils.CLUSTER_TYPE_HA,
+				Type:     CLUSTER_TYPE_HA,
 
 				NoWP: len(clusterState.InstanceIDs.WorkerNodes),
 				NoCP: len(clusterState.InstanceIDs.ControlNodes),
 				NoDS: len(clusterState.InstanceIDs.DatabaseNode),
 
-				K8sDistro:  clusterState.KubernetesDistro,
+				K8sDistro:  KsctlKubernetes(clusterState.KubernetesDistro),
 				K8sVersion: clusterState.KubernetesVer,
 			})
 	}
 
-	managedFolders, err := storage.Path(generatePath(utils.CLUSTER_PATH, "managed")).GetFolders()
+	managedFolders, err := storage.Path(generatePath(CLUSTER_PATH, "managed")).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, haFolder := range managedFolders {
 
-		path := generatePath(utils.CLUSTER_PATH, "managed", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
+		path := generatePath(CLUSTER_PATH, "managed", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -523,11 +536,11 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider:   utils.CLOUD_CIVO,
+				Provider:   CLOUD_CIVO,
 				Name:       haFolder[0],
 				Region:     haFolder[1],
-				Type:       utils.CLUSTER_TYPE_MANG,
-				K8sDistro:  clusterState.KubernetesDistro,
+				Type:       CLUSTER_TYPE_MANG,
+				K8sDistro:  KsctlKubernetes(clusterState.KubernetesDistro),
 				K8sVersion: clusterState.KubernetesVer,
 				NoMgt:      clusterState.NoManagedNodes,
 			})
@@ -536,7 +549,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 }
 
 func isPresent(storage resources.StorageFactory) bool {
-	_, err := storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
+	_, err := storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -547,15 +560,15 @@ func (obj *CivoProvider) SwitchCluster(storage resources.StorageFactory) error {
 	clusterDirName = obj.clusterName + " " + obj.region
 	switch obj.haCluster {
 	case true:
-		clusterType = utils.CLUSTER_TYPE_HA
+		clusterType = CLUSTER_TYPE_HA
 		if isPresent(storage) {
-			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OPERATION_STATE_CREATE)
 			return nil
 		}
 	case false:
-		clusterType = utils.CLUSTER_TYPE_MANG
+		clusterType = CLUSTER_TYPE_MANG
 		if isPresent(storage) {
-			printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OPERATION_STATE_CREATE)
 			return nil
 		}
 	}

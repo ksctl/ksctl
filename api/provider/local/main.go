@@ -9,6 +9,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 type StateConfiguration struct {
@@ -33,6 +34,20 @@ type LocalProvider struct {
 	Metadata
 }
 
+// GetSecretTokens implements resources.CloudFactory.
+func (*LocalProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
+	return nil, nil
+}
+
+// GetStateFile implements resources.CloudFactory.
+func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
+	cloudstate, err := json.Marshal(localState)
+	if err != nil {
+		return "", err
+	}
+	return string(cloudstate), nil
+}
+
 var (
 	localState *StateConfiguration
 )
@@ -49,9 +64,9 @@ func ReturnLocalStruct(metadata resources.Metadata) (*LocalProvider, error) {
 }
 
 // InitState implements resources.CloudFactory.
-func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation string) error {
+func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation KsctlOperation) error {
 	switch operation {
-	case utils.OPERATION_STATE_CREATE:
+	case OPERATION_STATE_CREATE:
 		if isPresent(storage, cloud.ClusterName) {
 			return fmt.Errorf("[local] already present")
 		}
@@ -60,18 +75,18 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 			Distro:      "kind",
 		}
 		var err error
-		err = storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, cloud.ClusterName)).
+		err = storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName)).
 			Permission(0750).CreateDir()
 		if err != nil {
 			return err
 		}
 
-		err = saveStateHelper(storage, utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, cloud.ClusterName, STATE_FILE))
+		err = saveStateHelper(storage, utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName, STATE_FILE))
 		if err != nil {
 			return err
 		}
-	case utils.OPERATION_STATE_DELETE, utils.OPERATION_STATE_GET:
-		err := loadStateHelper(storage, utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, cloud.ClusterName, STATE_FILE))
+	case OPERATION_STATE_DELETE, OPERATION_STATE_GET:
+		err := loadStateHelper(storage, utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName, STATE_FILE))
 		if err != nil {
 			return err
 		}
@@ -115,14 +130,14 @@ func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
 func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
 	var data []cloud_control_res.AllClusterData
 
-	managedFolders, err := storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL)).GetFolders()
+	managedFolders, err := storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, folder := range managedFolders {
 
-		path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, folder[0], STATE_FILE)
+		path := utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, folder[0], STATE_FILE)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -134,11 +149,11 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider:   utils.CLOUD_LOCAL,
+				Provider:   CLOUD_LOCAL,
 				Name:       folder[0],
 				Region:     "N/A",
-				Type:       utils.CLUSTER_TYPE_MANG,
-				K8sDistro:  clusterState.Distro,
+				Type:       CLUSTER_TYPE_MANG,
+				K8sDistro:  KsctlKubernetes(clusterState.Distro),
 				K8sVersion: clusterState.Version,
 				NoMgt:      clusterState.Nodes,
 			})
@@ -149,7 +164,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 // //// NOT IMPLEMENTED //////
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *LocalProvider) Role(string) resources.CloudFactory {
+func (cloud *LocalProvider) Role(KsctlRole) resources.CloudFactory {
 	return nil
 }
 
@@ -232,7 +247,7 @@ func (obj *LocalProvider) SwitchCluster(storage resources.StorageFactory) error 
 
 	if isPresent(storage, obj.ClusterName) {
 
-		printKubeconfig(storage, utils.OPERATION_STATE_CREATE, obj.ClusterName)
+		printKubeconfig(storage, OPERATION_STATE_CREATE, obj.ClusterName)
 		return nil
 	}
 	return fmt.Errorf("[local] Cluster not found")
