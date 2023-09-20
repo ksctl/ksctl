@@ -26,25 +26,24 @@ pipeline {
                 go version
 
                 cd ./cli
-                ls -laR
-                # Check if sudo access
+
                 go get -d
                 go build -v -o ksctl .
 
-                ls -la
                 chmod +x ksctl
                 sudo mv ksctl /usr/local/bin
+
                 # Setup the configurations dir
                 rm -rf ${HOME}/.ksctl
-                mkdir -p ${HOME}/.ksctl/cred
 
+                mkdir -p ${HOME}/.ksctl/cred
                 mkdir -p ${HOME}/.ksctl/config/civo/ha
                 mkdir -p ${HOME}/.ksctl/config/azure/ha
 				mkdir -p ${HOME}/.ksctl/config/aws/ha
-                mkdir ${HOME}/.ksctl/config/azure/managed
-                mkdir ${HOME}/.ksctl/config/civo/managed
-				mkdir ${HOME}/.ksctl/config/aws/managed
-                mkdir ${HOME}/.ksctl/config/local/managed
+                mkdir -p ${HOME}/.ksctl/config/azure/managed
+                mkdir -p ${HOME}/.ksctl/config/civo/managed
+				mkdir -p ${HOME}/.ksctl/config/aws/managed
+                mkdir -p ${HOME}/.ksctl/config/local/managed
 
                 echo "SETUP DONE"
                 '''
