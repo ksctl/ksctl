@@ -986,3 +986,21 @@ func TestHACluster(t *testing.T) {
 		assert.Assert(t, len(azureCloudState.SubnetID) == 0, "subnet should be created")
 	})
 }
+
+func TestGetSecretTokens(t *testing.T) {
+	t.Run("expect demo data", func(t *testing.T) {
+		expected := map[string][]byte{
+			"AZURE_TENANT_ID":       []byte("tenant"),
+			"AZURE_SUBSCRIPTION_ID": []byte("subscription"),
+			"AZURE_CLIENT_ID":       []byte("clientid"),
+			"AZURE_CLIENT_SECRET":   []byte("clientsecr"),
+		}
+
+		for key, val := range expected {
+			assert.NilError(t, os.Setenv(key, string(val)), "environment vars should be set")
+		}
+		actual, err := fakeAzure.GetSecretTokens(demoClient.Storage)
+		assert.NilError(t, err, "unable to get the secret token from the client")
+		assert.DeepEqual(t, actual, expected)
+	})
+}

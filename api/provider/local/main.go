@@ -36,12 +36,16 @@ type LocalProvider struct {
 
 // GetSecretTokens implements resources.CloudFactory.
 func (*LocalProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
-	panic("unimplemented")
+	return nil, nil
 }
 
 // GetStateFile implements resources.CloudFactory.
 func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
-	panic("unimplemented")
+	cloudstate, err := json.Marshal(localState)
+	if err != nil {
+		return "", err
+	}
+	return string(cloudstate), nil
 }
 
 var (

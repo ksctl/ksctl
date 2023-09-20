@@ -849,3 +849,18 @@ func TestHACluster(t *testing.T) {
 	})
 
 }
+
+func TestGetSecretTokens(t *testing.T) {
+	t.Run("expect demo data", func(t *testing.T) {
+		expected := map[string][]byte{
+			"CIVO_TOKEN": []byte("demo-fake"),
+		}
+
+		for key, val := range expected {
+			assert.NilError(t, os.Setenv(key, string(val)), "environment vars should be set")
+		}
+		actual, err := fakeClient.GetSecretTokens(demoClient.Storage)
+		assert.NilError(t, err, "unable to get the secret token from the client")
+		assert.DeepEqual(t, actual, expected)
+	})
+}
