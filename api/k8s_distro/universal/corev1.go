@@ -114,3 +114,11 @@ func (this *Kubernetes) serviceaccountApply(o *corev1.ServiceAccount, ns string)
 	}
 	return nil
 }
+
+func (this *Kubernetes) nodesList() (*corev1.NodeList, error) {
+	return this.clientset.CoreV1().Nodes().List(context.Background(), v1.ListOptions{})
+}
+
+func (this *Kubernetes) nodeDelete(nodeName string) error {
+	return this.clientset.CoreV1().Nodes().Delete(context.Background(), nodeName, v1.DeleteOptions{})
+}

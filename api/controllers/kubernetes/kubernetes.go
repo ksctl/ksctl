@@ -67,8 +67,16 @@ func DelWorkerPlanes(client *resources.KsctlClient, hostnames []string) error {
 		return err
 	}
 
+	kubernetesClient := universal.Kubernetes{
+		Metadata:      client.Metadata,
+		StorageDriver: client.Storage,
+	}
+	if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+		return err
+	}
+
 	for _, hostname := range hostnames {
-		if err := universal.DeleteNode(client.Storage, hostname, kubeconfigPath); err != nil {
+		if err := kubernetesClient.DeleteWorkerNodes(hostname); err != nil {
 			return err
 		}
 	}

@@ -1,13 +1,11 @@
 package universal
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -30,18 +28,9 @@ var (
 	apps map[string]Data
 )
 
-func DeleteNode(storage resources.StorageFactory, nodeName string, kubeconfigPath string) error {
+func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		return err
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
-	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), v1.ListOptions{})
+	nodes, err := this.nodesList()
 	if err != nil {
 		return err
 	}
@@ -57,11 +46,11 @@ func DeleteNode(storage resources.StorageFactory, nodeName string, kubeconfigPat
 	if len(kNodeName) == 0 {
 		return fmt.Errorf("Not found!")
 	}
-	err = clientset.CoreV1().Nodes().Delete(context.TODO(), kNodeName, v1.DeleteOptions{})
+	err = this.nodeDelete(kNodeName)
 	if err != nil {
 		return err
 	}
-	storage.Logger().Success("[kubernetes] Deleted Node", kNodeName)
+	this.StorageDriver.Logger().Success("[client-go] Deleted Node", kNodeName)
 	return nil
 }
 
