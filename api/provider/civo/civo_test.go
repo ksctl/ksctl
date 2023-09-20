@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
 	. "github.com/kubesimplify/ksctl/api/utils/consts"
@@ -489,6 +490,24 @@ func TestManagedCluster(t *testing.T) {
 		checkCurrentStateFile(t)
 	})
 
+	t.Run("Get cluster managed", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:     fakeClient.clusterName,
+				Provider: CLOUD_CIVO,
+				Type:     CLUSTER_TYPE_MANG,
+				Region:   fakeClient.region,
+				NoMgt:    civoCloudState.NoManagedNodes,
+
+				K8sDistro:  K8S_K3S,
+				K8sVersion: civoCloudState.KubernetesVer,
+			},
+		}
+		got, err := GetRAWClusterInfos(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
+	})
+
 	t.Run("Delete managed cluster", func(t *testing.T) {
 		assert.Equal(t, fakeClient.DelManagedCluster(demoClient.Storage), nil, "managed cluster should be deleted")
 
@@ -706,10 +725,29 @@ func TestHACluster(t *testing.T) {
 		assert.DeepEqual(t, string(got), expected)
 	})
 
+	// TODO: check for the Passing the state to the kubernetes distribution function GetStateForHACluster
+
+	t.Run("Get cluster ha", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:       fakeClient.clusterName,
+				Provider:   CLOUD_CIVO,
+				Type:       CLUSTER_TYPE_HA,
+				Region:     fakeClient.region,
+				NoWP:       fakeClient.noWP,
+				NoCP:       fakeClient.noCP,
+				NoDS:       fakeClient.noDS,
+				K8sDistro:  K8S_K3S,
+				K8sVersion: civoCloudState.KubernetesVer,
+			},
+		}
+		got, err := GetRAWClusterInfos(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
+	})
+
 	// explicit clean
 	civoCloudState = nil
-
-	// TODO: check for the Passing the state to the kubernetes distribution function GetStateForHACluster
 
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {

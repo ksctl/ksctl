@@ -11,6 +11,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
 	. "github.com/kubesimplify/ksctl/api/utils/consts"
@@ -542,6 +543,22 @@ func TestManagedCluster(t *testing.T) {
 		checkCurrentStateFile(t)
 	})
 
+	t.Run("Get cluster managed", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:       fakeAzure.clusterName,
+				Provider:   CLOUD_AZURE,
+				Type:       CLUSTER_TYPE_MANG,
+				Region:     fakeAzure.region,
+				NoMgt:      azureCloudState.NoManagedNodes,
+				K8sVersion: azureCloudState.KubernetesVer,
+			},
+		}
+		got, err := GetRAWClusterInfos(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
+	})
+
 	t.Run("Delete managed cluster", func(t *testing.T) {
 		assert.Equal(t, fakeAzure.DelManagedCluster(demoClient.Storage), nil, "managed cluster should be deleted")
 
@@ -797,6 +814,25 @@ func TestHACluster(t *testing.T) {
 
 		got, _ := json.Marshal(azureCloudState)
 		assert.DeepEqual(t, string(got), expected)
+	})
+
+	t.Run("Get cluster ha", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:       fakeAzure.clusterName,
+				Region:     fakeAzure.region,
+				Provider:   CLOUD_AZURE,
+				Type:       CLUSTER_TYPE_HA,
+				NoWP:       fakeAzure.noWP,
+				NoCP:       fakeAzure.noCP,
+				NoDS:       fakeAzure.noDS,
+				K8sDistro:  K8S_K3S,
+				K8sVersion: azureCloudState.KubernetesVer,
+			},
+		}
+		got, err := GetRAWClusterInfos(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
 	})
 
 	// explicit clean
