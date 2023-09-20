@@ -41,6 +41,8 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		},
 		Spec: corev1.PodSpec{
 
+			PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
+
 			// WARN: these toleration rules only tested for the K3s distribution
 			Tolerations: []corev1.Toleration{
 				corev1.Toleration{
@@ -103,6 +105,8 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		this.StorageDriver.Logger().Warn(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
 		time.Sleep(10 * time.Second)
 	}
+
+	time.Sleep(10 * time.Second) // to maintain a time gap for stable cluster and cloud resources
 
 	this.StorageDriver.Logger().Success("[client-go] Done configuring Cluster to Scale down the no of workerplane to 1")
 	return nil
@@ -279,6 +283,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 							Operator: corev1.TolerationOpExists,
 						},
 					},
+					PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
 
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsUser:  &userid,
@@ -420,6 +425,8 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 			},
 		}
 	}
+
+	time.Sleep(10 * time.Second) // waiting till the cluster is stable
 
 	if err := this.deploymentApply(ksctlServer, KSCTL_SYS_NAMESPACE); err != nil {
 		return err

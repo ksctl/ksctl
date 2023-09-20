@@ -180,10 +180,6 @@ func main() {
 		panic(err)
 	}
 
-	if err := os.Setenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE), "true"); err != nil {
-		panic(err)
-	}
-
 	// f, _ := os.Create("gin.log")
 	// gin.DefaultWriter = io.MultiWriter(f)
 

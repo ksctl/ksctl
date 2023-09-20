@@ -10,10 +10,11 @@ GOARCH_MACOS_INTEL = amd64
 CURR_TIME = $(shell date +%s)
 
 docker_build_httpserver:
-	docker build --file containers/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1-${CURR_TIME} .
+	docker build --file containers/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1 .
 
 docker_push_registry_httpserver:
 	docker push docker.io/kubesimplify/ksctl:slim-v1
+
 
 install_linux:
 	@echo "Started to Install ksctl"

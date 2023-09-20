@@ -21,4 +21,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: make docker_build_httpserver
+      run: docker build --file containers/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1 .
