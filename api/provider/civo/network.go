@@ -2,9 +2,10 @@ package civo
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
 	"time"
+
+	"github.com/kubesimplify/ksctl/api/resources"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // NewNetwork implements resources.CloudFactory.
@@ -28,12 +29,12 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 	// NOTE: as network creation marks first resource we should create the directoy
 	// when its success
 
-	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(CLUSTER_PATH, clusterType, clusterDirName)).
 		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
 		return err
 	}
 
-	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 	return saveStateHelper(storage, path)
 }
@@ -45,8 +46,8 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 		storage.Logger().Success("[skip] network already deleted")
 	} else {
 
-		currRetryCounter := 0
-		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
+		currRetryCounter := KsctlCounterConts(0)
+		for currRetryCounter < MAX_WATCH_RETRY_COUNT {
 			var err error
 			_, err = obj.client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
 			if err != nil {
@@ -57,16 +58,16 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 			}
 			time.Sleep(5 * time.Second)
 		}
-		if currRetryCounter == utils.MAX_WATCH_RETRY_COUNT {
+		if currRetryCounter == MAX_WATCH_RETRY_COUNT {
 			return fmt.Errorf("[civo] failed to delete network timeout")
 		}
 
 		civoCloudState.NetworkIDs.NetworkID = ""
-		if err := saveStateHelper(storage, generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
+		if err := saveStateHelper(storage, generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
 			return err
 		}
 		storage.Logger().Success("[civo] Deleted network", civoCloudState.NetworkIDs.NetworkID)
 	}
-	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)
+	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName)
 	return storage.Path(path).DeleteDir()
 }

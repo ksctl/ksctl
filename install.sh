@@ -101,7 +101,8 @@ mkdir -p ${HOME}/.ksctl/config/civo/ha
 mkdir -p ${HOME}/.ksctl/config/civo/managed
 mkdir -p ${HOME}/.ksctl/config/azure/ha
 mkdir -p ${HOME}/.ksctl/config/azure/managed
-mkdir ${HOME}/.ksctl/config/aws
-mkdir ${HOME}/.ksctl/config/local
+mkdir -p ${HOME}/.ksctl/config/aws/managed
+mkdir -p ${HOME}/.ksctl/config/aws/ha
+mkdir -p ${HOME}/.ksctl/config/local/managed
 
 echo -e "${Green}INSTALL COMPLETE${NoColor}"

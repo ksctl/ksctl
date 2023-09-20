@@ -3,6 +3,7 @@ package kubeadm
 import (
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // OTHER CONFIGURATIONS
@@ -23,6 +24,11 @@ type StateConfiguration struct {
 
 type KubeadmDistro struct {
 	KubeadmVer string
+}
+
+// GetStateFile implements resources.DistroFactory.
+func (*KubeadmDistro) GetStateFile(resources.StorageFactory) (string, error) {
+	panic("unimplemented")
 }
 
 // ConfigureControlPlane implements resources.DistroFactory.
@@ -46,12 +52,12 @@ func (*KubeadmDistro) DestroyWorkerPlane(state resources.StorageFactory) ([]stri
 }
 
 // GetKubeConfig implements resources.DistroFactory.
-func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (string, error) {
+func (*KubeadmDistro) GetKubeConfig(state resources.StorageFactory) (path string, data string, err error) {
 	panic("unimplemented")
 }
 
 // InitState implements resources.DistroFactory.
-func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory, string) error {
+func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory, KsctlOperation) error {
 	k8sState = &StateConfiguration{}
 	return nil
 }

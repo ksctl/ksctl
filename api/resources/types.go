@@ -5,6 +5,7 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/logger"
 	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 type KsctlClient struct {
@@ -18,17 +19,17 @@ type KsctlClient struct {
 	Storage StorageFactory
 
 	// Metadata is used by the cloudController and manager to use data from cli
-	Metadata
+	Metadata Metadata
 }
 
 type Metadata struct {
-	ClusterName   string `json:"cluster_name"`
-	Region        string `json:"region"`
-	Provider      string `json:"cloud_provider"`
-	K8sDistro     string `json:"kubernetes_distro"`
-	K8sVersion    string `json:"kubernetes_version"`
-	StateLocation string `json:"storage_type"`
-	IsHA          bool   `json:"ha_cluster"`
+	ClusterName   string          `json:"cluster_name"`
+	Region        string          `json:"region"`
+	Provider      KsctlCloud      `json:"cloud_provider"`
+	K8sDistro     KsctlKubernetes `json:"kubernetes_distro"`
+	K8sVersion    string          `json:"kubernetes_version"`
+	StateLocation KsctlStore      `json:"storage_type"`
+	IsHA          bool            `json:"ha_cluster"`
 
 	// TODO: is it required?
 	// try to see if string could be replaced by pointer to reduce memory
@@ -70,7 +71,7 @@ type CloudFactory interface {
 	// InitState is used to initalize the state of that partular cloud provider
 	// its internal state and cloud provider's client
 	// NOTE: multiple mode of OPERATIONS
-	InitState(StorageFactory, string) error
+	InitState(StorageFactory, KsctlOperation) error
 
 	// CreateUploadSSHKeyPair create SSH keypair in the host machine and then upload pub key
 	// and store the path of private key, username, etc.. wrt to specific cloud provider
@@ -94,7 +95,7 @@ type CloudFactory interface {
 	Name(string) CloudFactory
 
 	// Role specify what is its role. Ex. Controlplane or WorkerPlane or DataStore...
-	Role(string) CloudFactory
+	Role(KsctlRole) CloudFactory
 
 	// VMType specifiy what is the VirtualMachine size to be used
 	VMType(string) CloudFactory
@@ -141,12 +142,17 @@ type CloudFactory interface {
 	GetHostNameAllWorkerNode() []string
 
 	SwitchCluster(StorageFactory) error
+
+	// GetStateFiles it returns the civo-state.json
+	// WARN: sensitive info can be present
+	GetStateFile(StorageFactory) (string, error)
+	GetSecretTokens(StorageFactory) (map[string][]byte, error)
 }
 
 type KubernetesFactory interface {
 	// InitState uses the cloud provider's shared state to initlaize itself
 	// NOTE: multiple mode of OPERATIONS
-	InitState(cloud.CloudResourceState, StorageFactory, string) error
+	InitState(cloud.CloudResourceState, StorageFactory, KsctlOperation) error
 
 	// ConfigureControlPlane to join or create VM as controlplane
 	// it requires controlplane number
@@ -169,10 +175,14 @@ type KubernetesFactory interface {
 	InstallApplication(StorageFactory) error
 
 	// GetKubeConfig returns the path of kubeconfig
-	GetKubeConfig(StorageFactory) (string, error)
+	GetKubeConfig(StorageFactory) (path string, data string, err error)
 
 	// Version setter for version to be used
 	Version(string) DistroFactory
+
+	// GetStateFiles it returns the k8s-state.json
+	// WARN: sensitive info can be present
+	GetStateFile(StorageFactory) (string, error)
 }
 
 // FEATURE: non kubernetes distrobutions like nomad

@@ -19,6 +19,7 @@ import (
 	"github.com/kubesimplify/ksctl/api/resources"
 
 	"github.com/kubesimplify/ksctl/api/logger"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )
@@ -29,10 +30,30 @@ type SSHPayload struct {
 	PublicIP       string
 	Output         string
 
-	flag     int
+	flag     KsctlUtilsConsts
 	script   string
 	fastMode bool
 }
+
+type SSHCollection interface {
+	SSHExecute(resources.StorageFactory) error
+	Flag(KsctlUtilsConsts) SSHCollection
+	Script(string) SSHCollection
+	FastMode(bool) SSHCollection
+	Username(string)
+	LocPrivateKey(string)
+	GetOutput() string
+	IPv4(ip string) SSHCollection
+}
+
+var (
+	KSCTL_CONFIG_DIR = func() string {
+		if runtime.GOOS == "windows" {
+			return fmt.Sprintf("%s\\.ksctl", GetUserName())
+		}
+		return fmt.Sprintf("%s/.ksctl", GetUserName())
+	}()
+)
 
 func (ssh *SSHPayload) Username(s string) {
 	ssh.UserName = s
@@ -52,66 +73,6 @@ func (ssh *SSHPayload) IPv4(ip string) SSHCollection {
 	ssh.PublicIP = ip
 	return ssh
 }
-
-type SSHCollection interface {
-	SSHExecute(resources.StorageFactory) error
-	Flag(int) SSHCollection
-	Script(string) SSHCollection
-	FastMode(bool) SSHCollection
-	Username(string)
-	LocPrivateKey(string)
-	GetOutput() string
-	IPv4(ip string) SSHCollection
-}
-
-const (
-	SSH_PAUSE_IN_SECONDS  = 20
-	MAX_RETRY_COUNT       = 8
-	MAX_WATCH_RETRY_COUNT = 4
-	CREDENTIAL_PATH       = int(0)
-	CLUSTER_PATH          = int(1)
-	SSH_PATH              = int(2)
-	OTHER_PATH            = int(3)
-	EXEC_WITH_OUTPUT      = int(1)
-	EXEC_WITHOUT_OUTPUT   = int(0)
-
-	ROLE_CP = "controlplane"
-	ROLE_WP = "workerplane"
-	ROLE_LB = "loadbalancer"
-	ROLE_DS = "datastore"
-
-	CLOUD_CIVO  = "civo"
-	CLOUD_AZURE = "azure"
-	CLOUD_LOCAL = "local"
-	CLOUD_AWS   = "aws"
-
-	K8S_K3S     = "k3s"
-	K8S_KUBEADM = "kubeadm"
-
-	STORE_LOCAL  = "local"
-	STORE_REMOTE = "remote"
-
-	OPERATION_STATE_GET    = "get"
-	OPERATION_STATE_CREATE = "create"
-	OPERATION_STATE_DELETE = "delete"
-
-	CLUSTER_TYPE_HA   = "ha"
-	CLUSTER_TYPE_MANG = "managed"
-
-	// makes the fake client
-	KSCTL_FAKE_FLAG = "KSCTL_FAKE_FLAG_ENABLED"
-	// KSCTL_TEST_DIR_ENABLED use this as environment variable to set a different home directory for ksctl during testing
-	KSCTL_TEST_DIR_ENABLED = "KSCTL_TEST_DIR_ENABLED"
-)
-
-var (
-	KSCTL_CONFIG_DIR = func() string {
-		if runtime.GOOS == "windows" {
-			return fmt.Sprintf("%s\\.ksctl", GetUserName())
-		}
-		return fmt.Sprintf("%s/.ksctl", GetUserName())
-	}()
-)
 
 // GetUserName returns current active username
 func GetUserName() string {
@@ -134,21 +95,25 @@ func IsValidName(clusterName string) error {
 
 // getKubeconfig returns the path to clusters specific to provider
 
-func getKubeconfig(provider string, params ...string) string {
-	if strings.Compare(provider, CLOUD_CIVO) != 0 &&
-		strings.Compare(provider, CLOUD_LOCAL) != 0 &&
-		strings.Compare(provider, CLOUD_AZURE) != 0 {
+func getKubeconfig(provider KsctlCloud, clusterType KsctlClusterType, params ...string) string {
+	if provider != CLOUD_CIVO &&
+		provider != CLOUD_LOCAL &&
+		provider != CLOUD_AZURE {
 		return ""
 	}
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
 		ret.WriteString(fmt.Sprintf("%s\\config\\%s", KSCTL_CONFIG_DIR, provider))
+		ret.WriteString("\\" + string(clusterType))
+
 		for _, item := range params {
 			ret.WriteString("\\" + item)
 		}
 	} else {
 		ret.WriteString(fmt.Sprintf("%s/config/%s", KSCTL_CONFIG_DIR, provider))
+		ret.WriteString("/" + string(clusterType))
+
 		for _, item := range params {
 			ret.WriteString("/" + item)
 		}
@@ -158,7 +123,7 @@ func getKubeconfig(provider string, params ...string) string {
 
 // getCredentials generate the path to the credentials of different providers
 
-func getCredentials(provider string) string {
+func getCredentials(provider KsctlCloud) string {
 	if runtime.GOOS == "windows" {
 		return fmt.Sprintf("%s\\cred\\%s.json", KSCTL_CONFIG_DIR, provider)
 	} else {
@@ -169,29 +134,29 @@ func getCredentials(provider string) string {
 //
 // GetPath use this in every function and differentiate the logic by using if-else
 
-func GetPath(flag int, provider string, subfolders ...string) string {
+// make getPath use 3 predefined const last is clusterType TODO:
+func GetPath(flag KsctlUtilsConsts, provider KsctlCloud, clusterType KsctlClusterType, subfolders ...string) string {
 	// for using different KSCTL DIRECTORY
-	if dirName := os.Getenv(KSCTL_TEST_DIR_ENABLED); len(dirName) != 0 {
+	if dirName := os.Getenv(string(KSCTL_CUSTOM_DIR_ENABLED)); len(dirName) != 0 {
 		KSCTL_CONFIG_DIR = dirName
 	}
 	switch flag {
 	case SSH_PATH:
-		return getSSHPath(provider, subfolders...)
+		return getSSHPath(provider, clusterType, subfolders...)
 	case CLUSTER_PATH:
-		return getKubeconfig(provider, subfolders...)
+		return getKubeconfig(provider, clusterType, subfolders...)
 	case CREDENTIAL_PATH:
 		return getCredentials(provider)
 	case OTHER_PATH:
-		return getPaths(provider, subfolders...)
+		return getPaths(provider, clusterType, subfolders...)
 	default:
 		return ""
 	}
 }
 
-func SaveCred(storage resources.StorageFactory, config interface{}, provider string) error {
+func SaveCred(storage resources.StorageFactory, config interface{}, provider KsctlCloud) error {
 
-	if strings.Compare(provider, CLOUD_CIVO) != 0 &&
-		strings.Compare(provider, CLOUD_AZURE) != 0 {
+	if provider != CLOUD_CIVO && provider != CLOUD_AZURE {
 		return fmt.Errorf("invalid provider (given): Unable to save configuration")
 	}
 
@@ -200,7 +165,7 @@ func SaveCred(storage resources.StorageFactory, config interface{}, provider str
 		return err
 	}
 
-	err = storage.Permission(0640).Path(GetPath(CREDENTIAL_PATH, provider)).Save(storeBytes)
+	err = storage.Permission(0640).Path(GetPath(CREDENTIAL_PATH, provider, "")).Save(storeBytes)
 	if err != nil {
 		return err
 	}
@@ -209,9 +174,9 @@ func SaveCred(storage resources.StorageFactory, config interface{}, provider str
 	return nil
 }
 
-func GetCred(storage resources.StorageFactory, provider string) (i map[string]string, err error) {
+func GetCred(storage resources.StorageFactory, provider KsctlCloud) (i map[string]string, err error) {
 
-	fileBytes, err := storage.Path(GetPath(CREDENTIAL_PATH, provider)).Load()
+	fileBytes, err := storage.Path(GetPath(CREDENTIAL_PATH, provider, "")).Load()
 	if err != nil {
 		return
 	}
@@ -227,17 +192,21 @@ func GetCred(storage resources.StorageFactory, provider string) (i map[string]st
 }
 
 // getSSHPath generate the SSH keypair location and subsequent fetch
-func getSSHPath(provider string, params ...string) string {
+func getSSHPath(provider KsctlCloud, clusterType KsctlClusterType, params ...string) string {
 	var ret strings.Builder
 
 	if runtime.GOOS == "windows" {
 		ret.WriteString(fmt.Sprintf("%s\\config\\%s", KSCTL_CONFIG_DIR, provider))
+		ret.WriteString("\\" + string(clusterType))
+
 		for _, item := range params {
 			ret.WriteString("\\" + item)
 		}
 		ret.WriteString("\\keypair")
 	} else {
 		ret.WriteString(fmt.Sprintf("%s/config/%s", KSCTL_CONFIG_DIR, provider))
+		ret.WriteString("/" + string(clusterType))
+
 		for _, item := range params {
 			ret.WriteString("/" + item)
 		}
@@ -248,19 +217,23 @@ func getSSHPath(provider string, params ...string) string {
 
 // getPaths to generate path irrespective of the cluster
 // its a free flowing (Provider field has not much significance)
-func getPaths(provider string, params ...string) string {
+func getPaths(provider KsctlCloud, clusterType KsctlClusterType, params ...string) string {
 	var ret strings.Builder
-	if dirName := os.Getenv(KSCTL_TEST_DIR_ENABLED); len(dirName) != 0 {
+	if dirName := os.Getenv(string(KSCTL_CUSTOM_DIR_ENABLED)); len(dirName) != 0 {
 		KSCTL_CONFIG_DIR = dirName
 	}
 
 	if runtime.GOOS == "windows" {
 		ret.WriteString(fmt.Sprintf("%s\\config\\%s", KSCTL_CONFIG_DIR, provider))
+		ret.WriteString("\\" + string(clusterType))
+
 		for _, item := range params {
 			ret.WriteString("\\" + item)
 		}
 	} else {
 		ret.WriteString(fmt.Sprintf("%s/config/%s", KSCTL_CONFIG_DIR, provider))
+		ret.WriteString("/" + string(clusterType))
+
 		for _, item := range params {
 			ret.WriteString("/" + item)
 		}
@@ -268,7 +241,7 @@ func getPaths(provider string, params ...string) string {
 	return ret.String()
 }
 
-func CreateSSHKeyPair(storage resources.StorageFactory, provider, clusterDir string) (string, error) {
+func CreateSSHKeyPair(storage resources.StorageFactory, provider KsctlCloud, clusterDir string) (string, error) {
 
 	pathTillFolder := ""
 	pathTillFolder = getPaths(provider, CLUSTER_TYPE_HA, clusterDir)
@@ -352,13 +325,14 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 	return fingerprint[1], nil
 }
 
-func (ssh *SSHPayload) Flag(execMethod int) SSHCollection {
+func (ssh *SSHPayload) Flag(execMethod KsctlUtilsConsts) SSHCollection {
 	if execMethod == EXEC_WITH_OUTPUT || execMethod == EXEC_WITHOUT_OUTPUT {
 		ssh.flag = execMethod
 		return ssh
 	}
 	return nil
 }
+
 func (ssh *SSHPayload) Script(s string) SSHCollection {
 	ssh.script = s
 	return ssh
@@ -384,7 +358,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 	storage.Logger().Success("[ssh] SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
 	// NOTE: when the fake environment variable is set //
-	if fake := os.Getenv(KSCTL_FAKE_FLAG); len(fake) != 0 {
+	if fake := os.Getenv(string(KSCTL_FAKE_FLAG)); len(fake) != 0 {
 		storage.Logger().Success("[ssh] Exec Scripts")
 		sshPayload.Output = ""
 
@@ -421,11 +395,11 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 			})}
 
 	if !sshPayload.fastMode {
-		time.Sleep(SSH_PAUSE_IN_SECONDS * time.Second)
+		time.Sleep(SSH_PAUSE_IN_SECONDS)
 	}
 
 	var conn *ssh.Client
-	currRetryCounter := 0
+	currRetryCounter := KsctlCounterConts(0)
 
 	for currRetryCounter < MAX_RETRY_COUNT {
 		conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)

@@ -1,15 +1,23 @@
 package universal
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/kubesimplify/ksctl/api/resources"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+type Kubernetes struct {
+	Metadata            resources.Metadata
+	StorageDriver       resources.StorageFactory
+	config              *rest.Config
+	clientset           *kubernetes.Clientset
+	apiextensionsClient *clientset.Clientset
+}
 
 type Data struct {
 	Url string
@@ -20,18 +28,9 @@ var (
 	apps map[string]Data
 )
 
-func DeleteNode(storage resources.StorageFactory, nodeName string, kubeconfigPath string) error {
+func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		return err
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
-	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), v1.ListOptions{})
+	nodes, err := this.nodesList()
 	if err != nil {
 		return err
 	}
@@ -47,11 +46,11 @@ func DeleteNode(storage resources.StorageFactory, nodeName string, kubeconfigPat
 	if len(kNodeName) == 0 {
 		return fmt.Errorf("Not found!")
 	}
-	err = clientset.CoreV1().Nodes().Delete(context.TODO(), kNodeName, v1.DeleteOptions{})
+	err = this.nodeDelete(kNodeName)
 	if err != nil {
 		return err
 	}
-	storage.Logger().Success("[kubernetes] Deleted Node", kNodeName)
+	this.StorageDriver.Logger().Success("[client-go] Deleted Node", kNodeName)
 	return nil
 }
 
@@ -74,4 +73,23 @@ func GetApps(storage resources.StorageFactory, name string) (Data, error) {
 		return Data{}, fmt.Errorf("[kubernetes] app not found %s", name)
 	}
 	return val, nil
+}
+
+func (this *Kubernetes) ClientInit(kubeconfigPath string) (err error) {
+	this.config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err != nil {
+		return err
+	}
+
+	this.apiextensionsClient, err = clientset.NewForConfig(this.config)
+	if err != nil {
+		return err
+	}
+
+	this.clientset, err = kubernetes.NewForConfig(this.config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

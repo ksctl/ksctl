@@ -9,14 +9,14 @@ import (
 	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
 	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // make it return error
-func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bool) error {
+func HydrateCloud(client *resources.KsctlClient, operation KsctlOperation, fakeClient bool) error {
 	var err error
 	switch client.Metadata.Provider {
-	case utils.CLOUD_CIVO:
+	case CLOUD_CIVO:
 		if !fakeClient {
 			client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
 		} else {
@@ -26,7 +26,7 @@ func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bo
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
-	case utils.CLOUD_AZURE:
+	case CLOUD_AZURE:
 		if !fakeClient {
 			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideClient)
 		} else {
@@ -36,7 +36,7 @@ func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bo
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
-	case utils.CLOUD_LOCAL:
+	case CLOUD_LOCAL:
 		client.Cloud, err = local_pkg.ReturnLocalStruct(client.Metadata)
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
@@ -88,7 +88,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, no)
+			err := client.Cloud.Role(ROLE_WP).DelVM(client.Storage, no)
 			if err != nil {
 				errChanWP <- err
 			}
@@ -98,7 +98,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Role(utils.ROLE_CP).DelVM(client.Storage, no)
+			err := client.Cloud.Role(ROLE_CP).DelVM(client.Storage, no)
 			if err != nil {
 				errChanCP <- err
 			}
@@ -108,7 +108,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Role(utils.ROLE_DS).DelVM(client.Storage, no)
+			err := client.Cloud.Role(ROLE_DS).DelVM(client.Storage, no)
 			if err != nil {
 				errChanDS <- err
 			}
@@ -118,7 +118,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 	go func() {
 		defer wg.Done()
 
-		err := client.Cloud.Role(utils.ROLE_LB).DelVM(client.Storage, 0)
+		err := client.Cloud.Role(ROLE_LB).DelVM(client.Storage, 0)
 		if err != nil {
 			errChanLB <- err
 		}
@@ -154,22 +154,22 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 
 	pauseOperation(20) // NOTE: experimental time to wait for generic cloud to update its state
 
-	err = client.Cloud.Role(utils.ROLE_DS).DelFirewall(client.Storage)
+	err = client.Cloud.Role(ROLE_DS).DelFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Role(utils.ROLE_CP).DelFirewall(client.Storage)
+	err = client.Cloud.Role(ROLE_CP).DelFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Role(utils.ROLE_WP).DelFirewall(client.Storage)
+	err = client.Cloud.Role(ROLE_WP).DelFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Role(utils.ROLE_LB).DelFirewall(client.Storage)
+	err = client.Cloud.Role(ROLE_LB).DelFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
@@ -210,9 +210,9 @@ func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.ClusterName, no)).
-				Role(utils.ROLE_WP).
-				VMType(client.WorkerPlaneNodeType).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.Metadata.ClusterName, no)).
+				Role(ROLE_WP).
+				VMType(client.Metadata.WorkerPlaneNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
@@ -258,7 +258,7 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Role(utils.ROLE_WP).DelVM(client.Storage, no)
+			err := client.Cloud.Role(ROLE_WP).DelVM(client.Storage, no)
 			if err != nil {
 				errChanWP <- err
 			}
@@ -284,7 +284,7 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 
 func CreateHACluster(client *resources.KsctlClient) error {
 	var err error
-	err = client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.Storage)
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-net").NewNetwork(client.Storage)
 	if err != nil {
 		return err
 	}
@@ -301,34 +301,34 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-ssh").CreateUploadSSHKeyPair(client.Storage)
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-ssh").CreateUploadSSHKeyPair(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-lb").
-		Role(utils.ROLE_LB).
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-lb").
+		Role(ROLE_LB).
 		NewFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-db").
-		Role(utils.ROLE_DS).
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-db").
+		Role(ROLE_DS).
 		NewFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-cp").
-		Role(utils.ROLE_CP).
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-cp").
+		Role(ROLE_CP).
 		NewFirewall(client.Storage)
 	if err != nil {
 		return err
 	}
 
-	err = client.Cloud.Name(client.ClusterName + "-fw-wp").
-		Role(utils.ROLE_WP).
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-fw-wp").
+		Role(ROLE_WP).
 		NewFirewall(client.Storage)
 	if err != nil {
 		return err
@@ -346,9 +346,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	go func() {
 		defer wg.Done()
 
-		err := client.Cloud.Name(client.ClusterName+"-vm-lb").
-			Role(utils.ROLE_LB).
-			VMType(client.LoadBalancerNodeType).
+		err := client.Cloud.Name(client.Metadata.ClusterName+"-vm-lb").
+			Role(ROLE_LB).
+			VMType(client.Metadata.LoadBalancerNodeType).
 			Visibility(true).
 			NewVM(client.Storage, 0)
 		if err != nil {
@@ -360,9 +360,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-db-%d", client.ClusterName, no)).
-				Role(utils.ROLE_DS).
-				VMType(client.DataStoreNodeType).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-db-%d", client.Metadata.ClusterName, no)).
+				Role(ROLE_DS).
+				VMType(client.Metadata.DataStoreNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
@@ -374,9 +374,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-cp-%d", client.ClusterName, no)).
-				Role(utils.ROLE_CP).
-				VMType(client.ControlPlaneNodeType).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-cp-%d", client.Metadata.ClusterName, no)).
+				Role(ROLE_CP).
+				VMType(client.Metadata.ControlPlaneNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
@@ -389,9 +389,9 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		go func(no int) {
 			defer wg.Done()
 
-			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.ClusterName, no)).
-				Role(utils.ROLE_WP).
-				VMType(client.WorkerPlaneNodeType).
+			err := client.Cloud.Name(fmt.Sprintf("%s-vm-wp-%d", client.Metadata.ClusterName, no)).
+				Role(ROLE_WP).
+				VMType(client.Metadata.WorkerPlaneNodeType).
 				Visibility(true).
 				NewVM(client.Storage, no)
 			if err != nil {
@@ -433,7 +433,7 @@ func CreateHACluster(client *resources.KsctlClient) error {
 
 func CreateManagedCluster(client *resources.KsctlClient) error {
 
-	if client.Metadata.Provider != utils.CLOUD_LOCAL {
+	if client.Metadata.Provider != CLOUD_LOCAL {
 		if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.Storage); err != nil {
 			return err
 		}
@@ -441,7 +441,7 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 
 	managedClient := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed")
 
-	if client.Metadata.Provider != utils.CLOUD_LOCAL {
+	if client.Metadata.Provider != CLOUD_LOCAL {
 		managedClient = managedClient.VMType(client.Metadata.ManagedNodeType)
 	}
 
@@ -471,7 +471,7 @@ func DeleteManagedCluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	if client.Metadata.Provider != utils.CLOUD_LOCAL {
+	if client.Metadata.Provider != CLOUD_LOCAL {
 		if err := client.Cloud.DelNetwork(client.Storage); err != nil {
 			return err
 		}

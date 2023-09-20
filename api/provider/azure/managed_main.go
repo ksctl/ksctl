@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // DelManagedCluster implements resources.CloudFactory.
@@ -32,7 +32,7 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
-	printKubeconfig(storage, utils.OPERATION_STATE_DELETE)
+	printKubeconfig(storage, OPERATION_STATE_DELETE)
 
 	return nil
 }
@@ -109,7 +109,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
-	printKubeconfig(storage, utils.OPERATION_STATE_CREATE)
+	printKubeconfig(storage, OPERATION_STATE_CREATE)
 
 	storage.Logger().Success("[azure] created AKS", *resp.Name)
 	return nil

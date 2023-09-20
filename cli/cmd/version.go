@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -19,7 +20,7 @@ const ksctl = `
 // change this using ldflags
 var Version string = "dev"
 
-var BuildDate string
+var BuildDate string = time.Now().String()
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
