@@ -137,7 +137,7 @@ func getCredentials(provider KsctlCloud) string {
 // make getPath use 3 predefined const last is clusterType TODO:
 func GetPath(flag KsctlUtilsConsts, provider KsctlCloud, clusterType KsctlClusterType, subfolders ...string) string {
 	// for using different KSCTL DIRECTORY
-	if dirName := os.Getenv(string(KSCTL_TEST_DIR_ENABLED)); len(dirName) != 0 {
+	if dirName := os.Getenv(string(KSCTL_CUSTOM_DIR_ENABLED)); len(dirName) != 0 {
 		KSCTL_CONFIG_DIR = dirName
 	}
 	switch flag {
@@ -219,7 +219,7 @@ func getSSHPath(provider KsctlCloud, clusterType KsctlClusterType, params ...str
 // its a free flowing (Provider field has not much significance)
 func getPaths(provider KsctlCloud, clusterType KsctlClusterType, params ...string) string {
 	var ret strings.Builder
-	if dirName := os.Getenv(string(KSCTL_TEST_DIR_ENABLED)); len(dirName) != 0 {
+	if dirName := os.Getenv(string(KSCTL_CUSTOM_DIR_ENABLED)); len(dirName) != 0 {
 		KSCTL_CONFIG_DIR = dirName
 	}
 

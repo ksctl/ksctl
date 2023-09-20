@@ -176,7 +176,7 @@ func getClusters(context *gin.Context) {
 
 func main() {
 
-	if err := os.Setenv(string(KSCTL_TEST_DIR_ENABLED), "/app/ksctl-data"); err != nil {
+	if err := os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), "/app/ksctl-data"); err != nil {
 		panic(err)
 	}
 

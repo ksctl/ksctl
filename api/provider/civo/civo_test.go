@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	demoClient.Storage = localstate.InitStorage(false)
 
 	// setup temporary folder
-	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
 	civoHA := utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_HA)
 	civoManaged := utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_MANG)
 

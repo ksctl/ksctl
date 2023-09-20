@@ -53,7 +53,7 @@ func AzureTestingManaged() error {
 	cli.Client.Metadata.NoMP = 2
 	cli.Client.Metadata.K8sVersion = "1.27"
 
-	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
 	azManaged := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_MANG)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
@@ -71,7 +71,7 @@ func CivoTestingManaged() error {
 	cli.Client.Metadata.ManagedNodeType = "g4s.kube.small"
 	cli.Client.Metadata.NoMP = 2
 
-	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
 	azManaged := utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_MANG)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
@@ -99,7 +99,7 @@ func CivoTestingHA() error {
 	cli.Client.Metadata.NoDS = 3
 	cli.Client.Metadata.K8sVersion = "1.27.4"
 
-	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
 	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_HA)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
@@ -132,7 +132,7 @@ func AzureTestingHA() error {
 	cli.Client.Metadata.NoDS = 1
 	cli.Client.Metadata.K8sVersion = "1.27.4"
 
-	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
 	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {

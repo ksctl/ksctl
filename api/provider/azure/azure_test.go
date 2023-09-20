@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	fakeAzure, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
 
 	demoClient.Storage = localstate.InitStorage(false)
-	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
 	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA)
 	azManaged := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_MANG)
 

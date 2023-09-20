@@ -150,7 +150,7 @@ func TestIsValidClusterName(T *testing.T) {
 func TestSSHExecute(t *testing.T) {
 	var storage resources.StorageFactory = localstate.InitStorage(false)
 	assert.Equal(t, os.MkdirAll(GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd"), 0755), nil, "create folders")
-	_ = os.Setenv(string(KSCTL_TEST_DIR_ENABLED), dir)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
 	azHA := GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd")
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {

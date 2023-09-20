@@ -74,6 +74,6 @@ const (
 	// makes the fake client
 	KSCTL_FAKE_FLAG KsctlSpecialFlags = "KSCTL_FAKE_FLAG_ENABLED"
 
-	// KSCTL_TEST_DIR_ENABLED use this as environment variable to set a different home directory for ksctl during testing
-	KSCTL_TEST_DIR_ENABLED KsctlSpecialFlags = "KSCTL_TEST_DIR_ENABLED"
+	// KSCTL_CUSTOM_DIR_ENABLED use this as environment variable to set a different home directory for ksctl during testing
+	KSCTL_CUSTOM_DIR_ENABLED KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
 )
