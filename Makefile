@@ -8,10 +8,10 @@ GOARCH_MACOS = arm64
 GOARCH_MACOS_INTEL = amd64
 
 docker_build_httpserver:
-	docker build -f containers/httpserver_slim/Dockerfile -t docker.io/dipugodocker/kubesimplify:ksctl-non-root-slim-v1 .
+	docker build -f containers/httpserver_slim/Dockerfile -t docker.io/kubesimplify/ksctl:slim-v1 .
 
 docker_push_registry_httpserver:
-	docker push docker.io/dipugodocker/kubesimplify:ksctl-non-root-slim-v1
+	docker push docker.io/kubesimplify/ksctl:slim-v1
 
 install_linux:
 	@echo "Started to Install ksctl"

@@ -308,7 +308,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 					Containers: []corev1.Container{
 						corev1.Container{
 							Name:            "main",
-							Image:           "docker.io/dipugodocker/kubesimplify:ksctl-non-root-slim-v1",
+							Image:           "docker.io/kubesimplify/ksctl:slim-v1",
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								corev1.VolumeMount{
