@@ -1,0 +1,24 @@
+name: Build Test of Docker images
+on:
+  push:
+    paths:
+    - 'api/**'
+    - 'containers/**'
+    - 'httpserver/**'
+    - 'Makefile'
+    branches: [ main ]
+  pull_request:
+    paths:
+    - 'api/**'
+    - 'containers/**'
+    - 'httpserver/**'
+    - 'Makefile'
+    branches: [ main ]
+
+jobs:
+  ksctl_scaler_http:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: docker build --file containers/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1-$(date +%s) .
