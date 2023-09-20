@@ -7,8 +7,10 @@ GOARCH_WINDOWS = amd64
 GOARCH_MACOS = arm64
 GOARCH_MACOS_INTEL = amd64
 
+CURR_TIME = $(shell date +%s)
+
 docker_build_httpserver:
-	docker build -f containers/httpserver_slim/Dockerfile -t docker.io/kubesimplify/ksctl:slim-v1 .
+	docker build --file containers/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1-${CURR_TIME} .
 
 docker_push_registry_httpserver:
 	docker push docker.io/kubesimplify/ksctl:slim-v1
