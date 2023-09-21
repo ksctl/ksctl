@@ -87,7 +87,6 @@ pipeline {
                                 }
                             }
                             steps {
-				    // build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
                                 build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
