@@ -442,7 +442,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no i
 		}
 		return len(azureCloudState.InfoWorkerPlanes.Names), nil
 	}
-	if no >= 1 {
+	if no >= 0 {
 		obj.metadata.noWP = no
 		if azureCloudState == nil {
 			return -1, fmt.Errorf("[azure] state init not called")
