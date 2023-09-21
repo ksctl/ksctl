@@ -66,7 +66,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 					Name:    "destroyer",
 					Image:   "alpine",
 					Command: []string{"sh", "-c"},
-					Args:    []string{fmt.Sprintf("apk add curl && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 1, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
+					Args:    []string{fmt.Sprintf("apk add curl && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 0, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
 
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
