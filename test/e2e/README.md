@@ -38,3 +38,9 @@ sudo apt-get install python3-certbot-nginx
 ```
 
 > Docs: https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/
+
+make the user access to sudo
+```
+sudo visudo
+jenkins ALL=(ALL) NOPASSWD:ALL
+```
