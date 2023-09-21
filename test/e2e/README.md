@@ -39,8 +39,15 @@ sudo apt-get install python3-certbot-nginx
 
 > Docs: https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/
 
+## Server final setup
 make the user access to sudo
-```
+```bash
 sudo visudo
-jenkins ALL=(ALL) NOPASSWD:ALL
+
+    jenkins ALL=(ALL) NOPASSWD:ALL
+
+sudo apt install gcc g++ -y
+
+# first run do the install manually then call the jenkins build
+as it assumes that the ksctl was there so there is rm dir command
 ```
