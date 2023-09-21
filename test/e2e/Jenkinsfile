@@ -1,8 +1,8 @@
 pipeline {
     agent any
-    environment {
-        DISCORD_SEC = credentials("discord_secret")
-    }
+    // environment {
+    //    DISCORD_SEC = credentials("discord_secret")
+    // }
     stages {
 
         stage('Build binary') {
@@ -128,9 +128,9 @@ pipeline {
             }
         }
     }
-    post {
-		always {
-			discordSend description: 'e2e test', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
-		}
-	}
+    // post {
+	// 	always {
+	// 		discordSend description: 'e2e test', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
+	// 	}
+	// }
 }
