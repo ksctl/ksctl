@@ -1,12 +1,5 @@
 name: Build Test of Docker images
 on:
-  push:
-    paths:
-    - 'api/**'
-    - 'containers/**'
-    - 'httpserver/**'
-    - 'Makefile'
-    branches: [ main ]
   pull_request:
     paths:
     - 'api/**'

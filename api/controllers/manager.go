@@ -219,23 +219,23 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", err
 	}
 
-	//////// Done with cluster setup
-	cloudstate, err := client.Cloud.GetStateFile(client.Storage)
-	if err != nil {
-		return "", err
-	}
-
-	k8sstate, err := client.Distro.GetStateFile(client.Storage)
-	if err != nil {
-		return "", err
-	}
-
-	kubeconfigPath, kubeconfig, err := client.Distro.GetKubeConfig(client.Storage)
-	if err != nil {
-		return "", err
-	}
-
 	if len(os.Getenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE))) > 0 {
+
+		//////// Done with cluster setup
+		cloudstate, err := client.Cloud.GetStateFile(client.Storage)
+		if err != nil {
+			return "", err
+		}
+
+		k8sstate, err := client.Distro.GetStateFile(client.Storage)
+		if err != nil {
+			return "", err
+		}
+
+		kubeconfigPath, kubeconfig, err := client.Distro.GetKubeConfig(client.Storage)
+		if err != nil {
+			return "", err
+		}
 
 		var cloudSecret map[string][]byte
 		cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
@@ -276,9 +276,6 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return "", err
 	}
 
-	// NOTE: before removing resources from the local we must remove the extra resources allocated by the controller
-	// make a /scaledown PUT request with noWP = 1
-
 	if len(os.Getenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE))) > 0 {
 
 		// find a better way to get the kubeconfig location
@@ -311,8 +308,8 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 			return "", err
 		}
 
-		// NOTE: explict make the count of the workernodes as 1 as we need one schedulable workload to test of the operation was successful
-		if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, 1, true); err != nil {
+		// NOTE: explict make the count of the workernodes as 0 as we need one schedulable workload to test of the operation was successful
+		if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, 0, true); err != nil {
 			return "", err
 		}
 	}
