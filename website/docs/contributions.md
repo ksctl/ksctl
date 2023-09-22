@@ -77,7 +77,7 @@ also if you want to see e2e tests taking place here are the links
 
 Info | data
 -|-
-Url | `https://jenkins-ksctl.dipankardas.in/`
+Url | `https://jenkins.ksctl.kubesimplify.com/`
 UserName | `ksctl`
 pass | `77777`
 
