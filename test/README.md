@@ -37,6 +37,18 @@ sudo apt-get install certbot
 sudo apt-get install python3-certbot-nginx
 ```
 
+```conf
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    root /var/www/html;
+    server_name XXy.Y.z;
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+    }
+}
+```
+
 > Docs: https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/
 
 ## Server final setup
