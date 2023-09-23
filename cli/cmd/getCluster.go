@@ -32,6 +32,7 @@ ksctl get-clusters `,
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = "all"
 		stat, err := controller.GetCluster(&cli.Client)
 		if err != nil {

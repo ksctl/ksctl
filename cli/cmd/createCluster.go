@@ -4,8 +4,8 @@ package cmd
 
 import (
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
 
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"github.com/spf13/cobra"
 )
 
@@ -42,8 +42,9 @@ var createClusterAzure = &cobra.Command{
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
-		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
-		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG)
+		SetRequiredFeatureFlags(cmd)
+		cli.Client.Metadata.Provider = CLOUD_AZURE
+		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_MANG)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -61,8 +62,9 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 			panic(err)
 		}
 
-		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
-		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_MANG)
+		SetRequiredFeatureFlags(cmd)
+		cli.Client.Metadata.Provider = CLOUD_CIVO
+		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_MANG)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -80,8 +82,9 @@ ksctl create-cluster local <arguments to civo cloud provider>
 			panic(err)
 		}
 
-		cli.Client.Metadata.Provider = utils.CLOUD_LOCAL
-		SetDefaults(utils.CLOUD_LOCAL, utils.CLUSTER_TYPE_MANG)
+		SetRequiredFeatureFlags(cmd)
+		cli.Client.Metadata.Provider = CLOUD_LOCAL
+		SetDefaults(CLOUD_LOCAL, CLUSTER_TYPE_MANG)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -98,9 +101,10 @@ ksctl create-cluster ha-civo <arguments to civo cloud provider>
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		SetRequiredFeatureFlags(cmd)
 
-		cli.Client.Metadata.Provider = utils.CLOUD_CIVO
-		SetDefaults(utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA)
+		cli.Client.Metadata.Provider = CLOUD_CIVO
+		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_HA)
 		createHA(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -117,8 +121,9 @@ var createClusterHAAzure = &cobra.Command{
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
-		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
-		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
+		SetRequiredFeatureFlags(cmd)
+		cli.Client.Metadata.Provider = CLOUD_AZURE
+		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_HA)
 		createHA(cmd.Flags().Lookup("approve").Changed)
 	},
 }

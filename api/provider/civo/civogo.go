@@ -1,11 +1,14 @@
 package civo
 
 import (
-	"github.com/civo/civogo"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
+	"encoding/base64"
+	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/civo/civogo"
+	"github.com/kubesimplify/ksctl/api/resources"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 type CivoGo interface {
@@ -127,30 +130,43 @@ func (client *CivoGoClient) InitClient(factory resources.StorageFactory, region 
 	return
 }
 
-// CivoGoMockClient ///////// Mock Client
+// CivoGoMockClient ///////// Mock client
 type CivoGoMockClient struct {
 	client *civogo.FakeClient
 	region string
 }
 
+func generateRandomString(length int) string {
+	b := make([]byte, length)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(b)
+}
+
 func (client *CivoGoMockClient) ListAvailableKubernetesVersions() ([]civogo.KubernetesVersion, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return []civogo.KubernetesVersion{
 		{
-			ClusterType: utils.K8S_K3S,
+			ClusterType: string(K8S_K3S),
 			Label:       "1.27.4-k3s1",
 		},
 		{
-			ClusterType: utils.K8S_K3S,
+			ClusterType: string(K8S_K3S),
 			Label:       "1.27.1-k3s1",
 		},
 		{
-			ClusterType: utils.K8S_K3S,
+			ClusterType: string(K8S_K3S),
 			Label:       "1.26.4-k3s1",
 		},
 	}, nil
 }
 
 func (client *CivoGoMockClient) ListRegions() ([]civogo.Region, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return []civogo.Region{
 		{
 			Name: "FAKE",
@@ -168,6 +184,8 @@ func (client *CivoGoMockClient) ListRegions() ([]civogo.Region, error) {
 }
 
 func (client *CivoGoMockClient) ListInstanceSizes() ([]civogo.InstanceSize, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return []civogo.InstanceSize{
 		{
 			Name: "g3.small",
@@ -182,6 +200,8 @@ func (client *CivoGoMockClient) ListInstanceSizes() ([]civogo.InstanceSize, erro
 }
 
 func (client *CivoGoMockClient) GetNetwork(id string) (*civogo.Network, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return &civogo.Network{
 		ID:      id,
 		Default: false,
@@ -220,7 +240,7 @@ users:
 
 func (client *CivoGoMockClient) NewKubernetesClusters(kc *civogo.KubernetesClusterConfig) (*civogo.KubernetesCluster, error) {
 	return &civogo.KubernetesCluster{
-		ID:        "managed-k8s-213",
+		ID:        generateRandomString(10),
 		Name:      kc.Name,
 		NetworkID: kc.NetworkID,
 		Version:   kc.KubernetesVersion,
@@ -236,22 +256,28 @@ func (client *CivoGoMockClient) DeleteKubernetesCluster(id string) (*civogo.Simp
 }
 
 func (client *CivoGoMockClient) GetDiskImageByName(name string) (*civogo.DiskImage, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return &civogo.DiskImage{
 		Name:  name,
-		ID:    "disk-123",
+		ID:    "disk-" + generateRandomString(5),
 		State: "ACTIVE",
 	}, nil
 }
 
 func (client *CivoGoMockClient) CreateNetwork(label string) (*civogo.NetworkResult, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return &civogo.NetworkResult{
 		Label:  label,
-		ID:     "net-213",
+		ID:     generateRandomString(10),
 		Result: "created fake network",
 	}, nil
 }
 
 func (client *CivoGoMockClient) DeleteNetwork(id string) (*civogo.SimpleResponse, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return &civogo.SimpleResponse{
 		ID:     id,
 		Result: "fake network deleted",
@@ -259,8 +285,10 @@ func (client *CivoGoMockClient) DeleteNetwork(id string) (*civogo.SimpleResponse
 }
 
 func (client *CivoGoMockClient) NewFirewall(config *civogo.FirewallConfig) (*civogo.FirewallResult, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return &civogo.FirewallResult{
-		ID:     "firewall-123",
+		ID:     generateRandomString(10),
 		Name:   config.Name,
 		Result: "fake firewall created",
 	}, nil
@@ -275,7 +303,7 @@ func (client *CivoGoMockClient) DeleteFirewall(id string) (*civogo.SimpleRespons
 
 func (client *CivoGoMockClient) NewSSHKey(_, _ string) (*civogo.SimpleResponse, error) {
 	return &civogo.SimpleResponse{
-		ID:     "ssh-123",
+		ID:     generateRandomString(10),
 		Result: "created fake ssh key",
 	}, nil
 }
@@ -288,8 +316,10 @@ func (client *CivoGoMockClient) DeleteSSHKey(id string) (*civogo.SimpleResponse,
 }
 
 func (client *CivoGoMockClient) CreateInstance(config *civogo.InstanceConfig) (*civogo.Instance, error) {
+	time.Sleep(time.Duration(rand.Intn(3)) * time.Second)
+
 	return &civogo.Instance{
-		ID:         "vm-123",
+		ID:         generateRandomString(10),
 		Region:     config.Region,
 		PrivateIP:  "192.169.X.X",
 		PublicIP:   "A.B.C.D",
@@ -303,6 +333,7 @@ func (client *CivoGoMockClient) CreateInstance(config *civogo.InstanceConfig) (*
 }
 
 func (client *CivoGoMockClient) GetInstance(id string) (*civogo.Instance, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 	return &civogo.Instance{
 		ID:        id,
 		PrivateIP: "192.169.X.X",
@@ -313,6 +344,8 @@ func (client *CivoGoMockClient) GetInstance(id string) (*civogo.Instance, error)
 }
 
 func (client *CivoGoMockClient) DeleteInstance(id string) (*civogo.SimpleResponse, error) {
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
 	return &civogo.SimpleResponse{
 		ID:     id,
 		Result: "fake vm deleted",
