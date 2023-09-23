@@ -13,10 +13,10 @@ import (
 
 var addMoreWorkerNodesHAAzure = &cobra.Command{
 	Use:   "add-nodes",
-	Short: "Use to add more worker nodes in HA CIVO k3s cluster",
+	Short: "Use to add more worker nodes in HA azure k3s cluster",
 	Long: `It is used to add nodes to worker nodes in cluster with the given name from user. For example:
 
-ksctl create-cluster ha-civo add-nodes <arguments to civo cloud provider>
+ksctl create-cluster ha-azure add-nodes <arguments to civo cloud provider>
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		isSet := cmd.Flags().Lookup("verbose").Changed

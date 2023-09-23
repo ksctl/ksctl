@@ -12,7 +12,7 @@ import (
 
 var deleteNodesHAAzure = &cobra.Command{
 	Use:   "delete-nodes",
-	Short: "Use to delete a HA CIVO k3s cluster",
+	Short: "Use to delete a HA azure k3s cluster",
 	Long: `It is used to delete cluster with the given name from user. For example:
 
 ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
