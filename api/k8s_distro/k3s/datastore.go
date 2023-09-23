@@ -2,11 +2,14 @@ package k3s
 
 import (
 	"fmt"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/utils"
+
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // ConfigureDataStore implements resources.DistroFactory.
@@ -19,7 +22,7 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 
 	password := generateDBPassword(15)
 
-	err := k3s.SSHInfo.Flag(utils.EXEC_WITHOUT_OUTPUT).Script(
+	err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(
 		scriptDB(password)).
 		IPv4(k8sState.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute(storage)
@@ -28,7 +31,7 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 	}
 	k8sState.DataStoreEndPoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", password, k8sState.PrivateIPs.DataStores[idx])
 
-	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err = saveStateHelper(storage, path)
 	if err != nil {
 		return err

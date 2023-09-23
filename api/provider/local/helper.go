@@ -8,6 +8,7 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
@@ -64,7 +65,7 @@ nodes:
 }
 
 func isPresent(storage resources.StorageFactory, cluster string) bool {
-	_, err := storage.Path(utils.GetPath(utils.OTHER_PATH, utils.CLOUD_LOCAL, cluster, STATE_FILE)).Load()
+	_, err := storage.Path(utils.GetPath(OTHER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cluster, STATE_FILE)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -75,7 +76,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 
 	var err error
 
-	kpath := utils.GetPath(utils.OTHER_PATH, utils.CLOUD_LOCAL, clusterName, KUBECONFIG)
+	kpath := utils.GetPath(OTHER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, clusterName, KUBECONFIG)
 
 	err = storage.Permission(0755).
 		Path(kpath).Save([]byte(""))
@@ -83,7 +84,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 		return "", err
 	}
 
-	err = saveStateHelper(storage, utils.GetPath(utils.OTHER_PATH, utils.CLOUD_LOCAL, clusterName, STATE_FILE))
+	err = saveStateHelper(storage, utils.GetPath(OTHER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, clusterName, STATE_FILE))
 	if err != nil {
 		return "", err
 	}
@@ -91,10 +92,10 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 	return kpath, nil
 }
 
-func printKubeconfig(storage resources.StorageFactory, operation string, clustername string) {
+func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation, clustername string) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
-	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, clustername, KUBECONFIG)
+	path := utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, clustername, KUBECONFIG)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {
@@ -130,12 +131,6 @@ func loadStateHelper(storage resources.StorageFactory, path string) error {
 
 	return convertStateFromBytes(raw)
 }
-
-//func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubeconfig string) error {
-//	rawState := []byte(kubeconfig)
-//
-//	return storage.Path(path).Permission(0640).Save(rawState)
-//}
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {
 	return json.Marshal(state)

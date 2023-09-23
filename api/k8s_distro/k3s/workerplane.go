@@ -5,17 +5,18 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // JoinWorkerplane implements resources.DistroFactory.
 func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
-	path := utils.GetPath(utils.CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err := saveStateHelper(storage, path)
 	if err != nil {
 		return err
 	}
 
-	err = k3s.SSHInfo.Flag(utils.EXEC_WITHOUT_OUTPUT).Script(
+	err = k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(
 		scriptWP(k3s.K3sVer, k8sState.PrivateIPs.Loadbalancer, k8sState.K3sToken)).
 		IPv4(k8sState.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute(storage)

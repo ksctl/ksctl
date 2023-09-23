@@ -9,6 +9,7 @@ import (
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -20,7 +21,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	}
 	storage.Logger().Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := utils.GetCred(storage, utils.CLOUD_CIVO)
+	token, err := utils.GetCred(storage, CLOUD_CIVO)
 	if err != nil {
 		return ""
 	}
@@ -45,14 +46,14 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	}
 	fmt.Println(id)
 
-	if err := utils.SaveCred(storage, Credential{token}, utils.CLOUD_CIVO); err != nil {
+	if err := utils.SaveCred(storage, Credential{token}, CLOUD_CIVO); err != nil {
 		return err
 	}
 	return nil
 }
 
-func generatePath(flag int, path ...string) string {
-	return utils.GetPath(flag, utils.CLOUD_CIVO, path...)
+func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
+	return utils.GetPath(flag, CLOUD_CIVO, clusterType, path...)
 }
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
@@ -94,13 +95,13 @@ func convertStateFromBytes(raw []byte) error {
 // helper functions to get resources from civogo client
 // seperation so that we can test logic by assert
 func getValidK8sVersionClient(obj *CivoProvider) []string {
-	vers, err := obj.Client.ListAvailableKubernetesVersions()
+	vers, err := obj.client.ListAvailableKubernetesVersions()
 	if err != nil {
 		return nil
 	}
 	var val []string
 	for _, ver := range vers {
-		if ver.ClusterType == utils.K8S_K3S {
+		if ver.ClusterType == string(K8S_K3S) {
 			val = append(val, ver.Label)
 		}
 	}
@@ -108,7 +109,7 @@ func getValidK8sVersionClient(obj *CivoProvider) []string {
 }
 
 func getValidRegionsClient(obj *CivoProvider) []string {
-	regions, err := obj.Client.ListRegions()
+	regions, err := obj.client.ListRegions()
 	if err != nil {
 		return nil
 	}
@@ -120,7 +121,7 @@ func getValidRegionsClient(obj *CivoProvider) []string {
 }
 
 func getValidVMSizesClient(obj *CivoProvider) []string {
-	nodeSizes, err := obj.Client.ListInstanceSizes()
+	nodeSizes, err := obj.client.ListInstanceSizes()
 	if err != nil {
 		return nil
 	}
@@ -133,11 +134,11 @@ func getValidVMSizesClient(obj *CivoProvider) []string {
 
 func validationOfArguments(obj *CivoProvider) error {
 
-	if err := isValidRegion(obj, obj.Region); err != nil {
+	if err := isValidRegion(obj, obj.region); err != nil {
 		return err
 	}
 
-	if err := utils.IsValidName(obj.ClusterName); err != nil {
+	if err := utils.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 
@@ -175,10 +176,10 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 	return fmt.Errorf("INVALID VM SIZE\nValid options: %v\n", validFromClient)
 }
 
-func printKubeconfig(storage resources.StorageFactory, operation string) {
+func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
-	path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {
