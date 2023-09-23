@@ -6,6 +6,7 @@ import (
 
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
@@ -18,12 +19,12 @@ func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) 
 		cluster.ProviderWithLogger(logger),
 	)
 
-	if err := provider.Delete(cloud.ClusterName, utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, cloud.ClusterName, KUBECONFIG)); err != nil {
+	if err := provider.Delete(cloud.ClusterName, utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName, KUBECONFIG)); err != nil {
 		return fmt.Errorf("[local] failed to delete cluster %v", err)
 	}
-	printKubeconfig(storage, utils.OPERATION_STATE_DELETE, cloud.ClusterName)
+	printKubeconfig(storage, OPERATION_STATE_DELETE, cloud.ClusterName)
 
-	return storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_LOCAL, cloud.ClusterName)).DeleteDir()
+	return storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName)).DeleteDir()
 }
 
 // NewManagedCluster implements resources.CloudFactory.
@@ -66,6 +67,6 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 		return errors.Wrap(err, "[local] failed to create cluster")
 	}
 
-	printKubeconfig(storage, utils.OPERATION_STATE_CREATE, cloud.ClusterName)
+	printKubeconfig(storage, OPERATION_STATE_CREATE, cloud.ClusterName)
 	return nil
 }

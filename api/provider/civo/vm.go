@@ -6,28 +6,29 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
+
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
-func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int, creationMode bool, role, name string) error {
+func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int, creationMode bool, role KsctlRole, name string) error {
 
 	var instID string = ""
 	var pubIP string = ""
 	var pvIP string = ""
 	switch role {
-	case utils.ROLE_CP:
+	case ROLE_CP:
 		instID = civoCloudState.InstanceIDs.ControlNodes[idx]
 		pubIP = civoCloudState.IPv4.IPControlplane[idx]
 		pvIP = civoCloudState.IPv4.PrivateIPControlplane[idx]
-	case utils.ROLE_WP:
+	case ROLE_WP:
 		instID = civoCloudState.InstanceIDs.WorkerNodes[idx]
 		pubIP = civoCloudState.IPv4.IPWorkerPlane[idx]
 		pvIP = civoCloudState.IPv4.PrivateIPWorkerPlane[idx]
-	case utils.ROLE_DS:
+	case ROLE_DS:
 		instID = civoCloudState.InstanceIDs.DatabaseNode[idx]
 		pubIP = civoCloudState.IPv4.IPDataStore[idx]
 		pvIP = civoCloudState.IPv4.PrivateIPDataStore[idx]
-	case utils.ROLE_LB:
+	case ROLE_LB:
 		instID = civoCloudState.InstanceIDs.LoadBalancerNode
 		pubIP = civoCloudState.IPv4.IPLoadbalancer
 		pvIP = civoCloudState.IPv4.PrivateIPLoadbalancer
@@ -65,7 +66,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 	obj.mxName.Unlock()
 	obj.mxVMType.Unlock()
 
-	if role == utils.ROLE_DS && indexNo > 0 {
+	if role == ROLE_DS && indexNo > 0 {
 		storage.Logger().Note("[skip] currently multiple datastore not supported", name)
 		return nil
 	}
@@ -89,13 +90,13 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 	firewallID := ""
 
 	switch role {
-	case utils.ROLE_CP:
+	case ROLE_CP:
 		firewallID = civoCloudState.NetworkIDs.FirewallIDControlPlaneNode
-	case utils.ROLE_WP:
+	case ROLE_WP:
 		firewallID = civoCloudState.NetworkIDs.FirewallIDWorkerNode
-	case utils.ROLE_DS:
+	case ROLE_DS:
 		firewallID = civoCloudState.NetworkIDs.FirewallIDDatabaseNode
-	case utils.ROLE_LB:
+	case ROLE_LB:
 		firewallID = civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode
 	}
 
@@ -129,17 +130,17 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 		obj.mxState.Lock()
 
 		switch role {
-		case utils.ROLE_CP:
+		case ROLE_CP:
 			civoCloudState.InstanceIDs.ControlNodes[indexNo] = inst.ID
-		case utils.ROLE_WP:
+		case ROLE_WP:
 			civoCloudState.InstanceIDs.WorkerNodes[indexNo] = inst.ID
-		case utils.ROLE_DS:
+		case ROLE_DS:
 			civoCloudState.InstanceIDs.DatabaseNode[indexNo] = inst.ID
-		case utils.ROLE_LB:
+		case ROLE_LB:
 			civoCloudState.InstanceIDs.LoadBalancerNode = inst.ID
 		}
 
-		path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+		path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 		if err := saveStateHelper(storage, path); err != nil {
 			errCreateVM = err
@@ -183,7 +184,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 	var errCreateVM error
 
 	switch role {
-	case utils.ROLE_CP:
+	case ROLE_CP:
 		instID = civoCloudState.InstanceIDs.ControlNodes[indexNo]
 
 		go func() {
@@ -202,7 +203,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			civoCloudState.IPv4.PrivateIPControlplane[indexNo] = ""
 			civoCloudState.HostNames.ControlNodes[indexNo] = ""
 
-			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+			path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 			if err := saveStateHelper(storage, path); err != nil {
 				errCreateVM = err
@@ -214,7 +215,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 
 		<-done
 
-	case utils.ROLE_WP:
+	case ROLE_WP:
 		go func() {
 			defer close(done)
 			instID = civoCloudState.InstanceIDs.WorkerNodes[indexNo]
@@ -229,7 +230,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			civoCloudState.IPv4.IPWorkerPlane[indexNo] = ""
 			civoCloudState.IPv4.PrivateIPWorkerPlane[indexNo] = ""
 			civoCloudState.HostNames.WorkerNodes[indexNo] = ""
-			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+			path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 			if err := saveStateHelper(storage, path); err != nil {
 				errCreateVM = err
@@ -240,7 +241,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 		}()
 		<-done
 
-	case utils.ROLE_DS:
+	case ROLE_DS:
 		go func() {
 			defer close(done)
 			instID = civoCloudState.InstanceIDs.DatabaseNode[indexNo]
@@ -255,7 +256,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			civoCloudState.IPv4.IPDataStore[indexNo] = ""
 			civoCloudState.IPv4.PrivateIPDataStore[indexNo] = ""
 			civoCloudState.HostNames.DatabaseNode[indexNo] = ""
-			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+			path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 			if err := saveStateHelper(storage, path); err != nil {
 				errCreateVM = err
@@ -266,7 +267,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 		}()
 		<-done
 
-	case utils.ROLE_LB:
+	case ROLE_LB:
 		go func() {
 			defer close(done)
 			instID = civoCloudState.InstanceIDs.LoadBalancerNode
@@ -281,7 +282,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			civoCloudState.IPv4.IPLoadbalancer = ""
 			civoCloudState.IPv4.PrivateIPLoadbalancer = ""
 			civoCloudState.HostNames.LoadBalancerNode = ""
-			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+			path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 			if err := saveStateHelper(storage, path); err != nil {
 				errCreateVM = err
@@ -298,13 +299,13 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 	return errCreateVM
 }
 
-func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID string, idx int, role, name string) error {
+func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID string, idx int, role KsctlRole, name string) error {
 	for {
 		// NOTE: this is prone to network failure
 
-		currRetryCounter := 0
+		currRetryCounter := KsctlCounterConts(0)
 		var getInst *civogo.Instance
-		for currRetryCounter < utils.MAX_WATCH_RETRY_COUNT {
+		for currRetryCounter < MAX_WATCH_RETRY_COUNT {
 			var err error
 
 			getInst, err = obj.client.GetInstance(instID)
@@ -316,7 +317,7 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 			}
 			time.Sleep(5 * time.Second)
 		}
-		if currRetryCounter == utils.MAX_WATCH_RETRY_COUNT {
+		if currRetryCounter == MAX_WATCH_RETRY_COUNT {
 			return fmt.Errorf("[civo] failed to get the state of vm")
 		}
 
@@ -330,7 +331,7 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 			defer obj.mxState.Unlock()
 			// critical section
 			switch role {
-			case utils.ROLE_CP:
+			case ROLE_CP:
 				civoCloudState.IPv4.IPControlplane[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPControlplane[idx] = pvIP
 				civoCloudState.HostNames.ControlNodes[idx] = hostNam
@@ -338,7 +339,7 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 					// no wp set so it is the final cloud provisioning
 					civoCloudState.IsCompleted = true
 				}
-			case utils.ROLE_WP:
+			case ROLE_WP:
 				civoCloudState.IPv4.IPWorkerPlane[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPWorkerPlane[idx] = pvIP
 				civoCloudState.HostNames.WorkerNodes[idx] = hostNam
@@ -347,17 +348,17 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 				if len(civoCloudState.InstanceIDs.WorkerNodes) == idx+1 {
 					civoCloudState.IsCompleted = true
 				}
-			case utils.ROLE_DS:
+			case ROLE_DS:
 				civoCloudState.IPv4.IPDataStore[idx] = pubIP
 				civoCloudState.IPv4.PrivateIPDataStore[idx] = pvIP
 				civoCloudState.HostNames.DatabaseNode[idx] = hostNam
-			case utils.ROLE_LB:
+			case ROLE_LB:
 				civoCloudState.IPv4.IPLoadbalancer = pubIP
 				civoCloudState.IPv4.PrivateIPLoadbalancer = pvIP
 				civoCloudState.HostNames.LoadBalancerNode = hostNam
 			}
 
-			path := generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+			path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
 
 			if err := saveStateHelper(storage, path); err != nil {
 				return err

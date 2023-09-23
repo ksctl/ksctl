@@ -13,7 +13,7 @@ import (
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/resources/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -63,12 +63,12 @@ func Execute() {
 	controller = control_pkg.GenKsctlController()
 
 	cloud = map[int]string{
-		1: utils.CLOUD_AWS,
-		2: utils.CLOUD_AZURE,
-		3: utils.CLOUD_CIVO,
-		4: utils.CLOUD_LOCAL,
+		1: string(CLOUD_AWS),
+		2: string(CLOUD_AZURE),
+		3: string(CLOUD_CIVO),
+		4: string(CLOUD_LOCAL),
 	}
-	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
+	cli.Client.Metadata.StateLocation = STORE_LOCAL
 
 	err := rootCmd.Execute()
 	if err != nil {

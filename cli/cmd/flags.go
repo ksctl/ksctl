@@ -1,5 +1,7 @@
 package cmd
 
+import "github.com/spf13/cobra"
+
 func verboseFlags() {
 	//createClusterAws.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
@@ -39,80 +41,58 @@ func verboseFlags() {
 	deleteNodesHACivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
 }
 
-func argsFlags() {
-	// Managed Azure
-	clusterNameFlag(createClusterAzure)
-	nodeSizeManagedFlag(createClusterAzure)
-	regionFlag(createClusterAzure)
-	noOfMPFlag(createClusterAzure)
-	k8sVerFlag(createClusterAzure)
-	distroFlag(createClusterAzure)
+func clusterNameFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&clusterName, "name", "n", "demo", "Cluster Name") // keep it same for all
+}
 
-	// Managed Civo
-	clusterNameFlag(createClusterCivo)
-	nodeSizeManagedFlag(createClusterCivo)
-	regionFlag(createClusterCivo)
-	appsFlag(createClusterCivo)
-	cniFlag(createClusterCivo)
-	noOfMPFlag(createClusterCivo)
-	distroFlag(createClusterCivo)
-	k8sVerFlag(createClusterCivo)
+func nodeSizeManagedFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&nodeSizeMP, "nodeSizeMP", "", "", "Node size of managed cluster nodes")
+}
 
-	// Managed Local
-	clusterNameFlag(createClusterLocal)
-	appsFlag(createClusterLocal)
-	cniFlag(createClusterLocal)
-	noOfMPFlag(createClusterLocal)
-	distroFlag(createClusterLocal)
-	k8sVerFlag(createClusterLocal)
+func nodeSizeCPFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&nodeSizeCP, "nodeSizeCP", "", "", "Node size of self-managed controlplane nodes")
+}
+func nodeSizeWPFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&nodeSizeWP, "nodeSizeWP", "", "", "Node size of self-managed workerplane nodes")
+}
 
-	// HA Civo
-	clusterNameFlag(createClusterHACivo)
-	nodeSizeCPFlag(createClusterHACivo)
-	nodeSizeDSFlag(createClusterHACivo)
-	nodeSizeWPFlag(createClusterHACivo)
-	nodeSizeLBFlag(createClusterHACivo)
-	regionFlag(createClusterHACivo)
-	appsFlag(createClusterHACivo)
-	cniFlag(createClusterHACivo)
-	noOfWPFlag(createClusterHACivo)
-	noOfCPFlag(createClusterHACivo)
-	noOfDSFlag(createClusterHACivo)
-	distroFlag(createClusterHACivo)
-	k8sVerFlag(createClusterHACivo)
+func nodeSizeDSFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&nodeSizeDS, "nodeSizeDS", "", "", "Node size of self-managed datastore nodes")
+}
 
-	// HA Azure
-	clusterNameFlag(createClusterHAAzure)
-	nodeSizeCPFlag(createClusterHAAzure)
-	nodeSizeDSFlag(createClusterHAAzure)
-	nodeSizeWPFlag(createClusterHAAzure)
-	nodeSizeLBFlag(createClusterHAAzure)
-	regionFlag(createClusterHAAzure)
-	appsFlag(createClusterHAAzure)
-	cniFlag(createClusterHAAzure)
-	noOfWPFlag(createClusterHAAzure)
-	noOfCPFlag(createClusterHAAzure)
-	noOfDSFlag(createClusterHAAzure)
-	distroFlag(createClusterHAAzure)
-	k8sVerFlag(createClusterHAAzure)
+func nodeSizeLBFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&nodeSizeLB, "nodeSizeLB", "", "", "Node size of self-managed loadbalancer node")
+}
 
-	// Delete commands
-	// Managed Local
-	clusterNameFlag(deleteClusterLocal)
+func regionFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&region, "region", "r", "", "Region")
+}
 
-	// managed Azure
-	clusterNameFlag(deleteClusterAzure)
-	regionFlag(deleteClusterAzure)
+func appsFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&apps, "apps", "", "", "Pre-Installed Applications")
+}
 
-	// Managed Civo
-	clusterNameFlag(deleteClusterCivo)
-	regionFlag(deleteClusterCivo)
+func cniFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&cni, "cni", "", "", "CNI")
+}
 
-	// HA Civo
-	clusterNameFlag(deleteClusterHACivo)
-	regionFlag(deleteClusterHACivo)
+func distroFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&distro, "distribution", "", "", "Kubernetes Distribution")
+}
 
-	// HA Azure
-	clusterNameFlag(deleteClusterHAAzure)
-	regionFlag(deleteClusterHAAzure)
+func k8sVerFlag(f *cobra.Command) {
+	f.Flags().StringVarP(&k8sVer, "version", "", "", "Kubernetes Version")
+}
+
+func noOfWPFlag(f *cobra.Command) {
+	f.Flags().IntVarP(&noWP, "noWP", "", -1, "Number of WorkerPlane Nodes")
+}
+func noOfCPFlag(f *cobra.Command) {
+	f.Flags().IntVarP(&noCP, "noCP", "", -1, "Number of ControlPlane Nodes")
+}
+func noOfMPFlag(f *cobra.Command) {
+	f.Flags().IntVarP(&noMP, "noMP", "", -1, "Number of Managed Nodes")
+}
+func noOfDSFlag(f *cobra.Command) {
+	f.Flags().IntVarP(&noDS, "noDS", "", -1, "Number of DataStore Nodes")
 }

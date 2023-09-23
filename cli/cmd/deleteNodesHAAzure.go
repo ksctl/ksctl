@@ -6,13 +6,13 @@ import (
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"github.com/spf13/cobra"
 )
 
 var deleteNodesHAAzure = &cobra.Command{
 	Use:   "delete-nodes",
-	Short: "Use to delete a HA CIVO k3s cluster",
+	Short: "Use to delete a HA azure k3s cluster",
 	Long: `It is used to delete cluster with the given name from user. For example:
 
 ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
@@ -22,14 +22,15 @@ ksctl delete-cluster ha-azure delete-nodes <arguments to civo cloud provider>
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
-		cli.Client.Metadata.Provider = utils.CLOUD_AZURE
+		SetRequiredFeatureFlags(cmd)
+		cli.Client.Metadata.Provider = CLOUD_AZURE
 		cli.Client.Metadata.IsHA = true
 
-		SetDefaults(utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
+		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_HA)
 		cli.Client.Metadata.NoWP = noWP
 		cli.Client.Metadata.ClusterName = clusterName
 		cli.Client.Metadata.Region = region
-		cli.Client.Metadata.K8sDistro = distro
+		cli.Client.Metadata.K8sDistro = KsctlKubernetes(distro)
 
 		if err := deleteApproval(cmd.Flags().Lookup("approve").Changed); err != nil {
 			cli.Client.Storage.Logger().Err(err.Error())

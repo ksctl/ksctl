@@ -78,16 +78,22 @@ cd website # to go inside the directory
 ```
 ### Install Dependencies
 ```bash
-npm install # install npm  
-
+npm install
 ```
+
 
 ### Start the Server
 ```bash
-npm start # to run a development server with npm 
-yarn start # to run a development server with yarn
+npm start
 ```
 ## Trying out code changes
+
+Info | data
+-|-
+Url | `https://jenkins.ksctl.kubesimplify.com/`
+UserName | `ksctl`
+pass | `77777`
+
 
 Before submitting a code change, it is important to test your changes thoroughly. You can do this by running the unit tests and integration tests.
 

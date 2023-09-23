@@ -11,8 +11,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/api/storage/localstate"
 	"github.com/kubesimplify/ksctl/api/utils"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -27,15 +29,15 @@ func TestMain(m *testing.M) {
 	demoClient = &resources.KsctlClient{}
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
-	demoClient.Metadata.Provider = utils.CLOUD_AZURE
+	demoClient.Metadata.Provider = CLOUD_AZURE
 	demoClient.Cloud, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
 
 	fakeAzure, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
 
 	demoClient.Storage = localstate.InitStorage(false)
-	_ = os.Setenv(utils.KSCTL_TEST_DIR_ENABLED, dir)
-	azHA := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA)
-	azManaged := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG)
+	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
+	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA)
+	azManaged := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_MANG)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -59,11 +61,11 @@ func TestInitState(t *testing.T) {
 
 	t.Run("Create state", func(t *testing.T) {
 
-		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+		if err := fakeAzure.InitState(demoClient.Storage, OPERATION_STATE_CREATE); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_MANG, "clustertype should be managed")
+		assert.Equal(t, clusterType, CLUSTER_TYPE_MANG, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 		assert.Equal(t, fakeAzure.Name("fake-net").NewNetwork(demoClient.Storage), nil, "Network should be created")
@@ -74,21 +76,21 @@ func TestInitState(t *testing.T) {
 		azureCloudState.IsCompleted = true
 		assert.Equal(t, azureCloudState.IsCompleted, true, "cluster should not be completed")
 
-		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+		if err := fakeAzure.InitState(demoClient.Storage, OPERATION_STATE_CREATE); err != nil {
 			t.Fatalf("Unable to resume state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Get request", func(t *testing.T) {
 
-		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_GET); err != nil {
+		if err := fakeAzure.InitState(demoClient.Storage, OPERATION_STATE_GET); err != nil {
 			t.Fatalf("Unable to get state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Delete request", func(t *testing.T) {
 
-		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_DELETE); err != nil {
+		if err := fakeAzure.InitState(demoClient.Storage, OPERATION_STATE_DELETE); err != nil {
 			t.Fatalf("Unable to Delete state, Reason: %v", err)
 		}
 	})
@@ -112,8 +114,8 @@ func TestConsts(t *testing.T) {
 
 func TestGenPath(t *testing.T) {
 	assert.Equal(t,
-		generatePath(utils.CLUSTER_PATH, "abcd"),
-		utils.GetPath(utils.CLUSTER_PATH, "azure", "abcd"),
+		generatePath(CLUSTER_PATH, "abcd"),
+		utils.GetPath(CLUSTER_PATH, "azure", "abcd"),
 		"genreatePath not compatable with utils.getpath()")
 }
 
@@ -236,7 +238,7 @@ func TestResName(t *testing.T) {
 }
 
 func TestRole(t *testing.T) {
-	validSet := []string{utils.ROLE_CP, utils.ROLE_LB, utils.ROLE_DS, utils.ROLE_WP}
+	validSet := []KsctlRole{ROLE_CP, ROLE_LB, ROLE_DS, ROLE_WP}
 	for _, val := range validSet {
 		if ret := fakeAzure.Role(val); ret == nil {
 			t.Fatalf("returned nil for valid role")
@@ -473,7 +475,7 @@ func TestFirewallRules(t *testing.T) {
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -487,7 +489,7 @@ func checkCurrentStateFile(t *testing.T) {
 
 func checkCurrentStateFileHA(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_HA, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -503,15 +505,15 @@ func TestManagedCluster(t *testing.T) {
 	fakeAzure.Version("1.27")
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+		if err := fakeAzure.InitState(demoClient.Storage, OPERATION_STATE_CREATE); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_MANG, "clustertype should be managed")
+		assert.Equal(t, clusterType, CLUSTER_TYPE_MANG, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -534,11 +536,27 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, azureCloudState.KubernetesVer, fakeAzure.metadata.k8sVersion)
 		assert.Assert(t, len(azureCloudState.ManagedClusterName) > 0, "Managed cluster Name not saved")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_MANG, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
 		if os.IsNotExist(err) {
 			t.Fatalf("kubeconfig should not be absent")
 		}
 		checkCurrentStateFile(t)
+	})
+
+	t.Run("Get cluster managed", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:       fakeAzure.clusterName,
+				Provider:   CLOUD_AZURE,
+				Type:       CLUSTER_TYPE_MANG,
+				Region:     fakeAzure.region,
+				NoMgt:      azureCloudState.NoManagedNodes,
+				K8sVersion: azureCloudState.KubernetesVer,
+			},
+		}
+		got, err := GetRAWClusterInfos(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
 	})
 
 	t.Run("Delete managed cluster", func(t *testing.T) {
@@ -554,7 +572,7 @@ func TestManagedCluster(t *testing.T) {
 
 		assert.Equal(t, len(azureCloudState.ResourceGroupName), 0, "resource grp still present")
 		// at this moment the file is not present
-		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AZURE, utils.CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_MANG, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory still present")
 		}
@@ -572,19 +590,19 @@ func TestHACluster(t *testing.T) {
 	fakeAzure.metadata.noDS = 5
 	fakeAzure.metadata.noWP = 10
 	fakeAzure.metadata.public = true
-	fakeAzure.metadata.k8sName = utils.K8S_K3S
+	fakeAzure.metadata.k8sName = K8S_K3S
 
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_CREATE); err != nil {
+		if err := fakeAzure.InitState(demoClient.Storage, OPERATION_STATE_CREATE); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_HA, "clustertype should be managed")
+		assert.Equal(t, clusterType, CLUSTER_TYPE_HA, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_CIVO, utils.CLUSTER_TYPE_HA, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_HA, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -611,7 +629,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, azureCloudState.SSHKeyName, fakeAzure.metadata.resName, "sshid must be present")
 
 		assert.Equal(t, azureCloudState.SSHUser, "azureuser", "ssh user not set")
-		assert.Equal(t, azureCloudState.SSHPrivateKeyLoc, utils.GetPath(utils.SSH_PATH, utils.CLOUD_AZURE, clusterType, clusterDirName), "ssh private key loc missing")
+		assert.Equal(t, azureCloudState.SSHPrivateKeyLoc, utils.GetPath(SSH_PATH, CLOUD_AZURE, clusterType, clusterDirName), "ssh private key loc missing")
 
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 		checkCurrentStateFileHA(t)
@@ -620,7 +638,7 @@ func TestHACluster(t *testing.T) {
 	t.Run("Create Firewalls", func(t *testing.T) {
 
 		t.Run("Controlplane", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_CP)
+			fakeAzure.Role(ROLE_CP)
 			fakeAzure.Name("fake-fw-cp")
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
@@ -629,7 +647,7 @@ func TestHACluster(t *testing.T) {
 			assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkSecurityGroupID) > 0, "fw id for controlplane missing")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_WP)
+			fakeAzure.Role(ROLE_WP)
 			fakeAzure.Name("fake-fw-wp")
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
@@ -637,7 +655,7 @@ func TestHACluster(t *testing.T) {
 			assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID) > 0, "fw id for workerplane missing")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_LB)
+			fakeAzure.Role(ROLE_LB)
 			fakeAzure.Name("fake-fw-lb")
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
@@ -645,7 +663,7 @@ func TestHACluster(t *testing.T) {
 			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID) > 0, "fw id for loadbalacer missing")
 		})
 		t.Run("Datastore", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_DS)
+			fakeAzure.Role(ROLE_DS)
 			fakeAzure.Name("fake-fw-ds")
 
 			assert.Equal(t, fakeAzure.NewFirewall(demoClient.Storage), nil, "new firewall failed")
@@ -658,7 +676,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("Create VMs", func(t *testing.T) {
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_LB)
+			fakeAzure.Role(ROLE_LB)
 			fakeAzure.Name("fake-lb")
 			fakeAzure.VMType("fake")
 
@@ -688,7 +706,7 @@ func TestHACluster(t *testing.T) {
 				t.Run("controlplane", func(t *testing.T) {
 
 					fakeAzure.Name(fmt.Sprintf("fake-cp-%d", i))
-					fakeAzure.Role(utils.ROLE_CP)
+					fakeAzure.Role(ROLE_CP)
 					fakeAzure.VMType("fake")
 
 					assert.Equal(t, fakeAzure.NewVM(demoClient.Storage, i), nil, "new vm failed")
@@ -723,7 +741,7 @@ func TestHACluster(t *testing.T) {
 			for i := 0; i < fakeAzure.metadata.noDS; i++ {
 				t.Run("datastore", func(t *testing.T) {
 
-					fakeAzure.Role(utils.ROLE_DS)
+					fakeAzure.Role(ROLE_DS)
 					fakeAzure.Name(fmt.Sprintf("fake-ds-%d", i))
 					fakeAzure.VMType("fake")
 
@@ -755,7 +773,7 @@ func TestHACluster(t *testing.T) {
 			for i := 0; i < fakeAzure.metadata.noWP; i++ {
 				t.Run("workerplane", func(t *testing.T) {
 
-					fakeAzure.Role(utils.ROLE_WP)
+					fakeAzure.Role(ROLE_WP)
 					fakeAzure.Name(fmt.Sprintf("fake-wp-%d", i))
 					fakeAzure.VMType("fake")
 
@@ -790,6 +808,33 @@ func TestHACluster(t *testing.T) {
 		assert.DeepEqual(t, got, expected)
 	})
 
+	t.Run("check getState()", func(t *testing.T) {
+		expected, err := fakeAzure.GetStateFile(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there for getstate")
+
+		got, _ := json.Marshal(azureCloudState)
+		assert.DeepEqual(t, string(got), expected)
+	})
+
+	t.Run("Get cluster ha", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:       fakeAzure.clusterName,
+				Region:     fakeAzure.region,
+				Provider:   CLOUD_AZURE,
+				Type:       CLUSTER_TYPE_HA,
+				NoWP:       fakeAzure.noWP,
+				NoCP:       fakeAzure.noCP,
+				NoDS:       fakeAzure.noDS,
+				K8sDistro:  K8S_K3S,
+				K8sVersion: azureCloudState.KubernetesVer,
+			},
+		}
+		got, err := GetRAWClusterInfos(demoClient.Storage)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
+	})
+
 	// explicit clean
 	azureCloudState = nil
 
@@ -798,11 +843,11 @@ func TestHACluster(t *testing.T) {
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {
 
-		if err := fakeAzure.InitState(demoClient.Storage, utils.OPERATION_STATE_DELETE); err != nil {
+		if err := fakeAzure.InitState(demoClient.Storage, OPERATION_STATE_DELETE); err != nil {
 			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, utils.CLUSTER_TYPE_HA, "clustertype should be managed")
+		assert.Equal(t, clusterType, CLUSTER_TYPE_HA, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 	})
 
@@ -820,7 +865,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("Delete VMs", func(t *testing.T) {
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_LB)
+			fakeAzure.Role(ROLE_LB)
 
 			assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, 0), nil, "del vm failed")
 
@@ -843,7 +888,7 @@ func TestHACluster(t *testing.T) {
 
 			for i := 0; i < fakeAzure.metadata.noWP; i++ {
 				t.Run("workerplane", func(t *testing.T) {
-					fakeAzure.Role(utils.ROLE_WP)
+					fakeAzure.Role(ROLE_WP)
 
 					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
 
@@ -868,7 +913,7 @@ func TestHACluster(t *testing.T) {
 
 			for i := 0; i < fakeAzure.metadata.noCP; i++ {
 				t.Run("controlplane", func(t *testing.T) {
-					fakeAzure.Role(utils.ROLE_CP)
+					fakeAzure.Role(ROLE_CP)
 
 					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
 
@@ -893,7 +938,7 @@ func TestHACluster(t *testing.T) {
 
 			for i := 0; i < fakeAzure.metadata.noDS; i++ {
 				t.Run("datastore", func(t *testing.T) {
-					fakeAzure.Role(utils.ROLE_DS)
+					fakeAzure.Role(ROLE_DS)
 
 					assert.Equal(t, fakeAzure.DelVM(demoClient.Storage, i), nil, "del vm failed")
 
@@ -919,7 +964,7 @@ func TestHACluster(t *testing.T) {
 	t.Run("Delete Firewalls", func(t *testing.T) {
 
 		t.Run("Controlplane", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_CP)
+			fakeAzure.Role(ROLE_CP)
 
 			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "del firewall failed")
 
@@ -927,7 +972,7 @@ func TestHACluster(t *testing.T) {
 			assert.Assert(t, len(azureCloudState.InfoControlPlanes.NetworkSecurityGroupID) == 0, "fw id for controlplane missing")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_WP)
+			fakeAzure.Role(ROLE_WP)
 
 			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "new firewall failed")
 
@@ -935,7 +980,7 @@ func TestHACluster(t *testing.T) {
 			assert.Assert(t, len(azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID) == 0, "fw id for workerplane missing")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_LB)
+			fakeAzure.Role(ROLE_LB)
 
 			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "new firewall failed")
 
@@ -943,7 +988,7 @@ func TestHACluster(t *testing.T) {
 			assert.Assert(t, len(azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID) == 0, "fw id for loadbalacer missing")
 		})
 		t.Run("Datastore", func(t *testing.T) {
-			fakeAzure.Role(utils.ROLE_DS)
+			fakeAzure.Role(ROLE_DS)
 
 			assert.Equal(t, fakeAzure.DelFirewall(demoClient.Storage), nil, "new firewall failed")
 
@@ -975,5 +1020,23 @@ func TestHACluster(t *testing.T) {
 
 		assert.Assert(t, len(azureCloudState.VirtualNetworkID) == 0, "virtual net should be created")
 		assert.Assert(t, len(azureCloudState.SubnetID) == 0, "subnet should be created")
+	})
+}
+
+func TestGetSecretTokens(t *testing.T) {
+	t.Run("expect demo data", func(t *testing.T) {
+		expected := map[string][]byte{
+			"AZURE_TENANT_ID":       []byte("tenant"),
+			"AZURE_SUBSCRIPTION_ID": []byte("subscription"),
+			"AZURE_CLIENT_ID":       []byte("clientid"),
+			"AZURE_CLIENT_SECRET":   []byte("clientsecr"),
+		}
+
+		for key, val := range expected {
+			assert.NilError(t, os.Setenv(key, string(val)), "environment vars should be set")
+		}
+		actual, err := fakeAzure.GetSecretTokens(demoClient.Storage)
+		assert.NilError(t, err, "unable to get the secret token from the client")
+		assert.DeepEqual(t, actual, expected)
 	})
 }

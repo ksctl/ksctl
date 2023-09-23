@@ -5,7 +5,7 @@ pipeline {
         AZURE_CLIENT_SECRET = credentials("client_secret")
         AZURE_SUBSCRIPTION_ID = credentials("subscriptionid")
         AZURE_TENANT_ID = credentials("tenantid")
-        DISCORD_SEC = credentials("discord_secret")
+      //  DISCORD_SEC = credentials("discord_secret")
     }
 
     stages {
@@ -106,11 +106,11 @@ pipeline {
                 ksctl delete ha-azure -n demo -r eastus2 --approve -v
             '''
         }
-        success {
-            discordSend description: 'e2e test of azure provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
-        }
-        failure {
-            discordSend description: 'e2e test of azure provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
-        }
+        // success {
+        //     discordSend description: 'e2e test of azure provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
+        // }
+        // failure {
+        //     discordSend description: 'e2e test of azure provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
+        // }
     }
 }

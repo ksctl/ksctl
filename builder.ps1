@@ -14,10 +14,13 @@ mkdir -Force $env:USERPROFILE\.ksctl\cred
 mkdir -Force $env:USERPROFILE\.ksctl\config\civo
 mkdir -Force $env:USERPROFILE\.ksctl\config\civo\ha
 mkdir -Force $env:USERPROFILE\.ksctl\config\civo\managed
-mkdir -Force $env:USERPROFILE\.ksctl\config\local
 mkdir -Force $env:USERPROFILE\.ksctl\config\azure
 mkdir -Force $env:USERPROFILE\.ksctl\config\azure\ha
 mkdir -Force $env:USERPROFILE\.ksctl\config\azure\managed
+mkdir -Force $env:USERPROFILE\.ksctl\config\aws\ha
+mkdir -Force $env:USERPROFILE\.ksctl\config\aws\managed
+mkdir -Force $env:USERPROFILE\.ksctl\config\local
+mkdir -Force $env:USERPROFILE\.ksctl\config\local\managed
 
 $env:GOOS = 'windows'
 $env:GOARCH = 'amd64'

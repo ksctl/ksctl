@@ -3,12 +3,11 @@ package azure
 import (
 	"context"
 
-	"github.com/kubesimplify/ksctl/api/utils"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/kubesimplify/ksctl/api/resources"
+	. "github.com/kubesimplify/ksctl/api/utils/consts"
 )
 
 // NewNetwork implements resources.CloudFactory.
@@ -34,7 +33,7 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 
 	azureCloudState.ResourceGroupName = *resourceGroup.Name
 
-	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(CLUSTER_PATH, clusterType, clusterDirName)).
 		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
 		return err
 	}
@@ -179,7 +178,7 @@ func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
 
 	}
 
-	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(CLUSTER_PATH, clusterType, clusterDirName)).
 		DeleteDir(); err != nil {
 		return err
 	}
