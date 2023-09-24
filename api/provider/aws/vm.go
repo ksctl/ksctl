@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elb_types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
-	"github.com/fatih/color"
 	"github.com/kubesimplify/ksctl/api/resources"
 	"github.com/kubesimplify/ksctl/api/utils"
 )
@@ -21,14 +21,10 @@ var (
 	RouteTableID  string
 	VPCID         string
 	SUBNETID      []string
-
-	// clusterDirName string
-	// clusterType    string // it stores the ha or managed
-	// ctx context.Context
 )
 
 func (obj *AwsProvider) ec2Client() *ec2.Client {
-	ec2client := ec2.NewFromConfig(*obj.Session)
+	ec2client := ec2.NewFromConfig(obj.session)
 	//TODO ADD ERROR HANDLING
 	return ec2client
 }
@@ -62,101 +58,7 @@ func (obj *AwsProvider) CreateVPC() {
 
 }
 
-func (obj *AwsProvider) CreateSubnet() {
-
-	ec2Client := obj.ec2Client()
-
-	fmt.Print(color.BlueString("Creating Subnet...."))
-	subnetClient := ec2.CreateSubnetInput{
-		CidrBlock: aws.String("172.31.16.0/20"),
-		VpcId:     aws.String(VPCID),
-		TagSpecifications: []types.TagSpecification{
-			{
-				ResourceType: types.ResourceType("subnet"),
-				Tags: []types.Tag{
-					{
-						Key:   aws.String("Name"),
-						Value: aws.String(obj.ClusterName + "-subnet"),
-					},
-				},
-			},
-		},
-		AvailabilityZone: aws.String("ap-south-1a"),
-		// TODO: Add the following parameters
-		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
-	}
-
-	subnet, err := ec2Client.CreateSubnet(context.TODO(), &subnetClient)
-	if err != nil {
-		log.Println(err)
-	}
-	SUBNETID = append(SUBNETID, *subnet.Subnet.SubnetId)
-
-	///////////////////////
-
-	fmt.Print(color.BlueString("Creating Subnet...."))
-	subnetClient = ec2.CreateSubnetInput{
-		CidrBlock: aws.String("172.31.0.0/20"),
-		VpcId:     aws.String(VPCID),
-		TagSpecifications: []types.TagSpecification{
-			{
-				ResourceType: types.ResourceType("subnet"),
-				Tags: []types.Tag{
-					{
-						Key:   aws.String("Name"),
-						Value: aws.String(obj.ClusterName + "-subnet"),
-					},
-				},
-			},
-		},
-		// TODO: Add the following parameters
-		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
-
-		AvailabilityZone: aws.String("ap-south-1b"),
-	}
-
-	subnet, err = ec2Client.CreateSubnet(context.TODO(), &subnetClient)
-	if err != nil {
-		log.Println(err)
-	}
-	SUBNETID = append(SUBNETID, *subnet.Subnet.SubnetId)
-
-	///////////////////////
-
-	fmt.Print(color.BlueString("Creating Subnet...."))
-	subnetClient = ec2.CreateSubnetInput{
-		CidrBlock: aws.String("172.31.32.0/20"),
-		VpcId:     aws.String(VPCID),
-		TagSpecifications: []types.TagSpecification{
-			{
-				ResourceType: types.ResourceType("subnet"),
-				Tags: []types.Tag{
-					{
-						Key:   aws.String("Name"),
-						Value: aws.String(obj.ClusterName + "-subnet"),
-					},
-				},
-			},
-		},
-		// TODO: Add the following parameters
-		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
-
-		AvailabilityZone: aws.String("ap-south-1c"),
-	}
-
-	subnet, err = ec2Client.CreateSubnet(context.TODO(), &subnetClient)
-	if err != nil {
-		log.Println(err)
-	}
-
-	SUBNETID = append(SUBNETID, *subnet.Subnet.SubnetId)
-	fmt.Print("Subnet Created Successfully: ")
-	fmt.Println(*subnet.Subnet.SubnetId)
-	// awsCloudState.SubnetID = *subnet.Subnet.SubnetId
-	// fmt.Println("fromstate", awsCloudState.SubnetID)
-}
-
-func (obj *AwsProvider) CreateInternetGateway() {
+func (obj *AwsProvider) CreateInternetGateway() error {
 
 	ec2Client := obj.ec2Client()
 
@@ -190,6 +92,8 @@ func (obj *AwsProvider) CreateInternetGateway() {
 	fmt.Println(*createInternetGateway.InternetGateway.InternetGatewayId)
 	// awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 	fmt.Print("Internet Gateway Created Successfully: ")
+
+	return nil
 }
 
 func (obj *AwsProvider) CreateRouteTable() {
@@ -254,7 +158,7 @@ func (obj *AwsProvider) CreateRouteTable() {
 
 // TODO: Use elb v2 client
 func (obj *AwsProvider) ElbClient() *elasticloadbalancingv2.Client {
-	elbv2Client := elasticloadbalancingv2.NewFromConfig(*obj.Session)
+	elbv2Client := elasticloadbalancingv2.NewFromConfig(obj.session)
 
 	return elbv2Client
 }
@@ -316,7 +220,7 @@ func (obj *AwsProvider) RegisterTargetGroup() {
 
 	ARNV := ARN.TargetGroups[0].TargetGroupArn
 
-	client.RegisterTargets(context.TODO(), &elasticloadbalancingv2.RegisterTargetsInput{
+	_, err := client.RegisterTargets(context.TODO(), &elasticloadbalancingv2.RegisterTargetsInput{
 		TargetGroupArn: aws.String(*ARNV),
 		Targets: []elb_types.TargetDescription{
 			{
@@ -325,6 +229,10 @@ func (obj *AwsProvider) RegisterTargetGroup() {
 			},
 		},
 	})
+	if err != nil {
+		fmt.Println("Could not register the target group")
+		log.Fatal(err)
+	}
 
 	fmt.Println("Target Group Registered Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
 }
@@ -368,7 +276,7 @@ func (obj *AwsProvider) CreateListener() {
 func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName string, index int) error {
 
 	publicIP := ""
-	switch obj.Metadata.Role {
+	switch obj.metadata.role {
 	case utils.ROLE_WP:
 		publicIP = awsCloudState.InfoWorkerPlanes.PublicIPNames[index]
 	case utils.ROLE_CP:
@@ -389,7 +297,7 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 			{
 				Tags: []types.Tag{
 					{
-						Key:   aws.String(obj.Metadata.ResName),
+						Key:   aws.String(obj.metadata.resName),
 						Value: aws.String("value"),
 					},
 				},
@@ -416,7 +324,7 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 		log.Println(err)
 	}
 	if ipaddress.Addresses == nil {
-		fmt.Printf("No elastic IPs for %s region\n", obj.Region)
+		fmt.Printf("No elastic IPs for %s region\n", obj.region)
 		return err
 	}
 	fmt.Println("Elastic IPs")
@@ -433,7 +341,7 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 				ResourceType: types.ResourceType("elastic-ip"),
 				Tags: []types.Tag{
 					{
-						Key:   aws.String(obj.Metadata.ResName),
+						Key:   aws.String(obj.metadata.resName),
 						Value: aws.String("value"),
 					},
 				},
@@ -451,11 +359,11 @@ func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName 
 	return nil
 }
 
-func (obj *AwsProvider) AssignPublicIP(instanceid string) error {
+func (obj *AwsProvider) AssignPublicIP(instanceid string, publicip string) error {
 	client := obj.ec2Client()
 	_, err := client.AssociateAddress(context.Background(), &ec2.AssociateAddressInput{
 		InstanceId: aws.String(instanceid),
-		PublicIp:   aws.String(""),
+		PublicIp:   aws.String(publicip),
 	})
 	if err != nil {
 		log.Println(err)
@@ -491,78 +399,207 @@ func fmtAddress(addr *types.Address) string {
 // 8. OS IAMGE											TODO  TESTING PENDING
 // 9. Generate SSH Key
 // 10. Create VM
-func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
-	if obj.Metadata.Role == utils.ROLE_DS && indexNo > 0 {
-		storage.Logger().Note("[skip] currently multiple datastore not supported")
-		return nil
-	}
 
-	ec2Client := obj.ec2Client()
+// TODO Refactor all the code same as various providor
 
-	VM, err := ec2Client.RunInstances(context.TODO(), &ec2.RunInstancesInput{
-		/*
-			TODO: Add the following parameters
-			vmname
-			vpcid
-			subnetid
-			securitygroup
-			availabilityzone
-			availabilityzoneid
-			osimage
-			sshkey
-			instanceprofile t2.micro
-		*/
-		ImageId:      aws.String("ami-e7527ed7"),
-		InstanceType: types.InstanceType("t2.micro"),
-		KeyName:      aws.String(awsCloudState.SSHKeyName),
+func (obj *AwsProvider) DelVM(factory resources.StorageFactory, i int) error {
+	//TODO implement me
+	fmt.Println("AWS Del VM")
+	return nil
+}
 
-		// TODO figure out add the main parameters or not
-		// MaintenanceOptions: ,
+var NICID string
 
-		MaxCount: aws.Int32(1), //this is the number of instances you want to create
-		MinCount: aws.Int32(1), //this is the number of instances you want to create
+func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role string, inistanceid string) (*ec2.CreateNetworkInterfaceOutput, error) {
 
-		// Monitoring: types.RunInstancesMonitoringEnabled{
-		// 	Enabled: aws.Bool(true),
-		// },
-
-		PrivateIpAddress: aws.String(""),
-
-		EnablePrimaryIpv6: aws.Bool(true),
-		SecurityGroupIds: []string{
+	// to create networkinterface we need subnetid, securitygroup, availabilityzone, availabilityzoneid, osimage, sshkey, instanceprofile
+	// ipv6addresscount, ipv6pool
+	interfaceparameter := &ec2.CreateNetworkInterfaceInput{
+		Description: aws.String("network interface"),
+		Groups: []string{
 			awsCloudState.SecurityGroupID,
 		},
 		SubnetId: aws.String(awsCloudState.SubnetID),
 		TagSpecifications: []types.TagSpecification{
 			{
-				ResourceType: types.ResourceType("instance"),
+				ResourceType: types.ResourceType("network-interface"),
 				Tags: []types.Tag{
 					{
-						Key:   aws.String("Name"),
-						Value: aws.String(obj.Metadata.ResName),
+						Key:   aws.String(obj.metadata.resName),
+						Value: aws.String("value"),
 					},
 				},
 			},
 		},
+	}
 
-		// capacity reservation is used to reserve the capacity for the VM aka the storage
-		// CapacityReservationSpecification: &ec2.CapacityReservationSpecification{
-		// 	CapacityReservationPreference: aws.String("open"),
-		// 	CapacityReservationTarget: &ec2.CapacityReservationTarget{
-		// 		CapacityReservationId: aws.String("string"),
-		// 		CapacityReservationResourceGroupArn: aws.String("string"),
-		// 	},
-		// },
+	vniclient := obj.ec2Client()
+	nicresponse, err := vniclient.CreateNetworkInterface(context.Background(), interfaceparameter)
+	if err != nil {
+		log.Println(err)
+	}
 
-		// add disk size
+	NICID = *nicresponse.NetworkInterface.NetworkInterfaceId
+	storage.Logger().Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
+
+	publicip := &ec2.AllocateAddressInput{
+		Domain: types.DomainType("vpc"),
+		TagSpecifications: []types.TagSpecification{
+			{
+				ResourceType: types.ResourceType("elastic-ip"),
+				Tags: []types.Tag{
+					{
+						Key:   aws.String(obj.metadata.resName),
+						Value: aws.String("value"),
+					},
+				},
+			},
+		},
+	}
+
+	publicipresponse, err := vniclient.AllocateAddress(context.Background(), publicip)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// now we need to associate the public ip to the network interface
+	_, err = vniclient.AssociateAddress(context.Background(), &ec2.AssociateAddressInput{
+		AllocationId:       publicipresponse.AllocationId,
+		InstanceId:         aws.String(inistanceid),
+		NetworkInterfaceId: nicresponse.NetworkInterface.NetworkInterfaceId,
 	})
 	if err != nil {
 		log.Println(err)
 	}
 
-	fmt.Println("VM Created Successfully....")
-	fmt.Println(VM.Instances[0].InstanceId)
-	fmt.Println(VM.Instances[0].SecurityGroups)
-	fmt.Println(VM.Instances[0].PublicIpAddress)
+	time.Sleep(10 * time.Second)
+	attachresp, err := vniclient.AttachNetworkInterface(context.Background(), &ec2.AttachNetworkInterfaceInput{
+		DeviceIndex:        aws.Int32(0),
+		InstanceId:         aws.String(inistanceid),
+		NetworkInterfaceId: nicresponse.NetworkInterface.NetworkInterfaceId,
+		// SkipSourceDestCheck: aws.Bool(true),
+	})
+	if err != nil {
+		log.Println(err)
+	}
+
+	storage.Logger().Success("[aws] attached the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	storage.Logger().Success("[aws] attached the public ip ", *publicipresponse.PublicIp)
+	storage.Logger().Success("[aws] attached the network interface to the instance ", *attachresp.AttachmentId)
+
+	return nicresponse, nil
+
+}
+
+func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
+	if obj.metadata.role == utils.ROLE_DS && indexNo > 0 {
+		storage.Logger().Note("[skip] currently multiple datastore not supported")
+		return nil
+	}
+
+	ec2Client := obj.ec2Client()
+	obj.metadata.role = "testing"
+	err := obj.NewFirewall(storage)
+	if err != nil {
+		log.Println(err)
+	}
+
+	parameter := &ec2.RunInstancesInput{
+		// use awslinux image id ---->   ami-0e306788ff2473ccb
+		ImageId:      aws.String("ami-0e306788ff2473ccb"),
+		InstanceType: types.InstanceTypeT2Micro,
+		MinCount:     aws.Int32(1),
+		MaxCount:     aws.Int32(1),
+		KeyName:      aws.String("ksctl"),
+		SubnetId:     aws.String(awsCloudState.SubnetID),
+		Monitoring: &types.RunInstancesMonitoringEnabled{
+			Enabled: aws.Bool(true),
+		},
+
+		IamInstanceProfile: &types.IamInstanceProfileSpecification{
+			Arn: aws.String("arn:aws:iam::708808958753:instance-profile/kssctl-arn"),
+		},
+
+		TagSpecifications: []types.TagSpecification{
+			{
+				ResourceType: types.ResourceType("instance"),
+				Tags: []types.Tag{
+					{
+						Key:   aws.String(obj.metadata.resName),
+						Value: aws.String("value"),
+					},
+				},
+			},
+		},
+
+		// EbsOptimized: aws.Bool(true),
+		// BlockDeviceMappings: []types.BlockDeviceMapping{
+		// 	{
+		// 		DeviceName: aws.String("/dev/sda1"),
+		// 		Ebs: &types.EbsBlockDevice{
+		// 			DeleteOnTermination: aws.Bool(true),
+		// 			VolumeSize:          aws.Int32(8),
+		// 			VolumeType:          types.VolumeType("gp2"),
+		// 		},
+		// 	},
+		// },
+	}
+
+	instanceop, err := ec2Client.RunInstances(context.Background(), parameter)
+	// id := aws.String(*instanceop.Instances[0].InstanceId)
+	if err != nil {
+		fmt.Println(err)
+		panic("Error creating EC2 instance: " + err.Error())
+	}
+
+	_, err = obj.CreateNetworkInterface(context.TODO(), storage, obj.metadata.resName, indexNo, obj.metadata.role, *instanceop.Instances[0].InstanceId)
+	if err != nil {
+		panic("Error creating network interface: " + err.Error())
+	}
+
+	// obj.AssignPublicIP(*instanceop.Instances[0].InstanceId, *publicipresponse.PublicIp)
+
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+
+	storage.Logger().Success("[aws] created the instance ", *instanceop.Instances[0].InstanceId)
+	time.Sleep(300 * time.Second)
+	return nil
+}
+
+func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
+	return nil
+}
+
+func (obj *AwsProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
+	return nil
+}
+
+func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string, index int, role string, instancid string) (*ec2.ReleaseAddressOutput, error) {
+
+	ec2Client := obj.ec2Client()
+
+	allocRes, err := ec2Client.AllocateAddress(ctx, &ec2.AllocateAddressInput{
+		Domain: types.DomainTypeVpc,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = ec2Client.AssociateAddress(ctx, &ec2.AssociateAddressInput{
+		AllocationId: allocRes.AllocationId,
+		InstanceId:   aws.String(instancid),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	storage.Logger().Success("[aws] created the public IP ", *allocRes.PublicIp)
+	return nil, nil
+}
+
+func (obj *AwsProvider) DeleteDisk(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
+
 	return nil
 }
