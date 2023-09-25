@@ -39,9 +39,9 @@ func HydrateCloud(client *resources.KsctlClient, operation string, fakeClient bo
 		}
 	case utils.CLOUD_AWS:
 		if !fakeClient {
-			client.Cloud, err = aws_pkg.ReturnAwsStruct(client.Metadata, "")
+			client.Cloud, err = aws_pkg.ReturnAwsStruct(client.Metadata, aws_pkg.ProvideClient)
 		} else {
-			client.Cloud, err = aws.ReturnAwsStruct(client.Metadata, "")
+			client.Cloud, err = aws_pkg.ReturnAwsStruct(client.Metadata, aws_pkg.ProvideMockClient)
 		}
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
@@ -296,7 +296,17 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 
 func CreateHACluster(client *resources.KsctlClient) error {
 	var err error
-	err = client.Cloud.Name(client.ClusterName + "-net").NewNetwork(client.Storage)
+	// fmt.Println("CreateHACluster called in cloud.go")
+
+	// client.Cloud.Name(client.ClusterName + "-ksctl-net")
+	// client.Cloud.NewNetwork(client.Storage)
+
+	// client.Cloud.Role(utils.ROLE_WP)
+	// client.Cloud.NewVM(client.Storage, 0)
+
+	// return nil
+
+	err = client.Cloud.Name(client.ClusterName + "-ksctl-net").NewNetwork(client.Storage)
 	if err != nil {
 		return err
 	}

@@ -149,7 +149,7 @@ func init() {
 	createClusterCmd.AddCommand(createClusterLocal)
 	createClusterCmd.AddCommand(createClusterHACivo)
 	createClusterCmd.AddCommand(createClusterHAAzure)
-	createClusterCmd.AddCommand(createClusterAws)
+	createClusterCmd.AddCommand(createClusterHAAws)
 
 	createClusterAzure.MarkFlagRequired("name")
 	createClusterCivo.MarkFlagRequired("name")
@@ -157,5 +157,6 @@ func init() {
 	createClusterLocal.MarkFlagRequired("name")
 	createClusterHAAzure.MarkFlagRequired("name")
 	createClusterHACivo.MarkFlagRequired("name")
+	createClusterHAAws.MarkFlagRequired("name")
 
 }

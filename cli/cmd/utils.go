@@ -334,5 +334,36 @@ func SetDefaults(provider, clusterType string) {
 		if len(distro) == 0 {
 			distro = utils.K8S_K3S
 		}
+	case utils.CLOUD_AWS + utils.CLUSTER_TYPE_HA:
+		if len(nodeSizeCP) == 0 {
+			nodeSizeCP = "t2.micro"
+		}
+		if len(nodeSizeWP) == 0 {
+			nodeSizeWP = "t2.micro"
+		}
+		if len(nodeSizeDS) == 0 {
+			nodeSizeDS = "t2.micro"
+		}
+		if len(nodeSizeLB) == 0 {
+			nodeSizeLB = "t2.micro"
+		}
+		if len(region) == 0 {
+			region = "ap-south-1"
+		}
+		if noWP == -1 {
+			noWP = 1
+		}
+		if noCP == -1 {
+			noCP = 3
+		}
+		if noDS == -1 {
+			noDS = 1
+		}
+		if len(k8sVer) == 0 {
+			k8sVer = "1.27.1"
+		}
+		if len(distro) == 0 {
+			distro = utils.K8S_K3S
+		}
 	}
 }

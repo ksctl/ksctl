@@ -7,6 +7,7 @@ func verboseFlags() {
 	createClusterLocal.Flags().BoolP("verbose", "v", true, "Verbose output")
 	createClusterHACivo.Flags().BoolP("verbose", "v", true, "for verbose output")
 	createClusterHAAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
+	createClusterHAAws.Flags().Bool("verbose", false, "Enable verbose output")
 
 	deleteClusterAzure.Flags().BoolP("verbose", "v", true, "for verbose output")
 	deleteClusterCivo.Flags().BoolP("verbose", "v", true, "for verbose output")
@@ -37,6 +38,7 @@ func verboseFlags() {
 	addMoreWorkerNodesHACivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
 	deleteNodesHAAzure.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
 	deleteNodesHACivo.Flags().BoolP("approve", "", true, "approval to avoid showMsg")
+	createClusterHAAws.Flags().Bool("approve", false, "approve cluster creation")
 }
 
 func argsFlags() {
@@ -95,6 +97,20 @@ func argsFlags() {
 	noOfDSFlag(createClusterHAAzure)
 	distroFlag(createClusterHAAzure)
 	k8sVerFlag(createClusterHAAzure)
+
+	clusterNameFlag(createClusterHAAws)
+	nodeSizeCPFlag(createClusterHAAws)
+	nodeSizeDSFlag(createClusterHAAws)
+	nodeSizeWPFlag(createClusterHAAws)
+	nodeSizeLBFlag(createClusterHAAws)
+	regionFlag(createClusterHAAws)
+	appsFlag(createClusterHAAws)
+	cniFlag(createClusterHAAws)
+	noOfWPFlag(createClusterHAAws)
+	noOfCPFlag(createClusterHAAws)
+	noOfDSFlag(createClusterHAAws)
+	distroFlag(createClusterHAAws)
+	k8sVerFlag(createClusterHAAws)
 
 	// Delete commands
 	// Managed Local

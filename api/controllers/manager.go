@@ -191,6 +191,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	if str := os.Getenv(utils.KSCTL_FAKE_FLAG); len(str) != 0 {
 		fakeClient = true
 	}
+
 	if err := cloud.HydrateCloud(client, utils.OPERATION_STATE_CREATE, fakeClient); err != nil {
 		return "", err
 	}

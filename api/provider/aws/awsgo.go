@@ -33,7 +33,7 @@ type AwsGo interface {
 
 	BeginCreateVpc(ec2client *ec2.Client, parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error)
 
-	BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client , vpcid string) (string, error)
+	BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error)
 
 	BeginDeleteVirtNet() error
 
@@ -88,8 +88,23 @@ func (*AwsGoClient) BeginCreateSecurityGrp() error {
 
 // BeginCreateSubNet implements AwsGo.
 func (awsclient *AwsGoClient) BeginCreateSubNet(context context.Context, subnetName string, ec2client *ec2.Client, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
-	
-	return nil, nil
+	subnet, err := ec2client.CreateSubnet(context, &parameter)
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = ec2client.CreateTags(context, &ec2.CreateTagsInput{
+
+		Resources: []string{*subnet.Subnet.SubnetId},
+		Tags: []types.Tag{
+			{
+				Key:   aws.String("Name"),
+				Value: aws.String(subnetName),
+			},
+		},
+	})
+
+	return subnet, err
 }
 
 // BeginCreateVM implements AwsGo.
@@ -98,14 +113,14 @@ func (*AwsGoClient) BeginCreateVM() error {
 }
 
 // BeginCreateVirtNet implements AwsGo.
-func (*AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client, vpcid string) (string, error) {
+func (*AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
 
-	createInternetGateway, err := ec2Client.CreateInternetGateway(context.TODO(), &gatewayparameter)
+	createInternetGateway, err := ec2client.CreateInternetGateway(context.TODO(), &gatewayparameter)
 	if err != nil {
 		log.Println(err)
 	}
 
-	_, err = ec2Client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
+	_, err = ec2client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
 		InternetGatewayId: aws.String(*createInternetGateway.InternetGateway.InternetGatewayId),
 		VpcId:             aws.String(vpcid),
 	})
@@ -113,50 +128,37 @@ func (*AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewa
 		log.Println(err)
 	}
 
-	fmt.Println(*createInternetGateway.InternetGateway.InternetGatewayId)
 	awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
-	fmt.Print("Internet Gateway Created Successfully: ")
-
-	awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
-	
-	routeTable, err := ec2Client.CreateRouteTable(context.TODO(), &routeTableparameter)
+	////////////////////////////////////////
+	routeTable, err := ec2client.CreateRouteTable(context.TODO(), &routeTableparameter)
 	if err != nil {
 		log.Println(err)
 	}
 
-	fmt.Print("Route Table Created Successfully: ")
-	fmt.Println(*routeTable.RouteTable.RouteTableId)
-	RouteTableID = *routeTable.RouteTable.RouteTableId
-
-	for _, subnet := range awsCloudState.SubnetID {
-		_, err = ec2Client.AssociateRouteTable(context.TODO(), &ec2.AssociateRouteTableInput{
-			RouteTableId: aws.String(*routeTable.RouteTable.RouteTableId),
-			SubnetId:     aws.String(subnet),
-		})
-		if err != nil {
-			log.Println(err)
-		}
-	}
-	fmt.Println("Route Table Associated Successfully....")
+	awsCloudState.RouteTableID = *routeTable.RouteTable.RouteTableId
 
 	/*        create route		*/
-	_, err = ec2Client.CreateRoute(context.TODO(), &ec2.CreateRouteInput{
+	_, err = ec2client.CreateRoute(context.TODO(), &ec2.CreateRouteInput{
 		DestinationCidrBlock: aws.String("0.0.0.0/0"),
 		GatewayId:            aws.String(awsCloudState.GatewayID),
-		RouteTableId:         aws.String(*routeTable.RouteTable.RouteTableId),
+		RouteTableId:         aws.String(awsCloudState.RouteTableID),
 	})
 	if err != nil {
 		log.Println(err)
 	}
 
-	fmt.Println("Route Created Successfully....")
-
-	return "", nil
+	return routeTable, createInternetGateway, err
 }
 
 // BeginCreateVpc implements AwsGo.
 func (*AwsGoClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
-	panic("unimplemented")
+	vpc, err := ec2client.CreateVpc(context.TODO(), &parameter)
+	if err != nil {
+		fmt.Println("Error Creating VPC")
+		log.Println(err)
+	}
+
+	return vpc, err
 }
 
 // BeginDeleteNIC implements AwsGo.
@@ -321,9 +323,9 @@ func (*AwsGoMockClient) BeginCreateVM() error {
 }
 
 // BeginCreateVirtNet implements AwsGo.
-func (*AwsGoMockClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client) (string, error) {
+func (*AwsGoMockClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
 
-	return "", nil
+	return nil, nil, nil
 }
 
 // BeginCreateVpc implements AwsGo.
@@ -333,9 +335,7 @@ func (*AwsGoMockClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.Crea
 		fmt.Println("Error Creating VPC")
 		log.Println(err)
 	}
-	_ , err := ec2client.
 
-	VPCID = *vpc.Vpc.VpcId
 	fmt.Print("VPC Created Successfully: ")
 	fmt.Println(*vpc.Vpc.VpcId)
 

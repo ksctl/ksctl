@@ -92,7 +92,8 @@ type StateConfiguration struct {
 	IsCompleted        bool
 	ClusterName        string `json:"cluster_name"`
 	Region             string `json:"region"`
-	VPC                string `json:"vpc"`
+	VPCNAME            string `json:"vpc"`
+	VPCID              string `json:"vpc_id"`
 	SSHUSER            string `json:"ssh_user"`
 	SSHPrivateKeyLoc   string `json:"ssh_private_key_loc"`
 	SSHKeyName         string `json:"ssh_key_name"`
@@ -134,10 +135,10 @@ type metadata struct {
 	k8sVersion string
 }
 
-func ReturnAwsStruct(Metadata resources.Metadata, ClientOption func() *interface{}) (resources.CloudFactory, error) {
+func ReturnAwsStruct(Metadata resources.Metadata, ClientOption func() AwsGo) (*AwsProvider, error) {
 	return &AwsProvider{
 		clusterName: Metadata.ClusterName,
-		region:      "ap-south-1",
+		region:      Metadata.Region,
 		haCluster:   Metadata.IsHA,
 		metadata: metadata{
 			k8sVersion: Metadata.K8sVersion,
@@ -153,7 +154,7 @@ func NEWCLIENT() aws.Config {
 	NewSession, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("ap-south-1"),
 		config.WithSharedConfigProfile("default"),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("dsvvvsvrvsvrv", "vsavveawg4gave4ds4ees4ge", "")),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), "")),
 	)
 	if err != nil {
 		panic(err)
@@ -163,7 +164,6 @@ func NEWCLIENT() aws.Config {
 	fmt.Println("AWS Session Created Successfully")
 
 	return NewSession
-
 }
 
 func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
@@ -177,18 +177,6 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 	obj.metadata.resName = resName
 	fmt.Println(obj.metadata.resName)
 	fmt.Println("named the resource successfully")
-	return nil
-}
-
-func (obj *AwsProvider) DelVM(factory resources.StorageFactory, i int) error {
-	//TODO implement me
-	fmt.Println("AWS Del VM")
-	return nil
-}
-
-func (obj *AwsProvider) NewFirewall(factory resources.StorageFactory) error {
-	//TODO implement me
-	fmt.Println("AWS New Firewall")
 	return nil
 }
 
@@ -234,7 +222,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration str
 		clusterType = utils.CLUSTER_TYPE_HA
 
 	}
-	obj.vpc = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, clusterType)
+	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
 
 	errLoadState := loadStateHelper(storage)
@@ -267,7 +255,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration str
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		storage.Logger().Note("[aws] Get resources")
-		clusterDirName = awsCloudState.ClusterName + " " + awsCloudState.VPC + " " + awsCloudState.Region
+		clusterDirName = awsCloudState.ClusterName + " " + awsCloudState.VPCNAME + " " + awsCloudState.Region
 	default:
 		return errors.New("[aws] Invalid operation for init state")
 	}
@@ -284,14 +272,8 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration str
 	}
 
 	storage.Logger().Success("[aws] init cloud state")
-	return nil
-}
 
-func (obj *AwsProvider) InitClient(storage resources.StorageFactory) error {
-	//TODO implement me
-	fmt.Println("AWS Init Client")
 	return nil
-
 }
 
 func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
@@ -332,8 +314,7 @@ func (obj *AwsProvider) DelManagedCluster(factory resources.StorageFactory) erro
 }
 
 func (obj *AwsProvider) Role(s string) resources.CloudFactory {
-	//TODO implement me
-	fmt.Println("AWS Role")
+	obj.metadata.role = s
 	return nil
 
 }

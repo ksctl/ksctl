@@ -2,13 +2,11 @@ package aws
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
 )
 
 func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
@@ -36,13 +34,14 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	if err != nil {
 		return err
 	}
+
 	awsCloudState.VPCID = *vpc.Vpc.VpcId
 	awsCloudState.VPCNAME = *vpc.Vpc.Tags[0].Value
 
-	if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
-		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
-		return err
-	}
+	// if err := storage.Path(generatePath(utils.CLUSTER_PATH, clusterType, clusterDirName)).
+	// 	Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
+	// 	return err
+	// }
 
 	if err := saveStateHelper(storage); err != nil {
 		return err
@@ -66,7 +65,6 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 		}
 
 	}
-
 	return nil
 }
 
@@ -81,6 +79,8 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 	parameter := ec2.CreateSubnetInput{
 		CidrBlock: aws.String("172.31.16.0/20"),
 		VpcId:     aws.String(awsCloudState.VPCID),
+
+		// add ip v6 cidr block like from all the cidr blocks
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceType("subnet"),
@@ -117,6 +117,7 @@ func saveStateHelper(storage resources.StorageFactory) error {
 	return nil
 }
 
+// Implements internetgateway, route table
 func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resources.StorageFactory, resName string) error {
 
 	ec2Client := obj.ec2Client()
@@ -136,7 +137,7 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resour
 	}
 
 	routeTableClient := ec2.CreateRouteTableInput{
-		VpcId: aws.String(obj.vpc),
+		VpcId: aws.String(awsCloudState.VPCID),
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceType("route-table"),
@@ -150,13 +151,13 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resour
 		},
 	}
 
-	response, err := obj.client.BeginCreateVirtNet(internetGateway, routeTableClient, ec2Client)
+	routeresponce, gatewayresp, err := obj.client.BeginCreateVirtNet(internetGateway, routeTableClient, ec2Client, awsCloudState.VPCID)
 	if err != nil {
 		return err
 	}
 
-	// TODO this is wrong impletimentation to prevent the error
-	fmt.Println(response)
+	storage.Logger().Success("[aws] created the internet gateway ", *gatewayresp.InternetGateway.InternetGatewayId)
+	storage.Logger().Success("[aws] created the route table ", *routeresponce.RouteTable.RouteTableId)
 
 	// 3. Create  Internet Gateway            DONE
 	// 4. Create  Route Table				  DONE
