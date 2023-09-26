@@ -398,12 +398,10 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 
 	// to create networkinterface we need subnetid, securitygroup, availabilityzone, availabilityzoneid, osimage, sshkey, instanceprofile
 	// ipv6addresscount, ipv6pool
+
 	interfaceparameter := &ec2.CreateNetworkInterfaceInput{
 		Description: aws.String("network interface"),
-		Groups: []string{
-			awsCloudState.SecurityGroupID,
-		},
-		SubnetId: aws.String(awsCloudState.SubnetID),
+		SubnetId:    aws.String(awsCloudState.SubnetID),
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceType("network-interface"),
@@ -415,6 +413,9 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 				},
 			},
 		},
+		Groups: []string{
+			awsCloudState.SecurityGroupID,
+		},
 	}
 
 	vniclient := obj.ec2Client()
@@ -424,11 +425,8 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	}
 
 	NICID = *nicresponse.NetworkInterface.NetworkInterfaceId
-	storage.Logger().Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
-
 	// wait until the instance state comes from pending to running use
-	time.Sleep(10 * time.Second)
-
+	// time.Sleep(10 * time.Second)
 	// var state string
 	// for state != "16" {
 	// 	vmstate, err := vniclient.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
@@ -440,50 +438,18 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	// 	state = string(*vmstate.InstanceStatuses[1].InstanceState.Code)
 	// }
 
-	publicip := &ec2.AllocateAddressInput{
-		Domain: types.DomainType("vpc"),
-		TagSpecifications: []types.TagSpecification{
-			{
-				ResourceType: types.ResourceType("elastic-ip"),
-				Tags: []types.Tag{
-					{
-						Key:   aws.String(obj.metadata.resName),
-						Value: aws.String("value"),
-					},
-				},
-			},
-		},
-	}
+	// _, err = vniclient.AttachNetworkInterface(context.Background(), &ec2.AttachNetworkInterfaceInput{
+	// 	DeviceIndex:        aws.Int32(0),
+	// 	InstanceId:         aws.String(inistanceid),
+	// 	NetworkInterfaceId: nicresponse.NetworkInterface.NetworkInterfaceId,
+	// 	// SkipSourceDestCheck: aws.Bool(true),
+	// })
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	publicipresponse, err := vniclient.AllocateAddress(context.Background(), publicip)
-	if err != nil {
-		log.Println(err)
-	}
-
-	// now we need to associate the public ip to the network interface
-	_, err = vniclient.AssociateAddress(context.Background(), &ec2.AssociateAddressInput{
-		AllocationId:       publicipresponse.AllocationId,
-		InstanceId:         aws.String(inistanceid),
-		NetworkInterfaceId: nicresponse.NetworkInterface.NetworkInterfaceId,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	time.Sleep(10 * time.Second)
-	_, err = vniclient.AttachNetworkInterface(context.Background(), &ec2.AttachNetworkInterfaceInput{
-		DeviceIndex:        aws.Int32(0),
-		InstanceId:         aws.String(inistanceid),
-		NetworkInterfaceId: nicresponse.NetworkInterface.NetworkInterfaceId,
-		// SkipSourceDestCheck: aws.Bool(true),
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	storage.Logger().Success("[aws] attached the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
-	storage.Logger().Success("[aws] attached the public ip ", *publicipresponse.PublicIp)
-	// storage.Logger().Success("[aws] attached the network interface to the instance ", *attachresp.AttachmentId)
+	storage.Logger().Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	// storage.Logger().Success("[aws] attached the network interface ", *resp.AttachmentId)
 
 	return nicresponse, nil
 
@@ -496,10 +462,15 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	}
 
 	ec2Client := obj.ec2Client()
-	obj.metadata.role = "testing"
+
 	err := obj.NewFirewall(storage)
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
+		return nil
+	}
+	_, err = obj.CreateNetworkInterface(context.TODO(), storage, obj.metadata.resName, indexNo, obj.metadata.role, "")
+	if err != nil {
+		panic("Error creating network interface: " + err.Error())
 	}
 
 	parameter := &ec2.RunInstancesInput{
@@ -509,7 +480,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
 		KeyName:      aws.String("ksctl"),
-		SubnetId:     aws.String(awsCloudState.SubnetID),
+		// SubnetId:     aws.String(awsCloudState.SubnetID),
 		Monitoring: &types.RunInstancesMonitoringEnabled{
 			Enabled: aws.Bool(true),
 		},
@@ -530,6 +501,14 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 			},
 		},
 
+		NetworkInterfaces: []types.InstanceNetworkInterfaceSpecification{
+			{
+				DeviceIndex:        aws.Int32(0),
+				NetworkInterfaceId: aws.String(NICID),
+				// AssociatePublicIpAddress: aws.Bool(true),
+			},
+		},
+
 		// EbsOptimized: aws.Bool(true),
 		// BlockDeviceMappings: []types.BlockDeviceMapping{
 		// 	{
@@ -541,6 +520,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		// 		},
 		// 	},
 		// },
+
 	}
 
 	instanceop, err := ec2Client.RunInstances(context.Background(), parameter)
@@ -549,15 +529,10 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		panic("Error creating EC2 instance: " + err.Error())
 	}
 
-	// _, err = obj.CreateNetworkInterface(context.TODO(), storage, obj.metadata.resName, indexNo, obj.metadata.role, *instanceop.Instances[0].InstanceId)
+	// _, err = obj.CreatePublicIP(context.Background(), storage, obj.metadata.resName, indexNo, obj.metadata.role, *instanceop.Instances[0].InstanceId)
 	// if err != nil {
-	// 	panic("Error creating network interface: " + err.Error())
+	// 	panic("Error creating public ip: " + err.Error())
 	// }
-
-	_, err = obj.CreatePublicIP(context.Background(), storage, obj.metadata.resName, indexNo, obj.metadata.role, *instanceop.Instances[0].InstanceId)
-	if err != nil {
-		panic("Error creating public ip: " + err.Error())
-	}
 
 	storage.Logger().Success("[aws] created the instance ", *instanceop.Instances[0].InstanceId)
 	time.Sleep(300 * time.Second)
@@ -574,24 +549,20 @@ func (obj *AwsProvider) DeletePublicIP(ctx context.Context, storage resources.St
 
 func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string, index int, role string, instancid string) (*ec2.AllocateAddressOutput, error) {
 
-	time.Sleep(30 * time.Second)
-
 	ec2Client := obj.ec2Client()
-
-	allocRes, err := ec2Client.AllocateAddress(ctx, &ec2.AllocateAddressInput{
-		Domain: types.DomainTypeVpc,
+	// now we will assign the public ip to the instance
+	allocRes, err := ec2Client.AllocateAddress(context.Background(), &ec2.AllocateAddressInput{
+		Domain: types.DomainType("vpc"),
 	})
 	if err != nil {
-		return nil, err
+		log.Println(err)
 	}
 
-	_, err = ec2Client.AssociateAddress(ctx, &ec2.AssociateAddressInput{
-		AllocationId: allocRes.AllocationId,
-		InstanceId:   aws.String(instancid),
+	_, err = ec2Client.AssociateAddress(context.Background(), &ec2.AssociateAddressInput{
+		InstanceId:         aws.String(instancid),
+		AllocationId:       allocRes.AllocationId,
+		AllowReassociation: aws.Bool(true),
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	storage.Logger().Success("[aws] created the public IP ", *allocRes.PublicIp)
 	storage.Logger().Success("[aws] attached the public IP %s to the instance %s", *allocRes.PublicIp, instancid)
