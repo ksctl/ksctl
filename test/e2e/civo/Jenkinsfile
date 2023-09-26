@@ -2,7 +2,6 @@ pipeline {
     agent any
     environment {
         CIVO_TOKEN = credentials("civo_token")
-        // DISCORD_SEC = credentials("discord_secret")
     }
 
     stages {

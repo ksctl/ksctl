@@ -5,7 +5,6 @@ pipeline {
         AZURE_CLIENT_SECRET = credentials("client_secret")
         AZURE_SUBSCRIPTION_ID = credentials("subscriptionid")
         AZURE_TENANT_ID = credentials("tenantid")
-      //  DISCORD_SEC = credentials("discord_secret")
     }
 
     stages {
