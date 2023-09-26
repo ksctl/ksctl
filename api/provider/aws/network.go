@@ -93,6 +93,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 			},
 		},
 		AvailabilityZone: aws.String("ap-south-1a"),
+
 		// TODO: Add the following parameters
 		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
 	}
@@ -103,6 +104,20 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 
 	awsCloudState.SubnetID = *response.Subnet.SubnetId
 	awsCloudState.SubnetName = *response.Subnet.Tags[0].Value
+
+	// now edit the configuration of subnet
+	// enable auto assign ip v4
+	modifyusbnetinput := &ec2.ModifySubnetAttributeInput{
+		SubnetId: aws.String(awsCloudState.SubnetID),
+		MapPublicIpOnLaunch: &types.AttributeBooleanValue{
+			Value: aws.Bool(true),
+		},
+	}
+
+	_, err = client.ModifySubnetAttribute(ctx, modifyusbnetinput)
+	if err != nil {
+		return err
+	}
 
 	if err := saveStateHelper(storage); err != nil {
 		return err
