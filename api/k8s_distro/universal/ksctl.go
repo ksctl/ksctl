@@ -43,6 +43,30 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 
 			PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
 
+			Affinity: &corev1.Affinity{
+				NodeAffinity: &corev1.NodeAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+						NodeSelectorTerms: []corev1.NodeSelectorTerm{
+							corev1.NodeSelectorTerm{
+								MatchExpressions: []corev1.NodeSelectorRequirement{
+									corev1.NodeSelectorRequirement{
+										Key:      "node-role.kubernetes.io/control-plane",
+										Operator: corev1.NodeSelectorOpIn,
+										Values:   []string{"true"},
+									},
+
+									corev1.NodeSelectorRequirement{
+										Key:      "node-role.kubernetes.io/master",
+										Operator: corev1.NodeSelectorOpIn,
+										Values:   []string{"true"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
 			// WARN: these toleration rules only tested for the K3s distribution
 			Tolerations: []corev1.Toleration{
 				corev1.Toleration{
@@ -284,6 +308,30 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 						},
 					},
 					PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
+
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									corev1.NodeSelectorTerm{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											corev1.NodeSelectorRequirement{
+												Key:      "node-role.kubernetes.io/control-plane",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"true"},
+											},
+
+											corev1.NodeSelectorRequirement{
+												Key:      "node-role.kubernetes.io/master",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"true"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsUser:  &userid,
