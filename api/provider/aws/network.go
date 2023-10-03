@@ -224,6 +224,12 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resour
 		return err
 	}
 
+	// now attach the route table to the subnet
+	_, err = obj.ec2Client().AssociateRouteTable(ctx, &ec2.AssociateRouteTableInput{
+		RouteTableId: aws.String(*routeresponce.RouteTable.RouteTableId),
+		SubnetId:     aws.String(awsCloudState.SubnetID),
+	})
+
 	storage.Logger().Success("[aws] created the internet gateway ", *gatewayresp.InternetGateway.InternetGatewayId)
 	storage.Logger().Success("[aws] created the route table ", *routeresponce.RouteTable.RouteTableId)
 
