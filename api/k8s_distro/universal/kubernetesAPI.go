@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// TODO: create a interface so that we can have a mock test for this as well
 type Kubernetes struct {
 	Metadata            resources.Metadata
 	StorageDriver       resources.StorageFactory

@@ -381,12 +381,13 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 
 	switch this.Metadata.Provider {
 	case CLOUD_CIVO:
-		listEnv = []string{"CIVO_TOKEN"}
+		listEnv = append(listEnv, "CIVO_TOKEN")
 	case CLOUD_AZURE:
-		listEnv = []string{"AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET"}
+		listEnv = append(listEnv, "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
 	}
 
-	deploymentEnv := []corev1.EnvVar{}
+	deploymentEnv := make([]corev1.EnvVar, len(listEnv))
+
 	for i, env := range listEnv {
 		deploymentEnv[i] = corev1.EnvVar{
 			Name: env,
