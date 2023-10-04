@@ -22,14 +22,58 @@ const (
 	KSCTL_SYS_NAMESPACE = "ksctl"
 )
 
+var (
+
+	// WARN: these rules only tested for the K3s distribution
+
+	affinity = &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							corev1.NodeSelectorRequirement{
+								Key:      "node-role.kubernetes.io/control-plane",
+								Operator: corev1.NodeSelectorOpIn,
+								Values:   []string{"true"},
+							},
+
+							corev1.NodeSelectorRequirement{
+								Key:      "node-role.kubernetes.io/master",
+								Operator: corev1.NodeSelectorOpIn,
+								Values:   []string{"true"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tolerations = []corev1.Toleration{
+		corev1.Toleration{
+			Key:      "CriticalAddonsOnly",
+			Operator: corev1.TolerationOpExists,
+		},
+		corev1.Toleration{
+			Effect:   corev1.TaintEffectNoSchedule,
+			Key:      "node-role.kubernetes.io/control-plane",
+			Operator: corev1.TolerationOpExists,
+		},
+		corev1.Toleration{
+			Effect:   corev1.TaintEffectNoSchedule,
+			Key:      "node-role.kubernetes.io/master",
+			Operator: corev1.TolerationOpExists,
+		},
+	}
+)
+
 func (this *Kubernetes) DeleteResourcesFromController() error {
 	this.StorageDriver.Logger().Print("[client-go] Started to configure Cluster to delete workerplanes")
 	clusterName := this.Metadata.ClusterName
 	region := this.Metadata.Region
 	provider := this.Metadata.Provider
 	distro := this.Metadata.K8sDistro
-
-	// TODO: make the node have toleration for CriticalAddonsOnly=true:NoExecute to schedule in one of the controlplane
 
 	var destroyer *corev1.Pod = &corev1.Pod{
 		TypeMeta: v1.TypeMeta{
@@ -43,23 +87,10 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 
 			PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
 
-			// WARN: these toleration rules only tested for the K3s distribution
-			Tolerations: []corev1.Toleration{
-				corev1.Toleration{
-					Key:      "CriticalAddonsOnly",
-					Operator: corev1.TolerationOpExists,
-				},
-				corev1.Toleration{
-					Effect:   corev1.TaintEffectNoSchedule,
-					Key:      "node-role.kubernetes.io/control-plane",
-					Operator: corev1.TolerationOpExists,
-				},
-				corev1.Toleration{
-					Effect:   corev1.TaintEffectNoSchedule,
-					Key:      "node-role.kubernetes.io/master",
-					Operator: corev1.TolerationOpExists,
-				},
-			},
+			Affinity: affinity,
+
+			Tolerations: tolerations,
+
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				corev1.Container{
@@ -229,7 +260,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		return err
 	}
 
-	// reconstruct according to the http server
+	// NOTE: reconstruct according to the http server
 	newPath := fmt.Sprintf("/app/ksctl-data/config/%s/ha/%s", this.Metadata.Provider, clusterDir)
 
 	replicas := int32(1)
@@ -239,8 +270,6 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 
 	userid := int64(1000)
 	groupid := int64(1000)
-	// make it cloud provider specific
-	// TODO: make the node have toleration for CriticalAddonsOnly=true:NoExecute to schedule in one of the controlplane
 	var ksctlServer *appsv1.Deployment = &appsv1.Deployment{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Deployment",
@@ -266,24 +295,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 					},
 				},
 				Spec: corev1.PodSpec{
-					// WARN: these toleration rules only tested for the K3s distribution
-					Tolerations: []corev1.Toleration{
-						corev1.Toleration{
-							Key:      "CriticalAddonsOnly",
-							Operator: corev1.TolerationOpExists,
-						},
-						corev1.Toleration{
-							Effect:   corev1.TaintEffectNoSchedule,
-							Key:      "node-role.kubernetes.io/control-plane",
-							Operator: corev1.TolerationOpExists,
-						},
-						corev1.Toleration{
-							Effect:   corev1.TaintEffectNoSchedule,
-							Key:      "node-role.kubernetes.io/master",
-							Operator: corev1.TolerationOpExists,
-						},
-					},
+					Tolerations:       tolerations,
 					PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
+
+					Affinity: affinity,
 
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsUser:  &userid,
@@ -362,69 +377,31 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
+	var listEnv []string
+
 	switch this.Metadata.Provider {
 	case CLOUD_CIVO:
-		ksctlServer.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{
-			corev1.EnvVar{
-				Name: "CIVO_TOKEN",
-				ValueFrom: &corev1.EnvVarSource{
-					SecretKeyRef: &corev1.SecretKeySelector{
-						Key: "CIVO_TOKEN",
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: tokenSecret.ObjectMeta.Name,
-						},
-					},
-				},
-			},
-		}
+		listEnv = append(listEnv, "CIVO_TOKEN")
 	case CLOUD_AZURE:
-		ksctlServer.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{
-			corev1.EnvVar{
-				Name: "AZURE_TENANT_ID",
-				ValueFrom: &corev1.EnvVarSource{
-					SecretKeyRef: &corev1.SecretKeySelector{
-						Key: "AZURE_TENANT_ID",
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: tokenSecret.ObjectMeta.Name,
-						},
-					},
-				},
-			},
-			corev1.EnvVar{
-				Name: "AZURE_SUBSCRIPTION_ID",
-				ValueFrom: &corev1.EnvVarSource{
-					SecretKeyRef: &corev1.SecretKeySelector{
-						Key: "AZURE_SUBSCRIPTION_ID",
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: tokenSecret.ObjectMeta.Name,
-						},
-					},
-				},
-			},
-			corev1.EnvVar{
-				Name: "AZURE_CLIENT_ID",
-				ValueFrom: &corev1.EnvVarSource{
-					SecretKeyRef: &corev1.SecretKeySelector{
-						Key: "AZURE_CLIENT_ID",
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: tokenSecret.ObjectMeta.Name,
-						},
-					},
-				},
-			},
-			corev1.EnvVar{
-				Name: "AZURE_CLIENT_SECRET",
-				ValueFrom: &corev1.EnvVarSource{
-					SecretKeyRef: &corev1.SecretKeySelector{
-						Key: "AZURE_CLIENT_SECRET",
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: tokenSecret.ObjectMeta.Name,
-						},
+		listEnv = append(listEnv, "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
+	}
+
+	deploymentEnv := make([]corev1.EnvVar, len(listEnv))
+
+	for i, env := range listEnv {
+		deploymentEnv[i] = corev1.EnvVar{
+			Name: env,
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					Key: env,
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: tokenSecret.ObjectMeta.Name,
 					},
 				},
 			},
 		}
 	}
+	ksctlServer.Spec.Template.Spec.Containers[0].Env = deploymentEnv
 
 	time.Sleep(10 * time.Second) // waiting till the cluster is stable
 

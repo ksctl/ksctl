@@ -30,6 +30,9 @@
 'distro/kubeadm':
 - 'api/k8s_distro/kubeadm/*'
 
+'distro/kubernetes-client-go':
+- 'api/k8s_distro/universal/*'
+
 'state/local':
 - 'api/storage/localstate/*'
 
