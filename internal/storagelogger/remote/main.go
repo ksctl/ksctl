@@ -1,4 +1,4 @@
-package remotestate
+package remote
 
 import "fmt"
 

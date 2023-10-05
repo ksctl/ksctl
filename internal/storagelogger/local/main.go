@@ -1,4 +1,4 @@
-package localstate
+package local
 
 import (
 	"os"
