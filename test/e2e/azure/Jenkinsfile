@@ -105,11 +105,5 @@ pipeline {
                 ksctl delete ha-azure -n demo -r eastus2 --approve -v
             '''
         }
-        // success {
-        //     discordSend description: 'e2e test of azure provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
-        // }
-        // failure {
-        //     discordSend description: 'e2e test of azure provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins azure', webhookURL: "${DISCORD_SEC}"
-        // }
     }
 }
