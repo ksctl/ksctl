@@ -2,11 +2,13 @@ name: Unit-Testing API
 on:
   push:
     paths:
-    - 'api/**'
+      - 'internal/**'
+      - 'pkg/**'
     branches: [ main ]
   pull_request:
     paths:
-    - 'api/**'
+      - 'internal/**'
+      - 'pkg/**'
     branches: [ main ]
 
 jobs:
@@ -19,9 +21,9 @@ jobs:
           go-version: '1.20.0' # The Go version to download (if necessary) and use.
       - name: Unit-Testing
         run: |
-           cd api
-           chmod +x test-api.sh
-           ./test-api.sh
+          cd scripts
+          chmod u+x test-api.sh
+          ./test-api.sh
 
   API_on_Macos:
     runs-on: macos-latest
@@ -32,9 +34,9 @@ jobs:
           go-version: '1.20.0' # The Go version to download (if necessary) and use.
       - name: Unit-Testing
         run: |
-           cd api
-           chmod +x test-api.sh
-           ./test-api.sh
+          cd scripts
+          chmod u+x test-api.sh
+          ./test-api.sh
 
   API_on_Windows:
     runs-on: windows-latest
@@ -45,5 +47,5 @@ jobs:
           go-version: '1.20.0' # The Go version to download (if necessary) and use.
       - name: Unit-Testing
         run: |
-           cd api
-           .\test-api.ps1
+          cd scripts
+          .\test-api.ps1

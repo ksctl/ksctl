@@ -7,8 +7,9 @@ pipeline {
                 anyOf {
                     changeset "go.mod"
                     changeset "go.sum"
-                    changeset "api/**"
-                    changeset "cli/**"
+                    changeset "internal/**"
+                    changeset "pkg/**"
+                    changeset "cmd/cli/**"
                     changeset "test/e2e/**"
                 }
             }
@@ -22,7 +23,7 @@ pipeline {
 
                 go version
 
-                cd ./cli
+                cd ./cmd/cli
 
                 go get -d
                 go build -v -o ksctl .
@@ -62,8 +63,9 @@ pipeline {
                 anyOf {
                     changeset "go.mod"
                     changeset "go.sum"
-                    changeset "api/**"
-                    changeset "cli/**"
+                    changeset "internal/**"
+                    changeset "pkg/**"
+                    changeset "cmd/cli/**"
                     changeset "test/e2e/**"
                 }
             }
@@ -77,10 +79,10 @@ pipeline {
                                     changeset "go.mod"
                                     changeset "go.sum"
                                     changeset "test/e2e/**"
-                                    changeset "api/provider/local/**"
-                                    changeset "api/utils/**"
-                                    changeset "api/resources/**"
-				    changeset "api/controllers/**"
+                                    changeset "internal/cloudproviders/local/**"
+                                    changeset "pkg/utils/**"
+                                    changeset "pkg/resources/**"
+									changeset "pkg/controllers/**"
                                 }
                             }
                             steps {
@@ -93,10 +95,10 @@ pipeline {
                                     changeset "go.mod"
                                     changeset "go.sum"
                                     changeset "test/e2e/**"
-                                    changeset "api/provider/civo/**"
-                                    changeset "api/utils/**"
-									changeset "api/controllers/**"
-                                    changeset "api/resources/**"
+                                    changeset "internal/cloudproviders/civo/**"
+                                    changeset "pkg/utils/**"
+									changeset "pkg/controllers/**"
+                                    changeset "pkg/resources/**"
                                 }
                             }
                             steps {
@@ -109,10 +111,10 @@ pipeline {
                                     changeset "go.mod"
                                     changeset "go.sum"
                                     changeset "test/e2e/**"
-                                    changeset "api/provider/azure/**"
-                                    changeset "api/utils/**"
-                                    changeset "api/resources/**"
-									changeset "api/controllers/**"
+                                    changeset "internal/cloudproviders/azure/**"
+                                    changeset "pkg/utils/**"
+                                    changeset "pkg/resources/**"
+									changeset "pkg/controllers/**"
                                 }
                             }
                             steps {

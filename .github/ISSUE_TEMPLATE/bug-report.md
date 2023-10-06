@@ -10,10 +10,9 @@ assignees: ''
 # Describe 🐞
 <!--A clear and concise description of what the bug is. -->
 ## Provider in effect
-- [ ] Azure
-- [ ] Civo
-- [ ] Local
-- [ ] Local
+- Azure
+- Civo
+- Local
 
 # Reproduce 💻 ➡️  💻
 <!-- Steps to reproduce the behavior -->

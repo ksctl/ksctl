@@ -3,8 +3,9 @@ name: Build and Push of Docker images
 on:
   push:
     paths:
-    - 'api/**'
-    - 'containers/**'
+    - 'internal/**'
+    - 'pkg/**'
+    - 'build/**'
     - 'httpserver/**'
     branches: [ main ]
 
@@ -23,7 +24,7 @@ jobs:
       uses: sigstore/cosign-installer@main
 
     - name: Build the Docker image
-      run: docker build --file containers/httpserver_slim/Dockerfile --tag $HTTPSERVER .
+      run: docker build --file build/httpserver_slim/Dockerfile --tag $HTTPSERVER .
 
     - name: login
       run: docker login -u kubesimplify -p "$DOCKER_SECRET"
