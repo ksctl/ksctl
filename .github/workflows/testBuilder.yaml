@@ -55,6 +55,7 @@ jobs:
       - run: go version
       - name: Build and install the latest version
         run: |
-          .\scripts\builder.ps1
+          cd .\scripts
+          .\builder.ps1
           cd C:\Users\runneradmin\AppData\Local\ksctl
           .\ksctl.exe -h
