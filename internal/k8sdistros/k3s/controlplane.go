@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {

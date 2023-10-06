@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
-	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
-	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
-	"github.com/kubesimplify/ksctl/api/resources"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
+	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
+	localPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/local"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // make it return error
@@ -18,9 +18,9 @@ func HydrateCloud(client *resources.KsctlClient, operation KsctlOperation, fakeC
 	switch client.Metadata.Provider {
 	case CLOUD_CIVO:
 		if !fakeClient {
-			client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
+			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideClient)
 		} else {
-			client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideMockCivoClient)
+			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideMockCivoClient)
 		}
 
 		if err != nil {
@@ -28,16 +28,16 @@ func HydrateCloud(client *resources.KsctlClient, operation KsctlOperation, fakeC
 		}
 	case CLOUD_AZURE:
 		if !fakeClient {
-			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideClient)
+			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideClient)
 		} else {
-			client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideMockClient)
+			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideMockClient)
 		}
 
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
 	case CLOUD_LOCAL:
-		client.Cloud, err = local_pkg.ReturnLocalStruct(client.Metadata)
+		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata)
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}

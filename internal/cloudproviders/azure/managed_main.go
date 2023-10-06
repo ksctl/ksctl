@@ -5,8 +5,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
-	"github.com/kubesimplify/ksctl/api/resources"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // DelManagedCluster implements resources.CloudFactory.

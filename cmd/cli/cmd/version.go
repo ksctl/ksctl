@@ -27,7 +27,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of ksctl",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(ksctl)
+		fmt.Print(ksctl)
 		fmt.Println("Version:", Version)
 		fmt.Println("BuildDate:", BuildDate)
 	},

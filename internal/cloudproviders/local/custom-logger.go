@@ -3,7 +3,7 @@ package local
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources"
 	"sigs.k8s.io/kind/pkg/log"
 )
 

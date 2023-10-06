@@ -1,10 +1,10 @@
-'area/api':
-- any: ['api/**', 'api/*']
-  all: ['!api/utils/**','!api/controllers/**','!api/resources/**']
+'area/internal':
+- any: ['pkg/**', 'pkg/*']
+  all: ['!pkg/utils/**','!pkg/controllers/**','!pkg/resources/**']
 
 'area/cli':
-- 'cli/*'
-- 'cli/**/*'
+- 'cmd/cli/*'
+- 'cmd/cli/**/*'
 
 'kind/documentation':
 - 'website/*'
@@ -13,22 +13,22 @@
 - '**/*.md'
 
 'cloud/azure':
-- 'api/provider/azure/*'
+- 'internal/cloudproviders/azure/*'
 
 'cloud/aws':
-- 'api/provider/aws/*'
+- 'internal/cloudproviders/aws/*'
 
 'cloud/civo':
-- 'api/provider/civo/*'
+- 'internal/cloudproviders/civo/*'
 
 'cloud/local':
-- 'api/provider/local/*'
+- 'internal/cloudproviders/local/*'
 
 'distro/k3s':
-- 'api/k8s_distro/k3s/*'
+- 'internal/k8sdistros/k3s/*'
 
 'distro/kubeadm':
-- 'api/k8s_distro/kubeadm/*'
+- 'internal/k8sdistros/kubeadm/*'
 
 'distro/kubernetes-client-go':
 - 'api/k8s_distro/universal/*'
@@ -43,15 +43,19 @@
 
 'area/test':
 - '**/*_test.go'
+- 'test/e2e/*'
+- 'test/e2e/**/*'
+- 'scripts/test-api.ps1'
+- 'scripts/test-api.sh'
 
 'area/ci':
 - '.goreleaser.yaml'
 - '.github/*'
 - '.github/**/*'
 
-'area/core':
-- 'api/utils/*'
-- 'api/controllers/*'
-- 'api/controllers/**/*'
-- 'api/resources/**'
+'area/pkg':
+- 'pkg/utils/*'
+- 'pkg/controllers/*'
+- 'pkg/controllers/**/*'
+- 'pkg/resources/**'
 

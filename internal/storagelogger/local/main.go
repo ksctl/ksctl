@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kubesimplify/ksctl/api/logger"
-	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/pkg/logger"
+	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
 type Metadata struct {

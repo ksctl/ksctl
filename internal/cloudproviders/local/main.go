@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/api/utils"
+	"github.com/kubesimplify/ksctl/pkg/utils"
 
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type StateConfiguration struct {
@@ -127,8 +127,8 @@ func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
 	return cloud
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
-	var data []cloud_control_res.AllClusterData
+func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
+	var data []cloudControlRes.AllClusterData
 
 	managedFolders, err := storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG)).GetFolders()
 	if err != nil {
@@ -148,7 +148,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 		}
 
 		data = append(data,
-			cloud_control_res.AllClusterData{
+			cloudControlRes.AllClusterData{
 				Provider:   CLOUD_LOCAL,
 				Name:       folder[0],
 				Region:     "N/A",

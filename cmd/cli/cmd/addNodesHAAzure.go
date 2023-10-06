@@ -5,10 +5,10 @@ package cmd
 import (
 	"os"
 
-	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
+	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
 	"github.com/spf13/cobra"
 
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var addMoreWorkerNodesHAAzure = &cobra.Command{

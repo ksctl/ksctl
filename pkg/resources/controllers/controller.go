@@ -1,6 +1,6 @@
 package controllers
 
-import "github.com/kubesimplify/ksctl/api/resources"
+import "github.com/kubesimplify/ksctl/pkg/resources"
 
 type Controller interface {
 	CreateManagedCluster(*resources.KsctlClient) (string, error)

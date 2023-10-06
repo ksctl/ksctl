@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/storage/localstate"
+	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	"github.com/kubesimplify/ksctl/pkg/resources"
 
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 

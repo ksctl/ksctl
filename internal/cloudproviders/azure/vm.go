@@ -7,9 +7,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // Sequence

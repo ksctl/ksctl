@@ -1,9 +1,9 @@
 package kubeadm
 
 import (
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // OTHER CONFIGURATIONS

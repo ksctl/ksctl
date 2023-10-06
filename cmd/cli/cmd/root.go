@@ -10,10 +10,10 @@ package cmd
 import (
 	"os"
 
-	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	controlPkg "github.com/kubesimplify/ksctl/pkg/controllers"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -60,7 +60,7 @@ from local clusters to cloud provider specific clusters.`,
 func Execute() {
 
 	cli = &resources.CobraCmd{}
-	controller = control_pkg.GenKsctlController()
+	controller = controlPkg.GenKsctlController()
 
 	cloud = map[int]string{
 		1: string(CLOUD_AWS),

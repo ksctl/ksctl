@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
-	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/rodaine/table"
 )
 

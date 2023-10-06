@@ -9,7 +9,7 @@ Kubesimplify
 import (
 	"os"
 
-	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
+	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
 	"github.com/spf13/cobra"
 )
 

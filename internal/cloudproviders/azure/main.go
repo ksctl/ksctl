@@ -8,12 +8,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/kubesimplify/ksctl/api/logger"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 
-	"github.com/kubesimplify/ksctl/api/resources"
-	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/api/utils"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	cloud_control_res "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type AzureStateVMs struct {

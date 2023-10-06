@@ -5,14 +5,14 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers"
+	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers"
 
-	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
-	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
-	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	azure_pkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
+	civo_pkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
+	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (

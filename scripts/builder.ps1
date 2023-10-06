@@ -24,8 +24,10 @@ mkdir -Force $env:USERPROFILE\.ksctl\config\local\managed
 
 $env:GOOS = 'windows'
 $env:GOARCH = 'amd64'
+Set-Location .\..
 
-Set-Location .\cli\
+Set-Location .\cmd\cli\
+
 go build -v -o ksctl.exe .
 
 #Move-Item ksctl.exe $env:USERPROFILE\.ksctl\

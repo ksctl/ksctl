@@ -8,44 +8,48 @@ if (($PSVersionTable.PSVersion.Major) -lt 5) {
   break
 }
 
+Set-Location .\..\pkg\
+
 Write-Output "-----------------------------------"
-Write-Output "|   Testing (api/utils)"
+Write-Output "|   Testing (pkg/utils)"
 Write-Output "-----------------------------------"
 
 Set-Location utils
 go test . -v && Set-Location -
 
 Write-Output "-----------------------------------"
-Write-Output "|   Testing (api/logger)"
+Write-Output "|   Testing (pkg/logger)"
 Write-Output "-----------------------------------"
 
 Set-Location logger
 go test . -v && Set-Location -
 
-Write-Output "-----------------------------------"
-Write-Output "|   Testing (api/k8s_distro/k3s)"
-Write-Output "-----------------------------------"
+Set-Location .\..\internal
 
-Set-Location k8s_distro\k3s
+Write-Output "--------------------------------------------"
+Write-Output "|   Testing (internal/k8sdistros/k3s)"
+Write-Output "--------------------------------------------"
+
+Set-Location k8sdistros\k3s
 go test . -v && Set-Location -
 
-Write-Output "-----------------------------------"
-Write-Output "|   Testing (api/provider/local)"
-Write-Output "-----------------------------------"
+Write-Output "--------------------------------------------"
+Write-Output "|   Testing (internal/cloudproviders/local)"
+Write-Output "--------------------------------------------"
 
-Set-Location provider\local
+Set-Location cloudproviders\local
 go test . -v && Set-Location -
 
-Write-Output "-----------------------------------"
-Write-Output "|   Testing (api/provider/civo)"
-Write-Output "-----------------------------------"
+Write-Output "--------------------------------------------"
+Write-Output "|   Testing (internal/cloudproviders/civo)"
+Write-Output "--------------------------------------------"
 
-Set-Location provider\civo
+Set-Location cloudproviders\civo
 go test . -v && Set-Location -
 
-Write-Output "-----------------------------------"
-Write-Output "|   Testing (api/provider/azure)"
-Write-Output "-----------------------------------"
+Write-Output "--------------------------------------------"
+Write-Output "|   Testing (internal/cloudproviders/azure)"
+Write-Output "--------------------------------------------"
 
-Set-Location provider\azure
+Set-Location cloudproviders\azure
 go test . -v && Set-Location -

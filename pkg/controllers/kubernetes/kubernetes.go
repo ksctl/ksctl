@@ -3,19 +3,19 @@ package kubernetes
 import (
 	"fmt"
 
-	k3s_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/k3s"
-	kubeadm_pkg "github.com/kubesimplify/ksctl/api/k8s_distro/kubeadm"
-	"github.com/kubesimplify/ksctl/api/k8s_distro/universal"
-	"github.com/kubesimplify/ksctl/api/resources"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	k3sPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/k3s"
+	kubeadmPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/kubeadm"
+	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func HydrateK8sDistro(client *resources.KsctlClient) error {
 	switch client.Metadata.K8sDistro {
 	case K8S_K3S:
-		client.Distro = k3s_pkg.ReturnK3sStruct()
+		client.Distro = k3sPkg.ReturnK3sStruct()
 	case K8S_KUBEADM:
-		client.Distro = kubeadm_pkg.ReturnKubeadmStruct()
+		client.Distro = kubeadmPkg.ReturnKubeadmStruct()
 	default:
 		return fmt.Errorf("[kubernetes] Invalid k8s provider")
 	}

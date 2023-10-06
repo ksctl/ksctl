@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
-	"github.com/kubesimplify/ksctl/api/resources"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type CivoGo interface {

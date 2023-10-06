@@ -16,10 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources"
 
-	"github.com/kubesimplify/ksctl/api/logger"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/logger"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )

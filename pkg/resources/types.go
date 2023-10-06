@@ -3,9 +3,9 @@ package resources
 import (
 	"os"
 
-	"github.com/kubesimplify/ksctl/api/logger"
-	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/logger"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type KsctlClient struct {

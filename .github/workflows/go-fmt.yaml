@@ -3,13 +3,15 @@ name: ci-test-go
 on:
   push:
     paths:
-    - 'api/**'
-    - 'cli/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'cmd/cli/**'
     branches: [main]
   pull_request:
     paths:
-    - 'api/**'
-    - 'cli/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'cmd/cli/**'
     branches: [main]
 
 jobs:

@@ -1,45 +1,49 @@
 #!/bin/sh
 
+cd ../pkg/ || exit 1
+
 echo "-----------------------------------"
-echo "|   Testing (api/utils)"
+echo "|   Testing (pkg/utils)"
 echo "-----------------------------------"
 
 cd utils/
 go test . -v && cd -
 
 echo "-----------------------------------"
-echo "|   Testing (api/logger)"
+echo "|   Testing (pkg/logger)"
 echo "-----------------------------------"
 
 cd logger/
 go test . -v -timeout 10s && cd -
 
-echo "-----------------------------------"
-echo "|   Testing (api/k8s_distro/k3s)    |"
-echo "-----------------------------------"
+cd ../internal
 
-cd k8s_distro/k3s/
+echo "--------------------------------------------"
+echo "|   Testing (internal/k8sdistros/k3s)"
+echo "--------------------------------------------"
+
+cd k8sdistros/k3s/
 go test . -v && cd -
 
-echo "-----------------------------------"
-echo "|   Testing (api/provider/local)"
-echo "-----------------------------------"
+echo "--------------------------------------------"
+echo "|   Testing (internal/cloudproviders/local)"
+echo "--------------------------------------------"
 
-cd provider/local/
+cd cloudproviders/local/
 go test . -v && cd -
 
 
-echo "-----------------------------------"
-echo "|   Testing (api/provider/civo)"
-echo "-----------------------------------"
+echo "--------------------------------------------"
+echo "|   Testing (internal/cloudproviders/civo)"
+echo "--------------------------------------------"
 
-cd provider/civo/
+cd cloudproviders/civo/
 go test . -v && cd -
 
-echo "-----------------------------------"
-echo "|   Testing (api/provider/azure)"
-echo "-----------------------------------"
+echo "--------------------------------------------"
+echo "|   Testing (internal/cloudproviders/azure)"
+echo "--------------------------------------------"
 
-cd provider/azure/
+cd cloudproviders/azure/
 go test . -v && cd -
 

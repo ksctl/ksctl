@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"github.com/spf13/cobra"
 )
 

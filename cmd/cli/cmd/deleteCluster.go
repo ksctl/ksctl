@@ -3,8 +3,8 @@ package cmd
 // maintainer: 	Dipankar Das <dipankardas0115@gmail.com>
 
 import (
-	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"github.com/spf13/cobra"
 )
 

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubesimplify/ksctl/api/provider/azure"
-	"github.com/kubesimplify/ksctl/api/provider/civo"
+	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
+	"github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	corev1 "k8s.io/api/core/v1"
 
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

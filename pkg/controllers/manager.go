@@ -5,19 +5,19 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/api/k8s_distro/universal"
-	"github.com/kubesimplify/ksctl/api/provider/azure"
-	azure_pkg "github.com/kubesimplify/ksctl/api/provider/azure"
-	local_pkg "github.com/kubesimplify/ksctl/api/provider/local"
+	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
+	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
+	localPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/local"
+	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
 
-	civo_pkg "github.com/kubesimplify/ksctl/api/provider/civo"
+	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 
-	"github.com/kubesimplify/ksctl/api/controllers/cloud"
-	"github.com/kubesimplify/ksctl/api/controllers/kubernetes"
-	"github.com/kubesimplify/ksctl/api/resources"
-	cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/api/storage/localstate"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	"github.com/kubesimplify/ksctl/pkg/controllers/cloud"
+	"github.com/kubesimplify/ksctl/pkg/controllers/kubernetes"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type KsctlControllerClient struct{}
@@ -44,7 +44,7 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 
 	switch client.Metadata.Provider {
 	case CLOUD_CIVO:
-		err := civo_pkg.GetInputCredential(client.Storage)
+		err := civoPkg.GetInputCredential(client.Storage)
 		if err != nil {
 			return "", err
 		}
@@ -105,17 +105,17 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	var err error
 	switch client.Metadata.Provider {
 	case CLOUD_CIVO:
-		client.Cloud, err = civo_pkg.ReturnCivoStruct(client.Metadata, civo_pkg.ProvideClient)
+		client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideClient)
 		if err != nil {
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}
 	case CLOUD_AZURE:
-		client.Cloud, err = azure_pkg.ReturnAzureStruct(client.Metadata, azure_pkg.ProvideClient)
+		client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideClient)
 		if err != nil {
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}
 	case CLOUD_LOCAL:
-		client.Cloud, err = local_pkg.ReturnLocalStruct(client.Metadata)
+		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata)
 		if err != nil {
 			return "", fmt.Errorf("[cloud] " + err.Error())
 		}
@@ -135,40 +135,40 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 	var printerTable []cloudController.AllClusterData
 	switch client.Metadata.Provider {
 	case CLOUD_CIVO:
-		data, err := civo_pkg.GetRAWClusterInfos(client.Storage)
+		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return "", err
 		}
 		printerTable = append(printerTable, data...)
 
 	case CLOUD_LOCAL:
-		data, err := local_pkg.GetRAWClusterInfos(client.Storage)
+		data, err := localPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return "", err
 		}
 		printerTable = append(printerTable, data...)
 
 	case CLOUD_AZURE:
-		data, err := azure_pkg.GetRAWClusterInfos(client.Storage)
+		data, err := azurePkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return "", err
 		}
 		printerTable = append(printerTable, data...)
 
 	case "all":
-		data, err := civo_pkg.GetRAWClusterInfos(client.Storage)
+		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return "", err
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = local_pkg.GetRAWClusterInfos(client.Storage)
+		data, err = localPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return "", err
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = azure_pkg.GetRAWClusterInfos(client.Storage)
+		data, err = azurePkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return "", err
 		}

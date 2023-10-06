@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/api/storage/localstate"
-	"github.com/kubesimplify/ksctl/api/utils"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 

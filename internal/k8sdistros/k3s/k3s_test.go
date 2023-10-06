@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/api/resources"
-	cloud_control_res "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/api/storage/localstate"
-	"github.com/kubesimplify/ksctl/api/utils"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -18,7 +18,7 @@ var (
 	demoClient         *resources.KsctlClient
 	fakeClient         *K3sDistro
 	dir                = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
-	fakeStateFromCloud cloud_control_res.CloudResourceState
+	fakeStateFromCloud cloudControlRes.CloudResourceState
 )
 
 func TestMain(m *testing.M) {
@@ -39,12 +39,12 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	fmt.Println("Created tmp directories")
-	fakeStateFromCloud = cloud_control_res.CloudResourceState{
-		SSHState: cloud_control_res.SSHInfo{
+	fakeStateFromCloud = cloudControlRes.CloudResourceState{
+		SSHState: cloudControlRes.SSHInfo{
 			PathPrivateKey: utils.GetPath(SSH_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "fake fake-resgrp fake-reg"),
 			UserName:       "fakeuser",
 		},
-		Metadata: cloud_control_res.Metadata{
+		Metadata: cloudControlRes.Metadata{
 			ClusterName: "fake",
 			Provider:    CLOUD_AZURE,
 			Region:      "fake-reg",

@@ -1,6 +1,6 @@
 package logger
 
-import cloudController "github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
+import cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 
 type Logger struct {
 	Verbose bool
