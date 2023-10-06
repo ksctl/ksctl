@@ -1,8 +1,6 @@
 pipeline {
     agent any
-    environment {
-        DISCORD_SEC = credentials("discord_secret")
-    }
+
     stages {
 
         stage('Local Managed') {
@@ -13,7 +11,7 @@ pipeline {
                     ksctl create local -n demo --approve -v
 
                     ksctl get
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/demo/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/managed/demo/kubeconfig"
 
                     kubectl get nodes -owide
                 '''
@@ -36,12 +34,6 @@ pipeline {
                 #!/bin/bash
                 ksctl delete local -n demo --approve -v || exit 0
             '''
-        }
-        success {
-            discordSend description: 'e2e test of local provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
-        }
-        failure {
-            discordSend description: 'e2e test of local provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
         }
     }
 }

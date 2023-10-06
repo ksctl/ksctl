@@ -1,8 +1,7 @@
 pipeline {
     agent any
     environment {
-        CIVO_TOKEN = credentials("civo token")
-        DISCORD_SEC = credentials("discord_secret")
+        CIVO_TOKEN = credentials("civo_token")
     }
 
     stages {
@@ -103,12 +102,6 @@ pipeline {
                 ksctl delete civo -n demo1 -r LON1 --approve -v
                 ksctl delete ha-civo -n demo -r FRA1 --approve -v
             '''
-        }
-        success {
-            discordSend description: 'e2e test of civo provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
-        }
-        failure {
-            discordSend description: 'e2e test of civo provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins civo', webhookURL: "${DISCORD_SEC}"
         }
     }
 }

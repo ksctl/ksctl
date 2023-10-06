@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment {
-        DISCORD_SEC = credentials("discord_secret")
-    }
     stages {
 
         stage('Build binary') {
@@ -10,8 +7,9 @@ pipeline {
                 anyOf {
                     changeset "go.mod"
                     changeset "go.sum"
-                    changeset "api/**"
-                    changeset "cli/**"
+                    changeset "internal/**"
+                    changeset "pkg/**"
+                    changeset "cmd/cli/**"
                     changeset "test/e2e/**"
                 }
             }
@@ -25,25 +23,25 @@ pipeline {
 
                 go version
 
-                cd ./cli
-                ls -laR
-                # Check if sudo access
+                cd ./cmd/cli
+
                 go get -d
                 go build -v -o ksctl .
 
-                ls -la
                 chmod +x ksctl
                 sudo mv ksctl /usr/local/bin
+
                 # Setup the configurations dir
                 rm -rf ${HOME}/.ksctl
-                mkdir -p ${HOME}/.ksctl/cred
 
+                mkdir -p ${HOME}/.ksctl/cred
                 mkdir -p ${HOME}/.ksctl/config/civo/ha
                 mkdir -p ${HOME}/.ksctl/config/azure/ha
-                mkdir ${HOME}/.ksctl/config/azure/managed
-                mkdir ${HOME}/.ksctl/config/civo/managed
-                mkdir ${HOME}/.ksctl/config/aws
-                mkdir ${HOME}/.ksctl/config/local
+				mkdir -p ${HOME}/.ksctl/config/aws/ha
+                mkdir -p ${HOME}/.ksctl/config/azure/managed
+                mkdir -p ${HOME}/.ksctl/config/civo/managed
+				mkdir -p ${HOME}/.ksctl/config/aws/managed
+                mkdir -p ${HOME}/.ksctl/config/local/managed
 
                 echo "SETUP DONE"
                 '''
@@ -65,8 +63,9 @@ pipeline {
                 anyOf {
                     changeset "go.mod"
                     changeset "go.sum"
-                    changeset "api/**"
-                    changeset "cli/**"
+                    changeset "internal/**"
+                    changeset "pkg/**"
+                    changeset "cmd/cli/**"
                     changeset "test/e2e/**"
                 }
             }
@@ -80,14 +79,13 @@ pipeline {
                                     changeset "go.mod"
                                     changeset "go.sum"
                                     changeset "test/e2e/**"
-                                    changeset "api/provider/local/**"
-                                    changeset "api/utils/**"
-                                    changeset "api/resources/**"
-				    changeset "api/controllers/**"
+                                    changeset "internal/cloudproviders/local/**"
+                                    changeset "pkg/utils/**"
+                                    changeset "pkg/resources/**"
+									changeset "pkg/controllers/**"
                                 }
                             }
                             steps {
-				    // build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "${env.GIT_BRANCH}")]
                                 build job: 'ksctl (local)', parameters: [string(name: 'GIT_BRANCH', value: "main")]
                             }
                         }
@@ -97,10 +95,10 @@ pipeline {
                                     changeset "go.mod"
                                     changeset "go.sum"
                                     changeset "test/e2e/**"
-                                    changeset "api/provider/civo/**"
-                                    changeset "api/utils/**"
-									changeset "api/controllers/**"
-                                    changeset "api/resources/**"
+                                    changeset "internal/cloudproviders/civo/**"
+                                    changeset "pkg/utils/**"
+									changeset "pkg/controllers/**"
+                                    changeset "pkg/resources/**"
                                 }
                             }
                             steps {
@@ -113,10 +111,10 @@ pipeline {
                                     changeset "go.mod"
                                     changeset "go.sum"
                                     changeset "test/e2e/**"
-                                    changeset "api/provider/azure/**"
-                                    changeset "api/utils/**"
-                                    changeset "api/resources/**"
-									changeset "api/controllers/**"
+                                    changeset "internal/cloudproviders/azure/**"
+                                    changeset "pkg/utils/**"
+                                    changeset "pkg/resources/**"
+									changeset "pkg/controllers/**"
                                 }
                             }
                             steps {
@@ -130,7 +128,10 @@ pipeline {
     }
     post {
 		always {
-			discordSend description: 'e2e test', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins ksctl', webhookURL: "${DISCORD_SEC}"
+			emailext body: '''
+                [KSCTL-e2e Testing on main branch]
+                $DEFAULT_CONTENT
+                ''', mimeType: 'text/html', subject: 'NO-REPLY ksctl-bot: $DEFAULT_SUBJECT', to: 'ksctl-kubesimplify@googlegroups.com'
 		}
 	}
 }
