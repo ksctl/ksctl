@@ -3,13 +3,15 @@ name: ci-test-go
 on:
   push:
     paths:
-    - 'api/**'
-    - 'cli/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'cmd/cli/**'
     branches: [main]
   pull_request:
     paths:
-    - 'api/**'
-    - 'cli/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'cmd/cli/**'
     branches: [main]
 
 jobs:
@@ -22,10 +24,13 @@ jobs:
         with:
           go-version: v1.20
 
-      - name: check gofmt
-        working-directory: api
+      - name: check gofmt pkg dir
+        working-directory: pkg
         run: gofmt -s -w -d $(find . -type f -name '*.go' -print)
 
+      - name: check gofmt internal dir
+        working-directory: internal
+        run: gofmt -s -w -d $(find . -type f -name '*.go' -print)
       # TODO: Add linter
       # - name: check golint
       #   run: $#@$@

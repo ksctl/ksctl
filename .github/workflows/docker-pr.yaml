@@ -2,8 +2,9 @@ name: Build Test of Docker images
 on:
   pull_request:
     paths:
-    - 'api/**'
-    - 'containers/**'
+    - 'internal/**'
+    - 'pkg/**'
+    - 'build/**'
     - 'httpserver/**'
     - 'Makefile'
     branches: [ main ]
@@ -14,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build --file containers/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1 .
+      run: docker build --file build/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1 .

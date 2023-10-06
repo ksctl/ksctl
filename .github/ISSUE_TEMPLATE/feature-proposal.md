@@ -17,11 +17,11 @@ assignees: ''
 <!-- A clear and concise description of any alternative solutions or features you've considered. -->
 
 # Provider in question
-- [ ] Civo
-- [ ] Local
-- [ ] Azure
-- [ ] K3s
-- [ ] Kubeadm
+- Civo
+- Local
+- Azure
+- K3s
+- Kubeadm
 
 ## Additional context
 Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl/docs/contributions)

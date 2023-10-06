@@ -3,13 +3,15 @@ name: Mock-Integration Test
 on:
   pull_request:
     paths:
-      - 'api/**'
+      - 'internal/**'
+      - 'pkg/**'
       - 'go.mod'
       - 'go.sum'
     types: [ labeled ]
   push:
     paths:
-    - 'api/**'
+    - 'internal/**'
+    - 'pkg/**'
     - 'go.mod'
     - 'go.sum'
     branches: [ main ]

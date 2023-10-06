@@ -35,11 +35,5 @@ pipeline {
                 ksctl delete local -n demo --approve -v || exit 0
             '''
         }
-        // success {
-        //     discordSend description: 'e2e test of local provider (success)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
-        // }
-        // failure {
-        //     discordSend description: 'e2e test of local provider (failure)', footer: 'ksctl', image: '', link: "${env.BUILD_URL}", result: "${currentBuild.currentResult}", scmWebUrl: '', thumbnail: '', title: 'Jenkins local', webhookURL: "${DISCORD_SEC}"
-        // }
     }
 }

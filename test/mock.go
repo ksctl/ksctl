@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	control_pkg "github.com/kubesimplify/ksctl/api/controllers"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/resources/controllers"
-	"github.com/kubesimplify/ksctl/api/utils"
-	. "github.com/kubesimplify/ksctl/api/utils/consts"
+	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (

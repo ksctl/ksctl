@@ -2,15 +2,17 @@ name: Testing Build process
 on:
   push:
     paths:
-    - 'api/**'
-    - 'cli/**'
+    - 'internal/**'
+    - 'pkg/**'
+    - 'cmd/cli/**'
     - 'go.mod'
     - 'go.sum'
     branches: [ main ]
   pull_request:
     paths:
-    - 'api/**'
-    - 'cli/**'
+    - 'internal/**'
+    - 'pkg/**'
+    - 'cmd/cli/**'
     - 'go.mod'
     - 'go.sum'
     branches: [ main ]
@@ -53,6 +55,7 @@ jobs:
       - run: go version
       - name: Build and install the latest version
         run: |
+          cd .\scripts
           .\builder.ps1
           cd C:\Users\runneradmin\AppData\Local\ksctl
           .\ksctl.exe -h
