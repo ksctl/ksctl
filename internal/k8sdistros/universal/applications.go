@@ -24,6 +24,19 @@ type Application struct {
 	Metadata    string
 	Maintainer  string
 	PostInstall string
+	Name        string
+}
+
+func (a Application) String() string {
+	return fmt.Sprintf(`
+Name: %s
+Metadata: %s
+Namespace: %s
+Version: %s
+Maintainer: %s
+Source: %s
+PostInstall: %s
+`, a.Name, a.Metadata, a.Namespace, a.Version, a.Maintainer, a.Url, a.PostInstall)
 }
 
 var (
@@ -34,12 +47,31 @@ func initApps() {
 	apps = map[string]func() Application{
 		// "cilium":  {},
 		// "flannel": {},
-		"argocd": argocdData,
+		"argo-rollouts": argoRolloutsData,
+		"argocd":        argocdData,
+	}
+}
+
+func argoRolloutsData() Application {
+	return Application{
+		Name:       "argo-rollouts",
+		Url:        "https://github.com/argoproj/argo-rollouts/releases/download/v1.6.0/install.yaml",
+		Namespace:  "argo-rollouts",
+		Maintainer: "Dipankar Das",
+		Version:    "v1.6.0",
+		Metadata:   "Argo Rollouts is a Kubernetes controller and set of CRDs which provide advanced deployment capabilities such as blue-green, canary, canary analysis, experimentation, and progressive delivery features to Kubernetes.",
+		PostInstall: `
+Commands to execute to access Argo-Rollouts
+	kubectl argo rollouts version
+	kubectl argo rollouts dashboard
+and open http://localhost:3100/rollouts
+		`,
 	}
 }
 
 func argocdData() Application {
 	return Application{
+		Name:       "argocd",
 		Url:        "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml",
 		Namespace:  "argocd",
 		Maintainer: "Dipankar Das",
@@ -187,6 +219,6 @@ func installApplication(client *Kubernetes, app string) error {
 		}
 	}
 
-	client.StorageDriver.Logger().Success("[kubernetes] Installed", app, "\n", appStruct.PostInstall)
+	client.StorageDriver.Logger().Success("[kubernetes] Installed app\n", appStruct.String())
 	return nil
 }
