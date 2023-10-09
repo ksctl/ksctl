@@ -219,29 +219,30 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return "", err
 	}
 
+	//////// Done with cluster setup
+	cloudstate, err := client.Cloud.GetStateFile(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	k8sstate, err := client.Distro.GetStateFile(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	kubeconfigPath, kubeconfig, err := client.Distro.GetKubeConfig(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	var cloudSecret map[string][]byte
+	cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
+	if err != nil {
+		return "", err
+	}
+
+	////// EXPERIMENTAL Features //////
 	if len(os.Getenv(string(KSCTL_FEATURE_FLAG_HA_AUTOSCALE))) > 0 {
-
-		//////// Done with cluster setup
-		cloudstate, err := client.Cloud.GetStateFile(client.Storage)
-		if err != nil {
-			return "", err
-		}
-
-		k8sstate, err := client.Distro.GetStateFile(client.Storage)
-		if err != nil {
-			return "", err
-		}
-
-		kubeconfigPath, kubeconfig, err := client.Distro.GetKubeConfig(client.Storage)
-		if err != nil {
-			return "", err
-		}
-
-		var cloudSecret map[string][]byte
-		cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
-		if err != nil {
-			return "", err
-		}
 
 		kubernetesClient := universal.Kubernetes{
 			Metadata:      client.Metadata,
@@ -252,6 +253,22 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		}
 
 		if err = kubernetesClient.KsctlConfigForController(kubeconfig, kubeconfigPath, cloudstate, k8sstate, cloudSecret); err != nil {
+			return "", err
+		}
+	}
+
+	if len(os.Getenv(string(KSCTL_FEATURE_FLAG_APPLICATIONS))) > 0 {
+
+		kubernetesClient := universal.Kubernetes{
+			Metadata:      client.Metadata,
+			StorageDriver: client.Storage,
+		}
+		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+			return "", err
+		}
+
+		apps := strings.Split(client.Metadata.Applications, ",")
+		if err := kubernetesClient.InstallApplications(apps); err != nil {
 			return "", err
 		}
 	}
