@@ -20,15 +20,6 @@ type Kubernetes struct {
 	apiextensionsClient *clientset.Clientset
 }
 
-type Data struct {
-	Url string
-	//.....
-}
-
-var (
-	apps map[string]Data
-)
-
 func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
 	nodes, err := this.nodesList()
@@ -55,27 +46,6 @@ func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	return nil
 }
 
-func initApps() {
-	apps = map[string]Data{
-		"cilium":  {},
-		"flannel": {},
-		"argocd":  {},
-	}
-}
-
-func GetApps(storage resources.StorageFactory, name string) (Data, error) {
-	if apps == nil {
-		initApps()
-	}
-
-	val, present := apps[name]
-
-	if !present {
-		return Data{}, fmt.Errorf("[kubernetes] app not found %s", name)
-	}
-	return val, nil
-}
-
 func (this *Kubernetes) ClientInit(kubeconfigPath string) (err error) {
 	this.config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
@@ -91,6 +61,7 @@ func (this *Kubernetes) ClientInit(kubeconfigPath string) (err error) {
 	if err != nil {
 		return err
 	}
+	initApps()
 
 	return nil
 }

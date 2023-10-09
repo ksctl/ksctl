@@ -5,7 +5,7 @@ authors: [dipankar]
 tags: [kubernetes-client-go, ksctl]
 ---
 
-:::note Status `UnderDevelopment`
+:::note Status `Experiemental`
 Currently planned to support auto-scaling for self-managed clusters
 
 (Controllers part is under development)
@@ -15,6 +15,11 @@ During creation of the cluster it installs necessary configurations and statefil
 and also creates a slim version of ksctl core api (aka scaleup and scaledown)
 
 Added then the controller will use certain metrics from metrics server to determine when to call HTTP requests to the ksctl to scaleup or scaledown
+
+to use this feature
+```bash
+ksctl create ha-<cloud-provider> ...  --feature-flag autoscale
+```
 
 ### Here is deatiled view
 

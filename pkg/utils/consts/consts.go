@@ -79,4 +79,7 @@ const (
 
 	// KSCTL_FEATURE_FLAG_HA_AUTOSCALE to be set if feature for AUTOSCALE is needed
 	KSCTL_FEATURE_FLAG_HA_AUTOSCALE KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_HA_AUTOSCALE"
+
+	// KSCTL_FEATURE_FLAG_APPLICATIONS to be set if feature for install Application is needed
+	KSCTL_FEATURE_FLAG_APPLICATIONS KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_APPLICATIONS"
 )
