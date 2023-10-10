@@ -2,6 +2,7 @@ package k3s
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
@@ -21,10 +22,10 @@ func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory)
 		IPv4(k8sState.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute(storage)
 	if err != nil {
-		return fmt.Errorf("[k3s] workerplane%v", err)
+		return fmt.Errorf("[k3s] workerplane %v", err)
 	}
 
-	storage.Logger().Success("[k3s] configured WorkerPlane")
+	storage.Logger().Success("[k3s] configured WorkerPlane", strconv.Itoa(idx))
 
 	return nil
 }

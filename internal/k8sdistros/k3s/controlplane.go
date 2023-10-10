@@ -2,6 +2,7 @@ package k3s
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -12,7 +13,7 @@ import (
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(
-		scriptWithoutCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.ControlPlanes[0])).
+		scriptWithoutCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 		FastMode(true).SSHExecute(storage)
 	if err != nil {
@@ -85,7 +86,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		}
 
 	}
-	storage.Logger().Success("[k3s] configured ControlPlane", string(rune(noOfCP)))
+	storage.Logger().Success("[k3s] configured ControlPlane", strconv.Itoa(noOfCP))
 
 	return nil
 }

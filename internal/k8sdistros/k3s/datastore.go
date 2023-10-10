@@ -3,6 +3,7 @@ package k3s
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
 
 	if idx > 0 {
-		storage.Logger().Note("[k3s] cluster of datastore not enabled!", string(rune(idx)))
+		storage.Logger().Note("[k3s] cluster of datastore not enabled!", strconv.Itoa(idx))
 		return nil
 	}
 
@@ -36,7 +37,7 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 	if err != nil {
 		return err
 	}
-	storage.Logger().Success("[k3s] configured DataStore")
+	storage.Logger().Success("[k3s] configured DataStore", strconv.Itoa(idx))
 
 	return nil
 }
