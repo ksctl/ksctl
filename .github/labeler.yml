@@ -31,10 +31,10 @@
 - 'internal/k8sdistros/kubeadm/*'
 
 'distro/kubernetes-client-go':
-- 'api/k8s_distro/universal/*'
+- 'internal/k8sdistros/universal/*'
 
 'state/local':
-- 'api/storage/localstate/*'
+- 'internal/storagelogger/local/*'
 
 'go':
 - '**/*.go'
