@@ -72,18 +72,13 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 		return nil
 	}
 
-	network, err := obj.client.GetNetwork(civoCloudState.NetworkIDs.NetworkID)
-	if err != nil {
-		return err
-	}
-
 	configK8s := &civogo.KubernetesClusterConfig{
 		KubernetesVersion: obj.metadata.k8sVersion,
 		Name:              name,
 		Region:            obj.region,
 		NumTargetNodes:    noOfNodes,
 		TargetNodesSize:   vmtype,
-		NetworkID:         network.ID,
+		NetworkID:         civoCloudState.NetworkIDs.NetworkID,
 		Applications:      obj.metadata.apps, // make the use of application and cni via some method
 		CNIPlugin:         obj.metadata.cni,  // make it use install application in the civo
 	}
