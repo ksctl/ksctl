@@ -18,6 +18,7 @@ type Kubernetes struct {
 	config              *rest.Config
 	clientset           *kubernetes.Clientset
 	apiextensionsClient *clientset.Clientset
+	helmClient          *HelmClient
 }
 
 func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
@@ -61,6 +62,12 @@ func (this *Kubernetes) ClientInit(kubeconfigPath string) (err error) {
 	if err != nil {
 		return err
 	}
+
+	this.helmClient = new(HelmClient)
+	if err := this.helmClient.InitClient(kubeconfigPath); err != nil {
+		return err
+	}
+
 	initApps()
 
 	return nil
