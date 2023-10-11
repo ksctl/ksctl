@@ -154,8 +154,8 @@ func TestFetchAPIKey(t *testing.T) {
 
 func TestApplications(t *testing.T) {
 	testPreInstalled := map[string]string{
-		"":     "Traefik-v2-nodeport,metrics-server",
-		"abcd": "abcd,Traefik-v2-nodeport,metrics-server",
+		"":     "traefik2-nodeport,metrics-server",
+		"abcd": "abcd,traefik2-nodeport,metrics-server",
 	}
 
 	for apps, setVal := range testPreInstalled {
