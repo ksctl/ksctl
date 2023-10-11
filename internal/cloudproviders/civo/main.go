@@ -307,9 +307,9 @@ func (cloud *CivoProvider) SupportForCNI() bool {
 
 func aggregratedApps(s string) (ret string) {
 	if len(s) == 0 {
-		ret = "Traefik-v2-nodeport,metrics-server" // default: applications
+		ret = "traefik2-nodeport,metrics-server" // default: applications
 	} else {
-		ret = s + ",Traefik-v2-nodeport,metrics-server"
+		ret = s + ",traefik2-nodeport,metrics-server"
 	}
 	return
 }
