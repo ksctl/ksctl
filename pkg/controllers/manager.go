@@ -71,9 +71,35 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	if err := cloud.HydrateCloud(client, OPERATION_STATE_CREATE, fakeClient); err != nil {
 		return "", err
 	}
-	cloudResErr := cloud.CreateManagedCluster(client)
+	// it gets supportForApps, supportForCNI, error
+	supportApp, _, cloudResErr := cloud.CreateManagedCluster(client)
 	if cloudResErr != nil {
 		client.Storage.Logger().Err(cloudResErr.Error())
+	}
+
+	kubeconfigPath := client.Cloud.GetKubeconfigPath()
+	if len(os.Getenv(string(KSCTL_FEATURE_FLAG_APPLICATIONS))) > 0 {
+
+		kubernetesClient := universal.Kubernetes{
+			Metadata:      client.Metadata,
+			StorageDriver: client.Storage,
+		}
+		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+			return "", err
+		}
+
+		//if len(client.Metadata.CNIPlugin) != 0 || client.Metadata.CNIPlugin != "flannel" {
+		//	if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
+		//		return "", err
+		//	}
+		//}
+
+		if len(client.Metadata.Applications) != 0 && !supportApp {
+			apps := strings.Split(client.Metadata.Applications, ",")
+			if err := kubernetesClient.InstallApplications(apps); err != nil {
+				return "", err
+			}
+		}
 	}
 	return "[ksctl] created managed cluster", nil
 }

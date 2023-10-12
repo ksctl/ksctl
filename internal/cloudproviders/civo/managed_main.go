@@ -132,3 +132,7 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) err
 
 	return nil
 }
+
+func (obj *CivoProvider) GetKubeconfigPath() string {
+	return generatePath(CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+}
