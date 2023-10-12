@@ -10,18 +10,18 @@ pipeline {
                 sh '''
                     #!/bin/bash
 
-                    ksctl create civo -n demo1 -r LON1 --approve
+                    ksctl create civo -n test-e2e-civo -r LON1 --approve
 
 
                     ksctl get
                     tree "/var/lib/jenkins/.ksctl/config"
 
-                    cd /var/lib/jenkins/.ksctl/config/civo/managed/demo1\\ LON1
+                    cd /var/lib/jenkins/.ksctl/config/civo/managed/test-e2e-civo\\ LON1
 
                     jq . cloud-state.json
 
                     sleep 5s
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/managed/demo1 LON1/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/managed/test-e2e-civo LON1/kubeconfig"
 
                     kubectl get nodes -owide
                 '''
@@ -32,18 +32,18 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl create ha-civo -n demo -r FRA1 --approve
+                    ksctl create ha-civo -n test-e2e-ha-civo -r FRA1 --approve
 
                     ksctl get
                     tree "/var/lib/jenkins/.ksctl/config"
 
-                    cd /var/lib/jenkins/.ksctl/config/civo/ha/demo\\ FRA1
+                    cd /var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo\\ FRA1
 
                     jq . cloud-state.json
                     jq . k8s-state.json
 
                     sleep 5s
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/demo FRA1/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo FRA1/kubeconfig"
 
                     kubectl get nodes -owide
                 '''
@@ -54,8 +54,8 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl switch -p civo -n demo1 -r LON1
-                    ksctl switch -p ha-civo -n demo -r FRA1
+                    ksctl switch -p civo -n test-e2e-civo -r LON1
+                    ksctl switch -p ha-civo -n test-e2e-ha-civo -r FRA1
                 '''
             }
         }
@@ -65,11 +65,11 @@ pipeline {
                 sh '''
                     #!/bin/bash
                     sleep 30s
-                    ksctl delete ha-civo delete-nodes -n demo -r FRA1 --noWP 0 --approve
+                    ksctl delete ha-civo delete-nodes -n test-e2e-ha-civo -r FRA1 --noWP 0 --approve
 
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/demo FRA1/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo FRA1/kubeconfig"
                     kubectl get nodes -owide
-                    cd /var/lib/jenkins/.ksctl/config/civo/ha/demo\\ FRA1
+                    cd /var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo\\ FRA1
 
                     jq . cloud-state.json
                     jq . k8s-state.json
@@ -82,11 +82,11 @@ pipeline {
                 sh '''
                     #!/bin/bash
                     sleep 1m
-                    ksctl create ha-civo add-nodes -n demo -r FRA1 --noWP 1 --approve
+                    ksctl create ha-civo add-nodes -n test-e2e-ha-civo -r FRA1 --noWP 1 --approve
 
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/demo FRA1/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo FRA1/kubeconfig"
                     kubectl get nodes -owide
-                    cd /var/lib/jenkins/.ksctl/config/civo/ha/demo\\ FRA1
+                    cd /var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo\\ FRA1
 
                     jq . cloud-state.json
                     jq . k8s-state.json
@@ -99,8 +99,8 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete civo -n demo1 -r LON1 --approve -v
-                ksctl delete ha-civo -n demo -r FRA1 --approve -v
+                ksctl delete civo -n test-e2e-civo -r LON1 --approve -v
+                ksctl delete ha-civo -n test-e2e-ha-civo -r FRA1 --approve -v
             '''
         }
     }

@@ -267,7 +267,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 			return "", err
 		}
 
-		if client.Metadata.CNIPlugin != "flannel" {
+		if len(client.Metadata.CNIPlugin) != 0 || client.Metadata.CNIPlugin != "flannel" {
 			if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
 				return "", err
 			}
