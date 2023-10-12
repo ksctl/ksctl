@@ -1,6 +1,7 @@
 package k3s
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -12,8 +13,16 @@ import (
 
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
-	err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(
-		scriptWithoutCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)).
+	var script string
+	if k3s.Cni == "flannel" {
+		script = scriptCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
+	} else if k3s.Cni == "cilium" {
+		script = scriptCP_1WithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
+	} else {
+		return errors.New("[k3s] unsupported cni")
+	}
+
+	err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(script).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 		FastMode(true).SSHExecute(storage)
 	if err != nil {
@@ -49,8 +58,16 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		}
 	} else {
 
-		err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(
-			scriptCP_N(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)).
+		var script string
+		if k3s.Cni == "flannel" {
+			script = scriptCP_N(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
+		} else if k3s.Cni == "cilium" {
+			script = scriptCP_NWithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
+		} else {
+			return errors.New("[k3s] unsupported cni")
+		}
+
+		err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(script).
 			IPv4(k8sState.PublicIPs.ControlPlanes[noOfCP]).
 			FastMode(true).SSHExecute(storage)
 		if err != nil {
@@ -91,8 +108,45 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 	return nil
 }
 
-// scriptWithoutCP_1 script used to configure the control-plane-1 with no need of output inital
-func scriptWithoutCP_1(ver string, dbEndpoint, pubIPlb string) string {
+func scriptCP_1WithoutCNI(ver string, dbEndpoint, pubIPlb string) string {
+
+	return fmt.Sprintf(`#!/bin/bash
+cat <<EOF > control-setup.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--datastore-endpoint "%s" \
+	--flannel-backend=none \
+	--disable-network-policy \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setup.sh
+sudo ./control-setup.sh
+`, ver, dbEndpoint, pubIPlb)
+}
+
+func scriptCP_NWithoutCNI(ver string, dbEndpoint, pubIPlb, token string) string {
+	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
+	return fmt.Sprintf(`#!/bin/bash
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint="%s" \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--flannel-backend=none \
+	--disable-network-policy \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
+`, ver, token, dbEndpoint, pubIPlb)
+}
+
+// scriptCP_1 script used to configure the control-plane-1 with no need of output inital
+func scriptCP_1(ver string, dbEndpoint, pubIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setup.sh
@@ -106,22 +160,6 @@ EOF
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
 `, ver, dbEndpoint, pubIPlb)
-
-	// NOTE: Feature to add other CNI like Cilium
-	// Add it when the installApplication() feature is added so that it could install cni plugins
-
-	// Add these tags for having different CNI
-	// also check out the default loadbalancer available
-
-	//	return fmt.Sprintf(`#!/bin/bash
-	// export K3S_DATASTORE_ENDPOINT='%s'
-	//	curl -sfL https://get.k3s.io | sh -s - server \
-	//		--flannel-backend=none \
-	//		--disable-network-policy \
-	//		--node-taint CriticalAddonsOnly=true:NoExecute \
-	//		--tls-san %s
-	//
-	// `, dbEndpoint, privateIPlb)
 }
 
 func scriptForK3sToken() string {
@@ -141,23 +179,6 @@ EOF
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
 `, ver, token, dbEndpoint, pubIPlb)
-
-	// NOTE: Feature to add other CNI like Cilium
-	// Add these tags for having different CNI
-	// also check out the default loadbalancer available
-
-	//	return fmt.Sprintf(`#!/bin/bash
-	// export SECRET='%s'
-	// export K3S_DATASTORE_ENDPOINT='%s'
-	//
-	//	curl -sfL https://get.k3s.io | sh -s - server \
-	//		--token=$SECRET \
-	//		--node-taint CriticalAddonsOnly=true:NoExecute \
-	//		--flannel-backend=none \
-	//		--disable-network-policy \
-	//		--tls-san %s
-	//
-	// `, token, dbEndpoint, privateIPlb)
 }
 
 func (k3s *K3sDistro) GetKubeConfig(storage resources.StorageFactory) (path string, data string, err error) {

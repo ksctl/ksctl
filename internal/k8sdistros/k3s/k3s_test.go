@@ -105,7 +105,7 @@ EOF
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
 `, ver[i], dbEndpoint[i], pubIP[i])
-		if valid != scriptWithoutCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
+		if valid != scriptCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
 			t.Fatalf("scipts for Controlplane 1 failed")
 		}
 	}
