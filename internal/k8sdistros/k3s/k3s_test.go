@@ -89,6 +89,8 @@ func TestK3sDistro_Version(t *testing.T) {
 }
 
 func TestScriptsControlplane(t *testing.T) {
+	// TODO: add test cases for the WithoutCNI()
+
 	ver := []string{"1.26.1", "1.27"}
 	dbEndpoint := []string{"demo@(cd);dcwef", "mysql@demo@(cd);dcwef"}
 	pubIP := []string{"192.16.9.2", "23.34.4.1"}
@@ -278,6 +280,8 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Datastore unable to operate %v", err)
 		}
 	}
+
+	fakeClient.CNI("flannel")
 	for no := 0; no < demoClient.Metadata.NoCP; no++ {
 		err := fakeClient.ConfigureControlPlane(no, demoClient.Storage)
 		if err != nil {
