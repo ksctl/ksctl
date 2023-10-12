@@ -11,6 +11,9 @@ import (
 
 // JoinWorkerplane implements resources.DistroFactory.
 func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
+
+	storage.Logger().Print("[k3s] configuring Workerplane", strconv.Itoa(idx))
+
 	path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err := saveStateHelper(storage, path)
 	if err != nil {

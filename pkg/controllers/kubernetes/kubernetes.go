@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"errors"
 	"fmt"
 
 	k3sPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/k3s"
@@ -34,15 +35,26 @@ func ConfigureCluster(client *resources.KsctlClient) error {
 			return err
 		}
 	}
+
+	client.Distro = client.Distro.CNI(client.Metadata.CNIPlugin)
+	if client.Distro == nil {
+		return errors.New("[ksctl] invalid CNI plugin")
+	}
+
+	client.Distro = client.Distro.Version(client.Metadata.K8sVersion)
+	if client.Distro == nil {
+		return errors.New("[ksctl] invalid version of self-managed k8s cluster")
+	}
+
 	for no := 0; no < client.Metadata.NoCP; no++ {
-		err := client.Distro.Version(client.Metadata.K8sVersion).ConfigureControlPlane(no, client.Storage)
+		err := client.Distro.ConfigureControlPlane(no, client.Storage)
 		if err != nil {
 			return err
 		}
 	}
 
-	for no := 0; no < int(client.Metadata.NoWP); no++ {
-		err := client.Distro.Version(client.Metadata.K8sVersion).JoinWorkerplane(no, client.Storage)
+	for no := 0; no < client.Metadata.NoWP; no++ {
+		err := client.Distro.JoinWorkerplane(no, client.Storage)
 		if err != nil {
 			return err
 		}
@@ -51,8 +63,13 @@ func ConfigureCluster(client *resources.KsctlClient) error {
 }
 
 func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
+	client.Distro = client.Distro.Version(client.Metadata.K8sVersion)
+	if client.Distro == nil {
+		return errors.New("[ksctl] invalid version of self-managed k8s cluster")
+	}
+
 	for no := start; no < end; no++ {
-		err := client.Distro.Version(client.Metadata.K8sVersion).JoinWorkerplane(no, client.Storage)
+		err := client.Distro.JoinWorkerplane(no, client.Storage)
 		if err != nil {
 			return err
 		}

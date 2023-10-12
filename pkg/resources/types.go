@@ -171,24 +171,18 @@ type KubernetesFactory interface {
 	// it requires number
 	ConfigureDataStore(int, StorageFactory) error
 
-	// TODO: Check if its required
-	InstallApplication(StorageFactory) error
-
 	// GetKubeConfig returns the path of kubeconfig
 	GetKubeConfig(StorageFactory) (path string, data string, err error)
 
 	// Version setter for version to be used
 	Version(string) DistroFactory
 
+	CNI(string) DistroFactory
+
 	// GetStateFiles it returns the k8s-state.json
 	// WARN: sensitive info can be present
 	GetStateFile(StorageFactory) (string, error)
 }
-
-// FEATURE: non kubernetes distrobutions like nomad
-// type NonKubernetesInfrastructure interface {
-// 	InstallApplications()
-// }
 
 type DistroFactory interface {
 	KubernetesFactory
