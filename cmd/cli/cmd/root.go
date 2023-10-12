@@ -74,7 +74,11 @@ func Execute() {
 
 	timer := time.Now()
 	err := rootCmd.Execute()
-	defer cli.Client.Storage.Logger().Print(fmt.Sprintf("⏰  %v\n", time.Since(timer)))
+	if cli.Client.Storage == nil {
+		defer fmt.Printf("⏰  %v\n", time.Since(timer))
+	} else {
+		defer cli.Client.Storage.Logger().Print(fmt.Sprintf("⏰  %v\n", time.Since(timer)))
+	}
 	if err != nil {
 		os.Exit(1)
 	}
