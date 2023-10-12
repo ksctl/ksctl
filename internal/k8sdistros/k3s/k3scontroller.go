@@ -44,6 +44,7 @@ func ReturnK3sStruct() *K3sDistro {
 
 type K3sDistro struct {
 	K3sVer string
+	Cni    string
 	// it will be used for SSH
 	SSHInfo utils.SSHCollection
 }
@@ -121,11 +122,6 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 	return nil
 }
 
-// InstallApplication implements resources.DistroFactory.
-func (*K3sDistro) InstallApplication(state resources.StorageFactory) error {
-	panic("unimplemented")
-}
-
 func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {
 	if isValidK3sVersion(ver) {
 		// valid
@@ -133,4 +129,15 @@ func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {
 		return k3s
 	}
 	return nil
+}
+
+func (k3s *K3sDistro) CNI(cni string) resources.DistroFactory {
+	if len(cni) == 0 {
+		cni = "flannel" // default
+	} else if cni != "cilium" && cni != "flannel" {
+		return nil
+	}
+
+	k3s.Cni = cni
+	return k3s
 }

@@ -47,6 +47,7 @@ func initApps() {
 		"argo-rollouts": argoRolloutsData,
 		"argocd":        argocdData,
 		"istio":         istioData,
+		"cilium":        ciliumData,
 	}
 }
 
@@ -63,6 +64,16 @@ func GetApps(storage resources.StorageFactory, name string) (Application, error)
 	return val(), nil
 }
 
+func (this *Kubernetes) InstallCNI(app string) error {
+
+	if err := installApplication(this, app); err != nil {
+		return err
+	}
+
+	this.StorageDriver.Logger().Success("[kubernetes] Installed CNI plugin")
+	return nil
+}
+
 func (this *Kubernetes) InstallApplications(apps []string) error {
 
 	for _, app := range apps {
@@ -71,6 +82,7 @@ func (this *Kubernetes) InstallApplications(apps []string) error {
 		}
 	}
 
+	this.StorageDriver.Logger().Success("[kubernetes] Installed Applications")
 	return nil
 }
 
@@ -95,6 +107,6 @@ func installApplication(client *Kubernetes, app string) error {
 
 	}
 
-	client.StorageDriver.Logger().Success("[kubernetes] Installed app\n", appStruct.String())
+	client.StorageDriver.Logger().Success("[kubernetes] Installed Resource\n", appStruct.String())
 	return nil
 }

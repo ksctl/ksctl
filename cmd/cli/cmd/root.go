@@ -8,7 +8,9 @@ Kubesimplify
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	controlPkg "github.com/kubesimplify/ksctl/pkg/controllers"
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -70,7 +72,13 @@ func Execute() {
 	}
 	cli.Client.Metadata.StateLocation = STORE_LOCAL
 
+	timer := time.Now()
 	err := rootCmd.Execute()
+	if cli.Client.Storage == nil {
+		defer fmt.Printf("⏰  %v\n", time.Since(timer))
+	} else {
+		defer cli.Client.Storage.Logger().Print(fmt.Sprintf("⏰  %v\n", time.Since(timer)))
+	}
 	if err != nil {
 		os.Exit(1)
 	}

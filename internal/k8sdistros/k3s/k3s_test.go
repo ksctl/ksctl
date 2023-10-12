@@ -89,11 +89,12 @@ func TestK3sDistro_Version(t *testing.T) {
 }
 
 func TestScriptsControlplane(t *testing.T) {
+
 	ver := []string{"1.26.1", "1.27"}
 	dbEndpoint := []string{"demo@(cd);dcwef", "mysql@demo@(cd);dcwef"}
 	pubIP := []string{"192.16.9.2", "23.34.4.1"}
 	for i := 0; i < len(ver); i++ {
-		valid := fmt.Sprintf(`#!/bin/bash
+		validWithCni := fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
@@ -105,7 +106,26 @@ EOF
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
 `, ver[i], dbEndpoint[i], pubIP[i])
-		if valid != scriptWithoutCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
+
+		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+cat <<EOF > control-setup.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--datastore-endpoint "%s" \
+	--flannel-backend=none \
+	--disable-network-policy \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setup.sh
+sudo ./control-setup.sh
+`, ver[i], dbEndpoint[i], pubIP[i])
+
+		if validWithCni != scriptCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
+			t.Fatalf("scipts for Controlplane 1 failed")
+		}
+		if validWithoutCni != scriptCP_1WithoutCNI(ver[i], dbEndpoint[i], pubIP[i]) {
 			t.Fatalf("scipts for Controlplane 1 failed")
 		}
 	}
@@ -119,7 +139,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
 	for i := 0; i < len(ver); i++ {
-		valid := fmt.Sprintf(`#!/bin/bash
+		validWithCni := fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
@@ -128,8 +148,28 @@ EOF
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
 `, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
-		if rscript := scriptCP_N(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != valid {
-			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", valid, rscript)
+
+		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint="%s" \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--flannel-backend=none \
+	--disable-network-policy \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
+`, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
+
+		if rscript := scriptCP_N(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithCni {
+			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithCni, rscript)
+		}
+		if rscript := scriptCP_NWithoutCNI(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithoutCni {
+			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithoutCni, rscript)
 		}
 	}
 }
@@ -278,6 +318,8 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Datastore unable to operate %v", err)
 		}
 	}
+
+	fakeClient.CNI("flannel")
 	for no := 0; no < demoClient.Metadata.NoCP; no++ {
 		err := fakeClient.ConfigureControlPlane(no, demoClient.Storage)
 		if err != nil {

@@ -267,9 +267,17 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 			return "", err
 		}
 
-		apps := strings.Split(client.Metadata.Applications, ",")
-		if err := kubernetesClient.InstallApplications(apps); err != nil {
-			return "", err
+		if len(client.Metadata.CNIPlugin) != 0 || client.Metadata.CNIPlugin != "flannel" {
+			if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
+				return "", err
+			}
+		}
+
+		if len(client.Metadata.Applications) != 0 {
+			apps := strings.Split(client.Metadata.Applications, ",")
+			if err := kubernetesClient.InstallApplications(apps); err != nil {
+				return "", err
+			}
 		}
 	}
 
