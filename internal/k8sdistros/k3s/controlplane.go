@@ -50,7 +50,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 // ConfigureControlPlane implements resources.DistroFactory.
 func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
-
+	storage.Logger().Print("[k3s] configuring ControlPlane", strconv.Itoa(noOfCP))
 	if noOfCP == 0 {
 		err := configureCP_1(storage, k3s)
 		if err != nil {

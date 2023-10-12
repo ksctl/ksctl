@@ -15,6 +15,7 @@ import (
 
 // ConfigureDataStore implements resources.DistroFactory.
 func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
+	storage.Logger().Print("[k3s] configuring Datastore", strconv.Itoa(idx))
 
 	if idx > 0 {
 		storage.Logger().Note("[k3s] cluster of datastore not enabled!", strconv.Itoa(idx))
