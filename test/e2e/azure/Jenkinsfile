@@ -19,12 +19,13 @@ pipeline {
                     ksctl get
                     tree "/var/lib/jenkins/.ksctl/config"
 
-                    cd /var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure\\ demo-ksctl-managed-resgrp\\ eastus
+                    cd /var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure\\ test-e2e-azure-ksctl-managed-resgrp\\ eastus
 
                     jq . cloud-state.json
 
                     sleep 5s
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure demo-ksctl-managed-resgrp eastus/kubeconfig"
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure test-e2e-azure-ksctl-managed-resgrp eastus/kubeconfig"
 
                     kubectl get nodes -owide
                 '''
@@ -40,12 +41,13 @@ pipeline {
                     ksctl get
                     tree "/var/lib/jenkins/.ksctl/config"
 
-                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ demo-ksctl-ha-resgrp\\ eastus2
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
 
                     jq . cloud-state.json
                     jq . k8s-state.json
                     sleep 5s
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure demo-ksctl-ha-resgrp eastus2/kubeconfig"
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
 
                     kubectl get nodes -owide
                 '''
@@ -69,9 +71,11 @@ pipeline {
                     sleep 15s
                     ksctl delete ha-azure delete-nodes --noWP 0 -n test-e2e-ha-azure -r eastus2 --approve
 
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure demo-ksctl-ha-resgrp eastus2/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
+
                     kubectl get nodes -owide
-                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ demo-ksctl-ha-resgrp\\ eastus2
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
 
                     jq . cloud-state.json
                     jq . k8s-state.json
@@ -86,9 +90,11 @@ pipeline {
                     sleep 1m
                     ksctl create ha-azure add-nodes --noWP 1 -n test-e2e-ha-azure -r eastus2 --approve
 
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure demo-ksctl-ha-resgrp eastus2/kubeconfig"
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
+
                     kubectl get nodes -owide
-                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ demo-ksctl-ha-resgrp\\ eastus2
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
 
                     jq . cloud-state.json
                     jq . k8s-state.json

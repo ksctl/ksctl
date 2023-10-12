@@ -114,3 +114,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	storage.Logger().Success("[azure] created AKS", *resp.Name)
 	return nil
 }
+
+func (obj *AzureProvider) GetKubeconfigPath() string {
+	return generatePath(CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+}

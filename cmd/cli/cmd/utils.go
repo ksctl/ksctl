@@ -288,6 +288,8 @@ func argsFlags() {
 	noOfMPFlag(createClusterAzure)
 	k8sVerFlag(createClusterAzure)
 	distroFlag(createClusterAzure)
+	appsFlag(createClusterAzure)
+	cniFlag(createClusterAzure)
 
 	// Managed Civo
 	clusterNameFlag(createClusterCivo)
