@@ -70,3 +70,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 	printKubeconfig(storage, OPERATION_STATE_CREATE, cloud.ClusterName)
 	return nil
 }
+
+func (obj *LocalProvider) GetKubeconfigPath() string {
+	return utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, obj.ClusterName, KUBECONFIG)
+}

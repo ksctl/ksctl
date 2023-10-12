@@ -431,11 +431,14 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	return nil
 }
 
-func CreateManagedCluster(client *resources.KsctlClient) error {
+func CreateManagedCluster(client *resources.KsctlClient) (bool, bool, error) {
+
+	supportForApp := false
+	supportForCni := false
 
 	if client.Metadata.Provider != CLOUD_LOCAL {
 		if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.Storage); err != nil {
-			return err
+			return supportForApp, supportForCni, err
 		}
 	}
 
@@ -445,24 +448,24 @@ func CreateManagedCluster(client *resources.KsctlClient) error {
 		managedClient = managedClient.VMType(client.Metadata.ManagedNodeType)
 	}
 
-	if client.Cloud.SupportForApplications() {
+	if supportForApp = client.Cloud.SupportForApplications(); supportForApp {
 		managedClient = managedClient.Application(client.Metadata.Applications)
 	}
 
-	if client.Cloud.SupportForCNI() {
+	if supportForCni = client.Cloud.SupportForCNI(); supportForCni {
 		managedClient = managedClient.CNI(client.Metadata.CNIPlugin)
 	}
 
 	managedClient = managedClient.Version(client.Metadata.K8sVersion)
 
 	if managedClient == nil {
-		return fmt.Errorf("[azure] invalid version")
+		return supportForApp, supportForCni, fmt.Errorf("[ksctl] invalid version")
 	}
 
 	if err := managedClient.NewManagedCluster(client.Storage, client.Metadata.NoMP); err != nil {
-		return err
+		return supportForApp, supportForCni, err
 	}
-	return nil
+	return supportForApp, supportForCni, nil
 }
 
 func DeleteManagedCluster(client *resources.KsctlClient) error {
