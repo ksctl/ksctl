@@ -1,0 +1,173 @@
+#########################
+#   Under Development   #
+#########################
+
+openapi: 3.0.3
+info:
+  title: Ksctl - OpenAPI 3.0
+  description: |-
+    Infra-Automation tool that can interact with a multitude of cloud providers, making it easy for you to manage multi-cloud clusters, with just a single CLI/UI
+    
+    Some useful links:
+    - [The Github repository](https://github.com/kubsimplify/ksctl)
+    - [The source API definition for the ksctl api](https://github.com/kubesimplify/ksctl/blob/master/src/main/api/openapi-spec/openapiv3.yaml)
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: ksctl-kubesimplify@googlegroups.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.1.1-rc1
+
+servers:
+  - url: https://ksctl/api/v1
+tags:
+  - name: pet
+    description: Everything about your Pets
+    externalDocs:
+      description: Find out more
+      url: http://swagger.io
+
+paths:
+
+  /api:
+    get:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+  /api/v1:
+    get:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+  /api/v1/cluster:
+    get:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+  /api/v1/extensions:
+    get:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+  /api/v1/cluster/list:
+    get:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+
+  /api/v1/cluster/switch:
+    get:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+
+  /api/v1/cluster/create:
+    post:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+
+  /api/v1/cluster/create/scaleup:
+    put:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+
+  /api/v1/cluster/delete:
+    post:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+
+  /api/v1/cluster/delete/scaledown:
+    put:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+
+  /api/v1/extensions/apps:
+    post:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+  /api/v1/extensions/cni:
+    post:
+      tags:
+        - ''
+      responses:
+        '200':
+          description: Successful operation
+
+#    put:
+#      tags:
+#        - pet
+#      summary: Update an existing pet
+#      description: Update an existing pet by Id
+#      operationId: updatePet
+#      requestBody:
+#        description: Update an existent pet in the store
+#        content:
+#          application/json:
+#            schema:
+#              $ref: '#/components/schemas/Pet'
+#          application/xml:
+#            schema:
+#              $ref: '#/components/schemas/Pet'
+#          application/x-www-form-urlencoded:
+#            schema:
+#              $ref: '#/components/schemas/Pet'
+#        required: true
+#      responses:
+#        '200':
+#          description: Successful operation
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/Pet'
+#            application/xml:
+#              schema:
+#                $ref: '#/components/schemas/Pet'
+#        '400':
+#          description: Invalid ID supplied
+#        '404':
+#          description: Pet not found
+#        '405':
+#          description: Validation exception
+#      security:
+#        - petstore_auth:
+#            - write:pets
+#            - read:pets
