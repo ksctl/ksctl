@@ -1,6 +1,7 @@
 package civo
 
 import (
+	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"math/rand"
 	"strings"
@@ -130,7 +131,6 @@ func (client *CivoGoClient) InitClient(factory resources.StorageFactory, region 
 	return
 }
 
-// CivoGoMockClient ///////// Mock client
 type CivoGoMockClient struct {
 	client *civogo.FakeClient
 	region string
@@ -138,7 +138,7 @@ type CivoGoMockClient struct {
 
 func generateRandomString(length int) string {
 	b := make([]byte, length)
-	_, err := rand.Read(b)
+	_, err := cryptoRand.Read(b)
 	if err != nil {
 		panic(err)
 	}
@@ -146,7 +146,7 @@ func generateRandomString(length int) string {
 }
 
 func (client *CivoGoMockClient) ListAvailableKubernetesVersions() ([]civogo.KubernetesVersion, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return []civogo.KubernetesVersion{
 		{
@@ -165,7 +165,7 @@ func (client *CivoGoMockClient) ListAvailableKubernetesVersions() ([]civogo.Kube
 }
 
 func (client *CivoGoMockClient) ListRegions() ([]civogo.Region, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return []civogo.Region{
 		{
@@ -184,7 +184,7 @@ func (client *CivoGoMockClient) ListRegions() ([]civogo.Region, error) {
 }
 
 func (client *CivoGoMockClient) ListInstanceSizes() ([]civogo.InstanceSize, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return []civogo.InstanceSize{
 		{
@@ -200,7 +200,7 @@ func (client *CivoGoMockClient) ListInstanceSizes() ([]civogo.InstanceSize, erro
 }
 
 func (client *CivoGoMockClient) GetNetwork(id string) (*civogo.Network, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return &civogo.Network{
 		ID:      id,
@@ -266,7 +266,7 @@ func (client *CivoGoMockClient) GetDiskImageByName(name string) (*civogo.DiskIma
 }
 
 func (client *CivoGoMockClient) CreateNetwork(label string) (*civogo.NetworkResult, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return &civogo.NetworkResult{
 		Label:  label,
@@ -276,7 +276,7 @@ func (client *CivoGoMockClient) CreateNetwork(label string) (*civogo.NetworkResu
 }
 
 func (client *CivoGoMockClient) DeleteNetwork(id string) (*civogo.SimpleResponse, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return &civogo.SimpleResponse{
 		ID:     id,
@@ -285,7 +285,7 @@ func (client *CivoGoMockClient) DeleteNetwork(id string) (*civogo.SimpleResponse
 }
 
 func (client *CivoGoMockClient) NewFirewall(config *civogo.FirewallConfig) (*civogo.FirewallResult, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return &civogo.FirewallResult{
 		ID:     generateRandomString(10),
@@ -316,7 +316,7 @@ func (client *CivoGoMockClient) DeleteSSHKey(id string) (*civogo.SimpleResponse,
 }
 
 func (client *CivoGoMockClient) CreateInstance(config *civogo.InstanceConfig) (*civogo.Instance, error) {
-	time.Sleep(time.Duration(rand.Intn(3)) * time.Second)
+	time.Sleep(time.Second)
 
 	return &civogo.Instance{
 		ID:         generateRandomString(10),
@@ -333,7 +333,7 @@ func (client *CivoGoMockClient) CreateInstance(config *civogo.InstanceConfig) (*
 }
 
 func (client *CivoGoMockClient) GetInstance(id string) (*civogo.Instance, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 	return &civogo.Instance{
 		ID:        id,
 		PrivateIP: "192.169.X.X",
@@ -344,7 +344,7 @@ func (client *CivoGoMockClient) GetInstance(id string) (*civogo.Instance, error)
 }
 
 func (client *CivoGoMockClient) DeleteInstance(id string) (*civogo.SimpleResponse, error) {
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	time.Sleep(time.Second)
 
 	return &civogo.SimpleResponse{
 		ID:     id,
