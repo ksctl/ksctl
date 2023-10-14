@@ -18,68 +18,80 @@ type KsctlSpecialFlags string
 
 type KsctlUtilsConsts uint8
 
-type KsctlCounterConts uint32
+type KsctlCounterConsts uint32
+
+type KsctlValidCNIPlugin string
 
 const (
-	SSH_PAUSE_IN_SECONDS time.Duration = 20 * time.Second
-)
-
-const (
-	MAX_RETRY_COUNT       KsctlCounterConts = 8
-	MAX_WATCH_RETRY_COUNT KsctlCounterConts = 4
+	DurationSSHPause time.Duration = 20 * time.Second
 )
 
 const (
-	CREDENTIAL_PATH     KsctlUtilsConsts = 0
-	CLUSTER_PATH        KsctlUtilsConsts = 1
-	SSH_PATH            KsctlUtilsConsts = 2
-	OTHER_PATH          KsctlUtilsConsts = 3
-	EXEC_WITH_OUTPUT    KsctlUtilsConsts = 1
-	EXEC_WITHOUT_OUTPUT KsctlUtilsConsts = 0
+	CounterMaxRetryCount      KsctlCounterConsts = 8
+	CounterMaxWatchRetryCount KsctlCounterConsts = 4
 )
 
 const (
-	ROLE_CP KsctlRole = "controlplane"
-	ROLE_WP KsctlRole = "workerplane"
-	ROLE_LB KsctlRole = "loadbalancer"
-	ROLE_DS KsctlRole = "datastore"
-)
-const (
-	CLOUD_CIVO  KsctlCloud = "civo"
-	CLOUD_AZURE KsctlCloud = "azure"
-	CLOUD_LOCAL KsctlCloud = "local"
-	CLOUD_AWS   KsctlCloud = "aws"
-)
-const (
-	K8S_K3S     KsctlKubernetes = "k3s"
-	K8S_KUBEADM KsctlKubernetes = "kubeadm"
+	UtilCredentialPath    KsctlUtilsConsts = 0
+	UtilClusterPath       KsctlUtilsConsts = 1
+	UtilSSHPath           KsctlUtilsConsts = 2
+	UtilOtherPath         KsctlUtilsConsts = 3
+	UtilExecWithOutput    KsctlUtilsConsts = 1
+	UtilExecWithoutOutput KsctlUtilsConsts = 0
 )
 
 const (
-	STORE_LOCAL  KsctlStore = "local"
-	STORE_REMOTE KsctlStore = "remote"
+	RoleCp KsctlRole = "controlplane"
+	RoleWp KsctlRole = "workerplane"
+	RoleLb KsctlRole = "loadbalancer"
+	RoleDs KsctlRole = "datastore"
 )
 const (
-	OPERATION_STATE_GET    KsctlOperation = "get"
-	OPERATION_STATE_CREATE KsctlOperation = "create"
-	OPERATION_STATE_DELETE KsctlOperation = "delete"
+	CloudCivo  KsctlCloud = "civo"
+	CloudAzure KsctlCloud = "azure"
+	CloudLocal KsctlCloud = "local"
+	CloudAws   KsctlCloud = "aws"
+	CloudAll   KsctlCloud = "all"
+)
+const (
+	K8sK3s     KsctlKubernetes = "k3s"
+	K8sKubeadm KsctlKubernetes = "kubeadm"
 )
 
 const (
-	CLUSTER_TYPE_HA   KsctlClusterType = "ha"
-	CLUSTER_TYPE_MANG KsctlClusterType = "managed"
+	StoreLocal  KsctlStore = "local"
+	StoreRemote KsctlStore = "remote"
+)
+const (
+	OperationStateGet    KsctlOperation = "get"
+	OperationStateCreate KsctlOperation = "create"
+	OperationStateDelete KsctlOperation = "delete"
+)
+
+const (
+	ClusterTypeHa   KsctlClusterType = "ha"
+	ClusterTypeMang KsctlClusterType = "managed"
 )
 
 const (
 	// makes the fake client
-	KSCTL_FAKE_FLAG KsctlSpecialFlags = "KSCTL_FAKE_FLAG_ENABLED"
+	KsctlFakeFlag KsctlSpecialFlags = "KSCTL_FAKE_FLAG_ENABLED"
 
-	// KSCTL_CUSTOM_DIR_ENABLED use this as environment variable to set a different home directory for ksctl during testing
-	KSCTL_CUSTOM_DIR_ENABLED KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
+	// KsctlCustomDirEnabled use this as environment variable to set a different home directory for ksctl during testing
+	KsctlCustomDirEnabled KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
 
-	// KSCTL_FEATURE_FLAG_HA_AUTOSCALE to be set if feature for AUTOSCALE is needed
-	KSCTL_FEATURE_FLAG_HA_AUTOSCALE KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_HA_AUTOSCALE"
+	// KsctlFeatureFlagHaAutoscale to be set if feature for AUTOSCALE is needed
+	KsctlFeatureFlagHaAutoscale KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_HA_AUTOSCALE"
 
-	// KSCTL_FEATURE_FLAG_APPLICATIONS to be set if feature for install Application is needed
-	KSCTL_FEATURE_FLAG_APPLICATIONS KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_APPLICATIONS"
+	// KsctlFeatureFlagApplications to be set if feature for install Application is needed
+	KsctlFeatureFlagApplications KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_APPLICATIONS"
+)
+
+const (
+	CNIFlannel KsctlValidCNIPlugin = "flannel"
+	CNICilium  KsctlValidCNIPlugin = "cilium"
+	CNIAzure   KsctlValidCNIPlugin = "azure"
+	CNIKubenet KsctlValidCNIPlugin = "kubenet"
+	CNIKind    KsctlValidCNIPlugin = "kind"
+	CNINone    KsctlValidCNIPlugin = "none"
 )

@@ -26,22 +26,22 @@ ksctl switch-context -p <civo,local,civo-ha,azure-ha,azure>  -n <clustername> -r
 		cli.Client.Metadata.Region = region
 
 		switch provider {
-		case string(CLOUD_LOCAL):
-			cli.Client.Metadata.Provider = CLOUD_LOCAL
+		case string(CloudLocal):
+			cli.Client.Metadata.Provider = CloudLocal
 
-		case string(CLUSTER_TYPE_HA) + "-" + string(CLOUD_CIVO):
-			cli.Client.Metadata.Provider = CLOUD_CIVO
+		case string(ClusterTypeHa) + "-" + string(CloudCivo):
+			cli.Client.Metadata.Provider = CloudCivo
 			cli.Client.Metadata.IsHA = true
 
-		case string(CLOUD_CIVO):
-			cli.Client.Metadata.Provider = CLOUD_CIVO
+		case string(CloudCivo):
+			cli.Client.Metadata.Provider = CloudCivo
 
-		case string(CLUSTER_TYPE_HA) + "-" + string(CLOUD_AZURE):
-			cli.Client.Metadata.Provider = CLOUD_AZURE
+		case string(ClusterTypeHa) + "-" + string(CloudAzure):
+			cli.Client.Metadata.Provider = CloudAzure
 			cli.Client.Metadata.IsHA = true
 
-		case string(CLOUD_AZURE):
-			cli.Client.Metadata.Provider = CLOUD_AZURE
+		case string(CloudAzure):
+			cli.Client.Metadata.Provider = CloudAzure
 		}
 
 		stat, err := controller.SwitchCluster(&cli.Client)
@@ -57,6 +57,7 @@ func init() {
 	rootCmd.AddCommand(switchCluster)
 	clusterNameFlag(switchCluster)
 	regionFlag(switchCluster)
+
 	switchCluster.Flags().StringVarP(&provider, "provider", "p", "", "Provider")
 	switchCluster.MarkFlagRequired("name")
 	switchCluster.MarkFlagRequired("provider")

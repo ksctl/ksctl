@@ -150,15 +150,15 @@ func (client *CivoGoMockClient) ListAvailableKubernetesVersions() ([]civogo.Kube
 
 	return []civogo.KubernetesVersion{
 		{
-			ClusterType: string(K8S_K3S),
+			ClusterType: string(K8sK3s),
 			Label:       "1.27.4-k3s1",
 		},
 		{
-			ClusterType: string(K8S_K3S),
+			ClusterType: string(K8sK3s),
 			Label:       "1.27.1-k3s1",
 		},
 		{
-			ClusterType: string(K8S_K3S),
+			ClusterType: string(K8sK3s),
 			Label:       "1.26.4-k3s1",
 		},
 	}, nil

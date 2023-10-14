@@ -44,10 +44,11 @@ var (
 
 func initApps() {
 	apps = map[string]func() Application{
-		"argo-rollouts": argoRolloutsData,
-		"argocd":        argocdData,
-		"istio":         istioData,
-		"cilium":        ciliumData,
+		"argo-rollouts":    argoRolloutsData,
+		"argocd":           argocdData,
+		"istio":            istioData,
+		"cilium":           ciliumData,
+		"prometheus-stack": prometheusStackData,
 	}
 }
 

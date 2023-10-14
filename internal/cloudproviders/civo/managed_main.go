@@ -17,8 +17,8 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 		// clusterDS fetches the current state of kubernetes cluster given its id
 		//NOTE: this is prone to network failure
 		var clusterDS *civogo.KubernetesCluster
-		currRetryCounter := KsctlCounterConts(0)
-		for currRetryCounter < MAX_WATCH_RETRY_COUNT {
+		currRetryCounter := KsctlCounterConsts(0)
+		for currRetryCounter < CounterMaxWatchRetryCount {
 			var err error
 			clusterDS, err = obj.client.GetKubernetesCluster(id)
 			if err != nil {
@@ -29,23 +29,23 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 			}
 			time.Sleep(5 * time.Second)
 		}
-		if currRetryCounter == MAX_WATCH_RETRY_COUNT {
+		if currRetryCounter == CounterMaxWatchRetryCount {
 			return fmt.Errorf("[civo] failed to get the state of managed cluster")
 		}
 
 		if clusterDS.Ready {
 			fmt.Println("[civo] Booted Instance", name)
 			civoCloudState.IsCompleted = true
-			path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+			path := generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
 			if err := saveStateHelper(storage, path); err != nil {
 				return err
 			}
-			path = generatePath(CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+			path = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 			err := saveKubeconfigHelper(storage, path, clusterDS.KubeConfig)
 			if err != nil {
 				return err
 			}
-			printKubeconfig(storage, OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OperationStateCreate)
 			break
 		}
 		storage.Logger().Print("[civo] creating cluster..", clusterDS.Status)
@@ -97,11 +97,11 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 	}
 
 	civoCloudState.NoManagedNodes = noOfNodes
-	civoCloudState.KubernetesDistro = string(K8S_K3S)
+	civoCloudState.KubernetesDistro = string(K8sK3s)
 	civoCloudState.KubernetesVer = obj.metadata.k8sVersion
 	civoCloudState.ManagedClusterID = resp.ID
 
-	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
 	if err := saveStateHelper(storage, path); err != nil {
 		return err
 	}
@@ -124,15 +124,15 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) err
 	}
 	storage.Logger().Success("[civo] Deleted Managed cluster", civoCloudState.ManagedClusterID)
 	civoCloudState.ManagedClusterID = ""
-	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
 	if err := saveStateHelper(storage, path); err != nil {
 		return err
 	}
-	printKubeconfig(storage, OPERATION_STATE_DELETE)
+	printKubeconfig(storage, OperationStateDelete)
 
 	return nil
 }
 
 func (obj *CivoProvider) GetKubeconfigPath() string {
-	return generatePath(CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	return generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 }

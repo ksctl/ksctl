@@ -9,7 +9,7 @@ import (
 )
 
 func BenchmarkCivoTestingManaged(b *testing.B) {
-	if err := os.Setenv(string(KSCTL_FAKE_FLAG), "1"); err != nil {
+	if err := os.Setenv(string(KsctlFakeFlag), "1"); err != nil {
 		b.Fatalf("Failed to set fake env %v", err)
 	}
 	StartCloud()
@@ -27,7 +27,7 @@ func BenchmarkCivoTestingManaged(b *testing.B) {
 }
 
 func BenchmarkCivoTestingHA(b *testing.B) {
-	if err := os.Setenv(string(KSCTL_FAKE_FLAG), "1"); err != nil {
+	if err := os.Setenv(string(KsctlFakeFlag), "1"); err != nil {
 		b.Fatalf("Failed to set fake env %v", err)
 	}
 	StartCloud()
@@ -45,7 +45,7 @@ func BenchmarkCivoTestingHA(b *testing.B) {
 }
 
 func BenchmarkAzureTestingHA(b *testing.B) {
-	if err := os.Setenv(string(KSCTL_FAKE_FLAG), "1"); err != nil {
+	if err := os.Setenv(string(KsctlFakeFlag), "1"); err != nil {
 		b.Fatalf("Failed to set fake env %v", err)
 	}
 	StartCloud()
@@ -63,7 +63,7 @@ func BenchmarkAzureTestingHA(b *testing.B) {
 }
 
 func BenchmarkAzureTestingManaged(b *testing.B) {
-	if err := os.Setenv(string(KSCTL_FAKE_FLAG), "1"); err != nil {
+	if err := os.Setenv(string(KsctlFakeFlag), "1"); err != nil {
 		b.Fatalf("Failed to set fake env %v", err)
 	}
 	StartCloud()

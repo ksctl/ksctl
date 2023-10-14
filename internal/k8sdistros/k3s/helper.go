@@ -49,20 +49,20 @@ func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubecon
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
-	path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {
-		case OPERATION_STATE_CREATE:
+		case OperationStateCreate:
 			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
-		case OPERATION_STATE_DELETE:
+		case OperationStateDelete:
 			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
 		}
 	case "linux", "macos":
 		switch operation {
-		case OPERATION_STATE_CREATE:
+		case OperationStateCreate:
 			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
-		case OPERATION_STATE_DELETE:
+		case OperationStateDelete:
 			env = "unset KUBECONFIG"
 		}
 	}

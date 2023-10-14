@@ -22,8 +22,8 @@ func StartCloud() {
 	controller = control_pkg.GenKsctlController()
 
 	cli.Client.Metadata.ClusterName = "fake"
-	cli.Client.Metadata.StateLocation = STORE_LOCAL
-	cli.Client.Metadata.K8sDistro = K8S_K3S
+	cli.Client.Metadata.StateLocation = StoreLocal
+	cli.Client.Metadata.K8sDistro = K8sK3s
 
 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, false); err != nil {
 		panic(err)
@@ -48,13 +48,13 @@ func ExecuteManagedRun() error {
 
 func AzureTestingManaged() error {
 	cli.Client.Metadata.Region = "fake"
-	cli.Client.Metadata.Provider = CLOUD_AZURE
+	cli.Client.Metadata.Provider = CloudAzure
 	cli.Client.Metadata.ManagedNodeType = "fake"
 	cli.Client.Metadata.NoMP = 2
 	cli.Client.Metadata.K8sVersion = "1.27"
 
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	azManaged := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_MANG)
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	azManaged := utils.GetPath(UtilClusterPath, CloudAzure, ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -67,12 +67,12 @@ func AzureTestingManaged() error {
 
 func CivoTestingManaged() error {
 	cli.Client.Metadata.Region = "LON1"
-	cli.Client.Metadata.Provider = CLOUD_CIVO
+	cli.Client.Metadata.Provider = CloudCivo
 	cli.Client.Metadata.ManagedNodeType = "g4s.kube.small"
 	cli.Client.Metadata.NoMP = 2
 
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	azManaged := utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_MANG)
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	azManaged := utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -93,14 +93,14 @@ func CivoTestingHA() error {
 	cli.Client.Metadata.IsHA = true
 
 	cli.Client.Metadata.Region = "LON1"
-	cli.Client.Metadata.Provider = CLOUD_CIVO
+	cli.Client.Metadata.Provider = CloudCivo
 	cli.Client.Metadata.NoCP = 5
 	cli.Client.Metadata.NoWP = 1
 	cli.Client.Metadata.NoDS = 3
 	cli.Client.Metadata.K8sVersion = "1.27.4"
 
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_CIVO, CLUSTER_TYPE_HA)
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	azHA := utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeHa)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
@@ -126,14 +126,14 @@ func AzureTestingHA() error {
 	cli.Client.Metadata.IsHA = true
 
 	cli.Client.Metadata.Region = "fake"
-	cli.Client.Metadata.Provider = CLOUD_AZURE
+	cli.Client.Metadata.Provider = CloudAzure
 	cli.Client.Metadata.NoCP = 3
 	cli.Client.Metadata.NoWP = 1
 	cli.Client.Metadata.NoDS = 1
 	cli.Client.Metadata.K8sVersion = "1.27.4"
 
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA)
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	azHA := utils.GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
