@@ -7,8 +7,9 @@ Kubesimplify
 */
 
 import (
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"os"
+
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 
 	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
 	"github.com/spf13/cobra"
@@ -33,6 +34,9 @@ ksctl get-clusters `,
 		if _, err := control_pkg.InitializeStorageFactory(&cli.Client, isSet); err != nil {
 			panic(err)
 		}
+		if len(provider) == 0 {
+			provider = "all"
+		}
 		SetRequiredFeatureFlags(cmd)
 		cli.Client.Metadata.Provider = consts.KsctlCloud(provider)
 		stat, err := controller.GetCluster(&cli.Client)
@@ -46,5 +50,5 @@ ksctl get-clusters `,
 
 func init() {
 	rootCmd.AddCommand(getClusterCmd)
-	getClusterCmd.Flags().StringVarP(&provider, "provider", "p", "all", "Provider")
+	getClusterCmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider")
 }

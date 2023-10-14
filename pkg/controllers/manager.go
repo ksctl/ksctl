@@ -166,6 +166,8 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
 
+	client.Storage.Logger().Note("Filter ", string(client.Metadata.Provider))
+
 	var printerTable []cloudController.AllClusterData
 	switch client.Metadata.Provider {
 	case CloudCivo:
