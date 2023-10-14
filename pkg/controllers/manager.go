@@ -3,9 +3,10 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/pkg/utils"
 	"os"
 	"strings"
+
+	"github.com/kubesimplify/ksctl/pkg/utils"
 
 	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
 	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
@@ -79,7 +80,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		return "", err
 	}
 	// it gets supportForApps, supportForCNI, error
-	supportApp, externalCNI, cloudResErr := cloud.CreateManagedCluster(client)
+	externalApp, externalCNI, cloudResErr := cloud.CreateManagedCluster(client)
 	if cloudResErr != nil {
 		client.Storage.Logger().Err(cloudResErr.Error())
 	}
@@ -101,7 +102,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 			}
 		}
 
-		if len(client.Metadata.Applications) != 0 && !supportApp {
+		if len(client.Metadata.Applications) != 0 && externalApp {
 			apps := strings.Split(client.Metadata.Applications, ",")
 			if err := kubernetesClient.InstallApplications(apps); err != nil {
 				return "", err

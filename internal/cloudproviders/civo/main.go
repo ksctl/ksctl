@@ -310,9 +310,9 @@ func aggregratedApps(s string) (ret string) {
 	return
 }
 
-func (client *CivoProvider) Application(s string) resources.CloudFactory {
+func (client *CivoProvider) Application(s string) (externalApps bool) {
 	client.metadata.apps = aggregratedApps(s)
-	return client
+	return false
 }
 
 func (client *CivoProvider) CNI(s string) (externalCNI bool) {

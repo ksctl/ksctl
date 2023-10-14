@@ -23,9 +23,7 @@ type Metadata struct {
 	ResName string
 	Version string
 
-	// purpose: application in managed cluster
-	Apps string
-	Cni  string
+	Cni string
 }
 
 type LocalProvider struct {
@@ -101,14 +99,8 @@ func (cloud *LocalProvider) Name(resName string) resources.CloudFactory {
 	return cloud
 }
 
-// if its ha its always false instead it tells whether the provider has support in their managed offerering
-func (cloud *LocalProvider) SupportForApplications() bool {
-	return false
-}
-
-func (cloud *LocalProvider) Application(s string) resources.CloudFactory {
-	cloud.Metadata.Apps = s
-	return cloud
+func (cloud *LocalProvider) Application(s string) (externalApps bool) {
+	return true
 }
 
 func (client *LocalProvider) CNI(s string) (externalCNI bool) {

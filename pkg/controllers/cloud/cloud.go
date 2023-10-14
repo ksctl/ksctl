@@ -445,24 +445,20 @@ func CreateManagedCluster(client *resources.KsctlClient) (bool, bool, error) {
 		managedClient = managedClient.VMType(client.Metadata.ManagedNodeType)
 	}
 
-	supportForApp := false
-
-	if supportForApp = client.Cloud.SupportForApplications(); supportForApp {
-		managedClient = managedClient.Application(client.Metadata.Applications)
-	}
+	externalApps := managedClient.Application(client.Metadata.Applications)
 
 	externalCNI := managedClient.CNI(client.Metadata.CNIPlugin)
 
 	managedClient = managedClient.Version(client.Metadata.K8sVersion)
 
 	if managedClient == nil {
-		return supportForApp, externalCNI, fmt.Errorf("[ksctl] invalid version")
+		return externalApps, externalCNI, fmt.Errorf("[ksctl] invalid version")
 	}
 
 	if err := managedClient.NewManagedCluster(client.Storage, client.Metadata.NoMP); err != nil {
-		return supportForApp, externalCNI, err
+		return externalApps, externalCNI, err
 	}
-	return supportForApp, externalCNI, nil
+	return externalApps, externalCNI, nil
 }
 
 func DeleteManagedCluster(client *resources.KsctlClient) error {

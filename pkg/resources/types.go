@@ -100,12 +100,8 @@ type CloudFactory interface {
 	// Visibility whether to make the VM public or private
 	Visibility(bool) CloudFactory
 
-	// SupportForApplications whether the cloud provider supports pre-installed apps
-	// Only for Managed clusters
-	SupportForApplications() bool
-
 	// Application for the comma seperated apps names (Managed cluster)
-	Application(string) CloudFactory
+	Application(string) bool
 
 	// CNI for the CNI name (Managed cluster)
 	CNI(string) (willBeInstalled bool)

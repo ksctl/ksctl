@@ -79,8 +79,7 @@ type metadata struct {
 	vmType  string
 	public  bool
 
-	// purpose: application in managed cluster
-	apps    string
+	// apps    string
 	cni     string
 	version string
 
@@ -333,14 +332,8 @@ func (cloud *AzureProvider) Visibility(toBePublic bool) resources.CloudFactory {
 	return cloud
 }
 
-// SupportForApplications if its ha its always false instead it tells whether the provider has support in their managed offerering
-func (cloud *AzureProvider) SupportForApplications() bool {
-	return false
-}
-
-func (cloud *AzureProvider) Application(s string) resources.CloudFactory {
-	cloud.metadata.apps = s
-	return cloud
+func (cloud *AzureProvider) Application(s string) (externalApps bool) {
+	return true
 }
 
 // CNI Why will be installed because it will be done by the extensions
