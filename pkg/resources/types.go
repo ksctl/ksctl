@@ -31,16 +31,13 @@ type Metadata struct {
 	StateLocation KsctlStore      `json:"storage_type"`
 	IsHA          bool            `json:"ha_cluster"`
 
-	// TODO: is it required?
-	// try to see if string could be replaced by pointer to reduce memory
 	ManagedNodeType      string `json:"node_type_managed"`
 	WorkerPlaneNodeType  string `json:"node_type_workerplane"`
 	ControlPlaneNodeType string `json:"node_type_controlplane"`
 	DataStoreNodeType    string `json:"node_type_datastore"`
 	LoadBalancerNodeType string `json:"node_type_loadbalancer"`
 
-	NoMP int `json:"desired_no_of_managed_nodes"` // No of managed Nodes
-
+	NoMP int `json:"desired_no_of_managed_nodes"`      // No of managed Nodes
 	NoWP int `json:"desired_no_of_workerplane_nodes"`  // No of woerkplane VMs
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
@@ -107,15 +104,11 @@ type CloudFactory interface {
 	// Only for Managed clusters
 	SupportForApplications() bool
 
-	// SupportForCNI whether the cloud provider supports for choosing CNI
-	// Only for Managed clusters
-	SupportForCNI() bool
-
 	// Application for the comma seperated apps names (Managed cluster)
 	Application(string) CloudFactory
 
 	// CNI for the CNI name (Managed cluster)
-	CNI(string) CloudFactory
+	CNI(string) (willBeInstalled bool)
 
 	// Version for the Kubernetes Version (Managed cluster)
 	Version(string) CloudFactory
@@ -180,7 +173,7 @@ type KubernetesFactory interface {
 	// Version setter for version to be used
 	Version(string) DistroFactory
 
-	CNI(string) DistroFactory
+	CNI(string) (externalCNI bool) // it will return error
 
 	// GetStateFiles it returns the k8s-state.json
 	// WARN: sensitive info can be present

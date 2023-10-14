@@ -7,6 +7,7 @@ Kubesimplify
 */
 
 import (
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
@@ -33,7 +34,7 @@ ksctl get-clusters `,
 			panic(err)
 		}
 		SetRequiredFeatureFlags(cmd)
-		cli.Client.Metadata.Provider = "all"
+		cli.Client.Metadata.Provider = consts.KsctlCloud(provider)
 		stat, err := controller.GetCluster(&cli.Client)
 		if err != nil {
 			cli.Client.Storage.Logger().Err(err.Error())
@@ -45,4 +46,5 @@ ksctl get-clusters `,
 
 func init() {
 	rootCmd.AddCommand(getClusterCmd)
+	getClusterCmd.Flags().StringVarP(&provider, "provider", "p", "all", "Provider")
 }

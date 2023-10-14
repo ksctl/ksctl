@@ -17,7 +17,7 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 		controlPlaneIPs[i] = k8sState.PrivateIPs.ControlPlanes[i] + ":6443"
 	}
 
-	err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(
+	err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(
 		configLBscript(controlPlaneIPs)).
 		IPv4(k8sState.PublicIPs.Loadbalancer).
 		FastMode(true).SSHExecute(storage)

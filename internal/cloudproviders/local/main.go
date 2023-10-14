@@ -66,7 +66,7 @@ func ReturnLocalStruct(metadata resources.Metadata) (*LocalProvider, error) {
 // InitState implements resources.CloudFactory.
 func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation KsctlOperation) error {
 	switch operation {
-	case OPERATION_STATE_CREATE:
+	case OperationStateCreate:
 		if isPresent(storage, cloud.ClusterName) {
 			return fmt.Errorf("[local] already present")
 		}
@@ -75,18 +75,18 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 			Distro:      "kind",
 		}
 		var err error
-		err = storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName)).
+		err = storage.Path(utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName)).
 			Permission(0750).CreateDir()
 		if err != nil {
 			return err
 		}
 
-		err = saveStateHelper(storage, utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName, STATE_FILE))
+		err = saveStateHelper(storage, utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName, STATE_FILE))
 		if err != nil {
 			return err
 		}
-	case OPERATION_STATE_DELETE, OPERATION_STATE_GET:
-		err := loadStateHelper(storage, utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cloud.ClusterName, STATE_FILE))
+	case OperationStateDelete, OperationStateGet:
+		err := loadStateHelper(storage, utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName, STATE_FILE))
 		if err != nil {
 			return err
 		}
@@ -106,18 +106,22 @@ func (cloud *LocalProvider) SupportForApplications() bool {
 	return false
 }
 
-func (cloud *LocalProvider) SupportForCNI() bool {
-	return false
-}
-
 func (cloud *LocalProvider) Application(s string) resources.CloudFactory {
 	cloud.Metadata.Apps = s
 	return cloud
 }
 
-func (cloud *LocalProvider) CNI(s string) resources.CloudFactory {
-	cloud.Metadata.Cni = s
-	return cloud
+func (client *LocalProvider) CNI(s string) (externalCNI bool) {
+
+	switch KsctlValidCNIPlugin(s) {
+	case CNIKind, "":
+		client.Metadata.Cni = string(CNIKind)
+	default:
+		client.Metadata.Cni = string(CNINone)
+		return true
+	}
+
+	return false
 }
 
 // Version implements resources.CloudFactory.
@@ -130,14 +134,14 @@ func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
 func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
 	var data []cloudControlRes.AllClusterData
 
-	managedFolders, err := storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG)).GetFolders()
+	managedFolders, err := storage.Path(utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, folder := range managedFolders {
 
-		path := utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, folder[0], STATE_FILE)
+		path := utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, folder[0], STATE_FILE)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -149,10 +153,10 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloudControlRes.All
 
 		data = append(data,
 			cloudControlRes.AllClusterData{
-				Provider:   CLOUD_LOCAL,
+				Provider:   CloudLocal,
 				Name:       folder[0],
 				Region:     "N/A",
-				Type:       CLUSTER_TYPE_MANG,
+				Type:       ClusterTypeMang,
 				K8sDistro:  KsctlKubernetes(clusterState.Distro),
 				K8sVersion: clusterState.Version,
 				NoMgt:      clusterState.Nodes,
@@ -247,7 +251,7 @@ func (obj *LocalProvider) SwitchCluster(storage resources.StorageFactory) error 
 
 	if isPresent(storage, obj.ClusterName) {
 
-		printKubeconfig(storage, OPERATION_STATE_CREATE, obj.ClusterName)
+		printKubeconfig(storage, OperationStateCreate, obj.ClusterName)
 		return nil
 	}
 	return fmt.Errorf("[local] Cluster not found")

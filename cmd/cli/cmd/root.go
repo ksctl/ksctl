@@ -65,12 +65,12 @@ func Execute() {
 	controller = controlPkg.GenKsctlController()
 
 	cloud = map[int]string{
-		1: string(CLOUD_AWS),
-		2: string(CLOUD_AZURE),
-		3: string(CLOUD_CIVO),
-		4: string(CLOUD_LOCAL),
+		1: string(CloudAws),
+		2: string(CloudAzure),
+		3: string(CloudCivo),
+		4: string(CloudLocal),
 	}
-	cli.Client.Metadata.StateLocation = STORE_LOCAL
+	cli.Client.Metadata.StateLocation = StoreLocal
 
 	timer := time.Now()
 	err := rootCmd.Execute()

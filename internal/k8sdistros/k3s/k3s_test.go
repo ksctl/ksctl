@@ -26,14 +26,14 @@ func TestMain(m *testing.M) {
 	demoClient = &resources.KsctlClient{}
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
-	demoClient.Metadata.Provider = CLOUD_AZURE
+	demoClient.Metadata.Provider = CloudAzure
 	demoClient.Distro = ReturnK3sStruct()
 	fakeClient = ReturnK3sStruct()
 
 	demoClient.Storage = localstate.InitStorage(false)
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	_ = os.Setenv(string(KSCTL_FAKE_FLAG), "true")
-	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "fake fake-resgrp fake-reg")
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	_ = os.Setenv(string(KsctlFakeFlag), "true")
+	azHA := utils.GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg")
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
@@ -41,14 +41,14 @@ func TestMain(m *testing.M) {
 	fmt.Println("Created tmp directories")
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
 		SSHState: cloudControlRes.SSHInfo{
-			PathPrivateKey: utils.GetPath(SSH_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "fake fake-resgrp fake-reg"),
+			PathPrivateKey: utils.GetPath(UtilSSHPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg"),
 			UserName:       "fakeuser",
 		},
 		Metadata: cloudControlRes.Metadata{
 			ClusterName: "fake",
-			Provider:    CLOUD_AZURE,
+			Provider:    CloudAzure,
 			Region:      "fake-reg",
-			ClusterType: CLUSTER_TYPE_HA,
+			ClusterType: ClusterTypeHa,
 			ClusterDir:  "fake fake-resgrp fake-reg",
 		},
 		// public IPs
@@ -266,7 +266,7 @@ sudo ./worker-setup.sh
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -290,7 +290,7 @@ func getState(t *testing.T) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, OPERATION_STATE_CREATE), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, OperationStateCreate), nil, "should be initlize the state")
 
 	getState(t)
 
@@ -298,11 +298,11 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	checkCurrentStateFile(t)
 
-	_, err := utils.CreateSSHKeyPair(demoClient.Storage, CLOUD_AZURE, k8sState.ClusterDir)
+	_, err := utils.CreateSSHKeyPair(demoClient.Storage, CloudAzure, k8sState.ClusterDir)
 	if err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
-	t.Log(utils.GetPath(SSH_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "fake fake-resgrp fake-reg"))
+	t.Log(utils.GetPath(UtilSSHPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg"))
 
 	err = fakeClient.ConfigureLoadbalancer(demoClient.Storage)
 	if err != nil {
@@ -338,7 +338,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 		a, b, err := fakeClient.GetKubeConfig(demoClient.Storage)
 		assert.NilError(t, err, "get kubeconfig should be successful")
 
-		path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+		path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 		var raw []byte
 		raw, err = demoClient.Storage.Path(path).Load()

@@ -29,12 +29,12 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 	// NOTE: as network creation marks first resource we should create the directoy
 	// when its success
 
-	if err := storage.Path(generatePath(CLUSTER_PATH, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(UtilClusterPath, clusterType, clusterDirName)).
 		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
 		return err
 	}
 
-	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
 
 	return saveStateHelper(storage, path)
 }
@@ -46,8 +46,8 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 		storage.Logger().Success("[skip] network already deleted")
 	} else {
 
-		currRetryCounter := KsctlCounterConts(0)
-		for currRetryCounter < MAX_WATCH_RETRY_COUNT {
+		currRetryCounter := KsctlCounterConsts(0)
+		for currRetryCounter < CounterMaxWatchRetryCount {
 			var err error
 			_, err = obj.client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
 			if err != nil {
@@ -58,16 +58,16 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 			}
 			time.Sleep(5 * time.Second)
 		}
-		if currRetryCounter == MAX_WATCH_RETRY_COUNT {
+		if currRetryCounter == CounterMaxWatchRetryCount {
 			return fmt.Errorf("[civo] failed to delete network timeout")
 		}
 
 		civoCloudState.NetworkIDs.NetworkID = ""
-		if err := saveStateHelper(storage, generatePath(CLUSTER_PATH, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
+		if err := saveStateHelper(storage, generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
 			return err
 		}
 		storage.Logger().Success("[civo] Deleted network", civoCloudState.NetworkIDs.NetworkID)
 	}
-	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName)
+	path := generatePath(UtilClusterPath, clusterType, clusterDirName)
 	return storage.Path(path).DeleteDir()
 }

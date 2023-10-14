@@ -84,7 +84,7 @@ func scaleUp(context *gin.Context) {
 	controller = control_pkg.GenKsctlController()
 
 	cli.Client.Metadata.ClusterName = req.ClusterName
-	cli.Client.Metadata.StateLocation = STORE_LOCAL
+	cli.Client.Metadata.StateLocation = StoreLocal
 	cli.Client.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
 
 	cli.Client.Metadata.K8sVersion = "1.27.1"
@@ -120,7 +120,7 @@ func scaleDown(context *gin.Context) {
 	controller = control_pkg.GenKsctlController()
 
 	cli.Client.Metadata.ClusterName = req.ClusterName
-	cli.Client.Metadata.StateLocation = STORE_LOCAL
+	cli.Client.Metadata.StateLocation = StoreLocal
 	cli.Client.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
 
 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
@@ -148,7 +148,7 @@ func getClusters(context *gin.Context) {
 
 	cli = &resources.CobraCmd{}
 
-	cli.Client.Metadata.StateLocation = STORE_LOCAL
+	cli.Client.Metadata.StateLocation = StoreLocal
 
 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
@@ -176,7 +176,7 @@ func getClusters(context *gin.Context) {
 
 func main() {
 
-	if err := os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), "/app/ksctl-data"); err != nil {
+	if err := os.Setenv(string(KsctlCustomDirEnabled), "/app/ksctl-data"); err != nil {
 		panic(err)
 	}
 

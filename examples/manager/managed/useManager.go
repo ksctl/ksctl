@@ -11,12 +11,12 @@ func main() {
 	controller := control_pkg.GenKsctlController()
 
 	cli.Client.Metadata.ClusterName = "example-cluster"
-	cli.Client.Metadata.StateLocation = consts.STORE_LOCAL
-	cli.Client.Metadata.K8sDistro = consts.K8S_K3S
+	cli.Client.Metadata.StateLocation = consts.StoreLocal
+	cli.Client.Metadata.K8sDistro = consts.K8sK3s
 
 	cli.Client.Metadata.K8sVersion = "1.27.1"
 
-	cli.Client.Metadata.Provider = consts.CLOUD_LOCAL
+	cli.Client.Metadata.Provider = consts.CloudLocal
 
 	cli.Client.Metadata.NoMP = 2
 

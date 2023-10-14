@@ -34,8 +34,8 @@ func TestMain(m *testing.M) {
 
 	testClient, _ = ReturnLocalStruct(demoClient.Metadata)
 
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	localManaged := utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG)
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	localManaged := utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang)
 
 	if err := os.MkdirAll(localManaged, 0755); err != nil {
 		panic(err)

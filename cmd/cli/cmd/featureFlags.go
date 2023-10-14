@@ -31,7 +31,7 @@ func SetRequiredFeatureFlags(cmd *cobra.Command) {
 
 		switch consts.KsctlSpecialFlags(feature) {
 		case ksctl_feature_auto_scale:
-			if err := os.Setenv(string(consts.KSCTL_FEATURE_FLAG_HA_AUTOSCALE), "true"); err != nil {
+			if err := os.Setenv(string(consts.KsctlFeatureFlagHaAutoscale), "true"); err != nil {
 				if cli.Client.Storage != nil {
 					cli.Client.Storage.Logger().Err("Unable to set the ha autoscale feature")
 				} else {
@@ -40,7 +40,7 @@ func SetRequiredFeatureFlags(cmd *cobra.Command) {
 			}
 
 		case ksctl_feature_applications:
-			if err := os.Setenv(string(consts.KSCTL_FEATURE_FLAG_APPLICATIONS), "true"); err != nil {
+			if err := os.Setenv(string(consts.KsctlFeatureFlagApplications), "true"); err != nil {
 				if cli.Client.Storage != nil {
 					cli.Client.Storage.Logger().Err("Unable to set applications feature")
 				} else {

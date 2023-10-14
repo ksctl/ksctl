@@ -210,16 +210,16 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 
 	switch obj.haCluster {
 	case false:
-		clusterType = CLUSTER_TYPE_MANG
+		clusterType = ClusterTypeMang
 	case true:
-		clusterType = CLUSTER_TYPE_HA
+		clusterType = ClusterTypeHa
 	}
 	obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
 
 	errLoadState := loadStateHelper(storage)
 	switch operation {
-	case OPERATION_STATE_CREATE:
+	case OperationStateCreate:
 		if errLoadState == nil && azureCloudState.IsCompleted {
 			return fmt.Errorf("[azure] already exist")
 		}
@@ -236,13 +236,13 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 			}
 		}
 
-	case OPERATION_STATE_DELETE:
+	case OperationStateDelete:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		storage.Logger().Note("[azure] Delete resource(s)")
 
-	case OPERATION_STATE_GET:
+	case OperationStateGet:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
@@ -304,7 +304,7 @@ func (cloud *AzureProvider) Role(resRole KsctlRole) resources.CloudFactory {
 	cloud.mxRole.Lock()
 
 	switch resRole {
-	case ROLE_CP, ROLE_DS, ROLE_LB, ROLE_WP:
+	case RoleCp, RoleDs, RoleLb, RoleWp:
 		cloud.metadata.role = resRole
 		return cloud
 	default:
@@ -338,18 +338,25 @@ func (cloud *AzureProvider) SupportForApplications() bool {
 	return false
 }
 
-func (cloud *AzureProvider) SupportForCNI() bool {
-	return false
-}
-
 func (cloud *AzureProvider) Application(s string) resources.CloudFactory {
 	cloud.metadata.apps = s
 	return cloud
 }
 
-func (cloud *AzureProvider) CNI(s string) resources.CloudFactory {
-	cloud.metadata.cni = s
-	return cloud
+// CNI Why will be installed because it will be done by the extensions
+func (cloud *AzureProvider) CNI(s string) (externalCNI bool) {
+
+	switch KsctlValidCNIPlugin(s) {
+	case CNIKubenet, CNIAzure:
+		cloud.metadata.cni = s
+	case "":
+		cloud.metadata.cni = string(CNIAzure)
+	default:
+		cloud.metadata.cni = string(CNINone) // any other cni it will marked as none for NetworkPlugin
+		return true
+	}
+
+	return false
 }
 
 // NoOfControlPlane implements resources.CloudFactory.
@@ -505,13 +512,13 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 	var data []cloud_control_res.AllClusterData
 
 	// first get all the directories of ha
-	haFolders, err := storage.Path(generatePath(CLUSTER_PATH, CLUSTER_TYPE_HA)).GetFolders()
+	haFolders, err := storage.Path(generatePath(UtilClusterPath, ClusterTypeHa)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, haFolder := range haFolders {
-		path := generatePath(CLUSTER_PATH, CLUSTER_TYPE_HA, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		path := generatePath(UtilClusterPath, ClusterTypeHa, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -522,10 +529,10 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 		}
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider: CLOUD_AZURE,
+				Provider: CloudAzure,
 				Name:     haFolder[0],
 				Region:   haFolder[2],
-				Type:     CLUSTER_TYPE_HA,
+				Type:     ClusterTypeHa,
 
 				NoWP: len(clusterState.InfoWorkerPlanes.Names),
 				NoCP: len(clusterState.InfoControlPlanes.Names),
@@ -536,14 +543,14 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 			})
 	}
 
-	managedFolders, err := storage.Path(generatePath(CLUSTER_PATH, CLUSTER_TYPE_MANG)).GetFolders()
+	managedFolders, err := storage.Path(generatePath(UtilClusterPath, ClusterTypeMang)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, haFolder := range managedFolders {
 
-		path := generatePath(CLUSTER_PATH, CLUSTER_TYPE_MANG, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		path := generatePath(UtilClusterPath, ClusterTypeMang, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -555,10 +562,10 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider:   CLOUD_AZURE,
+				Provider:   CloudAzure,
 				Name:       haFolder[0],
 				Region:     haFolder[2],
-				Type:       CLUSTER_TYPE_MANG,
+				Type:       ClusterTypeMang,
 				K8sDistro:  KsctlKubernetes(clusterState.KubernetesDistro),
 				K8sVersion: clusterState.KubernetesVer,
 				NoMgt:      clusterState.NoManagedNodes,
@@ -568,7 +575,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 }
 
 func isPresent(storage resources.StorageFactory) bool {
-	_, err := storage.Path(utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
+	_, err := storage.Path(utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -579,19 +586,19 @@ func (obj *AzureProvider) SwitchCluster(storage resources.StorageFactory) error 
 
 	switch obj.haCluster {
 	case true:
-		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, CLUSTER_TYPE_HA)
+		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, ClusterTypeHa)
 		clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
-		clusterType = CLUSTER_TYPE_HA
+		clusterType = ClusterTypeHa
 		if isPresent(storage) {
-			printKubeconfig(storage, OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OperationStateCreate)
 			return nil
 		}
 	case false:
-		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, CLUSTER_TYPE_MANG)
+		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, ClusterTypeMang)
 		clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
-		clusterType = CLUSTER_TYPE_MANG
+		clusterType = ClusterTypeMang
 		if isPresent(storage) {
-			printKubeconfig(storage, OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OperationStateCreate)
 			return nil
 		}
 	}

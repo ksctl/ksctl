@@ -19,29 +19,29 @@ var (
 )
 
 func TestConsts(t *testing.T) {
-	assert.Equal(t, string(CLOUD_CIVO), "civo", "civo constant not correct assigned")
-	assert.Equal(t, string(CLOUD_AZURE), "azure", "azure constant not correct assgined")
-	assert.Equal(t, string(CLOUD_LOCAL), "local", "local constant not correct assgined")
-	assert.Equal(t, string(CLOUD_AWS), "aws", "aws constant not correct assgined")
-	assert.Equal(t, string(K8S_K3S), "k3s", "k3s constant not correct assgined")
-	assert.Equal(t, string(K8S_KUBEADM), "kubeadm", "kubeadm constant not correct assgined")
-	assert.Equal(t, string(STORE_LOCAL), "local", "local constant not correct assgined")
-	assert.Equal(t, string(STORE_REMOTE), "remote", "remote constant not correct assgined")
-	assert.Equal(t, string(ROLE_CP), "controlplane", "controlplane constant not correct assgined")
-	assert.Equal(t, string(ROLE_LB), "loadbalancer", "loadbalancer constant not correct assgined")
-	assert.Equal(t, string(ROLE_DS), "datastore", "datastore constant not correct assgined")
-	assert.Equal(t, string(ROLE_WP), "workerplane", "workerplane constant not correct assgined")
-	assert.Equal(t, string(CLUSTER_TYPE_HA), "ha", "HA constant not correct assgined")
-	assert.Equal(t, string(CLUSTER_TYPE_MANG), "managed", "Managed constant not correct assgined")
-	assert.Equal(t, string(OPERATION_STATE_CREATE), "create", "operation create constant not correct assgined")
-	assert.Equal(t, string(OPERATION_STATE_GET), "get", "operation get constant not correct assgined")
-	assert.Equal(t, string(OPERATION_STATE_DELETE), "delete", "operation delete constant not correct assgined")
-	assert.Equal(t, uint8(CLUSTER_PATH), uint8(1), "cluster_path constant not correct assgined")
-	assert.Equal(t, uint8(OTHER_PATH), uint8(3), "other_path constant not correct assgined")
-	assert.Equal(t, uint8(SSH_PATH), uint8(2), "ssh_path constant not correct assgined")
-	assert.Equal(t, uint8(CREDENTIAL_PATH), uint8(0), "credential_path constant not correct assgined")
-	assert.Equal(t, uint8(EXEC_WITHOUT_OUTPUT), uint8(0), "exec_without_output constant not correct assgined")
-	assert.Equal(t, uint8(EXEC_WITH_OUTPUT), uint8(1), "exec_without_output constant not correct assgined")
+	assert.Equal(t, string(CloudCivo), "civo", "civo constant not correct assigned")
+	assert.Equal(t, string(CloudAzure), "azure", "azure constant not correct assgined")
+	assert.Equal(t, string(CloudLocal), "local", "local constant not correct assgined")
+	assert.Equal(t, string(CloudAws), "aws", "aws constant not correct assgined")
+	assert.Equal(t, string(K8sK3s), "k3s", "k3s constant not correct assgined")
+	assert.Equal(t, string(K8sKubeadm), "kubeadm", "kubeadm constant not correct assgined")
+	assert.Equal(t, string(StoreLocal), "local", "local constant not correct assgined")
+	assert.Equal(t, string(StoreRemote), "remote", "remote constant not correct assgined")
+	assert.Equal(t, string(RoleCp), "controlplane", "controlplane constant not correct assgined")
+	assert.Equal(t, string(RoleLb), "loadbalancer", "loadbalancer constant not correct assgined")
+	assert.Equal(t, string(RoleDs), "datastore", "datastore constant not correct assgined")
+	assert.Equal(t, string(RoleWp), "workerplane", "workerplane constant not correct assgined")
+	assert.Equal(t, string(ClusterTypeHa), "ha", "HA constant not correct assgined")
+	assert.Equal(t, string(ClusterTypeMang), "managed", "Managed constant not correct assgined")
+	assert.Equal(t, string(OperationStateCreate), "create", "operation create constant not correct assgined")
+	assert.Equal(t, string(OperationStateGet), "get", "operation get constant not correct assgined")
+	assert.Equal(t, string(OperationStateDelete), "delete", "operation delete constant not correct assgined")
+	assert.Equal(t, uint8(UtilClusterPath), uint8(1), "cluster_path constant not correct assgined")
+	assert.Equal(t, uint8(UtilOtherPath), uint8(3), "other_path constant not correct assgined")
+	assert.Equal(t, uint8(UtilSSHPath), uint8(2), "ssh_path constant not correct assgined")
+	assert.Equal(t, uint8(UtilCredentialPath), uint8(0), "credential_path constant not correct assgined")
+	assert.Equal(t, uint8(UtilExecWithoutOutput), uint8(0), "exec_without_output constant not correct assgined")
+	assert.Equal(t, uint8(UtilExecWithOutput), uint8(1), "exec_without_output constant not correct assgined")
 }
 
 func TestGetUsername(t *testing.T) {
@@ -121,10 +121,10 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	clusterRegion := "RegionXYz" // with the region as well
 
 	t.Cleanup(func() {
-		_ = os.RemoveAll(GetPath(OTHER_PATH, KsctlCloud(provider), CLUSTER_TYPE_HA))
+		_ = os.RemoveAll(GetPath(UtilOtherPath, KsctlCloud(provider), ClusterTypeHa))
 	})
 
-	path := GetPath(OTHER_PATH, KsctlCloud(provider), CLUSTER_TYPE_HA, clusterName+" "+clusterRegion)
+	path := GetPath(UtilOtherPath, KsctlCloud(provider), ClusterTypeHa, clusterName+" "+clusterRegion)
 	err := os.MkdirAll(path, 0755)
 	if err != nil {
 		t.Fatalf("Unable to create dummy folder")
@@ -149,23 +149,23 @@ func TestIsValidClusterName(T *testing.T) {
 
 func TestSSHExecute(t *testing.T) {
 	var storage resources.StorageFactory = localstate.InitStorage(false)
-	assert.Equal(t, os.MkdirAll(GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd"), 0755), nil, "create folders")
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	azHA := GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "abcd")
+	assert.Equal(t, os.MkdirAll(GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd"), 0755), nil, "create folders")
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	azHA := GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd")
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
 	fmt.Println("Created tmp directories")
 
-	_, err := CreateSSHKeyPair(storage, CLOUD_AZURE, "abcd")
+	_, err := CreateSSHKeyPair(storage, CloudAzure, "abcd")
 	if err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
 	var sshTest SSHCollection = &SSHPayload{}
-	sshTest.LocPrivateKey(GetPath(SSH_PATH, CLOUD_AZURE, "ha", "abcd"))
+	sshTest.LocPrivateKey(GetPath(UtilSSHPath, CloudAzure, "ha", "abcd"))
 	sshTest.Username("fake")
-	assert.Assert(t, sshTest.Flag(EXEC_WITHOUT_OUTPUT).Script("").
+	assert.Assert(t, sshTest.Flag(UtilExecWithoutOutput).Script("").
 		IPv4("A.A.A.A").
 		FastMode(true).SSHExecute(storage) != nil, "ssh should fail")
 
