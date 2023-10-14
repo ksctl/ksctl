@@ -318,24 +318,23 @@ func TestK8sVersion(t *testing.T) {
 
 }
 
-func TestCniAndOthers(t *testing.T) {
-	t.Run("CNI Support flag", func(t *testing.T) {
-		if fakeAzure.SupportForCNI() {
-			t.Fatal("Support for CNI must be false")
-		}
-	})
+func TestCniAndApps(t *testing.T) {
 
-	t.Run("Application support flag", func(t *testing.T) {
-		if fakeAzure.SupportForApplications() {
-			t.Fatal("Support for Application must be false")
-		}
-	})
+	testCases := map[string]bool{
+		string(CNIAzure):   false,
+		string(CNIKubenet): false,
+		string(CNICilium):  true,
+	}
 
-	t.Run("CNI set functionality", func(t *testing.T) {
-		if ret := fakeAzure.CNI("cilium"); ret == nil {
-			t.Fatalf("returned nil for valid CNI")
-		}
-	})
+	for k, v := range testCases {
+		got := fakeAzure.CNI(k)
+		assert.Equal(t, got, v, "missmatch")
+	}
+
+	got := fakeAzure.Application("abcd")
+	if !got {
+		t.Fatalf("application should be external")
+	}
 }
 
 func TestFirewallRules(t *testing.T) {

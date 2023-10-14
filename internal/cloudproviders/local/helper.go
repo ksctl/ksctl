@@ -34,8 +34,7 @@ nodes:
 		noWorker--
 	}
 
-	config += fmt.Sprintf(`
-networking:
+	config += fmt.Sprintf(`networking:
   disableDefaultCNI: %v
 `, cni)
 

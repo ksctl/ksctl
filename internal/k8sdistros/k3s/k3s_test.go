@@ -349,3 +349,15 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	})
 }
+
+func TestCNI(t *testing.T) {
+	testCases := map[string]bool{
+		string(CNIFlannel): false,
+		string(CNICilium):  true,
+	}
+
+	for k, v := range testCases {
+		got := fakeClient.CNI(k)
+		assert.Equal(t, got, v, "missmatch")
+	}
+}

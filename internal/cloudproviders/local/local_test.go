@@ -161,8 +161,27 @@ func TestNoOfWorkerPlane(t *testing.T) {
 	}
 }
 
+func TestCNIandApp(t *testing.T) {
+
+	testCases := map[string]bool{
+		string(CNIKind):    false,
+		string(CNIKubenet): true,
+		string(CNICilium):  true,
+	}
+
+	for k, v := range testCases {
+		got := testClient.CNI(k)
+		assert.Equal(t, got, v, "missmatch")
+	}
+
+	got := testClient.Application("abcd")
+	if !got {
+		t.Fatalf("application should be external")
+	}
+}
+
 func TestGenerateConfig(t *testing.T) {
-	if _, err := generateConfig(0, 0); err == nil {
+	if _, err := generateConfig(0, 0, false); err == nil {
 		t.Fatalf("It should throw err as no of controlplane is 0")
 	}
 
@@ -173,19 +192,24 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
 - role: worker
+networking:
+  disableDefaultCNI: false
 ...`,
+
 		strconv.Itoa(0) + " " + strconv.Itoa(1): `---
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
+networking:
+  disableDefaultCNI: false
 ...`,
 	}
 	for key, val := range valid {
 		inp := strings.Split(key, " ")
 		noWP, _ := strconv.Atoi(inp[0])
 		noCP, _ := strconv.Atoi(inp[1])
-		if raw, _ := generateConfig(noWP, noCP); !reflect.DeepEqual(raw, []byte(val)) {
+		if raw, _ := generateConfig(noWP, noCP, false); !reflect.DeepEqual(raw, []byte(val)) {
 			t.Fatalf("Data missmatch for noCP: %d, noWP: %d expected %s but got %s", noCP, noWP, val, string(raw))
 		}
 	}

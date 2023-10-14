@@ -159,12 +159,11 @@ func TestApplications(t *testing.T) {
 	}
 
 	for apps, setVal := range testPreInstalled {
-		if retApps := fakeClient.Application(apps); retApps == nil {
-			t.Fatalf("application returned nil for valid applications as input")
-		} else {
-			if fakeClient.metadata.apps != setVal {
-				t.Fatalf("apps dont match `%s` Expected `%s` but got `%s`", apps, setVal, retApps)
-			}
+		if retApps := fakeClient.Application(apps); retApps {
+			t.Fatalf("application shouldn't be external flag")
+		}
+		if fakeClient.metadata.apps != setVal {
+			t.Fatalf("apps dont match Expected `%s` but got `%s`", apps, setVal)
 		}
 	}
 }
@@ -362,31 +361,18 @@ func TestK8sVersion(t *testing.T) {
 	}
 }
 
-func TestCniAndOthers(t *testing.T) {
-	t.Run("CNI Support flag", func(t *testing.T) {
-		if !fakeClient.SupportForCNI() {
-			t.Fatal("Support for CNI must be true")
-		}
-	})
+func TestCni(t *testing.T) {
+	testCases := map[string]bool{
+		string(CNICilium):  false,
+		string(CNIFlannel): false,
+		string(CNIKubenet): true,
+		"abcd":             true,
+	}
 
-	t.Run("Application support flag", func(t *testing.T) {
-		if !fakeClient.SupportForApplications() {
-			t.Fatal("Support for Application must be true")
-		}
-	})
-
-	t.Run("CNI set functionality", func(t *testing.T) {
-		if ret := fakeClient.CNI("cilium"); ret == nil {
-			t.Fatalf("returned nil for valid CNI")
-		}
-		if ret := fakeClient.CNI(""); ret == nil {
-			t.Fatalf("returned nil for valid CNI")
-		}
-
-		if ret := fakeClient.CNI("abcd"); ret != nil {
-			t.Fatalf("returned interface for invalid CNI")
-		}
-	})
+	for k, v := range testCases {
+		got := fakeClient.CNI(k)
+		assert.Equal(t, got, v, "missmatch")
+	}
 }
 
 func TestFirewallRules(t *testing.T) {

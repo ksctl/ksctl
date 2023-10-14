@@ -42,6 +42,13 @@ func TestConsts(t *testing.T) {
 	assert.Equal(t, uint8(UtilCredentialPath), uint8(0), "credential_path constant not correct assgined")
 	assert.Equal(t, uint8(UtilExecWithoutOutput), uint8(0), "exec_without_output constant not correct assgined")
 	assert.Equal(t, uint8(UtilExecWithOutput), uint8(1), "exec_without_output constant not correct assgined")
+
+	assert.Equal(t, string(CNIAzure), "azure", "missmatch")
+	assert.Equal(t, string(CNIKind), "kind", "missmatch")
+	assert.Equal(t, string(CNINone), "none", "missmatch")
+	assert.Equal(t, string(CNICilium), "cilium", "missmatch")
+	assert.Equal(t, string(CNIFlannel), "flannel", "missmatch")
+	assert.Equal(t, string(CNIKubenet), "kubenet", "missmatch")
 }
 
 func TestGetUsername(t *testing.T) {
@@ -49,6 +56,21 @@ func TestGetUsername(t *testing.T) {
 		assert.Equal(t, os.Getenv("USERPROFILE"), GetUserName(), "Unable to fetch correct username")
 	} else {
 		assert.Equal(t, os.Getenv("HOME"), GetUserName(), "Unable to fetch correct username")
+	}
+}
+
+func TestCNIValidation(t *testing.T) {
+	cnitests := map[string]bool{
+		string(CNIAzure):   true,
+		string(CNIKubenet): true,
+		string(CNIFlannel): true,
+		string(CNICilium):  true,
+		string(CNIKind):    true,
+		"abcd":             false,
+		"":                 true,
+	}
+	for k, v := range cnitests {
+		assert.Equal(t, v, ValidCNIPlugin(KsctlValidCNIPlugin(k)), "")
 	}
 }
 
