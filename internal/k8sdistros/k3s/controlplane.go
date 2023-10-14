@@ -1,7 +1,6 @@
 package k3s
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,15 +13,14 @@ import (
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	var script string
-	if k3s.Cni == "flannel" {
-		script = scriptCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
-	} else if k3s.Cni == "cilium" {
+
+	if KsctlValidCNIPlugin(k3s.Cni) == CNINone {
 		script = scriptCP_1WithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
 	} else {
-		return errors.New("[k3s] unsupported cni")
+		script = scriptCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
 	}
 
-	err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(script).
+	err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(script).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 		FastMode(true).SSHExecute(storage)
 	if err != nil {
@@ -30,7 +28,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 	}
 
 	// K3stoken
-	err = k3s.SSHInfo.Flag(EXEC_WITH_OUTPUT).Script(scriptForK3sToken()).
+	err = k3s.SSHInfo.Flag(UtilExecWithOutput).Script(scriptForK3sToken()).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 		SSHExecute(storage)
 	if err != nil {
@@ -40,7 +38,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 	storage.Logger().Note("[k3s] fetching k3s token")
 	k8sState.K3sToken = strings.Trim(k3s.SSHInfo.GetOutput(), "\n")
 
-	path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err = saveStateHelper(storage, path)
 	if err != nil {
 		return err
@@ -59,21 +57,20 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 	} else {
 
 		var script string
-		if k3s.Cni == "flannel" {
-			script = scriptCP_N(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
-		} else if k3s.Cni == "cilium" {
+
+		if KsctlValidCNIPlugin(k3s.Cni) == CNINone {
 			script = scriptCP_NWithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
 		} else {
-			return errors.New("[k3s] unsupported cni")
+			script = scriptCP_N(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
 		}
 
-		err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(script).
+		err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(script).
 			IPv4(k8sState.PublicIPs.ControlPlanes[noOfCP]).
 			FastMode(true).SSHExecute(storage)
 		if err != nil {
 			return err
 		}
-		path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+		path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 		err = saveStateHelper(storage, path)
 		if err != nil {
 			return err
@@ -82,7 +79,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		if noOfCP+1 == len(k8sState.PublicIPs.ControlPlanes) {
 
 			storage.Logger().Note("[k3s] fetching kubeconfig")
-			err = k3s.SSHInfo.Flag(EXEC_WITH_OUTPUT).Script(scriptKUBECONFIG()).
+			err = k3s.SSHInfo.Flag(UtilExecWithOutput).Script(scriptKUBECONFIG()).
 				IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 				FastMode(true).SSHExecute(storage)
 			if err != nil {
@@ -94,12 +91,12 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 			kubeconfig = strings.Replace(kubeconfig, "default", k8sState.ClusterName+"-"+k8sState.Region+"-"+string(k8sState.ClusterType)+"-"+string(k8sState.Provider)+"-ksctl", -1)
 
 			// modify
-			path = utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			path = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 			err = saveKubeconfigHelper(storage, path, kubeconfig)
 			if err != nil {
 				return err
 			}
-			printKubeconfig(storage, OPERATION_STATE_CREATE)
+			printKubeconfig(storage, OperationStateCreate)
 		}
 
 	}
@@ -187,7 +184,7 @@ func (k3s *K3sDistro) GetKubeConfig(storage resources.StorageFactory) (path stri
 		return "", "", fmt.Errorf("[k3s] status is not correct")
 	}
 
-	path = utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+	path = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 	var raw []byte
 	raw, err = storage.Path(path).Load()

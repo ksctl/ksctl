@@ -13,9 +13,9 @@ import (
 
 func HydrateK8sDistro(client *resources.KsctlClient) error {
 	switch client.Metadata.K8sDistro {
-	case K8S_K3S:
+	case K8sK3s:
 		client.Distro = k3sPkg.ReturnK3sStruct()
-	case K8S_KUBEADM:
+	case K8sKubeadm:
 		client.Distro = kubeadmPkg.ReturnKubeadmStruct()
 	default:
 		return fmt.Errorf("[kubernetes] Invalid k8s provider")
@@ -23,43 +23,40 @@ func HydrateK8sDistro(client *resources.KsctlClient) error {
 	return nil
 }
 
-func ConfigureCluster(client *resources.KsctlClient) error {
+func ConfigureCluster(client *resources.KsctlClient) (bool, error) {
 	err := client.Distro.ConfigureLoadbalancer(client.Storage)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for no := 0; no < client.Metadata.NoDS; no++ {
 		err := client.Distro.ConfigureDataStore(no, client.Storage)
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
-	client.Distro = client.Distro.CNI(client.Metadata.CNIPlugin)
-	if client.Distro == nil {
-		return errors.New("[ksctl] invalid CNI plugin")
-	}
+	externalCNI := client.Distro.CNI(client.Metadata.CNIPlugin)
 
 	client.Distro = client.Distro.Version(client.Metadata.K8sVersion)
 	if client.Distro == nil {
-		return errors.New("[ksctl] invalid version of self-managed k8s cluster")
+		return false, errors.New("[ksctl] invalid version of self-managed k8s cluster")
 	}
 
 	for no := 0; no < client.Metadata.NoCP; no++ {
 		err := client.Distro.ConfigureControlPlane(no, client.Storage)
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
 	for no := 0; no < client.Metadata.NoWP; no++ {
 		err := client.Distro.JoinWorkerplane(no, client.Storage)
 		if err != nil {
-			return err
+			return externalCNI, err
 		}
 	}
-	return nil
+	return externalCNI, nil
 }
 
 func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {

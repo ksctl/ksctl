@@ -21,7 +21,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	}
 	storage.Logger().Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := utils.GetCred(storage, CLOUD_CIVO)
+	token, err := utils.GetCred(storage, CloudCivo)
 	if err != nil {
 		return ""
 	}
@@ -46,14 +46,14 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	}
 	fmt.Println(id)
 
-	if err := utils.SaveCred(storage, Credential{token}, CLOUD_CIVO); err != nil {
+	if err := utils.SaveCred(storage, Credential{token}, CloudCivo); err != nil {
 		return err
 	}
 	return nil
 }
 
 func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
-	return utils.GetPath(flag, CLOUD_CIVO, clusterType, path...)
+	return utils.GetPath(flag, CloudCivo, clusterType, path...)
 }
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
@@ -101,7 +101,7 @@ func getValidK8sVersionClient(obj *CivoProvider) []string {
 	}
 	var val []string
 	for _, ver := range vers {
-		if ver.ClusterType == string(K8S_K3S) {
+		if ver.ClusterType == string(K8sK3s) {
 			val = append(val, ver.Label)
 		}
 	}
@@ -179,7 +179,7 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
-	path := generatePath(CLUSTER_PATH, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	path := generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {

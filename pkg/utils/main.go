@@ -96,9 +96,9 @@ func IsValidName(clusterName string) error {
 // getKubeconfig returns the path to clusters specific to provider
 
 func getKubeconfig(provider KsctlCloud, clusterType KsctlClusterType, params ...string) string {
-	if provider != CLOUD_CIVO &&
-		provider != CLOUD_LOCAL &&
-		provider != CLOUD_AZURE {
+	if provider != CloudCivo &&
+		provider != CloudLocal &&
+		provider != CloudAzure {
 		return ""
 	}
 	var ret strings.Builder
@@ -137,17 +137,17 @@ func getCredentials(provider KsctlCloud) string {
 // make getPath use 3 predefined const last is clusterType TODO:
 func GetPath(flag KsctlUtilsConsts, provider KsctlCloud, clusterType KsctlClusterType, subfolders ...string) string {
 	// for using different KSCTL DIRECTORY
-	if dirName := os.Getenv(string(KSCTL_CUSTOM_DIR_ENABLED)); len(dirName) != 0 {
+	if dirName := os.Getenv(string(KsctlCustomDirEnabled)); len(dirName) != 0 {
 		KSCTL_CONFIG_DIR = dirName
 	}
 	switch flag {
-	case SSH_PATH:
+	case UtilSSHPath:
 		return getSSHPath(provider, clusterType, subfolders...)
-	case CLUSTER_PATH:
+	case UtilClusterPath:
 		return getKubeconfig(provider, clusterType, subfolders...)
-	case CREDENTIAL_PATH:
+	case UtilCredentialPath:
 		return getCredentials(provider)
-	case OTHER_PATH:
+	case UtilOtherPath:
 		return getPaths(provider, clusterType, subfolders...)
 	default:
 		return ""
@@ -156,7 +156,7 @@ func GetPath(flag KsctlUtilsConsts, provider KsctlCloud, clusterType KsctlCluste
 
 func SaveCred(storage resources.StorageFactory, config interface{}, provider KsctlCloud) error {
 
-	if provider != CLOUD_CIVO && provider != CLOUD_AZURE {
+	if provider != CloudCivo && provider != CloudAzure {
 		return fmt.Errorf("invalid provider (given): Unable to save configuration")
 	}
 
@@ -165,7 +165,7 @@ func SaveCred(storage resources.StorageFactory, config interface{}, provider Ksc
 		return err
 	}
 
-	err = storage.Permission(0640).Path(GetPath(CREDENTIAL_PATH, provider, "")).Save(storeBytes)
+	err = storage.Permission(0640).Path(GetPath(UtilCredentialPath, provider, "")).Save(storeBytes)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func SaveCred(storage resources.StorageFactory, config interface{}, provider Ksc
 
 func GetCred(storage resources.StorageFactory, provider KsctlCloud) (i map[string]string, err error) {
 
-	fileBytes, err := storage.Path(GetPath(CREDENTIAL_PATH, provider, "")).Load()
+	fileBytes, err := storage.Path(GetPath(UtilCredentialPath, provider, "")).Load()
 	if err != nil {
 		return
 	}
@@ -219,7 +219,7 @@ func getSSHPath(provider KsctlCloud, clusterType KsctlClusterType, params ...str
 // its a free flowing (Provider field has not much significance)
 func getPaths(provider KsctlCloud, clusterType KsctlClusterType, params ...string) string {
 	var ret strings.Builder
-	if dirName := os.Getenv(string(KSCTL_CUSTOM_DIR_ENABLED)); len(dirName) != 0 {
+	if dirName := os.Getenv(string(KsctlCustomDirEnabled)); len(dirName) != 0 {
 		KSCTL_CONFIG_DIR = dirName
 	}
 
@@ -244,7 +244,7 @@ func getPaths(provider KsctlCloud, clusterType KsctlClusterType, params ...strin
 func CreateSSHKeyPair(storage resources.StorageFactory, provider KsctlCloud, clusterDir string) (string, error) {
 
 	pathTillFolder := ""
-	pathTillFolder = getPaths(provider, CLUSTER_TYPE_HA, clusterDir)
+	pathTillFolder = getPaths(provider, ClusterTypeHa, clusterDir)
 
 	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair") // WARN: it requires the os to have these dependencies
 	cmd.Dir = pathTillFolder
@@ -255,7 +255,7 @@ func CreateSSHKeyPair(storage resources.StorageFactory, provider KsctlCloud, clu
 
 	storage.Logger().Print("[utils]", string(out))
 
-	path := GetPath(OTHER_PATH, provider, CLUSTER_TYPE_HA, clusterDir, "keypair.pub")
+	path := GetPath(UtilOtherPath, provider, ClusterTypeHa, clusterDir, "keypair.pub")
 	fileBytePub, err := storage.Path(path).Load()
 	if err != nil {
 		return "", err
@@ -326,7 +326,7 @@ func returnServerPublicKeys(publicIP string) (string, error) {
 }
 
 func (ssh *SSHPayload) Flag(execMethod KsctlUtilsConsts) SSHCollection {
-	if execMethod == EXEC_WITH_OUTPUT || execMethod == EXEC_WITHOUT_OUTPUT {
+	if execMethod == UtilExecWithOutput || execMethod == UtilExecWithoutOutput {
 		ssh.flag = execMethod
 		return ssh
 	}
@@ -358,11 +358,11 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 	storage.Logger().Success("[ssh] SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
 	// NOTE: when the fake environment variable is set //
-	if fake := os.Getenv(string(KSCTL_FAKE_FLAG)); len(fake) != 0 {
+	if fake := os.Getenv(string(KsctlFakeFlag)); len(fake) != 0 {
 		storage.Logger().Success("[ssh] Exec Scripts")
 		sshPayload.Output = ""
 
-		if sshPayload.flag == EXEC_WITH_OUTPUT {
+		if sshPayload.flag == UtilExecWithOutput {
 			sshPayload.Output = "random fake"
 		}
 		return nil
@@ -395,13 +395,13 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 			})}
 
 	if !sshPayload.fastMode {
-		time.Sleep(SSH_PAUSE_IN_SECONDS)
+		time.Sleep(DurationSSHPause)
 	}
 
 	var conn *ssh.Client
-	currRetryCounter := KsctlCounterConts(0)
+	currRetryCounter := KsctlCounterConsts(0)
 
-	for currRetryCounter < MAX_RETRY_COUNT {
+	for currRetryCounter < CounterMaxRetryCount {
 		conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)
 		if err == nil {
 			break
@@ -411,7 +411,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
 	}
-	if currRetryCounter == MAX_RETRY_COUNT {
+	if currRetryCounter == CounterMaxRetryCount {
 		return fmt.Errorf("[ssh] maximum retry count reached for ssh conn %v", err)
 	}
 
@@ -428,11 +428,11 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 	var buff bytes.Buffer
 
 	sshPayload.Output = ""
-	if sshPayload.flag == EXEC_WITH_OUTPUT {
+	if sshPayload.flag == UtilExecWithOutput {
 		session.Stdout = &buff
 	}
 	err = session.Run(sshPayload.script)
-	if sshPayload.flag == EXEC_WITH_OUTPUT {
+	if sshPayload.flag == UtilExecWithOutput {
 		sshPayload.Output = buff.String()
 	}
 	if err != nil {
@@ -455,4 +455,13 @@ func UserInputCredentials(logging logger.LogFactory) (string, error) {
 	}
 	fmt.Println()
 	return strings.TrimSpace(string(bytePassword)), nil
+}
+
+func ValidCNIPlugin(cni KsctlValidCNIPlugin) bool {
+	switch cni {
+	case CNIAzure, CNICilium, CNIFlannel, CNIKubenet, CNIKind, "":
+		return true
+	default:
+		return false
+	}
 }

@@ -18,7 +18,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		return nil
 	}
 
-	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, CLOUD_AZURE, clusterDirName)
+	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, CloudAzure, clusterDirName)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 
 	azureCloudState.SSHKeyName = name
 	azureCloudState.SSHUser = "azureuser"
-	azureCloudState.SSHPrivateKeyLoc = utils.GetPath(SSH_PATH, CLOUD_AZURE, clusterType, clusterDirName)
+	azureCloudState.SSHPrivateKeyLoc = utils.GetPath(UtilSSHPath, CloudAzure, clusterType, clusterDirName)
 
 	if err := saveStateHelper(storage); err != nil {
 		return err

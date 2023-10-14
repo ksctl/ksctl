@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-func generateConfig(noWorker, noControl int) ([]byte, error) {
+func generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
 		return nil, fmt.Errorf("[local] invalid config request control node cannot be 0")
 	}
@@ -33,30 +33,37 @@ nodes:
 `
 		noWorker--
 	}
+
+	config += fmt.Sprintf(`networking:
+  disableDefaultCNI: %v
+`, cni)
+
 	config += `...`
 
 	return []byte(config), nil
 }
 
-func configOption(noOfNodes int) (cluster.CreateOption, error) {
+func configOption(noOfNodes int, cni bool) (cluster.CreateOption, error) {
 
 	if noOfNodes < 1 {
 		return nil, fmt.Errorf("[local] invalid config request control node cannot be 0")
 	}
 	if noOfNodes == 1 {
 		var config string
-		config += `---
+		config += fmt.Sprintf(`---
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
-...`
+networking:
+  disableDefaultCNI: %v
+...`, cni)
 		return cluster.CreateWithRawConfig([]byte(config)), nil
 	}
 	//control := noOfNodes / 2 // derive the math
 	control := 1
 	worker := noOfNodes - control
-	raw, err := generateConfig(worker, control)
+	raw, err := generateConfig(worker, control, cni)
 	if err != nil {
 		return nil, fmt.Errorf("ERR in node config generation")
 	}
@@ -65,7 +72,7 @@ nodes:
 }
 
 func isPresent(storage resources.StorageFactory, cluster string) bool {
-	_, err := storage.Path(utils.GetPath(OTHER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, cluster, STATE_FILE)).Load()
+	_, err := storage.Path(utils.GetPath(UtilOtherPath, CloudLocal, ClusterTypeMang, cluster, STATE_FILE)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -76,7 +83,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 
 	var err error
 
-	kpath := utils.GetPath(OTHER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, clusterName, KUBECONFIG)
+	kpath := utils.GetPath(UtilOtherPath, CloudLocal, ClusterTypeMang, clusterName, KUBECONFIG)
 
 	err = storage.Permission(0755).
 		Path(kpath).Save([]byte(""))
@@ -84,7 +91,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 		return "", err
 	}
 
-	err = saveStateHelper(storage, utils.GetPath(OTHER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, clusterName, STATE_FILE))
+	err = saveStateHelper(storage, utils.GetPath(UtilOtherPath, CloudLocal, ClusterTypeMang, clusterName, STATE_FILE))
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +102,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation, clustername string) {
 	env := ""
 	storage.Logger().Note("KUBECONFIG env var")
-	path := utils.GetPath(CLUSTER_PATH, CLOUD_LOCAL, CLUSTER_TYPE_MANG, clustername, KUBECONFIG)
+	path := utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, clustername, KUBECONFIG)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {

@@ -33,7 +33,7 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 
 	azureCloudState.ResourceGroupName = *resourceGroup.Name
 
-	if err := storage.Path(generatePath(CLUSTER_PATH, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(UtilClusterPath, clusterType, clusterDirName)).
 		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
 
 	}
 
-	if err := storage.Path(generatePath(CLUSTER_PATH, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(UtilClusterPath, clusterType, clusterDirName)).
 		DeleteDir(); err != nil {
 		return err
 	}
