@@ -43,8 +43,8 @@ var createClusterAzure = &cobra.Command{
 			panic(err)
 		}
 		SetRequiredFeatureFlags(cmd)
-		cli.Client.Metadata.Provider = CLOUD_AZURE
-		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_MANG)
+		cli.Client.Metadata.Provider = CloudAzure
+		SetDefaults(CloudAzure, ClusterTypeMang)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -63,8 +63,8 @@ ksctl create-cluster civo <arguments to civo cloud provider>
 		}
 
 		SetRequiredFeatureFlags(cmd)
-		cli.Client.Metadata.Provider = CLOUD_CIVO
-		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_MANG)
+		cli.Client.Metadata.Provider = CloudCivo
+		SetDefaults(CloudCivo, ClusterTypeMang)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -83,8 +83,8 @@ ksctl create-cluster local <arguments to civo cloud provider>
 		}
 
 		SetRequiredFeatureFlags(cmd)
-		cli.Client.Metadata.Provider = CLOUD_LOCAL
-		SetDefaults(CLOUD_LOCAL, CLUSTER_TYPE_MANG)
+		cli.Client.Metadata.Provider = CloudLocal
+		SetDefaults(CloudLocal, ClusterTypeMang)
 		createManaged(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -103,8 +103,8 @@ ksctl create-cluster ha-civo <arguments to civo cloud provider>
 		}
 		SetRequiredFeatureFlags(cmd)
 
-		cli.Client.Metadata.Provider = CLOUD_CIVO
-		SetDefaults(CLOUD_CIVO, CLUSTER_TYPE_HA)
+		cli.Client.Metadata.Provider = CloudCivo
+		SetDefaults(CloudCivo, ClusterTypeHa)
 		createHA(cmd.Flags().Lookup("approve").Changed)
 	},
 }
@@ -122,8 +122,8 @@ var createClusterHAAzure = &cobra.Command{
 			panic(err)
 		}
 		SetRequiredFeatureFlags(cmd)
-		cli.Client.Metadata.Provider = CLOUD_AZURE
-		SetDefaults(CLOUD_AZURE, CLUSTER_TYPE_HA)
+		cli.Client.Metadata.Provider = CloudAzure
+		SetDefaults(CloudAzure, ClusterTypeHa)
 		createHA(cmd.Flags().Lookup("approve").Changed)
 	},
 }

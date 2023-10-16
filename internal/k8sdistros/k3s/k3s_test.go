@@ -26,14 +26,14 @@ func TestMain(m *testing.M) {
 	demoClient = &resources.KsctlClient{}
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
-	demoClient.Metadata.Provider = CLOUD_AZURE
+	demoClient.Metadata.Provider = CloudAzure
 	demoClient.Distro = ReturnK3sStruct()
 	fakeClient = ReturnK3sStruct()
 
 	demoClient.Storage = localstate.InitStorage(false)
-	_ = os.Setenv(string(KSCTL_CUSTOM_DIR_ENABLED), dir)
-	_ = os.Setenv(string(KSCTL_FAKE_FLAG), "true")
-	azHA := utils.GetPath(CLUSTER_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "fake fake-resgrp fake-reg")
+	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
+	_ = os.Setenv(string(KsctlFakeFlag), "true")
+	azHA := utils.GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg")
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
@@ -41,14 +41,14 @@ func TestMain(m *testing.M) {
 	fmt.Println("Created tmp directories")
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
 		SSHState: cloudControlRes.SSHInfo{
-			PathPrivateKey: utils.GetPath(SSH_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "fake fake-resgrp fake-reg"),
+			PathPrivateKey: utils.GetPath(UtilSSHPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg"),
 			UserName:       "fakeuser",
 		},
 		Metadata: cloudControlRes.Metadata{
 			ClusterName: "fake",
-			Provider:    CLOUD_AZURE,
+			Provider:    CloudAzure,
 			Region:      "fake-reg",
-			ClusterType: CLUSTER_TYPE_HA,
+			ClusterType: ClusterTypeHa,
 			ClusterDir:  "fake fake-resgrp fake-reg",
 		},
 		// public IPs
@@ -89,11 +89,12 @@ func TestK3sDistro_Version(t *testing.T) {
 }
 
 func TestScriptsControlplane(t *testing.T) {
+
 	ver := []string{"1.26.1", "1.27"}
 	dbEndpoint := []string{"demo@(cd);dcwef", "mysql@demo@(cd);dcwef"}
 	pubIP := []string{"192.16.9.2", "23.34.4.1"}
 	for i := 0; i < len(ver); i++ {
-		valid := fmt.Sprintf(`#!/bin/bash
+		validWithCni := fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
@@ -105,7 +106,26 @@ EOF
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
 `, ver[i], dbEndpoint[i], pubIP[i])
-		if valid != scriptWithoutCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
+
+		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+cat <<EOF > control-setup.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--datastore-endpoint "%s" \
+	--flannel-backend=none \
+	--disable-network-policy \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setup.sh
+sudo ./control-setup.sh
+`, ver[i], dbEndpoint[i], pubIP[i])
+
+		if validWithCni != scriptCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
+			t.Fatalf("scipts for Controlplane 1 failed")
+		}
+		if validWithoutCni != scriptCP_1WithoutCNI(ver[i], dbEndpoint[i], pubIP[i]) {
 			t.Fatalf("scipts for Controlplane 1 failed")
 		}
 	}
@@ -119,7 +139,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
 	for i := 0; i < len(ver); i++ {
-		valid := fmt.Sprintf(`#!/bin/bash
+		validWithCni := fmt.Sprintf(`#!/bin/bash
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
@@ -128,8 +148,28 @@ EOF
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
 `, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
-		if rscript := scriptCP_N(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != valid {
-			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", valid, rscript)
+
+		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint="%s" \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--flannel-backend=none \
+	--disable-network-policy \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
+`, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
+
+		if rscript := scriptCP_N(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithCni {
+			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithCni, rscript)
+		}
+		if rscript := scriptCP_NWithoutCNI(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithoutCni {
+			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithoutCni, rscript)
 		}
 	}
 }
@@ -226,7 +266,7 @@ sudo ./worker-setup.sh
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -250,7 +290,7 @@ func getState(t *testing.T) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, OPERATION_STATE_CREATE), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, OperationStateCreate), nil, "should be initlize the state")
 
 	getState(t)
 
@@ -258,11 +298,11 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	checkCurrentStateFile(t)
 
-	_, err := utils.CreateSSHKeyPair(demoClient.Storage, CLOUD_AZURE, k8sState.ClusterDir)
+	_, err := utils.CreateSSHKeyPair(demoClient.Storage, CloudAzure, k8sState.ClusterDir)
 	if err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
-	t.Log(utils.GetPath(SSH_PATH, CLOUD_AZURE, CLUSTER_TYPE_HA, "fake fake-resgrp fake-reg"))
+	t.Log(utils.GetPath(UtilSSHPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg"))
 
 	err = fakeClient.ConfigureLoadbalancer(demoClient.Storage)
 	if err != nil {
@@ -278,6 +318,8 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Datastore unable to operate %v", err)
 		}
 	}
+
+	fakeClient.CNI("flannel")
 	for no := 0; no < demoClient.Metadata.NoCP; no++ {
 		err := fakeClient.ConfigureControlPlane(no, demoClient.Storage)
 		if err != nil {
@@ -296,7 +338,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 		a, b, err := fakeClient.GetKubeConfig(demoClient.Storage)
 		assert.NilError(t, err, "get kubeconfig should be successful")
 
-		path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+		path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 		var raw []byte
 		raw, err = demoClient.Storage.Path(path).Load()
@@ -306,4 +348,16 @@ func TestOverallScriptsCreation(t *testing.T) {
 		assert.Equal(t, string(raw), b, "the kubeconfig must match")
 
 	})
+}
+
+func TestCNI(t *testing.T) {
+	testCases := map[string]bool{
+		string(CNIFlannel): false,
+		string(CNICilium):  true,
+	}
+
+	for k, v := range testCases {
+		got := fakeClient.CNI(k)
+		assert.Equal(t, got, v, "missmatch")
+	}
 }

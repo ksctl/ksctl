@@ -118,7 +118,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		return err
 	}
 
-	count := KsctlCounterConts(0)
+	count := KsctlCounterConsts(0)
 	for {
 
 		status, err := this.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, v1.GetOptions{})
@@ -130,7 +130,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 			break
 		}
 		count++
-		if count == MAX_RETRY_COUNT {
+		if count == CounterMaxRetryCount {
 			return fmt.Errorf("max retry reached")
 		}
 		this.StorageDriver.Logger().Warn(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
@@ -157,7 +157,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	}
 
 	switch this.Metadata.Provider {
-	case CLOUD_CIVO:
+	case CloudCivo:
 		var data *civo.StateConfiguration
 		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
 			return err
@@ -171,7 +171,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		}
 		cloudstate = string(raw)
 
-	case CLOUD_AZURE:
+	case CloudAzure:
 		var data *azure.StateConfiguration
 		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
 			return err
@@ -380,9 +380,9 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	var listEnv []string
 
 	switch this.Metadata.Provider {
-	case CLOUD_CIVO:
+	case CloudCivo:
 		listEnv = append(listEnv, "CIVO_TOKEN")
-	case CLOUD_AZURE:
+	case CloudAzure:
 		listEnv = append(listEnv, "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
 	}
 

@@ -44,6 +44,7 @@ func ReturnK3sStruct() *K3sDistro {
 
 type K3sDistro struct {
 	K3sVer string
+	Cni    string
 	// it will be used for SSH
 	SSHInfo utils.SSHCollection
 }
@@ -73,15 +74,15 @@ sudo cat /etc/rancher/k3s/k3s.yaml`
 // try to achieve deepCopy
 func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation KsctlOperation) error {
 	// add the nil check here as well
-	path := utils.GetPath(CLUSTER_PATH, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(UtilClusterPath, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
 
 	switch operation {
-	case OPERATION_STATE_CREATE:
+	case OperationStateCreate:
 		// add  a flag of completion check
 		k8sState = &StateConfiguration{}
 		k8sState.DataStoreEndPoint = ""
 		k8sState.K3sToken = ""
-	case OPERATION_STATE_GET:
+	case OperationStateGet:
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return err
@@ -121,11 +122,6 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 	return nil
 }
 
-// InstallApplication implements resources.DistroFactory.
-func (*K3sDistro) InstallApplication(state resources.StorageFactory) error {
-	panic("unimplemented")
-}
-
 func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {
 	if isValidK3sVersion(ver) {
 		// valid
@@ -133,4 +129,16 @@ func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {
 		return k3s
 	}
 	return nil
+}
+
+func (k3s *K3sDistro) CNI(cni string) (externalCNI bool) {
+	switch KsctlValidCNIPlugin(cni) {
+	case CNIFlannel, "":
+		k3s.Cni = string(CNIFlannel)
+	default:
+		k3s.Cni = string(CNINone)
+		return true
+	}
+
+	return false
 }

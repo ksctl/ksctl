@@ -3,6 +3,7 @@ package k3s
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,15 +15,16 @@ import (
 
 // ConfigureDataStore implements resources.DistroFactory.
 func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
+	storage.Logger().Print("[k3s] configuring Datastore", strconv.Itoa(idx))
 
 	if idx > 0 {
-		storage.Logger().Note("[k3s] cluster of datastore not enabled!", string(rune(idx)))
+		storage.Logger().Note("[k3s] cluster of datastore not enabled!", strconv.Itoa(idx))
 		return nil
 	}
 
 	password := generateDBPassword(15)
 
-	err := k3s.SSHInfo.Flag(EXEC_WITHOUT_OUTPUT).Script(
+	err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(
 		scriptDB(password)).
 		IPv4(k8sState.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute(storage)
@@ -31,12 +33,12 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 	}
 	k8sState.DataStoreEndPoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", password, k8sState.PrivateIPs.DataStores[idx])
 
-	path := utils.GetPath(CLUSTER_PATH, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err = saveStateHelper(storage, path)
 	if err != nil {
 		return err
 	}
-	storage.Logger().Success("[k3s] configured DataStore")
+	storage.Logger().Success("[k3s] configured DataStore", strconv.Itoa(idx))
 
 	return nil
 }

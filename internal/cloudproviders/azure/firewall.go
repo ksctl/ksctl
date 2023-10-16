@@ -16,13 +16,13 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 
 	nsg := ""
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
-	case ROLE_WP:
+	case RoleWp:
 		nsg = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName
-	case ROLE_LB:
+	case RoleLb:
 		nsg = azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName
-	case ROLE_DS:
+	case RoleDs:
 		nsg = azureCloudState.InfoDatabase.NetworkSecurityGroupName
 	default:
 		return fmt.Errorf("invalid role")
@@ -43,16 +43,16 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 		return err
 	}
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = ""
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = ""
-	case ROLE_WP:
+	case RoleWp:
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID = ""
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = ""
-	case ROLE_LB:
+	case RoleLb:
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID = ""
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = ""
-	case ROLE_DS:
+	case RoleDs:
 		azureCloudState.InfoDatabase.NetworkSecurityGroupID = ""
 		azureCloudState.InfoDatabase.NetworkSecurityGroupName = ""
 	}
@@ -74,13 +74,13 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	nsg := ""
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
-	case ROLE_WP:
+	case RoleWp:
 		nsg = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName
-	case ROLE_LB:
+	case RoleLb:
 		nsg = azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName
-	case ROLE_DS:
+	case RoleDs:
 		nsg = azureCloudState.InfoDatabase.NetworkSecurityGroupName
 	default:
 		return fmt.Errorf("invalid role")
@@ -92,13 +92,13 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	var securityRules []*armnetwork.SecurityRule
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		securityRules = firewallRuleControlPlane()
-	case ROLE_WP:
+	case RoleWp:
 		securityRules = firewallRuleWorkerPlane()
-	case ROLE_LB:
+	case RoleLb:
 		securityRules = firewallRuleLoadBalancer()
-	case ROLE_DS:
+	case RoleDs:
 		securityRules = firewallRuleDataStore()
 	default:
 		return fmt.Errorf("invalid role")
@@ -117,13 +117,13 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return err
 	}
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = name
-	case ROLE_WP:
+	case RoleWp:
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = name
-	case ROLE_LB:
+	case RoleLb:
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = name
-	case ROLE_DS:
+	case RoleDs:
 		azureCloudState.InfoDatabase.NetworkSecurityGroupName = name
 	}
 
@@ -138,13 +138,13 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return err
 	}
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
-	case ROLE_WP:
+	case RoleWp:
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID = *resp.ID
-	case ROLE_LB:
+	case RoleLb:
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID = *resp.ID
-	case ROLE_DS:
+	case RoleDs:
 		azureCloudState.InfoDatabase.NetworkSecurityGroupID = *resp.ID
 	}
 

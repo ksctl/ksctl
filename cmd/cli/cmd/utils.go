@@ -169,7 +169,7 @@ func createApproval(showMsg bool) error {
 
 func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 	switch string(provider) + string(clusterType) {
-	case string(CLOUD_LOCAL) + string(CLUSTER_TYPE_MANG):
+	case string(CloudLocal) + string(ClusterTypeMang):
 		if noMP == -1 {
 			noMP = 2
 		}
@@ -177,10 +177,10 @@ func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = string(K8S_K3S)
+			distro = string(K8sK3s)
 		}
 
-	case string(CLOUD_AZURE) + string(CLUSTER_TYPE_MANG):
+	case string(CloudAzure) + string(ClusterTypeMang):
 		if len(nodeSizeMP) == 0 {
 			nodeSizeMP = "Standard_DS2_v2"
 		}
@@ -194,10 +194,10 @@ func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 			k8sVer = "1.27"
 		}
 		if len(distro) == 0 {
-			distro = string(K8S_K3S)
+			distro = string(K8sK3s)
 		}
 
-	case string(CLOUD_CIVO) + string(CLUSTER_TYPE_MANG):
+	case string(CloudCivo) + string(ClusterTypeMang):
 		if len(nodeSizeMP) == 0 {
 			nodeSizeMP = "g4s.kube.small"
 		}
@@ -211,10 +211,10 @@ func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = string(K8S_K3S)
+			distro = string(K8sK3s)
 		}
 
-	case string(CLOUD_AZURE) + string(CLUSTER_TYPE_HA):
+	case string(CloudAzure) + string(ClusterTypeHa):
 		if len(nodeSizeCP) == 0 {
 			nodeSizeCP = "Standard_F2s"
 		}
@@ -243,10 +243,10 @@ func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = string(K8S_K3S)
+			distro = string(K8sK3s)
 		}
 
-	case string(CLOUD_CIVO) + string(CLUSTER_TYPE_HA):
+	case string(CloudCivo) + string(ClusterTypeHa):
 		if len(nodeSizeCP) == 0 {
 			nodeSizeCP = "g3.small"
 		}
@@ -275,7 +275,7 @@ func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 			k8sVer = "1.27.1"
 		}
 		if len(distro) == 0 {
-			distro = string(K8S_K3S)
+			distro = string(K8sK3s)
 		}
 	case utils.CLOUD_AWS + utils.CLUSTER_TYPE_HA:
 		if len(nodeSizeCP) == 0 {
@@ -319,6 +319,8 @@ func argsFlags() {
 	noOfMPFlag(createClusterAzure)
 	k8sVerFlag(createClusterAzure)
 	distroFlag(createClusterAzure)
+	appsFlag(createClusterAzure)
+	cniFlag(createClusterAzure)
 
 	// Managed Civo
 	clusterNameFlag(createClusterCivo)

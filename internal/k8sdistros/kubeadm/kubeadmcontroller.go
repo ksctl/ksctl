@@ -84,3 +84,7 @@ func (kubeadm *KubeadmDistro) Version(string) resources.DistroFactory {
 	// TODO: Implement
 	return kubeadm
 }
+
+func (kubeadm *KubeadmDistro) CNI(cni string) (externalCNI bool) {
+	return true
+}

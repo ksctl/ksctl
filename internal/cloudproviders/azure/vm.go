@@ -27,13 +27,13 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 
 	vmName := ""
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		vmName = azureCloudState.InfoControlPlanes.Names[indexNo]
-	case ROLE_DS:
+	case RoleDs:
 		vmName = azureCloudState.InfoDatabase.Names[indexNo]
-	case ROLE_LB:
+	case RoleLb:
 		vmName = azureCloudState.InfoLoadBalancer.Name
-	case ROLE_WP:
+	case RoleWp:
 		vmName = azureCloudState.InfoWorkerPlanes.Names[indexNo]
 	}
 
@@ -61,16 +61,16 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 			defer obj.mxState.Unlock()
 
 			switch role {
-			case ROLE_WP:
+			case RoleWp:
 				azureCloudState.InfoWorkerPlanes.Names[indexNo] = ""
 				azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = ""
-			case ROLE_CP:
+			case RoleCp:
 				azureCloudState.InfoControlPlanes.Names[indexNo] = ""
 				azureCloudState.InfoControlPlanes.Hostnames[indexNo] = ""
-			case ROLE_LB:
+			case RoleLb:
 				azureCloudState.InfoLoadBalancer.Name = ""
 				azureCloudState.InfoLoadBalancer.HostName = ""
-			case ROLE_DS:
+			case RoleDs:
 				azureCloudState.InfoDatabase.Names[indexNo] = ""
 				azureCloudState.InfoDatabase.Hostnames[indexNo] = ""
 			}
@@ -114,7 +114,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	obj.mxName.Unlock()
 	obj.mxVMType.Unlock()
 
-	if role == ROLE_DS && indexNo > 0 {
+	if role == RoleDs && indexNo > 0 {
 		storage.Logger().Note("[skip] currently multiple datastore not supported")
 		return nil
 	}
@@ -129,16 +129,16 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	nsgID := ""
 
 	switch role {
-	case ROLE_WP:
+	case RoleWp:
 		pubIPID = azureCloudState.InfoWorkerPlanes.PublicIPIDs[indexNo]
 		nsgID = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID
-	case ROLE_CP:
+	case RoleCp:
 		nsgID = azureCloudState.InfoControlPlanes.NetworkSecurityGroupID
 		pubIPID = azureCloudState.InfoControlPlanes.PublicIPIDs[indexNo]
-	case ROLE_LB:
+	case RoleLb:
 		nsgID = azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID
 		pubIPID = azureCloudState.InfoLoadBalancer.PublicIPID
-	case ROLE_DS:
+	case RoleDs:
 		nsgID = azureCloudState.InfoDatabase.NetworkSecurityGroupID
 		pubIPID = azureCloudState.InfoDatabase.PublicIPIDs[indexNo]
 	}
@@ -150,13 +150,13 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	// NOTE: check if the VM is already created
 	vmName := ""
 	switch role {
-	case ROLE_CP:
+	case RoleCp:
 		vmName = azureCloudState.InfoControlPlanes.Names[indexNo]
-	case ROLE_DS:
+	case RoleDs:
 		vmName = azureCloudState.InfoDatabase.Names[indexNo]
-	case ROLE_LB:
+	case RoleLb:
 		vmName = azureCloudState.InfoLoadBalancer.Name
-	case ROLE_WP:
+	case RoleWp:
 		vmName = azureCloudState.InfoWorkerPlanes.Names[indexNo]
 	}
 	if len(vmName) != 0 {
@@ -164,7 +164,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		return nil
 	}
 
-	sshPublicKeyPath := utils.GetPath(OTHER_PATH, CLOUD_AZURE, clusterType, clusterDirName, "keypair.pub")
+	sshPublicKeyPath := utils.GetPath(UtilOtherPath, CloudAzure, clusterType, clusterDirName, "keypair.pub")
 	var sshBytes []byte
 	_, err := os.Stat(sshPublicKeyPath)
 	if err != nil {
@@ -177,13 +177,13 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 
 	netInterfaceID := ""
 	switch role {
-	case ROLE_WP:
+	case RoleWp:
 		netInterfaceID = azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[indexNo]
-	case ROLE_CP:
+	case RoleCp:
 		netInterfaceID = azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[indexNo]
-	case ROLE_LB:
+	case RoleLb:
 		netInterfaceID = azureCloudState.InfoLoadBalancer.NetworkInterfaceID
-	case ROLE_DS:
+	case RoleDs:
 		netInterfaceID = azureCloudState.InfoDatabase.NetworkInterfaceIDs[indexNo]
 	}
 
@@ -251,13 +251,13 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.Names[indexNo] = name
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.Names[indexNo] = name
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.Name = name
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.Names[indexNo] = name
 		}
 		if err := saveStateHelper(storage); err != nil {
@@ -287,24 +287,24 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.DiskNames[indexNo] = diskName
 			azureCloudState.InfoWorkerPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
 
 			if len(azureCloudState.InfoWorkerPlanes.Names) == indexNo+1 {
 				azureCloudState.IsCompleted = true
 			}
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.DiskNames[indexNo] = diskName
 			azureCloudState.InfoControlPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
 			if len(azureCloudState.InfoControlPlanes.Names) == indexNo+1 && len(azureCloudState.InfoWorkerPlanes.Names) == 0 {
 				// when its the last resource to be created and we are done with the last controlplane creation
 				azureCloudState.IsCompleted = true
 			}
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.DiskName = diskName
 			azureCloudState.InfoLoadBalancer.HostName = *resp.Properties.OSProfile.ComputerName
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.DiskNames[indexNo] = diskName
 			azureCloudState.InfoDatabase.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
 		}
@@ -327,13 +327,13 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 	diskName := ""
 	// pass the role
 	switch role {
-	case ROLE_WP:
+	case RoleWp:
 		diskName = azureCloudState.InfoWorkerPlanes.DiskNames[index]
-	case ROLE_CP:
+	case RoleCp:
 		diskName = azureCloudState.InfoControlPlanes.DiskNames[index]
-	case ROLE_LB:
+	case RoleLb:
 		diskName = azureCloudState.InfoLoadBalancer.DiskName
-	case ROLE_DS:
+	case RoleDs:
 		diskName = azureCloudState.InfoDatabase.DiskNames[index]
 	}
 	if len(diskName) == 0 {
@@ -362,13 +362,13 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.DiskNames[index] = ""
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.DiskNames[index] = ""
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.DiskName = ""
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.DiskNames[index] = ""
 		}
 		if err := saveStateHelper(storage); err != nil {
@@ -388,13 +388,13 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 
 	publicIP := ""
 	switch role {
-	case ROLE_WP:
+	case RoleWp:
 		publicIP = azureCloudState.InfoWorkerPlanes.PublicIPNames[index]
-	case ROLE_CP:
+	case RoleCp:
 		publicIP = azureCloudState.InfoControlPlanes.PublicIPNames[index]
-	case ROLE_LB:
+	case RoleLb:
 		publicIP = azureCloudState.InfoLoadBalancer.PublicIPName
-	case ROLE_DS:
+	case RoleDs:
 		publicIP = azureCloudState.InfoDatabase.PublicIPNames[index]
 	}
 
@@ -423,13 +423,13 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = publicIPName
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.PublicIPNames[index] = publicIPName
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.PublicIPName = publicIPName
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.PublicIPNames[index] = publicIPName
 		}
 		if err := saveStateHelper(storage); err != nil {
@@ -457,16 +457,16 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = *resp.ID
 			azureCloudState.InfoWorkerPlanes.PublicIPs[index] = *resp.Properties.IPAddress
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.PublicIPIDs[index] = *resp.ID
 			azureCloudState.InfoControlPlanes.PublicIPs[index] = *resp.Properties.IPAddress
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.PublicIPID = *resp.ID
 			azureCloudState.InfoLoadBalancer.PublicIP = *resp.Properties.IPAddress
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.PublicIPIDs[index] = *resp.ID
 			azureCloudState.InfoDatabase.PublicIPs[index] = *resp.Properties.IPAddress
 		}
@@ -488,13 +488,13 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 
 	publicIP := ""
 	switch role {
-	case ROLE_WP:
+	case RoleWp:
 		publicIP = azureCloudState.InfoWorkerPlanes.PublicIPNames[index]
-	case ROLE_CP:
+	case RoleCp:
 		publicIP = azureCloudState.InfoControlPlanes.PublicIPNames[index]
-	case ROLE_LB:
+	case RoleLb:
 		publicIP = azureCloudState.InfoLoadBalancer.PublicIPName
-	case ROLE_DS:
+	case RoleDs:
 		publicIP = azureCloudState.InfoDatabase.PublicIPNames[index]
 	}
 
@@ -525,19 +525,19 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.PublicIPNames[index] = ""
 			azureCloudState.InfoWorkerPlanes.PublicIPIDs[index] = ""
 			azureCloudState.InfoWorkerPlanes.PublicIPs[index] = ""
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.PublicIPNames[index] = ""
 			azureCloudState.InfoControlPlanes.PublicIPIDs[index] = ""
 			azureCloudState.InfoControlPlanes.PublicIPs[index] = ""
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.PublicIPID = ""
 			azureCloudState.InfoLoadBalancer.PublicIPName = ""
 			azureCloudState.InfoLoadBalancer.PublicIP = ""
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.PublicIPNames[index] = ""
 			azureCloudState.InfoDatabase.PublicIPIDs[index] = ""
 			azureCloudState.InfoDatabase.PublicIPs[index] = ""
@@ -561,13 +561,13 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 
 	interfaceName := ""
 	switch role {
-	case ROLE_WP:
+	case RoleWp:
 		interfaceName = azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index]
-	case ROLE_CP:
+	case RoleCp:
 		interfaceName = azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index]
-	case ROLE_LB:
+	case RoleLb:
 		interfaceName = azureCloudState.InfoLoadBalancer.NetworkInterfaceName
-	case ROLE_DS:
+	case RoleDs:
 		interfaceName = azureCloudState.InfoDatabase.NetworkInterfaceNames[index]
 	}
 	if len(interfaceName) != 0 {
@@ -611,14 +611,14 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = nicName
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = nicName
 
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.NetworkInterfaceName = nicName
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = nicName
 		}
 		if err := saveStateHelper(storage); err != nil {
@@ -646,17 +646,17 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = *resp.ID
 			azureCloudState.InfoWorkerPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = *resp.ID
 			azureCloudState.InfoControlPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.NetworkInterfaceID = *resp.ID
 			azureCloudState.InfoLoadBalancer.PrivateIP = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.NetworkInterfaceIDs[index] = *resp.ID
 			azureCloudState.InfoDatabase.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 		}
@@ -677,13 +677,13 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role KsctlRole) error {
 	interfaceName := ""
 	switch role {
-	case ROLE_WP:
+	case RoleWp:
 		interfaceName = azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index]
-	case ROLE_CP:
+	case RoleCp:
 		interfaceName = azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index]
-	case ROLE_LB:
+	case RoleLb:
 		interfaceName = azureCloudState.InfoLoadBalancer.NetworkInterfaceName
-	case ROLE_DS:
+	case RoleDs:
 		interfaceName = azureCloudState.InfoDatabase.NetworkInterfaceNames[index]
 	}
 	if len(interfaceName) == 0 {
@@ -713,19 +713,19 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case ROLE_WP:
+		case RoleWp:
 			azureCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = ""
 			azureCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = ""
 			azureCloudState.InfoWorkerPlanes.PrivateIPs[index] = ""
-		case ROLE_CP:
+		case RoleCp:
 			azureCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = ""
 			azureCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = ""
 			azureCloudState.InfoControlPlanes.PrivateIPs[index] = ""
-		case ROLE_LB:
+		case RoleLb:
 			azureCloudState.InfoLoadBalancer.NetworkInterfaceName = ""
 			azureCloudState.InfoLoadBalancer.NetworkInterfaceID = ""
 			azureCloudState.InfoLoadBalancer.PrivateIP = ""
-		case ROLE_DS:
+		case RoleDs:
 			azureCloudState.InfoDatabase.NetworkInterfaceNames[index] = ""
 			azureCloudState.InfoDatabase.NetworkInterfaceIDs[index] = ""
 			azureCloudState.InfoDatabase.PrivateIPs[index] = ""

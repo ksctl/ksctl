@@ -32,7 +32,7 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
-	printKubeconfig(storage, OPERATION_STATE_DELETE)
+	printKubeconfig(storage, OperationStateDelete)
 
 	return nil
 }
@@ -57,6 +57,9 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		Properties: &armcontainerservice.ManagedClusterProperties{
 			DNSPrefix:         to.Ptr("aksgosdk"),
 			KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
+			NetworkProfile: &armcontainerservice.NetworkProfile{
+				NetworkPlugin: to.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(obj.metadata.cni)),
+			},
 			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 				{
 					Name:              to.Ptr("askagent"),
@@ -77,6 +80,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			},
 		},
 	}
+
 	pollerResp, err := obj.client.BeginCreateAKS(name, parameter, nil)
 	if err != nil {
 		return err
@@ -109,8 +113,12 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return err
 	}
 
-	printKubeconfig(storage, OPERATION_STATE_CREATE)
+	printKubeconfig(storage, OperationStateCreate)
 
 	storage.Logger().Success("[azure] created AKS", *resp.Name)
 	return nil
+}
+
+func (obj *AzureProvider) GetKubeconfigPath() string {
+	return generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 }

@@ -32,16 +32,13 @@ type Metadata struct {
 	StateLocation KsctlStore      `json:"storage_type"`
 	IsHA          bool            `json:"ha_cluster"`
 
-	// TODO: is it required?
-	// try to see if string could be replaced by pointer to reduce memory
 	ManagedNodeType      string `json:"node_type_managed"`
 	WorkerPlaneNodeType  string `json:"node_type_workerplane"`
 	ControlPlaneNodeType string `json:"node_type_controlplane"`
 	DataStoreNodeType    string `json:"node_type_datastore"`
 	LoadBalancerNodeType string `json:"node_type_loadbalancer"`
 
-	NoMP int `json:"desired_no_of_managed_nodes"` // No of managed Nodes
-
+	NoMP int `json:"desired_no_of_managed_nodes"`      // No of managed Nodes
 	NoWP int `json:"desired_no_of_workerplane_nodes"`  // No of woerkplane VMs
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
@@ -104,19 +101,11 @@ type CloudFactory interface {
 	// Visibility whether to make the VM public or private
 	Visibility(bool) CloudFactory
 
-	// SupportForApplications whether the cloud provider supports pre-installed apps
-	// Only for Managed clusters
-	SupportForApplications() bool
-
-	// SupportForCNI whether the cloud provider supports for choosing CNI
-	// Only for Managed clusters
-	SupportForCNI() bool
-
 	// Application for the comma seperated apps names (Managed cluster)
-	Application(string) CloudFactory
+	Application(string) bool
 
 	// CNI for the CNI name (Managed cluster)
-	CNI(string) CloudFactory
+	CNI(string) (willBeInstalled bool)
 
 	// Version for the Kubernetes Version (Managed cluster)
 	Version(string) CloudFactory
@@ -147,6 +136,9 @@ type CloudFactory interface {
 	// GetStateFiles it returns the civo-state.json
 	// WARN: sensitive info can be present
 	GetStateFile(StorageFactory) (string, error)
+
+	GetKubeconfigPath() string
+
 	GetSecretTokens(StorageFactory) (map[string][]byte, error)
 }
 
@@ -172,24 +164,18 @@ type KubernetesFactory interface {
 	// it requires number
 	ConfigureDataStore(int, StorageFactory) error
 
-	// TODO: Check if its required
-	InstallApplication(StorageFactory) error
-
 	// GetKubeConfig returns the path of kubeconfig
 	GetKubeConfig(StorageFactory) (path string, data string, err error)
 
 	// Version setter for version to be used
 	Version(string) DistroFactory
 
+	CNI(string) (externalCNI bool) // it will return error
+
 	// GetStateFiles it returns the k8s-state.json
 	// WARN: sensitive info can be present
 	GetStateFile(StorageFactory) (string, error)
 }
-
-// FEATURE: non kubernetes distrobutions like nomad
-// type NonKubernetesInfrastructure interface {
-// 	InstallApplications()
-// }
 
 type DistroFactory interface {
 	KubernetesFactory
