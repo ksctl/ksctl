@@ -11,10 +11,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
-	armcomputev5 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
-	armcontainerservicev4 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	//"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	//"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
+	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -39,7 +39,7 @@ type AzureGo interface {
 
 	ListLocations() ([]string, error)
 
-	ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error)
+	ListKubernetesVersions() (armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse, error)
 
 	ListVMTypes() ([]string, error)
 
@@ -361,17 +361,17 @@ func (azclient *AzureGoClient) ListLocations() ([]string, error) {
 	return validReg, nil
 }
 
-func (azclient *AzureGoClient) ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error) {
-	clientFactory, err := armcontainerservicev4.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+func (azclient *AzureGoClient) ListKubernetesVersions() (armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse, error) {
+	clientFactory, err := armcontainerservice.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse{}, fmt.Errorf("failed to create client: %v", err)
+		return armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse{}, fmt.Errorf("failed to create client: %v", err)
 	}
 
 	return clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, azclient.Region, nil)
 }
 
 func (azclient *AzureGoClient) ListVMTypes() ([]string, error) {
-	clientFactory, err := armcomputev5.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
+	clientFactory, err := armcompute.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %v", err)
 	}
@@ -588,17 +588,17 @@ func (mock *AzureGoMockClient) ListLocations() ([]string, error) {
 	return []string{"eastus2", "centralindia", "fake"}, nil
 }
 
-func (mock *AzureGoMockClient) ListKubernetesVersions() (armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse, error) {
-	return armcontainerservicev4.ManagedClustersClientListKubernetesVersionsResponse{
-		KubernetesVersionListResult: armcontainerservicev4.KubernetesVersionListResult{
-			Values: []*armcontainerservicev4.KubernetesVersion{
-				&armcontainerservicev4.KubernetesVersion{
+func (mock *AzureGoMockClient) ListKubernetesVersions() (armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse, error) {
+	return armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse{
+		KubernetesVersionListResult: armcontainerservice.KubernetesVersionListResult{
+			Values: []*armcontainerservice.KubernetesVersion{
+				&armcontainerservice.KubernetesVersion{
 					Version: to.Ptr("1.27.1"),
 				},
-				&armcontainerservicev4.KubernetesVersion{
+				&armcontainerservice.KubernetesVersion{
 					Version: to.Ptr("1.26"),
 				},
-				&armcontainerservicev4.KubernetesVersion{
+				&armcontainerservice.KubernetesVersion{
 					Version: to.Ptr("1.27"),
 				},
 			},
