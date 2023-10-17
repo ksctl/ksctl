@@ -60,6 +60,10 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			NetworkProfile: &armcontainerservice.NetworkProfile{
 				NetworkPlugin: to.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(obj.metadata.cni)),
 			},
+			AutoUpgradeProfile: &armcontainerservice.ManagedClusterAutoUpgradeProfile{
+				NodeOSUpgradeChannel: to.Ptr[armcontainerservice.NodeOSUpgradeChannel](armcontainerservice.NodeOSUpgradeChannelNodeImage),
+				UpgradeChannel:       to.Ptr[armcontainerservice.UpgradeChannel](armcontainerservice.UpgradeChannelPatch),
+			},
 			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 				{
 					Name:              to.Ptr("askagent"),
