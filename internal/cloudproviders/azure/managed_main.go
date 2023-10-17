@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
+	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
@@ -59,6 +59,10 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 			KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
 				NetworkPlugin: to.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(obj.metadata.cni)),
+			},
+			AutoUpgradeProfile: &armcontainerservice.ManagedClusterAutoUpgradeProfile{
+				NodeOSUpgradeChannel: to.Ptr[armcontainerservice.NodeOSUpgradeChannel](armcontainerservice.NodeOSUpgradeChannelNodeImage),
+				UpgradeChannel:       to.Ptr[armcontainerservice.UpgradeChannel](armcontainerservice.UpgradeChannelPatch),
 			},
 			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 				{
