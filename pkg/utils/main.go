@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 
@@ -81,16 +82,6 @@ func GetUserName() string {
 	}
 
 	return os.Getenv("HOME")
-}
-
-func IsValidName(clusterName string) error {
-	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
-
-	if !matched || err != nil {
-		return fmt.Errorf("CLUSTER NAME INVALID")
-	}
-
-	return nil
 }
 
 // getKubeconfig returns the path to clusters specific to provider
@@ -458,10 +449,41 @@ func UserInputCredentials(logging logger.LogFactory) (string, error) {
 }
 
 func ValidCNIPlugin(cni KsctlValidCNIPlugin) bool {
+
+	if b := utf8.ValidString(string(cni)); !b {
+		return false
+	}
+
 	switch cni {
 	case CNIAzure, CNICilium, CNIFlannel, CNIKubenet, CNIKind, "":
 		return true
 	default:
 		return false
 	}
+}
+
+func ValidateCloud(cloud KsctlCloud) bool {
+	if b := utf8.ValidString(string(cloud)); !b {
+		return false
+	}
+
+	switch cloud {
+	case CloudAzure, CloudAws, CloudLocal, CloudAll, CloudCivo:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsValidName(clusterName string) error {
+	if len(clusterName) > 15 {
+		return fmt.Errorf("name is too long")
+	}
+	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
+
+	if !matched || err != nil {
+		return fmt.Errorf("CLUSTER NAME INVALID")
+	}
+
+	return nil
 }

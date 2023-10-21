@@ -15,6 +15,9 @@ Write-Output "|   Testing (pkg/utils)"
 Write-Output "-----------------------------------"
 
 Set-Location utils
+go test -fuzz=Fuzz -fuzztime 10s -v cloud_test.go main.go
+go test -fuzz=Fuzz -fuzztime 10s -v cni_test.go main.go
+go test -fuzz=Fuzz -fuzztime 10s -v name_test.go main.go
 go test . -v && Set-Location -
 
 Write-Output "-----------------------------------"
