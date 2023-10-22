@@ -448,6 +448,32 @@ func UserInputCredentials(logging logger.LogFactory) (string, error) {
 	return strings.TrimSpace(string(bytePassword)), nil
 }
 
+func ValidateDistro(distro KsctlKubernetes) bool {
+	if b := utf8.ValidString(string(distro)); !b {
+		return false
+	}
+
+	switch distro {
+	case K8sK3s, K8sKubeadm, "":
+		return true
+	default:
+		return false
+	}
+}
+
+func ValidateStorage(storage KsctlStore) bool {
+	if b := utf8.ValidString(string(storage)); !b {
+		return false
+	}
+
+	switch storage {
+	case StoreRemote, StoreLocal:
+		return true
+	default:
+		return false
+	}
+}
+
 func ValidCNIPlugin(cni KsctlValidCNIPlugin) bool {
 
 	if b := utf8.ValidString(string(cni)); !b {
@@ -476,7 +502,7 @@ func ValidateCloud(cloud KsctlCloud) bool {
 }
 
 func IsValidName(clusterName string) error {
-	if len(clusterName) > 15 {
+	if len(clusterName) > 30 {
 		return fmt.Errorf("name is too long")
 	}
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)

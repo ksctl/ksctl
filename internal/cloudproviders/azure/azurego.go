@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+
 	//"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	//"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
@@ -611,7 +611,6 @@ func (mock *AzureGoMockClient) ListVMTypes() ([]string, error) {
 }
 
 func (mock *AzureGoMockClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
 	return armresources.ResourceGroupsClientCreateOrUpdateResponse{
 		ResourceGroup: armresources.ResourceGroup{
 			Name: to.Ptr(mock.ResourceGrp),
@@ -620,97 +619,78 @@ func (mock *AzureGoMockClient) CreateResourceGrp(parameters armresources.Resourc
 }
 
 func (mock *AzureGoMockClient) BeginDeleteResourceGrp(options *armresources.ResourceGroupsClientBeginDeleteOptions) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armresources.ResourceGroupsClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginCreateVirtNet(virtualNetworkName string, parameters armnetwork.VirtualNetwork, options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeleteVirtNet(virtualNetworkName string, options *armnetwork.VirtualNetworksClientBeginDeleteOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginCreateSubNet(virtualNetworkName string, subnetName string, subnetParameters armnetwork.Subnet, options *armnetwork.SubnetsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeleteSubNet(virtualNetworkName string, subnetName string, options *armnetwork.SubnetsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SubnetsClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.SubnetsClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeleteSecurityGrp(networkSecurityGroupName string, options *armnetwork.SecurityGroupsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginCreateSecurityGrp(networkSecurityGroupName string, parameters armnetwork.SecurityGroup, options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) CreateSSHKey(sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource, options *armcompute.SSHPublicKeysClientCreateOptions) (armcompute.SSHPublicKeysClientCreateResponse, error) {
-	time.Sleep(time.Second)
 	return armcompute.SSHPublicKeysClientCreateResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) DeleteSSHKey(sshPublicKeyName string, options *armcompute.SSHPublicKeysClientDeleteOptions) (armcompute.SSHPublicKeysClientDeleteResponse, error) {
-	time.Sleep(time.Second)
 	return armcompute.SSHPublicKeysClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginCreateVM(vmName string, parameters armcompute.VirtualMachine, options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeleteVM(vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (*runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeleteDisk(diskName string, options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armcompute.DisksClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginCreatePubIP(publicIPAddressName string, parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeletePubIP(publicIPAddressName string, options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginCreateNIC(networkInterfaceName string, parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeleteNIC(networkInterfaceName string, options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armnetwork.InterfacesClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginDeleteAKS(resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) BeginCreateAKS(resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
-	time.Sleep(time.Second)
 	return &runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse]{}, nil
 }
 
 func (mock *AzureGoMockClient) ListClusterAdminCredentials(resourceName string, options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error) {
-	time.Sleep(time.Second)
 	return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{
 		CredentialResults: armcontainerservice.CredentialResults{
 			Kubeconfigs: []*armcontainerservice.CredentialResult{
@@ -725,12 +705,10 @@ func (mock *AzureGoMockClient) ListClusterAdminCredentials(resourceName string, 
 
 func (mock *AzureGoMockClient) PollUntilDoneDelNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientDeleteResponse, error) {
 	// as the result is not used
-	time.Sleep(time.Second)
 	return armnetwork.SecurityGroupsClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
 	return armnetwork.SecurityGroupsClientCreateOrUpdateResponse{
 		SecurityGroup: armnetwork.SecurityGroup{
 			ID:   to.Ptr("XXYY"),
@@ -741,12 +719,10 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateNSG(ctx context.Context, poll 
 
 func (mock *AzureGoMockClient) PollUntilDoneDelResourceGrp(ctx context.Context, poll *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armresources.ResourceGroupsClientDeleteResponse, error) {
 	// as the result is not used
-	time.Sleep(time.Second)
 	return armresources.ResourceGroupsClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
 	return armnetwork.SubnetsClientCreateOrUpdateResponse{
 		Subnet: armnetwork.Subnet{
 			ID:   to.Ptr("XXYY"),
@@ -757,12 +733,11 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateSubNet(ctx context.Context, po
 
 func (mock *AzureGoMockClient) PollUntilDoneDelSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientDeleteResponse, error) {
 	// as the result is not used
-	time.Sleep(time.Second)
 	return armnetwork.SubnetsClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneCreateVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
+
 	return armnetwork.VirtualNetworksClientCreateOrUpdateResponse{
 		VirtualNetwork: armnetwork.VirtualNetwork{
 			ID:   to.Ptr("XXYY"),
@@ -773,12 +748,12 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateVirtNet(ctx context.Context, p
 
 func (mock *AzureGoMockClient) PollUntilDoneDelVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientDeleteResponse, error) {
 	// as the result is not used
-	time.Sleep(time.Second)
+
 	return armnetwork.VirtualNetworksClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneCreateAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
+
 	return armcontainerservice.ManagedClustersClientCreateOrUpdateResponse{
 		ManagedCluster: armcontainerservice.ManagedCluster{
 			Name: to.Ptr("fake-ksctl-managed-resgrp"),
@@ -787,18 +762,16 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateAKS(ctx context.Context, poll 
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientDeleteResponse, error) {
-	time.Sleep(time.Second)
+
 	return armcontainerservice.ManagedClustersClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientDeleteResponse, error) {
 
-	time.Sleep(time.Second)
 	return armcompute.VirtualMachinesClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneCreateVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
 
 	return armcompute.VirtualMachinesClientCreateOrUpdateResponse{
 		VirtualMachine: armcompute.VirtualMachine{
@@ -817,7 +790,7 @@ func (mock *AzureGoMockClient) PollUntilDoneDelDisk(ctx context.Context, poll *r
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneCreatePubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
+
 	return armnetwork.PublicIPAddressesClientCreateOrUpdateResponse{
 		PublicIPAddress: armnetwork.PublicIPAddress{
 			ID:   to.Ptr("fake-XXYYY"),
@@ -830,12 +803,11 @@ func (mock *AzureGoMockClient) PollUntilDoneCreatePubIP(ctx context.Context, pol
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientDeleteResponse, error) {
-	time.Sleep(time.Second)
+
 	return armnetwork.PublicIPAddressesClientDeleteResponse{}, nil
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneCreateNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientCreateOrUpdateResponse, error) {
-	time.Sleep(time.Second)
 
 	return armnetwork.InterfacesClientCreateOrUpdateResponse{
 		Interface: armnetwork.Interface{
@@ -855,7 +827,6 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateNetInterface(ctx context.Conte
 }
 
 func (mock *AzureGoMockClient) PollUntilDoneDelNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientDeleteResponse, error) {
-	time.Sleep(time.Second)
 
 	return armnetwork.InterfacesClientDeleteResponse{}, nil
 }

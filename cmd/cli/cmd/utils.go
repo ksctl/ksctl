@@ -176,9 +176,6 @@ func SetDefaults(provider KsctlCloud, clusterType KsctlClusterType) {
 		if len(k8sVer) == 0 {
 			k8sVer = "1.27.1"
 		}
-		if len(distro) == 0 {
-			distro = string(K8sK3s)
-		}
 
 	case string(CloudAzure) + string(ClusterTypeMang):
 		if len(nodeSizeMP) == 0 {

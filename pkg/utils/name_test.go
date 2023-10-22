@@ -17,7 +17,7 @@ func FuzzName(f *testing.F) {
 		t.Logf("name: %s and err: %v", name, outErr)
 		matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, name)
 
-		if outErr == nil && len(name) > 15 {
+		if outErr == nil && len(name) > 30 {
 			t.Errorf("incorrect error for long length string")
 		}
 		if outErr != nil && (!matched || err != nil) {
