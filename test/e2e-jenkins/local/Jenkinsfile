@@ -8,6 +8,7 @@ pipeline {
                 sh '''
                     #!/bin/bash
 
+					export PATH="$PATH:/usr/local/go/bin"
 					cd test/e2e/local
 					go run . -op create -file input.json
 
@@ -24,6 +25,7 @@ pipeline {
                 sh '''
                     #!/bin/bash
 
+					export PATH="$PATH:/usr/local/go/bin"
 					cd test/e2e/local
 					go run . -op switch -file input.json
                 '''
@@ -36,6 +38,7 @@ pipeline {
             sh '''
                 #!/bin/bash
 
+                export PATH="$PATH:/usr/local/go/bin"
 				cd test/e2e/local
 				go run . -op delete -file input.json
             '''
