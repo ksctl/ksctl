@@ -8,7 +8,8 @@ pipeline {
                 sh '''
                     #!/bin/bash
 
-                    ksctl create local -n test-e2e-local --approve -v
+					cd test/e2e/local
+					go run . -op create -file input.json
 
                     ksctl get
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/managed/test-e2e-local/kubeconfig"
@@ -22,7 +23,9 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl switch -p local -n test-e2e-local
+
+					cd test/e2e/local
+					go run . -op switch -file input.json
                 '''
             }
         }
@@ -32,7 +35,9 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete local -n test-e2e-local --approve -v || exit 0
+
+				cd test/e2e/local
+				go run . -op delete -file input.json
             '''
         }
     }
