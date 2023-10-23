@@ -502,8 +502,8 @@ func ValidateCloud(cloud KsctlCloud) bool {
 }
 
 func IsValidName(clusterName string) error {
-	if len(clusterName) > 30 {
-		return fmt.Errorf("name is too long")
+	if len(clusterName) > 50 {
+		return fmt.Errorf("name is too long\tname: %s", clusterName)
 	}
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
 
