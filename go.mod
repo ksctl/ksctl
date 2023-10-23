@@ -15,14 +15,13 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/pkg/errors v0.9.1
 	github.com/rodaine/table v1.1.0
-	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.14.0
 	golang.org/x/term v0.13.0
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.13.0
-	k8s.io/api v0.28.2
+	k8s.io/api v0.28.3
 	k8s.io/apiextensions-apiserver v0.28.2
-	k8s.io/apimachinery v0.28.2
+	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.28.2
 	sigs.k8s.io/kind v0.20.0
 )
@@ -135,6 +134,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
+	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
