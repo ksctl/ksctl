@@ -1,6 +1,6 @@
 {
 	"cluster_name": "test-e2e-azure",
 	"storage_type": "local",
-	"region": "",
+	"region": "eastus",
 	"cloud_provider": "azure"
 }
