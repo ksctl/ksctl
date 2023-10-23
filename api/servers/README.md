@@ -1,1 +1,0 @@
-# here the Openapi spec server will be there
