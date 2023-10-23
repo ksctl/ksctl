@@ -3,6 +3,7 @@
 	"region": "FRA1",
 	"ha_cluster": true,
 	"cloud_provider": "civo",
+	"kubernetes_distro": "k3s",
 	"storage_type": "local",
 	"desired_no_of_workerplane_nodes": 0
 }
