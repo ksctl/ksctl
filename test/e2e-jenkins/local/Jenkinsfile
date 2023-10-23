@@ -8,9 +8,12 @@ pipeline {
                 sh '''
                     #!/bin/bash
 
-                    ksctl create local -n test-e2e-local --approve -v
+					cd test/e2e
 
-                    ksctl get
+					/usr/local/go/bin/go run . -op create -file local/create.json
+
+                    /usr/local/go/bin/go run . -op get -file local/get.json
+
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/managed/test-e2e-local/kubeconfig"
 
                     kubectl get nodes -owide
@@ -22,7 +25,10 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl switch -p local -n test-e2e-local
+
+					cd test/e2e
+
+					/usr/local/go/bin/go run . -op switch -file local/switch.json
                 '''
             }
         }
@@ -32,7 +38,9 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete local -n test-e2e-local --approve -v || exit 0
+
+				cd test/e2e
+				/usr/local/go/bin/go run . -op delete -file local/delete.json
             '''
         }
     }

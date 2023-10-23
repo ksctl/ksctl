@@ -1,0 +1,9 @@
+{
+	"cluster_name": "test-e2e-ha-azure",
+	"region": "eastus2",
+	"ha_cluster": true,
+	"cloud_provider": "azure",
+	"storage_type": "local",
+	"kubernetes_distro": "k3s",
+	"desired_no_of_workerplane_nodes": 0
+}
