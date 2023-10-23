@@ -10,10 +10,13 @@ pipeline {
                 sh '''
                     #!/bin/bash
 
-                    ksctl create civo -n test-e2e-civo -r LON1 --approve
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op create -file civo/create.json
 
 
-                    ksctl get
+                    /usr/local/go/bin/go run . -op get -file civo/get.json
+
                     tree "/var/lib/jenkins/.ksctl/config"
 
                     cd /var/lib/jenkins/.ksctl/config/civo/managed/test-e2e-civo\\ LON1
@@ -32,9 +35,12 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl create ha-civo -n test-e2e-ha-civo -r FRA1 --approve
+                    cd test/e2e
 
-                    ksctl get
+                    /usr/local/go/bin/go run . -op create -file civo/create-ha.json
+
+                    /usr/local/go/bin/go run . -op get -file civo/get.json
+
                     tree "/var/lib/jenkins/.ksctl/config"
 
                     cd /var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo\\ FRA1
@@ -54,8 +60,10 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl switch -p civo -n test-e2e-civo -r LON1
-                    ksctl switch -p ha-civo -n test-e2e-ha-civo -r FRA1
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op switch -file civo/switch.json
+                    /usr/local/go/bin/go run . -op switch -file civo/switch-ha.json
                 '''
             }
         }
@@ -64,8 +72,10 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
                     sleep 30s
-                    ksctl delete ha-civo delete-nodes -n test-e2e-ha-civo -r FRA1 --noWP 0 --approve
+                    /usr/local/go/bin/go run . -op scaledown -file civo/scaledown-ha.json
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo FRA1/kubeconfig"
                     kubectl get nodes -owide
@@ -81,8 +91,10 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
                     sleep 1m
-                    ksctl create ha-civo add-nodes -n test-e2e-ha-civo -r FRA1 --noWP 1 --approve
+                    /usr/local/go/bin/go run . -op scaleup -file civo/scaleup-ha.json
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/config/civo/ha/test-e2e-ha-civo FRA1/kubeconfig"
                     kubectl get nodes -owide
@@ -99,8 +111,10 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete civo -n test-e2e-civo -r LON1 --approve -v
-                ksctl delete ha-civo -n test-e2e-ha-civo -r FRA1 --approve -v
+                cd test/e2e
+
+                /usr/local/go/bin/go run . -op delete -file civo/delete.json
+                /usr/local/go/bin/go run . -op delete -file civo/delete-ha.json
             '''
         }
     }

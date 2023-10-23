@@ -29,6 +29,19 @@ func GenKsctlController() *KsctlControllerClient {
 	return &KsctlControllerClient{}
 }
 
+func validationFields(meta resources.Metadata) error {
+	if !utils.ValidateCloud(meta.Provider) {
+		return errors.New("invalid cloud provider")
+	}
+	if !utils.ValidateDistro(meta.K8sDistro) {
+		return errors.New("invalid kubernetes distro")
+	}
+	if !utils.ValidateStorage(meta.StateLocation) {
+		return errors.New("invalid storage driver")
+	}
+	return nil
+}
+
 func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) (string, error) {
 	switch client.Metadata.StateLocation {
 	case StoreLocal:
@@ -65,6 +78,9 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) (string, error) {
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
+	}
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
 	}
 
 	fakeClient := false
@@ -117,6 +133,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
+	}
+
 	fakeClient := false
 	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
@@ -136,6 +156,10 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
+	}
+
 	var err error
 	switch client.Metadata.Provider {
 	case CloudCivo:
@@ -164,6 +188,9 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.KsctlClient) (string, error) {
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
+	}
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
 	}
 
 	client.Storage.Logger().Note("Filter ", string(client.Metadata.Provider))
@@ -217,6 +244,9 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) (string, error) {
 	if client.Metadata.Provider == CloudLocal {
 		return "", fmt.Errorf("ha not supported")
+	}
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
 	}
 
 	if client.Storage == nil {
@@ -333,6 +363,9 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	if client.Storage == nil {
 		return "", fmt.Errorf("Initalize the storage driver")
 	}
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
+	}
 
 	fakeClient := false
 	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
@@ -389,6 +422,9 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 }
 
 func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
+	}
 
 	if client.Metadata.IsHA && len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
 		// disable add AddWorkerPlaneNode when this feature is being used
@@ -443,6 +479,9 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 }
 
 func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
+	if err := validationFields(client.Metadata); err != nil {
+		return "", err
+	}
 
 	if client.Metadata.IsHA && len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
 		return "", fmt.Errorf("This Functionality is diabled for {HA type cluster} due to FEATURE_FLAG [%s]", KsctlFeatureFlagHaAutoscale)

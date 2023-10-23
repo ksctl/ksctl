@@ -13,10 +13,13 @@ pipeline {
             steps{
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
 
-                    ksctl create azure -n test-e2e-azure -r eastus --approve
+                    /usr/local/go/bin/go run . -op create -file azure/create.json
 
-                    ksctl get
+                    /usr/local/go/bin/go run . -op get -file azure/get.json
+
+
                     tree "/var/lib/jenkins/.ksctl/config"
 
                     cd /var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure\\ test-e2e-azure-ksctl-managed-resgrp\\ eastus
@@ -36,9 +39,12 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl create ha-azure -n test-e2e-ha-azure -r eastus2 --approve
+                    cd test/e2e
 
-                    ksctl get
+                    /usr/local/go/bin/go run . -op create -file azure/create-ha.json
+
+                    /usr/local/go/bin/go run . -op get -file azure/get.json
+
                     tree "/var/lib/jenkins/.ksctl/config"
 
                     cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
@@ -58,8 +64,11 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
-                    ksctl switch -p azure -n test-e2e-azure -r eastus
-                    ksctl switch -p ha-azure -n test-e2e-ha-azure -r eastus2
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op switch -file azure/switch-ha.json
+
+                    /usr/local/go/bin/go run . -op switch -file azure/switch.json
                 '''
             }
         }
@@ -68,8 +77,12 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
                     sleep 15s
-                    ksctl delete ha-azure delete-nodes --noWP 0 -n test-e2e-ha-azure -r eastus2 --approve
+
+                    /usr/local/go/bin/go run . -op scaledown -file azure/scaledown-ha.json
+
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
 
@@ -87,8 +100,10 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
                     sleep 1m
-                    ksctl create ha-azure add-nodes --noWP 1 -n test-e2e-ha-azure -r eastus2 --approve
+                    /usr/local/go/bin/go run . -op scaleup -file azure/scaleup-ha.json
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
 
@@ -107,8 +122,10 @@ pipeline {
         always {
             sh '''
                 #!/bin/bash
-                ksctl delete azure -n test-e2e-azure -r eastus --approve -v
-                ksctl delete ha-azure -n test-e2e-ha-azure -r eastus2 --approve -v
+                cd test/e2e
+
+                /usr/local/go/bin/go run . -op delete -file azure/delete.json
+                /usr/local/go/bin/go run . -op delete -file azure/delete-ha.json
             '''
         }
     }
