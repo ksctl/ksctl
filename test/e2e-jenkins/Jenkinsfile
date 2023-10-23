@@ -2,7 +2,7 @@ pipeline {
     agent any
     stages {
 
-        stage('Build binary') {
+        stage('Setup e2e test files') {
             when {
                 anyOf {
                     changeset "go.mod"
@@ -16,10 +16,7 @@ pipeline {
             steps{
                 sh '''
                 #!/bin/bash
-                /usr/local/go/bin version
-
-                # Setup the configurations dir
-                rm -rf ${HOME}/.ksctl
+                /usr/local/go/bin/go version
 
                 mkdir -p ${HOME}/.ksctl/cred
                 mkdir -p ${HOME}/.ksctl/config/civo/ha
@@ -113,6 +110,12 @@ pipeline {
                 [KSCTL-e2e Testing on main branch]
                 $DEFAULT_CONTENT
                 ''', mimeType: 'text/html', subject: 'NO-REPLY ksctl-bot: $DEFAULT_SUBJECT', to: 'ksctl-kubesimplify@googlegroups.com'
+
+			sh '''
+                #!/bin/bash
+                # Setup the configurations dir
+                rm -rf ${HOME}/.ksctl
+			'''
 		}
 	}
 }
