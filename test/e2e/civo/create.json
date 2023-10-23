@@ -1,0 +1,10 @@
+{
+	"cluster_name": "test-e2e-civo",
+	"kubernetes_version": "1.27.1",
+	"region": "LON1",
+	"ha_cluster": false,
+	"cloud_provider": "civo",
+	"storage_type": "local",
+	"desired_no_of_managed_nodes": 2,
+	"node_type_managed": "g4s.kube.small"
+}

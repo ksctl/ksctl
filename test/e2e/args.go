@@ -1,4 +1,4 @@
-package e2e
+package main
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 )
 
 func GetReqPayload(l *log.Logger) (Operation, resources.Metadata) {
-
+	l = log.New(os.Stdout, "[setup-e2e]", -1)
 	arg1 := flag.String("op", "", "operation to perform")
 	arg2 := flag.String("file", "", "file name as payload")
 

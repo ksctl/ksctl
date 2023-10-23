@@ -1,0 +1,11 @@
+{
+	"cluster_name": "test-e2e-ha-civo",
+	"kubernetes_version": "1.27.1",
+	"region": "FRA1",
+	"ha_cluster": true,
+	"cloud_provider": "civo",
+	"kubernetes_distro": "k3s",
+	"storage_type": "local",
+	"node_type_workerplane": "g3.large",
+	"desired_no_of_workerplane_nodes": 1
+}

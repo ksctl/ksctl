@@ -3,6 +3,8 @@
 	"region": "",
 	"kubernetes_version": "",
 	"ha_cluster": false,
+	"cloud_provider": "",
+	"kubernetes_distro": "",
 	"node_type_managed": "",
 	"node_type_workerplane": "",
 	"node_type_controlplane": "",
