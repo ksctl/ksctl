@@ -516,19 +516,20 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 	}
 
 	client.Storage.Logger().Note("Hostnames to remove", strings.Join(hostnames, ";"))
+	if !fakeClient {
+		var payload cloudController.CloudResourceState
+		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+		// transfer the state
 
-	var payload cloudController.CloudResourceState
-	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
-	// transfer the state
+		err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
+		if err != nil {
+			return "", err
+		}
 
-	err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
-	if err != nil {
-		return "", err
-	}
-
-	// move it to kubernetes controller
-	if err := kubernetes.DelWorkerPlanes(client, hostnames); err != nil {
-		return "", err
+		// move it to kubernetes controller
+		if err := kubernetes.DelWorkerPlanes(client, hostnames); err != nil {
+			return "", err
+		}
 	}
 
 	return "[ksctl] deleted worker node(s)", nil
