@@ -11,8 +11,7 @@
 **CLI which can manage Kubernetes cluster on different environment**
 
 <div align="center">
-
-   <img src="https://img.shields.io/github/repo-size/kubesimplify/ksctl?style=for-the-badge" />
+    <a href="https://pkg.go.dev/github.com/kubesimplify/ksctl"><img src="https://pkg.go.dev/badge/github.com/kubesimplify/ksctl.svg" alt="Go Reference"></a>
    <img src="https://img.shields.io/github/issues/kubesimplify/ksctl?style=for-the-badge" />
    <img src="https://img.shields.io/github/issues-pr/kubesimplify/ksctl?style=for-the-badge" />
    <img src="https://img.shields.io/github/issues-pr-closed-raw/kubesimplify/ksctl?style=for-the-badge" />
@@ -21,13 +20,10 @@
    <img src="https://img.shields.io/github/stars/kubesimplify/ksctl?style=for-the-badge" />
    <img src="https://img.shields.io/github/contributors/kubesimplify/ksctl?style=for-the-badge" />
    <img src="https://img.shields.io/github/last-commit/kubesimplify/ksctl?style=for-the-badge" />
-
    <br>
 
    [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml)
   [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml)
-  [![Testing Build process](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testBuilder.yaml)
-  [![goreleaser](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/goreleaser.yml)
   [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl)
   [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
   [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
@@ -69,6 +65,10 @@ Connect ksctl cli to you [Azure](https://kubesimplify.github.io/ksctl/docs/provi
 ## Getting Started Civo
 Connect ksctl cli to your [Civo](https://kubesimplify.github.io/ksctl/docs/providers/civo) account. Watch the installation video here
 
+## Ksctl Repo's
+- [Ksctl Core](https://github.com/kubesimplify/ksctl)
+- [Ksctl CLI](https://github.com/kubesimplify/ksctl-cli)
+- [Ksctl Dashboard](https://github.com/kubesimplify/ksctl-dashboard)
 
 # Prerequisites
 
