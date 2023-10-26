@@ -1,0 +1,5 @@
+{
+	"cluster_name": "test-e2e-local",
+	"storage_type": "local",
+	"cloud_provider": "local"
+}

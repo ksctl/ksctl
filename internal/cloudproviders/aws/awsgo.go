@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
 func ProvideClient() AwsGo {
@@ -260,7 +260,21 @@ func (awsclient *AwsGoClient) ListLocations(ec2client *ec2.Client) (*string, err
 
 // ListVMTypes implements AwsGo.
 func (*AwsGoClient) ListVMTypes() ([]string, error) {
-	panic("unimplemented")
+
+	//ec2Client := obj.ec2Client()
+	//
+	//result, err := ec2Client.DescribeInstanceTypes(context.Background(), *ec2.DescribeInstancesInput{})
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return nil, err
+	//}
+	//
+	//var avalableinstance []string
+	//for _, instancetype := range result.InstanceTypes {
+	//	avalableinstance = append(avalableinstance, *instancetype.InstanceType)
+	//}
+
+	return nil, nil
 }
 
 // SetRegion implements AwsGo.

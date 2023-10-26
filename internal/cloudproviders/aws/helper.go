@@ -3,11 +3,12 @@ package aws
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/api/utils"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
-func generatePath(flag int, path ...string) string {
-	return utils.GetPath(flag, utils.CLOUD_AWS, path...)
+func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
+	return utils.GetPath(flag, CloudAws, clusterType, path...)
 }
 
 func validationOfArguments(obj *AwsProvider) error {
@@ -32,8 +33,13 @@ func isValidRegion(obj *AwsProvider, reg string) error {
 		return err
 	}
 	if validReg == nil {
-		return fmt.Errorf("No region found")
+		return fmt.Errorf("no region found")
 	}
 
 	return nil
+}
+
+func (obj *AwsProvider) GetKubeconfigPath() string{
+
+	return ""
 }

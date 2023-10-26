@@ -12,21 +12,21 @@ import TabItem from '@theme/TabItem';
   <TabItem value="Linux" label="Linux" default>
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/scripts/install.sh)
+bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl-cli/main/scripts/install.sh)
 ```
 
   </TabItem>
   <TabItem value="MacOS" label="MacOS">
 
 ```bash
-zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/scripts/install.sh)
+zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl-cli/main/scripts/install.sh)
 ```
 
   </TabItem>
   <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
-iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl-cli/main/install.ps1 | iex
 ```
 
   </TabItem>
@@ -38,21 +38,21 @@ iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/install.ps1 
   <TabItem value="Linux" label="Linux" default>
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/scripts/uninstall.sh)
+bash <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl-cli/main/scripts/uninstall.sh)
 ```
 
   </TabItem>
   <TabItem value="MacOS" label="MacOS">
 
 ```bash
-zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl/main/scripts/uninstall.sh)
+zsh <(curl -s https://raw.githubusercontent.com/kubesimplify/ksctl-cli/main/scripts/uninstall.sh)
 ```
 
   </TabItem>
   <TabItem value="Windows" label="Windows (Powershell)">
 
 ```ps1
-iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl/main/scripts/uninstall.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/kubesimplify/ksctl-cli/main/scripts/uninstall.ps1 | iex
 ```
 
   </TabItem>

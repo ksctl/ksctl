@@ -1,0 +1,132 @@
+pipeline {
+    agent any
+    environment {
+        AZURE_CLIENT_ID = credentials("client_id")
+        AZURE_CLIENT_SECRET = credentials("client_secret")
+        AZURE_SUBSCRIPTION_ID = credentials("subscriptionid")
+        AZURE_TENANT_ID = credentials("tenantid")
+    }
+
+    stages {
+
+        stage('create managed') {
+            steps{
+                sh '''
+                    #!/bin/bash
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op create -file azure/create.json
+
+                    /usr/local/go/bin/go run . -op get -file azure/get.json
+
+
+                    tree "/var/lib/jenkins/.ksctl/config"
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure\\ test-e2e-azure-ksctl-managed-resgrp\\ eastus
+
+                    jq . cloud-state.json
+
+                    sleep 5s
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure test-e2e-azure-ksctl-managed-resgrp eastus/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+
+        stage('ha cluster') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op create -file azure/create-ha.json
+
+                    /usr/local/go/bin/go run . -op get -file azure/get.json
+
+                    tree "/var/lib/jenkins/.ksctl/config"
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                    sleep 5s
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+
+        stage('switch') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op switch -file azure/switch-ha.json
+
+                    /usr/local/go/bin/go run . -op switch -file azure/switch.json
+                '''
+            }
+        }
+
+        stage('ha-del-nodes') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    cd test/e2e
+
+                    sleep 15s
+
+                    /usr/local/go/bin/go run . -op scaledown -file azure/scaledown-ha.json
+
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
+
+                    kubectl get nodes -owide
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                '''
+            }
+        }
+
+        stage('ha-add-nodes') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    cd test/e2e
+
+                    sleep 1m
+                    /usr/local/go/bin/go run . -op scaleup -file azure/scaleup-ha.json
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
+
+                    kubectl get nodes -owide
+
+                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                #!/bin/bash
+                cd test/e2e
+
+                /usr/local/go/bin/go run . -op delete -file azure/delete.json
+                /usr/local/go/bin/go run . -op delete -file azure/delete-ha.json
+            '''
+        }
+    }
+}

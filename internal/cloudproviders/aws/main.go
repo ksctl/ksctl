@@ -3,27 +3,28 @@ package aws
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
+	"sync"
 
-	"github.com/kubesimplify/ksctl/api/logger"
-	"github.com/kubesimplify/ksctl/api/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/api/utils"
-
-	"github.com/kubesimplify/ksctl/api/resources"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	cloud_control_res "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
-// var (
-// 	awsCloudState  *StateConfiguration
-// 	clusterDirName string
-// 	clusterType    string
-// 	ctx            context.Context
-// )
+var (
+	awsCloudState *StateConfiguration
+	GatewayID     string
+	RouteTableID  string
+	VPCID         string
+	SUBNETID      []string
+)
 
 type Credential struct {
 	AccessKeyID string `json:"access_key_id"`
@@ -40,6 +41,11 @@ type AwsProvider struct {
 	session     aws.Config
 	metadata
 
+	mxName   sync.Mutex
+	mxRole   sync.Mutex
+	mxVMType sync.Mutex
+	mxState  sync.Mutex
+
 	client  AwsGo
 	SSHPath string `json:"ssh_key"`
 }
@@ -49,22 +55,19 @@ type AWSStateVms struct {
 	SecurityGroupName     string   `json:"network_security_group_name"`
 	SecurityGroupID       string   `json:"network_security_group_id"`
 	DiskNames             []string `json:"disk_name"`
-	PublicIPNames         []string `json:"public_ip_"`
 	PrivateIPs            []string `json:"private_ip"`
 	PublicIPs             []string `json:"public_ip"`
 	NetworkInterfaceNames []string `json:"network_interface_name"`
 	NetworkInterfaceIDs   []string `json:"network_interface_id"`
 	SubnetNames           []string `json:"subnet_name"`
 	SubnetIDs             []string `json:"subnet_id"`
-	Hostnames             []string `json:"hostname"`
-	PublicIPIDs           []string `json:"publicipids"`
 }
 
 var (
 	azureCloudState *StateConfiguration
 
 	clusterDirName string
-	clusterType    string // it stores the ha or managed
+	clusterType    KsctlClusterType // it stores the ha or managed
 
 )
 
@@ -89,24 +92,28 @@ type AWSStateVm struct {
 }
 
 type StateConfiguration struct {
-	IsCompleted        bool
-	ClusterName        string `json:"cluster_name"`
-	Region             string `json:"region"`
-	VPCNAME            string `json:"vpc"`
-	VPCID              string `json:"vpc_id"`
-	SSHUSER            string `json:"ssh_user"`
-	SSHPrivateKeyLoc   string `json:"ssh_private_key_loc"`
-	SSHKeyName         string `json:"ssh_key_name"`
+	IsCompleted bool
+	ClusterName string `json:"cluster_name"`
+	Region      string `json:"region"`
+	VPCNAME     string `json:"vpc"`
+	VPCID       string `json:"vpc_id"`
+
 	ManagedClusterName string `json:"managed_cluster_name"`
 	NoManagedNodes     int    `json:"no_managed_nodes"`
 	SubnetName         string `json:"subnet_name"`
 	SubnetID           string `json:"subnet_id"`
-	SecurityGroupName  string `json:"security_group_name"`
-	SecurityGroupID    string `json:"security_group_id"`
-	GatewayName        string `json:"gateway_name"`
-	GatewayID          string `json:"gateway_id"`
-	RouteTableName     string `json:"route_table_name"`
-	RouteTableID       string `json:"route_table_id"`
+
+	SecurityGroupRole [4]string `json:"security_group_name"`
+	SecurityGroupID   [4]string `json:"security_group_id"`
+
+	GatewayRole    string `json:"gateway_role"`
+	GatewayID      string `json:"gateway_id"`
+	RouteTableName string `json:"route_table_name"`
+	RouteTableID   string `json:"route_table_id"`
+
+	SSHUser          string `json:"ssh_usr"`
+	SSHPrivateKeyLoc string `json:"ssh_private_key_location"`
+	SSHKeyName       string `json:"sshkey_name"`
 
 	InfoControlPlanes AWSStateVms `json:"info_control_planes"`
 	InfoWorkerPlanes  AWSStateVms `json:"info_worker_planes"`
@@ -119,7 +126,7 @@ type StateConfiguration struct {
 
 type metadata struct {
 	resName string
-	role    string
+	role    KsctlRole
 	vmType  string
 	public  bool
 
@@ -131,18 +138,18 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    string
+	k8sName    KsctlKubernetes
 	k8sVersion string
 }
 
-func ReturnAwsStruct(Metadata resources.Metadata, ClientOption func() AwsGo) (*AwsProvider, error) {
+func ReturnAwsStruct(meta resources.Metadata, ClientOption func() AwsGo) (*AwsProvider, error) {
 	return &AwsProvider{
-		clusterName: Metadata.ClusterName,
-		region:      Metadata.Region,
-		haCluster:   Metadata.IsHA,
+		clusterName: meta.ClusterName,
+		region:      meta.Region,
+		haCluster:   meta.IsHA,
 		metadata: metadata{
-			k8sVersion: Metadata.K8sVersion,
-			k8sName:    Metadata.K8sDistro,
+			k8sVersion: meta.K8sVersion,
+			k8sName:    meta.K8sDistro,
 		},
 
 		session: NEWCLIENT(),
@@ -168,6 +175,8 @@ func NEWCLIENT() aws.Config {
 
 func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 
+	obj.mxName.Lock()
+
 	if err := utils.IsValidName(resName); err != nil {
 		var logFactory logger.LogFactory = &logger.Logger{}
 		logFactory.Err(err.Error())
@@ -176,12 +185,13 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 
 	obj.metadata.resName = resName
 	fmt.Println(obj.metadata.resName)
-	fmt.Println("named the resource successfully")
-	return nil
+	return obj
 }
 
 func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
 	//TODO implement me
+
+	obj.mxRole.Lock()
 	fmt.Println("AWS Del Firewall")
 
 	return nil
@@ -204,7 +214,7 @@ func convertStateFromBytes(raw []byte) error {
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(utils.CLUSTER_PATH, utils.CLOUD_AWS, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(UtilClusterPath, CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
@@ -213,21 +223,20 @@ func loadStateHelper(storage resources.StorageFactory) error {
 	return convertStateFromBytes(raw)
 }
 
-func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration string) error {
+func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
-		clusterType = utils.CLUSTER_TYPE_MANG
+		clusterType = ClusterTypeMang
 	case true:
-		clusterType = utils.CLUSTER_TYPE_HA
-
+		clusterType = ClusterTypeHa
 	}
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
 
 	errLoadState := loadStateHelper(storage)
 	switch opration {
-	case utils.OPERATION_STATE_CREATE:
+	case OperationStateCreate:
 		if errLoadState == nil && awsCloudState.IsCompleted {
 			return fmt.Errorf("cluster %s already exists", obj.clusterName)
 		}
@@ -239,27 +248,28 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration str
 				IsCompleted:      false,
 				ClusterName:      obj.clusterName,
 				Region:           obj.region,
-				KubernetesDistro: obj.metadata.k8sName,
+				KubernetesDistro: string(obj.metadata.k8sName),
 				KubernetesVer:    obj.metadata.k8sVersion,
 			}
 		}
 
-	case utils.OPERATION_STATE_DELETE:
+	case OperationStateDelete:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		storage.Logger().Note("[aws] Delete resource(s)")
 
-	case utils.OPERATION_STATE_GET:
+	case OperationStateGet:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		storage.Logger().Note("[aws] Get resources")
 		clusterDirName = awsCloudState.ClusterName + " " + awsCloudState.VPCNAME + " " + awsCloudState.Region
 	default:
-		return errors.New("[aws] Invalid operation for init state")
+		return fmt.Errorf("invalid operation")
 	}
 
+	// TODO return error  ---------------------------------
 	if err := obj.client.InitClient(storage); err != nil {
 		fmt.Errorf("failed to initialize aws client reason:%s\n", err.Error())
 	}
@@ -276,13 +286,6 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration str
 	return nil
 }
 
-func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
-	//TODO implement me
-	fmt.Println("AWS Create Upload SSH Key Pair")
-	return nil
-
-}
-
 func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 	//TODO implement me
 	fmt.Println("AWS Del SSH Key Pair")
@@ -290,13 +293,34 @@ func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 
 }
 
-func (obj *AwsProvider) GetStateForHACluster(factory resources.StorageFactory) (cloud.CloudResourceState, error) {
-	//TODO implement me
-	fmt.Println("AWS Get State for HA Cluster")
+func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
-	str := cloud.CloudResourceState{}
-	return str, nil
+	payload := cloud_control_res.CloudResourceState{
+		SSHState: cloud_control_res.SSHInfo{
+			PathPrivateKey: awsCloudState.SSHPrivateKeyLoc,
+			UserName:       awsCloudState.SSHUser,
+		},
+		Metadata: cloud_control_res.Metadata{
+			ClusterName: awsCloudState.ClusterName,
+			Provider:    "aws",
+			Region:      awsCloudState.Region,
+			ClusterType: clusterType,
+			ClusterDir:  clusterDirName,
+		},
+		// public IPs
+		IPv4ControlPlanes: awsCloudState.InfoControlPlanes.PublicIPs,
+		IPv4DataStores:    awsCloudState.InfoDatabase.PublicIPs,
+		IPv4WorkerPlanes:  awsCloudState.InfoWorkerPlanes.PublicIPs,
+		IPv4LoadBalancer:  awsCloudState.InfoLoadBalancer.PublicIP,
 
+		// Private IPs
+		PrivateIPv4ControlPlanes: awsCloudState.InfoControlPlanes.PrivateIPs,
+		PrivateIPv4DataStores:    awsCloudState.InfoDatabase.PrivateIPs,
+		PrivateIPv4LoadBalancer:  awsCloudState.InfoLoadBalancer.PrivateIP,
+	}
+
+	storage.Logger().Success("[azure] Transferred Data, it's ready to be shipped!")
+	return payload, nil
 }
 
 func (obj *AwsProvider) NewManagedCluster(factory resources.StorageFactory, i int) error {
@@ -313,25 +337,43 @@ func (obj *AwsProvider) DelManagedCluster(factory resources.StorageFactory) erro
 
 }
 
-func (obj *AwsProvider) Role(s string) resources.CloudFactory {
-	obj.metadata.role = s
-	return nil
+func (obj *AwsProvider) Role(resRole KsctlRole) resources.CloudFactory {
+
+	obj.mxRole.Lock()
+
+	switch resRole {
+	case RoleCp, RoleDs, RoleLb, RoleWp:
+		obj.metadata.role = resRole
+		return obj
+	default:
+		var logFactory logger.LogFactory = &logger.Logger{}
+		logFactory.Err("invalid role assumed")
+		return nil
+	}
 
 }
 
-func (obj *AwsProvider) VMType(s string) resources.CloudFactory {
-	//TODO implement me
-	fmt.Println("AWS VM Type")
-	return nil
 
+func (obj *AwsProvider) VMType(size string) resources.CloudFactory {
+	//TODO implement me as soon as possible :)
+
+	//obj.mxVMType.Lock()
+	//obj.metadata.vmType = size
+	//if err := isValidVMSize(obj, size); err != nil {
+	//	var logFactory logger.LogFactory = &logger.Logger{}
+	//	logFactory.Err(err.Error())
+	//	return nil
+	//}
+	return obj
 }
 
 func (obj *AwsProvider) Visibility(b bool) resources.CloudFactory {
 	//TODO implement me
 	fmt.Println("AWS Visibility")
-	return nil
+	return obj
 
 }
+
 
 func (obj *AwsProvider) SupportForApplications() bool {
 	//TODO implement me
@@ -347,17 +389,17 @@ func (obj *AwsProvider) SupportForCNI() bool {
 
 }
 
-func (obj *AwsProvider) Application(s string) resources.CloudFactory {
+func (obj *AwsProvider) Application(s string) bool {
 	//TODO implement me
 	fmt.Println("AWS Application")
-	return nil
+	return true
 
 }
 
-func (obj *AwsProvider) CNI(s string) resources.CloudFactory {
+func (obj *AwsProvider) CNI(s string) bool {
 	//TODO implement me
 	fmt.Println("AWS CNI")
-	return nil
+	return true
 
 }
 
@@ -404,4 +446,30 @@ func (obj *AwsProvider) SwitchCluster(factory resources.StorageFactory) error {
 	fmt.Println("AWS Switch Cluster")
 	return nil
 
+}
+
+func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[string][]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func isValidVMSize(obj *AwsProvider, size string) error {
+	// TODO implement me
+	validSize, err := obj.client.ListVMTypes()
+	if err != nil {
+		return err
+	}
+
+	for _, valid := range validSize {
+		if valid == size {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("INVALID VM SIZE\nValid options %v\n", validSize)
 }

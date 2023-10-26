@@ -7,11 +7,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/kubesimplify/ksctl/api/resources"
+
+	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
 func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	_ = obj.metadata.resName
+	obj.mxName.Unlock()
+
 	if len(awsCloudState.VPCID) != 0 {
 		storage.Logger().Success("[skip] already created the vpc", awsCloudState.VPCNAME)
 	}
@@ -71,7 +74,6 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	if obj.haCluster {
 		virtNet := obj.clusterName + "-vnet"
 		subNet := obj.clusterName + "-subnet"
-		// virtual net
 
 		if err := obj.CreateSubnet(ctx, storage, subNet); err != nil {
 			return err
@@ -97,7 +99,6 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 		CidrBlock: aws.String("172.31.32.0/20"),
 		VpcId:     aws.String(awsCloudState.VPCID),
 
-		// add ip v6 cidr block like from all the cidr blocks
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceType("subnet"),
@@ -122,8 +123,6 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 	awsCloudState.SubnetID = *response.Subnet.SubnetId
 	awsCloudState.SubnetName = *response.Subnet.Tags[0].Value
 
-	// now edit the configuration of subnet
-	// enable auto assign ip v4
 	modifyusbnetinput := &ec2.ModifySubnetAttributeInput{
 		SubnetId: aws.String(awsCloudState.SubnetID),
 		MapPublicIpOnLaunch: &types.AttributeBooleanValue{
@@ -163,7 +162,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 	storage.Logger().Success("[aws] created the network acl ", *naclresp.NetworkAcl.NetworkAclId)
 
 	_, err = obj.ec2Client().CreateNetworkAclEntry(ctx, &ec2.CreateNetworkAclEntryInput{
-		// we will allow all the traffic
+		// ALLOW ALL TRAFFIC
 		NetworkAclId: aws.String(NACLID),
 		RuleNumber:   aws.Int32(100),
 		Protocol:     aws.String("-1"),
@@ -224,7 +223,6 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resour
 		return err
 	}
 
-	// now attach the route table to the subnet
 	_, err = obj.ec2Client().AssociateRouteTable(ctx, &ec2.AssociateRouteTableInput{
 		RouteTableId: aws.String(*routeresponce.RouteTable.RouteTableId),
 		SubnetId:     aws.String(awsCloudState.SubnetID),
@@ -232,15 +230,6 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resour
 
 	storage.Logger().Success("[aws] created the internet gateway ", *gatewayresp.InternetGateway.InternetGatewayId)
 	storage.Logger().Success("[aws] created the route table ", *routeresponce.RouteTable.RouteTableId)
-
-	// 3. Create  Internet Gateway            DONE
-	// 4. Create  Route Table				  DONE
-	// 5. Create  Firewall aka Security Group in AWS       implemented later on based on nodes role like worker or master
-	// 6. Create Load Balancer				 TODO
-	// create lb
-	// create target group
-	// register target group
-	// create listener
 
 	return nil
 }

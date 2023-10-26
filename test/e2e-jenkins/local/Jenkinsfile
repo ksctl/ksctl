@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Local Managed') {
+            steps{
+                sh '''
+                    #!/bin/bash
+
+					cd test/e2e
+
+					/usr/local/go/bin/go run . -op create -file local/create.json
+
+                    /usr/local/go/bin/go run . -op get -file local/get.json
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/local/managed/test-e2e-local/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+
+        stage('Test Switching') {
+            steps {
+                sh '''
+                    #!/bin/bash
+
+					cd test/e2e
+
+					/usr/local/go/bin/go run . -op switch -file local/switch.json
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                #!/bin/bash
+
+				cd test/e2e
+				/usr/local/go/bin/go run . -op delete -file local/delete.json
+            '''
+        }
+    }
+}

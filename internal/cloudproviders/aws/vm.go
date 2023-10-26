@@ -4,23 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
+	"strconv"
+
+	"github.com/kubesimplify/ksctl/pkg/resources"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elb_types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
-	"github.com/kubesimplify/ksctl/api/resources"
-	"github.com/kubesimplify/ksctl/api/utils"
-)
 
-var (
-	awsCloudState *StateConfiguration
-	GatewayID     string
-	RouteTableID  string
-	VPCID         string
-	SUBNETID      []string
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func (obj *AwsProvider) ec2Client() *ec2.Client {
@@ -33,12 +27,9 @@ func (obj *AwsProvider) vpcClienet() ec2.CreateVpcInput {
 
 	vpcClient := ec2.CreateVpcInput{
 		CidrBlock: aws.String("172.31.0.0/16"),
-		// Dry run is used to check if the request is valid
-		// without actually creating the VPC.
 	}
 	fmt.Println("VPC Client Created Successfully")
 	return vpcClient
-
 }
 
 func (obj *AwsProvider) CreateVPC() {
@@ -51,8 +42,7 @@ func (obj *AwsProvider) CreateVPC() {
 		fmt.Println("Error Creating VPC")
 		log.Println(err)
 	}
-	VPCID = *vpc.Vpc.VpcId
-	// awsCloudState.VPC = *vpc.Vpc.VpcId
+	awsCloudState.VPCID = *vpc.Vpc.VpcId
 	fmt.Print("VPC Created Successfully: ")
 	fmt.Println(*vpc.Vpc.VpcId)
 
@@ -90,7 +80,7 @@ func (obj *AwsProvider) CreateInternetGateway() error {
 	}
 	GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 	fmt.Println(*createInternetGateway.InternetGateway.InternetGatewayId)
-	// awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
+	awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 	fmt.Print("Internet Gateway Created Successfully: ")
 
 	return nil
@@ -149,14 +139,6 @@ func (obj *AwsProvider) CreateRouteTable() {
 
 }
 
-/*
-	create lb   				DONE
-	create target group			DONE
-	register target group		DONE
-	create listener				DONE
-*/
-
-// TODO: Use elb v2 client
 func (obj *AwsProvider) ElbClient() *elasticloadbalancingv2.Client {
 	elbv2Client := elasticloadbalancingv2.NewFromConfig(obj.session)
 
@@ -168,24 +150,25 @@ var (
 	GARN   *elasticloadbalancingv2.CreateTargetGroupOutput
 )
 
-func (obj *AwsProvider) CreateLB() (*elasticloadbalancingv2.CreateLoadBalancerOutput, error) {
-
-	LBCLIENT := obj.ElbClient()
-	LB_ARN, err := LBCLIENT.CreateLoadBalancer(context.TODO(), &elasticloadbalancingv2.CreateLoadBalancerInput{
-		Name:           aws.String("new" + "-lb"),
-		Scheme:         elb_types.LoadBalancerSchemeEnumInternetFacing,
-		IpAddressType:  elb_types.IpAddressType("ipv4"),
-		SecurityGroups: []string{awsCloudState.SecurityGroupID},
-		Subnets:        []string{awsCloudState.SubnetID},
-		Type:           elb_types.LoadBalancerTypeEnumApplication,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-	GLBARN = LB_ARN
-	return LB_ARN, nil
-
-}
+//// TODO : NOT CONFIRMED
+//func (obj *AwsProvider) CreateLB() (*elasticloadbalancingv2.CreateLoadBalancerOutput, error) {
+//
+//	LBCLIENT := obj.ElbClient()
+//	LB_ARN, err := LBCLIENT.CreateLoadBalancer(context.TODO(), &elasticloadbalancingv2.CreateLoadBalancerInput{
+//		Name:           aws.String("new" + "-lb"),
+//		Scheme:         elb_types.LoadBalancerSchemeEnumInternetFacing,
+//		IpAddressType:  elb_types.IpAddressType("ipv4"),
+//		SecurityGroups: []string{awsCloudState.SecurityGroupID},
+//		Subnets:        []string{awsCloudState.SubnetID},
+//		Type:           elb_types.LoadBalancerTypeEnumApplication,
+//	})
+//	if err != nil {
+//		log.Println(err)
+//	}
+//	GLBARN = LB_ARN
+//	return LB_ARN, nil
+//
+//}
 
 func (obj *AwsProvider) CreateTargetGroup() (*elasticloadbalancingv2.CreateTargetGroupOutput, error) {
 
@@ -273,131 +256,52 @@ func (obj *AwsProvider) CreateListener() {
 
 }
 
-func (obj *AwsProvider) PublicIP(storage resources.StorageFactory, publicIPName string, index int) error {
-
-	publicIP := ""
-	switch obj.metadata.role {
-	case utils.ROLE_WP:
-		publicIP = awsCloudState.InfoWorkerPlanes.PublicIPNames[index]
-	case utils.ROLE_CP:
-		publicIP = awsCloudState.InfoControlPlanes.PublicIPNames[index]
-	case utils.ROLE_LB:
-		publicIP = awsCloudState.InfoLoadBalancer.PublicIP
-	case utils.ROLE_DS:
-		publicIP = awsCloudState.InfoDatabase.PublicIPNames[index]
-	}
-	if len(publicIP) != 0 {
-		storage.Logger().Success("[skip] pub ip already created", publicIP)
-		return nil
-	}
-
-	client := obj.ec2Client()
-	Ipv4Pool, err := client.CreatePublicIpv4Pool(context.TODO(), &ec2.CreatePublicIpv4PoolInput{
-		TagSpecifications: []types.TagSpecification{
-			{
-				Tags: []types.Tag{
-					{
-						Key:   aws.String(obj.metadata.resName),
-						Value: aws.String("value"),
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	parameters := &ec2.DescribeAddressesInput{
-		Filters: []types.Filter{
-			{
-				Name:   aws.String("domain"),
-				Values: []string{"vpc"},
-			},
-		},
-		AllocationIds: []string{
-			*Ipv4Pool.PoolId,
-		},
-	}
-	ipaddress, err := client.DescribeAddresses(context.Background(), parameters)
-	if err != nil {
-		log.Println(err)
-	}
-	if ipaddress.Addresses == nil {
-		fmt.Printf("No elastic IPs for %s region\n", obj.region)
-		return err
-	}
-	fmt.Println("Elastic IPs")
-	for _, addr := range ipaddress.Addresses {
-		fmt.Println("*", fmtAddress(&addr))
-	}
-
-	// TODO its just a pool create the public ip
-	allocateIp, err := client.AllocateAddress(context.Background(), &ec2.AllocateAddressInput{
-		Domain:                types.DomainType("vpc"),
-		CustomerOwnedIpv4Pool: aws.String(*Ipv4Pool.PoolId),
-		TagSpecifications: []types.TagSpecification{
-			{
-				ResourceType: types.ResourceType("elastic-ip"),
-				Tags: []types.Tag{
-					{
-						Key:   aws.String(obj.metadata.resName),
-						Value: aws.String("value"),
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		log.Println(err)
-	}
-	if allocateIp.CustomerOwnedIpv4Pool != aws.String(*Ipv4Pool.PoolId) {
-		fmt.Println("Elastic IP is not allocated from the pool")
-		return nil
-	}
-	fmt.Println("Public IP Created Successfully: ", allocateIp.PublicIp)
-	return nil
-}
-
-func fmtAddress(addr *types.Address) string {
-	out := fmt.Sprintf("IP: %s,  allocation id: %s",
-		*aws.String(*addr.PublicIp), *aws.String(*addr.PublicIp))
-	if addr.InstanceId != nil {
-		out += fmt.Sprintf(", instance-id: %s", *addr.InstanceId)
-	}
-	return out
-}
-
 // TODO add EBS volume to the VM and attach it to the instance
 
 // TODO ADD A GLOBAL FUNTION THAT WILL HAVE THE ALL OUTPUTS
 
 // Sequence of steps to create a VM
 // 1. Create  VPC										DONE
-// 2. Create  Subnet									DONE TODO ADD MORE PARAMETERS
-// 3. Create  Internet Gateway							DONE  TESTING PENDING
-// 4. Create  Route Table								DONE  TESTING PENDING
-// 5. Create  Firewall aka Security Group in AWS		DONE  TESTING PENDING
-// 6. Create Load Balancer								DONE  TESTING PENDING
-// 7. Create Public IP									DONE  TESTING PENDING
-// 8. OS IAMGE											TODO  TESTING PENDING
+// 2. Create  Subnet									DONE
+// 3. Create  Internet Gateway							DONE
+// 4. Create  Route Table								DONE
+// 5. Create  Firewall aka Security Group in AWS		DONE
+// 6. Create Load Balancer								DONE
+// 7. Create Public IP									DONE
+// 8. OS IAMGE											DONE
 // 9. Generate SSH Key
 // 10. Create VM
 
 // TODO Refactor all the code same as various providor
 
-func (obj *AwsProvider) DelVM(factory resources.StorageFactory, i int) error {
-	//TODO implement me
-	fmt.Println("AWS Del VM")
+func (obj *AwsProvider) DelVM(factory resources.StorageFactory, index int) error {
+
+	//role := obj.metadata.role
+	//indexNo := index
+	//obj.mxRole.Unlock()
+	//
+	////ec2Client := obj.ec2Client()
+	//
+	////vmName := ""
+	//switch role {
+	//case ROLE_CP:
+	//	vmName = awsCloudState.InfoControlPlanes.Names[indexNo]
+	//case ROLE_DS:
+	//	vmName = awsCloudState.InfoDatabase.Names[indexNo]
+	//case ROLE_LB:
+	//	vmName = awsCloudState.InfoLoadBalancer.Name
+	//case ROLE_WP:
+	//	vmName = awsCloudState.InfoWorkerPlanes.Names[indexNo]
+	//}
+
 	return nil
 }
 
 var NICID string
 
-func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role string, inistanceid string) (*ec2.CreateNetworkInterfaceOutput, error) {
+func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role KsctlRole) (*ec2.CreateNetworkInterfaceOutput, error) {
 
-	// to create networkinterface we need subnetid, securitygroup, availabilityzone, availabilityzoneid, osimage, sshkey, instanceprofile
-	// ipv6addresscount, ipv6pool
+	groupid_role, err := fetchgroupid(role)
 
 	interfaceparameter := &ec2.CreateNetworkInterfaceInput{
 		Description: aws.String("network interface"),
@@ -408,18 +312,18 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 				Tags: []types.Tag{
 					{
 						Key:   aws.String(obj.metadata.resName),
-						Value: aws.String("value"),
+						Value: aws.String(string(role) + strconv.Itoa(index) + resName),
 					},
 				},
 			},
 		},
 		Groups: []string{
-			awsCloudState.SecurityGroupID,
+			groupid_role,
 		},
 	}
 
 	vniclient := obj.ec2Client()
-	nicresponse, err := vniclient.CreateNetworkInterface(context.Background(), interfaceparameter)
+	nicresponse, err := vniclient.CreateNetworkInterface(ctx, interfaceparameter)
 	if err != nil {
 		log.Println(err)
 	}
@@ -449,38 +353,40 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	// }
 
 	storage.Logger().Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
-	// storage.Logger().Success("[aws] attached the network interface ", *resp.AttachmentId)
 
 	return nicresponse, nil
 
 }
 
 func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
-	if obj.metadata.role == utils.ROLE_DS && indexNo > 0 {
+
+	//name := obj.metadata.resName
+	role := obj.metadata.role
+	//vmtype := obj.metadata.vmType
+
+	obj.mxRole.Unlock()
+	obj.mxName.Unlock()
+
+	if obj.metadata.role == RoleDs && indexNo > 0 {
 		storage.Logger().Note("[skip] currently multiple datastore not supported")
 		return nil
 	}
 
+	stringindexNo := fmt.Sprintf("%d", indexNo)
 	ec2Client := obj.ec2Client()
 
-	err := obj.NewFirewall(storage)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	_, err = obj.CreateNetworkInterface(context.TODO(), storage, obj.metadata.resName, indexNo, obj.metadata.role, "")
+	_, err := obj.CreateNetworkInterface(context.TODO(), storage, obj.metadata.resName, indexNo, obj.metadata.role)
 	if err != nil {
 		panic("Error creating network interface: " + err.Error())
 	}
 
 	parameter := &ec2.RunInstancesInput{
 		// use awslinux image id ---->   ami-0e306788ff2473ccb
-		ImageId:      aws.String("ami-0e306788ff2473ccb"),
+		ImageId:      aws.String("ami-067c21fb1979f0b27"),
 		InstanceType: types.InstanceTypeT2Micro,
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
 		KeyName:      aws.String("ksctl"),
-		// SubnetId:     aws.String(awsCloudState.SubnetID),
 		Monitoring: &types.RunInstancesMonitoringEnabled{
 			Enabled: aws.Bool(true),
 		},
@@ -493,6 +399,10 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 			{
 				ResourceType: types.ResourceType("instance"),
 				Tags: []types.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(string(role) + stringindexNo),
+					},
 					{
 						Key:   aws.String(obj.metadata.resName),
 						Value: aws.String("value"),
@@ -508,19 +418,6 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 				// AssociatePublicIpAddress: aws.Bool(true),
 			},
 		},
-
-		// EbsOptimized: aws.Bool(true),
-		// BlockDeviceMappings: []types.BlockDeviceMapping{
-		// 	{
-		// 		DeviceName: aws.String("/dev/sda1"),
-		// 		Ebs: &types.EbsBlockDevice{
-		// 			DeleteOnTermination: aws.Bool(true),
-		// 			VolumeSize:          aws.Int32(8),
-		// 			VolumeType:          types.VolumeType("gp2"),
-		// 		},
-		// 	},
-		// },
-
 	}
 
 	instanceop, err := ec2Client.RunInstances(context.Background(), parameter)
@@ -529,13 +426,38 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		panic("Error creating EC2 instance: " + err.Error())
 	}
 
-	// _, err = obj.CreatePublicIP(context.Background(), storage, obj.metadata.resName, indexNo, obj.metadata.role, *instanceop.Instances[0].InstanceId)
-	// if err != nil {
-	// 	panic("Error creating public ip: " + err.Error())
-	// }
+
+	// TODO : make sure err not fue to vm type mutex
+	
+	done := make(chan struct{})
+	var errCreate error
+	go func() {
+		defer close(done)
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
+
+		switch role {
+		case RoleWp:
+			awsCloudState.InfoWorkerPlanes.PublicIPs[indexNo] = *instanceop.Instances[0].PublicIpAddress
+		case RoleCp:
+			awsCloudState.InfoControlPlanes.PublicIPs[indexNo] = *instanceop.Instances[0].PublicIpAddress
+		case RoleLb:
+			awsCloudState.InfoLoadBalancer.PublicIP = *instanceop.Instances[0].PublicIpAddress
+		case RoleDs:
+			awsCloudState.InfoDatabase.PublicIPs[indexNo] = *instanceop.Instances[0].PublicIpAddress
+		}
+		if err := saveStateHelper(storage); err != nil {
+			errCreate = err
+			fmt.Println(err)
+			return
+		}
+	}()
+	<-done
+	if errCreate != nil {
+		return errCreate
+	}
 
 	storage.Logger().Success("[aws] created the instance ", *instanceop.Instances[0].InstanceId)
-	time.Sleep(300 * time.Second)
 	return nil
 }
 
@@ -572,4 +494,19 @@ func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.St
 func (obj *AwsProvider) DeleteDisk(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
 
 	return nil
+}
+
+func fetchgroupid(role KsctlRole) (string, error) {
+	switch role {
+	case RoleCp:
+		return awsCloudState.SecurityGroupID[0], nil
+	case RoleWp:
+		return awsCloudState.SecurityGroupID[1], nil
+	case RoleLb:
+		return awsCloudState.SecurityGroupID[2], nil
+	case RoleDs:
+		return awsCloudState.SecurityGroupID[3], nil
+
+	}
+	return "", fmt.Errorf("No security group found for role %s", role)
 }
