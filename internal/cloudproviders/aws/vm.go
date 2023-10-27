@@ -331,26 +331,6 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	NICID = *nicresponse.NetworkInterface.NetworkInterfaceId
 	// wait until the instance state comes from pending to running use
 	// time.Sleep(10 * time.Second)
-	// var state string
-	// for state != "16" {
-	// 	vmstate, err := vniclient.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
-	// 		InstanceIds: []string{inistanceid},
-	// 	})
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-	// 	state = string(*vmstate.InstanceStatuses[1].InstanceState.Code)
-	// }
-
-	// _, err = vniclient.AttachNetworkInterface(context.Background(), &ec2.AttachNetworkInterfaceInput{
-	// 	DeviceIndex:        aws.Int32(0),
-	// 	InstanceId:         aws.String(inistanceid),
-	// 	NetworkInterfaceId: nicresponse.NetworkInterface.NetworkInterfaceId,
-	// 	// SkipSourceDestCheck: aws.Bool(true),
-	// })
-	// if err != nil {
-	// 	log.Println(err)
-	// }
 
 	storage.Logger().Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
 
@@ -386,7 +366,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		InstanceType: types.InstanceTypeT2Micro,
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
-		KeyName:      aws.String("ksctl"),
+		KeyName:      aws.String("testkeypair"),
 		Monitoring: &types.RunInstancesMonitoringEnabled{
 			Enabled: aws.Bool(true),
 		},
@@ -426,9 +406,39 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		panic("Error creating EC2 instance: " + err.Error())
 	}
 
+	var state int32 = 0
+	for {
+		vmstate, err := ec2Client.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
+			InstanceIds: []string{*instanceop.Instances[0].InstanceId},
+		})
+		if err != nil {
+			log.Println(err)
+		}
+		state = *vmstate.InstanceStatuses[0].InstanceState.Code
+		if state == 16 {
+			storage.Logger().Success("[aws] instance running ")
+			break
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	// get the instance public ip
+	instanceip := &ec2.DescribeInstancesInput{
+		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
+	}
+
+	instance_ip, err := ec2Client.DescribeInstances(context.Background(), instanceip)
+	if err != nil {
+		return err
+	}
+
+	publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
+	fmt.Println(*publicip)
 
 	// TODO : make sure err not fue to vm type mutex
-	
+
 	done := make(chan struct{})
 	var errCreate error
 	go func() {
@@ -438,13 +448,14 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 		switch role {
 		case RoleWp:
-			awsCloudState.InfoWorkerPlanes.PublicIPs[indexNo] = *instanceop.Instances[0].PublicIpAddress
+
+			awsCloudState.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
 		case RoleCp:
-			awsCloudState.InfoControlPlanes.PublicIPs[indexNo] = *instanceop.Instances[0].PublicIpAddress
+			awsCloudState.InfoControlPlanes.PublicIPs[indexNo] = *publicip
 		case RoleLb:
-			awsCloudState.InfoLoadBalancer.PublicIP = *instanceop.Instances[0].PublicIpAddress
+			awsCloudState.InfoLoadBalancer.PublicIP = *publicip
 		case RoleDs:
-			awsCloudState.InfoDatabase.PublicIPs[indexNo] = *instanceop.Instances[0].PublicIpAddress
+			awsCloudState.InfoDatabase.PublicIPs[indexNo] = *publicip
 		}
 		if err := saveStateHelper(storage); err != nil {
 			errCreate = err
@@ -454,6 +465,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	}()
 	<-done
 	if errCreate != nil {
+		fmt.Println(errCreate)
 		return errCreate
 	}
 
