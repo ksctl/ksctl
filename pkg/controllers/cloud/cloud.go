@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	awspkg "github.com/kubesimplify/ksctl/internal/cloudproviders/aws"
 	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
 	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	localPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/local"
@@ -36,6 +37,16 @@ func HydrateCloud(client *resources.KsctlClient, operation KsctlOperation, fakeC
 		if err != nil {
 			return fmt.Errorf("[cloud] " + err.Error())
 		}
+	case CloudAws:
+		if !fakeClient {
+			client.Cloud, err = awspkg.ReturnAwsStruct(client.Metadata, awspkg.ProvideClient)
+		} else {
+			client.Cloud, err = awspkg.ReturnAwsStruct(client.Metadata, awspkg.ProvideMockClient)
+		}
+		if err != nil {
+			return fmt.Errorf("[cloud] " + err.Error())
+		}
+
 	case CloudLocal:
 		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata)
 		if err != nil {
@@ -334,6 +345,16 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
+	err = client.Cloud.Name(client.Metadata.ClusterName+"-vm-lb").
+		Role(RoleLb).
+		VMType(client.Metadata.LoadBalancerNodeType).
+		Visibility(true).
+		NewVM(client.Storage, 0)
+	if err != nil {
+		print(err)
+		return err
+	}
+
 	//////
 	wg := &sync.WaitGroup{}
 	errChanLB := make(chan error, 1)
@@ -428,6 +449,8 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		}
 	}
 
+	println("ALL VMs CREATED")
+	time.Sleep(20 * time.Second)
 	return nil
 }
 
