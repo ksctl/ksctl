@@ -69,6 +69,7 @@ Connect ksctl cli to your [Civo](https://kubesimplify.github.io/ksctl/docs/provi
 - [Ksctl Core](https://github.com/kubesimplify/ksctl)
 - [Ksctl CLI](https://github.com/kubesimplify/ksctl-cli)
 - [Ksctl Dashboard](https://github.com/kubesimplify/ksctl-dashboard)
+- [Ksctl Docs](https://github.com/kubesimplify/ksctl-docs)
 
 # Prerequisites
 
