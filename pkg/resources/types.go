@@ -22,13 +22,16 @@ type KsctlClient struct {
 }
 
 type Metadata struct {
-	ClusterName   string                 `json:"cluster_name"`
-	Region        string                 `json:"region"`
+	ClusterName string `json:"cluster_name"`
+	Region      string `json:"region"`
+
 	Provider      consts.KsctlCloud      `json:"cloud_provider"`
 	K8sDistro     consts.KsctlKubernetes `json:"kubernetes_distro"`
-	K8sVersion    string                 `json:"kubernetes_version"`
 	StateLocation consts.KsctlStore      `json:"storage_type"`
-	IsHA          bool                   `json:"ha_cluster"`
+
+	IsHA bool `json:"ha_cluster"`
+
+	K8sVersion string `json:"kubernetes_version"`
 
 	ManagedNodeType      string `json:"node_type_managed"`
 	WorkerPlaneNodeType  string `json:"node_type_workerplane"`

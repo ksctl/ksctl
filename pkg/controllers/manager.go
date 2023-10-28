@@ -3,6 +3,8 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"github.com/kubesimplify/ksctl/internal/logger"
+	"io"
 	"os"
 	"strings"
 
@@ -50,6 +52,13 @@ func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) (st
 		return "", fmt.Errorf("Currently Local state is supported!")
 	}
 	return "[ksctl] initialized storageFactory", nil
+}
+
+func InitializeLoggerFactory(client *resources.KsctlClient, out io.Writer, verbosity int) (string, error) {
+	client.Logger = new(logger.Logger)
+	client.Logger.New(verbosity, out)
+
+	return "", nil
 }
 
 func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) (string, error) {
