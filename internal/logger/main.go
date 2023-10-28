@@ -9,9 +9,21 @@ import (
 	"strings"
 )
 
+type prefixes []string
+
 type Logger struct {
 	userVerboseLevel int
+	prefixHistory    prefixes
 	customLog        *log.Logger
+}
+
+func (p prefixes) String() string {
+	var str strings.Builder
+
+	for _, s := range p {
+		str.WriteString("[" + s + "]")
+	}
+	return str.String()
 }
 
 func (l *Logger) New(verbose int, out io.Writer) error {
@@ -25,11 +37,19 @@ func (l *Logger) New(verbose int, out io.Writer) error {
 }
 
 func (l *Logger) AppendPrefix(pre string) {
-	l.customLog.SetPrefix(l.customLog.Prefix() + pre)
+	l.prefixHistory = append(l.prefixHistory, pre)
+	l.customLog.SetPrefix(l.prefixHistory.String())
 }
 
-func (l *Logger) ResetSetPrefix(pre string) {
-	l.customLog.SetPrefix("[ksctl]" + pre)
+func (l *Logger) PopPrefix() {
+	l.prefixHistory = l.prefixHistory[:len(l.prefixHistory)-1]
+	l.customLog.SetPrefix(l.prefixHistory.String())
+}
+
+func (l *Logger) ResetPrefix() {
+	l.prefixHistory = prefixes{}
+	l.prefixHistory = append(l.prefixHistory, "ksctl")
+	l.customLog.SetPrefix(l.prefixHistory.String())
 }
 
 func setMessagePrefix(msg resources.LoggerMsgType, format *string, args *[]any) {
@@ -48,7 +68,7 @@ func setMessagePrefix(msg resources.LoggerMsgType, format *string, args *[]any) 
 	if format != nil {
 		*format = msgCode + " " + strings.TrimSpace(*format)
 	} else {
-		*args = append([]any{msgCode}, *args)
+		*args = append([]any{msgCode}, *args...)
 	}
 }
 

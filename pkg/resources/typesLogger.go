@@ -12,7 +12,8 @@ type LoggerFactory interface {
 
 	New(int, io.Writer) error
 	AppendPrefix(string)
-	ResetSetPrefix(string)
+	ResetPrefix()
+	PopPrefix()
 }
 
 type LoggerMsgType string
