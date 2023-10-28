@@ -10,7 +10,7 @@ func main() {
 	var ksctl resources.KsctlClient
 	ksctl.Logger = &logger.Logger{}
 
-	if err := ksctl.Logger.New(3, os.Stdout); err != nil {
+	if err := ksctl.Logger.New(5, os.Stdout); err != nil {
 		panic(err)
 	}
 	{
@@ -20,7 +20,7 @@ func main() {
 	{
 		ksctl.Logger.ResetPrefix()
 		ksctl.Logger.Info(resources.MsgTypeError, "creating")
-		ksctl.Logger.Debug(resources.MsgTypeError, "debug reset")
+		ksctl.Logger.Debug(resources.MsgTypeError, "debug reset", ksctl)
 		{
 			ksctl.Logger.AppendPrefix("block 2 inner")
 			ksctl.Logger.Info(resources.MsgTypeError, "poped")
@@ -30,5 +30,5 @@ func main() {
 		ksctl.Logger.ResetPrefix()
 		ksctl.Logger.Info(resources.MsgTypeWarn, "creating cdsjcjneciejdsner dfcs", "wcdascdscdsc")
 	}
-	ksctl.Logger.Infof(resources.MsgTypeSuccess, "Author: %s nice: %v", "working correctly", "nice")
+	ksctl.Logger.Infof(resources.MsgTypeSuccess, "Author: %s nice: %v\t log: %v\n", "working correctly", "nice", ksctl.Logger)
 }
