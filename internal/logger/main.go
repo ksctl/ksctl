@@ -1,118 +1,82 @@
 package logger
 
 import (
-	"errors"
 	"github.com/fatih/color"
-	"github.com/kubesimplify/ksctl/pkg/resources"
 	"io"
-	"log"
-	"strings"
+	"log/slog"
 )
 
-type prefixes []string
-
 type Logger struct {
-	userVerboseLevel int
-	prefixHistory    prefixes
-	customLog        *log.Logger
+	logger     *slog.Logger
+	moduleName string
 }
 
-func (p prefixes) String() string {
-	var str strings.Builder
-
-	for _, s := range p {
-		str.WriteString("[" + s + "]")
-	}
-	return str.String()
+func (l *Logger) SetModule(m string) {
+	l.moduleName = "[" + m + "]"
 }
 
-func (l *Logger) New(verbose int, out io.Writer) error {
-	if verbose > 0 && verbose < 9 {
-		l.userVerboseLevel = verbose
-		l.customLog = log.New(out, "[ksctl]", verbose)
-		return nil
+func (l *Logger) New(verbose int, out io.Writer) {
+	// LevelDebug Level = -4
+	// LevelInfo  Level = 0
+	// LevelWarn  Level = 4
+	// LevelError Level = 8
+
+	var ve slog.Level
+
+	source := false
+	if verbose < 0 {
+		ve = slog.LevelDebug
+		source = true
+	} else if verbose < 4 {
+		ve = slog.LevelInfo
+	} else if verbose < 8 {
+		ve = slog.LevelWarn
 	} else {
-		return errors.New("invalid verbosity level")
+		ve = slog.LevelError
 	}
-}
 
-func (l *Logger) AppendPrefix(pre string) {
-	l.prefixHistory = append(l.prefixHistory, pre)
-	l.customLog.SetPrefix(l.prefixHistory.String())
-}
-
-func (l *Logger) PopPrefix() {
-	l.prefixHistory = l.prefixHistory[:len(l.prefixHistory)-1]
-	l.customLog.SetPrefix(l.prefixHistory.String())
-}
-
-func (l *Logger) ResetPrefix() {
-	l.prefixHistory = prefixes{}
-	l.prefixHistory = append(l.prefixHistory, "ksctl")
-	l.customLog.SetPrefix(l.prefixHistory.String())
-}
-
-func setMessagePrefix(msg resources.LoggerMsgType, format *string, args *[]any) {
-	msgCode := ""
-	switch msg {
-	case resources.MsgTypeSuccess:
-		color.Set(color.FgGreen, color.Bold)
-		msgCode = "[SUCCESS]"
-	case resources.MsgTypeError:
-		color.Set(color.FgHiRed, color.Bold)
-		msgCode = "[ERR]"
-	case resources.MsgTypeWarn:
-		color.Set(color.FgYellow, color.Bold)
-		msgCode = "[WARN]"
-	}
-	if format != nil {
-		*format = msgCode + " " + strings.TrimSpace(*format)
+	if source {
+		l.logger = slog.New(slog.NewJSONHandler(out, &slog.HandlerOptions{
+			AddSource: source,
+			Level:     ve,
+		}))
 	} else {
-		*args = append([]any{msgCode}, *args...)
+		l.logger = slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{
+			AddSource: false,
+			Level:     ve,
+		}))
 	}
 }
 
-func (l *Logger) Info(msg resources.LoggerMsgType, args ...any) {
-	defer color.Unset()
-
-	if l.userVerboseLevel > 3 {
-		// skip
-		return
-	}
-	setMessagePrefix(msg, nil, &args)
-	// create a seeprate function which will append the ...any with the string
-	l.customLog.Println(args...)
+func (l *Logger) Print(msg string, args ...any) {
+	l.logger.Info(l.moduleName+msg, args...)
 }
 
-func (l *Logger) Debug(msg resources.LoggerMsgType, args ...any) {
+func (l *Logger) Success(msg string, args ...any) {
+	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
-
-	if l.userVerboseLevel <= 3 || l.userVerboseLevel > 9 {
-		// skip
-		return
-	}
-	setMessagePrefix(msg, nil, &args)
-	l.customLog.Println(args...)
+	l.logger.Info(l.moduleName+msg, args...)
 }
 
-func (l *Logger) Infof(msg resources.LoggerMsgType, format string, args ...any) {
+func (l *Logger) Note(msg string, args ...any) {
+	color.Set(color.FgBlue, color.Bold)
 	defer color.Unset()
-
-	if l.userVerboseLevel > 3 {
-		// skip
-		return
-	}
-	setMessagePrefix(msg, &format, &args)
-	l.customLog.Printf(format, args...)
+	l.logger.Info(l.moduleName+msg, args...)
 }
 
-func (l *Logger) Debugf(msg resources.LoggerMsgType, format string, args ...any) {
+func (l *Logger) Debug(msg string, args ...any) {
 	defer color.Unset()
+	l.logger.Debug(l.moduleName+msg, args...)
+}
 
-	if l.userVerboseLevel <= 3 || l.userVerboseLevel > 9 {
-		// skip
-		return
-	}
-	setMessagePrefix(msg, &format, &args)
-	l.customLog.Printf(format, args...)
+func (l *Logger) Error(msg string, args ...any) {
+	color.Set(color.FgHiRed, color.Bold)
+	defer color.Unset()
+	l.logger.Error(l.moduleName+msg, args...)
+}
+
+func (l *Logger) Warn(msg string, args ...any) {
+	color.Set(color.FgYellow, color.Bold)
+	defer color.Unset()
+	l.logger.Warn(l.moduleName+msg, args...)
 }

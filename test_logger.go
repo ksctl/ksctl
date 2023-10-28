@@ -1,34 +1,42 @@
 package main
 
 import (
+	"errors"
 	"github.com/kubesimplify/ksctl/internal/logger"
+	controlPkg "github.com/kubesimplify/ksctl/pkg/controllers"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"os"
 )
 
 func main() {
 	var ksctl resources.KsctlClient
-	ksctl.Logger = &logger.Logger{}
+	ksctl.Logger = new(logger.Logger)
 
-	if err := ksctl.Logger.New(5, os.Stdout); err != nil {
+	//{
+	//	civoLog := log.WithGroup("civo")
+	//	civoLog = civoLog.With("err", nil)
+	//	civoLog.Info("Civo started")
+	//}
+
+	if _, err := controlPkg.InitializeLoggerFactory(&ksctl, os.Stdout, -1); err != nil {
 		panic(err)
 	}
+
+	ksctl.Logger.Print("Printed", "type", "demo")
+	ksctl.Logger.Debug("Debugged", "type", "demo")
+	ksctl.Logger.Error("Errored", "type", "demo")
+	ksctl.Logger.Warn("Warned", "type", "demo")
+	ksctl.Logger.Success("Successed", "type", "demo")
+	ksctl.Logger.Note("Noted", "type", "demo")
 	{
-		ksctl.Logger.AppendPrefix("block 1")
-		ksctl.Logger.Info(resources.MsgTypeSuccess, "creating")
+		ksctl.Logger.SetModule("civo")
+		ksctl.Logger.Success("Created the cluster", "ksctlClient", ksctl)
 	}
 	{
-		ksctl.Logger.ResetPrefix()
-		ksctl.Logger.Info(resources.MsgTypeError, "creating")
-		ksctl.Logger.Debug(resources.MsgTypeError, "debug reset", ksctl)
-		{
-			ksctl.Logger.AppendPrefix("block 2 inner")
-			ksctl.Logger.Info(resources.MsgTypeError, "poped")
-		}
+		ksctl.Logger.SetModule("azure")
+		ksctl.Logger.Print("Created the cluster", "ksctlClient", ksctl)
 	}
-	{
-		ksctl.Logger.ResetPrefix()
-		ksctl.Logger.Info(resources.MsgTypeWarn, "creating cdsjcjneciejdsner dfcs", "wcdascdscdsc")
-	}
-	ksctl.Logger.Infof(resources.MsgTypeSuccess, "Author: %s nice: %v\t log: %v\n", "working correctly", "nice", ksctl.Logger)
+
+	ksctl.Logger.SetModule("ksctl")
+	ksctl.Logger.Error("Failed", "Err", errors.New("fake error"))
 }
