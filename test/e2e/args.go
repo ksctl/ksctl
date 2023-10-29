@@ -20,7 +20,7 @@ func GetReqPayload(l *log.Logger) (Operation, resources.Metadata) {
 
 	// Check if required arguments are provided
 	if *arg1 == "" || *arg2 == "" {
-		fmt.Println("Usage: go run main.go -op <value> -file <value>")
+		fmt.Println("Usage: go run log.go -op <value> -file <value>")
 		os.Exit(1)
 	}
 

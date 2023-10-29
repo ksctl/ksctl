@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"io"
+	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 )
 
 type LoggerFactory interface {
@@ -17,7 +17,7 @@ type LoggerFactory interface {
 
 	Debug(string, ...any)
 
-	New(int, io.Writer)
+	SetPackageName(string)
 
-	SetModule(string)
+	Table(data []cloudController.AllClusterData)
 }

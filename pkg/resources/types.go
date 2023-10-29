@@ -14,9 +14,6 @@ type KsctlClient struct {
 	// Storage is the Storage's factory interface
 	Storage StorageFactory
 
-	// Logger is for logging stuff
-	Logger LoggerFactory
-
 	// Metadata is used by the cloudController and manager to use data from cli
 	Metadata Metadata
 }
@@ -46,12 +43,14 @@ type Metadata struct {
 
 	Applications string `json:"preinstalled_apps"`
 	CNIPlugin    string `json:"cni_plugin"`
+
+	LogVerbosity int `json:"log_verbosity"`
 }
 
-// CobraCmd TODO: Move it to the cli repo
-type CobraCmd struct {
-	ClusterName string
-	Region      string
-	Client      KsctlClient
-	Version     string
-}
+//// CobraCmd TODO: Move it to the cli repo
+//type CobraCmd struct {
+//	ClusterName string
+//	Region      string
+//	Client      KsctlClient
+//	Version     string
+//}
