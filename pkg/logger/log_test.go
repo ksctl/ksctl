@@ -3,20 +3,27 @@ package logger
 import (
 	"os"
 	"testing"
+
+	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
 var (
-	logger LogFactory
+	logger resources.LoggerFactory
 )
 
 func TestMain(m *testing.M) {
-	logger = &Logger{Verbose: true}
+	logger = NewDefaultLogger(-1, os.Stdout)
 	exitVal := m.Run()
 
 	os.Exit(exitVal)
 }
 
 func TestPrinters(t *testing.T) {
+
+	t.Run("Paclage name set", func(t *testing.T) {
+		logger.SetPackageName("logger-test")
+	})
+
 	t.Run("Success", func(t *testing.T) {
 		logger.Success("FAKE")
 	})
@@ -26,7 +33,7 @@ func TestPrinters(t *testing.T) {
 	})
 
 	t.Run("Err", func(t *testing.T) {
-		logger.Err("FAKE")
+		logger.Error("FAKE")
 	})
 
 	t.Run("Note", func(t *testing.T) {

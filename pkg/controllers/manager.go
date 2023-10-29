@@ -3,7 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/internal/logger"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"io"
 	"os"
 	"strings"
@@ -17,7 +17,7 @@ import (
 
 	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/controllers/kubernetes"
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -56,7 +56,7 @@ func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) (st
 
 func InitializeLoggerFactory(client *resources.KsctlClient, out io.Writer, verbosity int) (string, error) {
 	client.Logger = new(logger.Logger)
-	client.Logger.New(verbosity, out)
+	client.Logger.NewDefaultLogger(verbosity, out)
 
 	return "", nil
 }

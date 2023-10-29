@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"github.com/kubesimplify/ksctl/pkg/logger"
 	"os"
 )
 
@@ -29,7 +28,4 @@ type StorageFactory interface {
 
 	// GetFolders returns the folder's contents
 	GetFolders() ([][]string, error)
-
-	// Logger to access logger
-	Logger() logger.LogFactory
 }
