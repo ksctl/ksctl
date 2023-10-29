@@ -89,6 +89,12 @@ func (l *Logger) Error(msg string, args ...any) {
 	l.logger.Error(msg, args...)
 }
 
+func (l *Logger) NewError(format string, args ...any) error {
+	l.Error(format, args...)
+	args = append([]any{"package", l.moduleName}, args...)
+	return fmt.Errorf(format, args...)
+}
+
 func (l *Logger) Warn(msg string, args ...any) {
 	color.Set(color.FgYellow, color.Bold)
 	defer color.Unset()

@@ -2,6 +2,7 @@ package resources
 
 import (
 	consts "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"io"
 )
 
 type KsctlClient struct {
@@ -44,7 +45,8 @@ type Metadata struct {
 	Applications string `json:"preinstalled_apps"`
 	CNIPlugin    string `json:"cni_plugin"`
 
-	LogVerbosity int `json:"log_verbosity"`
+	LogVerbosity int       `json:"log_verbosity"`
+	LogWritter   io.Writer `json:"log_writter"`
 }
 
 //// CobraCmd TODO: Move it to the cli repo

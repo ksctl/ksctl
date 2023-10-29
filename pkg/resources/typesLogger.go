@@ -5,19 +5,21 @@ import (
 )
 
 type LoggerFactory interface {
-	Print(string, ...any)
+	Print(msg string, v ...any)
 
-	Success(string, ...any)
+	Success(msg string, v ...any)
 
-	Note(string, ...any)
+	Note(msg string, v ...any)
 
-	Warn(string, ...any)
+	Warn(msg string, v ...any)
 
-	Error(string, ...any)
+	Error(msg string, v ...any)
 
-	Debug(string, ...any)
+	Debug(msg string, v ...any)
 
-	SetPackageName(string)
+	SetPackageName(name string)
+
+	NewError(format string, v ...any) error
 
 	Table(data []cloudController.AllClusterData)
 }
