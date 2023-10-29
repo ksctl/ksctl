@@ -3,8 +3,6 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/pkg/logger"
-	"io"
 	"os"
 	"strings"
 
@@ -23,6 +21,10 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+)
+
+var (
+	log resources.LoggerFactory
 )
 
 type KsctlControllerClient struct{}
@@ -52,13 +54,6 @@ func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) (st
 		return "", fmt.Errorf("Currently Local state is supported!")
 	}
 	return "[ksctl] initialized storageFactory", nil
-}
-
-func InitializeLoggerFactory(client *resources.KsctlClient, out io.Writer, verbosity int) (string, error) {
-	client.Logger = new(logger.Logger)
-	client.Logger.NewDefaultLogger(verbosity, out)
-
-	return "", nil
 }
 
 func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) (string, error) {

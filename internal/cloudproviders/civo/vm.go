@@ -1,7 +1,6 @@
 package civo
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/civo/civogo"
@@ -39,7 +38,7 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 		if len(pubIP) != 0 && len(pvIP) != 0 {
 			// all info present
 			if creationMode {
-				storage.Logger().Success("[skip] vm found", instID)
+				log.Print("skipped vm found", instID)
 			}
 			return nil
 		} else {
@@ -49,10 +48,9 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 		}
 	}
 	if creationMode {
-		return fmt.Errorf("[civo] vm not found")
+		return log.NewError("vm not found")
 	}
-	return fmt.Errorf("[skip] already deleted vm having role: %s", role)
-
+	return log.NewError("skipped already deleted vm having role: %s", role)
 }
 
 // NewVM implements resources.CloudFactory.
@@ -66,15 +64,16 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 	obj.mxName.Unlock()
 	obj.mxVMType.Unlock()
 
+	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
+
 	if role == RoleDs && indexNo > 0 {
-		storage.Logger().Note("[skip] currently multiple datastore not supported", name)
+		log.Note("skipped currently multiple datastore not supported", "vmName", name)
 		return nil
 	}
 
 	err := obj.foundStateVM(storage, indexNo, true, role, name)
 	if err == nil {
-		return err
-
+		return log.NewError(err.Error())
 	}
 
 	publicIP := "create"
@@ -84,7 +83,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 
 	diskImg, err := obj.client.GetDiskImageByName("ubuntu-focal")
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	firewallID := ""
@@ -115,12 +114,13 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 		// Script:           initializationScript,  // TODO: add the os updates and other non necessary things before we try to configure in kubernetes may be security fixes
 	}
 
-	storage.Logger().Print("[civo] Creating vm", name)
+	log.Debug("Printing", "instanceConfig", instanceConfig)
+	log.Print("Creating vm", "name", name)
 
 	var inst *civogo.Instance
 	inst, err = obj.client.CreateInstance(instanceConfig)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	done := make(chan struct{})
@@ -156,7 +156,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 			return
 		}
 
-		storage.Logger().Success("[civo] Created vm", name)
+		log.Success("Created vm", "vmName", name)
 
 		close(done)
 	}()
@@ -173,9 +173,11 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 	role := obj.metadata.role
 	obj.mxRole.Unlock()
 
+	log.Debug("Printing", "role", role, "indexNo", indexNo)
+
 	err := obj.foundStateVM(storage, indexNo, false, role, "")
 	if err != nil {
-		storage.Logger().Success(err.Error())
+		log.Success(err.Error())
 		return nil
 	}
 
@@ -186,6 +188,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 	switch role {
 	case RoleCp:
 		instID = civoCloudState.InstanceIDs.ControlNodes[indexNo]
+		log.Debug("Printing", "instID", instID)
 
 		go func() {
 			defer close(done)
@@ -209,8 +212,9 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				errCreateVM = err
 				return
 			}
+
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			storage.Logger().Success("[civo] Deleted vm", instID)
+			log.Success("Deleted vm", instID)
 		}()
 
 		<-done
@@ -219,6 +223,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 		go func() {
 			defer close(done)
 			instID = civoCloudState.InstanceIDs.WorkerNodes[indexNo]
+			log.Debug("Printing", "instID", instID)
+
 			_, err := obj.client.DeleteInstance(instID)
 			if err != nil {
 				errCreateVM = err
@@ -237,7 +243,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				return
 			}
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			storage.Logger().Success("[civo] Deleted vm", instID)
+			log.Success("Deleted vm", instID)
 		}()
 		<-done
 
@@ -245,6 +251,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 		go func() {
 			defer close(done)
 			instID = civoCloudState.InstanceIDs.DatabaseNode[indexNo]
+			log.Debug("Printing", "instID", instID)
+
 			_, err := obj.client.DeleteInstance(instID)
 			if err != nil {
 				errCreateVM = err
@@ -263,7 +271,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				return
 			}
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			storage.Logger().Success("[civo] Deleted vm", instID)
+			log.Success("Deleted vm", instID)
 		}()
 		<-done
 
@@ -271,6 +279,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 		go func() {
 			defer close(done)
 			instID = civoCloudState.InstanceIDs.LoadBalancerNode
+			log.Debug("Printing", "instID", instID)
+
 			_, err := obj.client.DeleteInstance(instID)
 			if err != nil {
 				errCreateVM = err
@@ -290,11 +300,11 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				return
 			}
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			storage.Logger().Success("[civo] Deleted vm", instID)
+			log.Success("Deleted vm", instID)
 		}()
 		<-done
-
 	}
+	log.Debug("Printing", "cloudState", civoCloudState)
 
 	return errCreateVM
 }
@@ -311,14 +321,14 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 			getInst, err = obj.client.GetInstance(instID)
 			if err != nil {
 				currRetryCounter++
-				storage.Logger().Warn(fmt.Sprintln("RETRYING", err))
+				log.Warn("RETRYING", err)
 			} else {
 				break
 			}
 			time.Sleep(5 * time.Second)
 		}
 		if currRetryCounter == CounterMaxWatchRetryCount {
-			return fmt.Errorf("[civo] failed to get the state of vm")
+			return log.NewError("failed to get the state of vm")
 		}
 
 		if getInst.Status == "ACTIVE" {
@@ -366,7 +376,7 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 
 			return nil
 		}
-		storage.Logger().Print("[civo] waiting for vm to be ready..", name)
+		log.Debug("waiting for vm to be ready..", "vmName", name, "Status", getInst.Status)
 		time.Sleep(10 * time.Second)
 	}
 }
