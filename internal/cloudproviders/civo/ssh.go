@@ -25,7 +25,10 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 	civoCloudState.SSHPrivateKeyLoc = ""
 	civoCloudState.SSHUser = ""
 
-	return log.NewError(saveStateHelper(storage, path).Error())
+	if err := saveStateHelper(storage, path); err != nil {
+		return log.NewError(err.Error())
+	}
+	return nil
 }
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
@@ -38,7 +41,7 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory
 		return nil
 	}
 
-	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, CloudCivo, clusterDirName)
+	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, log, CloudCivo, clusterDirName)
 	if err != nil {
 		return log.NewError(err.Error())
 	}

@@ -38,7 +38,11 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 
 	path := generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
 
-	return log.NewError(saveStateHelper(storage, path).Error())
+	err = saveStateHelper(storage, path)
+	if err != nil {
+		return log.NewError(err.Error())
+	}
+	return nil
 }
 
 // DelNetwork implements resources.CloudFactory.
@@ -72,5 +76,8 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 	}
 	path := generatePath(UtilClusterPath, clusterType, clusterDirName)
 
-	return log.NewError(storage.Path(path).DeleteDir().Error())
+	if err := storage.Path(path).DeleteDir(); err != nil {
+		return log.NewError(err.Error())
+	}
+	return nil
 }

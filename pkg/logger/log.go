@@ -90,7 +90,7 @@ func (l *Logger) Error(msg string, args ...any) {
 }
 
 func (l *Logger) NewError(format string, args ...any) error {
-	l.Error(format, args...)
+	l.Debug(format, args...)
 	args = append([]any{"package", l.moduleName}, args...)
 	return fmt.Errorf(format, args...)
 }

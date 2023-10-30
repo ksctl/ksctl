@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kubesimplify/ksctl/pkg/logger"
 	"os"
 	"strings"
 	"testing"
@@ -26,13 +25,11 @@ var (
 func TestMain(m *testing.M) {
 
 	demoClient = &resources.KsctlClient{}
-
-	log = logger.NewDefaultLogger(-1, os.Stdout)
-	log.SetPackageName(string(consts.CloudCivo))
-
 	demoClient.Metadata.ClusterName = "demo"
 	demoClient.Metadata.Region = "demoRegion"
 	demoClient.Metadata.Provider = "demoProvider"
+	demoClient.Metadata.LogVerbosity = -1
+	demoClient.Metadata.LogWritter = os.Stdout
 
 	demoClient.Cloud, _ = ReturnCivoStruct(demoClient.Metadata, ProvideMockCivoClient)
 
