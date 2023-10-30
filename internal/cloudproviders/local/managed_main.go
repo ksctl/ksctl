@@ -1,36 +1,38 @@
 package local
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
-	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 // DelManagedCluster implements resources.CloudFactory.
 func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) error {
 
-	logger := CustomLogger{StorageDriver: storage}
+	logger := CustomLogger{log}
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
 
 	if err := provider.Delete(cloud.ClusterName, utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName, KUBECONFIG)); err != nil {
-		return fmt.Errorf("[local] failed to delete cluster %v", err)
+		return log.NewError("failed to delete cluster %v", err)
 	}
 	printKubeconfig(storage, OperationStateDelete, cloud.ClusterName)
 
-	return storage.Path(utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName)).DeleteDir()
+	if err := storage.Path(utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName)).DeleteDir(); err != nil {
+		return log.NewError(err.Error())
+	}
+
+	return nil
 }
 
 // NewManagedCluster implements resources.CloudFactory.
 func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
 
-	logger := CustomLogger{StorageDriver: storage}
+	logger := CustomLogger{log}
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
@@ -42,7 +44,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 
 	withConfig, err := configOption(noOfNodes, cni)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	localState.Version = cloud.Metadata.Version
@@ -58,10 +60,11 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 		cluster.CreateWithKubeconfigPath(func() string {
 			path, err := createNecessaryConfigs(storage, cloud.ClusterName)
 			if err != nil {
-				storage.Logger().Err("[rollback] Cannot continue 😢")
+				log.Error("rollback Cannot continue 😢")
 				err = cloud.DelManagedCluster(storage)
 				if err != nil {
-					panic(err)
+					log.Error(err.Error())
+					return "" // asumming it never comes here
 				}
 			}
 			return path
@@ -69,7 +72,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		return errors.Wrap(err, "[local] failed to create cluster")
+		return log.NewError("failed to create cluster", "err", err)
 	}
 
 	printKubeconfig(storage, OperationStateCreate, cloud.ClusterName)
