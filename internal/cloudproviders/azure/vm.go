@@ -25,6 +25,8 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 	indexNo := index
 	obj.mxRole.Unlock()
 
+	log.Debug("Printing", "role", role, "indexNo", indexNo)
+
 	vmName := ""
 	switch role {
 	case RoleCp:
@@ -38,7 +40,7 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 	}
 
 	if len(vmName) == 0 {
-		storage.Logger().Success("[skip] vm already deleted")
+		log.Print("skipped vm already deleted")
 	} else {
 
 		var errDel error //just to make sure its nil
@@ -50,7 +52,7 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 				errDel = err
 				return
 			}
-			storage.Logger().Print("[azure] deleting vm...", vmName)
+			log.Print("deleting vm...", "name", vmName)
 
 			_, err = obj.client.PollUntilDoneDelVM(ctx, pollerResponse, nil)
 			if err != nil {
@@ -83,23 +85,25 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 		}()
 		<-donePoll
 		if errDel != nil {
-			return errDel
+			return log.NewError(errDel.Error())
 		}
-		storage.Logger().Success("[azure] Deleted the vm", vmName)
+		log.Success("Deleted the vm", "name", vmName)
 
 	}
 
 	if err := obj.DeleteDisk(ctx, storage, indexNo, role); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	if err := obj.DeleteNetworkInterface(ctx, storage, indexNo, role); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	if err := obj.DeletePublicIP(ctx, storage, indexNo, role); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
+
+	log.Debug("Printing", "azureCloudState", azureCloudState)
 
 	return nil
 }
@@ -114,15 +118,19 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	obj.mxName.Unlock()
 	obj.mxVMType.Unlock()
 
+	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
+
 	if role == RoleDs && indexNo > 0 {
-		storage.Logger().Note("[skip] currently multiple datastore not supported")
+		log.Print("skipped currently multiple datastore not supported")
 		return nil
 	}
 	pubIPName := name + "-pub"
 	nicName := name + "-nic"
 	diskName := name + "-disk"
+	log.Debug("Printing", "pubIPName", pubIPName, "NICName", nicName, "diskName", diskName)
+
 	if err := obj.CreatePublicIP(ctx, storage, pubIPName, indexNo, role); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	pubIPID := ""
@@ -143,8 +151,10 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		pubIPID = azureCloudState.InfoDatabase.PublicIPIDs[indexNo]
 	}
 
+	log.Debug("Printing", "PubIP_id", pubIPID, "NsgID", nsgID)
+
 	if err := obj.CreateNetworkInterface(ctx, storage, nicName, azureCloudState.SubnetID, pubIPID, nsgID, indexNo, role); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	// NOTE: check if the VM is already created
@@ -160,19 +170,21 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		vmName = azureCloudState.InfoWorkerPlanes.Names[indexNo]
 	}
 	if len(vmName) != 0 {
-		storage.Logger().Success("[skip] vm already created", vmName)
+		log.Print("skipped vm already created", "name", vmName)
 		return nil
 	}
 
 	sshPublicKeyPath := utils.GetPath(UtilOtherPath, CloudAzure, clusterType, clusterDirName, "keypair.pub")
+	log.Debug("Printing", "sshKeyPath", sshPublicKeyPath)
+
 	var sshBytes []byte
 	_, err := os.Stat(sshPublicKeyPath)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	sshBytes, err = storage.Path(sshPublicKeyPath).Load()
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	netInterfaceID := ""
@@ -186,6 +198,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	case RoleDs:
 		netInterfaceID = azureCloudState.InfoDatabase.NetworkInterfaceIDs[indexNo]
 	}
+	log.Debug("Printing", "netInterfaceID", netInterfaceID)
 
 	parameters := armcompute.VirtualMachine{
 		Location: to.Ptr(obj.region),
@@ -238,9 +251,11 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 			},
 		},
 	}
+	log.Debug("Printing", "VMConfig", parameters)
+
 	pollerResponse, err := obj.client.BeginCreateVM(name, parameters, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	// NOTE: Add the entry for name before polling starts so that state is present
 	done := make(chan struct{})
@@ -269,9 +284,9 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 
 	<-done
 	if errCreateVM != nil {
-		return errCreateVM
+		return log.NewError(errCreateVM.Error())
 	}
-	storage.Logger().Print("[azure] creating vm...", name)
+	log.Print("creating vm...", "name", name)
 
 	errCreateVM = nil //just to make sure its nil
 	donePoll := make(chan struct{})
@@ -294,6 +309,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 			if len(azureCloudState.InfoWorkerPlanes.Names) == indexNo+1 {
 				azureCloudState.IsCompleted = true
 			}
+
 		case RoleCp:
 			azureCloudState.InfoControlPlanes.DiskNames[indexNo] = diskName
 			azureCloudState.InfoControlPlanes.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
@@ -317,9 +333,11 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	}()
 	<-donePoll
 	if errCreateVM != nil {
-		return errCreateVM
+		return log.NewError(errCreateVM.Error())
 	}
-	storage.Logger().Success("[azure] Created virtual machine", name)
+	log.Debug("Printing", "azureCloudState", azureCloudState)
+
+	log.Success("Created virtual machine", "name", name)
 	return nil
 }
 

@@ -12,25 +12,26 @@ import (
 // DelManagedCluster implements resources.CloudFactory.
 func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) error {
 	if len(azureCloudState.ManagedClusterName) == 0 {
-		storage.Logger().Success("[skip] already deleted AKS cluster")
+		log.Print("skipped already deleted AKS cluster")
 		return nil
 	}
 
 	pollerResp, err := obj.client.BeginDeleteAKS(azureCloudState.ManagedClusterName, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Print("[azure] Deleting AKS cluster...")
+	log.Print("Deleting AKS cluster...", "name", azureCloudState.ManagedClusterName)
 
 	_, err = obj.client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	storage.Logger().Success("[azure] Deleted the AKS cluster", azureCloudState.ManagedClusterName)
+	log.Success("Deleted the AKS cluster", "name", azureCloudState.ManagedClusterName)
+
 	azureCloudState.ManagedClusterName = ""
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	printKubeconfig(storage, OperationStateDelete)
 
@@ -44,8 +45,10 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	obj.mxName.Unlock()
 	obj.mxVMType.Unlock()
 
+	log.Debug("Printing", "name", name, "vmtype", vmtype)
+
 	if len(azureCloudState.ManagedClusterName) != 0 {
-		storage.Logger().Success("[skip] already created AKS cluster %s", azureCloudState.ManagedClusterName)
+		log.Print("skipped already created AKS cluster", "name", azureCloudState.ManagedClusterName)
 		return nil
 	}
 
@@ -85,41 +88,43 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		},
 	}
 
+	log.Debug("Printing", "AKSConfig", parameter)
+
 	pollerResp, err := obj.client.BeginCreateAKS(name, parameter, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	azureCloudState.ManagedClusterName = name
 
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	storage.Logger().Print("[azure] Creating AKS cluster...")
+	log.Print("Creating AKS cluster...")
 
 	resp, err := obj.client.PollUntilDoneCreateAKS(ctx, pollerResp, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	azureCloudState.IsCompleted = true
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	kubeconfig, err := obj.client.ListClusterAdminCredentials(name, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	kubeconfigStr := string(kubeconfig.Kubeconfigs[0].Value)
 
 	if err := saveKubeconfigHelper(storage, kubeconfigStr); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	printKubeconfig(storage, OperationStateCreate)
 
-	storage.Logger().Success("[azure] created AKS", *resp.Name)
+	log.Success("created AKS", "name", *resp.Name)
 	return nil
 }
 

@@ -12,26 +12,26 @@ import (
 
 func GetInputCredential(storage resources.StorageFactory) error {
 
-	storage.Logger().Print("Enter your SUBSCRIPTION ID")
-	skey, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your SUBSCRIPTION ID")
+	skey, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
-	storage.Logger().Print("Enter your TENANT ID")
-	tid, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your TENANT ID")
+	tid, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
-	storage.Logger().Print("Enter your CLIENT ID")
-	cid, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your CLIENT ID")
+	cid, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
-	storage.Logger().Print("Enter your CLIENT SECRET")
-	cs, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your CLIENT SECRET")
+	cs, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	//}
 	// ADD SOME PING method to validate credentials
 
-	if err := utils.SaveCred(storage, apiStore, CloudAzure); err != nil {
+	if err := utils.SaveCred(storage, log, apiStore, CloudAzure); err != nil {
 		return err
 	}
 
@@ -78,6 +78,8 @@ func saveStateHelper(storage resources.StorageFactory) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "rawState", string(rawState), "path", path)
+
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
@@ -88,12 +90,15 @@ func loadStateHelper(storage resources.StorageFactory) error {
 		return err
 	}
 
+	log.Debug("Printing", "rawState", string(raw), "path", path)
 	return convertStateFromBytes(raw)
 }
 
 func saveKubeconfigHelper(storage resources.StorageFactory, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
 	path := utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+
+	log.Debug("Printing", "path", path, "kubeconfig", kubeconfig)
 
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
 }
@@ -113,7 +118,7 @@ func convertStateFromBytes(raw []byte) error {
 
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
 	env := ""
-	storage.Logger().Note("KUBECONFIG env var")
+	log.Note("KUBECONFIG env var")
 	path := generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 	switch runtime.GOOS {
 	case "windows":
@@ -131,7 +136,7 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 			env = "unset KUBECONFIG"
 		}
 	}
-	storage.Logger().Note(env)
+	log.Note(env)
 }
 
 func validationOfArguments(obj *AzureProvider) error {
@@ -150,8 +155,11 @@ func validationOfArguments(obj *AzureProvider) error {
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
 	res, err := obj.client.ListKubernetesVersions()
 	if err != nil {
-		return fmt.Errorf("failed to finish the request: %v", err)
+		return log.NewError("failed to finish the request: %v", err)
 	}
+
+	log.Debug("Printing", "ListKubernetesVersions", res)
+
 	var vers []string
 	for _, version := range res.Values {
 		vers = append(vers, *version.Version)
@@ -161,7 +169,7 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Invalid k8s version\nValid options: %v\n", vers)
+	return log.NewError("Invalid k8s version\nValid options: %v\n", vers)
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {
@@ -169,12 +177,14 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "ListLocation", validReg)
+
 	for _, valid := range validReg {
 		if valid == reg {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID REGION\nValid options: %v\n", validReg)
+	return log.NewError("INVALID REGION\nValid options: %v\n", validReg)
 }
 
 func isValidVMSize(obj *AzureProvider, size string) error {
@@ -183,6 +193,7 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "ListVMType", validSize)
 
 	for _, valid := range validSize {
 		if valid == size {
@@ -190,5 +201,5 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 		}
 	}
 
-	return fmt.Errorf("INVALID VM SIZE\nValid options %v\n", validSize)
+	return log.NewError("INVALID VM SIZE\nValid options %v\n", validSize)
 }

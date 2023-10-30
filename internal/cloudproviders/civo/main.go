@@ -198,9 +198,9 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 
 		if errLoadState == nil && !civoCloudState.IsCompleted {
 			// file present but not completed
-			log.Note("RESUME triggered!!")
+			log.Debug("RESUME triggered!!")
 		} else {
-			log.Note("Fresh state!!")
+			log.Debug("Fresh state!!")
 			civoCloudState = &StateConfiguration{
 				IsCompleted:      false,
 				Region:           obj.region,
@@ -215,14 +215,14 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Note("Get resources")
+		log.Debug("Get resources")
 
 	case consts.OperationStateDelete:
 
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Note("Delete resource(s)")
+		log.Debug("Delete resource(s)")
 	default:
 		return log.NewError("Invalid operation for init state")
 	}
@@ -234,8 +234,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 	if err := validationOfArguments(obj); err != nil {
 		return log.NewError(err.Error())
 	}
-	log.Debug("Printing", "CivoProvider", obj)
-	log.Success("init cloud state")
+	log.Debug("init cloud state")
 	return nil
 }
 
