@@ -63,11 +63,13 @@ func ReturnLocalStruct(metadata resources.Metadata) (*LocalProvider, error) {
 	log = logger.NewDefaultLogger(metadata.LogVerbosity, metadata.LogWritter)
 	log.SetPackageName(string(consts.CloudLocal))
 
-	log.Debug("Printing", "metadata", metadata)
-
-	return &LocalProvider{
+	obj := &LocalProvider{
 		ClusterName: metadata.ClusterName,
-	}, nil
+	}
+
+	log.Debug("Printing", "localProvider", obj)
+
+	return obj, nil
 }
 
 // InitState implements resources.CloudFactory.
@@ -98,7 +100,7 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 			return log.NewError(err.Error())
 		}
 	}
-	log.Success("initialized the state")
+	log.Debug("initialized the state")
 	return nil
 }
 

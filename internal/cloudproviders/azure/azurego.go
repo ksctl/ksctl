@@ -289,9 +289,9 @@ func (obj *AzureGoClient) setRequiredENV_VAR(storage resources.StorageFactory, c
 		msg = msg + " AZURE_CLIENT_SECRET"
 	}
 
-	storage.Logger().Warn(msg)
+	log.Warn(msg)
 
-	tokens, err := utils.GetCred(storage, "azure")
+	tokens, err := utils.GetCred(storage, log, "azure")
 	if err != nil {
 		return err
 	}

@@ -14,6 +14,8 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	role := obj.metadata.role
 	obj.mxRole.Unlock()
 
+	log.Debug("Printing", "role", role)
+
 	nsg := ""
 	switch role {
 	case RoleCp:
@@ -27,20 +29,21 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	default:
 		return fmt.Errorf("invalid role")
 	}
+
 	if len(nsg) == 0 {
-		storage.Logger().Success("[skip] firewall already deleted")
+		log.Print("skipped firewall already deleted")
 		return nil
 	}
 
 	pollerResponse, err := obj.client.BeginDeleteSecurityGrp(nsg, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Print("[azure] firewall deleting...", nsg)
+	log.Print("firewall deleting...", "name", nsg)
 
 	_, err = obj.client.PollUntilDoneDelNSG(ctx, pollerResponse, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	switch role {
 	case RoleCp:
@@ -58,9 +61,10 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	}
 
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Success("[azure] Deleted network security group", nsg)
+
+	log.Success("Deleted network security group", "name", nsg)
 
 	return nil
 }
@@ -71,6 +75,8 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	role := obj.metadata.role
 	obj.mxRole.Unlock()
 	obj.mxName.Unlock()
+
+	log.Debug("Printing", "name", name, "role", role)
 
 	nsg := ""
 	switch role {
@@ -83,10 +89,10 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	case RoleDs:
 		nsg = azureCloudState.InfoDatabase.NetworkSecurityGroupName
 	default:
-		return fmt.Errorf("invalid role")
+		return log.NewError("invalid role")
 	}
 	if len(nsg) != 0 {
-		storage.Logger().Success("[skip] firewall already created", nsg)
+		log.Success("skipped firewall already created", "name", nsg)
 		return nil
 	}
 
@@ -101,8 +107,10 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	case RoleDs:
 		securityRules = firewallRuleDataStore()
 	default:
-		return fmt.Errorf("invalid role")
+		return log.NewError("invalid role")
 	}
+
+	log.Debug("Printing", "firewallrule", securityRules)
 
 	parameters := armnetwork.SecurityGroup{
 		Location: to.Ptr(obj.region),
@@ -114,7 +122,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	pollerResponse, err := obj.client.BeginCreateSecurityGrp(name, parameters, nil)
 
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	switch role {
 	case RoleCp:
@@ -128,14 +136,14 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	storage.Logger().Print("[azure] creating firewall...", name)
+	log.Print("creating firewall...", "name", name)
 
 	resp, err := obj.client.PollUntilDoneCreateNSG(ctx, pollerResponse, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	switch role {
 	case RoleCp:
@@ -149,9 +157,10 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Success("[azure] Created network security group", *resp.Name)
+
+	log.Success("Created network security group", "name", *resp.Name)
 
 	return nil
 }
