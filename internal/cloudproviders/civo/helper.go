@@ -21,7 +21,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	}
 	log.Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := utils.GetCred(storage, CloudCivo)
+	token, err := utils.GetCred(storage, log, CloudCivo)
 	if err != nil {
 		return ""
 	}
@@ -46,7 +46,7 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	}
 	log.Print(id)
 
-	if err := utils.SaveCred(storage, Credential{token}, CloudCivo); err != nil {
+	if err := utils.SaveCred(storage, log, Credential{token}, CloudCivo); err != nil {
 		return err
 	}
 	return nil
