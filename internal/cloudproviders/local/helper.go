@@ -14,7 +14,7 @@ import (
 
 func generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
-		return nil, fmt.Errorf("[local] invalid config request control node cannot be 0")
+		return nil, log.NewError("invalid config request control node cannot be 0")
 	}
 	var config string
 	config += `---
@@ -46,7 +46,7 @@ nodes:
 func configOption(noOfNodes int, cni bool) (cluster.CreateOption, error) {
 
 	if noOfNodes < 1 {
-		return nil, fmt.Errorf("[local] invalid config request control node cannot be 0")
+		return nil, log.NewError("invalid config request control node cannot be 0")
 	}
 	if noOfNodes == 1 {
 		var config string
@@ -68,6 +68,8 @@ networking:
 		return nil, fmt.Errorf("ERR in node config generation")
 	}
 
+	log.Debug("Printing", "configCluster", string(raw))
+
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
@@ -88,12 +90,12 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 	err = storage.Permission(0755).
 		Path(kpath).Save([]byte(""))
 	if err != nil {
-		return "", err
+		return "", log.NewError(err.Error())
 	}
 
 	err = saveStateHelper(storage, utils.GetPath(UtilOtherPath, CloudLocal, ClusterTypeMang, clusterName, STATE_FILE))
 	if err != nil {
-		return "", err
+		return "", log.NewError(err.Error())
 	}
 
 	return kpath, nil
@@ -101,7 +103,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation, clustername string) {
 	env := ""
-	storage.Logger().Note("KUBECONFIG env var")
+	log.Note("KUBECONFIG env var")
 	path := utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, clustername, KUBECONFIG)
 	switch runtime.GOOS {
 	case "windows":
@@ -119,13 +121,13 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation,
 			env = "unset KUBECONFIG"
 		}
 	}
-	storage.Logger().Note(env)
+	log.Note(env)
 }
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
 	rawState, err := convertStateToBytes(*localState)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	return storage.Path(path).Permission(0755).Save(rawState)
 }
@@ -133,7 +135,7 @@ func saveStateHelper(storage resources.StorageFactory, path string) error {
 func loadStateHelper(storage resources.StorageFactory, path string) error {
 	raw, err := storage.Path(path).Load()
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	return convertStateFromBytes(raw)
@@ -146,7 +148,7 @@ func convertStateToBytes(state StateConfiguration) ([]byte, error) {
 func convertStateFromBytes(raw []byte) error {
 	var data *StateConfiguration
 	if err := json.Unmarshal(raw, &data); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	localState = data
 	return nil

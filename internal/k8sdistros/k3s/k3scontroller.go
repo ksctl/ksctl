@@ -34,6 +34,7 @@ type StateConfiguration struct {
 
 var (
 	k8sState *StateConfiguration
+	log      resources.LoggerFactory
 )
 
 func ReturnK3sStruct() *K3sDistro {
