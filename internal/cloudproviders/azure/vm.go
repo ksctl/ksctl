@@ -355,7 +355,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		diskName = azureCloudState.InfoDatabase.DiskNames[index]
 	}
 	if len(diskName) == 0 {
-		storage.Logger().Success("[skip] disk already deleted")
+		log.Print("skipped disk already deleted")
 		return nil
 	}
 
@@ -363,7 +363,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 	if err != nil {
 		return err
 	}
-	storage.Logger().Print("[azure] Deleting the disk..", diskName)
+	log.Print("Deleting the disk..", "name", diskName)
 
 	// NOTE: Add the entry for name before polling starts so that state is present
 
@@ -398,7 +398,9 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 	if errDelete != nil {
 		return errDelete
 	}
-	storage.Logger().Success("[azure] Deleted disk", diskName)
+
+	log.Debug("Printing", "azureCloudState", azureCloudState)
+	log.Success("Deleted disk", "name", diskName)
 	return nil
 }
 
@@ -417,7 +419,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	}
 
 	if len(publicIP) != 0 {
-		storage.Logger().Success("[skip] pub ip already created", publicIP)
+		log.Print("skipped pub ip already created", "name", publicIP)
 		return nil
 	}
 
@@ -428,10 +430,13 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		},
 	}
 
+	log.Debug("Printing", "PublicIPConfig", parameters)
+
 	pollerResponse, err := obj.client.BeginCreatePubIP(publicIPName, parameters, nil)
 	if err != nil {
 		return err
 	}
+
 	// NOTE: Add the entry for name before polling starts so that state is present
 	done := make(chan struct{})
 	var errCreate error
@@ -459,7 +464,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	if errCreate != nil {
 		return errCreate
 	}
-	storage.Logger().Print("[azure] creating the pubip..", publicIPName)
+	log.Print("creating the pubip..", "name", publicIPName)
 
 	var errCreatePub error //just to make sure its nil
 	donePoll := make(chan struct{})
@@ -498,7 +503,9 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	if errCreatePub != nil {
 		return errCreatePub
 	}
-	storage.Logger().Success("[azure] Created public IP address", publicIPName)
+
+	log.Debug("Printing", "azureCloudState", azureCloudState)
+	log.Success("Created public IP address", "name", publicIPName)
 	return nil
 }
 
@@ -517,7 +524,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 	}
 
 	if len(publicIP) == 0 {
-		storage.Logger().Success("[skip] pub ip already deleted")
+		log.Print("skipped pub ip already deleted")
 		return nil
 	}
 
@@ -525,7 +532,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 	if err != nil {
 		return err
 	}
-	storage.Logger().Print("[azure] Deleting the pubip..", publicIP)
+	log.Print("Deleting the pubip..", "name", publicIP)
 
 	// NOTE: Add the entry for name before polling starts so that state is present
 
@@ -570,7 +577,9 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 	if errDelPub != nil {
 		return errDelPub
 	}
-	storage.Logger().Success("[azure] Deleted the pub IP", publicIP)
+
+	log.Debug("Printing", "azureCloudState", azureCloudState)
+	log.Success("Deleted the pub IP", "name", publicIP)
 	return nil
 }
 
@@ -589,7 +598,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		interfaceName = azureCloudState.InfoDatabase.NetworkInterfaceNames[index]
 	}
 	if len(interfaceName) != 0 {
-		storage.Logger().Success("[skip] network interface already created", interfaceName)
+		log.Print("skipped network interface already created", "name", interfaceName)
 		return nil
 	}
 
@@ -615,6 +624,8 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 			},
 		},
 	}
+
+	log.Debug("Printing", "netInterfaceConfig", parameters)
 
 	pollerResponse, err := obj.client.BeginCreateNIC(nicName, parameters, nil)
 	if err != nil {
@@ -648,7 +659,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	if errCreate != nil {
 		return errCreate
 	}
-	storage.Logger().Print("[azure] Creating the network interface...", nicName)
+	log.Print("Creating the network interface...", "name", nicName)
 
 	var errCreatenic error //just to make sure its nil
 	donePoll := make(chan struct{})
@@ -688,7 +699,9 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	if errCreatenic != nil {
 		return errCreatenic
 	}
-	storage.Logger().Success("[azure] Created network interface", nicName)
+	log.Debug("Printing", "azureCloudState", azureCloudState)
+
+	log.Success("Created network interface", "name", nicName)
 	return nil
 }
 
@@ -705,7 +718,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 		interfaceName = azureCloudState.InfoDatabase.NetworkInterfaceNames[index]
 	}
 	if len(interfaceName) == 0 {
-		storage.Logger().Success("[skip] network interface already deleted")
+		log.Print("skipped network interface already deleted")
 		return nil
 	}
 
@@ -713,7 +726,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 	if err != nil {
 		return err
 	}
-	storage.Logger().Print("[azure] Deleting the network interface...", interfaceName)
+	log.Print("Deleting the network interface...", "name", interfaceName)
 
 	// NOTE: Add the entry for name before polling starts so that state is present
 
@@ -757,7 +770,9 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 	if errDelnic != nil {
 		return errDelnic
 	}
-	storage.Logger().Success("[azure] Deleted the network interface", interfaceName)
+	log.Debug("Printing", "azureCloudState", azureCloudState)
+
+	log.Success("Deleted the network interface", "name", interfaceName)
 
 	return nil
 }

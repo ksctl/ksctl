@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 
 	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
@@ -34,6 +35,9 @@ func GenKsctlController() *KsctlControllerClient {
 }
 
 func validationFields(meta resources.Metadata) error {
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName("ksctl-manager")
+
 	if !utils.ValidateCloud(meta.Provider) {
 		return errors.New("invalid cloud provider")
 	}

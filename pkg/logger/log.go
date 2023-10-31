@@ -23,13 +23,11 @@ func (l *Logger) SetPackageName(m string) {
 func newLogger(out io.Writer, ver slog.Level, debug bool) *slog.Logger {
 	if debug {
 		return slog.New(slog.NewJSONHandler(out, &slog.HandlerOptions{
-			AddSource: true,
-			Level:     ver,
+			Level: ver,
 		}))
 	}
 	return slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{
-		AddSource: false,
-		Level:     ver,
+		Level: ver,
 	}))
 }
 

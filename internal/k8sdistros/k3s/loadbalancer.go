@@ -10,7 +10,7 @@ import (
 // ConfigureLoadbalancer implements resources.DistroFactory.
 func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) error {
 
-	storage.Logger().Print("[k3s] configuring Loadbalancer")
+	log.Print("configuring Loadbalancer")
 
 	var controlPlaneIPs = make([]string, len(k8sState.PublicIPs.ControlPlanes))
 	for i := 0; i < len(k8sState.PublicIPs.ControlPlanes); i++ {
@@ -20,12 +20,12 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 	err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(
 		configLBscript(controlPlaneIPs)).
 		IPv4(k8sState.PublicIPs.Loadbalancer).
-		FastMode(true).SSHExecute(storage)
+		FastMode(true).SSHExecute(storage, log)
 	if err != nil {
-		return fmt.Errorf("[k3s] loadbalancer%v", err)
+		return log.NewError(err.Error())
 	}
 
-	storage.Logger().Success("[k3s] configured LoadBalancer")
+	log.Success("configured LoadBalancer")
 
 	return nil
 }
