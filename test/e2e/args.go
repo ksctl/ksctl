@@ -36,5 +36,8 @@ func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
 		os.Exit(1)
 	}
 
+	payload.LogVerbosity = 0
+	payload.LogWritter = os.Stdout
+
 	return Operation(*arg1), payload
 }
