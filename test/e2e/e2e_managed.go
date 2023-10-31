@@ -1,23 +1,27 @@
 package main
 
-import "github.com/kubesimplify/ksctl/pkg/resources"
+import (
+	"os"
+
+	"github.com/kubesimplify/ksctl/pkg/resources"
+)
 
 func createManagedCluster(ksctlClient *resources.KsctlClient) {
-	l.Println("Started to Create Cluster...")
+	l.Print("Started to Create Cluster...")
 
-	resp, err := ksctlManager.CreateManagedCluster(ksctlClient)
+	err := ksctlManager.CreateManagedCluster(ksctlClient)
 	if err != nil {
-		l.Fatal(err)
+		l.Error(err.Error())
+		os.Exit(1)
 	}
-	l.Println(resp)
 }
 
 func deleteManagedCluster(ksctlClient *resources.KsctlClient) {
-	l.Println("Started to Delete Cluster...")
+	l.Print("Started to Delete Cluster...")
 
-	resp, err := ksctlManager.DeleteManagedCluster(ksctlClient)
+	err := ksctlManager.DeleteManagedCluster(ksctlClient)
 	if err != nil {
-		l.Fatal(err)
+		l.Error(err.Error())
+		os.Exit(1)
 	}
-	l.Println(resp)
 }

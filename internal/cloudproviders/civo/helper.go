@@ -2,7 +2,6 @@ package civo
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"runtime"
 
@@ -191,24 +190,28 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
 	env := ""
-	log.Note("KUBECONFIG env var")
+
 	path := generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 	log.Debug("Printing", "path", path)
 	switch runtime.GOOS {
 	case "windows":
 		switch operation {
 		case "create":
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
+			env = "$Env:KUBECONFIG"
 		case "delete":
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+			env = "$Env:KUBECONFIG"
 		}
 	case "linux", "macos":
 		switch operation {
 		case "create":
-			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
+			env = "export KUBECONFIG"
 		case "delete":
 			env = "unset KUBECONFIG"
 		}
 	}
-	log.Note(env)
+	if operation == "create" {
+		log.Note("KUBECONFIG env var", env, path)
+	} else {
+		log.Note(env)
+	}
 }
