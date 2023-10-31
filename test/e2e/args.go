@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
-func GetReqPayload(l *log.Logger) (Operation, resources.Metadata) {
-	l = log.New(os.Stdout, "[setup-e2e]", -1)
+func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
+	l.SetPackageName("e2e-tests")
 	arg1 := flag.String("op", "", "operation to perform")
 	arg2 := flag.String("file", "", "file name as payload")
 
@@ -26,13 +25,15 @@ func GetReqPayload(l *log.Logger) (Operation, resources.Metadata) {
 
 	raw, err := os.ReadFile(*arg2)
 	if err != nil {
-		l.Fatal(err)
+		l.Error(err.Error())
+		os.Exit(1)
 	}
 
 	var payload resources.Metadata
 	err = json.Unmarshal(raw, &payload)
 	if err != nil {
-		l.Fatal(err)
+		l.Error(err.Error())
+		os.Exit(1)
 	}
 
 	return Operation(*arg1), payload

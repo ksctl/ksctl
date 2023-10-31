@@ -15,10 +15,10 @@ func (this *Kubernetes) clusterroleApply(o *rbacv1.ClusterRole) error {
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.RbacV1().ClusterRoles().Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -31,10 +31,10 @@ func (this *Kubernetes) clusterrolebindingApply(o *rbacv1.ClusterRoleBinding) er
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.RbacV1().ClusterRoleBindings().Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -47,10 +47,10 @@ func (this *Kubernetes) roleApply(o *rbacv1.Role, ns string) error {
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.RbacV1().Roles(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -63,10 +63,10 @@ func (this *Kubernetes) rolebindingApply(o *rbacv1.RoleBinding, ns string) error
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.RbacV1().RoleBindings(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil

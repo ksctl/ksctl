@@ -525,7 +525,11 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no i
 	return -1, log.NewError("constrains for no of workplane >= 0")
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
+func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloud_control_res.AllClusterData, error) {
+
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(CloudAzure))
+
 	var data []cloud_control_res.AllClusterData
 
 	// first get all the directories of ha

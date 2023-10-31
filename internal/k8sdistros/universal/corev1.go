@@ -17,11 +17,11 @@ func (this *Kubernetes) configMapApply(o *corev1.ConfigMap, ns string) error {
 
 			_, err = this.clientset.CoreV1().ConfigMaps(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -36,11 +36,11 @@ func (this *Kubernetes) serviceApply(o *corev1.Service, ns string) error {
 
 			_, err = this.clientset.CoreV1().Services(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -52,10 +52,10 @@ func (this *Kubernetes) namespaceCreate(ns string) error {
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.CoreV1().Namespaces().Update(context.Background(), &corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: ns}}, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -70,11 +70,11 @@ func (this *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
 
 			_, err = this.clientset.CoreV1().Secrets(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -89,11 +89,11 @@ func (this *Kubernetes) PodApply(o *corev1.Pod, ns string) error {
 
 			_, err = this.clientset.CoreV1().Pods(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -106,10 +106,10 @@ func (this *Kubernetes) serviceaccountApply(o *corev1.ServiceAccount, ns string)
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.CoreV1().ServiceAccounts(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil

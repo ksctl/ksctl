@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/civo/civogo"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
@@ -28,7 +29,10 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	return token["token"]
 }
 
-func GetInputCredential(storage resources.StorageFactory) error {
+func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
+
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(CloudCivo))
 
 	log.Print("Enter CIVO TOKEN")
 	token, err := utils.UserInputCredentials(log)

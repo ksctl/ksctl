@@ -15,10 +15,10 @@ func (this *Kubernetes) jobApply(o *batchv1.Job, ns string) error {
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.BatchV1().Jobs(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil

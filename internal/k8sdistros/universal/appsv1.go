@@ -16,10 +16,10 @@ func (this *Kubernetes) deploymentApply(o *appsv1.Deployment, ns string) error {
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.AppsV1().Deployments(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
@@ -32,10 +32,10 @@ func (this *Kubernetes) statefulsetApply(o *appsv1.StatefulSet, ns string) error
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.AppsV1().StatefulSets(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil
