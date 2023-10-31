@@ -1,7 +1,6 @@
 package universal
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -65,51 +64,51 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 
 		case *appsv1.Deployment:
 
-			fmt.Printf("Deployment %T {%s}\n", o, o.Name)
+			log.Debug("Deployment", "name", o.Name)
 			errRes = client.deploymentApply(o, appStruct.Namespace)
 
 		case *corev1.Service:
-			fmt.Printf("service %T {%s}\n", o, o.Name)
+			log.Debug("Service", "name", o.Name)
 			errRes = client.serviceApply(o, appStruct.Namespace)
 
 		case *corev1.ServiceAccount:
-			fmt.Printf("serviceaccount %T {%s}\n", o, o.Name)
+			log.Debug("ServiceAccount", "name", o.Name)
 			errRes = client.serviceaccountApply(o, appStruct.Namespace)
 
 		case *corev1.ConfigMap:
-			fmt.Printf("configmap %T {%s}\n", o, o.Name)
+			log.Debug("ConfigMap", "name", o.Name)
 			errRes = client.configMapApply(o, appStruct.Namespace)
 
 		case *corev1.Secret:
-			fmt.Printf("Secret %T {%s}\n", o, o.Name)
+			log.Debug("Secret", "name", o.Name)
 			errRes = client.secretApply(o, appStruct.Namespace)
 
 		case *appsv1.StatefulSet:
-			fmt.Printf("Statefulset %T {%s}\n", o, o.Name)
+			log.Debug("StatefulSet", "name", o.Name)
 			errRes = client.statefulsetApply(o, appStruct.Namespace)
 
 		case *rbacv1.ClusterRole:
-			fmt.Printf("ClusterRole %T {%s}\n", o, o.Name)
+			log.Debug("ClusterRole", "name", o.Name)
 			errRes = client.clusterroleApply(o)
 
 		case *rbacv1.ClusterRoleBinding:
-			fmt.Printf("ClusterRoleBinding %T {%s}\n", o, o.Name)
+			log.Debug("ClusterRoleBinding", "name", o.Name)
 			errRes = client.clusterrolebindingApply(o)
 
 		case *rbacv1.Role:
-			fmt.Printf("Role %T {%s}\n", o, o.Name)
+			log.Debug("Role", "name", o.Name)
 			errRes = client.roleApply(o, appStruct.Namespace)
 
 		case *rbacv1.RoleBinding:
-			fmt.Printf("RoleBinding %T {%s}\n", o, o.Name)
+			log.Debug("RoleBinding", "name", o.Name)
 			errRes = client.rolebindingApply(o, appStruct.Namespace)
 
 		case *networkingv1.NetworkPolicy:
-			fmt.Printf("NetworkPolicy %T {%s}\n", o, o.Name)
+			log.Debug("NetworkPolicy", "name", o.Name)
 			errRes = client.netpolicyApply(o, appStruct.Namespace)
 
 		default:
-			fmt.Printf("unexpected type %T\n", o)
+			log.Error("unexpected type", "obj", o)
 		}
 
 		if errRes != nil {

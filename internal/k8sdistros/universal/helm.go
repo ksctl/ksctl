@@ -1,8 +1,6 @@
 package universal
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -99,11 +97,10 @@ func (c *HelmClient) ListInstalledCharts() error {
 		return err
 	}
 
-	fmt.Println("Lists installed Charts")
+	log.Print("Lists installed Charts")
 	for _, rel := range results {
-		fmt.Println(rel.Chart.Name(), rel.Namespace, rel.Info.Description)
+		log.Print(rel.Chart.Name(), rel.Namespace, rel.Info.Description)
 	}
-	fmt.Println()
 	return nil
 }
 
@@ -114,8 +111,8 @@ func (client *HelmClient) InitClient(kubeconfig string) error {
 	client.settings.KubeConfig = kubeconfig
 
 	client.actionConfig = new(action.Configuration)
-	if err := client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
-		return err
+	if err := client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Debug); err != nil {
+		return log.NewError(err.Error())
 	}
 	return nil
 }
@@ -125,17 +122,17 @@ func installHelm(client *Kubernetes, appStruct Application) error {
 	repoName, repoUrl, charts := appStruct.Name, appStruct.Url, appStruct.HelmConfig
 
 	if err := client.helmClient.RepoAdd(repoName, repoUrl); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	for _, chart := range charts {
 		if err := client.helmClient.InstallChart(chart.chartVer, chart.chartName, chart.namespace, chart.releaseName, chart.createns, chart.args); err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 
 	if err := client.helmClient.ListInstalledCharts(); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	return nil
 }

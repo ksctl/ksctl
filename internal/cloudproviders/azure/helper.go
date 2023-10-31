@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
-func GetInputCredential(storage resources.StorageFactory) error {
+func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(CloudAws))
 
 	log.Print("Enter your SUBSCRIPTION ID")
 	skey, err := utils.UserInputCredentials(log)

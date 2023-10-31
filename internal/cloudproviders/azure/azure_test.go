@@ -555,7 +555,7 @@ func TestManagedCluster(t *testing.T) {
 				K8sVersion: azureCloudState.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(demoClient.Storage)
+		got, err := GetRAWClusterInfos(demoClient.Storage, demoClient.Metadata)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
@@ -831,7 +831,7 @@ func TestHACluster(t *testing.T) {
 				K8sVersion: azureCloudState.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(demoClient.Storage)
+		got, err := GetRAWClusterInfos(demoClient.Storage, demoClient.Metadata)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})

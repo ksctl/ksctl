@@ -136,7 +136,10 @@ func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
 	return cloud
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
+func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudControlRes.AllClusterData, error) {
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(consts.CloudLocal))
+
 	var data []cloudControlRes.AllClusterData
 
 	managedFolders, err := storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)).GetFolders()

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
@@ -47,48 +46,58 @@ func validationFields(meta resources.Metadata) error {
 	if !utils.ValidateStorage(meta.StateLocation) {
 		return errors.New("invalid storage driver")
 	}
+	log.Debug("Valid fields from user")
 	return nil
 }
 
-func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) (string, error) {
+func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) error {
+
+	if log == nil {
+		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		log.SetPackageName("ksctl-manager")
+	}
+
 	switch client.Metadata.StateLocation {
 	case StoreLocal:
 		client.Storage = localstate.InitStorage(verbosity)
 	default:
-		return "", fmt.Errorf("Currently Local state is supported!")
+		return log.NewError("Currently Local state is supported!")
 	}
-	return "[ksctl] initialized storageFactory", nil
+	log.Debug("initialized storageFactory")
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) error {
 
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 
 	switch client.Metadata.Provider {
 	case CloudCivo:
-		err := civoPkg.GetInputCredential(client.Storage)
+		err := civoPkg.GetInputCredential(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 	case CloudAzure:
-		err := azure.GetInputCredential(client.Storage)
+		err := azure.GetInputCredential(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 	default:
-		return "", fmt.Errorf("Currently not supported!")
+		return log.NewError("Currently not supported!")
 	}
-	return "[ksctl] Credential added", nil
+	log.Success("successfully Credential Added")
+
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) error {
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	fakeClient := false
@@ -97,16 +106,16 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	}
 
 	if !utils.ValidCNIPlugin(KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
-		return "", errors.New("invalid CNI plugin")
+		return log.NewError("invalid CNI plugin")
 	}
 
 	if err := cloud.HydrateCloud(client, OperationStateCreate, fakeClient); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 	// it gets supportForApps, supportForCNI, error
 	externalApp, externalCNI, cloudResErr := cloud.CreateManagedCluster(client)
 	if cloudResErr != nil {
-		client.Storage.Logger().Err(cloudResErr.Error())
+		log.Error(cloudResErr.Error())
 	}
 
 	kubeconfigPath := client.Cloud.GetKubeconfigPath()
@@ -117,32 +126,34 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 			StorageDriver: client.Storage,
 		}
 		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 
 		if externalCNI {
 			if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
-				return "", err
+				return log.NewError(err.Error())
 			}
 		}
 
 		if len(client.Metadata.Applications) != 0 && externalApp {
 			apps := strings.Split(client.Metadata.Applications, ",")
 			if err := kubernetesClient.InstallApplications(apps); err != nil {
-				return "", err
+				return log.NewError(err.Error())
 			}
 		}
 	}
-	return "[ksctl] created managed cluster", nil
+
+	log.Success("successfully created managed cluster")
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resources.KsctlClient) error {
 
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	fakeClient := false
@@ -150,22 +161,23 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, OperationStateDelete, fakeClient); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	cloudResErr := cloud.DeleteManagedCluster(client)
 	if cloudResErr != nil {
-		client.Storage.Logger().Err(cloudResErr.Error())
+		return log.NewError(cloudResErr.Error())
 	}
-	return "[ksctl] deleted managed cluster", nil
+	log.Success("successfully deleted managed cluster")
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.KsctlClient) error {
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	var err error
@@ -173,92 +185,97 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	case CloudCivo:
 		client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideClient)
 		if err != nil {
-			return "", fmt.Errorf("[cloud] " + err.Error())
+			return log.NewError(err.Error())
 		}
 	case CloudAzure:
 		client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideClient)
 		if err != nil {
-			return "", fmt.Errorf("[cloud] " + err.Error())
+			return log.NewError(err.Error())
 		}
 	case CloudLocal:
 		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata)
 		if err != nil {
-			return "", fmt.Errorf("[cloud] " + err.Error())
+			return log.NewError(err.Error())
 		}
 	}
 
 	if err := client.Cloud.SwitchCluster(client.Storage); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
-	return "[ksctl] switched cluster", nil
+
+	log.Success("successfully switched cluster")
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.KsctlClient) error {
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
-	client.Storage.Logger().Note("Filter ", string(client.Metadata.Provider))
+	log.Note("Filter", "cloudProvider", string(client.Metadata.Provider))
 
 	var printerTable []cloudController.AllClusterData
 	switch client.Metadata.Provider {
 	case CloudCivo:
-		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
+		data, err := civoPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
 	case CloudLocal:
-		data, err := localPkg.GetRAWClusterInfos(client.Storage)
+		data, err := localPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
 	case CloudAzure:
-		data, err := azurePkg.GetRAWClusterInfos(client.Storage)
+		data, err := azurePkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
 	case CloudAll:
-		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
+		data, err := civoPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = localPkg.GetRAWClusterInfos(client.Storage)
+		data, err = localPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = azurePkg.GetRAWClusterInfos(client.Storage)
+		data, err = azurePkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 	}
-	client.Storage.Logger().Table(printerTable)
-	return "[ksctl] get clusters", nil
+	log.Table(printerTable)
+
+	log.Success("successfully get clusters")
+
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) error {
 	if client.Metadata.Provider == CloudLocal {
-		return "", fmt.Errorf("ha not supported")
+		return log.NewError("ha not supported")
 	}
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 
 	fakeClient := false
@@ -267,20 +284,20 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	}
 
 	if !utils.ValidCNIPlugin(KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
-		return "", errors.New("invalid CNI plugin")
+		return log.NewError("invalid CNI plugin")
 	}
 
 	if err := cloud.HydrateCloud(client, OperationStateCreate, fakeClient); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 	err := kubernetes.HydrateK8sDistro(client)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	cloudResErr := cloud.CreateHACluster(client)
 	if cloudResErr != nil {
-		return "", cloudResErr
+		return log.NewError(cloudResErr.Error())
 	}
 	// Cloud done
 	var payload cloudController.CloudResourceState
@@ -288,36 +305,36 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 	err = client.Distro.InitState(payload, client.Storage, OperationStateCreate)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
-	client.Storage.Logger().Warn("[ksctl] only cloud resources are having replay!\n")
+	log.Warn("only cloud resources are having replay!")
 	// Kubernetes controller
 	externalCNI, err := kubernetes.ConfigureCluster(client)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	//////// Done with cluster setup
 	cloudstate, err := client.Cloud.GetStateFile(client.Storage)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	k8sstate, err := client.Distro.GetStateFile(client.Storage)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	kubeconfigPath, kubeconfig, err := client.Distro.GetKubeConfig(client.Storage)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	var cloudSecret map[string][]byte
 	cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	////// EXPERIMENTAL Features //////
@@ -328,11 +345,11 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 			StorageDriver: client.Storage,
 		}
 		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 
 		if err = kubernetesClient.KsctlConfigForController(kubeconfig, kubeconfigPath, cloudstate, k8sstate, cloudSecret); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 	}
 
@@ -343,36 +360,37 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 			StorageDriver: client.Storage,
 		}
 		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 
 		if externalCNI {
 			if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
-				return "", err
+				return log.NewError(err.Error())
 			}
 		}
 
 		if len(client.Metadata.Applications) != 0 {
 			apps := strings.Split(client.Metadata.Applications, ",")
 			if err := kubernetesClient.InstallApplications(apps); err != nil {
-				return "", err
+				return log.NewError(err.Error())
 			}
 		}
 	}
+	log.Success("successfully created ha cluster")
 
-	return "[ksctl] created HA cluster", nil
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) error {
 
 	if client.Metadata.Provider == CloudLocal {
-		return "", fmt.Errorf("ha not supported")
+		return log.NewError("ha not supported")
 	}
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	fakeClient := false
@@ -380,7 +398,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, OperationStateDelete, fakeClient); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	if len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
@@ -389,18 +407,18 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 
 		err := kubernetes.HydrateK8sDistro(client)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		var payload cloudController.CloudResourceState
 		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 
 		err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 		kubeconfigPath, _, err := client.Distro.GetKubeConfig(client.Storage)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 
 		kubernetesClient := universal.Kubernetes{
@@ -408,44 +426,46 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 			StorageDriver: client.Storage,
 		}
 		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 
 		if err = kubernetesClient.DeleteResourcesFromController(); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 
 		// NOTE: explict make the count of the workernodes as 0 as we need one schedulable workload to test of the operation was successful
 		if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, 0, true); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 	}
 
 	cloudResErr := cloud.DeleteHACluster(client)
 	if cloudResErr != nil {
-		return "", cloudResErr
+		return log.NewError(cloudResErr.Error())
 	}
 
-	return "[ksctl] deleted HA cluster", nil
+	log.Success("successfully deleted HA cluster")
+
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resources.KsctlClient) error {
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	if client.Metadata.IsHA && len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
 		// disable add AddWorkerPlaneNode when this feature is being used
-		return "", fmt.Errorf("This Functionality is diabled for {HA type clusters} due to FEATURE_FLAG [%s]", KsctlFeatureFlagHaAutoscale)
+		return log.NewError("This Functionality is diabled for {HA type clusters}", "FEATURE_FLAG", KsctlFeatureFlagHaAutoscale)
 	}
 	if client.Metadata.Provider == CloudLocal {
-		return "", fmt.Errorf("ha not supported")
+		return log.NewError("ha not supported")
 	}
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 	if !client.Metadata.IsHA {
-		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
+		return log.NewError("this feature is only for ha clusters (for now)")
 	}
 
 	fakeClient := false
@@ -453,17 +473,17 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, OperationStateGet, fakeClient); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	err := kubernetes.HydrateK8sDistro(client)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	currWP, cloudResErr := cloud.AddWorkerNodes(client)
 	if cloudResErr != nil {
-		return "", cloudResErr
+		return log.NewError(cloudResErr.Error())
 	}
 
 	// Cloud done
@@ -473,36 +493,37 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 
 	err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
-	client.Storage.Logger().Warn("\n[ksctl] only cloud resources are having replay!\n")
+	log.Warn("[ksctl] only cloud resources are having replay!")
 	// Kubernetes controller
 	err = kubernetes.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
-	return "[ksctl] added worker node(s)", nil
+	log.Success("successfully added workernodes")
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) (string, error) {
+func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) error {
 	if err := validationFields(client.Metadata); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	if client.Metadata.IsHA && len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
-		return "", fmt.Errorf("This Functionality is diabled for {HA type cluster} due to FEATURE_FLAG [%s]", KsctlFeatureFlagHaAutoscale)
+		return log.NewError("This Functionality is diabled for {HA type cluster}", "FEATURE_FLAG", KsctlFeatureFlagHaAutoscale)
 	}
 
 	if client.Metadata.Provider == CloudLocal {
-		return "", fmt.Errorf("ha not supported")
+		return log.NewError("ha not supported")
 	}
 	if client.Storage == nil {
-		return "", fmt.Errorf("Initalize the storage driver")
+		return log.NewError("Initalize the storage driver")
 	}
 	if !client.Metadata.IsHA {
-		return "", fmt.Errorf("this feature is only for ha clusters (for now)")
+		return log.NewError("this feature is only for ha clusters (for now)")
 	}
 
 	fakeClient := false
@@ -510,20 +531,20 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		fakeClient = true
 	}
 	if err := cloud.HydrateCloud(client, OperationStateGet, fakeClient); err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	err := kubernetes.HydrateK8sDistro(client)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
 	hostnames, err := cloud.DelWorkerNodes(client)
 	if err != nil {
-		return "", err
+		return log.NewError(err.Error())
 	}
 
-	client.Storage.Logger().Note("Hostnames to remove", strings.Join(hostnames, ";"))
+	log.Debug("K8s nodes to be deleted", "hostnames", strings.Join(hostnames, ";"))
 	if !fakeClient {
 		var payload cloudController.CloudResourceState
 		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
@@ -531,14 +552,15 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 
 		err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
 		if err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 
 		// move it to kubernetes controller
 		if err := kubernetes.DelWorkerPlanes(client, hostnames); err != nil {
-			return "", err
+			return log.NewError(err.Error())
 		}
 	}
+	log.Success("Successfully deleted workerNodes")
 
-	return "[ksctl] deleted worker node(s)", nil
+	return nil
 }
