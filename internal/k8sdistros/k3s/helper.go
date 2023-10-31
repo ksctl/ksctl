@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
@@ -17,6 +16,7 @@ func saveStateHelper(storage resources.StorageFactory, path string) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "k3sState", string(rawState))
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
@@ -26,29 +26,34 @@ func loadStateHelper(storage resources.StorageFactory, path string) error {
 		return err
 	}
 
-	return convertStateFromBytes(raw)
+	log.Debug("Printing", "rawState", string(raw))
+
+	return convertBytesToState(raw)
 }
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {
 	return json.Marshal(state)
 }
 
-func convertStateFromBytes(raw []byte) error {
+func convertBytesToState(raw []byte) error {
 	var data *StateConfiguration
 	if err := json.Unmarshal(raw, &data); err != nil {
 		return err
 	}
 	k8sState = data
+
+	log.Debug("Printing", "k3sState", k8sState)
 	return nil
 }
 func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubeconfig string) error {
-	rawState := []byte(kubeconfig)
+	rawKubeconfig := []byte(kubeconfig)
 
-	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
+	log.Debug("Printing", "kubeconfig", kubeconfig)
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawKubeconfig)
 }
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
 	env := ""
-	storage.Logger().Note("KUBECONFIG env var")
+	log.Note("KUBECONFIG env var")
 	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 	switch runtime.GOOS {
 	case "windows":
@@ -66,7 +71,7 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 			env = "unset KUBECONFIG"
 		}
 	}
-	storage.Logger().Note(env)
+	log.Note(env)
 }
 
 func isValidK3sVersion(ver string) bool {
@@ -77,7 +82,6 @@ func isValidK3sVersion(ver string) bool {
 			return true
 		}
 	}
-	var log logger.LogFactory = &logger.Logger{}
-	log.Err(strings.Join(validVersion, " "))
+	log.Error(strings.Join(validVersion, " "))
 	return false
 }
