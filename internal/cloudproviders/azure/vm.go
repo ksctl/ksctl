@@ -370,7 +370,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 	var errDelete error //just to make sure its nil
 	donePoll := make(chan struct{})
 	go func() {
-		close(donePoll)
+		defer close(donePoll)
 		_, err = obj.client.PollUntilDoneDelDisk(ctx, pollerResponse, nil)
 		if err != nil {
 			errDelete = err
