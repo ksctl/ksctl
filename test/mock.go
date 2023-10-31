@@ -24,7 +24,7 @@ func StartCloud() {
 	cli.Metadata.ClusterName = "fake"
 	cli.Metadata.StateLocation = consts.StoreLocal
 	cli.Metadata.K8sDistro = consts.K8sK3s
-	cli.Metadata.LogVerbosity = 0
+	cli.Metadata.LogVerbosity = -1
 	cli.Metadata.LogWritter = os.Stdout
 
 	if err := control_pkg.InitializeStorageFactory(cli, false); err != nil {
