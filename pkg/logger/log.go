@@ -122,6 +122,6 @@ func (l *Logger) Table(data []cloudController.AllClusterData) {
 }
 
 func (l *Logger) Box(title string, lines string) {
-	Box := box.New(box.Config{Px: 2, Py: 2, Type: "Bold", TitlePos: "Top", Color: "Cyan"})
+	Box := box.New(box.Config{Px: 4, Py: 2, Type: "Bold", TitlePos: "Top", Color: "Cyan"})
 	Box.Println(title, lines)
 }

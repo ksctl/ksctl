@@ -33,7 +33,6 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 	if err := saveStateHelper(storage); err != nil {
 		return log.NewError(err.Error())
 	}
-	printKubeconfig(storage, OperationStateDelete)
 
 	return nil
 }

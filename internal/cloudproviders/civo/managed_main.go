@@ -133,7 +133,6 @@ func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) err
 	if err := saveStateHelper(storage, path); err != nil {
 		return log.NewError(err.Error())
 	}
-	printKubeconfig(storage, OperationStateDelete)
 
 	return nil
 }
