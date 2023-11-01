@@ -186,6 +186,8 @@ func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
 		log.Success("deleted the resource group", "name", rgname)
 	}
 
+	printKubeconfig(storage, OperationStateDelete)
+
 	if err := storage.Path(generatePath(UtilClusterPath, clusterType, clusterDirName)).
 		DeleteDir(); err != nil {
 		return log.NewError(err.Error())
