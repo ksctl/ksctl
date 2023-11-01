@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
@@ -122,6 +123,12 @@ func (l *Logger) Table(data []cloudController.AllClusterData) {
 }
 
 func (l *Logger) Box(title string, lines string) {
-	Box := box.New(box.Config{Px: 4, Py: 2, Type: "Bold", TitlePos: "Top", Color: "Cyan"})
+	px := 4
+	if len(title) >= 2*px+len(lines) {
+		// some maths
+		px = int(math.Ceil(float64(len(title)-len(lines))/2)) + 1
+	}
+	l.Debug("PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
+	Box := box.New(box.Config{Px: px, Py: 2, Type: "Bold", TitlePos: "Top", Color: "Cyan"})
 	Box.Println(title, lines)
 }

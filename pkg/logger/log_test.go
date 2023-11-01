@@ -47,4 +47,11 @@ func TestPrinters(t *testing.T) {
 	t.Run("Table", func(t *testing.T) {
 		logger.Table(nil)
 	})
+
+	t.Run("Box", func(t *testing.T) {
+		logger.Box("Abcd", "1")
+		logger.Box("Abcddedefe", "1")
+		logger.Box("KUBECONFIG env var", "/jknc/csdc")
+		logger.Box("KUBECONFIG env var", "jknc")
+	})
 }
