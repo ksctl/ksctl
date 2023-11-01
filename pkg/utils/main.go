@@ -89,7 +89,8 @@ func GetUserName() string {
 func getKubeconfig(provider KsctlCloud, clusterType KsctlClusterType, params ...string) string {
 	if provider != CloudCivo &&
 		provider != CloudLocal &&
-		provider != CloudAzure {
+		provider != CloudAzure &&
+		provider != CloudAws {
 		return ""
 	}
 	var ret strings.Builder
@@ -275,9 +276,17 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 	return signer, nil
 }
 
-func returnServerPublicKeys(publicIP string) (string, error) {
-	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP) // WARN: it requires the os to have these dependencies
-	c2 := exec.Command("ssh-keygen", "-lf", "-")             // WARN: it requires the os to have these dependencies
+func returnServerPublicKeys(provider KsctlCloud, publicIP string) (string, error) {
+	var c1 *exec.Cmd
+	var c2 *exec.Cmd
+
+	if provider == CloudAws {
+		c1 = exec.Command("ssh-keyscan", "-t", "ecdsa", publicIP)
+		c2 = exec.Command("ssh-keygen", "-lf", "-")
+	} else {
+		c1 = exec.Command("ssh-keyscan", "-t", "rsa", publicIP) // WARN: it requires the os to have these dependencies
+		c2 = exec.Command("ssh-keygen", "-lf", "-")             // WARN: it requires the os to have these dependencies
+	}
 
 	r, w := io.Pipe()
 	c1.Stdout = w
@@ -334,7 +343,7 @@ func (ssh *SSHPayload) FastMode(mode bool) SSHCollection {
 	return ssh
 }
 
-func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error {
+func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, provider KsctlCloud) error {
 
 	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
 	if err != nil {
@@ -359,15 +368,26 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 		return nil
 	}
 
+	var keyalgo []string
+	if provider == CloudAws {
+		keyalgo = []string{
+			ssh.KeyAlgoECDSA256,
+			ssh.KeyAlgoED25519,
+		}
+	} else {
+		keyalgo = []string{
+			ssh.KeyAlgoRSASHA256,
+		}
+	}
+
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
 
-		HostKeyAlgorithms: []string{
-			ssh.KeyAlgoRSASHA256,
-		},
+		HostKeyAlgorithms: keyalgo,
+
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 				actualFingerprint := ssh.FingerprintSHA256(key)
