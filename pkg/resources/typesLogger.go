@@ -22,4 +22,6 @@ type LoggerFactory interface {
 	NewError(format string, v ...any) error
 
 	Table(data []cloudController.AllClusterData)
+
+	Box(title string, lines string)
 }

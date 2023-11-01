@@ -38,7 +38,7 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 		if len(pubIP) != 0 && len(pvIP) != 0 {
 			// all info present
 			if creationMode {
-				log.Print("skipped vm found", instID)
+				log.Print("skipped vm found", "id", instID)
 			}
 			return nil
 		} else {
@@ -214,7 +214,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 			}
 
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success("Deleted vm", instID)
+			log.Success("Deleted vm", "id", instID)
 		}()
 
 		<-done
@@ -243,7 +243,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				return
 			}
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success("Deleted vm", instID)
+			log.Success("Deleted vm", "id", instID)
 		}()
 		<-done
 
@@ -271,7 +271,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				return
 			}
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success("Deleted vm", instID)
+			log.Success("Deleted vm", "id", instID)
 		}()
 		<-done
 
@@ -300,7 +300,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				return
 			}
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success("Deleted vm", instID)
+			log.Success("Deleted vm", "id", instID)
 		}()
 		<-done
 	}

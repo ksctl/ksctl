@@ -2,6 +2,7 @@ package civo
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"runtime"
 
@@ -189,29 +190,38 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 }
 
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
-	env := ""
-
-	path := generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-	log.Debug("Printing", "path", path)
+	key := ""
+	value := ""
+	box := ""
 	switch runtime.GOOS {
 	case "windows":
+		key = "$Env:KUBECONFIG"
+
 		switch operation {
-		case "create":
-			env = "$Env:KUBECONFIG"
-		case "delete":
-			env = "$Env:KUBECONFIG"
+		case OperationStateCreate:
+			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+
+		case OperationStateDelete:
+			value = ""
 		}
+		box = key + "=" + fmt.Sprintf("\"%s\"", value)
+		log.Note("KUBECONFIG env var", key, value)
+
 	case "linux", "macos":
+
 		switch operation {
-		case "create":
-			env = "export KUBECONFIG"
-		case "delete":
-			env = "unset KUBECONFIG"
+		case OperationStateCreate:
+			key = "export KUBECONFIG"
+			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+			box = key + "=" + fmt.Sprintf("\"%s\"", value)
+			log.Note("KUBECONFIG env var", key, value)
+
+		case OperationStateDelete:
+			key = "unset KUBECONFIG"
+			box = key
+			log.Note(key)
 		}
 	}
-	if operation == "create" {
-		log.Note("KUBECONFIG env var", env, path)
-	} else {
-		log.Note(env)
-	}
+
+	log.Box("KUBECONFIG env var", box)
 }
