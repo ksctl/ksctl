@@ -64,6 +64,8 @@ func (obj *AzureProvider) DelSSHKeyPair(storage resources.StorageFactory) error 
 		return log.NewError(err.Error())
 	}
 
+	sshName := azureCloudState.SSHKeyName
+
 	azureCloudState.SSHKeyName = ""
 	azureCloudState.SSHUser = ""
 	azureCloudState.SSHPrivateKeyLoc = ""
@@ -72,6 +74,6 @@ func (obj *AzureProvider) DelSSHKeyPair(storage resources.StorageFactory) error 
 		return log.NewError(err.Error())
 	}
 
-	log.Success("deleted the ssh key pair", "name", azureCloudState.SSHKeyName)
+	log.Success("deleted the ssh key pair", "name", sshName)
 	return nil
 }
