@@ -181,6 +181,8 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 		return log.NewError(err.Error())
 	}
 
+	// MIssing kubeconfig unset printing
+
 	err = client.Cloud.DelSSHKeyPair(client.Storage)
 	if err != nil {
 		return log.NewError(err.Error())

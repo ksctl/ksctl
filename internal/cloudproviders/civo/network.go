@@ -77,6 +77,8 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 	}
 	path := generatePath(UtilClusterPath, clusterType, clusterDirName)
 
+	printKubeconfig(storage, OperationStateDelete)
+
 	if err := storage.Path(path).DeleteDir(); err != nil {
 		return log.NewError(err.Error())
 	}
