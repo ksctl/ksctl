@@ -51,6 +51,7 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 	if len(civoCloudState.NetworkIDs.NetworkID) == 0 {
 		log.Print("skipped network already deleted")
 	} else {
+		netID := civoCloudState.NetworkIDs.NetworkID
 
 		currRetryCounter := KsctlCounterConsts(0)
 		for currRetryCounter < CounterMaxWatchRetryCount {
@@ -72,7 +73,7 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 		if err := saveStateHelper(storage, generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
 			return log.NewError(err.Error())
 		}
-		log.Success("Deleted network", "networkID", civoCloudState.NetworkIDs.NetworkID)
+		log.Success("Deleted network", "networkID", netID)
 	}
 	path := generatePath(UtilClusterPath, clusterType, clusterDirName)
 

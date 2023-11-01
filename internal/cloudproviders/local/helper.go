@@ -102,26 +102,40 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 }
 
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation, clustername string) {
-	env := ""
-	log.Note("KUBECONFIG env var")
-	path := utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, clustername, KUBECONFIG)
+	key := ""
+	value := ""
+	box := ""
 	switch runtime.GOOS {
 	case "windows":
+		key = "$Env:KUBECONFIG"
+
 		switch operation {
-		case "create":
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
-		case "delete":
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+		case OperationStateCreate:
+			value = utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, clustername, KUBECONFIG)
+
+		case OperationStateDelete:
+			value = ""
 		}
+		box = key + "=" + fmt.Sprintf("\"%s\"", value)
+		log.Note("KUBECONFIG env var", key, value)
+
 	case "linux", "macos":
+
 		switch operation {
-		case "create":
-			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
-		case "delete":
-			env = "unset KUBECONFIG"
+		case OperationStateCreate:
+			key = "export KUBECONFIG"
+			value = utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, clustername, KUBECONFIG)
+			box = key + "=" + fmt.Sprintf("\"%s\"", value)
+			log.Note("KUBECONFIG env var", key, value)
+
+		case OperationStateDelete:
+			key = "unset KUBECONFIG"
+			box = key
+			log.Note(key)
 		}
 	}
-	log.Note(env)
+
+	log.Box("KUBECONFIG env var", box)
 }
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {

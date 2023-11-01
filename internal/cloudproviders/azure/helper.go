@@ -120,26 +120,40 @@ func convertStateFromBytes(raw []byte) error {
 }
 
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
-	env := ""
-	log.Note("KUBECONFIG env var")
-	path := generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	key := ""
+	value := ""
+	box := ""
 	switch runtime.GOOS {
 	case "windows":
+		key = "$Env:KUBECONFIG"
+
 		switch operation {
 		case OperationStateCreate:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
+			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+
 		case OperationStateDelete:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+			value = ""
 		}
+		box = key + "=" + fmt.Sprintf("\"%s\"", value)
+		log.Note("KUBECONFIG env var", key, value)
+
 	case "linux", "macos":
+
 		switch operation {
 		case OperationStateCreate:
-			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
+			key = "export KUBECONFIG"
+			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+			box = key + "=" + fmt.Sprintf("\"%s\"", value)
+			log.Note("KUBECONFIG env var", key, value)
+
 		case OperationStateDelete:
-			env = "unset KUBECONFIG"
+			key = "unset KUBECONFIG"
+			box = key
+			log.Note(key)
 		}
 	}
-	log.Note(env)
+
+	log.Box("KUBECONFIG env var", box)
 }
 
 func validationOfArguments(obj *AzureProvider) error {

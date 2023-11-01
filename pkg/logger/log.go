@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 
+	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
@@ -118,4 +119,9 @@ func (l *Logger) Table(data []cloudController.AllClusterData) {
 	}
 
 	tbl.Print()
+}
+
+func (l *Logger) Box(title string, lines string) {
+	Box := box.New(box.Config{Px: 2, Py: 2, Type: "Bold", TitlePos: "Top", Color: "Cyan"})
+	Box.Println(title, lines)
 }

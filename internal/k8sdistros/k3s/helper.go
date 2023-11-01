@@ -52,26 +52,40 @@ func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubecon
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawKubeconfig)
 }
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
-	env := ""
-	log.Note("KUBECONFIG env var")
-	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+	key := ""
+	value := ""
+	box := ""
 	switch runtime.GOOS {
 	case "windows":
+		key = "$Env:KUBECONFIG"
+
 		switch operation {
 		case OperationStateCreate:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
+			value = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+
 		case OperationStateDelete:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+			value = ""
 		}
+		box = key + "=" + fmt.Sprintf("\"%s\"", value)
+		log.Note("KUBECONFIG env var", key, value)
+
 	case "linux", "macos":
+
 		switch operation {
 		case OperationStateCreate:
-			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
+			key = "export KUBECONFIG"
+			value = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			box = key + "=" + fmt.Sprintf("\"%s\"", value)
+			log.Note("KUBECONFIG env var", key, value)
+
 		case OperationStateDelete:
-			env = "unset KUBECONFIG"
+			key = "unset KUBECONFIG"
+			box = key
+			log.Note(key)
 		}
 	}
-	log.Note(env)
+
+	log.Box("KUBECONFIG env var", box)
 }
 
 func isValidK3sVersion(ver string) bool {
