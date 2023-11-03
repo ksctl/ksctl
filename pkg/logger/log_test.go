@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 )
 
 var (
@@ -13,6 +14,7 @@ var (
 
 func TestMain(m *testing.M) {
 	logger = NewDefaultLogger(-1, os.Stdout)
+	_ = NewDefaultLogger(0, os.Stdout)
 	exitVal := m.Run()
 
 	os.Exit(exitVal)
@@ -20,31 +22,44 @@ func TestMain(m *testing.M) {
 
 func TestPrinters(t *testing.T) {
 
-	t.Run("Paclage name set", func(t *testing.T) {
+	t.Run("Package name set", func(t *testing.T) {
 		logger.SetPackageName("logger-test")
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		logger.Success("FAKE")
+		logger.Success("FAKE", "type", "success")
 	})
 
 	t.Run("Warn", func(t *testing.T) {
-		logger.Warn("FAKE")
+		logger.Warn("FAKE", "type", "warn")
 	})
 
-	t.Run("Err", func(t *testing.T) {
-		logger.Error("FAKE")
+	t.Run("Error", func(t *testing.T) {
+		logger.Error("FAKE", "type", "error")
+	})
+
+	t.Run("Debug", func(t *testing.T) {
+		logger.Debug("FAKE", "type", "debugging")
 	})
 
 	t.Run("Note", func(t *testing.T) {
-		logger.Note("FAKE")
+		logger.Note("FAKE", "type", "note")
 	})
 
 	t.Run("Print", func(t *testing.T) {
-		logger.Print("FAKE")
+		logger.Print("FAKE", "type", "print")
 	})
 
 	t.Run("Table", func(t *testing.T) {
+		logger.Table(
+			[]cloud.AllClusterData{
+				cloud.AllClusterData{
+					Name:     "fake-demo",
+					Provider: "fake",
+					Region:   "fake-reg",
+				},
+			})
+
 		logger.Table(nil)
 	})
 
