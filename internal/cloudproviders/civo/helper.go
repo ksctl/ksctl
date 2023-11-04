@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/civo/civogo"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
@@ -19,19 +20,22 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	if civoToken != "" {
 		return civoToken
 	}
-	storage.Logger().Warn("environment vars not set: `CIVO_TOKEN`")
+	log.Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := utils.GetCred(storage, CloudCivo)
+	token, err := utils.GetCred(storage, log, CloudCivo)
 	if err != nil {
 		return ""
 	}
 	return token["token"]
 }
 
-func GetInputCredential(storage resources.StorageFactory) error {
+func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
 
-	storage.Logger().Print("Enter CIVO TOKEN")
-	token, err := utils.UserInputCredentials(storage.Logger())
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(CloudCivo))
+
+	log.Print("Enter CIVO TOKEN")
+	token, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
@@ -42,18 +46,20 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	id := client.GetAccountID()
 
 	if len(id) == 0 {
-		return fmt.Errorf("Invalid user")
+		return log.NewError("Invalid user")
 	}
-	fmt.Println(id)
+	log.Print(id)
 
-	if err := utils.SaveCred(storage, Credential{token}, CloudCivo); err != nil {
+	if err := utils.SaveCred(storage, log, Credential{token}, CloudCivo); err != nil {
 		return err
 	}
 	return nil
 }
 
 func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
-	return utils.GetPath(flag, CloudCivo, clusterType, path...)
+	p := utils.GetPath(flag, CloudCivo, clusterType, path...)
+	log.Debug("Printing", "path", p)
+	return p
 }
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
@@ -67,7 +73,7 @@ func saveStateHelper(storage resources.StorageFactory, path string) error {
 func loadStateHelper(storage resources.StorageFactory, path string) error {
 	raw, err := storage.Path(path).Load()
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	return convertStateFromBytes(raw)
@@ -75,6 +81,7 @@ func loadStateHelper(storage resources.StorageFactory, path string) error {
 
 func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
+	log.Debug("Printing", "kubeconfig", kubeconfig, "path", path)
 
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
 }
@@ -97,8 +104,10 @@ func convertStateFromBytes(raw []byte) error {
 func getValidK8sVersionClient(obj *CivoProvider) []string {
 	vers, err := obj.client.ListAvailableKubernetesVersions()
 	if err != nil {
+		log.Error("unable to get available k8s versions", "err", err)
 		return nil
 	}
+	log.Debug("Printing", "ListAvailableKubernetesVersions", vers)
 	var val []string
 	for _, ver := range vers {
 		if ver.ClusterType == string(K8sK3s) {
@@ -111,8 +120,10 @@ func getValidK8sVersionClient(obj *CivoProvider) []string {
 func getValidRegionsClient(obj *CivoProvider) []string {
 	regions, err := obj.client.ListRegions()
 	if err != nil {
+		log.Error("unable to get available regions", "err", err)
 		return nil
 	}
+	log.Debug("Printing", "ListRegions", regions)
 	var val []string
 	for _, region := range regions {
 		val = append(val, region.Code)
@@ -123,8 +134,10 @@ func getValidRegionsClient(obj *CivoProvider) []string {
 func getValidVMSizesClient(obj *CivoProvider) []string {
 	nodeSizes, err := obj.client.ListInstanceSizes()
 	if err != nil {
+		log.Error("unable to fetch list of valid instance sizes", "err", err)
 		return nil
 	}
+	log.Debug("Printing", "ListInstanceSizes", nodeSizes)
 	var val []string
 	for _, region := range nodeSizes {
 		val = append(val, region.Name)
@@ -152,7 +165,7 @@ func isValidK8sVersion(obj *CivoProvider, ver string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Invalid k8s version\nValid options: %v\n", valver)
+	return log.NewError("Invalid k8s version\nValid options: %v\n", valver)
 }
 
 // IsValidRegionCIVO validates the region code for CIVO
@@ -163,7 +176,7 @@ func isValidRegion(obj *CivoProvider, reg string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID REGION\nValid options: %v\n", validFromClient)
+	return log.NewError("INVALID REGION\nValid options: %v\n", validFromClient)
 }
 
 func isValidVMSize(obj *CivoProvider, size string) error {
@@ -173,28 +186,42 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID VM SIZE\nValid options: %v\n", validFromClient)
+	return log.NewError("INVALID VM SIZE\nValid options: %v\n", validFromClient)
 }
 
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
-	env := ""
-	storage.Logger().Note("KUBECONFIG env var")
-	path := generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	key := ""
+	value := ""
+	box := ""
 	switch runtime.GOOS {
 	case "windows":
+		key = "$Env:KUBECONFIG"
+
 		switch operation {
-		case "create":
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
-		case "delete":
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+		case OperationStateCreate:
+			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+
+		case OperationStateDelete:
+			value = ""
 		}
+		box = key + "=" + fmt.Sprintf("\"%s\"", value)
+		log.Note("KUBECONFIG env var", key, value)
+
 	case "linux", "macos":
+
 		switch operation {
-		case "create":
-			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
-		case "delete":
-			env = "unset KUBECONFIG"
+		case OperationStateCreate:
+			key = "export KUBECONFIG"
+			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+			box = key + "=" + fmt.Sprintf("\"%s\"", value)
+			log.Note("KUBECONFIG env var", key, value)
+
+		case OperationStateDelete:
+			key = "unset KUBECONFIG"
+			box = key
+			log.Note(key)
 		}
 	}
-	storage.Logger().Note(env)
+
+	log.Box("KUBECONFIG env var", box)
 }

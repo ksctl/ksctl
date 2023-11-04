@@ -34,7 +34,7 @@
 - 'internal/k8sdistros/universal/*'
 
 'state/local':
-- 'internal/storagelogger/local/*'
+- 'internal/storage/local/*'
 
 'go':
 - '**/*.go'

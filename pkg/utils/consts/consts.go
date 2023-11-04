@@ -62,6 +62,7 @@ const (
 	StoreLocal  KsctlStore = "local"
 	StoreRemote KsctlStore = "remote"
 )
+
 const (
 	OperationStateGet    KsctlOperation = "get"
 	OperationStateCreate KsctlOperation = "create"

@@ -19,7 +19,6 @@ import (
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -37,7 +36,7 @@ type SSHPayload struct {
 }
 
 type SSHCollection interface {
-	SSHExecute(resources.StorageFactory) error
+	SSHExecute(resources.StorageFactory, resources.LoggerFactory) error
 	Flag(KsctlUtilsConsts) SSHCollection
 	Script(string) SSHCollection
 	FastMode(bool) SSHCollection
@@ -145,10 +144,10 @@ func GetPath(flag KsctlUtilsConsts, provider KsctlCloud, clusterType KsctlCluste
 	}
 }
 
-func SaveCred(storage resources.StorageFactory, config interface{}, provider KsctlCloud) error {
+func SaveCred(storage resources.StorageFactory, log resources.LoggerFactory, config interface{}, provider KsctlCloud) error {
 
 	if provider != CloudCivo && provider != CloudAzure {
-		return fmt.Errorf("invalid provider (given): Unable to save configuration")
+		return log.NewError("invalid provider (given): Unable to save configuration")
 	}
 
 	storeBytes, err := json.Marshal(config)
@@ -161,11 +160,11 @@ func SaveCred(storage resources.StorageFactory, config interface{}, provider Ksc
 		return err
 	}
 
-	storage.Logger().Success("[secrets] configuration")
+	log.Success("successful in saving credentials")
 	return nil
 }
 
-func GetCred(storage resources.StorageFactory, provider KsctlCloud) (i map[string]string, err error) {
+func GetCred(storage resources.StorageFactory, log resources.LoggerFactory, provider KsctlCloud) (i map[string]string, err error) {
 
 	fileBytes, err := storage.Path(GetPath(UtilCredentialPath, provider, "")).Load()
 	if err != nil {
@@ -177,7 +176,7 @@ func GetCred(storage resources.StorageFactory, provider KsctlCloud) (i map[strin
 	if err != nil {
 		return
 	}
-	storage.Logger().Success("[utils] configuration")
+	log.Success("successful in fetching credentials")
 
 	return
 }
@@ -232,7 +231,7 @@ func getPaths(provider KsctlCloud, clusterType KsctlClusterType, params ...strin
 	return ret.String()
 }
 
-func CreateSSHKeyPair(storage resources.StorageFactory, provider KsctlCloud, clusterDir string) (string, error) {
+func CreateSSHKeyPair(storage resources.StorageFactory, log resources.LoggerFactory, provider KsctlCloud, clusterDir string) (string, error) {
 
 	pathTillFolder := ""
 	pathTillFolder = getPaths(provider, ClusterTypeHa, clusterDir)
@@ -244,7 +243,7 @@ func CreateSSHKeyPair(storage resources.StorageFactory, provider KsctlCloud, clu
 		return "", err
 	}
 
-	storage.Logger().Print("[utils]", string(out))
+	log.Debug("Printing", "keypair", string(out))
 
 	path := GetPath(UtilOtherPath, provider, ClusterTypeHa, clusterDir, "keypair.pub")
 	fileBytePub, err := storage.Path(path).Load()
@@ -334,7 +333,7 @@ func (ssh *SSHPayload) FastMode(mode bool) SSHCollection {
 	return ssh
 }
 
-func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error {
+func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log resources.LoggerFactory) error {
 
 	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
 	if err != nil {
@@ -346,11 +345,11 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 	if err != nil {
 		return err
 	}
-	storage.Logger().Success("[ssh] SSH into", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+	log.Debug("SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
 	// NOTE: when the fake environment variable is set //
 	if fake := os.Getenv(string(KsctlFakeFlag)); len(fake) != 0 {
-		storage.Logger().Success("[ssh] Exec Scripts")
+		log.Debug("Exec Scripts for fake flag")
 		sshPayload.Output = ""
 
 		if sshPayload.flag == UtilExecWithOutput {
@@ -378,11 +377,11 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 						return err
 					}
 					if expectedFingerprint != actualFingerprint {
-						return fmt.Errorf("[ssh] mismatch of fingerprint")
+						return log.NewError("mismatch of SSH fingerprint")
 					}
 					return nil
 				}
-				return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
+				return log.NewError("unsupported key type: %s", keyType)
 			})}
 
 	if !sshPayload.fastMode {
@@ -397,16 +396,17 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 		if err == nil {
 			break
 		} else {
-			storage.Logger().Warn(fmt.Sprintln("RETRYING", err))
+			log.Warn("RETRYING", err)
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
 	}
 	if currRetryCounter == CounterMaxRetryCount {
-		return fmt.Errorf("[ssh] maximum retry count reached for ssh conn %v", err)
+		return log.NewError("maximum retry count reached for ssh conn %v", err)
 	}
 
-	storage.Logger().Success("[ssh] Exec Scripts")
+	log.Debug("Printing", "bashScript", sshPayload.script)
+	log.Print("Exec Scripts")
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -419,21 +419,28 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory) error
 	var buff bytes.Buffer
 
 	sshPayload.Output = ""
-	if sshPayload.flag == UtilExecWithOutput {
-		session.Stdout = &buff
-	}
+	//if sshPayload.flag == UtilExecWithOutput {
+	session.Stdout = &buff // make the stdout be stored in buffer
+	//}
 	err = session.Run(sshPayload.script)
+
+	bufferContent := buff.String()
+	log.Debug("Printing", "CommandResult", bufferContent)
+
 	if sshPayload.flag == UtilExecWithOutput {
-		sshPayload.Output = buff.String()
+		sshPayload.Output = bufferContent
 	}
+
 	if err != nil {
 		return err
 	}
 
+	log.Success("Success in executing the script")
+
 	return nil
 }
 
-func UserInputCredentials(logging logger.LogFactory) (string, error) {
+func UserInputCredentials(logging resources.LoggerFactory) (string, error) {
 
 	fmt.Print("    Enter Secret-> ")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -441,7 +448,7 @@ func UserInputCredentials(logging logger.LogFactory) (string, error) {
 		return "", err
 	}
 	if len(bytePassword) == 0 {
-		logging.Err("Empty secret passed!")
+		logging.Error("Empty secret passed!")
 		return UserInputCredentials(logging)
 	}
 	fmt.Println()

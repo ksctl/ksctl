@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
@@ -34,13 +35,8 @@ type StateConfiguration struct {
 
 var (
 	k8sState *StateConfiguration
+	log      resources.LoggerFactory
 )
-
-func ReturnK3sStruct() *K3sDistro {
-	return &K3sDistro{
-		SSHInfo: &utils.SSHPayload{},
-	}
-}
 
 type K3sDistro struct {
 	K3sVer string
@@ -49,21 +45,31 @@ type K3sDistro struct {
 	SSHInfo utils.SSHCollection
 }
 
-// GetStateFiles implements resources.DistroFactory.
-func (*K3sDistro) GetStateFile(resources.StorageFactory) (string, error) {
-	state, err := json.Marshal(k8sState)
-	if err != nil {
-		return "", err
-	}
-	return string(state), nil
-}
-
 const (
 	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
 	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0755)
 	STATE_FILE_NAME              = string("k8s-state.json")
 	KUBECONFIG_FILE_NAME         = string("kubeconfig")
 )
+
+func ReturnK3sStruct(meta resources.Metadata) *K3sDistro {
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName("k3s")
+
+	return &K3sDistro{
+		SSHInfo: &utils.SSHPayload{},
+	}
+}
+
+// GetStateFiles implements resources.DistroFactory.
+func (*K3sDistro) GetStateFile(resources.StorageFactory) (string, error) {
+	state, err := json.Marshal(k8sState)
+	if err != nil {
+		return "", err
+	}
+	log.Debug("Printing", "k3sState", string(state))
+	return string(state), nil
+}
 
 func scriptKUBECONFIG() string {
 	return `#!/bin/bash
@@ -82,16 +88,16 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 		k8sState = &StateConfiguration{}
 		k8sState.DataStoreEndPoint = ""
 		k8sState.K3sToken = ""
+
 	case OperationStateGet:
 		raw, err := storage.Path(path).Load()
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 		err = json.Unmarshal(raw, &k8sState)
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
-
 	}
 	k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
 	k8sState.PrivateIPs.ControlPlanes = cloudState.PrivateIPv4ControlPlanes
@@ -115,10 +121,11 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 	k8sState.ClusterType = cloudState.Metadata.ClusterType
 	err := saveStateHelper(storage, path)
 	if err != nil {
-		return fmt.Errorf("[k3s] failed to Initialized state from Cloud reason: %v", err)
+		return log.NewError("failed to Initialized state from Cloud reason: %v", err)
 	}
+	log.Debug("Printing", "k3sState", k8sState)
 
-	storage.Logger().Success("[k3s] Initialized state from Cloud")
+	log.Print("Initialized state from Cloud")
 	return nil
 }
 
@@ -126,12 +133,14 @@ func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {
 	if isValidK3sVersion(ver) {
 		// valid
 		k3s.K3sVer = fmt.Sprintf("v%s+k3s1", ver)
+		log.Debug("Printing", "k3s.K3sVer", k3s.K3sVer)
 		return k3s
 	}
 	return nil
 }
 
 func (k3s *K3sDistro) CNI(cni string) (externalCNI bool) {
+	log.Debug("Printing", "cni", cni)
 	switch KsctlValidCNIPlugin(cni) {
 	case CNIFlannel, "":
 		k3s.Cni = string(CNIFlannel)

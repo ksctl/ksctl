@@ -54,13 +54,13 @@ func initApps() {
 
 func GetApps(storage resources.StorageFactory, name string) (Application, error) {
 	if apps == nil {
-		return Application{}, fmt.Errorf("[kubernetes] app variable not initalized")
+		return Application{}, log.NewError("app variable not initalized")
 	}
 
 	val, present := apps[name]
 
 	if !present {
-		return Application{}, fmt.Errorf("[kubernetes] app not found %s", name)
+		return Application{}, log.NewError("app not found %s", name)
 	}
 	return val(), nil
 }
@@ -68,10 +68,10 @@ func GetApps(storage resources.StorageFactory, name string) (Application, error)
 func (this *Kubernetes) InstallCNI(app string) error {
 
 	if err := installApplication(this, app); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	this.StorageDriver.Logger().Success("[kubernetes] Installed CNI plugin")
+	log.Success("Installed CNI plugin")
 	return nil
 }
 
@@ -79,11 +79,11 @@ func (this *Kubernetes) InstallApplications(apps []string) error {
 
 	for _, app := range apps {
 		if err := installApplication(this, app); err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 
-	this.StorageDriver.Logger().Success("[kubernetes] Installed Applications")
+	log.Success("Installed Applications")
 	return nil
 }
 
@@ -91,23 +91,23 @@ func installApplication(client *Kubernetes, app string) error {
 
 	appStruct, err := GetApps(client.StorageDriver, app)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	switch appStruct.InstallType {
 
 	case InstallHelm:
 		if err := installHelm(client, appStruct); err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 
 	case InstallKubectl:
 		if err := installKubectl(client, appStruct); err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 
 	}
 
-	client.StorageDriver.Logger().Success("[kubernetes] Installed Resource\n", appStruct.String())
+	log.Success("Installed Resource", "metadata", appStruct.String())
 	return nil
 }

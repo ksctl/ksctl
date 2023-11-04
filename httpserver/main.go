@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	cli        *resources.CobraCmd
+	cli        *resources.KsctlClient
 	controller controllers.Controller
 )
 
@@ -80,31 +80,33 @@ func scaleUp(context *gin.Context) {
 		return
 	}
 
-	cli = &resources.CobraCmd{}
+	cli = new(resources.KsctlClient)
 	controller = control_pkg.GenKsctlController()
 
-	cli.Client.Metadata.ClusterName = req.ClusterName
-	cli.Client.Metadata.StateLocation = StoreLocal
-	cli.Client.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
+	cli.Metadata.ClusterName = req.ClusterName
+	cli.Metadata.StateLocation = StoreLocal
+	cli.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
+	cli.Metadata.LogVerbosity = 0
+	cli.Metadata.LogWritter = os.Stdout
 
-	cli.Client.Metadata.K8sVersion = "1.27.1"
-	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
+	cli.Metadata.K8sVersion = "1.27.1"
+	if err := control_pkg.InitializeStorageFactory(cli, true); err != nil {
 		_ = context.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	cli.Client.Metadata.IsHA = true
-	cli.Client.Metadata.Region = req.Region
-	cli.Client.Metadata.Provider = KsctlCloud(req.Cloud)
+	cli.Metadata.IsHA = true
+	cli.Metadata.Region = req.Region
+	cli.Metadata.Provider = KsctlCloud(req.Cloud)
 
-	cli.Client.Metadata.WorkerPlaneNodeType = req.VMSizeWp
-	cli.Client.Metadata.NoWP = int(req.NoWp)
+	cli.Metadata.WorkerPlaneNodeType = req.VMSizeWp
+	cli.Metadata.NoWP = int(req.NoWp)
 
-	msg, err := controller.AddWorkerPlaneNode(&cli.Client)
+	err := controller.AddWorkerPlaneNode(cli)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 	} else {
-		context.JSON(http.StatusAccepted, &Response{OK: true, Response: msg})
+		context.JSON(http.StatusAccepted, &Response{OK: true, Response: "scaled up"})
 	}
 }
 
@@ -116,55 +118,60 @@ func scaleDown(context *gin.Context) {
 		_ = context.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	cli = &resources.CobraCmd{}
+	cli = new(resources.KsctlClient)
 	controller = control_pkg.GenKsctlController()
 
-	cli.Client.Metadata.ClusterName = req.ClusterName
-	cli.Client.Metadata.StateLocation = StoreLocal
-	cli.Client.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
+	cli.Metadata.ClusterName = req.ClusterName
+	cli.Metadata.StateLocation = StoreLocal
+	cli.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
 
-	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
+	cli.Metadata.LogVerbosity = 0
+	cli.Metadata.LogWritter = os.Stdout
+
+	if err := control_pkg.InitializeStorageFactory(cli, true); err != nil {
 		_ = context.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	cli.Client.Metadata.IsHA = true
-	cli.Client.Metadata.Region = req.Region
-	cli.Client.Metadata.Provider = KsctlCloud(req.Cloud)
+	cli.Metadata.IsHA = true
+	cli.Metadata.Region = req.Region
+	cli.Metadata.Provider = KsctlCloud(req.Cloud)
 
-	cli.Client.Metadata.NoWP = int(req.NoWp)
+	cli.Metadata.NoWP = int(req.NoWp)
 
 	// Return
 
-	msg, err := controller.DelWorkerPlaneNode(&cli.Client)
+	err := controller.DelWorkerPlaneNode(cli)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 	} else {
-		context.JSON(http.StatusAccepted, &Response{OK: true, Response: msg})
+		context.JSON(http.StatusAccepted, &Response{OK: true, Response: "scaled down"})
 	}
 }
 
 func getClusters(context *gin.Context) {
 
-	cli = &resources.CobraCmd{}
+	cli = new(resources.KsctlClient)
 
-	cli.Client.Metadata.StateLocation = StoreLocal
+	cli.Metadata.StateLocation = StoreLocal
 
-	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
+	cli.Metadata.LogVerbosity = 0
+	cli.Metadata.LogWritter = os.Stdout
+
+	if err := control_pkg.InitializeStorageFactory(cli, true); err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 		return
 	}
 
 	var printerTable []cloudController.AllClusterData
-
-	data, err := civo_pkg.GetRAWClusterInfos(cli.Client.Storage)
+	data, err := civo_pkg.GetRAWClusterInfos(cli.Storage, cli.Metadata)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 		return
 	}
 	printerTable = append(printerTable, data...)
 
-	data, err = azure_pkg.GetRAWClusterInfos(cli.Client.Storage)
+	data, err = azure_pkg.GetRAWClusterInfos(cli.Storage, cli.Metadata)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 		return
@@ -197,83 +204,3 @@ func main() {
 
 	_ = r.Run(":8080")
 }
-
-// // CreateHa implements create ha.
-// func (s *httpserversrvc) CreateHa(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
-//
-// 	cli = &resources.CobraCmd{}
-// 	controller = control_pkg.GenKsctlController()
-//
-// 	cli.Client.Metadata.ClusterName = p.ClusterName
-// 	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
-// 	cli.Client.Metadata.K8sDistro = p.Distro
-// 	cli.Client.Metadata.K8sVersion = "1.27.1"
-//
-// 	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, true); err != nil {
-// 		panic(err)
-// 	}
-//
-// 	cli.Client.Metadata.Region = p.Region
-// 	cli.Client.Metadata.Provider = p.Cloud
-//
-// 	cli.Client.Metadata.NoCP = int(*p.NoCp)
-// 	cli.Client.Metadata.NoDS = int(*p.NoDs)
-// 	cli.Client.Metadata.NoWP = int(*p.NoWp)
-// 	cli.Client.Metadata.IsHA = true
-//
-// 	cli.Client.Metadata.ControlPlaneNodeType = *p.VMSizeCp
-// 	cli.Client.Metadata.WorkerPlaneNodeType = *p.VMSizeWp
-// 	cli.Client.Metadata.LoadBalancerNodeType = *p.VMSizeLb
-// 	cli.Client.Metadata.DataStoreNodeType = *p.VMSizeDs
-//
-// 	// Return
-// 	ok := true
-// 	errStr := ""
-//
-// 	msg, err := controller.CreateHACluster(&cli.Client)
-// 	if err != nil {
-// 		ok = false
-// 		errStr = err.Error()
-// 	}
-//
-// 	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
-// 	s.logger.Print(msg)
-//
-// 	return
-// }
-//
-// // DeleteHa implements delete ha.
-// func (s *httpserversrvc) DeleteHa(ctx context.Context, p *httpserver.Metadata) (res *httpserver.Response, err error) {
-//
-// 	cli = &resources.CobraCmd{}
-// 	controller = control_pkg.GenKsctlController()
-//
-// 	cli.Client.Metadata.ClusterName = p.ClusterName
-// 	cli.Client.Metadata.StateLocation = utils.STORE_LOCAL
-// 	cli.Client.Metadata.K8sDistro = p.Distro
-//
-// 	if _, err1 := control_pkg.InitializeStorageFactory(&cli.Client, true); err1 != nil {
-// 		err = err1
-// 		return
-// 	}
-//
-// 	cli.Client.Metadata.IsHA = true
-// 	cli.Client.Metadata.Region = p.Region
-// 	cli.Client.Metadata.Provider = p.Cloud
-//
-// 	// Return
-// 	ok := true
-// 	errStr := ""
-//
-// 	msg, err := controller.DeleteHACluster(&cli.Client)
-// 	if err != nil {
-// 		ok = false
-// 		errStr = err.Error()
-// 	}
-//
-// 	res = &httpserver.Response{OK: &ok, Errors: &errStr, Response: msg}
-// 	s.logger.Print(msg)
-//
-// 	return
-// }
-//

@@ -15,10 +15,10 @@ func (this *Kubernetes) apiextensionsApply(o *apiextensionsv1.CustomResourceDefi
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil

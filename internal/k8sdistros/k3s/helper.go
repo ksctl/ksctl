@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
@@ -17,6 +16,7 @@ func saveStateHelper(storage resources.StorageFactory, path string) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "k3sState", string(rawState))
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
@@ -26,47 +26,66 @@ func loadStateHelper(storage resources.StorageFactory, path string) error {
 		return err
 	}
 
-	return convertStateFromBytes(raw)
+	log.Debug("Printing", "rawState", string(raw))
+
+	return convertBytesToState(raw)
 }
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {
 	return json.Marshal(state)
 }
 
-func convertStateFromBytes(raw []byte) error {
+func convertBytesToState(raw []byte) error {
 	var data *StateConfiguration
 	if err := json.Unmarshal(raw, &data); err != nil {
 		return err
 	}
 	k8sState = data
+
+	log.Debug("Printing", "k3sState", k8sState)
 	return nil
 }
 func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubeconfig string) error {
-	rawState := []byte(kubeconfig)
+	rawKubeconfig := []byte(kubeconfig)
 
-	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
+	log.Debug("Printing", "kubeconfig", kubeconfig)
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawKubeconfig)
 }
 func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
-	env := ""
-	storage.Logger().Note("KUBECONFIG env var")
-	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+	key := ""
+	value := ""
+	box := ""
 	switch runtime.GOOS {
 	case "windows":
+		key = "$Env:KUBECONFIG"
+
 		switch operation {
 		case OperationStateCreate:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
+			value = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+
 		case OperationStateDelete:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+			value = ""
 		}
+		box = key + "=" + fmt.Sprintf("\"%s\"", value)
+		log.Note("KUBECONFIG env var", key, value)
+
 	case "linux", "macos":
+
 		switch operation {
 		case OperationStateCreate:
-			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
+			key = "export KUBECONFIG"
+			value = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			box = key + "=" + fmt.Sprintf("\"%s\"", value)
+			log.Note("KUBECONFIG env var", key, value)
+
 		case OperationStateDelete:
-			env = "unset KUBECONFIG"
+			key = "unset KUBECONFIG"
+			box = key
+			log.Note(key)
 		}
 	}
-	storage.Logger().Note(env)
+
+	log.Box("KUBECONFIG env var", box)
 }
 
 func isValidK3sVersion(ver string) bool {
@@ -77,7 +96,6 @@ func isValidK3sVersion(ver string) bool {
 			return true
 		}
 	}
-	var log logger.LogFactory = &logger.Logger{}
-	log.Err(strings.Join(validVersion, " "))
+	log.Error(strings.Join(validVersion, " "))
 	return false
 }
