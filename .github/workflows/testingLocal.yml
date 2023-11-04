@@ -1,4 +1,4 @@
-name: Unit-Testing API
+name: Regression Test Local
 on:
   push:
     paths:

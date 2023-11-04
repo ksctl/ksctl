@@ -1,4 +1,4 @@
-name: Unit-Testing API
+name: Regression Test K3s
 on:
   push:
     paths:
