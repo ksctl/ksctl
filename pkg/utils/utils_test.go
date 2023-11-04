@@ -157,7 +157,7 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to create dummy folder")
 	}
-	ksctl := resources.KsctlClient{Storage: localstate.InitStorage(false)}
+	ksctl := resources.KsctlClient{Storage: localstate.InitStorage()}
 
 	if _, err := CreateSSHKeyPair(ksctl.Storage, log, KsctlCloud(provider), clusterName+" "+clusterRegion); err != nil {
 		t.Fatalf("Unable to create SSH keypair")
@@ -177,7 +177,7 @@ func TestIsValidClusterName(T *testing.T) {
 }
 
 func TestSSHExecute(t *testing.T) {
-	var storage resources.StorageFactory = localstate.InitStorage(false)
+	var storage resources.StorageFactory = localstate.InitStorage()
 	assert.Equal(t, os.MkdirAll(GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd"), 0755), nil, "create folders")
 	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
 	azHA := GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd")
