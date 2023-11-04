@@ -5,13 +5,11 @@ on:
     paths:
       - 'internal/**'
       - 'pkg/**'
-      - 'cmd/cli/**'
     branches: [main]
   pull_request:
     paths:
       - 'internal/**'
       - 'pkg/**'
-      - 'cmd/cli/**'
     branches: [main]
 
 jobs:
