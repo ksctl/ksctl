@@ -10,7 +10,7 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -22,7 +22,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	}
 	log.Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := utils.GetCred(storage, log, CloudCivo)
+	token, err := utils.GetCred(storage, log, consts.CloudCivo)
 	if err != nil {
 		return ""
 	}
@@ -32,7 +32,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
 
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(CloudCivo))
+	log.SetPackageName(string(consts.CloudCivo))
 
 	log.Print("Enter CIVO TOKEN")
 	token, err := utils.UserInputCredentials(log)
@@ -50,14 +50,14 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	}
 	log.Print(id)
 
-	if err := utils.SaveCred(storage, log, Credential{token}, CloudCivo); err != nil {
+	if err := utils.SaveCred(storage, log, Credential{token}, consts.CloudCivo); err != nil {
 		return err
 	}
 	return nil
 }
 
-func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
-	p := utils.GetPath(flag, CloudCivo, clusterType, path...)
+func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
+	p := utils.GetPath(flag, consts.CloudCivo, clusterType, path...)
 	log.Debug("Printing", "path", p)
 	return p
 }
@@ -110,7 +110,7 @@ func getValidK8sVersionClient(obj *CivoProvider) []string {
 	log.Debug("Printing", "ListAvailableKubernetesVersions", vers)
 	var val []string
 	for _, ver := range vers {
-		if ver.ClusterType == string(K8sK3s) {
+		if ver.ClusterType == string(consts.K8sK3s) {
 			val = append(val, ver.Label)
 		}
 	}
@@ -189,7 +189,7 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 	return log.NewError("INVALID VM SIZE\nValid options: %v\n", validFromClient)
 }
 
-func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
+func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOperation) {
 	key := ""
 	value := ""
 	box := ""
@@ -198,10 +198,10 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 		key = "$Env:KUBECONFIG"
 
 		switch operation {
-		case OperationStateCreate:
-			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+		case consts.OperationStateCreate:
+			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 
-		case OperationStateDelete:
+		case consts.OperationStateDelete:
 			value = ""
 		}
 		box = key + "=" + fmt.Sprintf("\"%s\"", value)
@@ -210,13 +210,13 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 	case "linux", "macos":
 
 		switch operation {
-		case OperationStateCreate:
+		case consts.OperationStateCreate:
 			key = "export KUBECONFIG"
-			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 			box = key + "=" + fmt.Sprintf("\"%s\"", value)
 			log.Note("KUBECONFIG env var", key, value)
 
-		case OperationStateDelete:
+		case consts.OperationStateDelete:
 			key = "unset KUBECONFIG"
 			box = key
 			log.Note(key)

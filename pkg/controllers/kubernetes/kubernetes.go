@@ -6,7 +6,7 @@ import (
 	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var log resources.LoggerFactory
@@ -16,9 +16,9 @@ func HydrateK8sDistro(client *resources.KsctlClient) error {
 	log.SetPackageName("ksctl-distro")
 
 	switch client.Metadata.K8sDistro {
-	case K8sK3s:
+	case consts.K8sK3s:
 		client.Distro = k3sPkg.ReturnK3sStruct(client.Metadata)
-	case K8sKubeadm:
+	case consts.K8sKubeadm:
 		client.Distro = kubeadmPkg.ReturnKubeadmStruct(client.Metadata)
 	default:
 		return log.NewError("Invalid k8s provider")

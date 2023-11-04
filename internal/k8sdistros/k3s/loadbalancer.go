@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // ConfigureLoadbalancer implements resources.DistroFactory.
@@ -17,7 +17,7 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 		controlPlaneIPs[i] = k8sState.PrivateIPs.ControlPlanes[i] + ":6443"
 	}
 
-	err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(
+	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		configLBscript(controlPlaneIPs)).
 		IPv4(k8sState.PublicIPs.Loadbalancer).
 		FastMode(true).SSHExecute(storage, log)

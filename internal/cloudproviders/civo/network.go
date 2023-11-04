@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // NewNetwork implements resources.CloudFactory.
@@ -31,12 +31,12 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 	// NOTE: as network creation marks first resource we should create the directoy
 	// when its success
 
-	if err := storage.Path(generatePath(UtilClusterPath, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(consts.UtilClusterPath, clusterType, clusterDirName)).
 		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	path := generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
 
 	err = saveStateHelper(storage, path)
 	if err != nil {
@@ -53,8 +53,8 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 	} else {
 		netID := civoCloudState.NetworkIDs.NetworkID
 
-		currRetryCounter := KsctlCounterConsts(0)
-		for currRetryCounter < CounterMaxWatchRetryCount {
+		currRetryCounter := consts.KsctlCounterConsts(0)
+		for currRetryCounter < consts.CounterMaxWatchRetryCount {
 			var err error
 			_, err = obj.client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
 			if err != nil {
@@ -65,19 +65,19 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 			}
 			time.Sleep(5 * time.Second)
 		}
-		if currRetryCounter == CounterMaxWatchRetryCount {
+		if currRetryCounter == consts.CounterMaxWatchRetryCount {
 			return log.NewError("failed to delete network timeout")
 		}
 
 		civoCloudState.NetworkIDs.NetworkID = ""
-		if err := saveStateHelper(storage, generatePath(UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
+		if err := saveStateHelper(storage, generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
 			return log.NewError(err.Error())
 		}
 		log.Success("Deleted network", "networkID", netID)
 	}
-	path := generatePath(UtilClusterPath, clusterType, clusterDirName)
+	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName)
 
-	printKubeconfig(storage, OperationStateDelete)
+	printKubeconfig(storage, consts.OperationStateDelete)
 
 	if err := storage.Path(path).DeleteDir(); err != nil {
 		return log.NewError(err.Error())

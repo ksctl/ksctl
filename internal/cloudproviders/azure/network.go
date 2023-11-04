@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // NewNetwork implements resources.CloudFactory.
@@ -36,7 +36,7 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 
 	azureCloudState.ResourceGroupName = *resourceGroup.Name
 
-	if err := storage.Path(generatePath(UtilClusterPath, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(consts.UtilClusterPath, clusterType, clusterDirName)).
 		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
 		return log.NewError(err.Error())
 	}
@@ -186,9 +186,9 @@ func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
 		log.Success("deleted the resource group", "name", rgname)
 	}
 
-	printKubeconfig(storage, OperationStateDelete)
+	printKubeconfig(storage, consts.OperationStateDelete)
 
-	if err := storage.Path(generatePath(UtilClusterPath, clusterType, clusterDirName)).
+	if err := storage.Path(generatePath(consts.UtilClusterPath, clusterType, clusterDirName)).
 		DeleteDir(); err != nil {
 		return log.NewError(err.Error())
 	}

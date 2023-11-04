@@ -7,20 +7,20 @@ import (
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	var script string
 
-	if KsctlValidCNIPlugin(k3s.Cni) == CNINone {
+	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
 	} else {
 		script = scriptCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
 	}
 
-	err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(script).
+	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 		FastMode(true).SSHExecute(storage, log)
 	if err != nil {
@@ -28,7 +28,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 	}
 
 	// K3stoken
-	err = k3s.SSHInfo.Flag(UtilExecWithOutput).Script(scriptForK3sToken()).
+	err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptForK3sToken()).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 		SSHExecute(storage, log)
 	if err != nil {
@@ -41,7 +41,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	log.Debug("Printing", "k3sToken", k8sState.K3sToken)
 
-	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err = saveStateHelper(storage, path)
 	if err != nil {
 		return log.NewError(err.Error())
@@ -61,19 +61,19 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 
 		var script string
 
-		if KsctlValidCNIPlugin(k3s.Cni) == CNINone {
+		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 			script = scriptCP_NWithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
 		} else {
 			script = scriptCP_N(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
 		}
 
-		err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(script).
+		err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
 			IPv4(k8sState.PublicIPs.ControlPlanes[noOfCP]).
 			FastMode(true).SSHExecute(storage, log)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
-		path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+		path := utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 		err = saveStateHelper(storage, path)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -82,7 +82,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		if noOfCP+1 == len(k8sState.PublicIPs.ControlPlanes) {
 
 			log.Debug("fetching kubeconfig")
-			err = k3s.SSHInfo.Flag(UtilExecWithOutput).Script(scriptKUBECONFIG()).
+			err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptKUBECONFIG()).
 				IPv4(k8sState.PublicIPs.ControlPlanes[0]).
 				FastMode(true).SSHExecute(storage, log)
 			if err != nil {
@@ -95,12 +95,12 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 
 			log.Debug("Printing", "kubeconfig", kubeconfig)
 			// modify
-			path = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			path = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 			err = saveKubeconfigHelper(storage, path, kubeconfig)
 			if err != nil {
 				return log.NewError(err.Error())
 			}
-			printKubeconfig(storage, OperationStateCreate)
+			printKubeconfig(storage, consts.OperationStateCreate)
 		}
 
 	}
@@ -188,7 +188,7 @@ func (k3s *K3sDistro) GetKubeConfig(storage resources.StorageFactory) (path stri
 		return "", "", log.NewError("status is not correct")
 	}
 
-	path = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+	path = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 	var raw []byte
 	raw, err = storage.Path(path).Load()
