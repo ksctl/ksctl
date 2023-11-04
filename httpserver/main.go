@@ -90,7 +90,7 @@ func scaleUp(context *gin.Context) {
 	cli.Metadata.LogWritter = os.Stdout
 
 	cli.Metadata.K8sVersion = "1.27.1"
-	if err := control_pkg.InitializeStorageFactory(cli, true); err != nil {
+	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
 		_ = context.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -128,7 +128,7 @@ func scaleDown(context *gin.Context) {
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = os.Stdout
 
-	if err := control_pkg.InitializeStorageFactory(cli, true); err != nil {
+	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
 		_ = context.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -158,7 +158,7 @@ func getClusters(context *gin.Context) {
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = os.Stdout
 
-	if err := control_pkg.InitializeStorageFactory(cli, true); err != nil {
+	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
 		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 		return
 	}
