@@ -43,7 +43,7 @@ func main() {
 
 	ksctlClient.Metadata = meta
 
-	err := controllers.InitializeStorageFactory(ksctlClient, true)
+	err := controllers.InitializeStorageFactory(ksctlClient)
 	if err != nil {
 		l.Error(err.Error())
 		os.Exit(1)

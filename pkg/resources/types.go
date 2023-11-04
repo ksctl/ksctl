@@ -1,7 +1,7 @@
 package resources
 
 import (
-	consts "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"io"
 )
 

@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 
 	fakeClient, _ = ReturnCivoStruct(demoClient.Metadata, ProvideMockCivoClient)
 
-	demoClient.Storage = localstate.InitStorage(false)
+	demoClient.Storage = localstate.InitStorage()
 
 	// setup temporary folder
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)

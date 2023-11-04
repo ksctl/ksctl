@@ -8,7 +8,7 @@ import (
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
@@ -51,7 +51,7 @@ func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubecon
 	log.Debug("Printing", "kubeconfig", kubeconfig)
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawKubeconfig)
 }
-func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
+func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOperation) {
 	key := ""
 	value := ""
 	box := ""
@@ -60,10 +60,10 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 		key = "$Env:KUBECONFIG"
 
 		switch operation {
-		case OperationStateCreate:
-			value = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+		case consts.OperationStateCreate:
+			value = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
-		case OperationStateDelete:
+		case consts.OperationStateDelete:
 			value = ""
 		}
 		box = key + "=" + fmt.Sprintf("\"%s\"", value)
@@ -72,13 +72,13 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 	case "linux", "macos":
 
 		switch operation {
-		case OperationStateCreate:
+		case consts.OperationStateCreate:
 			key = "export KUBECONFIG"
-			value = utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			value = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 			box = key + "=" + fmt.Sprintf("\"%s\"", value)
 			log.Note("KUBECONFIG env var", key, value)
 
-		case OperationStateDelete:
+		case consts.OperationStateDelete:
 			key = "unset KUBECONFIG"
 			box = key
 			log.Note(key)

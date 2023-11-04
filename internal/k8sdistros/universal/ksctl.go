@@ -11,7 +11,7 @@ import (
 	"github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	corev1 "k8s.io/api/core/v1"
 
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -123,7 +123,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		return log.NewError(err.Error())
 	}
 
-	count := KsctlCounterConsts(0)
+	count := consts.KsctlCounterConsts(0)
 	for {
 
 		status, err := this.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, v1.GetOptions{})
@@ -135,7 +135,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 			break
 		}
 		count++
-		if count == CounterMaxRetryCount*2 {
+		if count == consts.CounterMaxRetryCount*2 {
 			return log.NewError("max retry reached")
 		}
 		log.Debug(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
@@ -162,7 +162,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	}
 
 	switch this.Metadata.Provider {
-	case CloudCivo:
+	case consts.CloudCivo:
 		var data *civo.StateConfiguration
 		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
 			return log.NewError(err.Error())
@@ -179,7 +179,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 
 		cloudstate = string(raw)
 
-	case CloudAzure:
+	case consts.CloudAzure:
 		var data *azure.StateConfiguration
 		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
 			return log.NewError(err.Error())
@@ -398,9 +398,9 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	var listEnv []string
 
 	switch this.Metadata.Provider {
-	case CloudCivo:
+	case consts.CloudCivo:
 		listEnv = append(listEnv, "CIVO_TOKEN")
-	case CloudAzure:
+	case consts.CloudAzure:
 		listEnv = append(listEnv, "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
 	}
 

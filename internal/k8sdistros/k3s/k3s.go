@@ -9,7 +9,7 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type Instances struct {
@@ -26,11 +26,11 @@ type StateConfiguration struct {
 	PublicIPs         Instances     `json:"cloud_public_ips"`
 	PrivateIPs        Instances     `json:"cloud_private_ips"`
 
-	ClusterName string           `json:"cluster_name"`
-	Region      string           `json:"region"`
-	ClusterType KsctlClusterType `json:"cluster_type"`
-	ClusterDir  string           `json:"cluster_dir"`
-	Provider    KsctlCloud       `json:"provider"`
+	ClusterName string                  `json:"cluster_name"`
+	Region      string                  `json:"region"`
+	ClusterType consts.KsctlClusterType `json:"cluster_type"`
+	ClusterDir  string                  `json:"cluster_dir"`
+	Provider    consts.KsctlCloud       `json:"provider"`
 }
 
 var (
@@ -78,18 +78,18 @@ sudo cat /etc/rancher/k3s/k3s.yaml`
 
 // InitState implements resources.DistroFactory.
 // try to achieve deepCopy
-func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation KsctlOperation) error {
+func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation consts.KsctlOperation) error {
 	// add the nil check here as well
-	path := utils.GetPath(UtilClusterPath, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
 
 	switch operation {
-	case OperationStateCreate:
+	case consts.OperationStateCreate:
 		// add  a flag of completion check
 		k8sState = &StateConfiguration{}
 		k8sState.DataStoreEndPoint = ""
 		k8sState.K3sToken = ""
 
-	case OperationStateGet:
+	case consts.OperationStateGet:
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return log.NewError(err.Error())
@@ -141,11 +141,11 @@ func (k3s *K3sDistro) Version(ver string) resources.DistroFactory {
 
 func (k3s *K3sDistro) CNI(cni string) (externalCNI bool) {
 	log.Debug("Printing", "cni", cni)
-	switch KsctlValidCNIPlugin(cni) {
-	case CNIFlannel, "":
-		k3s.Cni = string(CNIFlannel)
+	switch consts.KsctlValidCNIPlugin(cni) {
+	case consts.CNIFlannel, "":
+		k3s.Cni = string(consts.CNIFlannel)
 	default:
-		k3s.Cni = string(CNINone)
+		k3s.Cni = string(consts.CNINone)
 		return true
 	}
 

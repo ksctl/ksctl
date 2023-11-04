@@ -20,7 +20,7 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/controllers/kubernetes"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (
@@ -50,7 +50,7 @@ func validationFields(meta resources.Metadata) error {
 	return nil
 }
 
-func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) error {
+func InitializeStorageFactory(client *resources.KsctlClient) error {
 
 	if log == nil {
 		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
@@ -58,8 +58,8 @@ func InitializeStorageFactory(client *resources.KsctlClient, verbosity bool) err
 	}
 
 	switch client.Metadata.StateLocation {
-	case StoreLocal:
-		client.Storage = localstate.InitStorage(verbosity)
+	case consts.StoreLocal:
+		client.Storage = localstate.InitStorage()
 	default:
 		return log.NewError("Currently Local state is supported!")
 	}
@@ -74,12 +74,12 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 	}
 
 	switch client.Metadata.Provider {
-	case CloudCivo:
+	case consts.CloudCivo:
 		err := civoPkg.GetInputCredential(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
-	case CloudAzure:
+	case consts.CloudAzure:
 		err := azure.GetInputCredential(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -101,15 +101,15 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	}
 
 	fakeClient := false
-	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
+	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
 
-	if !utils.ValidCNIPlugin(KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
+	if !utils.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
 		return log.NewError("invalid CNI plugin")
 	}
 
-	if err := cloud.HydrateCloud(client, OperationStateCreate, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, consts.OperationStateCreate, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 	// it gets supportForApps, supportForCNI, error
@@ -119,7 +119,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	}
 
 	kubeconfigPath := client.Cloud.GetKubeconfigPath()
-	if len(os.Getenv(string(KsctlFeatureFlagApplications))) > 0 {
+	if len(os.Getenv(string(consts.KsctlFeatureFlagApplications))) > 0 {
 
 		kubernetesClient := universal.Kubernetes{
 			Metadata:      client.Metadata,
@@ -157,10 +157,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	}
 
 	fakeClient := false
-	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
+	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, OperationStateDelete, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, consts.OperationStateDelete, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -182,17 +182,17 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 
 	var err error
 	switch client.Metadata.Provider {
-	case CloudCivo:
+	case consts.CloudCivo:
 		client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideClient)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
-	case CloudAzure:
+	case consts.CloudAzure:
 		client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideClient)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
-	case CloudLocal:
+	case consts.CloudLocal:
 		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -219,28 +219,28 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 
 	var printerTable []cloudController.AllClusterData
 	switch client.Metadata.Provider {
-	case CloudCivo:
+	case consts.CloudCivo:
 		data, err := civoPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
-	case CloudLocal:
+	case consts.CloudLocal:
 		data, err := localPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
-	case CloudAzure:
+	case consts.CloudAzure:
 		data, err := azurePkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
-	case CloudAll:
+	case consts.CloudAll:
 		data, err := civoPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -267,7 +267,7 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 }
 
 func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) error {
-	if client.Metadata.Provider == CloudLocal {
+	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
 	}
 	if err := validationFields(client.Metadata); err != nil {
@@ -279,15 +279,15 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	}
 
 	fakeClient := false
-	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
+	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
 
-	if !utils.ValidCNIPlugin(KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
+	if !utils.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
 		return log.NewError("invalid CNI plugin")
 	}
 
-	if err := cloud.HydrateCloud(client, OperationStateCreate, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, consts.OperationStateCreate, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 	err := kubernetes.HydrateK8sDistro(client)
@@ -303,7 +303,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	var payload cloudController.CloudResourceState
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 
-	err = client.Distro.InitState(payload, client.Storage, OperationStateCreate)
+	err = client.Distro.InitState(payload, client.Storage, consts.OperationStateCreate)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -338,7 +338,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	}
 
 	////// EXPERIMENTAL Features //////
-	if len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
+	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
 
 		kubernetesClient := universal.Kubernetes{
 			Metadata:      client.Metadata,
@@ -353,7 +353,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		}
 	}
 
-	if len(os.Getenv(string(KsctlFeatureFlagApplications))) > 0 {
+	if len(os.Getenv(string(consts.KsctlFeatureFlagApplications))) > 0 {
 
 		kubernetesClient := universal.Kubernetes{
 			Metadata:      client.Metadata,
@@ -383,7 +383,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) error {
 
-	if client.Metadata.Provider == CloudLocal {
+	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
 	}
 	if client.Storage == nil {
@@ -394,14 +394,14 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	}
 
 	fakeClient := false
-	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
+	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, OperationStateDelete, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, consts.OperationStateDelete, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	if len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
+	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
 
 		// find a better way to get the kubeconfig location
 
@@ -412,7 +412,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		var payload cloudController.CloudResourceState
 		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 
-		err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
+		err = client.Distro.InitState(payload, client.Storage, consts.OperationStateGet)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -454,11 +454,11 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 		return log.NewError(err.Error())
 	}
 
-	if client.Metadata.IsHA && len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
+	if client.Metadata.IsHA && len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
 		// disable add AddWorkerPlaneNode when this feature is being used
-		return log.NewError("This Functionality is diabled for {HA type clusters}", "FEATURE_FLAG", KsctlFeatureFlagHaAutoscale)
+		return log.NewError("This Functionality is diabled for {HA type clusters}", "FEATURE_FLAG", consts.KsctlFeatureFlagHaAutoscale)
 	}
-	if client.Metadata.Provider == CloudLocal {
+	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
 	}
 	if client.Storage == nil {
@@ -469,10 +469,10 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	}
 
 	fakeClient := false
-	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
+	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, OperationStateGet, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, consts.OperationStateGet, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -491,7 +491,7 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 	// transfer the state
 
-	err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
+	err = client.Distro.InitState(payload, client.Storage, consts.OperationStateGet)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -512,11 +512,11 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		return log.NewError(err.Error())
 	}
 
-	if client.Metadata.IsHA && len(os.Getenv(string(KsctlFeatureFlagHaAutoscale))) > 0 {
-		return log.NewError("This Functionality is diabled for {HA type cluster}", "FEATURE_FLAG", KsctlFeatureFlagHaAutoscale)
+	if client.Metadata.IsHA && len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
+		return log.NewError("This Functionality is diabled for {HA type cluster}", "FEATURE_FLAG", consts.KsctlFeatureFlagHaAutoscale)
 	}
 
-	if client.Metadata.Provider == CloudLocal {
+	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
 	}
 	if client.Storage == nil {
@@ -527,10 +527,10 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 	}
 
 	fakeClient := false
-	if str := os.Getenv(string(KsctlFakeFlag)); len(str) != 0 {
+	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, OperationStateGet, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, consts.OperationStateGet, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -550,7 +550,7 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 		// transfer the state
 
-		err = client.Distro.InitState(payload, client.Storage, OperationStateGet)
+		err = client.Distro.InitState(payload, client.Storage, consts.OperationStateGet)
 		if err != nil {
 			return log.NewError(err.Error())
 		}

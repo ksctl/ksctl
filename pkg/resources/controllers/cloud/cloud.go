@@ -1,6 +1,6 @@
 package cloud
 
-import . "github.com/kubesimplify/ksctl/pkg/utils/consts"
+import "github.com/kubesimplify/ksctl/pkg/utils/consts"
 
 // CloudResourceState provides the state which cloud provider creates
 // and which is consumed by the kubernetes to configure them
@@ -21,8 +21,8 @@ type Metadata struct {
 	ClusterName string
 	Region      string
 	ClusterDir  string
-	ClusterType KsctlClusterType
-	Provider    KsctlCloud
+	ClusterType consts.KsctlClusterType
+	Provider    consts.KsctlCloud
 }
 
 type SSHInfo struct {
@@ -32,13 +32,13 @@ type SSHInfo struct {
 
 type AllClusterData struct {
 	Name       string
-	Provider   KsctlCloud
-	Type       KsctlClusterType
+	Provider   consts.KsctlCloud
+	Type       consts.KsctlClusterType
 	Region     string
 	NoWP       int
 	NoCP       int
 	NoDS       int
 	NoMgt      int
-	K8sDistro  KsctlKubernetes
+	K8sDistro  consts.KsctlKubernetes
 	K8sVersion string
 }

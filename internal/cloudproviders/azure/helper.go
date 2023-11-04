@@ -8,12 +8,12 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(CloudAws))
+	log.SetPackageName(string(consts.CloudAws))
 
 	log.Print("Enter your SUBSCRIPTION ID")
 	skey, err := utils.UserInputCredentials(log)
@@ -64,19 +64,19 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	//}
 	// ADD SOME PING method to validate credentials
 
-	if err := utils.SaveCred(storage, log, apiStore, CloudAzure); err != nil {
+	if err := utils.SaveCred(storage, log, apiStore, consts.CloudAzure); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
-	return utils.GetPath(flag, CloudAzure, clusterType, path...)
+func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
+	return utils.GetPath(flag, consts.CloudAzure, clusterType, path...)
 }
 
 func saveStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
 	rawState, err := convertStateToBytes(*azureCloudState)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func saveStateHelper(storage resources.StorageFactory) error {
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func loadStateHelper(storage resources.StorageFactory) error {
 
 func saveKubeconfigHelper(storage resources.StorageFactory, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
-	path := utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 
 	log.Debug("Printing", "path", path, "kubeconfig", kubeconfig)
 
@@ -119,7 +119,7 @@ func convertStateFromBytes(raw []byte) error {
 	return nil
 }
 
-func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
+func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOperation) {
 	key := ""
 	value := ""
 	box := ""
@@ -128,10 +128,10 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 		key = "$Env:KUBECONFIG"
 
 		switch operation {
-		case OperationStateCreate:
-			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+		case consts.OperationStateCreate:
+			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 
-		case OperationStateDelete:
+		case consts.OperationStateDelete:
 			value = ""
 		}
 		box = key + "=" + fmt.Sprintf("\"%s\"", value)
@@ -140,13 +140,13 @@ func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation)
 	case "linux", "macos":
 
 		switch operation {
-		case OperationStateCreate:
+		case consts.OperationStateCreate:
 			key = "export KUBECONFIG"
-			value = generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 			box = key + "=" + fmt.Sprintf("\"%s\"", value)
 			log.Note("KUBECONFIG env var", key, value)
 
-		case OperationStateDelete:
+		case consts.OperationStateDelete:
 			key = "unset KUBECONFIG"
 			box = key
 			log.Note(key)
