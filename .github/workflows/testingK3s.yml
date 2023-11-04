@@ -17,7 +17,6 @@ on:
     - 'pkg/utils/**'
     - 'go.mod'
     - 'go.sum'
-    branches: [ main ]
 
 jobs:
   linux:

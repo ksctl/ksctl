@@ -9,7 +9,9 @@ on:
     - 'go.mod'
     - 'go.sum'
     branches: [ main ]
+
   pull_request:
+    types: [ labeled ]
     paths:
     - 'internal/cloudproviders/azure/**'
     - 'internal/storage/**'
@@ -17,7 +19,6 @@ on:
     - 'pkg/logger/**'
     - 'go.mod'
     - 'go.sum'
-    branches: [ main ]
 
 jobs:
   linux:
