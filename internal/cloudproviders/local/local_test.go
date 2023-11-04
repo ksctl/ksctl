@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
@@ -28,6 +28,9 @@ func TestMain(m *testing.M) {
 	demoClient.Metadata.ClusterName = "demo"
 	demoClient.Metadata.Region = "demoRegion"
 	demoClient.Metadata.Provider = "demoProvider"
+	demoClient.Metadata.LogVerbosity = -1
+	demoClient.Metadata.LogWritter = os.Stdout
+
 	demoClient.Storage = localstate.InitStorage(false)
 	localState = &StateConfiguration{}
 	demoClient.Cloud, _ = ReturnLocalStruct(demoClient.Metadata)

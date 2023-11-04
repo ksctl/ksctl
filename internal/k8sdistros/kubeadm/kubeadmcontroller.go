@@ -76,7 +76,7 @@ var (
 	k8sState *StateConfiguration
 )
 
-func ReturnKubeadmStruct() *KubeadmDistro {
+func ReturnKubeadmStruct(resources.Metadata) *KubeadmDistro {
 	return &KubeadmDistro{}
 }
 

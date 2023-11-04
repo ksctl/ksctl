@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/kubesimplify/ksctl/pkg/logger"
+
 	"github.com/kubesimplify/ksctl/pkg/utils"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type StateConfiguration struct {
@@ -32,6 +34,11 @@ type LocalProvider struct {
 	Metadata
 }
 
+var (
+	localState *StateConfiguration
+	log        resources.LoggerFactory
+)
+
 // GetSecretTokens implements resources.CloudFactory.
 func (*LocalProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
 	return nil, nil
@@ -43,12 +50,9 @@ func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	log.Debug("Printing", "cloudState", cloudstate)
 	return string(cloudstate), nil
 }
-
-var (
-	localState *StateConfiguration
-)
 
 const (
 	STATE_FILE = "kind-state.json"
@@ -56,40 +60,47 @@ const (
 )
 
 func ReturnLocalStruct(metadata resources.Metadata) (*LocalProvider, error) {
-	return &LocalProvider{
+	log = logger.NewDefaultLogger(metadata.LogVerbosity, metadata.LogWritter)
+	log.SetPackageName(string(consts.CloudLocal))
+
+	obj := &LocalProvider{
 		ClusterName: metadata.ClusterName,
-	}, nil
+	}
+
+	log.Debug("Printing", "localProvider", obj)
+
+	return obj, nil
 }
 
 // InitState implements resources.CloudFactory.
-func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation KsctlOperation) error {
+func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
 	switch operation {
-	case OperationStateCreate:
+	case consts.OperationStateCreate:
 		if isPresent(storage, cloud.ClusterName) {
-			return fmt.Errorf("[local] already present")
+			return log.NewError("already present")
 		}
 		localState = &StateConfiguration{
 			ClusterName: cloud.ClusterName,
 			Distro:      "kind",
 		}
 		var err error
-		err = storage.Path(utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName)).
+		err = storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName)).
 			Permission(0750).CreateDir()
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 
-		err = saveStateHelper(storage, utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName, STATE_FILE))
+		err = saveStateHelper(storage, utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
-	case OperationStateDelete, OperationStateGet:
-		err := loadStateHelper(storage, utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, cloud.ClusterName, STATE_FILE))
+	case consts.OperationStateDelete, consts.OperationStateGet:
+		err := loadStateHelper(storage, utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
-	storage.Logger().Success("[local] initialized the state")
+	log.Debug("initialized the state")
 	return nil
 }
 
@@ -104,12 +115,13 @@ func (cloud *LocalProvider) Application(s string) (externalApps bool) {
 }
 
 func (client *LocalProvider) CNI(s string) (externalCNI bool) {
+	log.Debug("Printing", "cni", s)
 
-	switch KsctlValidCNIPlugin(s) {
-	case CNIKind, "":
-		client.Metadata.Cni = string(CNIKind)
+	switch consts.KsctlValidCNIPlugin(s) {
+	case consts.CNIKind, "":
+		client.Metadata.Cni = string(consts.CNIKind)
 	default:
-		client.Metadata.Cni = string(CNINone)
+		client.Metadata.Cni = string(consts.CNINone)
 		return true
 	}
 
@@ -119,21 +131,27 @@ func (client *LocalProvider) CNI(s string) (externalCNI bool) {
 // Version implements resources.CloudFactory.
 func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
 	// TODO: validation of version
+	log.Debug("Printing", "k8sVersion", ver)
 	cloud.Metadata.Version = ver
 	return cloud
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
+func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudControlRes.AllClusterData, error) {
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(consts.CloudLocal))
+
 	var data []cloudControlRes.AllClusterData
 
-	managedFolders, err := storage.Path(utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang)).GetFolders()
+	managedFolders, err := storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
+	log.Debug("Printing", "managedFolderContents", managedFolders)
+
 	for _, folder := range managedFolders {
 
-		path := utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang, folder[0], STATE_FILE)
+		path := utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, folder[0], STATE_FILE)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err
@@ -145,22 +163,34 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloudControlRes.All
 
 		data = append(data,
 			cloudControlRes.AllClusterData{
-				Provider:   CloudLocal,
+				Provider:   consts.CloudLocal,
 				Name:       folder[0],
 				Region:     "N/A",
-				Type:       ClusterTypeMang,
-				K8sDistro:  KsctlKubernetes(clusterState.Distro),
+				Type:       consts.ClusterTypeMang,
+				K8sDistro:  consts.KsctlKubernetes(clusterState.Distro),
 				K8sVersion: clusterState.Version,
 				NoMgt:      clusterState.Nodes,
 			})
 	}
+
+	log.Debug("Printing", "clusterInfo", data)
 	return data, nil
+}
+
+func (obj *LocalProvider) SwitchCluster(storage resources.StorageFactory) error {
+
+	if isPresent(storage, obj.ClusterName) {
+
+		printKubeconfig(storage, consts.OperationStateCreate, obj.ClusterName)
+		return nil
+	}
+	return log.NewError("Cluster not found")
 }
 
 // //// NOT IMPLEMENTED //////
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *LocalProvider) Role(KsctlRole) resources.CloudFactory {
+func (cloud *LocalProvider) Role(consts.KsctlRole) resources.CloudFactory {
 	return nil
 }
 
@@ -237,14 +267,4 @@ func (cloud *LocalProvider) NoOfDataStore(int, bool) (int, error) {
 // NoOfWorkerPlane implements resources.CloudFactory.
 func (cloud *LocalProvider) NoOfWorkerPlane(resources.StorageFactory, int, bool) (int, error) {
 	return -1, fmt.Errorf("[local] unsupported operation")
-}
-
-func (obj *LocalProvider) SwitchCluster(storage resources.StorageFactory) error {
-
-	if isPresent(storage, obj.ClusterName) {
-
-		printKubeconfig(storage, OperationStateCreate, obj.ClusterName)
-		return nil
-	}
-	return fmt.Errorf("[local] Cluster not found")
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
@@ -30,6 +30,8 @@ func TestMain(m *testing.M) {
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
 	demoClient.Metadata.Provider = CloudAzure
+	demoClient.Metadata.LogVerbosity = -1
+	demoClient.Metadata.LogWritter = os.Stdout
 	demoClient.Cloud, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
 
 	fakeAzure, _ = ReturnAzureStruct(demoClient.Metadata, ProvideMockClient)
@@ -553,7 +555,7 @@ func TestManagedCluster(t *testing.T) {
 				K8sVersion: azureCloudState.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(demoClient.Storage)
+		got, err := GetRAWClusterInfos(demoClient.Storage, demoClient.Metadata)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
@@ -829,7 +831,7 @@ func TestHACluster(t *testing.T) {
 				K8sVersion: azureCloudState.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(demoClient.Storage)
+		got, err := GetRAWClusterInfos(demoClient.Storage, demoClient.Metadata)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})

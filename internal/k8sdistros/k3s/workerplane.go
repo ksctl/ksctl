@@ -12,23 +12,23 @@ import (
 // JoinWorkerplane implements resources.DistroFactory.
 func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
 
-	storage.Logger().Print("[k3s] configuring Workerplane", strconv.Itoa(idx))
+	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
 
 	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err := saveStateHelper(storage, path)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	err = k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(
 		scriptWP(k3s.K3sVer, k8sState.PrivateIPs.Loadbalancer, k8sState.K3sToken)).
 		IPv4(k8sState.PublicIPs.WorkerPlanes[idx]).
-		FastMode(true).SSHExecute(storage)
+		FastMode(true).SSHExecute(storage, log)
 	if err != nil {
-		return fmt.Errorf("[k3s] workerplane %v", err)
+		return log.NewError(err.Error())
 	}
 
-	storage.Logger().Success("[k3s] configured WorkerPlane", strconv.Itoa(idx))
+	log.Success("configured WorkerPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }

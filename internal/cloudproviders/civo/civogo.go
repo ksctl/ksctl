@@ -8,7 +8,7 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type CivoGo interface {
@@ -148,15 +148,15 @@ func (client *CivoGoMockClient) ListAvailableKubernetesVersions() ([]civogo.Kube
 
 	return []civogo.KubernetesVersion{
 		{
-			ClusterType: string(K8sK3s),
+			ClusterType: string(consts.K8sK3s),
 			Label:       "1.27.4-k3s1",
 		},
 		{
-			ClusterType: string(K8sK3s),
+			ClusterType: string(consts.K8sK3s),
 			Label:       "1.27.1-k3s1",
 		},
 		{
-			ClusterType: string(K8sK3s),
+			ClusterType: string(consts.K8sK3s),
 			Label:       "1.26.4-k3s1",
 		},
 	}, nil

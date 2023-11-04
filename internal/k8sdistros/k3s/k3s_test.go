@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
@@ -27,8 +27,11 @@ func TestMain(m *testing.M) {
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
 	demoClient.Metadata.Provider = CloudAzure
-	demoClient.Distro = ReturnK3sStruct()
-	fakeClient = ReturnK3sStruct()
+	demoClient.Metadata.LogWritter = os.Stdout
+	demoClient.Metadata.LogVerbosity = -1
+
+	demoClient.Distro = ReturnK3sStruct(demoClient.Metadata)
+	fakeClient = ReturnK3sStruct(demoClient.Metadata)
 
 	demoClient.Storage = localstate.InitStorage(false)
 	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
@@ -298,7 +301,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	checkCurrentStateFile(t)
 
-	_, err := utils.CreateSSHKeyPair(demoClient.Storage, CloudAzure, k8sState.ClusterDir)
+	_, err := utils.CreateSSHKeyPair(demoClient.Storage, log, CloudAzure, k8sState.ClusterDir)
 	if err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
