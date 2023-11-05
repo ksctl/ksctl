@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
-	"github.com/kubesimplify/ksctl/pkg/resources"
 
+	"github.com/kubesimplify/ksctl/pkg/resources"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
@@ -189,7 +189,7 @@ func TestSSHExecute(t *testing.T) {
 	sshTest.Username("fake")
 	assert.Assert(t, sshTest.Flag(UtilExecWithoutOutput).Script("").
 		IPv4("A.A.A.A").
-		FastMode(true).SSHExecute(storage) != nil, "ssh should fail")
+		FastMode(true).SSHExecute(storage, "") != nil, "ssh should fail")
 
 	fmt.Println("Cleanup..")
 	if err := os.RemoveAll(dir); err != nil {

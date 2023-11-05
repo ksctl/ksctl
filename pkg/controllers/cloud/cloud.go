@@ -345,16 +345,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		return err
 	}
 
-	err = client.Cloud.Name(client.Metadata.ClusterName+"-vm-lb").
-		Role(RoleLb).
-		VMType(client.Metadata.LoadBalancerNodeType).
-		Visibility(true).
-		NewVM(client.Storage, 0)
-	if err != nil {
-		print(err)
-		return err
-	}
-
 	//////
 	wg := &sync.WaitGroup{}
 	errChanLB := make(chan error, 1)
@@ -450,7 +440,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	}
 
 	println("ALL VMs CREATED")
-	time.Sleep(20 * time.Second)
 	return nil
 }
 
