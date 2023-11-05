@@ -2,6 +2,8 @@ package utils
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -253,6 +255,105 @@ func CreateSSHKeyPair(storage resources.StorageFactory, log resources.LoggerFact
 
 	return string(fileBytePub), nil
 }
+
+// ////////////////////////////// New ssh-keygen
+
+// generatePrivateKey creates a RSA Private Key of specified byte size
+func generatePrivateKey(log resources.LoggerFactory, bitSize int) (*rsa.PrivateKey, error) {
+	// Private Key generation
+	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate Private Key
+	err = privateKey.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Print("Private Key generated")
+	return privateKey, nil
+}
+
+// encodePrivateKeyToPEM encodes Private Key from RSA to PEM format
+func encodePrivateKeyToPEM(log resources.LoggerFactory, privateKey *rsa.PrivateKey) []byte {
+	// Get ASN.1 DER format
+	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	// pem.Block
+	privBlock := pem.Block{
+		Type:    "RSA PRIVATE KEY",
+		Headers: nil,
+		Bytes:   privDER,
+	}
+
+	// Private key in PEM format
+	privatePEM := pem.EncodeToMemory(&privBlock)
+
+	return privatePEM
+}
+
+// generatePublicKey take a rsa.PublicKey and return bytes suitable for writing to .pub file
+// returns in the format "ssh-rsa ..."
+func generatePublicKey(log resources.LoggerFactory, privatekey *rsa.PublicKey) ([]byte, error) {
+	publicRsaKey, err := ssh.NewPublicKey(privatekey)
+	if err != nil {
+		return nil, err
+	}
+
+	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
+
+	log.Print("Public key generated")
+	return pubKeyBytes, nil
+}
+
+// // writePemToFile writes keys to a file
+// func writeKeyToFile(keyBytes []byte, saveFileTo string) error {
+// 	err := os.WriteFile(saveFileTo, keyBytes, 0600)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	log.Print("Key saved to", "saveFileTo)
+// 	return nil
+// }
+
+func CreateSSHKeyPair__New__(storage resources.StorageFactory, log resources.LoggerFactory, provider consts.KsctlCloud, clusterDir string) (string, error) {
+	// savePrivateFileTo := "./id_rsa_test"
+	// savePublicFileTo := "./id_rsa_test.pub"
+	bitSize := 4096
+
+	privateKey, err := generatePrivateKey(log, bitSize)
+	if err != nil {
+		return "", err
+	}
+
+	publicKeyBytes, err := generatePublicKey(log, &privateKey.PublicKey)
+	if err != nil {
+		return "", err
+	}
+
+	privateKeyBytes := encodePrivateKeyToPEM(log, privateKey)
+
+	fmt.Println("[[PUBLIC Key]]")
+	fmt.Println(string(publicKeyBytes))
+	fmt.Println("[[PRIVATE Key]]")
+	fmt.Println(string(privateKeyBytes))
+
+	// err = writeKeyToFile(privateKeyBytes, savePrivateFileTo)
+	// if err != nil {
+	// 	return "", err
+	// }
+	//
+	// err = writeKeyToFile([]byte(publicKeyBytes), savePublicFileTo)
+	// if err != nil {
+	// 	return "", err
+	// }
+	return "", nil
+}
+
+////////////////////////////////
 
 func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 

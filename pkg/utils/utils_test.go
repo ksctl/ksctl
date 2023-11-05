@@ -164,6 +164,13 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	}
 }
 
+func TestNewSSHCreate(t *testing.T) {
+
+	if _, err := __CreateSSHKeyPair(nil, log, "", ""); err != nil {
+		t.Fatalf("SSHKeyfailed")
+	}
+}
+
 func TestIsValidClusterName(T *testing.T) {
 	errorStr := fmt.Errorf("CLUSTER NAME INVALID")
 	assert.Equal(T, nil, IsValidName("demo"), "Returns false for valid cluster name")
