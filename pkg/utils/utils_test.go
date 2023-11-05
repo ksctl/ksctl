@@ -166,7 +166,7 @@ func TestCreateSSHKeyPair(t *testing.T) {
 
 func TestNewSSHCreate(t *testing.T) {
 
-	if _, err := __CreateSSHKeyPair(nil, log, "", ""); err != nil {
+	if _, err := CreateSSHKeyPair__New__(nil, log, "", ""); err != nil {
 		t.Fatalf("SSHKeyfailed")
 	}
 }
