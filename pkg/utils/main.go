@@ -37,7 +37,7 @@ type SSHPayload struct {
 }
 
 type SSHCollection interface {
-	SSHExecute(resources.StorageFactory) error
+	SSHExecute(resources.StorageFactory, KsctlCloud) error
 	Flag(KsctlUtilsConsts) SSHCollection
 	Script(string) SSHCollection
 	FastMode(bool) SSHCollection
@@ -369,41 +369,67 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, provi
 	}
 
 	var keyalgo []string
+	var config *ssh.ClientConfig
+
 	if provider == CloudAws {
 		keyalgo = []string{
 			ssh.KeyAlgoECDSA256,
 			ssh.KeyAlgoED25519,
 		}
+		config = &ssh.ClientConfig{
+			User: sshPayload.UserName,
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(signer),
+			},
+
+			HostKeyAlgorithms: keyalgo,
+
+			HostKeyCallback: ssh.HostKeyCallback(
+				func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+					actualFingerprint := ssh.FingerprintSHA256(key)
+					keyType := key.Type()
+					if keyType == ssh.KeyAlgoRSA || keyType == ssh.KeyAlgoDSA || keyType == ssh.KeyAlgoECDSA256 || keyType == ssh.KeyAlgoED25519 {
+						expectedFingerprint, err := returnServerPublicKeys(CloudAws, sshPayload.PublicIP)
+						if err != nil {
+							return err
+						}
+						if expectedFingerprint != actualFingerprint {
+							return fmt.Errorf("[ssh] mismatch of fingerprint")
+						}
+						return nil
+					}
+					return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
+				})}
+
 	} else {
 		keyalgo = []string{
 			ssh.KeyAlgoRSASHA256,
 		}
+		config = &ssh.ClientConfig{
+			User: sshPayload.UserName,
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(signer),
+			},
+
+			HostKeyAlgorithms: keyalgo,
+
+			HostKeyCallback: ssh.HostKeyCallback(
+				func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+					actualFingerprint := ssh.FingerprintSHA256(key)
+					keyType := key.Type()
+					if keyType == ssh.KeyAlgoRSA {
+						expectedFingerprint, err := returnServerPublicKeys(CloudAws, sshPayload.PublicIP)
+						if err != nil {
+							return err
+						}
+						if expectedFingerprint != actualFingerprint {
+							return fmt.Errorf("[ssh] mismatch of fingerprint")
+						}
+						return nil
+					}
+					return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
+				})}
 	}
-
-	config := &ssh.ClientConfig{
-		User: sshPayload.UserName,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-
-		HostKeyAlgorithms: keyalgo,
-
-		HostKeyCallback: ssh.HostKeyCallback(
-			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				actualFingerprint := ssh.FingerprintSHA256(key)
-				keyType := key.Type()
-				if keyType == ssh.KeyAlgoRSA {
-					expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
-					if err != nil {
-						return err
-					}
-					if expectedFingerprint != actualFingerprint {
-						return fmt.Errorf("[ssh] mismatch of fingerprint")
-					}
-					return nil
-				}
-				return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
-			})}
 
 	if !sshPayload.fastMode {
 		time.Sleep(DurationSSHPause)
