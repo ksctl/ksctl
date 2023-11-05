@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
@@ -88,146 +87,61 @@ func (obj *AwsProvider) CreateSecurityGroup(Role KsctlRole) (string, error) {
 
 // TODO ADD FIREWALL RULES
 func firewallRuleControlPlane(client *ec2.Client, GroupId string) {
-	// inbound rules
+
 	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(22),
-		ToPort:     aws.Int32(22),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
-		IpPermissions: []types.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(6443),
-				ToPort:     aws.Int32(6443),
-			}, {
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(2379),
-				ToPort:     aws.Int32(2380),
-			},
-		},
 	})
 
-	// outbound rules
 	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(22),
-		ToPort:     aws.Int32(22),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
-		IpPermissions: []types.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(6443),
-				ToPort:     aws.Int32(6443),
-			}, {
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(2379),
-				ToPort:     aws.Int32(2380),
-			},
-		},
 	})
 
 }
 func firewallRuleWorkerPlane(client *ec2.Client, GroupId string) {
+
 	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(22),
-		ToPort:     aws.Int32(22),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
-		IpPermissions: []types.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(6443),
-				ToPort:     aws.Int32(6443),
-			}, {
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(2379),
-				ToPort:     aws.Int32(2380),
-			},
-		},
 	})
 
-	// outbound rules
 	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(22),
-		ToPort:     aws.Int32(22),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
-		IpPermissions: []types.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(6443),
-				ToPort:     aws.Int32(6443),
-			}, {
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(2379),
-				ToPort:     aws.Int32(2380),
-			},
-		},
 	})
-
 }
 
 func firewallRuleDataStore(client *ec2.Client, GroupId string) {
 
 	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(22),
-		ToPort:     aws.Int32(22),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
-		IpPermissions: []types.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(6443),
-				ToPort:     aws.Int32(6443),
-			}, {
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(2379),
-				ToPort:     aws.Int32(2380),
-			},
-		},
 	})
 
 	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(22),
-		ToPort:     aws.Int32(22),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
-		IpPermissions: []types.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(6443),
-				ToPort:     aws.Int32(6443),
-			}, {
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int32(2379),
-				ToPort:     aws.Int32(2380),
-			},
-		},
 	})
-
 }
 
 func firewallRuleLoadBalancer(client *ec2.Client, GroupId string) {
 
 	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(0),
-		ToPort:     aws.Int32(65535),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
 	})
 
 	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
 		GroupId:    &GroupId,
-		IpProtocol: aws.String("tcp"),
-		FromPort:   aws.Int32(0),
-		ToPort:     aws.Int32(65535),
+		IpProtocol: aws.String("-1"),
 		CidrIp:     aws.String("0.0.0.0/0"),
 	})
 
