@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 
@@ -362,11 +363,11 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 	parameter := &ec2.RunInstancesInput{
 		// use awslinux image id ---->   ami-0e306788ff2473ccb
-		ImageId:      aws.String("ami-067c21fb1979f0b27"),
+		ImageId:      aws.String("ami-0287a05f0ef0e9d9a"),
 		InstanceType: types.InstanceTypeT2Micro,
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
-		KeyName:      aws.String("testkeypair"),
+		KeyName:      aws.String("test-e2e-ha-aws-ssh"),
 		Monitoring: &types.RunInstancesMonitoringEnabled{
 			Enabled: aws.Bool(true),
 		},
@@ -406,23 +407,27 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		panic("Error creating EC2 instance: " + err.Error())
 	}
 
-	var state int32 = 0
-	for {
-		vmstate, err := ec2Client.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
-			InstanceIds: []string{*instanceop.Instances[0].InstanceId},
-		})
-		if err != nil {
-			log.Println(err)
-		}
-		state = *vmstate.InstanceStatuses[0].InstanceState.Code
-		if state == 16 {
-			storage.Logger().Success("[aws] instance running ")
-			break
-		}
-	}
-	if err != nil {
-		return err
-	}
+	// chceck the instance state until it comes to running state
+
+	time.Sleep(50 * time.Second)
+
+	//var state int32 = 0
+	//for {
+	//	vmstate, err := ec2Client.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
+	//		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
+	//	})
+	//	if err != nil {
+	//		log.Println(err)
+	//	}
+	//	state = *vmstate.InstanceStatuses[0].InstanceState.Code
+	//	if state == 16 {
+	//		storage.Logger().Success("[aws] instance running ")
+	//		break
+	//	}
+	//}
+	//if err != nil {
+	//	return err
+	//}
 
 	// get the instance public ip
 	instanceip := &ec2.DescribeInstancesInput{
@@ -435,9 +440,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	}
 
 	publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
-	fmt.Println(*publicip)
-
-	// TODO : make sure err not fue to vm type mutex
+	privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
 
 	done := make(chan struct{})
 	var errCreate error
@@ -448,14 +451,25 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 		switch role {
 		case RoleWp:
-
-			awsCloudState.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
+			fmt.Println(role)
+			fmt.Println(indexNo)
+			awsCloudState.InfoWorkerPlanes.PublicIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *publicip)
+			awsCloudState.InfoWorkerPlanes.PrivateIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *privateip)
 		case RoleCp:
-			awsCloudState.InfoControlPlanes.PublicIPs[indexNo] = *publicip
+			fmt.Println(role)
+			fmt.Println(indexNo)
+			awsCloudState.InfoControlPlanes.PublicIPs = append(awsCloudState.InfoControlPlanes.PublicIPs, *publicip)
+			awsCloudState.InfoControlPlanes.PrivateIPs = append(awsCloudState.InfoControlPlanes.PrivateIPs, *privateip)
+			fmt.Println("worked")
 		case RoleLb:
+			fmt.Println(role)
 			awsCloudState.InfoLoadBalancer.PublicIP = *publicip
+			awsCloudState.InfoLoadBalancer.PrivateIP = *privateip
 		case RoleDs:
-			awsCloudState.InfoDatabase.PublicIPs[indexNo] = *publicip
+			fmt.Println(role)
+
+			awsCloudState.InfoDatabase.PublicIPs = append(awsCloudState.InfoDatabase.PublicIPs, *publicip)
+			awsCloudState.InfoDatabase.PrivateIPs = append(awsCloudState.InfoDatabase.PrivateIPs, *privateip)
 		}
 		if err := saveStateHelper(storage); err != nil {
 			errCreate = err
