@@ -64,11 +64,8 @@ type AWSStateVms struct {
 }
 
 var (
-	azureCloudState *StateConfiguration
-
 	clusterDirName string
-	clusterType    KsctlClusterType // it stores the ha or managed
-
+	clusterType    KsctlClusterType
 )
 
 const (
@@ -232,7 +229,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration Ksc
 		clusterType = ClusterTypeHa
 	}
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
-	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
+	clusterDirName = obj.clusterName + "/" + obj.vpc + "/" + obj.region
 
 	errLoadState := loadStateHelper(storage)
 	switch opration {
@@ -353,7 +350,6 @@ func (obj *AwsProvider) Role(resRole KsctlRole) resources.CloudFactory {
 
 }
 
-
 func (obj *AwsProvider) VMType(size string) resources.CloudFactory {
 	//TODO implement me as soon as possible :)
 
@@ -374,32 +370,31 @@ func (obj *AwsProvider) Visibility(b bool) resources.CloudFactory {
 
 }
 
-
 func (obj *AwsProvider) SupportForApplications() bool {
 	//TODO implement me
 	fmt.Println("AWS Support for Applications")
-	return true
+	return false
 
 }
 
 func (obj *AwsProvider) SupportForCNI() bool {
 	//TODO implement me
 	fmt.Println("AWS Support for CNI")
-	return true
+	return false
 
 }
 
 func (obj *AwsProvider) Application(s string) bool {
 	//TODO implement me
 	fmt.Println("AWS Application")
-	return true
+	return false
 
 }
 
 func (obj *AwsProvider) CNI(s string) bool {
 	//TODO implement me
 	fmt.Println("AWS CNI")
-	return true
+	return false
 
 }
 
@@ -449,13 +444,23 @@ func (obj *AwsProvider) SwitchCluster(factory resources.StorageFactory) error {
 }
 
 func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, error) {
-	//TODO implement me
-	panic("implement me")
+
+	cloudstate, err := json.Marshal(awsCloudState)
+	if err != nil {
+		return "", err
+	}
+	return string(cloudstate), nil
 }
 
 func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[string][]byte, error) {
 	//TODO implement me
-	panic("implement me")
+	acesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
+	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
+
+	return map[string][]byte{
+		"aws_access_key_id":     []byte(acesskeyid),
+		"aws_secret_access_key": []byte(secret),
+	}, nil
 }
 
 func isValidVMSize(obj *AwsProvider, size string) error {

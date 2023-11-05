@@ -2,54 +2,55 @@ package aws
 
 import (
 	"context"
-	"fmt"
-	"os"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
-	//TODO implement me
 
+	name := obj.metadata.resName
 	obj.mxName.Unlock()
 
-	fmt.Println("AWS Create Upload SSH Key Pair")
-	keypairinput := &ec2.CreateKeyPairInput{
-		KeyName: aws.String("testkeypair"),
-		KeyType: types.KeyTypeRsa,
+	if len(awsCloudState.SSHKeyName) != 0 {
+		storage.Logger().Success("[skip] ssh key already created", awsCloudState.SSHKeyName)
+		return nil
+	}
+
+	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, CloudAws, clusterDirName)
+	if err != nil {
+		return err
+	}
+
+	parameter := ec2.ImportKeyPairInput{
+		KeyName:           aws.String(name),
+		PublicKeyMaterial: []byte(keyPairToUpload),
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceTypeKeyPair,
 				Tags: []types.Tag{
 					{
 						Key:   aws.String("Name"),
-						Value: aws.String("testkeypair"),
+						Value: aws.String(name),
 					},
 				},
 			},
 		},
 	}
 
-	response, err := obj.ec2Client().CreateKeyPair(context.Background(), keypairinput)
-	if err != nil {
+	_, err = obj.ec2Client().ImportKeyPair(context.Background(), &parameter)
+
+	awsCloudState.SSHKeyName = name
+	awsCloudState.SSHUser = "ubuntu"
+	awsCloudState.SSHPrivateKeyLoc = utils.GetPath(UtilSSHPath, CloudAws, clusterType, clusterDirName)
+
+	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
-	
-	file, err := os.Create("testkeypair.pem")
-	if err != nil {
-		return err
-	}
-
-	_, err = file.WriteString(*response.KeyMaterial)
-	if err != nil {
-		return err
-	}
-	file.Close()
-
-
+	storage.Logger().Success("[aws] created the ssh key pair", awsCloudState.SSHKeyName)
 
 	return nil
 
