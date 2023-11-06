@@ -11,7 +11,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.2.0
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
-	github.com/civo/civogo v0.3.52
+	github.com/civo/civogo v0.3.53
 	github.com/fatih/color v1.15.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/rodaine/table v1.1.0
