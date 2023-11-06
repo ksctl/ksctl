@@ -233,31 +233,6 @@ func getPaths(provider consts.KsctlCloud, clusterType consts.KsctlClusterType, p
 	return ret.String()
 }
 
-func CreateSSHKeyPair(storage resources.StorageFactory, log resources.LoggerFactory, provider consts.KsctlCloud, clusterDir string) (string, error) {
-
-	pathTillFolder := ""
-	pathTillFolder = getPaths(provider, consts.ClusterTypeHa, clusterDir)
-
-	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", "keypair") // WARN: it requires the os to have these dependencies
-	cmd.Dir = pathTillFolder
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-
-	log.Debug("Printing", "keypair", string(out))
-
-	path := GetPath(consts.UtilOtherPath, provider, consts.ClusterTypeHa, clusterDir, "keypair.pub")
-	fileBytePub, err := storage.Path(path).Load()
-	if err != nil {
-		return "", err
-	}
-
-	return string(fileBytePub), nil
-}
-
-// ////////////////////////////// New ssh-keygen
-
 // generatePrivateKey creates a RSA Private Key of specified byte size
 func generatePrivateKey(log resources.LoggerFactory, bitSize int) (*rsa.PrivateKey, error) {
 	// Private Key generation
@@ -308,20 +283,10 @@ func generatePublicKey(log resources.LoggerFactory, privatekey *rsa.PublicKey) (
 	return pubKeyBytes, nil
 }
 
-// // writePemToFile writes keys to a file
-// func writeKeyToFile(keyBytes []byte, saveFileTo string) error {
-// 	err := os.WriteFile(saveFileTo, keyBytes, 0600)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	log.Print("Key saved to", "saveFileTo)
-// 	return nil
-// }
+func CreateSSHKeyPair(storage resources.StorageFactory, log resources.LoggerFactory, provider consts.KsctlCloud, clusterDir string) (string, error) {
+	savePrivateFileTo := GetPath(consts.UtilOtherPath, provider, consts.ClusterTypeHa, clusterDir, "keypair")
+	savePublicFileTo := GetPath(consts.UtilOtherPath, provider, consts.ClusterTypeHa, clusterDir, "keypair.pub")
 
-func CreateSSHKeyPair__New__(storage resources.StorageFactory, log resources.LoggerFactory, provider consts.KsctlCloud, clusterDir string) (string, error) {
-	// savePrivateFileTo := "./id_rsa_test"
-	// savePublicFileTo := "./id_rsa_test.pub"
 	bitSize := 4096
 
 	privateKey, err := generatePrivateKey(log, bitSize)
@@ -336,24 +301,19 @@ func CreateSSHKeyPair__New__(storage resources.StorageFactory, log resources.Log
 
 	privateKeyBytes := encodePrivateKeyToPEM(log, privateKey)
 
-	fmt.Println("[[PUBLIC Key]]")
-	fmt.Println(string(publicKeyBytes))
-	fmt.Println("[[PRIVATE Key]]")
-	fmt.Println(string(privateKeyBytes))
+	log.Debug("Printing", "ssh pub key", string(publicKeyBytes))
+	log.Debug("Printing", "ssh private key", string(privateKeyBytes))
 
-	// err = writeKeyToFile(privateKeyBytes, savePrivateFileTo)
-	// if err != nil {
-	// 	return "", err
-	// }
-	//
-	// err = writeKeyToFile([]byte(publicKeyBytes), savePublicFileTo)
-	// if err != nil {
-	// 	return "", err
-	// }
-	return "", nil
+	if err := storage.Path(savePrivateFileTo).Permission(0400).Save(privateKeyBytes); err != nil {
+		return "", err
+	}
+
+	if err := storage.Path(savePublicFileTo).Permission(0600).Save(publicKeyBytes); err != nil {
+		return "", err
+	}
+
+	return string(publicKeyBytes), nil
 }
-
-////////////////////////////////
 
 func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 
@@ -497,7 +457,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log r
 		if err == nil {
 			break
 		} else {
-			log.Warn("RETRYING", err)
+			log.Warn("RETRYING", "reason", err)
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
