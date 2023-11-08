@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
@@ -15,16 +14,13 @@ type Metadata struct {
 }
 
 type LocalStorageProvider struct {
-	Log logger.LogFactory
 	Metadata
 }
 
 var fileMutex sync.Mutex
 
-func InitStorage(verbosity bool) *LocalStorageProvider {
-	return &LocalStorageProvider{
-		Log: &logger.Logger{Verbose: verbosity},
-	}
+func InitStorage() *LocalStorageProvider {
+	return &LocalStorageProvider{}
 }
 
 func (s *LocalStorageProvider) Path(path string) resources.StorageFactory {
@@ -95,8 +91,4 @@ func (s *LocalStorageProvider) GetFolders() ([][]string, error) {
 	}
 
 	return info, nil
-}
-
-func (s *LocalStorageProvider) Logger() logger.LogFactory {
-	return s.Log
 }

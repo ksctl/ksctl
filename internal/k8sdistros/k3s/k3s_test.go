@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -26,14 +26,17 @@ func TestMain(m *testing.M) {
 	demoClient = &resources.KsctlClient{}
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
-	demoClient.Metadata.Provider = CloudAzure
-	demoClient.Distro = ReturnK3sStruct()
-	fakeClient = ReturnK3sStruct()
+	demoClient.Metadata.Provider = consts.CloudAzure
+	demoClient.Metadata.LogWritter = os.Stdout
+	demoClient.Metadata.LogVerbosity = -1
 
-	demoClient.Storage = localstate.InitStorage(false)
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	_ = os.Setenv(string(KsctlFakeFlag), "true")
-	azHA := utils.GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg")
+	demoClient.Distro = ReturnK3sStruct(demoClient.Metadata)
+	fakeClient = ReturnK3sStruct(demoClient.Metadata)
+
+	demoClient.Storage = localstate.InitStorage()
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
+	azHA := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg")
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
@@ -41,14 +44,14 @@ func TestMain(m *testing.M) {
 	fmt.Println("Created tmp directories")
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
 		SSHState: cloudControlRes.SSHInfo{
-			PathPrivateKey: utils.GetPath(UtilSSHPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg"),
+			PathPrivateKey: utils.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"),
 			UserName:       "fakeuser",
 		},
 		Metadata: cloudControlRes.Metadata{
 			ClusterName: "fake",
-			Provider:    CloudAzure,
+			Provider:    consts.CloudAzure,
 			Region:      "fake-reg",
-			ClusterType: ClusterTypeHa,
+			ClusterType: consts.ClusterTypeHa,
 			ClusterDir:  "fake fake-resgrp fake-reg",
 		},
 		// public IPs
@@ -266,7 +269,7 @@ sudo ./worker-setup.sh
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -290,7 +293,7 @@ func getState(t *testing.T) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, OperationStateCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, consts.OperationStateCreate), nil, "should be initlize the state")
 
 	getState(t)
 
@@ -298,11 +301,11 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	checkCurrentStateFile(t)
 
-	_, err := utils.CreateSSHKeyPair(demoClient.Storage, CloudAzure, k8sState.ClusterDir)
+	_, err := utils.CreateSSHKeyPair(demoClient.Storage, log, consts.CloudAzure, k8sState.ClusterDir)
 	if err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
-	t.Log(utils.GetPath(UtilSSHPath, CloudAzure, ClusterTypeHa, "fake fake-resgrp fake-reg"))
+	t.Log(utils.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"))
 
 	err = fakeClient.ConfigureLoadbalancer(demoClient.Storage)
 	if err != nil {
@@ -338,7 +341,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 		a, b, err := fakeClient.GetKubeConfig(demoClient.Storage)
 		assert.NilError(t, err, "get kubeconfig should be successful")
 
-		path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+		path := utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 		var raw []byte
 		raw, err = demoClient.Storage.Path(path).Load()
@@ -352,8 +355,8 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 func TestCNI(t *testing.T) {
 	testCases := map[string]bool{
-		string(CNIFlannel): false,
-		string(CNICilium):  true,
+		string(consts.CNIFlannel): false,
+		string(consts.CNICilium):  true,
 	}
 
 	for k, v := range testCases {

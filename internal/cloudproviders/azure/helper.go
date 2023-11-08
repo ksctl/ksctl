@@ -5,33 +5,36 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
-func GetInputCredential(storage resources.StorageFactory) error {
+func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(consts.CloudAws))
 
-	storage.Logger().Print("Enter your SUBSCRIPTION ID")
-	skey, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your SUBSCRIPTION ID")
+	skey, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
-	storage.Logger().Print("Enter your TENANT ID")
-	tid, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your TENANT ID")
+	tid, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
-	storage.Logger().Print("Enter your CLIENT ID")
-	cid, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your CLIENT ID")
+	cid, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
-	storage.Logger().Print("Enter your CLIENT SECRET")
-	cs, err := utils.UserInputCredentials(storage.Logger())
+	log.Print("Enter your CLIENT SECRET")
+	cs, err := utils.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
@@ -61,39 +64,44 @@ func GetInputCredential(storage resources.StorageFactory) error {
 	//}
 	// ADD SOME PING method to validate credentials
 
-	if err := utils.SaveCred(storage, apiStore, CloudAzure); err != nil {
+	if err := utils.SaveCred(storage, log, apiStore, consts.CloudAzure); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func generatePath(flag KsctlUtilsConsts, clusterType KsctlClusterType, path ...string) string {
-	return utils.GetPath(flag, CloudAzure, clusterType, path...)
+func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
+	return utils.GetPath(flag, consts.CloudAzure, clusterType, path...)
 }
 
 func saveStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
 	rawState, err := convertStateToBytes(*azureCloudState)
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "rawState", string(rawState), "path", path)
+
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
 	}
 
+	log.Debug("Printing", "rawState", string(raw), "path", path)
 	return convertStateFromBytes(raw)
 }
 
 func saveKubeconfigHelper(storage resources.StorageFactory, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
-	path := utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+
+	log.Debug("Printing", "path", path, "kubeconfig", kubeconfig)
 
 	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
 }
@@ -111,27 +119,41 @@ func convertStateFromBytes(raw []byte) error {
 	return nil
 }
 
-func printKubeconfig(storage resources.StorageFactory, operation KsctlOperation) {
-	env := ""
-	storage.Logger().Note("KUBECONFIG env var")
-	path := generatePath(UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOperation) {
+	key := ""
+	value := ""
+	box := ""
 	switch runtime.GOOS {
 	case "windows":
+		key = "$Env:KUBECONFIG"
+
 		switch operation {
-		case OperationStateCreate:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"%s\"\n", path)
-		case OperationStateDelete:
-			env = fmt.Sprintf("$Env:KUBECONFIG=\"\"\n")
+		case consts.OperationStateCreate:
+			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+
+		case consts.OperationStateDelete:
+			value = ""
 		}
+		box = key + "=" + fmt.Sprintf("\"%s\"", value)
+		log.Note("KUBECONFIG env var", key, value)
+
 	case "linux", "macos":
+
 		switch operation {
-		case OperationStateCreate:
-			env = fmt.Sprintf("export KUBECONFIG=\"%s\"\n", path)
-		case OperationStateDelete:
-			env = "unset KUBECONFIG"
+		case consts.OperationStateCreate:
+			key = "export KUBECONFIG"
+			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+			box = key + "=" + fmt.Sprintf("\"%s\"", value)
+			log.Note("KUBECONFIG env var", key, value)
+
+		case consts.OperationStateDelete:
+			key = "unset KUBECONFIG"
+			box = key
+			log.Note(key)
 		}
 	}
-	storage.Logger().Note(env)
+
+	log.Box("KUBECONFIG env var", box)
 }
 
 func validationOfArguments(obj *AzureProvider) error {
@@ -150,8 +172,11 @@ func validationOfArguments(obj *AzureProvider) error {
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
 	res, err := obj.client.ListKubernetesVersions()
 	if err != nil {
-		return fmt.Errorf("failed to finish the request: %v", err)
+		return log.NewError("failed to finish the request: %v", err)
 	}
+
+	log.Debug("Printing", "ListKubernetesVersions", res)
+
 	var vers []string
 	for _, version := range res.Values {
 		vers = append(vers, *version.Version)
@@ -161,7 +186,7 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Invalid k8s version\nValid options: %v\n", vers)
+	return log.NewError("Invalid k8s version\nValid options: %v\n", vers)
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {
@@ -169,12 +194,14 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "ListLocation", validReg)
+
 	for _, valid := range validReg {
 		if valid == reg {
 			return nil
 		}
 	}
-	return fmt.Errorf("INVALID REGION\nValid options: %v\n", validReg)
+	return log.NewError("INVALID REGION\nValid options: %v\n", validReg)
 }
 
 func isValidVMSize(obj *AzureProvider, size string) error {
@@ -183,6 +210,7 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 	if err != nil {
 		return err
 	}
+	log.Debug("Printing", "ListVMType", validSize)
 
 	for _, valid := range validSize {
 		if valid == size {
@@ -190,5 +218,5 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 		}
 	}
 
-	return fmt.Errorf("INVALID VM SIZE\nValid options %v\n", validSize)
+	return log.NewError("INVALID VM SIZE\nValid options %v\n", validSize)
 }

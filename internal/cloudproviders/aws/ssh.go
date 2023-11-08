@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -16,11 +17,11 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 	obj.mxName.Unlock()
 
 	if len(awsCloudState.SSHKeyName) != 0 {
-		storage.Logger().Success("[skip] ssh key already created", awsCloudState.SSHKeyName)
+		log.Success("[skip] ssh key already created", awsCloudState.SSHKeyName)
 		return nil
 	}
 
-	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, CloudAws, clusterDirName)
+	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, log, CloudAws, clusterDirName)
 	if err != nil {
 		return err
 	}
@@ -50,7 +51,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
-	storage.Logger().Success("[aws] created the ssh key pair", awsCloudState.SSHKeyName)
+	log.Success("[aws] created the ssh key pair", awsCloudState.SSHKeyName)
 
 	return nil
 

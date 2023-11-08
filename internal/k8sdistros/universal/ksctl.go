@@ -11,7 +11,7 @@ import (
 	"github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	corev1 "k8s.io/api/core/v1"
 
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,11 +69,14 @@ var (
 )
 
 func (this *Kubernetes) DeleteResourcesFromController() error {
-	this.StorageDriver.Logger().Print("[client-go] Started to configure Cluster to delete workerplanes")
+	log.Print("Started to configure Cluster to delete workerplanes")
+
 	clusterName := this.Metadata.ClusterName
 	region := this.Metadata.Region
 	provider := this.Metadata.Provider
 	distro := this.Metadata.K8sDistro
+
+	log.Debug("Printing", "clustername", clusterName, "region", region, "provider", provider, "distro", distro)
 
 	var destroyer *corev1.Pod = &corev1.Pod{
 		TypeMeta: v1.TypeMeta{
@@ -114,38 +117,40 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 		},
 	}
 
+	log.Debug("Printing", "destroyerPodManifest", destroyer)
+
 	if err := this.PodApply(destroyer, KSCTL_SYS_NAMESPACE); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	count := KsctlCounterConsts(0)
+	count := consts.KsctlCounterConsts(0)
 	for {
 
 		status, err := this.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, v1.GetOptions{})
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 		if status.Status.Phase == corev1.PodSucceeded {
-			this.StorageDriver.Logger().Success(fmt.Sprintf("Status of Job [%v]", status.Status.Phase))
+			log.Success(fmt.Sprintf("Status of Job [%v]", status.Status.Phase))
 			break
 		}
 		count++
-		if count == CounterMaxRetryCount {
-			return fmt.Errorf("max retry reached")
+		if count == consts.CounterMaxRetryCount*2 {
+			return log.NewError("max retry reached")
 		}
-		this.StorageDriver.Logger().Warn(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
+		log.Debug(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
 		time.Sleep(10 * time.Second)
 	}
 
 	time.Sleep(10 * time.Second) // to maintain a time gap for stable cluster and cloud resources
 
-	this.StorageDriver.Logger().Success("[client-go] Done configuring Cluster to Scale down the no of workerplane to 1")
+	log.Success("Done configuring Cluster to Scale down the no of workerplane to 1")
 	return nil
 }
 
 func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, cloudstate, k8sstate string, secretKeys map[string][]byte) error {
 
-	this.StorageDriver.Logger().Print("[client-go] Started to configure Cluster to add Ksctl specific resources")
+	log.Print("Started to configure Cluster to add Ksctl specific resources")
 	rawCloudstate := []byte(cloudstate)
 
 	var sshPrivateKeyPath string
@@ -153,28 +158,31 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	var clusterDir string
 
 	if err := this.namespaceCreate(KSCTL_SYS_NAMESPACE); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	switch this.Metadata.Provider {
-	case CloudCivo:
+	case consts.CloudCivo:
 		var data *civo.StateConfiguration
 		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
+
 		sshPrivateKeyPath = data.SSHPrivateKeyLoc
 		clusterDir = data.ClusterName + " " + data.Region
 		data.SSHPrivateKeyLoc = fmt.Sprintf("/app/ksctl-data/config/civo/ha/%s/keypair", clusterDir)
+
 		raw, err := json.Marshal(data)
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
+
 		cloudstate = string(raw)
 
-	case CloudAzure:
+	case consts.CloudAzure:
 		var data *azure.StateConfiguration
 		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 
 		sshPrivateKeyPath = data.SSHPrivateKeyLoc
@@ -183,7 +191,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		data.SSHPrivateKeyLoc = fmt.Sprintf("/app/ksctl-data/config/azure/ha/%s/keypair", clusterDir)
 		raw, err := json.Marshal(data)
 		if err != nil {
-			return err
+			return log.NewError(err.Error())
 		}
 		cloudstate = string(raw)
 	}
@@ -192,13 +200,15 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 
 	sshPrivate, err := this.StorageDriver.Path(sshPrivateKeyPath).Load()
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	sshPub, err := this.StorageDriver.Path(sshPubKeyPath).Load()
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
+
+	log.Debug("Printing", "cloud-state.json", cloudstate, "k8s-state.json", k8sstate, "kubeconfig", kubeconfig, "keypair.Public", string(sshPub), "keypair.Private", string(sshPrivate))
 
 	var state *corev1.ConfigMap = &corev1.ConfigMap{
 		TypeMeta: v1.TypeMeta{
@@ -217,8 +227,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
+	log.Debug("Printing", "stateConfigMapManifest", state)
+
 	if err := this.configMapApply(state, KSCTL_SYS_NAMESPACE); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	var controllerInput *corev1.ConfigMap = &corev1.ConfigMap{
@@ -241,8 +253,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
+	log.Debug("Printing", "autoScalerControllerHelperConfigMapManifest", controllerInput)
+
 	if err := this.configMapApply(controllerInput, KSCTL_SYS_NAMESPACE); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	var tokenSecret *corev1.Secret = &corev1.Secret{
@@ -256,8 +270,10 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		Data: secretKeys,
 	}
 
+	log.Debug("Printing", "cloudProviderSecretsManifest", tokenSecret)
+
 	if err := this.secretApply(tokenSecret, KSCTL_SYS_NAMESPACE); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	// NOTE: reconstruct according to the http server
@@ -267,6 +283,8 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 
 	execNewPath := strings.Join(strings.Split(newPath, " "), "\\ ")
 	rootFolder := fmt.Sprintf("/app/ksctl-data/config/%s/ha", this.Metadata.Provider)
+
+	log.Debug("Printing", "newPathForClusterAccordingToPodFileSystem", newPath, "rootFolderForClusterAccordingToPodFileSystem", rootFolder)
 
 	userid := int64(1000)
 	groupid := int64(1000)
@@ -380,9 +398,9 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	var listEnv []string
 
 	switch this.Metadata.Provider {
-	case CloudCivo:
+	case consts.CloudCivo:
 		listEnv = append(listEnv, "CIVO_TOKEN")
-	case CloudAzure:
+	case consts.CloudAzure:
 		listEnv = append(listEnv, "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
 	}
 
@@ -403,10 +421,12 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	}
 	ksctlServer.Spec.Template.Spec.Containers[0].Env = deploymentEnv
 
+	log.Debug("Printing", "ksctlMainServerManifest", ksctlServer)
+
 	time.Sleep(10 * time.Second) // waiting till the cluster is stable
 
 	if err := this.deploymentApply(ksctlServer, KSCTL_SYS_NAMESPACE); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	var serverService *corev1.Service = &corev1.Service{
@@ -435,11 +455,13 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		},
 	}
 
+	log.Debug("Printing", "ksctlServerServiceManifest", serverService)
+
 	if err := this.serviceApply(serverService, KSCTL_SYS_NAMESPACE); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	this.StorageDriver.Logger().Success("[client-go] Done configuring Cluster to add Ksctl specific resources")
+	log.Success("Done configuring Cluster to add Ksctl specific resources")
 	return nil
 
 }

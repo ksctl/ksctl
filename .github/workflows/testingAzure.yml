@@ -1,0 +1,82 @@
+name: Regression Test Azure
+on:
+  push:
+    paths:
+    - 'internal/cloudproviders/azure/**'
+    - 'internal/storage/**'
+    - 'pkg/utils/**'
+    - 'pkg/logger/**'
+    - 'go.mod'
+    - 'go.sum'
+    branches: [ main ]
+
+  pull_request:
+    types: [ labeled, opened, synchronize, reopened, edited ]
+    paths:
+    - 'internal/cloudproviders/azure/**'
+    - 'internal/storage/**'
+    - 'pkg/utils/**'
+    - 'pkg/logger/**'
+    - 'go.mod'
+    - 'go.sum'
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Unit Test
+        run: |
+          cd scripts
+          chmod u+x test-azure.sh
+          ./test-azure.sh
+
+  mock-linux:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.label.name == 'pr/lgtm' }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Mock integration testing
+        run: |
+          cd test/
+          go test -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
+          go test -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Unit Test
+        run: |
+          cd scripts
+          .\test-azure.ps1
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Unit Test
+        run: |
+          cd scripts
+          chmod u+x test-azure.sh
+          ./test-azure.sh

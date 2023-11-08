@@ -1,9 +1,9 @@
 package universal
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -21,11 +21,15 @@ type Kubernetes struct {
 	helmClient          *HelmClient
 }
 
+var (
+	log resources.LoggerFactory
+)
+
 func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
 	nodes, err := this.nodesList()
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	kNodeName := ""
@@ -37,35 +41,38 @@ func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	}
 
 	if len(kNodeName) == 0 {
-		return fmt.Errorf("Not found!")
+		return log.NewError("Not found!")
 	}
 	err = this.nodeDelete(kNodeName)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	this.StorageDriver.Logger().Success("[client-go] Deleted Node", kNodeName)
+	log.Success("Deleted Node", "name", kNodeName)
 	return nil
 }
 
 func (this *Kubernetes) ClientInit(kubeconfigPath string) (err error) {
+	log = logger.NewDefaultLogger(this.Metadata.LogVerbosity, this.Metadata.LogWritter)
+	log.SetPackageName("kubernetes-client")
+
 	this.config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	this.apiextensionsClient, err = clientset.NewForConfig(this.config)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	this.clientset, err = kubernetes.NewForConfig(this.config)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	this.helmClient = new(HelmClient)
 	if err := this.helmClient.InitClient(kubeconfigPath); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	initApps()

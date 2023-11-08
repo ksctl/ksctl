@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -25,21 +25,22 @@ var (
 func TestMain(m *testing.M) {
 
 	demoClient = &resources.KsctlClient{}
-
 	demoClient.Metadata.ClusterName = "demo"
 	demoClient.Metadata.Region = "demoRegion"
 	demoClient.Metadata.Provider = "demoProvider"
+	demoClient.Metadata.LogVerbosity = -1
+	demoClient.Metadata.LogWritter = os.Stdout
 
 	demoClient.Cloud, _ = ReturnCivoStruct(demoClient.Metadata, ProvideMockCivoClient)
 
 	fakeClient, _ = ReturnCivoStruct(demoClient.Metadata, ProvideMockCivoClient)
 
-	demoClient.Storage = localstate.InitStorage(false)
+	demoClient.Storage = localstate.InitStorage()
 
 	// setup temporary folder
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	civoHA := utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeHa)
-	civoManaged := utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeMang)
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	civoHA := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa)
+	civoManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(civoManaged, 0755); err != nil {
 		panic(err)
@@ -71,8 +72,8 @@ func TestConsts(t *testing.T) {
 
 func TestGenPath(t *testing.T) {
 	assert.Equal(t,
-		generatePath(UtilClusterPath, "abcd"),
-		utils.GetPath(UtilClusterPath, "civo", "abcd"),
+		generatePath(consts.UtilClusterPath, "abcd"),
+		utils.GetPath(consts.UtilClusterPath, "civo", "abcd"),
 		"genreatePath not compatable with utils.getpath()")
 }
 
@@ -90,11 +91,11 @@ func TestCivoProvider_InitState(t *testing.T) {
 
 	t.Run("Create state", func(t *testing.T) {
 
-		if err := fakeClient.InitState(demoClient.Storage, OperationStateCreate); err != nil {
+		if err := fakeClient.InitState(demoClient.Storage, consts.OperationStateCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, ClusterTypeMang, "clustertype should be managed")
+		assert.Equal(t, clusterType, consts.ClusterTypeMang, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeClient.clusterName+" "+fakeClient.region, "clusterdir not equal")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 		assert.Equal(t, fakeClient.Name("fake").NewNetwork(demoClient.Storage), nil, "Network should be created")
@@ -105,21 +106,21 @@ func TestCivoProvider_InitState(t *testing.T) {
 		civoCloudState.IsCompleted = true
 		assert.Equal(t, civoCloudState.IsCompleted, true, "cluster should not be completed")
 
-		if err := fakeClient.InitState(demoClient.Storage, OperationStateCreate); err != nil {
+		if err := fakeClient.InitState(demoClient.Storage, consts.OperationStateCreate); err != nil {
 			t.Fatalf("Unable to resume state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Get request", func(t *testing.T) {
 
-		if err := fakeClient.InitState(demoClient.Storage, OperationStateGet); err != nil {
+		if err := fakeClient.InitState(demoClient.Storage, consts.OperationStateGet); err != nil {
 			t.Fatalf("Unable to get state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Delete request", func(t *testing.T) {
 
-		if err := fakeClient.InitState(demoClient.Storage, OperationStateDelete); err != nil {
+		if err := fakeClient.InitState(demoClient.Storage, consts.OperationStateDelete); err != nil {
 			t.Fatalf("Unable to Delete state, Reason: %v", err)
 		}
 	})
@@ -273,7 +274,7 @@ func TestResName(t *testing.T) {
 }
 
 func TestRole(t *testing.T) {
-	validSet := []KsctlRole{RoleCp, RoleLb, RoleDs, RoleWp}
+	validSet := []consts.KsctlRole{consts.RoleCp, consts.RoleLb, consts.RoleDs, consts.RoleWp}
 	for _, val := range validSet {
 		if ret := fakeClient.Role(val); ret == nil {
 			t.Fatalf("returned nil for valid role")
@@ -363,10 +364,10 @@ func TestK8sVersion(t *testing.T) {
 
 func TestCni(t *testing.T) {
 	testCases := map[string]bool{
-		string(CNICilium):  false,
-		string(CNIFlannel): false,
-		string(CNIKubenet): true,
-		"abcd":             true,
+		string(consts.CNICilium):  false,
+		string(consts.CNIFlannel): false,
+		string(consts.CNIKubenet): true,
+		"abcd":                    true,
 	}
 
 	for k, v := range testCases {
@@ -403,7 +404,7 @@ func TestFirewallRules(t *testing.T) {
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -417,7 +418,7 @@ func checkCurrentStateFile(t *testing.T) {
 
 func checkCurrentStateFileHA(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -433,15 +434,15 @@ func TestManagedCluster(t *testing.T) {
 	fakeClient.region = "LON1"
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeClient.InitState(demoClient.Storage, OperationStateCreate); err != nil {
+		if err := fakeClient.InitState(demoClient.Storage, consts.OperationStateCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, ClusterTypeMang, "clustertype should be managed")
+		assert.Equal(t, clusterType, consts.ClusterTypeMang, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeClient.clusterName+" "+fakeClient.region, "clusterdir not equal")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -465,11 +466,11 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, civoCloudState.IsCompleted, true, "cluster should not be completed")
 
 		assert.Equal(t, civoCloudState.NoManagedNodes, 5)
-		assert.Equal(t, civoCloudState.KubernetesDistro, string(K8sK3s))
+		assert.Equal(t, civoCloudState.KubernetesDistro, string(consts.K8sK3s))
 		assert.Equal(t, civoCloudState.KubernetesVer, fakeClient.metadata.k8sVersion)
 		assert.Assert(t, len(civoCloudState.ManagedClusterID) > 0, "Managed clusterID not saved")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeMang, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
 		if os.IsNotExist(err) {
 			t.Fatalf("kubeconfig should not be absent")
 		}
@@ -480,16 +481,16 @@ func TestManagedCluster(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
 				Name:     fakeClient.clusterName,
-				Provider: CloudCivo,
-				Type:     ClusterTypeMang,
+				Provider: consts.CloudCivo,
+				Type:     consts.ClusterTypeMang,
 				Region:   fakeClient.region,
 				NoMgt:    civoCloudState.NoManagedNodes,
 
-				K8sDistro:  K8sK3s,
+				K8sDistro:  consts.K8sK3s,
 				K8sVersion: civoCloudState.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(demoClient.Storage)
+		got, err := GetRAWClusterInfos(demoClient.Storage, demoClient.Metadata)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
@@ -507,7 +508,7 @@ func TestManagedCluster(t *testing.T) {
 
 		assert.Equal(t, len(civoCloudState.NetworkIDs.NetworkID), 0, "network id still present")
 		// at this moment the file is not present
-		_, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory still present")
 		}
@@ -526,19 +527,19 @@ func TestHACluster(t *testing.T) {
 	fakeClient.metadata.noWP = 10
 	fakeClient.metadata.public = true
 	fakeClient.metadata.vmType = "g4s.kube.small"
-	fakeClient.metadata.k8sName = K8sK3s
+	fakeClient.metadata.k8sName = consts.K8sK3s
 
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeClient.InitState(demoClient.Storage, OperationStateCreate); err != nil {
+		if err := fakeClient.InitState(demoClient.Storage, consts.OperationStateCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, ClusterTypeHa, "clustertype should be managed")
+		assert.Equal(t, clusterType, consts.ClusterTypeHa, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeClient.clusterName+" "+fakeClient.region, "clusterdir not equal")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -558,7 +559,7 @@ func TestHACluster(t *testing.T) {
 
 		assert.Assert(t, len(civoCloudState.SSHID) > 0, "sshid must be present")
 		assert.Equal(t, civoCloudState.SSHUser, "root", "ssh user not set")
-		assert.Equal(t, civoCloudState.SSHPrivateKeyLoc, utils.GetPath(UtilSSHPath, CloudCivo, clusterType, clusterDirName), "ssh private key loc missing")
+		assert.Equal(t, civoCloudState.SSHPrivateKeyLoc, utils.GetPath(consts.UtilSSHPath, consts.CloudCivo, clusterType, clusterDirName), "ssh private key loc missing")
 
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 		checkCurrentStateFileHA(t)
@@ -567,7 +568,7 @@ func TestHACluster(t *testing.T) {
 	t.Run("Create Firewalls", func(t *testing.T) {
 
 		t.Run("Controlplane", func(t *testing.T) {
-			fakeClient.Role(RoleCp)
+			fakeClient.Role(consts.RoleCp)
 			fakeClient.Name("fake-cp")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
@@ -575,21 +576,21 @@ func TestHACluster(t *testing.T) {
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDControlPlaneNode) > 0, "firewallID for controlplane absent")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
-			fakeClient.Role(RoleWp)
+			fakeClient.Role(consts.RoleWp)
 			fakeClient.Name("fake-wp")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDWorkerNode) > 0, "firewallID for workerplane absent")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeClient.Role(RoleLb)
+			fakeClient.Role(consts.RoleLb)
 			fakeClient.Name("fake-lb")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode) > 0, "firewallID for loadbalancer absent")
 		})
 		t.Run("Datastore", func(t *testing.T) {
-			fakeClient.Role(RoleDs)
+			fakeClient.Role(consts.RoleDs)
 			fakeClient.Name("fake-ds")
 
 			assert.Equal(t, fakeClient.NewFirewall(demoClient.Storage), nil, "new firewall failed")
@@ -601,7 +602,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("Create VMs", func(t *testing.T) {
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeClient.Role(RoleLb)
+			fakeClient.Role(consts.RoleLb)
 			fakeClient.Name("fake-lb-vm")
 			fakeClient.VMType("g4s.kube.small")
 
@@ -625,7 +626,7 @@ func TestHACluster(t *testing.T) {
 
 					fakeClient.Name(fmt.Sprintf("fake-cp-%d", i))
 					fakeClient.VMType("g4s.kube.small")
-					fakeClient.Role(RoleCp)
+					fakeClient.Role(consts.RoleCp)
 
 					assert.Equal(t, fakeClient.NewVM(demoClient.Storage, i), nil, "new vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.ControlNodes[i]) > 0, "controlplane VM id absent")
@@ -654,7 +655,7 @@ func TestHACluster(t *testing.T) {
 
 					fakeClient.Name(fmt.Sprintf("fake-ds-%d", i))
 					fakeClient.VMType("g4s.kube.small")
-					fakeClient.Role(RoleDs)
+					fakeClient.Role(consts.RoleDs)
 
 					assert.Equal(t, fakeClient.NewVM(demoClient.Storage, i), nil, "new vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.DatabaseNode[i]) > 0, "datastore VM id absent")
@@ -677,7 +678,7 @@ func TestHACluster(t *testing.T) {
 				t.Run("workerplane", func(t *testing.T) {
 
 					fakeClient.Name(fmt.Sprintf("fake-wp-%d", i))
-					fakeClient.Role(RoleWp)
+					fakeClient.Role(consts.RoleWp)
 					fakeClient.VMType("g4s.kube.small")
 
 					assert.Equal(t, fakeClient.NewVM(demoClient.Storage, i), nil, "new vm failed")
@@ -717,17 +718,17 @@ func TestHACluster(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
 				Name:       fakeClient.clusterName,
-				Provider:   CloudCivo,
-				Type:       ClusterTypeHa,
+				Provider:   consts.CloudCivo,
+				Type:       consts.ClusterTypeHa,
 				Region:     fakeClient.region,
 				NoWP:       fakeClient.noWP,
 				NoCP:       fakeClient.noCP,
 				NoDS:       fakeClient.noDS,
-				K8sDistro:  K8sK3s,
+				K8sDistro:  consts.K8sK3s,
 				K8sVersion: civoCloudState.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(demoClient.Storage)
+		got, err := GetRAWClusterInfos(demoClient.Storage, demoClient.Metadata)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
@@ -738,11 +739,11 @@ func TestHACluster(t *testing.T) {
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {
 
-		if err := fakeClient.InitState(demoClient.Storage, OperationStateDelete); err != nil {
+		if err := fakeClient.InitState(demoClient.Storage, consts.OperationStateDelete); err != nil {
 			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, ClusterTypeHa, "clustertype should be managed")
+		assert.Equal(t, clusterType, consts.ClusterTypeHa, "clustertype should be managed")
 		assert.Equal(t, clusterDirName, fakeClient.clusterName+" "+fakeClient.region, "clusterdir not equal")
 	})
 
@@ -760,7 +761,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("Delete VMs", func(t *testing.T) {
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeClient.Role(RoleLb)
+			fakeClient.Role(consts.RoleLb)
 
 			assert.Equal(t, fakeClient.DelVM(demoClient.Storage, 0), nil, "del vm failed")
 			assert.Assert(t, len(civoCloudState.InstanceIDs.LoadBalancerNode) == 0, "loadbalancer VM id absent")
@@ -776,7 +777,7 @@ func TestHACluster(t *testing.T) {
 
 			for i := 0; i < fakeClient.metadata.noWP; i++ {
 				t.Run("workerplane", func(t *testing.T) {
-					fakeClient.Role(RoleWp)
+					fakeClient.Role(consts.RoleWp)
 
 					assert.Equal(t, fakeClient.DelVM(demoClient.Storage, i), nil, "del vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.WorkerNodes[i]) == 0, "workerplane VM id present")
@@ -793,7 +794,7 @@ func TestHACluster(t *testing.T) {
 
 			for i := 0; i < fakeClient.metadata.noCP; i++ {
 				t.Run("controlplane", func(t *testing.T) {
-					fakeClient.Role(RoleCp)
+					fakeClient.Role(consts.RoleCp)
 
 					assert.Equal(t, fakeClient.DelVM(demoClient.Storage, i), nil, "del vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.ControlNodes[i]) == 0, "controlplane VM id present")
@@ -810,7 +811,7 @@ func TestHACluster(t *testing.T) {
 
 			for i := 0; i < fakeClient.metadata.noDS; i++ {
 				t.Run("datastore", func(t *testing.T) {
-					fakeClient.Role(RoleDs)
+					fakeClient.Role(consts.RoleDs)
 
 					assert.Equal(t, fakeClient.DelVM(demoClient.Storage, i), nil, "del vm failed")
 					assert.Assert(t, len(civoCloudState.InstanceIDs.DatabaseNode[i]) == 0, "datastore VM id present")
@@ -828,26 +829,26 @@ func TestHACluster(t *testing.T) {
 	t.Run("Delete Firewalls", func(t *testing.T) {
 
 		t.Run("Controlplane", func(t *testing.T) {
-			fakeClient.Role(RoleCp)
+			fakeClient.Role(consts.RoleCp)
 
 			assert.Equal(t, fakeClient.DelFirewall(demoClient.Storage), nil, "del firewall failed")
 
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDControlPlaneNode) == 0, "firewallID for controlplane present")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
-			fakeClient.Role(RoleWp)
+			fakeClient.Role(consts.RoleWp)
 
 			assert.Equal(t, fakeClient.DelFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDWorkerNode) == 0, "firewallID for workerplane present")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
-			fakeClient.Role(RoleLb)
+			fakeClient.Role(consts.RoleLb)
 
 			assert.Equal(t, fakeClient.DelFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode) == 0, "firewallID for loadbalancer present")
 		})
 		t.Run("Datastore", func(t *testing.T) {
-			fakeClient.Role(RoleDs)
+			fakeClient.Role(consts.RoleDs)
 
 			assert.Equal(t, fakeClient.DelFirewall(demoClient.Storage), nil, "new firewall failed")
 			assert.Assert(t, len(civoCloudState.NetworkIDs.FirewallIDDatabaseNode) == 0, "firewallID for datastore present")

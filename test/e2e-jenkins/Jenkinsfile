@@ -109,7 +109,7 @@ pipeline {
 			emailext body: '''
                 [KSCTL-e2e Testing on main branch]
                 $DEFAULT_CONTENT
-                ''', mimeType: 'text/html', subject: 'NO-REPLY ksctl-bot: $DEFAULT_SUBJECT', to: 'ksctl-kubesimplify@googlegroups.com'
+                ''', mimeType: 'text/html', subject: 'NO-REPLY ksctl-bot: $DEFAULT_SUBJECT', to: 'dipankar@dipankar-das.com'
 
 			sh '''
                 #!/bin/bash

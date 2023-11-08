@@ -15,10 +15,10 @@ func (this *Kubernetes) netpolicyApply(o *networkingv1.NetworkPolicy, ns string)
 		if apierrors.IsAlreadyExists(err) {
 			_, err = this.clientset.NetworkingV1().NetworkPolicies(ns).Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return err
+				return log.NewError(err.Error())
 			}
 		} else {
-			return err
+			return log.NewError(err.Error())
 		}
 	}
 	return nil

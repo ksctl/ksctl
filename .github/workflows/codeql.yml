@@ -16,13 +16,11 @@ on:
     paths:
       - 'internal/**'
       - 'pkg/**'
-      - 'cmd/cli/**'
     branches: [ "main" ]
   pull_request:
     paths:
       - 'internal/**'
       - 'pkg/**'
-      - 'cmd/cli/**'
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
   schedule:
@@ -40,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'go', 'javascript' ]
+        language: [ 'go' ]
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 

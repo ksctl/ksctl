@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // DelFirewall implements resources.CloudFactory.
@@ -14,53 +14,57 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	role := obj.metadata.role
 	obj.mxRole.Unlock()
 
+	log.Debug("Printing", "role", role)
+
 	nsg := ""
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
-	case RoleWp:
+	case consts.RoleWp:
 		nsg = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName
-	case RoleLb:
+	case consts.RoleLb:
 		nsg = azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName
-	case RoleDs:
+	case consts.RoleDs:
 		nsg = azureCloudState.InfoDatabase.NetworkSecurityGroupName
 	default:
 		return fmt.Errorf("invalid role")
 	}
+
 	if len(nsg) == 0 {
-		storage.Logger().Success("[skip] firewall already deleted")
+		log.Print("skipped firewall already deleted")
 		return nil
 	}
 
 	pollerResponse, err := obj.client.BeginDeleteSecurityGrp(nsg, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Print("[azure] firewall deleting...", nsg)
+	log.Print("firewall deleting...", "name", nsg)
 
 	_, err = obj.client.PollUntilDoneDelNSG(ctx, pollerResponse, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = ""
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = ""
-	case RoleWp:
+	case consts.RoleWp:
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID = ""
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = ""
-	case RoleLb:
+	case consts.RoleLb:
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID = ""
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = ""
-	case RoleDs:
+	case consts.RoleDs:
 		azureCloudState.InfoDatabase.NetworkSecurityGroupID = ""
 		azureCloudState.InfoDatabase.NetworkSecurityGroupName = ""
 	}
 
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Success("[azure] Deleted network security group", nsg)
+
+	log.Success("Deleted network security group", "name", nsg)
 
 	return nil
 }
@@ -72,37 +76,41 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	obj.mxRole.Unlock()
 	obj.mxName.Unlock()
 
+	log.Debug("Printing", "name", name, "role", role)
+
 	nsg := ""
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
-	case RoleWp:
+	case consts.RoleWp:
 		nsg = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName
-	case RoleLb:
+	case consts.RoleLb:
 		nsg = azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName
-	case RoleDs:
+	case consts.RoleDs:
 		nsg = azureCloudState.InfoDatabase.NetworkSecurityGroupName
 	default:
-		return fmt.Errorf("invalid role")
+		return log.NewError("invalid role")
 	}
 	if len(nsg) != 0 {
-		storage.Logger().Success("[skip] firewall already created", nsg)
+		log.Success("skipped firewall already created", "name", nsg)
 		return nil
 	}
 
 	var securityRules []*armnetwork.SecurityRule
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		securityRules = firewallRuleControlPlane()
-	case RoleWp:
+	case consts.RoleWp:
 		securityRules = firewallRuleWorkerPlane()
-	case RoleLb:
+	case consts.RoleLb:
 		securityRules = firewallRuleLoadBalancer()
-	case RoleDs:
+	case consts.RoleDs:
 		securityRules = firewallRuleDataStore()
 	default:
-		return fmt.Errorf("invalid role")
+		return log.NewError("invalid role")
 	}
+
+	log.Debug("Printing", "firewallrule", securityRules)
 
 	parameters := armnetwork.SecurityGroup{
 		Location: to.Ptr(obj.region),
@@ -114,44 +122,45 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	pollerResponse, err := obj.client.BeginCreateSecurityGrp(name, parameters, nil)
 
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = name
-	case RoleWp:
+	case consts.RoleWp:
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = name
-	case RoleLb:
+	case consts.RoleLb:
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = name
-	case RoleDs:
+	case consts.RoleDs:
 		azureCloudState.InfoDatabase.NetworkSecurityGroupName = name
 	}
 
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	storage.Logger().Print("[azure] creating firewall...", name)
+	log.Print("creating firewall...", "name", name)
 
 	resp, err := obj.client.PollUntilDoneCreateNSG(ctx, pollerResponse, nil)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
-	case RoleWp:
+	case consts.RoleWp:
 		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID = *resp.ID
-	case RoleLb:
+	case consts.RoleLb:
 		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID = *resp.ID
-	case RoleDs:
+	case consts.RoleDs:
 		azureCloudState.InfoDatabase.NetworkSecurityGroupID = *resp.ID
 	}
 
 	if err := saveStateHelper(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Success("[azure] Created network security group", *resp.Name)
+
+	log.Success("Created network security group", "name", *resp.Name)
 
 	return nil
 }

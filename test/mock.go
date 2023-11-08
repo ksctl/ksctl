@@ -8,24 +8,26 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (
-	cli        *resources.CobraCmd
+	cli        *resources.KsctlClient
 	controller controllers.Controller
 	dir        = fmt.Sprintf("%s/ksctl-black-box-test", os.TempDir())
 )
 
 func StartCloud() {
-	cli = &resources.CobraCmd{}
+	cli = new(resources.KsctlClient)
 	controller = control_pkg.GenKsctlController()
 
-	cli.Client.Metadata.ClusterName = "fake"
-	cli.Client.Metadata.StateLocation = StoreLocal
-	cli.Client.Metadata.K8sDistro = K8sK3s
+	cli.Metadata.ClusterName = "fake"
+	cli.Metadata.StateLocation = consts.StoreLocal
+	cli.Metadata.K8sDistro = consts.K8sK3s
+	cli.Metadata.LogVerbosity = -1
+	cli.Metadata.LogWritter = os.Stdout
 
-	if _, err := control_pkg.InitializeStorageFactory(&cli.Client, false); err != nil {
+	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
 		panic(err)
 	}
 }
@@ -34,12 +36,12 @@ func ExecuteManagedRun() error {
 
 	var err error
 
-	_, err = controller.CreateManagedCluster(&cli.Client)
+	err = controller.CreateManagedCluster(cli)
 	if err != nil {
 		return err
 	}
 
-	_, err = controller.DeleteManagedCluster(&cli.Client)
+	err = controller.DeleteManagedCluster(cli)
 	if err != nil {
 		return err
 	}
@@ -47,14 +49,14 @@ func ExecuteManagedRun() error {
 }
 
 func AzureTestingManaged() error {
-	cli.Client.Metadata.Region = "fake"
-	cli.Client.Metadata.Provider = CloudAzure
-	cli.Client.Metadata.ManagedNodeType = "fake"
-	cli.Client.Metadata.NoMP = 2
-	cli.Client.Metadata.K8sVersion = "1.27"
+	cli.Metadata.Region = "fake"
+	cli.Metadata.Provider = consts.CloudAzure
+	cli.Metadata.ManagedNodeType = "fake"
+	cli.Metadata.NoMP = 2
+	cli.Metadata.K8sVersion = "1.27"
 
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	azManaged := utils.GetPath(UtilClusterPath, CloudAzure, ClusterTypeMang)
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	azManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -66,13 +68,13 @@ func AzureTestingManaged() error {
 }
 
 func CivoTestingManaged() error {
-	cli.Client.Metadata.Region = "LON1"
-	cli.Client.Metadata.Provider = CloudCivo
-	cli.Client.Metadata.ManagedNodeType = "g4s.kube.small"
-	cli.Client.Metadata.NoMP = 2
+	cli.Metadata.Region = "LON1"
+	cli.Metadata.Provider = consts.CloudCivo
+	cli.Metadata.ManagedNodeType = "g4s.kube.small"
+	cli.Metadata.NoMP = 2
 
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	azManaged := utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeMang)
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	azManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -85,66 +87,72 @@ func CivoTestingManaged() error {
 
 func CivoTestingHA() error {
 	var err error
-	cli.Client.Metadata.LoadBalancerNodeType = "fake.small"
-	cli.Client.Metadata.ControlPlaneNodeType = "fake.small"
-	cli.Client.Metadata.WorkerPlaneNodeType = "fake.small"
-	cli.Client.Metadata.DataStoreNodeType = "fake.small"
+	cli.Metadata.LoadBalancerNodeType = "fake.small"
+	cli.Metadata.ControlPlaneNodeType = "fake.small"
+	cli.Metadata.WorkerPlaneNodeType = "fake.small"
+	cli.Metadata.DataStoreNodeType = "fake.small"
 
-	cli.Client.Metadata.IsHA = true
+	cli.Metadata.IsHA = true
 
-	cli.Client.Metadata.Region = "LON1"
-	cli.Client.Metadata.Provider = CloudCivo
-	cli.Client.Metadata.NoCP = 5
-	cli.Client.Metadata.NoWP = 1
-	cli.Client.Metadata.NoDS = 3
-	cli.Client.Metadata.K8sVersion = "1.27.4"
+	cli.Metadata.Region = "LON1"
+	cli.Metadata.Provider = consts.CloudCivo
+	cli.Metadata.NoCP = 5
+	cli.Metadata.NoWP = 1
+	cli.Metadata.NoDS = 3
+	cli.Metadata.K8sVersion = "1.27.4"
 
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	azHA := utils.GetPath(UtilClusterPath, CloudCivo, ClusterTypeHa)
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	azHA := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
 	}
 	fmt.Println("Created tmp directories")
 
-	_, err = controller.CreateHACluster(&cli.Client)
+	err = controller.CreateHACluster(cli)
 	if err != nil {
 		return err
 	}
 
-	_, err = controller.DeleteHACluster(&cli.Client)
+	err = controller.DeleteHACluster(cli)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func AzureTestingHA() error {
 	var err error
-	cli.Client.Metadata.LoadBalancerNodeType = "fake"
-	cli.Client.Metadata.ControlPlaneNodeType = "fake"
-	cli.Client.Metadata.WorkerPlaneNodeType = "fake"
-	cli.Client.Metadata.DataStoreNodeType = "fake"
+	cli.Metadata.LoadBalancerNodeType = "fake"
+	cli.Metadata.ControlPlaneNodeType = "fake"
+	cli.Metadata.WorkerPlaneNodeType = "fake"
+	cli.Metadata.DataStoreNodeType = "fake"
 
-	cli.Client.Metadata.IsHA = true
+	cli.Metadata.IsHA = true
 
-	cli.Client.Metadata.Region = "fake"
-	cli.Client.Metadata.Provider = CloudAzure
-	cli.Client.Metadata.NoCP = 3
-	cli.Client.Metadata.NoWP = 1
-	cli.Client.Metadata.NoDS = 1
-	cli.Client.Metadata.K8sVersion = "1.27.4"
+	cli.Metadata.Region = "fake"
+	cli.Metadata.Provider = consts.CloudAzure
+	cli.Metadata.NoCP = 3
+	cli.Metadata.NoWP = 1
+	cli.Metadata.NoDS = 1
+	cli.Metadata.K8sVersion = "1.27.4"
 
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	azHA := utils.GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa)
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	azHA := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
 	}
 	fmt.Println("Created tmp directories")
 
-	_, err = controller.CreateHACluster(&cli.Client)
+	err = controller.CreateHACluster(cli)
 	if err != nil {
 		return err
 	}
 
-	_, err = controller.DeleteHACluster(&cli.Client)
+	err = controller.DeleteHACluster(cli)
+	if err != nil {
+		return err
+	}
 	return nil
 }

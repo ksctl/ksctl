@@ -3,7 +3,6 @@ package aws
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -40,8 +39,7 @@ func (obj *AwsProvider) CreateVPC() {
 
 	vpc, err := ec2Client.CreateVpc(context.TODO(), &vpcClient)
 	if err != nil {
-		fmt.Println("Error Creating VPC")
-		log.Println(err)
+		log.Debug("Error Creating VPC", err)
 	}
 	awsCloudState.VPCID = *vpc.Vpc.VpcId
 	fmt.Print("VPC Created Successfully: ")
@@ -69,7 +67,7 @@ func (obj *AwsProvider) CreateInternetGateway() error {
 
 	createInternetGateway, err := ec2Client.CreateInternetGateway(context.TODO(), &internetGateway)
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Internet Gateway", err)
 	}
 
 	_, err = ec2Client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
@@ -77,7 +75,7 @@ func (obj *AwsProvider) CreateInternetGateway() error {
 		VpcId:             aws.String(VPCID),
 	})
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Attaching Internet Gateway", err)
 	}
 	GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 	fmt.Println(*createInternetGateway.InternetGateway.InternetGatewayId)
@@ -108,11 +106,10 @@ func (obj *AwsProvider) CreateRouteTable() {
 
 	routeTable, err := ec2Client.CreateRouteTable(context.TODO(), &routeTableClient)
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Route Table", err)
 	}
 
-	fmt.Print("Route Table Created Successfully: ")
-	fmt.Println(*routeTable.RouteTable.RouteTableId)
+	log.Success("Route Table Created Successfully: ", *routeTable.RouteTable.RouteTableId)
 	RouteTableID = *routeTable.RouteTable.RouteTableId
 
 	for _, subnet := range SUBNETID {
@@ -121,7 +118,7 @@ func (obj *AwsProvider) CreateRouteTable() {
 			SubnetId:     aws.String(subnet),
 		})
 		if err != nil {
-			log.Println(err)
+			log.Debug("Error Associating Route Table", err)
 		}
 	}
 
@@ -133,10 +130,10 @@ func (obj *AwsProvider) CreateRouteTable() {
 		RouteTableId:         aws.String(*routeTable.RouteTable.RouteTableId),
 	})
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Route", err)
 	}
 
-	fmt.Println("Route Created Successfully....")
+	log.Success("Route Table Created Successfully: ", *routeTable.RouteTable.RouteTableId)
 
 }
 
@@ -184,7 +181,7 @@ func (obj *AwsProvider) CreateTargetGroup() (*elasticloadbalancingv2.CreateTarge
 	})
 
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Target Group", err)
 	}
 	GARN = ARN
 	fmt.Println("Target Group Created Successfully: ", *ARN.TargetGroups[0].TargetGroupArn)
@@ -198,7 +195,7 @@ func (obj *AwsProvider) RegisterTargetGroup() {
 
 	ARN := GARN
 	if ARN == nil {
-		log.Println("Target Group not created")
+		log.Error("Target Group not created")
 		return
 	}
 
@@ -214,8 +211,7 @@ func (obj *AwsProvider) RegisterTargetGroup() {
 		},
 	})
 	if err != nil {
-		fmt.Println("Could not register the target group")
-		log.Fatal(err)
+		log.Debug("Error Registering Target Group", err)
 	}
 
 	fmt.Println("Target Group Registered Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
@@ -253,7 +249,7 @@ func (obj *AwsProvider) CreateListener() {
 		},
 	})
 
-	fmt.Println("Listener Created Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
+	log.Success("Listener Created Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
 
 }
 
@@ -326,14 +322,14 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	vniclient := obj.ec2Client()
 	nicresponse, err := vniclient.CreateNetworkInterface(ctx, interfaceparameter)
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Network Interface", err)
 	}
 
 	NICID = *nicresponse.NetworkInterface.NetworkInterfaceId
 	// wait until the instance state comes from pending to running use
 	// time.Sleep(10 * time.Second)
 
-	storage.Logger().Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	log.Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
 
 	return nicresponse, nil
 
@@ -349,7 +345,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	obj.mxName.Unlock()
 
 	if obj.metadata.role == RoleDs && indexNo > 0 {
-		storage.Logger().Note("[skip] currently multiple datastore not supported")
+		log.Note("[skip] currently multiple datastore not supported")
 		return nil
 	}
 
@@ -483,7 +479,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		return errCreate
 	}
 
-	storage.Logger().Success("[aws] created the instance ", *instanceop.Instances[0].InstanceId)
+	log.Success("[aws] created the instance ", *instanceop.Instances[0].InstanceId)
 	return nil
 }
 
@@ -503,7 +499,7 @@ func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.St
 		Domain: types.DomainType("vpc"),
 	})
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Public IP", err)
 	}
 
 	_, err = ec2Client.AssociateAddress(context.Background(), &ec2.AssociateAddressInput{
@@ -512,8 +508,8 @@ func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.St
 		AllowReassociation: aws.Bool(true),
 	})
 
-	storage.Logger().Success("[aws] created the public IP ", *allocRes.PublicIp)
-	storage.Logger().Success("[aws] attached the public IP %s to the instance %s", *allocRes.PublicIp, instancid)
+	log.Success("[aws] created the public IP ", *allocRes.PublicIp)
+	log.Success("[aws] attached the public IP %s to the instance %s", *allocRes.PublicIp, instancid)
 	return nil, nil
 }
 

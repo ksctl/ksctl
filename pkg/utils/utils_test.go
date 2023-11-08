@@ -7,15 +7,20 @@ import (
 	"strings"
 	"testing"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
-
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
 var (
-	dir = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
+	dir                         = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
+	log resources.LoggerFactory = func() resources.LoggerFactory {
+		var l resources.LoggerFactory = logger.NewDefaultLogger(-1, os.Stdout)
+		l.SetPackageName("utils")
+		return l
+	}()
 )
 
 func TestConsts(t *testing.T) {
@@ -151,8 +156,9 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to create dummy folder")
 	}
-	ksctl := resources.KsctlClient{Storage: localstate.InitStorage(false)}
-	if _, err := CreateSSHKeyPair(ksctl.Storage, KsctlCloud(provider), clusterName+" "+clusterRegion); err != nil {
+	ksctl := resources.KsctlClient{Storage: localstate.InitStorage()}
+
+	if _, err := CreateSSHKeyPair(ksctl.Storage, log, KsctlCloud(provider), clusterName+" "+clusterRegion); err != nil {
 		t.Fatalf("Unable to create SSH keypair")
 	}
 }
@@ -170,7 +176,7 @@ func TestIsValidClusterName(T *testing.T) {
 }
 
 func TestSSHExecute(t *testing.T) {
-	var storage resources.StorageFactory = localstate.InitStorage(false)
+	var storage resources.StorageFactory = localstate.InitStorage()
 	assert.Equal(t, os.MkdirAll(GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd"), 0755), nil, "create folders")
 	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
 	azHA := GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd")
@@ -180,7 +186,7 @@ func TestSSHExecute(t *testing.T) {
 	}
 	fmt.Println("Created tmp directories")
 
-	_, err := CreateSSHKeyPair(storage, CloudAzure, "abcd")
+	_, err := CreateSSHKeyPair(storage, log, CloudAzure, "abcd")
 	if err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
@@ -189,7 +195,7 @@ func TestSSHExecute(t *testing.T) {
 	sshTest.Username("fake")
 	assert.Assert(t, sshTest.Flag(UtilExecWithoutOutput).Script("").
 		IPv4("A.A.A.A").
-		FastMode(true).SSHExecute(storage, "") != nil, "ssh should fail")
+		FastMode(true).SSHExecute(storage, log) != nil, "ssh should fail")
 
 	fmt.Println("Cleanup..")
 	if err := os.RemoveAll(dir); err != nil {

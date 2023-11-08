@@ -1,13 +1,17 @@
 package main
 
-import "github.com/kubesimplify/ksctl/pkg/resources"
+import (
+	"os"
+
+	"github.com/kubesimplify/ksctl/pkg/resources"
+)
 
 func getClusters(ksctlClient *resources.KsctlClient) {
-	l.Println("Exec ksctl get...")
+	l.Print("Exec ksctl get...")
 
-	resp, err := ksctlManager.GetCluster(ksctlClient)
+	err := ksctlManager.GetCluster(ksctlClient)
 	if err != nil {
-		l.Fatal(err)
+		l.Error(err.Error())
+		os.Exit(1)
 	}
-	l.Println(resp)
 }

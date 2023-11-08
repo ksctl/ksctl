@@ -1,4 +1,6 @@
-# ![CoverPage Social Media](./img/ksctl-cover.png)
+# Ksctl: Cloud Agnostic Kubernetes Management tool
+
+![CoverPage Social Media](./img/ksctl-cover.png)
 
 <h4 align="center">
     <a href="https://discord.com/invite/kubesimplify">Discord</a> |
@@ -8,7 +10,6 @@
     <a href="https://kubesimplify.github.io/ksctl/docs/roadmap">Roadmap</a><br/><br/>
 </h4>
 
-**CLI which can manage Kubernetes cluster on different environment**
 
 <div align="center">
     <a href="https://pkg.go.dev/github.com/kubesimplify/ksctl"><img src="https://pkg.go.dev/badge/github.com/kubesimplify/ksctl.svg" alt="Go Reference"></a>
@@ -23,7 +24,6 @@
    <br>
 
    [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml)
-  [![Testing API](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/testingAPI.yaml)
   [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl)
   [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
   [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)

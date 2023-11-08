@@ -3,7 +3,6 @@ package aws
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -90,7 +89,7 @@ func (*AwsGoClient) BeginCreateSecurityGrp() error {
 func (awsclient *AwsGoClient) BeginCreateSubNet(context context.Context, subnetName string, ec2client *ec2.Client, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
 	subnet, err := ec2client.CreateSubnet(context, &parameter)
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Subnet", "error", err)
 	}
 
 	_, err = ec2client.CreateTags(context, &ec2.CreateTagsInput{
@@ -117,7 +116,7 @@ func (*AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewa
 
 	createInternetGateway, err := ec2client.CreateInternetGateway(context.TODO(), &gatewayparameter)
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Internet Gateway", "error", err)
 	}
 
 	_, err = ec2client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
@@ -125,14 +124,14 @@ func (*AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewa
 		VpcId:             aws.String(vpcid),
 	})
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Attaching Internet Gateway", "error", err)
 	}
 
 	awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 	////////////////////////////////////////
 	routeTable, err := ec2client.CreateRouteTable(context.TODO(), &routeTableparameter)
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Route Table", "error", err)
 	}
 
 	awsCloudState.RouteTableID = *routeTable.RouteTable.RouteTableId
@@ -144,7 +143,7 @@ func (*AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewa
 		RouteTableId:         aws.String(awsCloudState.RouteTableID),
 	})
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Route", "error", err)
 	}
 
 	return routeTable, createInternetGateway, err
@@ -154,8 +153,7 @@ func (*AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewa
 func (*AwsGoClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
 	vpc, err := ec2client.CreateVpc(context.TODO(), &parameter)
 	if err != nil {
-		fmt.Println("Error Creating VPC")
-		log.Println(err)
+		log.Debug("Error Creating VPC", "error", err)
 	}
 
 	return vpc, err
@@ -229,7 +227,7 @@ func (obj *AwsGoClient) setRequiredENVVAR(storage resources.StorageFactory, ctx 
 		msg = msg + " AWS_SECRET_ACCESS_KEY"
 	}
 
-	storage.Logger().Warn(msg)
+	log.Debug(msg)
 
 	return nil
 
@@ -315,7 +313,7 @@ func (*AwsGoMockClient) BeginCreateSecurityGrp() error {
 func (*AwsGoMockClient) BeginCreateSubNet(context context.Context, subnetName string, ec2client *ec2.Client, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
 	subnet, err := ec2client.CreateSubnet(context, &parameter)
 	if err != nil {
-		log.Println(err)
+		log.Debug("Error Creating Subnet", "error", err)
 	}
 
 	_, err = ec2client.CreateTags(context, &ec2.CreateTagsInput{
@@ -346,8 +344,7 @@ func (*AwsGoMockClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGa
 func (*AwsGoMockClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
 	vpc, err := ec2client.CreateVpc(context.TODO(), &parameter)
 	if err != nil {
-		fmt.Println("Error Creating VPC")
-		log.Println(err)
+		log.Debug("Error Creating VPC", "error", err)
 	}
 
 	fmt.Print("VPC Created Successfully: ")

@@ -1,0 +1,64 @@
+name: Regression Test K3s
+on:
+  push:
+    paths:
+    - 'internal/k8sdistros/k3s/**'
+    - 'internal/storage/**'
+    - 'pkg/logger/**'
+    - 'pkg/utils/**'
+    - 'go.mod'
+    - 'go.sum'
+    branches: [ main ]
+  pull_request:
+    paths:
+    - 'internal/k8sdistros/k3s/**'
+    - 'internal/storage/**'
+    - 'pkg/logger/**'
+    - 'pkg/utils/**'
+    - 'go.mod'
+    - 'go.sum'
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Unit Test
+        run: |
+          cd scripts
+          chmod u+x test-k3s.sh
+          ./test-k3s.sh
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Unit Test
+        run: |
+          cd scripts
+          .\test-k3s.ps1
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Unit Test
+        run: |
+          cd scripts
+          chmod u+x test-k3s.sh
+          ./test-k3s.sh

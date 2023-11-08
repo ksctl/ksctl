@@ -16,7 +16,7 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	obj.mxName.Unlock()
 
 	if len(awsCloudState.VPCID) != 0 {
-		storage.Logger().Success("[skip] already created the vpc", awsCloudState.VPCNAME)
+		log.Debug("[skip] already created the vpc", awsCloudState.VPCNAME)
 	}
 	ec2client := ec2.NewFromConfig(obj.session)
 	vpcclient := ec2.CreateVpcInput{
@@ -67,7 +67,7 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 		return err
 	}
 
-	storage.Logger().Success("[aws] created the vpc ", *vpc.Vpc.VpcId)
+	log.Success("[aws] created the vpc ", *vpc.Vpc.VpcId)
 
 	ctx := context.TODO()
 
@@ -90,7 +90,7 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
 
 	if len(awsCloudState.SubnetID) != 0 {
-		storage.Logger().Success("[skip] already created the subnet", awsCloudState.SubnetID)
+		log.Debug("[skip] already created the subnet", awsCloudState.SubnetID)
 	}
 
 	client := obj.ec2Client()
@@ -137,7 +137,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
-	storage.Logger().Success("[aws] created the subnet ", *response.Subnet.Tags[0].Value)
+	log.Success("[aws] created the subnet ", *response.Subnet.Tags[0].Value)
 
 	naclinput := ec2.CreateNetworkAclInput{
 		VpcId: aws.String(awsCloudState.VPCID),
@@ -159,7 +159,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 		return err
 	}
 	NACLID = *naclresp.NetworkAcl.NetworkAclId
-	storage.Logger().Success("[aws] created the network acl ", *naclresp.NetworkAcl.NetworkAclId)
+	log.Success("[aws] created the network acl ", *naclresp.NetworkAcl.NetworkAclId)
 
 	_, err = obj.ec2Client().CreateNetworkAclEntry(ctx, &ec2.CreateNetworkAclEntryInput{
 		// ALLOW ALL TRAFFIC
@@ -228,8 +228,8 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resour
 		SubnetId:     aws.String(awsCloudState.SubnetID),
 	})
 
-	storage.Logger().Success("[aws] created the internet gateway ", *gatewayresp.InternetGateway.InternetGatewayId)
-	storage.Logger().Success("[aws] created the route table ", *routeresponce.RouteTable.RouteTableId)
+	log.Success("[aws] created the internet gateway ", *gatewayresp.InternetGateway.InternetGatewayId)
+	log.Success("[aws] created the route table ", *routeresponce.RouteTable.RouteTableId)
 
 	return nil
 }

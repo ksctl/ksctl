@@ -7,15 +7,13 @@ import (
 	"os"
 	"sync"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (
@@ -24,6 +22,8 @@ var (
 	RouteTableID  string
 	VPCID         string
 	SUBNETID      []string
+
+	log resources.LoggerFactory
 )
 
 type Credential struct {
@@ -65,7 +65,7 @@ type AWSStateVms struct {
 
 var (
 	clusterDirName string
-	clusterType    KsctlClusterType
+	clusterType    consts.KsctlClusterType
 )
 
 const (
@@ -123,7 +123,7 @@ type StateConfiguration struct {
 
 type metadata struct {
 	resName string
-	role    KsctlRole
+	role    consts.KsctlRole
 	vmType  string
 	public  bool
 
@@ -135,7 +135,7 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    KsctlKubernetes
+	k8sName    consts.KsctlKubernetes
 	k8sVersion string
 }
 
@@ -175,8 +175,7 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 	obj.mxName.Lock()
 
 	if err := utils.IsValidName(resName); err != nil {
-		var logFactory logger.LogFactory = &logger.Logger{}
-		logFactory.Err(err.Error())
+		log.Error(err.Error())
 		return nil
 	}
 
@@ -211,7 +210,7 @@ func convertStateFromBytes(raw []byte) error {
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(UtilClusterPath, CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
@@ -220,27 +219,27 @@ func loadStateHelper(storage resources.StorageFactory) error {
 	return convertStateFromBytes(raw)
 }
 
-func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration KsctlOperation) error {
+func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration consts.KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
-		clusterType = ClusterTypeMang
+		clusterType = consts.ClusterTypeMang
 	case true:
-		clusterType = ClusterTypeHa
+		clusterType = consts.ClusterTypeHa
 	}
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + "/" + obj.vpc + "/" + obj.region
 
 	errLoadState := loadStateHelper(storage)
 	switch opration {
-	case OperationStateCreate:
+	case consts.OperationStateCreate:
 		if errLoadState == nil && awsCloudState.IsCompleted {
 			return fmt.Errorf("cluster %s already exists", obj.clusterName)
 		}
 		if errLoadState == nil && !awsCloudState.IsCompleted {
-			storage.Logger().Note("[aws] RESUME triggered!!")
+			log.Note("[aws] RESUME triggered!!")
 		} else {
-			storage.Logger().Note("[aws] NEW cluster triggered!!")
+			log.Note("[aws] NEW cluster triggered!!")
 			awsCloudState = &StateConfiguration{
 				IsCompleted:      false,
 				ClusterName:      obj.clusterName,
@@ -250,17 +249,17 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration Ksc
 			}
 		}
 
-	case OperationStateDelete:
+	case consts.OperationStateDelete:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		storage.Logger().Note("[aws] Delete resource(s)")
+		log.Note("[aws] Delete resource(s)")
 
-	case OperationStateGet:
+	case consts.OperationStateGet:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		storage.Logger().Note("[aws] Get resources")
+		log.Note("[aws] Get resources")
 		clusterDirName = awsCloudState.ClusterName + " " + awsCloudState.VPCNAME + " " + awsCloudState.Region
 	default:
 		return fmt.Errorf("invalid operation")
@@ -278,7 +277,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration Ksc
 		return err
 	}
 
-	storage.Logger().Success("[aws] init cloud state")
+	log.Success("[aws] init cloud state")
 
 	return nil
 }
@@ -316,7 +315,7 @@ func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (
 		PrivateIPv4LoadBalancer:  awsCloudState.InfoLoadBalancer.PrivateIP,
 	}
 
-	storage.Logger().Success("[azure] Transferred Data, it's ready to be shipped!")
+	log.Success("[azure] Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
 
@@ -334,20 +333,19 @@ func (obj *AwsProvider) DelManagedCluster(factory resources.StorageFactory) erro
 
 }
 
-func (obj *AwsProvider) Role(resRole KsctlRole) resources.CloudFactory {
+func (obj *AwsProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
 
 	obj.mxRole.Lock()
 
 	switch resRole {
-	case RoleCp, RoleDs, RoleLb, RoleWp:
+	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
 		obj.metadata.role = resRole
 		return obj
 	default:
-		var logFactory logger.LogFactory = &logger.Logger{}
-		logFactory.Err("invalid role assumed")
+		log.Error("invalid role assumed")
+
 		return nil
 	}
-
 }
 
 func (obj *AwsProvider) VMType(size string) resources.CloudFactory {

@@ -1,16 +1,20 @@
 package main
 
-import "github.com/kubesimplify/ksctl/pkg/resources"
+import (
+	"os"
+
+	"github.com/kubesimplify/ksctl/pkg/resources"
+)
 
 func switchCluster(ksctlClient *resources.KsctlClient) {
 
-	l.Println("Exec ksctl switch...")
+	l.Print("Exec ksctl switch...")
 
 	//ksctlClient.Metadata.Provider = consts.CloudAll
 
-	resp, err := ksctlManager.SwitchCluster(ksctlClient)
+	err := ksctlManager.SwitchCluster(ksctlClient)
 	if err != nil {
-		l.Fatal(err)
+		l.Error(err.Error())
+		os.Exit(1)
 	}
-	l.Println(resp)
 }

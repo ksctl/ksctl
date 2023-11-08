@@ -18,6 +18,5 @@
 
 <!--Add here-->
 
-- [ ] Ran Unit Test locally
-- [ ] Tested the website locally
-- [ ] Checked [Contribution's guidelines](https://kubesimplify.github.io/ksctl/docs/contributions)
+- [ ] Ran Tests locally
+- [ ] Checked [Contribution's guidelines](https://kubesimplify.github.io/ksctl-docs/docs/contribution-guidelines/)

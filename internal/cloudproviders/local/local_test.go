@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storagelogger/local"
+	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -28,14 +28,17 @@ func TestMain(m *testing.M) {
 	demoClient.Metadata.ClusterName = "demo"
 	demoClient.Metadata.Region = "demoRegion"
 	demoClient.Metadata.Provider = "demoProvider"
-	demoClient.Storage = localstate.InitStorage(false)
+	demoClient.Metadata.LogVerbosity = -1
+	demoClient.Metadata.LogWritter = os.Stdout
+
+	demoClient.Storage = localstate.InitStorage()
 	localState = &StateConfiguration{}
 	demoClient.Cloud, _ = ReturnLocalStruct(demoClient.Metadata)
 
 	testClient, _ = ReturnLocalStruct(demoClient.Metadata)
 
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	localManaged := utils.GetPath(UtilClusterPath, CloudLocal, ClusterTypeMang)
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	localManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(localManaged, 0755); err != nil {
 		panic(err)
@@ -164,9 +167,9 @@ func TestNoOfWorkerPlane(t *testing.T) {
 func TestCNIandApp(t *testing.T) {
 
 	testCases := map[string]bool{
-		string(CNIKind):    false,
-		string(CNIKubenet): true,
-		string(CNICilium):  true,
+		string(consts.CNIKind):    false,
+		string(consts.CNIKubenet): true,
+		string(consts.CNICilium):  true,
 	}
 
 	for k, v := range testCases {

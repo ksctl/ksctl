@@ -3,7 +3,6 @@ package azure
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -13,7 +12,7 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type AzureStateVMs struct {
@@ -75,7 +74,7 @@ type StateConfiguration struct {
 
 type metadata struct {
 	resName string
-	role    KsctlRole
+	role    consts.KsctlRole
 	vmType  string
 	public  bool
 
@@ -88,7 +87,7 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    KsctlKubernetes
+	k8sName    consts.KsctlKubernetes
 	k8sVersion string
 }
 
@@ -107,13 +106,19 @@ type AzureProvider struct {
 	client AzureGo
 }
 
+type Credential struct {
+	SubscriptionID string `json:"subscription_id"`
+	TenantID       string `json:"tenant_id"`
+	ClientID       string `json:"client_id"`
+	ClientSecret   string `json:"client_secret"`
+}
+
 var (
 	azureCloudState *StateConfiguration
-
-	clusterDirName string
-	clusterType    KsctlClusterType // it stores the ha or managed
-
-	ctx context.Context
+	clusterDirName  string
+	clusterType     consts.KsctlClusterType // it stores the ha or managed
+	ctx             context.Context
+	log             resources.LoggerFactory
 )
 
 const (
@@ -146,32 +151,27 @@ func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	log.Debug("Printing", "cloudstate", cloudstate)
 	return string(cloudstate), nil
 }
 
 func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 	var hostnames []string = make([]string, len(azureCloudState.InfoWorkerPlanes.Hostnames))
 	copy(hostnames, azureCloudState.InfoWorkerPlanes.Hostnames)
+	log.Debug("Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }
 
 // Version implements resources.CloudFactory.
 func (obj *AzureProvider) Version(ver string) resources.CloudFactory {
+	log.Debug("Printing", "K8sVersion", ver)
 	if err := isValidK8sVersion(obj, ver); err != nil {
-		var logFactory logger.LogFactory = &logger.Logger{}
-		logFactory.Err(err.Error())
+		log.Error(err.Error())
 		return nil
 	}
 
 	obj.metadata.k8sVersion = ver
 	return obj
-}
-
-type Credential struct {
-	SubscriptionID string `json:"subscription_id"`
-	TenantID       string `json:"tenant_id"`
-	ClientID       string `json:"client_id"`
-	ClientSecret   string `json:"client_secret"`
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
@@ -200,32 +200,34 @@ func (*AzureProvider) GetStateForHACluster(storage resources.StorageFactory) (cl
 		PrivateIPv4DataStores:    azureCloudState.InfoDatabase.PrivateIPs,
 		PrivateIPv4LoadBalancer:  azureCloudState.InfoLoadBalancer.PrivateIP,
 	}
-	storage.Logger().Success("[azure] Transferred Data, it's ready to be shipped!")
+	log.Debug("Printing", "azureStateTransferPayload", payload)
+
+	log.Success("Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
 
 // InitState implements resources.CloudFactory.
-func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation KsctlOperation) error {
+func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
-		clusterType = ClusterTypeMang
+		clusterType = consts.ClusterTypeMang
 	case true:
-		clusterType = ClusterTypeHa
+		clusterType = consts.ClusterTypeHa
 	}
 	obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
 
 	errLoadState := loadStateHelper(storage)
 	switch operation {
-	case OperationStateCreate:
+	case consts.OperationStateCreate:
 		if errLoadState == nil && azureCloudState.IsCompleted {
-			return fmt.Errorf("[azure] already exist")
+			return log.NewError("cluster already exist")
 		}
 		if errLoadState == nil && !azureCloudState.IsCompleted {
-			storage.Logger().Note("[azure] RESUME triggered!!")
+			log.Debug("RESUME triggered!!")
 		} else {
-			storage.Logger().Note("[azure] Fresh state!!")
+			log.Debug("Fresh state!!")
 			azureCloudState = &StateConfiguration{
 				IsCompleted:      false,
 				ClusterName:      obj.clusterName,
@@ -235,27 +237,27 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 			}
 		}
 
-	case OperationStateDelete:
+	case consts.OperationStateDelete:
 		if errLoadState != nil {
-			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
+			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		storage.Logger().Note("[azure] Delete resource(s)")
+		log.Debug("Delete resource(s)")
 
-	case OperationStateGet:
+	case consts.OperationStateGet:
 		if errLoadState != nil {
-			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
+			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		storage.Logger().Note("[azure] Get resources")
+		log.Debug("Get resources")
 		clusterDirName = azureCloudState.ClusterName + " " + azureCloudState.ResourceGroupName + " " + azureCloudState.Region
 	default:
-		return errors.New("[azure] Invalid operation for init state")
+		return log.NewError("Invalid operation for init state")
 
 	}
 
 	ctx = context.Background()
 
 	if err := obj.client.InitClient(storage); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
 	// added the resource grp and region for easy of use for the client library
@@ -263,17 +265,20 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	obj.client.SetResourceGrp(obj.resourceGroup)
 
 	if err := validationOfArguments(obj); err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 
-	storage.Logger().Success("[azure] init cloud state")
+	log.Debug("init cloud state")
 
 	return nil
 }
 
 func ReturnAzureStruct(meta resources.Metadata, ClientOption func() AzureGo) (*AzureProvider, error) {
 
-	return &AzureProvider{
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(consts.CloudAzure))
+
+	obj := &AzureProvider{
 		clusterName: meta.ClusterName,
 		region:      meta.Region,
 		haCluster:   meta.IsHA,
@@ -282,7 +287,11 @@ func ReturnAzureStruct(meta resources.Metadata, ClientOption func() AzureGo) (*A
 			k8sName:    meta.K8sDistro,
 		},
 		client: ClientOption(),
-	}, nil
+	}
+
+	log.Debug("Printing", "AzureProvider", obj)
+
+	return obj, nil
 }
 
 // Name it will contain the name of the resource to be created
@@ -290,25 +299,25 @@ func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
 	cloud.mxName.Lock()
 
 	if err := utils.IsValidName(resName); err != nil {
-		var logFactory logger.LogFactory = &logger.Logger{}
-		logFactory.Err(err.Error())
+		log.Error(err.Error())
 		return nil
 	}
+
 	cloud.metadata.resName = resName
 	return cloud
 }
 
 // Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *AzureProvider) Role(resRole KsctlRole) resources.CloudFactory {
+func (cloud *AzureProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
 	cloud.mxRole.Lock()
 
 	switch resRole {
-	case RoleCp, RoleDs, RoleLb, RoleWp:
+	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
 		cloud.metadata.role = resRole
 		return cloud
 	default:
-		var logFactory logger.LogFactory = &logger.Logger{}
-		logFactory.Err("invalid role assumed")
+		log.Error("invalid role assumed")
+
 		return nil
 	}
 }
@@ -319,8 +328,7 @@ func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
 
 	cloud.metadata.vmType = size
 	if err := isValidVMSize(cloud, size); err != nil {
-		var logFactory logger.LogFactory = &logger.Logger{}
-		logFactory.Err(err.Error())
+		log.Error(err.Error())
 		return nil
 	}
 	return cloud
@@ -339,13 +347,15 @@ func (cloud *AzureProvider) Application(s string) (externalApps bool) {
 // CNI Why will be installed because it will be done by the extensions
 func (cloud *AzureProvider) CNI(s string) (externalCNI bool) {
 
-	switch KsctlValidCNIPlugin(s) {
-	case CNIKubenet, CNIAzure:
+	log.Debug("Printing", "cni", s)
+
+	switch consts.KsctlValidCNIPlugin(s) {
+	case consts.CNIKubenet, consts.CNIAzure:
 		cloud.metadata.cni = s
 	case "":
-		cloud.metadata.cni = string(CNIAzure)
+		cloud.metadata.cni = string(consts.CNIAzure)
 	default:
-		cloud.metadata.cni = string(CNINone) // any other cni it will marked as none for NetworkPlugin
+		cloud.metadata.cni = string(consts.CNINone) // any other cni it will marked as none for NetworkPlugin
 		return true
 	}
 
@@ -354,22 +364,26 @@ func (cloud *AzureProvider) CNI(s string) (externalCNI bool) {
 
 // NoOfControlPlane implements resources.CloudFactory.
 func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
+
+	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		// delete operation
 		if azureCloudState == nil {
-			return -1, fmt.Errorf("[azure] state init not called")
+			return -1, log.NewError("state init not called")
 		}
 		if azureCloudState.InfoControlPlanes.Names == nil {
 			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, nil
 		}
+
+		log.Debug("Printing", "azureCloudState.InfoControlPlanes.Names", azureCloudState.InfoControlPlanes.Names)
 		return len(azureCloudState.InfoControlPlanes.Names), nil
 	}
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noCP = no
 		if azureCloudState == nil {
-			return -1, fmt.Errorf("[azure] state init not called")
+			return -1, log.NewError("state init not called")
 		}
 
 		currLen := len(azureCloudState.InfoControlPlanes.Names)
@@ -384,30 +398,35 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			azureCloudState.InfoControlPlanes.PublicIPNames = make([]string, no)
 			azureCloudState.InfoControlPlanes.PublicIPIDs = make([]string, no)
 		}
+
+		log.Debug("Printing", "azureCloudState.InfoControlplanes", azureCloudState.InfoControlPlanes)
 		return -1, nil
 	}
-	return -1, fmt.Errorf("[azure] constrains for no of controlplane >= 3 and odd number")
+	return -1, log.NewError("constrains for no of controlplane >= 3 and odd number")
 }
 
 // NoOfDataStore implements resources.CloudFactory.
 func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
+	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		// delete operation
 		if azureCloudState == nil {
-			return -1, fmt.Errorf("[azure] state init not called")
+			return -1, log.NewError("state init not called")
 		}
 		if azureCloudState.InfoDatabase.Names == nil {
 			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, nil
 		}
+
+		log.Debug("Printing", "azureCloudState.InfoDatabase.Names", azureCloudState.InfoDatabase.Names)
 		return len(azureCloudState.InfoDatabase.Names), nil
 	}
 	if no >= 1 && (no&1) == 1 {
 		obj.metadata.noDS = no
 
 		if azureCloudState == nil {
-			return -1, fmt.Errorf("[azure] state init not called")
+			return -1, log.NewError("state init not called")
 		}
 
 		currLen := len(azureCloudState.InfoDatabase.Names)
@@ -423,29 +442,32 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			azureCloudState.InfoDatabase.PublicIPIDs = make([]string, no)
 		}
 
+		log.Debug("Printing", "azureCloudState.InfoDatabase", azureCloudState.InfoDatabase)
 		return -1, nil
 	}
-	return -1, fmt.Errorf("[azure] constrains for no of Datastore>= 1 and odd number")
+	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")
 }
 
 // NoOfWorkerPlane implements resources.CloudFactory.
 func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
+	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		// delete operation
 		if azureCloudState == nil {
-			return -1, fmt.Errorf("[azure] state init not called")
+			return -1, log.NewError("state init not called")
 		}
 		if azureCloudState.InfoWorkerPlanes.Names == nil {
 			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, nil
 		}
+		log.Debug("Prnting", "azureCloudState.InfoWorkerPlanes.Names", azureCloudState.InfoWorkerPlanes.Names)
 		return len(azureCloudState.InfoWorkerPlanes.Names), nil
 	}
 	if no >= 0 {
 		obj.metadata.noWP = no
 		if azureCloudState == nil {
-			return -1, fmt.Errorf("[azure] state init not called")
+			return -1, log.NewError("state init not called")
 		}
 		currLen := len(azureCloudState.InfoWorkerPlanes.Names)
 
@@ -496,79 +518,93 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no i
 			return -1, err
 		}
 
+		log.Debug("Printing", "azureCloudState.InfoWorkerPlanes", azureCloudState.InfoWorkerPlanes)
+
 		return -1, nil
 	}
-	return -1, fmt.Errorf("[azure] constrains for no of workplane >= 0")
+	return -1, log.NewError("constrains for no of workplane >= 0")
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
+func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloud_control_res.AllClusterData, error) {
+
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(consts.CloudAzure))
+
 	var data []cloud_control_res.AllClusterData
 
 	// first get all the directories of ha
-	haFolders, err := storage.Path(generatePath(UtilClusterPath, ClusterTypeHa)).GetFolders()
+	haFolders, err := storage.Path(generatePath(consts.UtilClusterPath, consts.ClusterTypeHa)).GetFolders()
 	if err != nil {
-		return nil, err
+		return nil, log.NewError(err.Error())
 	}
 
+	log.Debug("Printing", "ha folder contents", haFolders)
+
 	for _, haFolder := range haFolders {
-		path := generatePath(UtilClusterPath, ClusterTypeHa, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		path := generatePath(consts.UtilClusterPath, consts.ClusterTypeHa, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
-			return nil, err
+			return nil, log.NewError(err.Error())
 		}
 		var clusterState *StateConfiguration
 		if err := json.Unmarshal(raw, &clusterState); err != nil {
-			return nil, err
+			return nil, log.NewError(err.Error())
 		}
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider: CloudAzure,
+				Provider: consts.CloudAzure,
 				Name:     haFolder[0],
 				Region:   haFolder[2],
-				Type:     ClusterTypeHa,
+				Type:     consts.ClusterTypeHa,
 
 				NoWP: len(clusterState.InfoWorkerPlanes.Names),
 				NoCP: len(clusterState.InfoControlPlanes.Names),
 				NoDS: len(clusterState.InfoDatabase.Names),
 
-				K8sDistro:  KsctlKubernetes(clusterState.KubernetesDistro),
+				K8sDistro:  consts.KsctlKubernetes(clusterState.KubernetesDistro),
 				K8sVersion: clusterState.KubernetesVer,
 			})
 	}
 
-	managedFolders, err := storage.Path(generatePath(UtilClusterPath, ClusterTypeMang)).GetFolders()
+	log.Debug("Printing", "clusterInfo", data)
+
+	managedFolders, err := storage.Path(generatePath(consts.UtilClusterPath, consts.ClusterTypeMang)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
 
+	log.Debug("Printing", "managed folder contents", managedFolders)
+
 	for _, haFolder := range managedFolders {
 
-		path := generatePath(UtilClusterPath, ClusterTypeMang, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
+		path := generatePath(consts.UtilClusterPath, consts.ClusterTypeMang, haFolder[0]+" "+haFolder[1]+" "+haFolder[2], STATE_FILE_NAME)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
-			return nil, err
+			return nil, log.NewError(err.Error())
 		}
 		var clusterState *StateConfiguration
 		if err := json.Unmarshal(raw, &clusterState); err != nil {
-			return nil, err
+			return nil, log.NewError(err.Error())
 		}
 
 		data = append(data,
 			cloud_control_res.AllClusterData{
-				Provider:   CloudAzure,
+				Provider:   consts.CloudAzure,
 				Name:       haFolder[0],
 				Region:     haFolder[2],
-				Type:       ClusterTypeMang,
-				K8sDistro:  KsctlKubernetes(clusterState.KubernetesDistro),
+				Type:       consts.ClusterTypeMang,
+				K8sDistro:  consts.KsctlKubernetes(clusterState.KubernetesDistro),
 				K8sVersion: clusterState.KubernetesVer,
 				NoMgt:      clusterState.NoManagedNodes,
 			})
 	}
+
+	log.Debug("Printing", "clusterInfo", data)
 	return data, nil
 }
 
 func isPresent(storage resources.StorageFactory) bool {
-	_, err := storage.Path(utils.GetPath(UtilClusterPath, CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
+	_, err := storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -579,21 +615,21 @@ func (obj *AzureProvider) SwitchCluster(storage resources.StorageFactory) error 
 
 	switch obj.haCluster {
 	case true:
-		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, ClusterTypeHa)
+		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, consts.ClusterTypeHa)
 		clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
-		clusterType = ClusterTypeHa
+		clusterType = consts.ClusterTypeHa
 		if isPresent(storage) {
-			printKubeconfig(storage, OperationStateCreate)
+			printKubeconfig(storage, consts.OperationStateCreate)
 			return nil
 		}
 	case false:
-		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, ClusterTypeMang)
+		obj.resourceGroup = fmt.Sprintf("%s-ksctl-%s-resgrp", obj.clusterName, consts.ClusterTypeMang)
 		clusterDirName = obj.clusterName + " " + obj.resourceGroup + " " + obj.region
-		clusterType = ClusterTypeMang
+		clusterType = consts.ClusterTypeMang
 		if isPresent(storage) {
-			printKubeconfig(storage, OperationStateCreate)
+			printKubeconfig(storage, consts.OperationStateCreate)
 			return nil
 		}
 	}
-	return fmt.Errorf("[azure] Cluster not found")
+	return log.NewError("Cluster not found")
 }

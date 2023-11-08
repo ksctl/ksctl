@@ -10,35 +10,40 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // ConfigureDataStore implements resources.DistroFactory.
 func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
-	storage.Logger().Print("[k3s] configuring Datastore", strconv.Itoa(idx))
+	log.Print("configuring Datastore", "number", strconv.Itoa(idx))
 
 	if idx > 0 {
-		storage.Logger().Note("[k3s] cluster of datastore not enabled!", strconv.Itoa(idx))
+		log.Warn("cluster of datastore not enabled!", "number", strconv.Itoa(idx))
 		return nil
 	}
 
 	password := generateDBPassword(15)
 
-	err := k3s.SSHInfo.Flag(UtilExecWithoutOutput).Script(
+	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(password)).
 		IPv4(k8sState.PublicIPs.DataStores[idx]).
+<<<<<<< HEAD
 		FastMode(true).SSHExecute(storage, KsctlCloud(k8sState.Provider))
+=======
+		FastMode(true).SSHExecute(storage, log)
+>>>>>>> upstream/main
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
 	k8sState.DataStoreEndPoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", password, k8sState.PrivateIPs.DataStores[idx])
+	log.Debug("Printing", "datastoreEndpoint", k8sState.DataStoreEndPoint)
 
-	path := utils.GetPath(UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	path := utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err = saveStateHelper(storage, path)
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-	storage.Logger().Success("[k3s] configured DataStore", strconv.Itoa(idx))
+	log.Success("configured DataStore", "number", strconv.Itoa(idx))
 
 	return nil
 }
