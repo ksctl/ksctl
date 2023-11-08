@@ -27,7 +27,11 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(password)).
 		IPv4(k8sState.PublicIPs.DataStores[idx]).
+<<<<<<< HEAD
+		FastMode(true).SSHExecute(storage, KsctlCloud(k8sState.Provider))
+=======
 		FastMode(true).SSHExecute(storage, log)
+>>>>>>> upstream/main
 	if err != nil {
 		return log.NewError(err.Error())
 	}

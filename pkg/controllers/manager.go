@@ -299,7 +299,6 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	if cloudResErr != nil {
 		return log.NewError(cloudResErr.Error())
 	}
-	// Cloud done
 	var payload cloudController.CloudResourceState
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 
