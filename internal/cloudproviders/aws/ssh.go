@@ -23,7 +23,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 
 	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, log, CloudAws, clusterDirName)
 	if err != nil {
-		return err
+		log.Debug("Error creating ssh key pair", "error", err)
 	}
 
 	parameter := ec2.ImportKeyPairInput{
