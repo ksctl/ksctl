@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elb_types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func (obj *AwsProvider) ec2Client() *ec2.Client {
@@ -266,37 +266,92 @@ func (obj *AwsProvider) CreateListener() {
 // 6. Create Load Balancer								DONE
 // 7. Create Public IP									DONE
 // 8. OS IAMGE											DONE
-// 9. Generate SSH Key
-// 10. Create VM
+// 9. Generate SSH Key									DONE
+// 10. Create VM										DONE
 
 // TODO Refactor all the code same as various providor
 
-func (obj *AwsProvider) DelVM(factory resources.StorageFactory, index int) error {
+func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error {
 
-	//role := obj.metadata.role
-	//indexNo := index
-	//obj.mxRole.Unlock()
-	//
-	////ec2Client := obj.ec2Client()
-	//
-	////vmName := ""
-	//switch role {
-	//case ROLE_CP:
-	//	vmName = awsCloudState.InfoControlPlanes.Names[indexNo]
-	//case ROLE_DS:
-	//	vmName = awsCloudState.InfoDatabase.Names[indexNo]
-	//case ROLE_LB:
-	//	vmName = awsCloudState.InfoLoadBalancer.Name
-	//case ROLE_WP:
-	//	vmName = awsCloudState.InfoWorkerPlanes.Names[indexNo]
-	//}
+	role := obj.metadata.role
+	indexNo := index
+	obj.mxRole.Unlock()
+
+	vmName := ""
+
+	switch role {
+	case consts.RoleCp:
+		vmName = awsCloudState.InfoControlPlanes.Names[indexNo]
+	case consts.RoleDs:
+		vmName = awsCloudState.InfoDatabase.Names[indexNo]
+	case consts.RoleLb:
+		vmName = awsCloudState.InfoLoadBalancer.Name
+	case consts.RoleWp:
+		vmName = awsCloudState.InfoWorkerPlanes.Names[indexNo]
+	}
+
+	if len(vmName) == 0 {
+		log.Print("skipped vm already deleted")
+	} else {
+
+		var errDel error
+		donePoll := make(chan struct{})
+		go func() {
+			defer close(donePoll)
+
+			err := obj.client.BeginDeleteVM(vmName, obj.ec2Client())
+			if err != nil {
+				errDel = err
+				return
+			}
+
+			log.Print("deleting vm...", "name", vmName)
+
+			obj.mxState.Lock()
+			defer obj.mxState.Unlock()
+
+			switch role {
+			case consts.RoleWp:
+				awsCloudState.InfoWorkerPlanes.Names[indexNo] = ""
+			case consts.RoleCp:
+				awsCloudState.InfoControlPlanes.Names[indexNo] = ""
+			case consts.RoleLb:
+				awsCloudState.InfoLoadBalancer.Name = ""
+			case consts.RoleDs:
+				awsCloudState.InfoDatabase.Names[indexNo] = ""
+			}
+
+			if err := saveStateHelper(storage); err != nil {
+				errDel = err
+				return
+			}
+		}()
+		<-donePoll
+		if errDel != nil {
+			return log.NewError(errDel.Error())
+		}
+		log.Success("Deleted the vm", "name", vmName)
+
+	}
+
+	// if err := obj.DeleteDisk(ctx, storage, indexNo, role); err != nil {
+	// 	return log.NewError(err.Error())
+	// }
+
+	if err := obj.DeleteNetworkInterface(context.Background(), storage, indexNo, role); err != nil {
+		return log.NewError(err.Error())
+	}
+
+	// if err := obj.DeletePublicIP(ctx, storage, indexNo, role); err != nil {
+	// 	return log.NewError(err.Error())
+	// }
+
+	log.Debug("Printing", "awsCloudState", awsCloudState)
 
 	return nil
 }
 
-var NICID string
-
-func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role KsctlRole) (*ec2.CreateNetworkInterfaceOutput, error) {
+func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role consts.KsctlRole) (*ec2.CreateNetworkInterfaceOutput, error) {
 
 	groupid_role, err := fetchgroupid(role)
 
@@ -325,10 +380,22 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 		log.Debug("Error Creating Network Interface", err)
 	}
 
-	NICID = *nicresponse.NetworkInterface.NetworkInterfaceId
-	// wait until the instance state comes from pending to running use
-	// time.Sleep(10 * time.Second)
+	switch role {
+	case consts.RoleWp:
+		awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+	case consts.RoleCp:
+		awsCloudState.InfoControlPlanes.NetworkInterfaceNames = append(awsCloudState.InfoControlPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+	case consts.RoleLb:
+		awsCloudState.InfoLoadBalancer.Name = *nicresponse.NetworkInterface.NetworkInterfaceId
+	case consts.RoleDs:
+		awsCloudState.InfoDatabase.NetworkInterfaceNames = append(awsCloudState.InfoDatabase.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
 
+	default:
+		return nil, fmt.Errorf("invalid role %s", role)
+
+	}
+
+	// NICID = *nicresponse.NetworkInterface.NetworkInterfaceId
 	log.Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
 
 	return nicresponse, nil
@@ -341,10 +408,24 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	role := obj.metadata.role
 	//vmtype := obj.metadata.vmType
 
+	nicid := ""
+	switch role {
+	case consts.RoleWp:
+		nicid = awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[indexNo]
+	case consts.RoleCp:
+		nicid = awsCloudState.InfoControlPlanes.NetworkInterfaceNames[indexNo]
+	case consts.RoleLb:
+		nicid = awsCloudState.InfoLoadBalancer.Name
+	case consts.RoleDs:
+		nicid = awsCloudState.InfoDatabase.NetworkInterfaceNames[indexNo]
+	default:
+		return fmt.Errorf("invalid role %s", role)
+	}
+
 	obj.mxRole.Unlock()
 	obj.mxName.Unlock()
 
-	if obj.metadata.role == RoleDs && indexNo > 0 {
+	if obj.metadata.role == consts.RoleDs && indexNo > 0 {
 		log.Note("[skip] currently multiple datastore not supported")
 		return nil
 	}
@@ -358,7 +439,6 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	}
 
 	parameter := &ec2.RunInstancesInput{
-		// use awslinux image id ---->   ami-0e306788ff2473ccb
 		ImageId:      aws.String("ami-0287a05f0ef0e9d9a"),
 		InstanceType: types.InstanceTypeT2Micro,
 		MinCount:     aws.Int32(1),
@@ -391,7 +471,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		NetworkInterfaces: []types.InstanceNetworkInterfaceSpecification{
 			{
 				DeviceIndex:        aws.Int32(0),
-				NetworkInterfaceId: aws.String(NICID),
+				NetworkInterfaceId: aws.String(nicid),
 				// AssociatePublicIpAddress: aws.Bool(true),
 			},
 		},
@@ -407,23 +487,23 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 	time.Sleep(50 * time.Second)
 
-	//var state int32 = 0
-	//for {
-	//	vmstate, err := ec2Client.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
-	//		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
-	//	})
-	//	if err != nil {
-	//		log.Println(err)
-	//	}
-	//	state = *vmstate.InstanceStatuses[0].InstanceState.Code
-	//	if state == 16 {
-	//		storage.Logger().Success("[aws] instance running ")
-	//		break
-	//	}
-	//}
-	//if err != nil {
-	//	return err
-	//}
+	// var state int32 = 0
+	// for {
+	// 	vmstate, err := ec2Client.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
+	// 		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
+	// 	})
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+	// 	state = *vmstate.InstanceStatuses[0].InstanceState.Code
+	// 	if state == 16 {
+	// 		storage.Logger().Success("[aws] instance running ")
+	// 		break
+	// 	}
+	// }
+	// if err != nil {
+	// 	return err
+	// }
 
 	// get the instance public ip
 	instanceip := &ec2.DescribeInstancesInput{
@@ -446,24 +526,27 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		defer obj.mxState.Unlock()
 
 		switch role {
-		case RoleWp:
+		case consts.RoleWp:
 			fmt.Println(role)
 			fmt.Println(indexNo)
+			awsCloudState.InfoWorkerPlanes.Names = append(awsCloudState.InfoWorkerPlanes.Names, *instanceop.Instances[0].InstanceId)
 			awsCloudState.InfoWorkerPlanes.PublicIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *publicip)
 			awsCloudState.InfoWorkerPlanes.PrivateIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *privateip)
-		case RoleCp:
+		case consts.RoleCp:
 			fmt.Println(role)
 			fmt.Println(indexNo)
+			awsCloudState.InfoControlPlanes.Names = append(awsCloudState.InfoControlPlanes.Names, *instanceop.Instances[0].InstanceId)
 			awsCloudState.InfoControlPlanes.PublicIPs = append(awsCloudState.InfoControlPlanes.PublicIPs, *publicip)
 			awsCloudState.InfoControlPlanes.PrivateIPs = append(awsCloudState.InfoControlPlanes.PrivateIPs, *privateip)
 			fmt.Println("worked")
-		case RoleLb:
+		case consts.RoleLb:
 			fmt.Println(role)
+			awsCloudState.InfoLoadBalancer.Name = *instanceop.Instances[0].InstanceId
 			awsCloudState.InfoLoadBalancer.PublicIP = *publicip
 			awsCloudState.InfoLoadBalancer.PrivateIP = *privateip
-		case RoleDs:
+		case consts.RoleDs:
 			fmt.Println(role)
-
+			awsCloudState.InfoDatabase.Names = append(awsCloudState.InfoDatabase.Names, *instanceop.Instances[0].InstanceId)
 			awsCloudState.InfoDatabase.PublicIPs = append(awsCloudState.InfoDatabase.PublicIPs, *publicip)
 			awsCloudState.InfoDatabase.PrivateIPs = append(awsCloudState.InfoDatabase.PrivateIPs, *privateip)
 		}
@@ -483,7 +566,28 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	return nil
 }
 
-func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
+func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+
+	interfaceName := ""
+	switch role {
+	case consts.RoleWp:
+		interfaceName = awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index]
+	case consts.RoleCp:
+		interfaceName = awsCloudState.InfoControlPlanes.NetworkInterfaceNames[index]
+	case consts.RoleLb:
+		interfaceName = awsCloudState.InfoLoadBalancer.Name
+	case consts.RoleDs:
+		interfaceName = awsCloudState.InfoDatabase.NetworkInterfaceNames[index]
+	}
+	if len(interfaceName) == 0 {
+		log.Print("skipped network interface already deleted")
+		return nil
+	}
+
+	err := obj.client.BeginDeleteNIC(interfaceName, obj.ec2Client())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -518,17 +622,18 @@ func (obj *AwsProvider) DeleteDisk(ctx context.Context, storage resources.Storag
 	return nil
 }
 
-func fetchgroupid(role KsctlRole) (string, error) {
+func fetchgroupid(role consts.KsctlRole) (string, error) {
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		return awsCloudState.SecurityGroupID[0], nil
-	case RoleWp:
+	case consts.RoleWp:
 		return awsCloudState.SecurityGroupID[1], nil
-	case RoleLb:
+	case consts.RoleLb:
 		return awsCloudState.SecurityGroupID[2], nil
-	case RoleDs:
+	case consts.RoleDs:
 		return awsCloudState.SecurityGroupID[3], nil
 
 	}
-	return "", fmt.Errorf("No security group found for role %s", role)
+
+	return "", fmt.Errorf("invalid role %s", role)
 }

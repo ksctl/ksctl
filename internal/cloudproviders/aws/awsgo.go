@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -46,7 +47,7 @@ type AwsGo interface {
 
 	BeginCreateVM() error
 
-	BeginDeleteVM() error
+	BeginDeleteVM(vmname string, ec2client *ec2.Client) error
 
 	BeginCreatePubIP() error
 
@@ -54,7 +55,7 @@ type AwsGo interface {
 
 	BeginCreateNIC() error
 
-	BeginDeleteNIC() error
+	BeginDeleteNIC(nicname string, ec2Client *ec2.Client) error
 
 	BeginDeleteSecurityGrp() error
 	BeginCreateSecurityGrp() error
@@ -160,8 +161,19 @@ func (*AwsGoClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.CreateVp
 }
 
 // BeginDeleteNIC implements AwsGo.
-func (*AwsGoClient) BeginDeleteNIC() error {
-	panic("unimplemented")
+func (*AwsGoClient) BeginDeleteNIC(nicname string, ec2Client *ec2.Client) error {
+
+	repsonce, err := ec2Client.DeleteNetworkInterface(context.Background(), &ec2.DeleteNetworkInterfaceInput{
+		NetworkInterfaceId: aws.String(nicname),
+	})
+	if err != nil {
+		log.Debug("Error Deleting NIC", "error", err)
+		return err
+	}
+
+	log.Debug("NIC Deleted", "repsonce", repsonce)
+
+	return nil
 }
 
 // BeginDeletePubIP implements AwsGo.
@@ -180,8 +192,42 @@ func (*AwsGoClient) BeginDeleteSubNet() error {
 }
 
 // BeginDeleteVM implements AwsGo.
-func (*AwsGoClient) BeginDeleteVM() error {
-	panic("unimplemented")
+func (*AwsGoClient) BeginDeleteVM(vmname string, ec2client *ec2.Client) error {
+
+	// delete instance
+	_, err := ec2client.TerminateInstances(context.Background(), &ec2.TerminateInstancesInput{
+
+		InstanceIds: []string{vmname},
+	})
+	if err != nil {
+		log.Debug("Error Terminating Instance", "error", err)
+	}
+
+	// now wait for instance to be terminated
+
+	responce, err := ec2client.DescribeInstances(context.Background(), &ec2.DescribeInstancesInput{
+		InstanceIds: []string{vmname},
+	})
+	if err != nil {
+		log.Debug("Error Describing Instance", "error", err)
+	}
+
+	time.Sleep(20 * time.Second)
+
+	for {
+		for _, reservation := range responce.Reservations {
+			for _, instance := range reservation.Instances {
+				if instance.State.Name == "terminated" {
+					log.Success("Instance Terminated", "instance", *instance.InstanceId)
+				}
+			}
+		}
+
+		break
+	}
+
+	return nil
+
 }
 
 // BeginDeleteVirtNet implements AwsGo.
@@ -354,7 +400,7 @@ func (*AwsGoMockClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.Crea
 }
 
 // BeginDeleteNIC implements AwsGo.
-func (*AwsGoMockClient) BeginDeleteNIC() error {
+func (*AwsGoMockClient) BeginDeleteNIC(nicname string, ec2Client *ec2.Client) error {
 	panic("unimplemented")
 }
 
@@ -374,8 +420,37 @@ func (*AwsGoMockClient) BeginDeleteSubNet() error {
 }
 
 // BeginDeleteVM implements AwsGo.
-func (*AwsGoMockClient) BeginDeleteVM() error {
-	panic("unimplemented")
+func (*AwsGoMockClient) BeginDeleteVM(vmname string, ec2client *ec2.Client) error {
+
+	_, err := ec2client.TerminateInstances(context.Background(), &ec2.TerminateInstancesInput{
+		InstanceIds: []string{vmname},
+	})
+	if err != nil {
+		log.Debug("Error Terminating Instance", "error", err)
+	}
+
+	responce, err := ec2client.DescribeInstances(context.Background(), &ec2.DescribeInstancesInput{
+		InstanceIds: []string{vmname},
+	})
+	if err != nil {
+		log.Debug("Error Describing Instance", "error", err)
+	}
+
+	time.Sleep(20 * time.Second)
+
+	for {
+		for _, reservation := range responce.Reservations {
+			for _, instance := range reservation.Instances {
+				if instance.State.Name == "terminated" {
+					log.Success("Instance Terminated", "instance", *instance.InstanceId)
+				}
+			}
+		}
+		break
+	}
+
+	return nil
+
 }
 
 // BeginDeleteVirtNet implements AwsGo.
