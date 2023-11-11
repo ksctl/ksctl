@@ -351,7 +351,7 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 	return nil
 }
 
-func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role consts.KsctlRole) (*ec2.CreateNetworkInterfaceOutput, error) {
+func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role consts.KsctlRole) (string, error) {
 
 	groupid_role, err := fetchgroupid(role)
 
@@ -380,26 +380,35 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 		log.Debug("Error Creating Network Interface", err)
 	}
 
-	switch role {
-	case consts.RoleWp:
-		awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
-	case consts.RoleCp:
-		awsCloudState.InfoControlPlanes.NetworkInterfaceNames = append(awsCloudState.InfoControlPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
-	case consts.RoleLb:
-		awsCloudState.InfoLoadBalancer.Name = *nicresponse.NetworkInterface.NetworkInterfaceId
-	case consts.RoleDs:
-		awsCloudState.InfoDatabase.NetworkInterfaceNames = append(awsCloudState.InfoDatabase.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+	var errCreate error
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		obj.mxState.Lock()
+		defer obj.mxState.Unlock()
 
-	default:
-		return nil, fmt.Errorf("invalid role %s", role)
+		switch role {
+		case consts.RoleWp:
+			awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+		case consts.RoleCp:
+			awsCloudState.InfoControlPlanes.NetworkInterfaceNames = append(awsCloudState.InfoControlPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+		case consts.RoleLb:
+			awsCloudState.InfoLoadBalancer.NetworkInterfaceName = *nicresponse.NetworkInterface.NetworkInterfaceId
+		case consts.RoleDs:
+			awsCloudState.InfoDatabase.NetworkInterfaceNames = append(awsCloudState.InfoDatabase.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
 
+		default:
+			errCreate = fmt.Errorf("invalid role %s", role)
+		}
+	}()
+
+	if errCreate != nil {
+		fmt.Println(errCreate)
+		return "", errCreate
 	}
-
-	// NICID = *nicresponse.NetworkInterface.NetworkInterfaceId
 	log.Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
 
-	return nicresponse, nil
-
+	return *nicresponse.NetworkInterface.NetworkInterfaceId, nil
 }
 
 func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
@@ -407,20 +416,6 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	//name := obj.metadata.resName
 	role := obj.metadata.role
 	//vmtype := obj.metadata.vmType
-
-	nicid := ""
-	switch role {
-	case consts.RoleWp:
-		nicid = awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[indexNo]
-	case consts.RoleCp:
-		nicid = awsCloudState.InfoControlPlanes.NetworkInterfaceNames[indexNo]
-	case consts.RoleLb:
-		nicid = awsCloudState.InfoLoadBalancer.Name
-	case consts.RoleDs:
-		nicid = awsCloudState.InfoDatabase.NetworkInterfaceNames[indexNo]
-	default:
-		return fmt.Errorf("invalid role %s", role)
-	}
 
 	obj.mxRole.Unlock()
 	obj.mxName.Unlock()
@@ -433,7 +428,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	stringindexNo := fmt.Sprintf("%d", indexNo)
 	ec2Client := obj.ec2Client()
 
-	_, err := obj.CreateNetworkInterface(context.TODO(), storage, obj.metadata.resName, indexNo, obj.metadata.role)
+	nicid, err := obj.CreateNetworkInterface(context.TODO(), storage, obj.metadata.resName, indexNo, obj.metadata.role)
 	if err != nil {
 		panic("Error creating network interface: " + err.Error())
 	}
@@ -518,8 +513,9 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
 	privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
 
-	done := make(chan struct{})
 	var errCreate error
+
+	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		obj.mxState.Lock()

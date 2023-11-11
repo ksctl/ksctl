@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 	"os"
 	"sync"
 
@@ -23,7 +24,7 @@ var (
 	VPCID         string
 	SUBNETID      []string
 
-	log resources.LoggerFactory
+	log = logger.NewDefaultLogger(-1, os.Stdout)
 )
 
 type Credential struct {
@@ -77,15 +78,16 @@ const (
 )
 
 type AWSStateVm struct {
-	Vpc           string `json:"vpc"`
-	Name          string `json:"name"`
-	DiskSize      string `json:"disk_size"`
-	InstanceType  string `json:"instance_type"`
-	Subnet        string `json:"subnet"`
-	SecurityGroup string `json:"security_group"`
-	PublicIPName  string `json:"public_ip_name"`
-	PublicIP      string `json:"public_ip"`
-	PrivateIP     string `json:"private_ip"`
+	Vpc                  string `json:"vpc"`
+	Name                 string `json:"name"`
+	DiskSize             string `json:"disk_size"`
+	InstanceType         string `json:"instance_type"`
+	Subnet               string `json:"subnet"`
+	SecurityGroup        string `json:"security_group"`
+	PublicIPName         string `json:"public_ip_name"`
+	PublicIP             string `json:"public_ip"`
+	PrivateIP            string `json:"private_ip"`
+	NetworkInterfaceName string `json:"network_interface_name"`
 }
 
 type StateConfiguration struct {
@@ -230,6 +232,8 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + "/" + obj.vpc + "/" + obj.region
 
+	fmt.Println(clusterDirName)
+
 	errLoadState := loadStateHelper(storage)
 	switch opration {
 	case consts.OperationStateCreate:
@@ -237,9 +241,9 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 			return fmt.Errorf("cluster %s already exists", obj.clusterName)
 		}
 		if errLoadState == nil && !awsCloudState.IsCompleted {
-			log.Note("[aws] RESUME triggered!!")
+			log.Debug("RESUME triggered!!")
 		} else {
-			log.Note("[aws] NEW cluster triggered!!")
+			log.Debug("Fresh state!!")
 			awsCloudState = &StateConfiguration{
 				IsCompleted:      false,
 				ClusterName:      obj.clusterName,
@@ -253,13 +257,13 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Note("[aws] Delete resource(s)")
+		log.Debug("[aws] Delete resource(s)")
 
 	case consts.OperationStateGet:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Note("[aws] Get resources")
+		log.Debug("[aws] Get resources")
 		clusterDirName = awsCloudState.ClusterName + " " + awsCloudState.VPCNAME + " " + awsCloudState.Region
 	default:
 		return fmt.Errorf("invalid operation")
@@ -315,7 +319,7 @@ func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (
 		PrivateIPv4LoadBalancer:  awsCloudState.InfoLoadBalancer.PrivateIP,
 	}
 
-	log.Success("[azure] Transferred Data, it's ready to be shipped!")
+	log.Success("[aws] Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
 
