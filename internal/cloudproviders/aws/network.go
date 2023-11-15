@@ -11,6 +11,87 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
+func (obj *AwsProvider) DelNetwork(storage resources.StorageFactory) error {
+
+	_ = obj.metadata.resName
+	obj.mxName.Unlock()
+
+	if len(awsCloudState.VPCID) == 0 {
+		log.Debug("[skip] already deleted the vpc", awsCloudState.VPCNAME)
+		return nil
+	}
+
+	//ec2client := ec2.NewFromConfig(obj.session)
+
+	err := obj.DeleteSubnet(context.Background(), storage, awsCloudState.SubnetID)
+	if err != nil {
+		return err
+	}
+
+	err = obj.client.BeginDeleteVirtNet(context.Background(), storage, obj.ec2Client())
+	if err != nil {
+		return err
+	}
+
+	err = obj.DeleteVpc(context.Background(), storage, awsCloudState.VPCID)
+	if err != nil {
+		return err
+	}
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	log.Success("[aws] deleted the vpc ", awsCloudState.VPCNAME)
+
+	return nil
+}
+
+func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
+
+	if len(awsCloudState.SubnetID) == 0 {
+		log.Debug("[skip] already deleted the subnet", awsCloudState.SubnetID)
+		return nil
+	}
+
+	err := obj.client.BeginDeleteSubNet(ctx, storage, subnetName, obj.ec2Client())
+	if err != nil {
+		return err
+	}
+
+	awsCloudState.SubnetID = ""
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	log.Success("[aws] deleted the subnet ", awsCloudState.SubnetName)
+
+	return nil
+}
+
+func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage resources.StorageFactory, resName string) error {
+
+	if len(awsCloudState.VPCID) == 0 {
+		log.Debug("[skip] already deleted the vpc", awsCloudState.VPCID)
+		return nil
+	}
+
+	err := obj.client.BeginDeleteVpc(ctx, storage, obj.ec2Client())
+	if err != nil {
+		return err
+	}
+
+	awsCloudState.VPCID = ""
+	awsCloudState.VPCNAME = ""
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	_ = obj.metadata.resName
 	obj.mxName.Unlock()

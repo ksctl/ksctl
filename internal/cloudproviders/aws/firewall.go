@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
@@ -19,7 +19,7 @@ func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 	obj.mxName.Unlock()
 
 	switch role {
-	case RoleCp:
+	case consts.RoleCp:
 		GroupID, err := obj.CreateSecurityGroup(obj.metadata.role)
 		if err != nil {
 			fmt.Println(err)
@@ -27,20 +27,20 @@ func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 
 		firewallRuleControlPlane(obj.ec2Client(), GroupID)
 
-	case RoleWp:
+	case consts.RoleWp:
 		GroupID, err := obj.CreateSecurityGroup(role)
 		if err != nil {
 			fmt.Println(err)
 		}
 		firewallRuleWorkerPlane(obj.ec2Client(), GroupID)
 
-	case RoleLb:
+	case consts.RoleLb:
 		Groupid, err := obj.CreateSecurityGroup(role)
 		if err != nil {
 			fmt.Println(err)
 		}
 		firewallRuleLoadBalancer(obj.ec2Client(), Groupid)
-	case RoleDs:
+	case consts.RoleDs:
 		GroupID, err := obj.CreateSecurityGroup(role)
 		if err != nil {
 			fmt.Println(err)
@@ -54,7 +54,45 @@ func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 	return nil
 }
 
-func (obj *AwsProvider) CreateSecurityGroup(Role KsctlRole) (string, error) {
+func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
+	role := obj.metadata.role
+	obj.mxRole.Unlock()
+
+	log.Debug("Printing", "role", role)
+
+	nsg := ""
+	switch role {
+	case consts.RoleCp:
+		nsg = awsCloudState.InfoControlPlanes.NetworkSecurityGroup
+	case consts.RoleWp:
+		nsg = awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup
+	case consts.RoleLb:
+		nsg = awsCloudState.InfoLoadBalancer.NetworkSecurityGroup
+	case consts.RoleDs:
+		nsg = awsCloudState.InfoDatabase.NetworkSecurityGroup
+	default:
+		return fmt.Errorf("invalid role")
+	}
+
+	if len(nsg) == 0 {
+		log.Print("skipped firewall already deleted")
+		return nil
+	}
+
+	err := obj.client.BeginDeleteSecurityGrp(context.Background(), obj.ec2Client(), nsg)
+	if err != nil {
+		log.Error("Error deleting security group", "error", err)
+	}
+
+	if len(nsg) == 0 {
+		log.Print("skipped firewall already deleted")
+		return nil
+	}
+
+	return nil
+}
+
+func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, error) {
 	SecurityGroup, err := obj.ec2Client().CreateSecurityGroup(context.Background(), &ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(string(Role + "securitygroup")),
 		Description: aws.String(obj.clusterName + "securitygroup"),
@@ -65,18 +103,14 @@ func (obj *AwsProvider) CreateSecurityGroup(Role KsctlRole) (string, error) {
 	}
 
 	switch Role {
-	case RoleCp:
-		awsCloudState.SecurityGroupID[0] = *SecurityGroup.GroupId
-		awsCloudState.SecurityGroupRole[0] = string(Role)
-	case RoleWp:
-		awsCloudState.SecurityGroupID[1] = *SecurityGroup.GroupId
-		awsCloudState.SecurityGroupRole[1] = string(Role)
-	case RoleDs:
-		awsCloudState.SecurityGroupID[2] = *SecurityGroup.GroupId
-		awsCloudState.SecurityGroupRole[2] = string(Role)
-	case RoleLb:
-		awsCloudState.SecurityGroupID[3] = *SecurityGroup.GroupId
-		awsCloudState.SecurityGroupRole[3] = string(Role)
+	case consts.RoleCp:
+		awsCloudState.InfoControlPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+	case consts.RoleWp:
+		awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+	case consts.RoleDs:
+		awsCloudState.InfoDatabase.NetworkSecurityGroup = *SecurityGroup.GroupId
+	case consts.RoleLb:
+		awsCloudState.InfoLoadBalancer.NetworkSecurityGroup = *SecurityGroup.GroupId
 	default:
 		return "", fmt.Errorf("invalid role")
 

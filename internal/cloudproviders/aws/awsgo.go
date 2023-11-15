@@ -35,15 +35,15 @@ type AwsGo interface {
 
 	BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error)
 
-	BeginDeleteVirtNet() error
-
 	BeginCreateSubNet(context context.Context, subnetName string, ec2client *ec2.Client, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error)
 
-	BeginDeleteSubNet() error
+	BeginDeleteVirtNet(ctx context.Context, storage resources.StorageFactory, ec2client *ec2.Client) error
+
+	BeginDeleteSubNet(ctx context.Context, storage resources.StorageFactory, subnetID string, ec2client *ec2.Client) error
 
 	CreateSSHKey() error
 
-	DeleteSSHKey() error
+	DeleteSSHKey(ctx context.Context, ec2Client *ec2.Client, name string) error
 
 	BeginCreateVM() error
 
@@ -57,7 +57,9 @@ type AwsGo interface {
 
 	BeginDeleteNIC(nicname string, ec2Client *ec2.Client) error
 
-	BeginDeleteSecurityGrp() error
+	BeginDeleteVpc(ctx context.Context, storage resources.StorageFactory, ec2client *ec2.Client) error
+
+	BeginDeleteSecurityGrp(ctx context.Context, ec2Client *ec2.Client, securityGrpID string) error
 	BeginCreateSecurityGrp() error
 
 	SetRegion(string)
@@ -160,18 +162,62 @@ func (*AwsGoClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.CreateVp
 	return vpc, err
 }
 
-// BeginDeleteNIC implements AwsGo.
-func (*AwsGoClient) BeginDeleteNIC(nicname string, ec2Client *ec2.Client) error {
+func (*AwsGoClient) BeginDeleteVpc(ctx context.Context, storage resources.StorageFactory, ec2client *ec2.Client) error {
 
-	repsonce, err := ec2Client.DeleteNetworkInterface(context.Background(), &ec2.DeleteNetworkInterfaceInput{
-		NetworkInterfaceId: aws.String(nicname),
+	_, err := ec2client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
+		VpcId: aws.String(awsCloudState.VPCID),
 	})
 	if err != nil {
-		log.Debug("Error Deleting NIC", "error", err)
+		log.Error("Error Deleting VPC", "error", err)
+	}
+
+	awsCloudState.VPCID = ""
+
+	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
 
-	log.Debug("NIC Deleted", "repsonce", repsonce)
+	log.Success("[aws] deleted the vpc ", awsCloudState.VPCID)
+
+	return nil
+
+}
+
+// BeginDeleteNIC implements AwsGo.
+func (*AwsGoClient) BeginDeleteNIC(nicname string, ec2Client *ec2.Client) error {
+
+	// check the nic is attached to a vm
+	resp, err := ec2Client.DescribeNetworkInterfaces(context.Background(), &ec2.DescribeNetworkInterfacesInput{
+		NetworkInterfaceIds: []string{nicname},
+	})
+	if err != nil {
+		log.Success("[skip] already deleted the nic", nicname)
+		return nil
+	}
+
+	if err == nil {
+		for _, nic := range resp.NetworkInterfaces {
+			if nic.Attachment != nil {
+				_, err = ec2Client.DetachNetworkInterface(context.Background(), &ec2.DetachNetworkInterfaceInput{
+					AttachmentId: nic.Attachment.AttachmentId,
+				})
+				if err != nil {
+					log.Success("[skip] already detached the nic", nicname)
+				}
+			}
+		}
+	}
+	_, err = ec2Client.DeleteNetworkInterface(context.Background(), &ec2.DeleteNetworkInterfaceInput{
+		NetworkInterfaceId: aws.String(nicname),
+	})
+	// search for the nic if its not found then its already deleted but it will return an error
+	// so we ignore the error
+	if err != nil {
+		log.Success("[skip] already deleted the nic", nicname)
+		return nil
+	}
+
+	log.Success("[aws] deleted the nic ", nicname)
 
 	return nil
 }
@@ -182,57 +228,129 @@ func (*AwsGoClient) BeginDeletePubIP() error {
 }
 
 // BeginDeleteSecurityGrp implements AwsGo.
-func (*AwsGoClient) BeginDeleteSecurityGrp() error {
-	panic("unimplemented")
+func (*AwsGoClient) BeginDeleteSecurityGrp(ctx context.Context, ec2Client *ec2.Client, securityGrpID string) error {
+
+	_, err := ec2Client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{
+		GroupId: aws.String(securityGrpID),
+	})
+	if err != nil {
+		log.Error("Error Deleting Security Group", "error", err)
+	}
+
+	log.Success("[aws] deleted the security group ", securityGrpID)
+	return nil
 }
 
 // BeginDeleteSubNet implements AwsGo.
-func (*AwsGoClient) BeginDeleteSubNet() error {
-	panic("unimplemented")
-}
+func (*AwsGoClient) BeginDeleteSubNet(ctx context.Context, storage resources.StorageFactory, subnetID string, ec2client *ec2.Client) error {
 
-// BeginDeleteVM implements AwsGo.
-func (*AwsGoClient) BeginDeleteVM(vmname string, ec2client *ec2.Client) error {
+	if len(awsCloudState.SubnetID) == 0 {
+		log.Debug("[skip] already deleted the subnet", awsCloudState.SubnetID)
+		return nil
+	}
 
-	// delete instance
-	_, err := ec2client.TerminateInstances(context.Background(), &ec2.TerminateInstancesInput{
-
-		InstanceIds: []string{vmname},
+	_, err := ec2client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
+		SubnetId: aws.String(subnetID),
 	})
 	if err != nil {
-		log.Debug("Error Terminating Instance", "error", err)
+		return err
 	}
 
-	// now wait for instance to be terminated
+	awsCloudState.SubnetID = ""
 
-	responce, err := ec2client.DescribeInstances(context.Background(), &ec2.DescribeInstancesInput{
-		InstanceIds: []string{vmname},
-	})
-	if err != nil {
-		log.Debug("Error Describing Instance", "error", err)
+	if err := saveStateHelper(storage); err != nil {
+		return err
 	}
 
-	time.Sleep(20 * time.Second)
-
-	for {
-		for _, reservation := range responce.Reservations {
-			for _, instance := range reservation.Instances {
-				if instance.State.Name == "terminated" {
-					log.Success("Instance Terminated", "instance", *instance.InstanceId)
-				}
-			}
-		}
-
-		break
-	}
+	log.Success("[aws] deleted the subnet ", awsCloudState.SubnetName)
 
 	return nil
 
 }
 
-// BeginDeleteVirtNet implements AwsGo.
-func (*AwsGoClient) BeginDeleteVirtNet() error {
-	panic("unimplemented")
+// BeginDeleteVM implements AwsGo.
+func (*AwsGoClient) BeginDeleteVM(vmname string, ec2client *ec2.Client) error {
+
+	_, err := ec2client.TerminateInstances(context.Background(), &ec2.TerminateInstancesInput{
+		InstanceIds: []string{vmname},
+	})
+	if err != nil {
+		log.Error("Error Terminating Instance", "error", err)
+	}
+
+	// initial wait to terminate so nic can be detached and deleted
+	time.Sleep(15 * time.Second)
+
+	instanceinput := &ec2.DescribeInstancesInput{
+		InstanceIds: []string{vmname},
+	}
+
+	if err != nil {
+		log.Error("Error Describing Instance", "error", err)
+	}
+
+	for {
+		responce, err := ec2client.DescribeInstances(context.Background(), instanceinput)
+		if err != nil {
+			log.Error("Error Describing Instance", "error", err)
+		}
+
+		for _, reservation := range responce.Reservations {
+			for _, instance := range reservation.Instances {
+				if instance.State.Name == "terminated" {
+					break
+				}
+			}
+		}
+		break
+	}
+
+	return nil
+}
+
+func (*AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage resources.StorageFactory, ec2client *ec2.Client) error {
+
+	_, err := ec2client.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{
+		RouteTableId: aws.String(awsCloudState.RouteTableID),
+	})
+	if err != nil {
+		log.Error("Error Deleting Route Table", "error", err)
+	}
+
+	_, err = ec2client.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		InternetGatewayId: aws.String(awsCloudState.GatewayID),
+		VpcId:             aws.String(awsCloudState.VPCID),
+	})
+
+	if err != nil {
+		log.Error("Error Detaching Internet Gateway", "error", err)
+	}
+
+	_, err = ec2client.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{
+		InternetGatewayId: aws.String(awsCloudState.GatewayID),
+	})
+
+	if err != nil {
+		log.Error("Error Deleting Internet Gateway", "error", err)
+	}
+
+	_, err = ec2client.DeleteNetworkAcl(ctx, &ec2.DeleteNetworkAclInput{
+		NetworkAclId: aws.String(awsCloudState.NetworkAclID),
+	})
+
+	if err != nil {
+		log.Error("Error Deleting Network ACL", "error", err)
+	}
+
+	awsCloudState.NetworkAclID = ""
+	awsCloudState.RouteTableID = ""
+	awsCloudState.GatewayID = ""
+
+	log.Success("[aws] deleted the route table ", awsCloudState.RouteTableID)
+	log.Success("[aws] deleted the network acl ", awsCloudState.NetworkAclID)
+	log.Success("[aws] deleted the internet gateway ", awsCloudState.GatewayID)
+
+	return nil
 }
 
 // CreateSSHKey implements AwsGo.
@@ -241,8 +359,18 @@ func (*AwsGoClient) CreateSSHKey() error {
 }
 
 // DeleteSSHKey implements AwsGo.
-func (*AwsGoClient) DeleteSSHKey() error {
-	panic("unimplemented")
+func (*AwsGoClient) DeleteSSHKey(ctx context.Context, ec2Client *ec2.Client, name string) error {
+
+	resp, err := ec2Client.DeleteKeyPair(ctx, &ec2.DeleteKeyPairInput{
+		KeyName: aws.String(name),
+	})
+	if err != nil {
+		log.Error("Error Deleting Key Pair", "error", err)
+	}
+
+	log.Success("[aws] deleted the ssh key pair ", resp.KeyPairId)
+
+	return nil
 }
 
 // InitClient implements AwsGo.
@@ -383,7 +511,38 @@ func (*AwsGoMockClient) BeginCreateVM() error {
 // BeginCreateVirtNet implements AwsGo.
 func (*AwsGoMockClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, ec2client *ec2.Client, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
 
-	return nil, nil, nil
+	createInternetGateway, err := ec2client.CreateInternetGateway(context.TODO(), &gatewayparameter)
+	if err != nil {
+		log.Debug("Error Creating Internet Gateway", "error", err)
+	}
+
+	_, err = ec2client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
+		InternetGatewayId: aws.String(*createInternetGateway.InternetGateway.InternetGatewayId),
+		VpcId:             aws.String(vpcid),
+	})
+	if err != nil {
+		log.Debug("Error Attaching Internet Gateway", "error", err)
+	}
+
+	awsCloudState.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
+	routeTable, err := ec2client.CreateRouteTable(context.TODO(), &routeTableparameter)
+	if err != nil {
+		log.Debug("Error Creating Route Table", "error", err)
+	}
+
+	awsCloudState.RouteTableID = *routeTable.RouteTable.RouteTableId
+
+	/*        create route		*/
+	_, err = ec2client.CreateRoute(context.TODO(), &ec2.CreateRouteInput{
+		DestinationCidrBlock: aws.String("0.0.0.0/0"),
+		GatewayId:            aws.String(awsCloudState.GatewayID),
+		RouteTableId:         aws.String(awsCloudState.RouteTableID),
+	})
+	if err != nil {
+		log.Debug("Error Creating Route", "error", err)
+	}
+
+	return routeTable, createInternetGateway, err
 }
 
 // BeginCreateVpc implements AwsGo.
@@ -399,6 +558,27 @@ func (*AwsGoMockClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.Crea
 	return vpc, err
 }
 
+func (*AwsGoMockClient) BeginDeleteVpc(ctx context.Context, storage resources.StorageFactory, ec2client *ec2.Client) error {
+
+	_, err := ec2client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
+		VpcId: aws.String(awsCloudState.VPCID),
+	})
+	if err != nil {
+		log.Error("Error Deleting VPC", "error", err)
+	}
+
+	awsCloudState.VPCID = ""
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	log.Success("[aws] deleted the vpc ", awsCloudState.VPCID)
+
+	return nil
+
+}
+
 // BeginDeleteNIC implements AwsGo.
 func (*AwsGoMockClient) BeginDeleteNIC(nicname string, ec2Client *ec2.Client) error {
 	panic("unimplemented")
@@ -410,13 +590,35 @@ func (*AwsGoMockClient) BeginDeletePubIP() error {
 }
 
 // BeginDeleteSecurityGrp implements AwsGo.
-func (*AwsGoMockClient) BeginDeleteSecurityGrp() error {
+func (*AwsGoMockClient) BeginDeleteSecurityGrp(ctx context.Context, ec2Client *ec2.Client, securityGrpID string) error {
 	panic("unimplemented")
 }
 
 // BeginDeleteSubNet implements AwsGo.
-func (*AwsGoMockClient) BeginDeleteSubNet() error {
-	panic("unimplemented")
+func (*AwsGoMockClient) BeginDeleteSubNet(ctx context.Context, storage resources.StorageFactory, subnetID string, ec2client *ec2.Client) error {
+
+	if len(awsCloudState.SubnetID) == 0 {
+		log.Debug("[skip] already deleted the subnet", awsCloudState.SubnetID)
+		return nil
+	}
+
+	_, err := ec2client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
+		SubnetId: aws.String(subnetID),
+	})
+	if err != nil {
+		return err
+	}
+
+	awsCloudState.SubnetID = ""
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	log.Success("[aws] deleted the subnet ", awsCloudState.SubnetName)
+
+	return nil
+
 }
 
 // BeginDeleteVM implements AwsGo.
@@ -454,8 +656,49 @@ func (*AwsGoMockClient) BeginDeleteVM(vmname string, ec2client *ec2.Client) erro
 }
 
 // BeginDeleteVirtNet implements AwsGo.
-func (*AwsGoMockClient) BeginDeleteVirtNet() error {
-	panic("unimplemented")
+func (*AwsGoMockClient) BeginDeleteVirtNet(ctx context.Context, storage resources.StorageFactory, ec2client *ec2.Client) error {
+
+	_, err := ec2client.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{
+		RouteTableId: aws.String(awsCloudState.RouteTableID),
+	})
+	if err != nil {
+		log.Error("Error Deleting Route Table", "error", err)
+	}
+
+	_, err = ec2client.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		InternetGatewayId: aws.String(awsCloudState.GatewayID),
+		VpcId:             aws.String(awsCloudState.VPCID),
+	})
+
+	if err != nil {
+		log.Error("Error Detaching Internet Gateway", "error", err)
+	}
+
+	_, err = ec2client.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{
+		InternetGatewayId: aws.String(awsCloudState.GatewayID),
+	})
+
+	if err != nil {
+		log.Error("Error Deleting Internet Gateway", "error", err)
+	}
+
+	_, err = ec2client.DeleteNetworkAcl(ctx, &ec2.DeleteNetworkAclInput{
+		NetworkAclId: aws.String(awsCloudState.NetworkAclID),
+	})
+
+	if err != nil {
+		log.Error("Error Deleting Network ACL", "error", err)
+	}
+
+	awsCloudState.NetworkAclID = ""
+	awsCloudState.RouteTableID = ""
+	awsCloudState.GatewayID = ""
+
+	log.Success("[aws] deleted the route table ", awsCloudState.RouteTableID)
+	log.Success("[aws] deleted the network acl ", awsCloudState.NetworkAclID)
+	log.Success("[aws] deleted the internet gateway ", awsCloudState.GatewayID)
+
+	return nil
 }
 
 // CreateSSHKey implements AwsGo.
@@ -464,8 +707,9 @@ func (*AwsGoMockClient) CreateSSHKey() error {
 }
 
 // DeleteSSHKey implements AwsGo.
-func (*AwsGoMockClient) DeleteSSHKey() error {
-	panic("unimplemented")
+func (*AwsGoMockClient) DeleteSSHKey(ctx context.Context, ec2Client *ec2.Client, name string) error {
+
+	return nil
 }
 
 // InitClient implements AwsGo.

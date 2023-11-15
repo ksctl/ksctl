@@ -62,6 +62,7 @@ type AWSStateVms struct {
 	NetworkInterfaceIDs   []string `json:"network_interface_id"`
 	SubnetNames           []string `json:"subnet_name"`
 	SubnetIDs             []string `json:"subnet_id"`
+	NetworkSecurityGroup  string   `json:"network_security_group"`
 }
 
 var (
@@ -83,7 +84,7 @@ type AWSStateVm struct {
 	DiskSize             string `json:"disk_size"`
 	InstanceType         string `json:"instance_type"`
 	Subnet               string `json:"subnet"`
-	SecurityGroup        string `json:"security_group"`
+	NetworkSecurityGroup string `json:"network_security_group"`
 	PublicIPName         string `json:"public_ip_name"`
 	PublicIP             string `json:"public_ip"`
 	PrivateIP            string `json:"private_ip"`
@@ -101,6 +102,7 @@ type StateConfiguration struct {
 	NoManagedNodes     int    `json:"no_managed_nodes"`
 	SubnetName         string `json:"subnet_name"`
 	SubnetID           string `json:"subnet_id"`
+	NetworkAclID       string `json:"network_acl_id"`
 
 	SecurityGroupRole [4]string `json:"security_group_name"`
 	SecurityGroupID   [4]string `json:"security_group_id"`
@@ -186,22 +188,6 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 	return obj
 }
 
-func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
-	//TODO implement me
-
-	obj.mxRole.Lock()
-	fmt.Println("AWS Del Firewall")
-
-	return nil
-}
-
-func (obj *AwsProvider) DelNetwork(factory resources.StorageFactory) error {
-	//TODO implement me
-	fmt.Println("AWS Del Network")
-	return nil
-
-}
-
 func convertStateFromBytes(raw []byte) error {
 	var data *StateConfiguration
 	if err := json.Unmarshal(raw, &data); err != nil {
@@ -230,8 +216,8 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 		clusterType = consts.ClusterTypeHa
 	}
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
-	clusterDirName = obj.clusterName + "/" + obj.vpc + "/" + obj.region
-
+	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
+	//os.MkdirAll(utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName), FILE_PERM_CLUSTER_DIR)
 	fmt.Println(clusterDirName)
 
 	errLoadState := loadStateHelper(storage)
@@ -284,13 +270,6 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	log.Success("[aws] init cloud state")
 
 	return nil
-}
-
-func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
-	//TODO implement me
-	fmt.Println("AWS Del SSH Key Pair")
-	return nil
-
 }
 
 func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
@@ -407,28 +386,166 @@ func (obj *AwsProvider) Version(s string) resources.CloudFactory {
 
 }
 
-func (obj *AwsProvider) NoOfWorkerPlane(factory resources.StorageFactory, i int, b bool) (int, error) {
-	//TODO implement me
-	fmt.Println("AWS No of Worker Plane")
-	i = 0
-	return i, nil
+func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
+	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
+	if !setter {
+		// delete operation
+		if awsCloudState == nil {
+			return -1, log.NewError("state init not called")
+		}
+		if awsCloudState.InfoWorkerPlanes.Names == nil {
+			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
+			// it happens when the resource groups and network is created but interrup occurs before setter is called
+			return -1, nil
+		}
+		log.Debug("Prnting", "awsCloudState.InfoWorkerPlanes.Names", awsCloudState.InfoWorkerPlanes.Names)
+		return len(awsCloudState.InfoWorkerPlanes.Names), nil
+	}
+	if no >= 0 {
+		obj.metadata.noWP = no
+		if awsCloudState == nil {
+			return -1, log.NewError("state init not called")
+		}
+		currLen := len(awsCloudState.InfoWorkerPlanes.Names)
+
+		newLen := no
+
+		if currLen == 0 {
+			awsCloudState.InfoWorkerPlanes.Names = make([]string, no)
+			//awsCloudState.InfoWorkerPlanes.Hostnames = make([]string, no)
+			awsCloudState.InfoWorkerPlanes.PublicIPs = make([]string, no)
+			awsCloudState.InfoWorkerPlanes.PrivateIPs = make([]string, no)
+			awsCloudState.InfoWorkerPlanes.DiskNames = make([]string, no)
+			awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = make([]string, no)
+			awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = make([]string, no)
+			//awsCloudState.InfoWorkerPlanes.PublicIPNames = make([]string, no)
+			//awsCloudState.InfoWorkerPlanes.PublicIPIDs = make([]string, no)
+		} else {
+			if currLen == newLen {
+				// no changes needed
+				return -1, nil
+			} else if currLen < newLen {
+				// for up-scaling
+				for i := currLen; i < newLen; i++ {
+					awsCloudState.InfoWorkerPlanes.Names = append(awsCloudState.InfoWorkerPlanes.Names, "")
+					//awsCloudState.InfoWorkerPlanes.Hostnames = append(awsCloudState.InfoWorkerPlanes.Hostnames, "")
+					awsCloudState.InfoWorkerPlanes.PublicIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, "")
+					awsCloudState.InfoWorkerPlanes.PrivateIPs = append(awsCloudState.InfoWorkerPlanes.PrivateIPs, "")
+					awsCloudState.InfoWorkerPlanes.DiskNames = append(awsCloudState.InfoWorkerPlanes.DiskNames, "")
+					awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, "")
+					awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs, "")
+					//awsCloudState.InfoWorkerPlanes.PublicIPNames = append(awsCloudState.InfoWorkerPlanes.PublicIPNames, "")
+					//awsCloudState.InfoWorkerPlanes.PublicIPIDs = append(awsCloudState.InfoWorkerPlanes.PublicIPIDs, "")
+				}
+			} else {
+				// for downscaling
+				awsCloudState.InfoWorkerPlanes.Names = awsCloudState.InfoWorkerPlanes.Names[:newLen]
+				//awsCloudState.InfoWorkerPlanes.Hostnames = awsCloudState.InfoWorkerPlanes.Hostnames[:newLen]
+				awsCloudState.InfoWorkerPlanes.PublicIPs = awsCloudState.InfoWorkerPlanes.PublicIPs[:newLen]
+				awsCloudState.InfoWorkerPlanes.PrivateIPs = awsCloudState.InfoWorkerPlanes.PrivateIPs[:newLen]
+				awsCloudState.InfoWorkerPlanes.DiskNames = awsCloudState.InfoWorkerPlanes.DiskNames[:newLen]
+				awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[:newLen]
+				awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[:newLen]
+				//awsCloudState.InfoWorkerPlanes.PublicIPNames = awsCloudState.InfoWorkerPlanes.PublicIPNames[:newLen]
+				//awsCloudState.InfoWorkerPlanes.PublicIPIDs = awsCloudState.InfoWorkerPlanes.PublicIPIDs[:newLen]
+			}
+		}
+
+		if err := saveStateHelper(storage); err != nil {
+			return -1, err
+		}
+
+		log.Debug("Printing", "awsCloudState.InfoWorkerPlanes", awsCloudState.InfoWorkerPlanes)
+
+		return -1, nil
+	}
+	return -1, log.NewError("constrains for no of workplane >= 0")
 
 }
 
-func (obj *AwsProvider) NoOfControlPlane(i int, b bool) (int, error) {
+func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	//TODO implement me
-	fmt.Println("AWS No of Control Plane")
-	i = 0
-	return i, nil
+	if !setter {
+		// delete operation
+		if awsCloudState == nil {
+			return -1, log.NewError("state init not called")
+		}
+		if awsCloudState.InfoControlPlanes.Names == nil {
+			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
+			// it happens when the resource groups and network is created but interrup occurs before setter is called
+			return -1, nil
+		}
+
+		log.Debug("Printing", "awsCloudState.InfoControlPlanes.Names", awsCloudState.InfoControlPlanes.Names)
+		return len(awsCloudState.InfoControlPlanes.Names), nil
+	}
+	if no >= 3 && (no&1) == 1 {
+		obj.metadata.noCP = no
+		if awsCloudState == nil {
+			return -1, log.NewError("state init not called")
+		}
+
+		currLen := len(awsCloudState.InfoControlPlanes.Names)
+		if currLen == 0 {
+			// What id hostname ?
+			awsCloudState.InfoControlPlanes.Names = make([]string, no)
+			//awsCloudState.InfoControlPlanes.Hostnames = make([]string, no)
+			awsCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
+			awsCloudState.InfoControlPlanes.PrivateIPs = make([]string, no)
+			awsCloudState.InfoControlPlanes.DiskNames = make([]string, no)
+			awsCloudState.InfoControlPlanes.NetworkInterfaceNames = make([]string, no)
+			awsCloudState.InfoControlPlanes.NetworkInterfaceIDs = make([]string, no)
+			//awsCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
+			//awsCloudState.InfoControlPlanes.PublicIPIDs = make([]string, no)
+		}
+
+		log.Debug("Printing", "awsCloudState.InfoControlplanes", awsCloudState.InfoControlPlanes)
+		return -1, nil
+	}
+	return -1, log.NewError("constrains for no of controlplane >= 3 and odd number")
 
 }
 
-func (obj *AwsProvider) NoOfDataStore(i int, b bool) (int, error) {
-	//TODO implement me
-	fmt.Println("AWS No of Data Store")
-	i = 0
-	return i, nil
+func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
+	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
+	if !setter {
+		// delete operation
+		if awsCloudState == nil {
+			return -1, log.NewError("state init not called")
+		}
+		if awsCloudState.InfoDatabase.Names == nil {
+			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
+			// it happens when the resource groups and network is created but interrup occurs before setter is called
+			return -1, nil
+		}
 
+		log.Debug("Printing", "awsCloudState.InfoDatabase.Names", awsCloudState.InfoDatabase.Names)
+		return len(awsCloudState.InfoDatabase.Names), nil
+	}
+	if no >= 1 && (no&1) == 1 {
+		obj.metadata.noDS = no
+
+		if awsCloudState == nil {
+			return -1, log.NewError("state init not called")
+		}
+
+		currLen := len(awsCloudState.InfoDatabase.Names)
+		if currLen == 0 {
+			awsCloudState.InfoDatabase.Names = make([]string, no)
+			//awsCloudState.InfoDatabase.Hostnames = make([]string, no)
+			awsCloudState.InfoDatabase.PublicIPs = make([]string, no)
+			awsCloudState.InfoDatabase.PrivateIPs = make([]string, no)
+			awsCloudState.InfoDatabase.DiskNames = make([]string, no)
+			awsCloudState.InfoDatabase.NetworkInterfaceNames = make([]string, no)
+			awsCloudState.InfoDatabase.NetworkInterfaceIDs = make([]string, no)
+			//awsCloudState.InfoDatabase.PublicIPNames = make([]string, no)
+			//awsCloudState.InfoDatabase.PublicIPIDs = make([]string, no)
+		}
+
+		log.Debug("Printing", "awsCloudState.InfoDatabase", awsCloudState.InfoDatabase)
+		return -1, nil
+	}
+	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")
 }
 
 func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
@@ -446,11 +563,20 @@ func (obj *AwsProvider) SwitchCluster(factory resources.StorageFactory) error {
 }
 
 func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, error) {
-
 	cloudstate, err := json.Marshal(awsCloudState)
 	if err != nil {
 		return "", err
 	}
+	log.Debug("Printing", "cloudstate", cloudstate)
+
+	// now create a file cloud-state.json in .ksctl/cluster/aws/clusterName
+	_, err = os.Create(utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME))
+	if err != nil {
+		return "", err
+	}
+	//now write the cloudstate in the file
+
+	os.WriteFile(utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME), cloudstate, FILE_PERM_CLUSTER_STATE)
 	return string(cloudstate), nil
 }
 

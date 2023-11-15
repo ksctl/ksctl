@@ -56,3 +56,27 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 	return nil
 
 }
+
+func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
+
+	name := obj.metadata.resName
+	obj.mxName.Unlock()
+
+	if len(awsCloudState.SSHKeyName) == 0 {
+		log.Debug("[skip] already deleted the ssh key", awsCloudState.SSHKeyName)
+		return nil
+	}
+
+	err := obj.client.DeleteSSHKey(context.Background(), obj.ec2Client(), name)
+	if err != nil {
+		return err
+	}
+
+	if err := saveStateHelper(storage); err != nil {
+		return err
+	}
+
+	log.Success("[aws] deleted the ssh key", awsCloudState.SSHKeyName)
+
+	return nil
+}

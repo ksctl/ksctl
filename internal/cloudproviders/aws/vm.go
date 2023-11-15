@@ -299,13 +299,15 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 		go func() {
 			defer close(donePoll)
 
+			log.Print("deleting vm...", "name", vmName)
+
 			err := obj.client.BeginDeleteVM(vmName, obj.ec2Client())
 			if err != nil {
 				errDel = err
 				return
 			}
 
-			log.Print("deleting vm...", "name", vmName)
+			err = obj.DeleteNetworkInterface(context.Background(), storage, indexNo, role)
 
 			obj.mxState.Lock()
 			defer obj.mxState.Unlock()
@@ -313,12 +315,19 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 			switch role {
 			case consts.RoleWp:
 				awsCloudState.InfoWorkerPlanes.Names[indexNo] = ""
+				awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[indexNo] = ""
+				awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[indexNo] = ""
 			case consts.RoleCp:
 				awsCloudState.InfoControlPlanes.Names[indexNo] = ""
+				//awsCloudState.InfoControlPlanes.NetworkInterfaceIDs[indexNo] = ""
+				awsCloudState.InfoControlPlanes.NetworkInterfaceNames[indexNo] = ""
 			case consts.RoleLb:
 				awsCloudState.InfoLoadBalancer.Name = ""
+				awsCloudState.InfoLoadBalancer.NetworkInterfaceName = ""
 			case consts.RoleDs:
 				awsCloudState.InfoDatabase.Names[indexNo] = ""
+				awsCloudState.InfoDatabase.NetworkInterfaceIDs[indexNo] = ""
+				awsCloudState.InfoDatabase.NetworkInterfaceNames[indexNo] = ""
 			}
 
 			if err := saveStateHelper(storage); err != nil {
@@ -338,22 +347,19 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 	// 	return log.NewError(err.Error())
 	// }
 
-	if err := obj.DeleteNetworkInterface(context.Background(), storage, indexNo, role); err != nil {
-		return log.NewError(err.Error())
-	}
-
 	// if err := obj.DeletePublicIP(ctx, storage, indexNo, role); err != nil {
 	// 	return log.NewError(err.Error())
 	// }
-
-	log.Debug("Printing", "awsCloudState", awsCloudState)
 
 	return nil
 }
 
 func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role consts.KsctlRole) (string, error) {
 
-	groupid_role, err := fetchgroupid(role)
+	securitygroup, err := fetchgroupid(role)
+	if err != nil {
+		log.Error("Error fetching security group id", "error", err)
+	}
 
 	interfaceparameter := &ec2.CreateNetworkInterfaceInput{
 		Description: aws.String("network interface"),
@@ -370,7 +376,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 			},
 		},
 		Groups: []string{
-			groupid_role,
+			securitygroup,
 		},
 	}
 
@@ -389,13 +395,16 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 
 		switch role {
 		case consts.RoleWp:
-			awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+			awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
+			//awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
 		case consts.RoleCp:
-			awsCloudState.InfoControlPlanes.NetworkInterfaceNames = append(awsCloudState.InfoControlPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+			awsCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
+			//awsCloudState.InfoControlPlanes.NetworkInterfaceNames = append(awsCloudState.InfoControlPlanes.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
 		case consts.RoleLb:
 			awsCloudState.InfoLoadBalancer.NetworkInterfaceName = *nicresponse.NetworkInterface.NetworkInterfaceId
 		case consts.RoleDs:
-			awsCloudState.InfoDatabase.NetworkInterfaceNames = append(awsCloudState.InfoDatabase.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
+			awsCloudState.InfoDatabase.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
+			//awsCloudState.InfoDatabase.NetworkInterfaceNames = append(awsCloudState.InfoDatabase.NetworkInterfaceNames, *nicresponse.NetworkInterface.NetworkInterfaceId)
 
 		default:
 			errCreate = fmt.Errorf("invalid role %s", role)
@@ -525,15 +534,23 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		case consts.RoleWp:
 			fmt.Println(role)
 			fmt.Println(indexNo)
-			awsCloudState.InfoWorkerPlanes.Names = append(awsCloudState.InfoWorkerPlanes.Names, *instanceop.Instances[0].InstanceId)
-			awsCloudState.InfoWorkerPlanes.PublicIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *publicip)
-			awsCloudState.InfoWorkerPlanes.PrivateIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *privateip)
+			awsCloudState.InfoWorkerPlanes.Names[indexNo] = *instanceop.Instances[0].InstanceId
+			awsCloudState.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
+			awsCloudState.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
+
+			//awsCloudState.InfoWorkerPlanes.Names = append(awsCloudState.InfoWorkerPlanes.Names, *instanceop.Instances[0].InstanceId)
+			//awsCloudState.InfoWorkerPlanes.PublicIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *publicip)
+			//awsCloudState.InfoWorkerPlanes.PrivateIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *privateip)
 		case consts.RoleCp:
 			fmt.Println(role)
 			fmt.Println(indexNo)
-			awsCloudState.InfoControlPlanes.Names = append(awsCloudState.InfoControlPlanes.Names, *instanceop.Instances[0].InstanceId)
-			awsCloudState.InfoControlPlanes.PublicIPs = append(awsCloudState.InfoControlPlanes.PublicIPs, *publicip)
-			awsCloudState.InfoControlPlanes.PrivateIPs = append(awsCloudState.InfoControlPlanes.PrivateIPs, *privateip)
+			awsCloudState.InfoControlPlanes.Names[indexNo] = *instanceop.Instances[0].InstanceId
+			awsCloudState.InfoControlPlanes.PublicIPs[indexNo] = *publicip
+			awsCloudState.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
+
+			//awsCloudState.InfoControlPlanes.Names = append(awsCloudState.InfoControlPlanes.Names, *instanceop.Instances[0].InstanceId)
+			//awsCloudState.InfoControlPlanes.PublicIPs = append(awsCloudState.InfoControlPlanes.PublicIPs, *publicip)
+			//awsCloudState.InfoControlPlanes.PrivateIPs = append(awsCloudState.InfoControlPlanes.PrivateIPs, *privateip)
 			fmt.Println("worked")
 		case consts.RoleLb:
 			fmt.Println(role)
@@ -542,9 +559,14 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 			awsCloudState.InfoLoadBalancer.PrivateIP = *privateip
 		case consts.RoleDs:
 			fmt.Println(role)
-			awsCloudState.InfoDatabase.Names = append(awsCloudState.InfoDatabase.Names, *instanceop.Instances[0].InstanceId)
-			awsCloudState.InfoDatabase.PublicIPs = append(awsCloudState.InfoDatabase.PublicIPs, *publicip)
-			awsCloudState.InfoDatabase.PrivateIPs = append(awsCloudState.InfoDatabase.PrivateIPs, *privateip)
+
+			awsCloudState.InfoDatabase.Names[indexNo] = *instanceop.Instances[0].InstanceId
+			awsCloudState.InfoDatabase.PublicIPs[indexNo] = *publicip
+			awsCloudState.InfoDatabase.PrivateIPs[indexNo] = *privateip
+
+			//awsCloudState.InfoDatabase.Names = append(awsCloudState.InfoDatabase.Names, *instanceop.Instances[0].InstanceId)
+			//awsCloudState.InfoDatabase.PublicIPs = append(awsCloudState.InfoDatabase.PublicIPs, *publicip)
+			//awsCloudState.InfoDatabase.PrivateIPs = append(awsCloudState.InfoDatabase.PrivateIPs, *privateip)
 		}
 		if err := saveStateHelper(storage); err != nil {
 			errCreate = err
@@ -621,13 +643,13 @@ func (obj *AwsProvider) DeleteDisk(ctx context.Context, storage resources.Storag
 func fetchgroupid(role consts.KsctlRole) (string, error) {
 	switch role {
 	case consts.RoleCp:
-		return awsCloudState.SecurityGroupID[0], nil
+		return awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup, nil
 	case consts.RoleWp:
-		return awsCloudState.SecurityGroupID[1], nil
+		return awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup, nil
 	case consts.RoleLb:
-		return awsCloudState.SecurityGroupID[2], nil
+		return awsCloudState.InfoLoadBalancer.NetworkSecurityGroup, nil
 	case consts.RoleDs:
-		return awsCloudState.SecurityGroupID[3], nil
+		return awsCloudState.InfoDatabase.NetworkSecurityGroup, nil
 
 	}
 
