@@ -85,6 +85,22 @@ func CivoTestingManaged() error {
 	return ExecuteManagedRun()
 }
 
+func LocalTestingManaged() error {
+	cli.Metadata.Provider = consts.CloudLocal
+	cli.Metadata.NoMP = 5
+
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	localManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)
+
+	if err := os.MkdirAll(localManaged, 0755); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Created tmp directories")
+
+	return ExecuteManagedRun()
+}
+
 func CivoTestingHA() error {
 	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake.small"

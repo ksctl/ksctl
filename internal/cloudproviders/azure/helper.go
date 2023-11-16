@@ -137,7 +137,7 @@ func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOpe
 		box = key + "=" + fmt.Sprintf("\"%s\"", value)
 		log.Note("KUBECONFIG env var", key, value)
 
-	case "linux", "macos":
+	case "linux", "darwin":
 
 		switch operation {
 		case consts.OperationStateCreate:

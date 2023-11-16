@@ -79,3 +79,21 @@ func BenchmarkAzureTestingManaged(b *testing.B) {
 		panic(err)
 	}
 }
+
+func BenchmarkLocalTestingManaged(b *testing.B) {
+	if err := os.Setenv(string(consts.KsctlFakeFlag), "1"); err != nil {
+		b.Fatalf("Failed to set fake env %v", err)
+	}
+	StartCloud()
+
+	for i := 0; i < b.N; i++ {
+		if err := LocalTestingManaged(); err != nil {
+			b.Fatalf("failed, err: %v", err)
+		}
+	}
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
+}
