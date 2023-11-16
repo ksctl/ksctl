@@ -43,7 +43,12 @@ func HydrateCloud(client *resources.KsctlClient, operation consts.KsctlOperation
 			return log.NewError(err.Error())
 		}
 	case consts.CloudLocal:
-		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata)
+		if !fakeClient {
+			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, localPkg.ProvideClient)
+		} else {
+			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, localPkg.ProvideMockClient)
+		}
+
 		if err != nil {
 			return log.NewError(err.Error())
 		}

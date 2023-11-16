@@ -32,6 +32,8 @@ type LocalProvider struct {
 	ClusterName string `json:"cluster_name"`
 	NoNodes     int    `json:"no_nodes"`
 	Metadata
+
+	client LocalGo
 }
 
 var (
@@ -59,12 +61,13 @@ const (
 	KUBECONFIG = "kubeconfig"
 )
 
-func ReturnLocalStruct(metadata resources.Metadata) (*LocalProvider, error) {
+func ReturnLocalStruct(metadata resources.Metadata, ClientOption func() LocalGo) (*LocalProvider, error) {
 	log = logger.NewDefaultLogger(metadata.LogVerbosity, metadata.LogWritter)
 	log.SetPackageName(string(consts.CloudLocal))
 
 	obj := &LocalProvider{
 		ClusterName: metadata.ClusterName,
+		client:      ClientOption(),
 	}
 
 	log.Debug("Printing", "localProvider", obj)
