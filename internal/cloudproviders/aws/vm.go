@@ -3,10 +3,9 @@ package aws
 import (
 	"context"
 	"fmt"
+	"github.com/kubesimplify/ksctl/pkg/resources"
 	"strconv"
 	"time"
-
-	"github.com/kubesimplify/ksctl/pkg/resources"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -39,7 +38,7 @@ func (obj *AwsProvider) CreateVPC() {
 
 	vpc, err := ec2Client.CreateVpc(context.TODO(), &vpcClient)
 	if err != nil {
-		log.Debug("Error Creating VPC", err)
+		log.Error("Error Creating VPC", err)
 	}
 	awsCloudState.VPCID = *vpc.Vpc.VpcId
 	fmt.Print("VPC Created Successfully: ")
@@ -67,7 +66,7 @@ func (obj *AwsProvider) CreateInternetGateway() error {
 
 	createInternetGateway, err := ec2Client.CreateInternetGateway(context.TODO(), &internetGateway)
 	if err != nil {
-		log.Debug("Error Creating Internet Gateway", err)
+		log.Error("Error Creating Internet Gateway", err)
 	}
 
 	_, err = ec2Client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
@@ -75,7 +74,7 @@ func (obj *AwsProvider) CreateInternetGateway() error {
 		VpcId:             aws.String(VPCID),
 	})
 	if err != nil {
-		log.Debug("Error Attaching Internet Gateway", err)
+		log.Error("Error Attaching Internet Gateway", err)
 	}
 	GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 	fmt.Println(*createInternetGateway.InternetGateway.InternetGatewayId)
@@ -106,7 +105,7 @@ func (obj *AwsProvider) CreateRouteTable() {
 
 	routeTable, err := ec2Client.CreateRouteTable(context.TODO(), &routeTableClient)
 	if err != nil {
-		log.Debug("Error Creating Route Table", err)
+		log.Error("Error Creating Route Table", err)
 	}
 
 	log.Success("Route Table Created Successfully: ", *routeTable.RouteTable.RouteTableId)
@@ -118,7 +117,7 @@ func (obj *AwsProvider) CreateRouteTable() {
 			SubnetId:     aws.String(subnet),
 		})
 		if err != nil {
-			log.Debug("Error Associating Route Table", err)
+			log.Error("Error Associating Route Table", err)
 		}
 	}
 
@@ -130,7 +129,7 @@ func (obj *AwsProvider) CreateRouteTable() {
 		RouteTableId:         aws.String(*routeTable.RouteTable.RouteTableId),
 	})
 	if err != nil {
-		log.Debug("Error Creating Route", err)
+		log.Error("Error Creating Route", err)
 	}
 
 	log.Success("Route Table Created Successfully: ", *routeTable.RouteTable.RouteTableId)
@@ -181,7 +180,7 @@ func (obj *AwsProvider) CreateTargetGroup() (*elasticloadbalancingv2.CreateTarge
 	})
 
 	if err != nil {
-		log.Debug("Error Creating Target Group", err)
+		log.Error("Error Creating Target Group", err)
 	}
 	GARN = ARN
 	fmt.Println("Target Group Created Successfully: ", *ARN.TargetGroups[0].TargetGroupArn)
@@ -211,7 +210,7 @@ func (obj *AwsProvider) RegisterTargetGroup() {
 		},
 	})
 	if err != nil {
-		log.Debug("Error Registering Target Group", err)
+		log.Error("Error Registering Target Group", err)
 	}
 
 	fmt.Println("Target Group Registered Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
@@ -255,22 +254,6 @@ func (obj *AwsProvider) CreateListener() {
 
 // TODO add EBS volume to the VM and attach it to the instance
 
-// TODO ADD A GLOBAL FUNTION THAT WILL HAVE THE ALL OUTPUTS
-
-// Sequence of steps to create a VM
-// 1. Create  VPC										DONE
-// 2. Create  Subnet									DONE
-// 3. Create  Internet Gateway							DONE
-// 4. Create  Route Table								DONE
-// 5. Create  Firewall aka Security Group in AWS		DONE
-// 6. Create Load Balancer								DONE
-// 7. Create Public IP									DONE
-// 8. OS IAMGE											DONE
-// 9. Generate SSH Key									DONE
-// 10. Create VM										DONE
-
-// TODO Refactor all the code same as various providor
-
 func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error {
 
 	role := obj.metadata.role
@@ -291,7 +274,7 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 	}
 
 	if len(vmName) == 0 {
-		log.Print("skipped vm already deleted")
+		log.Success("[skip] already deleted the vm", vmName)
 	} else {
 
 		var errDel error
@@ -306,29 +289,24 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 				errDel = err
 				return
 			}
-
-			err = obj.DeleteNetworkInterface(context.Background(), storage, indexNo, role)
-
-			obj.mxState.Lock()
-			defer obj.mxState.Unlock()
-
 			switch role {
 			case consts.RoleWp:
 				awsCloudState.InfoWorkerPlanes.Names[indexNo] = ""
-				awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[indexNo] = ""
-				awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[indexNo] = ""
 			case consts.RoleCp:
 				awsCloudState.InfoControlPlanes.Names[indexNo] = ""
-				//awsCloudState.InfoControlPlanes.NetworkInterfaceIDs[indexNo] = ""
-				awsCloudState.InfoControlPlanes.NetworkInterfaceNames[indexNo] = ""
 			case consts.RoleLb:
 				awsCloudState.InfoLoadBalancer.Name = ""
-				awsCloudState.InfoLoadBalancer.NetworkInterfaceName = ""
 			case consts.RoleDs:
 				awsCloudState.InfoDatabase.Names[indexNo] = ""
-				awsCloudState.InfoDatabase.NetworkInterfaceIDs[indexNo] = ""
-				awsCloudState.InfoDatabase.NetworkInterfaceNames[indexNo] = ""
 			}
+
+			err = obj.DeleteNetworkInterface(context.Background(), storage, indexNo, role)
+			if err != nil {
+				errDel = err
+				return
+			}
+			obj.mxState.Lock()
+			defer obj.mxState.Unlock()
 
 			if err := saveStateHelper(storage); err != nil {
 				errDel = err
@@ -342,15 +320,6 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 		log.Success("Deleted the vm", "name", vmName)
 
 	}
-
-	// if err := obj.DeleteDisk(ctx, storage, indexNo, role); err != nil {
-	// 	return log.NewError(err.Error())
-	// }
-
-	// if err := obj.DeletePublicIP(ctx, storage, indexNo, role); err != nil {
-	// 	return log.NewError(err.Error())
-	// }
-
 	return nil
 }
 
@@ -383,7 +352,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	vniclient := obj.ec2Client()
 	nicresponse, err := vniclient.CreateNetworkInterface(ctx, interfaceparameter)
 	if err != nil {
-		log.Debug("Error Creating Network Interface", err)
+		log.Error("Error Creating Network Interface", err)
 	}
 
 	var errCreate error
@@ -487,27 +456,25 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		panic("Error creating EC2 instance: " + err.Error())
 	}
 
-	// chceck the instance state until it comes to running state
-
-	time.Sleep(50 * time.Second)
-
-	// var state int32 = 0
-	// for {
-	// 	vmstate, err := ec2Client.DescribeInstanceStatus(context.Background(), &ec2.DescribeInstanceStatusInput{
-	// 		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
-	// 	})
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-	// 	state = *vmstate.InstanceStatuses[0].InstanceState.Code
-	// 	if state == 16 {
-	// 		storage.Logger().Success("[aws] instance running ")
-	// 		break
-	// 	}
-	// }
-	// if err != nil {
-	// 	return err
-	// }
+	time.Sleep(40 * time.Second)
+	// fetch instance info and wait until its running
+	//for {
+	//	instanceinfo := &ec2.DescribeInstancesInput{
+	//		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
+	//	}
+	//
+	//	instanceinforesponse, err := ec2Client.DescribeInstances(context.Background(), instanceinfo)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	if instanceinforesponse.Reservations[0].Instances[0].State.Name == "running" {
+	//		break
+	//	}
+	//}
+	if err != nil {
+		return err
+	}
 
 	// get the instance public ip
 	instanceip := &ec2.DescribeInstancesInput{
@@ -532,41 +499,21 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 		switch role {
 		case consts.RoleWp:
-			fmt.Println(role)
-			fmt.Println(indexNo)
 			awsCloudState.InfoWorkerPlanes.Names[indexNo] = *instanceop.Instances[0].InstanceId
 			awsCloudState.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
 			awsCloudState.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
-
-			//awsCloudState.InfoWorkerPlanes.Names = append(awsCloudState.InfoWorkerPlanes.Names, *instanceop.Instances[0].InstanceId)
-			//awsCloudState.InfoWorkerPlanes.PublicIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *publicip)
-			//awsCloudState.InfoWorkerPlanes.PrivateIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, *privateip)
 		case consts.RoleCp:
-			fmt.Println(role)
-			fmt.Println(indexNo)
 			awsCloudState.InfoControlPlanes.Names[indexNo] = *instanceop.Instances[0].InstanceId
 			awsCloudState.InfoControlPlanes.PublicIPs[indexNo] = *publicip
 			awsCloudState.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
-
-			//awsCloudState.InfoControlPlanes.Names = append(awsCloudState.InfoControlPlanes.Names, *instanceop.Instances[0].InstanceId)
-			//awsCloudState.InfoControlPlanes.PublicIPs = append(awsCloudState.InfoControlPlanes.PublicIPs, *publicip)
-			//awsCloudState.InfoControlPlanes.PrivateIPs = append(awsCloudState.InfoControlPlanes.PrivateIPs, *privateip)
-			fmt.Println("worked")
 		case consts.RoleLb:
-			fmt.Println(role)
 			awsCloudState.InfoLoadBalancer.Name = *instanceop.Instances[0].InstanceId
 			awsCloudState.InfoLoadBalancer.PublicIP = *publicip
 			awsCloudState.InfoLoadBalancer.PrivateIP = *privateip
 		case consts.RoleDs:
-			fmt.Println(role)
-
 			awsCloudState.InfoDatabase.Names[indexNo] = *instanceop.Instances[0].InstanceId
 			awsCloudState.InfoDatabase.PublicIPs[indexNo] = *publicip
 			awsCloudState.InfoDatabase.PrivateIPs[indexNo] = *privateip
-
-			//awsCloudState.InfoDatabase.Names = append(awsCloudState.InfoDatabase.Names, *instanceop.Instances[0].InstanceId)
-			//awsCloudState.InfoDatabase.PublicIPs = append(awsCloudState.InfoDatabase.PublicIPs, *publicip)
-			//awsCloudState.InfoDatabase.PrivateIPs = append(awsCloudState.InfoDatabase.PrivateIPs, *privateip)
 		}
 		if err := saveStateHelper(storage); err != nil {
 			errCreate = err
@@ -589,23 +536,43 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage reso
 	interfaceName := ""
 	switch role {
 	case consts.RoleWp:
-		interfaceName = awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index]
+		interfaceName = awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index]
 	case consts.RoleCp:
-		interfaceName = awsCloudState.InfoControlPlanes.NetworkInterfaceNames[index]
+		interfaceName = awsCloudState.InfoControlPlanes.NetworkInterfaceIDs[index]
 	case consts.RoleLb:
-		interfaceName = awsCloudState.InfoLoadBalancer.Name
+		interfaceName = awsCloudState.InfoLoadBalancer.NetworkInterfaceName
 	case consts.RoleDs:
-		interfaceName = awsCloudState.InfoDatabase.NetworkInterfaceNames[index]
+		interfaceName = awsCloudState.InfoDatabase.NetworkInterfaceIDs[index]
 	}
 	if len(interfaceName) == 0 {
 		log.Print("skipped network interface already deleted")
-		return nil
+	} else {
+		err := obj.client.BeginDeleteNIC(interfaceName, obj.ec2Client())
+		if err != nil {
+			log.Error("Error deleting network interface", "error", err)
+		}
+		switch role {
+		case consts.RoleWp:
+			awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = ""
+			awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = ""
+		case consts.RoleCp:
+			awsCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = ""
+			awsCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = ""
+		case consts.RoleLb:
+			awsCloudState.InfoLoadBalancer.NetworkInterfaceName = ""
+		case consts.RoleDs:
+			awsCloudState.InfoDatabase.NetworkInterfaceIDs[index] = ""
+			awsCloudState.InfoDatabase.NetworkInterfaceNames[index] = ""
+		default:
+			return fmt.Errorf("invalid role %s", role)
+		}
+		err = saveStateHelper(storage)
+		if err != nil {
+			log.Error("Error saving state", "error", err)
+		}
+		log.Success("[aws] deleted the network interface ", interfaceName)
 	}
 
-	err := obj.client.BeginDeleteNIC(interfaceName, obj.ec2Client())
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -621,7 +588,7 @@ func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.St
 		Domain: types.DomainType("vpc"),
 	})
 	if err != nil {
-		log.Debug("Error Creating Public IP", err)
+		log.Error("Error Creating Public IP", err)
 	}
 
 	_, err = ec2Client.AssociateAddress(context.Background(), &ec2.AssociateAddressInput{

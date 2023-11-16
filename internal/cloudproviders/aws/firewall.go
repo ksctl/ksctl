@@ -58,8 +58,6 @@ func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
 	role := obj.metadata.role
 	obj.mxRole.Unlock()
 
-	log.Debug("Printing", "role", role)
-
 	nsg := ""
 	switch role {
 	case consts.RoleCp:
@@ -77,16 +75,31 @@ func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
 	if len(nsg) == 0 {
 		log.Print("skipped firewall already deleted")
 		return nil
-	}
+	} else {
+		err := obj.client.BeginDeleteSecurityGrp(context.Background(), obj.ec2Client(), nsg)
+		if err != nil {
+			log.Error("Error deleting security group", "error", err)
+		}
 
-	err := obj.client.BeginDeleteSecurityGrp(context.Background(), obj.ec2Client(), nsg)
-	if err != nil {
-		log.Error("Error deleting security group", "error", err)
-	}
+		switch role {
+		case consts.RoleCp:
+			awsCloudState.InfoControlPlanes.NetworkSecurityGroup = ""
+		case consts.RoleWp:
+			awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup = ""
+		case consts.RoleLb:
+			awsCloudState.InfoLoadBalancer.NetworkSecurityGroup = ""
+		case consts.RoleDs:
+			awsCloudState.InfoDatabase.NetworkSecurityGroup = ""
+		default:
+			return fmt.Errorf("invalid role")
+		}
 
-	if len(nsg) == 0 {
-		log.Print("skipped firewall already deleted")
-		return nil
+		err = saveStateHelper(factory)
+		if err != nil {
+			log.Error("Error saving state", "error", err)
+		}
+
+		log.Success("[aws] deleted the security group ", nsg)
 	}
 
 	return nil

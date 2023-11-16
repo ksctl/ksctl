@@ -23,7 +23,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 
 	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, log, CloudAws, clusterDirName)
 	if err != nil {
-		log.Debug("Error creating ssh key pair", "error", err)
+		log.Print("Error creating ssh key pair", "error", err)
 	}
 
 	parameter := ec2.ImportKeyPairInput{
@@ -59,24 +59,20 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 
 func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 
-	name := obj.metadata.resName
-	obj.mxName.Unlock()
-
 	if len(awsCloudState.SSHKeyName) == 0 {
-		log.Debug("[skip] already deleted the ssh key", awsCloudState.SSHKeyName)
-		return nil
-	}
+		log.Success("[skip] already deleted the ssh key", awsCloudState.SSHKeyName)
+	} else {
+		err := obj.client.DeleteSSHKey(context.Background(), obj.ec2Client(), awsCloudState.SSHKeyName)
+		if err != nil {
+			return err
+		}
+		awsCloudState.SSHKeyName = ""
+		if err := saveStateHelper(storage); err != nil {
+			return err
+		}
 
-	err := obj.client.DeleteSSHKey(context.Background(), obj.ec2Client(), name)
-	if err != nil {
-		return err
+		log.Success("[aws] deleted the ssh key", awsCloudState.SSHKeyName)
 	}
-
-	if err := saveStateHelper(storage); err != nil {
-		return err
-	}
-
-	log.Success("[aws] deleted the ssh key", awsCloudState.SSHKeyName)
 
 	return nil
 }

@@ -199,11 +199,13 @@ func convertStateFromBytes(raw []byte) error {
 
 func loadStateHelper(storage resources.StorageFactory) error {
 	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
+	fmt.Println(path)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
 	}
 
+	log.Print("raw", string(raw))
 	return convertStateFromBytes(raw)
 }
 
@@ -227,9 +229,9 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 			return fmt.Errorf("cluster %s already exists", obj.clusterName)
 		}
 		if errLoadState == nil && !awsCloudState.IsCompleted {
-			log.Debug("RESUME triggered!!")
+			log.Warn("Cluster state found but not completed, resuming operation")
 		} else {
-			log.Debug("Fresh state!!")
+			log.Print("Fresh state!!")
 			awsCloudState = &StateConfiguration{
 				IsCompleted:      false,
 				ClusterName:      obj.clusterName,
@@ -243,13 +245,13 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Debug("[aws] Delete resource(s)")
+		log.Print("[aws] Delete resource(s)")
 
 	case consts.OperationStateGet:
 		if errLoadState != nil {
 			return fmt.Errorf("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Debug("[aws] Get resources")
+		log.Print("[aws] Get resources")
 		clusterDirName = awsCloudState.ClusterName + " " + awsCloudState.VPCNAME + " " + awsCloudState.Region
 	default:
 		return fmt.Errorf("invalid operation")
@@ -332,23 +334,17 @@ func (obj *AwsProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
 }
 
 func (obj *AwsProvider) VMType(size string) resources.CloudFactory {
-	//TODO implement me as soon as possible :)
-
-	//obj.mxVMType.Lock()
-	//obj.metadata.vmType = size
-	//if err := isValidVMSize(obj, size); err != nil {
-	//	var logFactory logger.LogFactory = &logger.Logger{}
-	//	logFactory.Err(err.Error())
-	//	return nil
-	//}
+	obj.mxVMType.Lock()
+	obj.metadata.vmType = size
+	if err := isValidVMSize(obj, size); err != nil {
+		log.Error("invalid vm size assumed")
+	}
 	return obj
 }
 
-func (obj *AwsProvider) Visibility(b bool) resources.CloudFactory {
-	//TODO implement me
-	fmt.Println("AWS Visibility")
+func (obj *AwsProvider) Visibility(toBePublic bool) resources.CloudFactory {
+	obj.metadata.public = toBePublic
 	return obj
-
 }
 
 func (obj *AwsProvider) SupportForApplications() bool {
@@ -387,7 +383,7 @@ func (obj *AwsProvider) Version(s string) resources.CloudFactory {
 }
 
 func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
-	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
+	log.Print("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		// delete operation
 		if awsCloudState == nil {
@@ -398,7 +394,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, nil
 		}
-		log.Debug("Prnting", "awsCloudState.InfoWorkerPlanes.Names", awsCloudState.InfoWorkerPlanes.Names)
+		log.Print("Prnting", "awsCloudState.InfoWorkerPlanes.Names", awsCloudState.InfoWorkerPlanes.Names)
 		return len(awsCloudState.InfoWorkerPlanes.Names), nil
 	}
 	if no >= 0 {
@@ -455,7 +451,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 			return -1, err
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoWorkerPlanes", awsCloudState.InfoWorkerPlanes)
+		log.Print("Printing", "awsCloudState.InfoWorkerPlanes", awsCloudState.InfoWorkerPlanes)
 
 		return -1, nil
 	}
@@ -476,7 +472,7 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			return -1, nil
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoControlPlanes.Names", awsCloudState.InfoControlPlanes.Names)
+		log.Print("Printing", "awsCloudState.InfoControlPlanes.Names", awsCloudState.InfoControlPlanes.Names)
 		return len(awsCloudState.InfoControlPlanes.Names), nil
 	}
 	if no >= 3 && (no&1) == 1 {
@@ -499,7 +495,7 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			//awsCloudState.InfoControlPlanes.PublicIPIDs = make([]string, no)
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoControlplanes", awsCloudState.InfoControlPlanes)
+		log.Print("Printing", "awsCloudState.InfoControlplanes", awsCloudState.InfoControlPlanes)
 		return -1, nil
 	}
 	return -1, log.NewError("constrains for no of controlplane >= 3 and odd number")
@@ -507,7 +503,7 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 }
 
 func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
-	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
+	log.Print("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		// delete operation
 		if awsCloudState == nil {
@@ -519,7 +515,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			return -1, nil
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoDatabase.Names", awsCloudState.InfoDatabase.Names)
+		log.Print("Printing", "awsCloudState.InfoDatabase.Names", awsCloudState.InfoDatabase.Names)
 		return len(awsCloudState.InfoDatabase.Names), nil
 	}
 	if no >= 1 && (no&1) == 1 {
@@ -542,7 +538,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			//awsCloudState.InfoDatabase.PublicIPIDs = make([]string, no)
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoDatabase", awsCloudState.InfoDatabase)
+		log.Print("Printing", "awsCloudState.InfoDatabase", awsCloudState.InfoDatabase)
 		return -1, nil
 	}
 	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")
@@ -567,7 +563,7 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 	if err != nil {
 		return "", err
 	}
-	log.Debug("Printing", "cloudstate", cloudstate)
+	log.Print("Printing", "cloudstate", cloudstate)
 
 	// now create a file cloud-state.json in .ksctl/cluster/aws/clusterName
 	_, err = os.Create(utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME))
@@ -592,14 +588,13 @@ func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[s
 }
 
 func isValidVMSize(obj *AwsProvider, size string) error {
-	// TODO implement me
-	validSize, err := obj.client.ListVMTypes()
+	validSize, err := obj.client.ListVMTypes(obj.ec2Client())
 	if err != nil {
 		return err
 	}
 
-	for _, valid := range validSize {
-		if valid == size {
+	for _, valid := range validSize.InstanceTypes {
+		if aws.String(string(valid.InstanceType)) == aws.String(size) {
 			return nil
 		}
 	}

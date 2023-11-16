@@ -3,6 +3,8 @@ package aws
 import (
 	"context"
 	"fmt"
+	"github.com/kubesimplify/ksctl/pkg/utils"
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -13,29 +15,27 @@ import (
 
 func (obj *AwsProvider) DelNetwork(storage resources.StorageFactory) error {
 
-	_ = obj.metadata.resName
-	obj.mxName.Unlock()
-
-	if len(awsCloudState.VPCID) == 0 {
-		log.Debug("[skip] already deleted the vpc", awsCloudState.VPCNAME)
-		return nil
+	if len(awsCloudState.SubnetID) == 0 {
+		log.Print("[skip] already deleted the vpc", awsCloudState.VPCNAME)
+	} else {
+		err := obj.DeleteSubnet(context.Background(), storage, awsCloudState.SubnetID)
+		if err != nil {
+			return err
+		}
 	}
 
-	//ec2client := ec2.NewFromConfig(obj.session)
-
-	err := obj.DeleteSubnet(context.Background(), storage, awsCloudState.SubnetID)
+	err := obj.client.BeginDeleteVirtNet(context.Background(), storage, obj.ec2Client())
 	if err != nil {
 		return err
 	}
 
-	err = obj.client.BeginDeleteVirtNet(context.Background(), storage, obj.ec2Client())
-	if err != nil {
-		return err
-	}
-
-	err = obj.DeleteVpc(context.Background(), storage, awsCloudState.VPCID)
-	if err != nil {
-		return err
+	if awsCloudState.VPCID == "" {
+		log.Success("[aws] deleted the vpc ", awsCloudState.VPCNAME)
+	} else {
+		err = obj.DeleteVpc(context.Background(), storage, awsCloudState.VPCID)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := saveStateHelper(storage); err != nil {
@@ -49,16 +49,10 @@ func (obj *AwsProvider) DelNetwork(storage resources.StorageFactory) error {
 
 func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
 
-	if len(awsCloudState.SubnetID) == 0 {
-		log.Debug("[skip] already deleted the subnet", awsCloudState.SubnetID)
-		return nil
-	}
-
 	err := obj.client.BeginDeleteSubNet(ctx, storage, subnetName, obj.ec2Client())
 	if err != nil {
 		return err
 	}
-
 	awsCloudState.SubnetID = ""
 
 	if err := saveStateHelper(storage); err != nil {
@@ -72,23 +66,17 @@ func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage resources.Stor
 
 func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage resources.StorageFactory, resName string) error {
 
-	if len(awsCloudState.VPCID) == 0 {
-		log.Debug("[skip] already deleted the vpc", awsCloudState.VPCID)
-		return nil
-	}
-
 	err := obj.client.BeginDeleteVpc(ctx, storage, obj.ec2Client())
 	if err != nil {
 		return err
 	}
-
 	awsCloudState.VPCID = ""
 	awsCloudState.VPCNAME = ""
-
 	if err := saveStateHelper(storage); err != nil {
 		return err
 	}
 
+	log.Success("[aws] deleted the vpc ", awsCloudState.VPCNAME)
 	return nil
 }
 
@@ -97,7 +85,7 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	obj.mxName.Unlock()
 
 	if len(awsCloudState.VPCID) != 0 {
-		log.Debug("[skip] already created the vpc", awsCloudState.VPCNAME)
+		log.Print("[skip] already created the vpc", awsCloudState.VPCNAME)
 	}
 	ec2client := ec2.NewFromConfig(obj.session)
 	vpcclient := ec2.CreateVpcInput{
@@ -171,7 +159,7 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
 
 	if len(awsCloudState.SubnetID) != 0 {
-		log.Debug("[skip] already created the subnet", awsCloudState.SubnetID)
+		log.Print("[skip] already created the subnet", awsCloudState.SubnetID)
 	}
 
 	client := obj.ec2Client()
@@ -239,12 +227,11 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 	if err != nil {
 		return err
 	}
-	NACLID = *naclresp.NetworkAcl.NetworkAclId
-	log.Success("[aws] created the network acl ", *naclresp.NetworkAcl.NetworkAclId)
+	awsCloudState.NetworkAclID = *naclresp.NetworkAcl.NetworkAclId
 
 	_, err = obj.ec2Client().CreateNetworkAclEntry(ctx, &ec2.CreateNetworkAclEntryInput{
 		// ALLOW ALL TRAFFIC
-		NetworkAclId: aws.String(NACLID),
+		NetworkAclId: aws.String(awsCloudState.NetworkAclID),
 		RuleNumber:   aws.Int32(100),
 		Protocol:     aws.String("-1"),
 		RuleAction:   types.RuleActionAllow,
@@ -255,14 +242,22 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 		return err
 	}
 
+	if err := saveStateHelper(storage); err != nil {
+		log.Error("Error saving state", "error", err)
+	}
+	log.Success("[aws] created the network acl ", *naclresp.NetworkAcl.NetworkAclId)
+
 	return nil
 }
 
-var NACLID string
-
 func saveStateHelper(storage resources.StorageFactory) error {
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
+	rawState, err := convertStateToBytes(*awsCloudState)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
 // Implements internetgateway, route table
