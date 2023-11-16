@@ -61,7 +61,6 @@ mock_test:
 	cd test/ && \
 		go test -bench=. -benchtime=1x -cover -v
 
-
 mock_civo_ha:
 	cd test/ && \
  		go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
@@ -77,6 +76,10 @@ mock_azure_managed:
 mock_azure_ha:
 	cd test/ && \
  		go test -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
+
+mock_local_managed:
+	cd test/ && \
+ 		go test -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
 
 test: unit_test_api mock_test
 	@echo "Done All tests"
