@@ -193,7 +193,7 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 			return log.NewError(err.Error())
 		}
 	case consts.CloudLocal:
-		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata)
+		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, localPkg.ProvideClient)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
