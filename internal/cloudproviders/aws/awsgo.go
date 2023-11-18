@@ -380,14 +380,25 @@ func (*AwsGoClient) ListVMTypes(ec2Client *ec2.Client) (ec2.DescribeInstanceType
 
 	var vmTypes ec2.DescribeInstanceTypesOutput
 
-	parameter, err := ec2Client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{})
+	parameter, err := ec2Client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("current-generation"),
+				Values: []string{"true"},
+			},
+		},
+		InstanceTypes: []types.InstanceType{"t2.micro"},
+	})
 	if err != nil {
 		log.Error("Error Describing Instance Types", "error", err)
+		return vmTypes, err
 	}
 
 	for _, instanceType := range parameter.InstanceTypes {
 		vmTypes.InstanceTypes = append(vmTypes.InstanceTypes, instanceType)
 	}
+
+	return vmTypes, nil
 
 	return vmTypes, nil
 }

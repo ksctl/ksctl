@@ -390,13 +390,12 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 }
 
 func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) error {
-
-	//name := obj.metadata.resName
 	role := obj.metadata.role
-	//vmtype := obj.metadata.vmType
+	vmtype := obj.metadata.vmType
 
 	obj.mxRole.Unlock()
 	obj.mxName.Unlock()
+	obj.mxVMType.Unlock()
 
 	if obj.metadata.role == consts.RoleDs && indexNo > 0 {
 		log.Note("[skip] currently multiple datastore not supported")
@@ -413,7 +412,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 	parameter := &ec2.RunInstancesInput{
 		ImageId:      aws.String("ami-0287a05f0ef0e9d9a"),
-		InstanceType: types.InstanceTypeT2Micro,
+		InstanceType: types.InstanceType(vmtype),
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
 		KeyName:      aws.String("test-e2e-ha-aws-ssh"),

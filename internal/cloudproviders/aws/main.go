@@ -51,6 +51,11 @@ type AwsProvider struct {
 	SSHPath string `json:"ssh_key"`
 }
 
+func (obj *AwsProvider) GetKubeconfigPath() string {
+
+	return utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+}
+
 type AWSStateVms struct {
 	Names                 []string `json:"names"`
 	SecurityGroupName     string   `json:"network_security_group_name"`
@@ -354,32 +359,24 @@ func (obj *AwsProvider) SupportForApplications() bool {
 
 }
 
-func (obj *AwsProvider) SupportForCNI() bool {
-	//TODO implement me
-	fmt.Println("AWS Support for CNI")
-	return false
-
-}
+//func (obj *AwsProvider) SupportForCNI() bool {
+//	//TODO implement me
+//	fmt.Println("AWS Support for CNI")
+//	return false
+//
+//}
 
 func (obj *AwsProvider) Application(s string) bool {
-	//TODO implement me
-	fmt.Println("AWS Application")
-	return false
-
+	return true
 }
 
 func (obj *AwsProvider) CNI(s string) bool {
-	//TODO implement me
-	fmt.Println("AWS CNI")
-	return false
-
+	return true
 }
 
 func (obj *AwsProvider) Version(s string) resources.CloudFactory {
-	//TODO implement me
 	fmt.Println("AWS Version")
 	return nil
-
 }
 
 func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
@@ -577,7 +574,7 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 }
 
 func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[string][]byte, error) {
-	//TODO implement me
+
 	acesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
 	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
 
@@ -585,19 +582,4 @@ func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[s
 		"aws_access_key_id":     []byte(acesskeyid),
 		"aws_secret_access_key": []byte(secret),
 	}, nil
-}
-
-func isValidVMSize(obj *AwsProvider, size string) error {
-	validSize, err := obj.client.ListVMTypes(obj.ec2Client())
-	if err != nil {
-		return err
-	}
-
-	for _, valid := range validSize.InstanceTypes {
-		if aws.String(string(valid.InstanceType)) == aws.String(size) {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("INVALID VM SIZE\nValid options %v\n", validSize)
 }
