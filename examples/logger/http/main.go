@@ -32,7 +32,7 @@ func StartCloud(w http.ResponseWriter) {
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = w
 
-	if err := control_pkg.InitializeStorageFactory(cli, false); err != nil {
+	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
 		panic(err)
 	}
 }
