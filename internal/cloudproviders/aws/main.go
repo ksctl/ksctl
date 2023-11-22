@@ -170,7 +170,7 @@ func NEWCLIENT() aws.Config {
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), "")),
 	)
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
 	}
 
 	// obj.Session = &NewSession
