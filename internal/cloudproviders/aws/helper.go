@@ -3,6 +3,7 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
@@ -13,6 +14,16 @@ func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterT
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {
 	return json.Marshal(state)
+}
+
+func saveStateHelper(storage resources.StorageFactory) error {
+	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
+	rawState, err := convertStateToBytes(*awsCloudState)
+	if err != nil {
+		return err
+	}
+
+	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
 func validationOfArguments(obj *AwsProvider) error {
@@ -47,6 +58,8 @@ func isValidRegion(obj *AwsProvider, reg string) error {
 // so will check if the string is in the consts
 
 func isValidVMSize(obj *AwsProvider, size string) error {
+	fmt.Println(size)
+	fmt.Println("......................................................")
 	validSize, err := obj.client.ListVMTypes(obj.ec2Client())
 	if err != nil {
 		return err

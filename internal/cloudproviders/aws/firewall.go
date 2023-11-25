@@ -25,27 +25,35 @@ func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 			fmt.Println(err)
 		}
 
-		firewallRuleControlPlane(obj.ec2Client(), GroupID)
+		if consts.KsctlFakeFlag == "1" {
+			firewallRuleControlPlane(obj.ec2Client(), GroupID)
+		}
 
 	case consts.RoleWp:
 		GroupID, err := obj.CreateSecurityGroup(role)
 		if err != nil {
 			fmt.Println(err)
 		}
-		firewallRuleWorkerPlane(obj.ec2Client(), GroupID)
+		if consts.KsctlFakeFlag == "1" {
+			firewallRuleWorkerPlane(obj.ec2Client(), GroupID)
+		}
 
 	case consts.RoleLb:
 		Groupid, err := obj.CreateSecurityGroup(role)
 		if err != nil {
 			fmt.Println(err)
 		}
-		firewallRuleLoadBalancer(obj.ec2Client(), Groupid)
+		if consts.KsctlFakeFlag == "1" {
+			firewallRuleLoadBalancer(obj.ec2Client(), Groupid)
+		}
 	case consts.RoleDs:
 		GroupID, err := obj.CreateSecurityGroup(role)
 		if err != nil {
 			fmt.Println(err)
 		}
-		firewallRuleDataStore(obj.ec2Client(), GroupID)
+		if consts.KsctlFakeFlag == "1" {
+			firewallRuleDataStore(obj.ec2Client(), GroupID)
+		}
 
 	default:
 		return fmt.Errorf("invalid role")
@@ -106,11 +114,19 @@ func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
 }
 
 func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, error) {
-	SecurityGroup, err := obj.ec2Client().CreateSecurityGroup(context.Background(), &ec2.CreateSecurityGroupInput{
+	//SecurityGroup, err := obj.ec2Client().CreateSecurityGroup(context.Background(), &ec2.CreateSecurityGroupInput{
+	//	GroupName:   aws.String(string(Role + "securitygroup")),
+	//	Description: aws.String(obj.clusterName + "securitygroup"),
+	//	VpcId:       aws.String(awsCloudState.VPCID),
+	//})
+
+	SecurityGroupInput := ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(string(Role + "securitygroup")),
 		Description: aws.String(obj.clusterName + "securitygroup"),
 		VpcId:       aws.String(awsCloudState.VPCID),
-	})
+	}
+
+	SecurityGroup, err := obj.client.BeginCreateSecurityGroup(context.Background(), obj.ec2Client(), SecurityGroupInput)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -118,6 +134,37 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 	switch Role {
 	case consts.RoleCp:
 		awsCloudState.InfoControlPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+
+		func(client *ec2.Client, GroupId string) {
+
+			ingressrules := ec2.AuthorizeSecurityGroupIngressInput{
+				GroupId:    &GroupId,
+				IpProtocol: aws.String("-1"),
+				CidrIp:     aws.String("0.0.0.0/0"),
+			}
+
+			obj.client.AuthorizeSecurityGroupIngress(context.Background(), client, ingressrules)
+			//client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
+			//	GroupId:    &GroupId,
+			//	IpProtocol: aws.String("-1"),
+			//	CidrIp:     aws.String("0.0.0.0/0"),
+			//})
+
+			egressrules := ec2.AuthorizeSecurityGroupEgressInput{
+				GroupId:    &GroupId,
+				IpProtocol: aws.String("-1"),
+				CidrIp:     aws.String("0.0.0.0/0"),
+			}
+
+			obj.client.AuthorizeSecurityGroupEgress(context.Background(), client, egressrules)
+			//client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
+			//	GroupId:    &GroupId,
+			//	IpProtocol: aws.String("-1"),
+			//	CidrIp:     aws.String("0.0.0.0/0"),
+			//})
+
+		}
+
 	case consts.RoleWp:
 		awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
 	case consts.RoleDs:

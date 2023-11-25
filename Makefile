@@ -77,6 +77,10 @@ mock_azure_ha:
 	cd test/ && \
  		go test -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
 
+mock_aws_ha:
+	cd test/ && \
+		go test -bench=BemchmarkAwsTestingHA -benchtime=1x -cover -v
+
 mock_local_managed:
 	cd test/ && \
  		go test -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v

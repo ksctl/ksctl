@@ -42,7 +42,9 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 		},
 	}
 
-	_, err = obj.ec2Client().ImportKeyPair(context.Background(), &parameter)
+	if obj.client.ImportKeyPair(context.Background(), obj.ec2Client(), parameter); err != nil {
+		log.Error("Error uploading ssh key pair", "error", err)
+	}
 
 	awsCloudState.SSHKeyName = name
 	awsCloudState.SSHUser = "ubuntu"

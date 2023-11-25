@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kubesimplify/ksctl/pkg/logger"
 	"os"
 	"sync"
+
+	"github.com/kubesimplify/ksctl/pkg/logger"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -224,10 +225,10 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	}
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
-	//os.MkdirAll(utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName), FILE_PERM_CLUSTER_DIR)
-	fmt.Println(clusterDirName)
+	log.Print("clusterDirName", clusterDirName)
 
 	errLoadState := loadStateHelper(storage)
+
 	switch opration {
 	case consts.OperationStateCreate:
 		if errLoadState == nil && awsCloudState.IsCompleted {

@@ -349,10 +349,9 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 		},
 	}
 
-	vniclient := obj.ec2Client()
-	nicresponse, err := vniclient.CreateNetworkInterface(ctx, interfaceparameter)
+	nicresponse, err := obj.client.BeginCreateNIC(ctx, obj.ec2Client(), interfaceparameter)
 	if err != nil {
-		log.Error("Error Creating Network Interface", err)
+		log.Error("Error creating network interface", "error", err)
 	}
 
 	var errCreate error
@@ -449,40 +448,30 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		},
 	}
 
-	instanceop, err := ec2Client.RunInstances(context.Background(), parameter)
+	//instanceop, err := ec2Client.RunInstances(context.Background(), parameter)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	panic("Error creating EC2 instance: " + err.Error())
+	//}
+
+	instanceop, err := obj.client.BeginCreateVM(context.Background(), ec2Client, parameter)
 	if err != nil {
-		fmt.Println(err)
-		panic("Error creating EC2 instance: " + err.Error())
+		log.Error("Error creating vm", "error", err)
 	}
 
 	time.Sleep(40 * time.Second)
-	// fetch instance info and wait until its running
-	//for {
-	//	instanceinfo := &ec2.DescribeInstancesInput{
-	//		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
-	//	}
-	//
-	//	instanceinforesponse, err := ec2Client.DescribeInstances(context.Background(), instanceinfo)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	if instanceinforesponse.Reservations[0].Instances[0].State.Name == "running" {
-	//		break
-	//	}
-	//}
 	if err != nil {
-		return err
+		log.Error("Error creating vm", "error", err)
 	}
 
 	// get the instance public ip
-	instanceip := &ec2.DescribeInstancesInput{
+	instanceipinput := &ec2.DescribeInstancesInput{
 		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
 	}
 
-	instance_ip, err := ec2Client.DescribeInstances(context.Background(), instanceip)
+	instance_ip, err := obj.client.DescribeInstanceState(context.Background(), ec2Client, instanceipinput)
 	if err != nil {
-		return err
+		log.Error("Error getting instance state", "error", err)
 	}
 
 	publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
