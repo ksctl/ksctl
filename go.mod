@@ -16,7 +16,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/rodaine/table v1.1.0
 	golang.org/x/crypto v0.15.0
-	golang.org/x/term v0.14.0
+	golang.org/x/term v0.15.0
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.13.2
 	k8s.io/api v0.28.4
@@ -154,7 +154,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
