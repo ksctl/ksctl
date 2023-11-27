@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"errors"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"os"
 	"strings"
 
 	"github.com/kubesimplify/ksctl/pkg/logger"
-	"github.com/kubesimplify/ksctl/pkg/utils"
 
 	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
 	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
@@ -18,9 +18,9 @@ import (
 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/controllers/kubernetes"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (
@@ -37,13 +37,13 @@ func validationFields(meta resources.Metadata) error {
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName("ksctl-manager")
 
-	if !utils.ValidateCloud(meta.Provider) {
+	if !helpers.ValidateCloud(meta.Provider) {
 		return errors.New("invalid cloud provider")
 	}
-	if !utils.ValidateDistro(meta.K8sDistro) {
+	if !helpers.ValidateDistro(meta.K8sDistro) {
 		return errors.New("invalid kubernetes distro")
 	}
-	if !utils.ValidateStorage(meta.StateLocation) {
+	if !helpers.ValidateStorage(meta.StateLocation) {
 		return errors.New("invalid storage driver")
 	}
 	log.Debug("Valid fields from user")
@@ -105,7 +105,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		fakeClient = true
 	}
 
-	if !utils.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
+	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
 		return log.NewError("invalid CNI plugin")
 	}
 
@@ -283,7 +283,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		fakeClient = true
 	}
 
-	if !utils.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
+	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
 		return log.NewError("invalid CNI plugin")
 	}
 

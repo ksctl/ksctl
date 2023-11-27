@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 
 	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
 )
@@ -48,7 +48,7 @@ func createDummyCivo(w http.ResponseWriter, r *http.Request) {
 	cli.Metadata.NoMP = 2
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
+	azManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)

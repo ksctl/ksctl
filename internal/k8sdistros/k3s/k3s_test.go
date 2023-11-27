@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	demoClient.Storage = localstate.InitStorage()
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
-	azHA := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg")
+	azHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg")
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	fmt.Println("Created tmp directories")
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
 		SSHState: cloudControlRes.SSHInfo{
-			PathPrivateKey: utils.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"),
+			PathPrivateKey: helpers.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"),
 			UserName:       "fakeuser",
 		},
 		Metadata: cloudControlRes.Metadata{
@@ -269,7 +269,7 @@ sudo ./worker-setup.sh
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -301,11 +301,11 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	checkCurrentStateFile(t)
 
-	_, err := utils.CreateSSHKeyPair(demoClient.Storage, log, consts.CloudAzure, k8sState.ClusterDir)
+	_, err := helpers.CreateSSHKeyPair(demoClient.Storage, log, consts.CloudAzure, k8sState.ClusterDir)
 	if err != nil {
 		t.Fatalf("Reason: %v", err)
 	}
-	t.Log(utils.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"))
+	t.Log(helpers.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"))
 
 	err = fakeClient.ConfigureLoadbalancer(demoClient.Storage)
 	if err != nil {
@@ -341,7 +341,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 		a, b, err := fakeClient.GetKubeConfig(demoClient.Storage)
 		assert.NilError(t, err, "get kubeconfig should be successful")
 
-		path := utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+		path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 		var raw []byte
 		raw, err = demoClient.Storage.Path(path).Load()

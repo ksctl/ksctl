@@ -3,8 +3,8 @@ package civo
 import (
 	"time"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // NewNetwork implements resources.CloudFactory.

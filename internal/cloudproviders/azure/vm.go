@@ -7,9 +7,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // Sequence
@@ -174,7 +174,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		return nil
 	}
 
-	sshPublicKeyPath := utils.GetPath(consts.UtilOtherPath, consts.CloudAzure, clusterType, clusterDirName, "keypair.pub")
+	sshPublicKeyPath := helpers.GetPath(consts.UtilOtherPath, consts.CloudAzure, clusterType, clusterDirName, "keypair.pub")
 	log.Debug("Printing", "sshKeyPath", sshPublicKeyPath)
 
 	var sshBytes []byte

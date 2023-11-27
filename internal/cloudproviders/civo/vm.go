@@ -6,7 +6,7 @@ import (
 	"github.com/civo/civogo"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
 
 func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int, creationMode bool, role consts.KsctlRole, name string) error {
