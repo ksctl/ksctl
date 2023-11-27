@@ -6,12 +6,12 @@ import (
 
 	"github.com/kubesimplify/ksctl/pkg/logger"
 
-	"github.com/kubesimplify/ksctl/pkg/utils"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type StateConfiguration struct {
@@ -87,18 +87,18 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 			Distro:      "kind",
 		}
 		var err error
-		err = storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName)).
+		err = storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName)).
 			Permission(0750).CreateDir()
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 
-		err = saveStateHelper(storage, utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
+		err = saveStateHelper(storage, helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 	case consts.OperationStateDelete, consts.OperationStateGet:
-		err := loadStateHelper(storage, utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
+		err := loadStateHelper(storage, helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -145,7 +145,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloudControlRes.AllClusterData
 
-	managedFolders, err := storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)).GetFolders()
+	managedFolders, err := storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)).GetFolders()
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	for _, folder := range managedFolders {
 
-		path := utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, folder[0], STATE_FILE)
+		path := helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, folder[0], STATE_FILE)
 		raw, err := storage.Path(path).Load()
 		if err != nil {
 			return nil, err

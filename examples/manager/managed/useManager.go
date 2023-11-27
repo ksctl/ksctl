@@ -4,8 +4,8 @@ import (
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func main() {

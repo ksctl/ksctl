@@ -7,10 +7,10 @@ import (
 	"runtime"
 
 	"github.com/civo/civogo"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -22,7 +22,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	}
 	log.Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := utils.GetCred(storage, log, consts.CloudCivo)
+	token, err := helpers.GetCred(storage, log, consts.CloudCivo)
 	if err != nil {
 		return ""
 	}
@@ -35,7 +35,7 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	log.SetPackageName(string(consts.CloudCivo))
 
 	log.Print("Enter CIVO TOKEN")
-	token, err := utils.UserInputCredentials(log)
+	token, err := helpers.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
@@ -50,14 +50,14 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	}
 	log.Print(id)
 
-	if err := utils.SaveCred(storage, log, Credential{token}, consts.CloudCivo); err != nil {
+	if err := helpers.SaveCred(storage, log, Credential{token}, consts.CloudCivo); err != nil {
 		return err
 	}
 	return nil
 }
 
 func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
-	p := utils.GetPath(flag, consts.CloudCivo, clusterType, path...)
+	p := helpers.GetPath(flag, consts.CloudCivo, clusterType, path...)
 	log.Debug("Printing", "path", p)
 	return p
 }
@@ -151,7 +151,7 @@ func validationOfArguments(obj *CivoProvider) error {
 		return err
 	}
 
-	if err := utils.IsValidName(obj.clusterName); err != nil {
+	if err := helpers.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 

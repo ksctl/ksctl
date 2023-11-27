@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type Instances struct {
@@ -42,7 +42,7 @@ type K3sDistro struct {
 	K3sVer string
 	Cni    string
 	// it will be used for SSH
-	SSHInfo utils.SSHCollection
+	SSHInfo helpers.SSHCollection
 }
 
 const (
@@ -57,7 +57,7 @@ func ReturnK3sStruct(meta resources.Metadata) *K3sDistro {
 	log.SetPackageName("k3s")
 
 	return &K3sDistro{
-		SSHInfo: &utils.SSHPayload{},
+		SSHInfo: &helpers.SSHPayload{},
 	}
 }
 
@@ -80,7 +80,7 @@ sudo cat /etc/rancher/k3s/k3s.yaml`
 // try to achieve deepCopy
 func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation consts.KsctlOperation) error {
 	// add the nil check here as well
-	path := utils.GetPath(consts.UtilClusterPath, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
+	path := helpers.GetPath(consts.UtilClusterPath, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
 
 	switch operation {
 	case consts.OperationStateCreate:

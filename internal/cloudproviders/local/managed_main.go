@@ -3,9 +3,9 @@ package local
 import (
 	"time"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 // DelManagedCluster implements resources.CloudFactory.
@@ -13,12 +13,12 @@ func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) 
 
 	cloud.client.NewProvider(log, storage, nil)
 
-	if err := cloud.client.Delete(cloud.ClusterName, utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, KUBECONFIG)); err != nil {
+	if err := cloud.client.Delete(cloud.ClusterName, helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, KUBECONFIG)); err != nil {
 		return log.NewError("failed to delete cluster %v", err)
 	}
 	printKubeconfig(storage, consts.OperationStateDelete, cloud.ClusterName)
 
-	if err := storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName)).DeleteDir(); err != nil {
+	if err := storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName)).DeleteDir(); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -67,5 +67,5 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 }
 
 func (obj *LocalProvider) GetKubeconfigPath() string {
-	return utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, obj.ClusterName, KUBECONFIG)
+	return helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, obj.ClusterName, KUBECONFIG)
 }

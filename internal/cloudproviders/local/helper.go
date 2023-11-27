@@ -6,9 +6,9 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
@@ -74,7 +74,7 @@ networking:
 }
 
 func isPresent(storage resources.StorageFactory, cluster string) bool {
-	_, err := storage.Path(utils.GetPath(consts.UtilOtherPath, consts.CloudLocal, consts.ClusterTypeMang, cluster, STATE_FILE)).Load()
+	_, err := storage.Path(helpers.GetPath(consts.UtilOtherPath, consts.CloudLocal, consts.ClusterTypeMang, cluster, STATE_FILE)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -85,7 +85,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 
 	var err error
 
-	kpath := utils.GetPath(consts.UtilOtherPath, consts.CloudLocal, consts.ClusterTypeMang, clusterName, KUBECONFIG)
+	kpath := helpers.GetPath(consts.UtilOtherPath, consts.CloudLocal, consts.ClusterTypeMang, clusterName, KUBECONFIG)
 
 	err = storage.Permission(0755).
 		Path(kpath).Save([]byte(""))
@@ -93,7 +93,7 @@ func createNecessaryConfigs(storage resources.StorageFactory, clusterName string
 		return "", log.NewError(err.Error())
 	}
 
-	err = saveStateHelper(storage, utils.GetPath(consts.UtilOtherPath, consts.CloudLocal, consts.ClusterTypeMang, clusterName, STATE_FILE))
+	err = saveStateHelper(storage, helpers.GetPath(consts.UtilOtherPath, consts.CloudLocal, consts.ClusterTypeMang, clusterName, STATE_FILE))
 	if err != nil {
 		return "", log.NewError(err.Error())
 	}
@@ -111,7 +111,7 @@ func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOpe
 
 		switch operation {
 		case consts.OperationStateCreate:
-			value = utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, clustername, KUBECONFIG)
+			value = helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, clustername, KUBECONFIG)
 
 		case consts.OperationStateDelete:
 			value = ""
@@ -124,7 +124,7 @@ func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOpe
 		switch operation {
 		case consts.OperationStateCreate:
 			key = "export KUBECONFIG"
-			value = utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, clustername, KUBECONFIG)
+			value = helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, clustername, KUBECONFIG)
 			box = key + "=" + fmt.Sprintf("\"%s\"", value)
 			log.Note("KUBECONFIG env var", key, value)
 

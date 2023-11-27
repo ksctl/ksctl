@@ -4,7 +4,7 @@ on:
     paths:
       - 'internal/cloudproviders/civo/**'
       - 'internal/storage/**'
-      - 'pkg/utils/**'
+      - 'pkg/helpers/**'
       - 'pkg/logger/**'
       - 'go.mod'
       - 'go.sum'
@@ -14,7 +14,7 @@ on:
     paths:
     - 'internal/cloudproviders/civo/**'
     - 'internal/storage/**'
-    - 'pkg/utils/**'
+    - 'pkg/helpers/**'
     - 'pkg/logger/**'
     - 'go.mod'
     - 'go.sum'
