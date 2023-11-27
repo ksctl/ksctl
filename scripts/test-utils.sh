@@ -6,7 +6,7 @@ echo "-----------------------------------"
 echo "|   Testing (pkg/helpers)"
 echo "-----------------------------------"
 
-cd utils/
+cd helpers/
 go test -fuzz=Fuzz -fuzztime 10s -v cloud_test.go fields.go
 go test -fuzz=Fuzz -fuzztime 10s -v cni_test.go fields.go
 go test -fuzz=Fuzz -fuzztime 10s -v name_test.go fields.go

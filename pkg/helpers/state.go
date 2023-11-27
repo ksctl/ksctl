@@ -1,4 +1,4 @@
-package utils
+package helpers
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
 
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
 
 var (

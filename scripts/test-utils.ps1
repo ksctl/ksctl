@@ -14,7 +14,7 @@ Write-Output "-----------------------------------"
 Write-Output "|   Testing (pkg/utils)"
 Write-Output "-----------------------------------"
 
-Set-Location utils
+Set-Location helpers
 go test -fuzz=Fuzz -fuzztime 10s -v cloud_test.go fields.go
 go test -fuzz=Fuzz -fuzztime 10s -v cni_test.go fields.go
 go test -fuzz=Fuzz -fuzztime 10s -v name_test.go fields.go

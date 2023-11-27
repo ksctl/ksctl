@@ -1,4 +1,4 @@
-package utils
+package helpers
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"golang.org/x/term"
 )
 

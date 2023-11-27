@@ -18,8 +18,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
 )
 
 func ProvideClient() AzureGo {
@@ -291,7 +291,7 @@ func (obj *AzureGoClient) setRequiredENV_VAR(storage resources.StorageFactory, c
 
 	log.Warn(msg)
 
-	tokens, err := utils.GetCred(storage, log, "azure")
+	tokens, err := helpers.GetCred(storage, log, "azure")
 	if err != nil {
 		return err
 	}

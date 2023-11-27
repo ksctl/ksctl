@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	testClient, _ = ReturnLocalStruct(demoClient.Metadata, ProvideMockClient)
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	localManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)
+	localManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(localManaged, 0755); err != nil {
 		panic(err)

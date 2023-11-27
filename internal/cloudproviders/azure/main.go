@@ -9,10 +9,10 @@ import (
 
 	"github.com/kubesimplify/ksctl/pkg/logger"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 type AzureStateVMs struct {
@@ -298,7 +298,7 @@ func ReturnAzureStruct(meta resources.Metadata, ClientOption func() AzureGo) (*A
 func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
 	cloud.mxName.Lock()
 
-	if err := utils.IsValidName(resName); err != nil {
+	if err := helpers.IsValidName(resName); err != nil {
 		log.Error(err.Error())
 		return nil
 	}
@@ -604,7 +604,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 }
 
 func isPresent(storage resources.StorageFactory) bool {
-	_, err := storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
+	_, err := storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
 	if os.IsNotExist(err) {
 		return false
 	}

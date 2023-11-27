@@ -4,9 +4,9 @@ import (
 	k3sPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/k3s"
 	kubeadmPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/kubeadm"
 	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var log resources.LoggerFactory

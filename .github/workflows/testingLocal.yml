@@ -5,7 +5,7 @@ on:
     - 'internal/cloudproviders/local/**'
     - 'internal/storage/**'
     - 'pkg/logger/**'
-    - 'pkg/utils/**'
+    - 'pkg/helpers/**'
     - 'go.mod'
     - 'go.sum'
     branches: [ main ]
@@ -15,7 +15,7 @@ on:
     - 'internal/cloudproviders/local/**'
     - 'internal/storage/**'
     - 'pkg/logger/**'
-    - 'pkg/utils/**'
+    - 'pkg/helpers/**'
     - 'go.mod'
     - 'go.sum'
 

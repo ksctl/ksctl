@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -39,8 +39,8 @@ func TestMain(m *testing.M) {
 
 	// setup temporary folder
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	civoHA := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa)
-	civoManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
+	civoHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa)
+	civoManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(civoManaged, 0755); err != nil {
 		panic(err)
@@ -73,7 +73,7 @@ func TestConsts(t *testing.T) {
 func TestGenPath(t *testing.T) {
 	assert.Equal(t,
 		generatePath(consts.UtilClusterPath, "abcd"),
-		utils.GetPath(consts.UtilClusterPath, "civo", "abcd"),
+		helpers.GetPath(consts.UtilClusterPath, "civo", "abcd"),
 		"genreatePath not compatable with utils.getpath()")
 }
 
@@ -404,7 +404,7 @@ func TestFirewallRules(t *testing.T) {
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -418,7 +418,7 @@ func checkCurrentStateFile(t *testing.T) {
 
 func checkCurrentStateFileHA(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -442,7 +442,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, clusterDirName, fakeClient.clusterName+" "+fakeClient.region, "clusterdir not equal")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -470,7 +470,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, civoCloudState.KubernetesVer, fakeClient.metadata.k8sVersion)
 		assert.Assert(t, len(civoCloudState.ManagedClusterID) > 0, "Managed clusterID not saved")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
 		if os.IsNotExist(err) {
 			t.Fatalf("kubeconfig should not be absent")
 		}
@@ -508,7 +508,7 @@ func TestManagedCluster(t *testing.T) {
 
 		assert.Equal(t, len(civoCloudState.NetworkIDs.NetworkID), 0, "network id still present")
 		// at this moment the file is not present
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory still present")
 		}
@@ -539,7 +539,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, clusterDirName, fakeClient.clusterName+" "+fakeClient.region, "clusterdir not equal")
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -559,7 +559,7 @@ func TestHACluster(t *testing.T) {
 
 		assert.Assert(t, len(civoCloudState.SSHID) > 0, "sshid must be present")
 		assert.Equal(t, civoCloudState.SSHUser, "root", "ssh user not set")
-		assert.Equal(t, civoCloudState.SSHPrivateKeyLoc, utils.GetPath(consts.UtilSSHPath, consts.CloudCivo, clusterType, clusterDirName), "ssh private key loc missing")
+		assert.Equal(t, civoCloudState.SSHPrivateKeyLoc, helpers.GetPath(consts.UtilSSHPath, consts.CloudCivo, clusterType, clusterDirName), "ssh private key loc missing")
 
 		assert.Equal(t, civoCloudState.IsCompleted, false, "cluster should not be completed")
 		checkCurrentStateFileHA(t)

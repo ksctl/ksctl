@@ -11,8 +11,8 @@ import (
 
 	azure_pkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
 	civo_pkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
+	. "github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (

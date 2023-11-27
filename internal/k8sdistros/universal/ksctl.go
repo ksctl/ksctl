@@ -11,7 +11,7 @@ import (
 	"github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
