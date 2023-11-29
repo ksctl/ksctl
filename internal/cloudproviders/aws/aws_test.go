@@ -3,13 +3,14 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"testing"
+
 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/utils"
 	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
-	"os"
-	"testing"
 )
 
 var (
