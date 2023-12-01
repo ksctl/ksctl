@@ -113,15 +113,15 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log r
 			ssh.KeyAlgoRSASHA256,
 		},
 		HostKeyCallback: ssh.HostKeyCallback(
-			func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				actualFingerprint := ssh.FingerprintSHA256(key)
-				keyType := key.Type()
+			func(hostname string, remote net.Addr, remoteSvrHostKey ssh.PublicKey) error {
+				gotFingerprint := ssh.FingerprintSHA256(remoteSvrHostKey)
+				keyType := remoteSvrHostKey.Type()
 				if keyType == ssh.KeyAlgoRSA {
-					expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
+					recvFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
 					if err != nil {
 						return err
 					}
-					if expectedFingerprint != actualFingerprint {
+					if recvFingerprint != gotFingerprint {
 						return log.NewError("mismatch of SSH fingerprint")
 					}
 					return nil
