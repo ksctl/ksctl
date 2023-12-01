@@ -93,7 +93,6 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log r
 	}
 	log.Debug("SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
-	// NOTE: when the fake environment variable is set //
 	if fake := os.Getenv(string(consts.KsctlFakeFlag)); len(fake) != 0 {
 		log.Debug("Exec Scripts for fake flag")
 		sshPayload.Output = ""
@@ -287,9 +286,11 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 	return signer, nil
 }
 
+// returnServerPublicKeys it uses the ssh-keygen and ssh-keyscan as OS deps
+// it uses this command -> ssh-keyscan -t rsa <remote_ssh_server_public_ipv4> | ssh-keygen -lf -
 func returnServerPublicKeys(publicIP string) (string, error) {
-	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP) // WARN: it requires the os to have these dependencies
-	c2 := exec.Command("ssh-keygen", "-lf", "-")             // WARN: it requires the os to have these dependencies
+	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
+	c2 := exec.Command("ssh-keygen", "-lf", "-")
 
 	r, w := io.Pipe()
 	c1.Stdout = w
