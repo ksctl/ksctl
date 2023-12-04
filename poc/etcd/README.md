@@ -53,9 +53,7 @@ save /etc/systemd/system/etcd.service
 
 // TODO: need to add for cssl thing https://github.com/etcd-io/etcd/tree/main/hack/tls-setup
 
-**etcd-1**
-Private: 192.168.1.2
-Ip: 74.220.19.167
+#### etcd-1
 
 ```bash
 cat <<EOF > /etc/systemd/system/etcd.service
@@ -64,32 +62,17 @@ cat <<EOF > /etc/systemd/system/etcd.service
 Description=etcd
 
 [Service]
-Environment="INTERNAL_IP=192.168.1.2"
-Environment="CLUSTER_NAME=infra0"
-Environment="NODE_1=192.168.1.2"
-Environment="NODE_2=192.168.1.3"
-Environment="NODE_3=192.168.1.4"
-Environment="NODE_NAME_1=infra0"
-Environment="NODE_NAME_2=infra1"
-Environment="NODE_NAME_3=infra2"
 
 ExecStart=/usr/local/bin/etcd \\
-  --name ${CLUSTER_NAME} \\
-  --initial-advertise-peer-urls https://${INTERNAL_IP}:2380 \
-  --listen-peer-urls https://${INTERNAL_IP}:2380 \\
-  --listen-client-urls https://${INTERNAL_IP}:2379,https://127.0.0.1:2379 \\
-  --advertise-client-urls https://${INTERNAL_IP}:2379 \\
+  --name infra0 \\
+  --initial-advertise-peer-urls http://192.168.1.6:2380 \
+  --listen-peer-urls http://192.168.1.6:2380 \\
+  --listen-client-urls http://192.168.1.6:2379,http://127.0.0.1:2379 \\
+  --advertise-client-urls http://192.168.1.6:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
-  --initial-cluster ${NODE_NAME_1}=https://${NODE_1}:2380,${NODE_NAME_2}=https://${NODE_2}:2380,${NODE_NAME_3}=https://${NODE_3}:2380 \\
+  --initial-cluster infra0=http://192.168.1.6:2380,infra1=http://192.168.1.7:2380,infra2=http://192.168.1.8:2380 \\
+  --log-outputs=/var/lib/etcd.log \\
   --initial-cluster-state new \\
-  --client-cert-auth \\
-  --trusted-ca-file=/path/to/ca-client.crt \\
-  --cert-file=/path/to/infra0-client.crt \\
-  --key-file=/path/to/infra0-client.key \\
-  --peer-client-cert-auth \\
-  --peer-trusted-ca-file=ca-peer.crt \\
-  --peer-cert-file=/path/to/infra0-peer.crt \\
-  --peer-key-file=/path/to/infra0-peer.key \\
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
@@ -103,9 +86,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable etcd
 ```
 
-**etcd-2**
-Private: 192.168.1.3
-Ip: 74.220.19.191
+#### etcd-2
 
 ```bash
 cat <<EOF > /etc/systemd/system/etcd.service
@@ -114,32 +95,16 @@ cat <<EOF > /etc/systemd/system/etcd.service
 Description=etcd
 
 [Service]
-Environment="INTERNAL_IP=192.168.1.3"
-Environment="CLUSTER_NAME=infra1"
-Environment="NODE_1=192.168.1.2"
-Environment="NODE_2=192.168.1.3"
-Environment="NODE_3=192.168.1.4"
-Environment="NODE_NAME_1=infra0"
-Environment="NODE_NAME_2=infra1"
-Environment="NODE_NAME_3=infra2"
-
 ExecStart=/usr/local/bin/etcd \\
-  --name ${CLUSTER_NAME} \\
-  --initial-advertise-peer-urls https://${INTERNAL_IP}:2380 \
-  --listen-peer-urls https://${INTERNAL_IP}:2380 \\
-  --listen-client-urls https://${INTERNAL_IP}:2379,https://127.0.0.1:2379 \\
-  --advertise-client-urls https://${INTERNAL_IP}:2379 \\
+  --name infra1 \\
+  --initial-advertise-peer-urls http://192.168.1.7:2380 \
+  --listen-peer-urls http://192.168.1.7:2380 \\
+  --listen-client-urls http://192.168.1.7:2379,http://127.0.0.1:2379 \\
+  --advertise-client-urls http://192.168.1.7:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
-  --initial-cluster ${NODE_NAME_1}=https://${NODE_1}:2380,${NODE_NAME_2}=https://${NODE_2}:2380,${NODE_NAME_3}=https://${NODE_3}:2380 \\
+  --initial-cluster infra0=http://192.168.1.6:2380,infra1=http://192.168.1.7:2380,infra2=http://192.168.1.8:2380 \\
+  --log-outputs=/var/lib/etcd.log \\
   --initial-cluster-state new \\
-  --client-cert-auth \\
-  --trusted-ca-file=/path/to/ca-client.crt \\
-  --cert-file=/path/to/infra0-client.crt \\
-  --key-file=/path/to/infra0-client.key \\
-  --peer-client-cert-auth \\
-  --peer-trusted-ca-file=ca-peer.crt \\
-  --peer-cert-file=/path/to/infra0-peer.crt \\
-  --peer-key-file=/path/to/infra0-peer.key \\
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
@@ -153,9 +118,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable etcd
 ```
 
-**etcd-3**
-Private: 192.168.1.4
-Ip: 74.220.21.81
+#### etcd-3
 
 ```bash
 cat <<EOF > /etc/systemd/system/etcd.service
@@ -164,32 +127,16 @@ cat <<EOF > /etc/systemd/system/etcd.service
 Description=etcd
 
 [Service]
-Environment="INTERNAL_IP=192.168.1.4"
-Environment="CLUSTER_NAME=infra2"
-Environment="NODE_1=192.168.1.2"
-Environment="NODE_2=192.168.1.3"
-Environment="NODE_3=192.168.1.4"
-Environment="NODE_NAME_1=infra0"
-Environment="NODE_NAME_2=infra1"
-Environment="NODE_NAME_3=infra2"
-
 ExecStart=/usr/local/bin/etcd \\
-  --name ${CLUSTER_NAME} \\
-  --initial-advertise-peer-urls https://${INTERNAL_IP}:2380 \
-  --listen-peer-urls https://${INTERNAL_IP}:2380 \\
-  --listen-client-urls https://${INTERNAL_IP}:2379,https://127.0.0.1:2379 \\
-  --advertise-client-urls https://${INTERNAL_IP}:2379 \\
+  --name infra2 \\
+  --initial-advertise-peer-urls http://192.168.1.8:2380 \
+  --listen-peer-urls http://192.168.1.8:2380 \\
+  --listen-client-urls http://192.168.1.8:2379,http://127.0.0.1:2379 \\
+  --advertise-client-urls http://192.168.1.8:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
-  --initial-cluster ${NODE_NAME_1}=https://${NODE_1}:2380,${NODE_NAME_2}=https://${NODE_2}:2380,${NODE_NAME_3}=https://${NODE_3}:2380 \\
+  --initial-cluster infra0=http://192.168.1.6:2380,infra1=http://192.168.1.7:2380,infra2=http://192.168.1.8:2380 \\
+  --log-outputs=/var/lib/etcd.log \\
   --initial-cluster-state new \\
-  --client-cert-auth \\
-  --trusted-ca-file=/path/to/ca-client.crt \\
-  --cert-file=/path/to/infra0-client.crt \\
-  --key-file=/path/to/infra0-client.key \\
-  --peer-client-cert-auth \\
-  --peer-trusted-ca-file=ca-peer.crt \\
-  --peer-cert-file=/path/to/infra0-peer.crt \\
-  --peer-key-file=/path/to/infra0-peer.key \\
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
@@ -214,23 +161,26 @@ sudo systemctl start etcd
 lets create 2 controlplane
 
 ```bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+curl -sfL https://get.k3s.io | sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--datastore-endpoint "https://etcd-host-1:2379,https://etcd-host-2:2379,https://etcd-host-3:2379" \
-	--tls-san <public ip of loadbalancer or controlplane>
+	--datastore-endpoint "http://192.168.1.6:2379,http://192.168.1.7:2379,http://192.168.1.8:2379" \
+	--tls-san "74.220.20.36"
 ```
 
 
 ```bash
-
-#!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
-    --token "from /var/lib/rancher/k3s/server/token" \
-    --datastore-endpoint="https://etcd-host-1:2379,https://etcd-host-2:2379,https://etcd-host-3:2379" \
-    --node-taint CriticalAddonsOnly=true:NoExecute \
-    --tls-san <public ip of loadbalancer or controlplane>
-EOF
+curl -sfL https://get.k3s.io | sh -s - server \
+    --token "K106750583e6a35a52ce92add7a0c9a9177250f8f39c49e8d6b5810f1d352a9adab::server:294adbf8a30918379c243a2567d5f3d0" \
+    --datastore-endpoint "http://192.168.1.6:2379,http://192.168.1.7:2379,http://192.168.1.8:2379" \
+    --tls-san "74.220.20.36"
 ```
 
 ### Create VMs for workerplane
 lets create 1 workerplane
+
+
+```bash
+# workload
+k3s kubectl run nginx --image=nginx
+kubectl expose pod nginx --port=80 --type=LoadBalancer --name=nginx-service
+```
