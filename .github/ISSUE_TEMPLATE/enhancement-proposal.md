@@ -13,4 +13,4 @@ assignees: ''
 
 ## Additional context
 
-Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl/docs/contributions)
+Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl-docs/docs/contribution-guidelines/)
