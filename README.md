@@ -57,7 +57,7 @@ Here are some of the specific features of ksctl:
 
 # Documentations
 
-Link to the [docs website](https://kubesimplify.github.io/ksctl/)
+Link to the [docs website](https://kubesimplify.github.io/ksctl-docs/)
 
 ## Getting Started Azure
 Connect ksctl cli to you [Azure](https://kubesimplify.github.io/ksctl/docs/providers/azure) account.
