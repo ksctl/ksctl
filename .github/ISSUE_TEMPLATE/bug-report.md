@@ -31,4 +31,4 @@ Add here
 
 # Additional context
 Add any other context about the problem here.
-Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl/docs/contributions)
+Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl-docs/docs/contribution-guidelines/)
