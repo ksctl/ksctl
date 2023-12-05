@@ -9,8 +9,7 @@
     <a href="https://kubesimplify.github.io/ksctl/docs/contributions">Contribute</a> |
     <a href="https://kubesimplify.github.io/ksctl/docs/roadmap">Roadmap</a><br/><br/>
 </h4>
-
-
+<br>
 <div align="center">
     <a href="https://pkg.go.dev/github.com/kubesimplify/ksctl"><img src="https://pkg.go.dev/badge/github.com/kubesimplify/ksctl.svg" alt="Go Reference"></a>
    <img src="https://img.shields.io/github/issues/kubesimplify/ksctl?style=for-the-badge" />
@@ -44,7 +43,7 @@ Many cloud providers offer their flavor of Kubernetes. Each provider has its uni
 
 # Purpose
 
-The ksctl project by kubesimplify is a Generic Kubernetes Management command-line tool that helps developers and administrators manage Kubernetes clusters running on different environment
+The ksctl project by kubesimplify is a Cloud Agnostic Kubernetes Management tool that helps developers and administrators manage Kubernetes clusters running on different environment
 
 It provides a simple and intuitive interface for performing common tasks such as creating, deleting, and managing Kubernetes resources. ksctl is designed to be easy to use, even for developers who are new to Kubernetes.
 
@@ -55,21 +54,12 @@ Here are some of the specific features of ksctl:
 - It is a powerful tool that can be used to perform a wide range of tasks.
 - It is currently under development, but it is already a valuable tool for developers who want to manage Kubernetes clusters.
 
-# Documentations
-
-Link to the [docs website](https://kubesimplify.github.io/ksctl-docs/)
-
-## Getting Started Azure
-Connect ksctl cli to you [Azure](https://kubesimplify.github.io/ksctl/docs/providers/azure) account.
-
-## Getting Started Civo
-Connect ksctl cli to your [Civo](https://kubesimplify.github.io/ksctl/docs/providers/civo) account. Watch the installation video here
-
-## Ksctl Repo's
-- [Ksctl Core](https://github.com/kubesimplify/ksctl)
-- [Ksctl CLI](https://github.com/kubesimplify/ksctl-cli)
-- [Ksctl Dashboard](https://github.com/kubesimplify/ksctl-dashboard)
-- [Ksctl Docs](https://github.com/kubesimplify/ksctl-docs)
+## Repositories
+Repo | Description
+-|-
+[Ksctl](https://github.com/kubesimplify/ksctl) | It provides the core components aka the internals of ksctl features
+[Ksctl CLI](https://github.com/kubesimplify/ksctl-cli) | It uses the ksctl repo to make a CLI tool
+[Ksctl Docs](https://github.com/kubesimplify/ksctl-docs) | It's for documentation purpose and to host the ksctl website
 
 # Prerequisites
 
@@ -87,14 +77,13 @@ Windows | :heavy_check_mark:
 
 # Getting Started guide
 
-[Getting Started guide](https://kubesimplify.github.io/ksctl/docs/category/getting-started)
+[Getting Started guide](https://kubesimplify.github.io/ksctl-docs/docs/getting-started/cli/)
 
 # Usage
 
-Please refer to the [CLI Reference guide](https://kubesimplify.github.io/ksctl/docs/cli/CLI%20command%20reference) also [Docs Website](https://kubesimplify.github.io/ksctl) to know how you can use ksctl
-
+Please refer to the [CLI Reference guide](https://kubesimplify.github.io/ksctl-docs/docs/reference/cli/)
 # Contribution Guidelines
-Please refer to our [contribution guide](CONTRIBUTING.md) if you wish to contribute to the project :smile:
+Please refer to our [contribution guide](https://kubesimplify.github.io/ksctl-docs/docs/contribution-guidelines/) if you wish to contribute to the project :smile:
 
 ## Thanks to all the contributors ❤️
 [Link to Contributors](https://github.com/kubesimplify/ksctl/graphs/contributors)
