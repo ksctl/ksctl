@@ -7,15 +7,16 @@ import (
 	"os"
 	"sync"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+
+	"github.com/kubesimplify/ksctl/pkg/logger"
+
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	cloud_control_res "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (
@@ -54,21 +55,21 @@ type AwsProvider struct {
 
 func (obj *AwsProvider) GetKubeconfigPath() string {
 
-	return utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	return helpers.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 }
 
 type AWSStateVms struct {
-	Names                 []string `json:"names"`
-	SecurityGroupName     string   `json:"network_security_group_name"`
-	SecurityGroupID       string   `json:"network_security_group_id"`
-	DiskNames             []string `json:"disk_name"`
-	PrivateIPs            []string `json:"private_ip"`
-	PublicIPs             []string `json:"public_ip"`
-	NetworkInterfaceNames []string `json:"network_interface_name"`
-	NetworkInterfaceIDs   []string `json:"network_interface_id"`
-	SubnetNames           []string `json:"subnet_name"`
-	SubnetIDs             []string `json:"subnet_id"`
-	NetworkSecurityGroup  string   `json:"network_security_group"`
+	Names []string `json:"names"`
+	//SecurityGroupName     string   `json:"network_security_group_name"`
+	//SecurityGroupID       string   `json:"network_security_group_id"`
+	DiskNames  []string `json:"disk_name"`
+	PrivateIPs []string `json:"private_ip"`
+	PublicIPs  []string `json:"public_ip"`
+	//NetworkInterfaceNames []string `json:"network_interface_name"`
+	NetworkInterfaceIDs  []string `json:"network_interface_id"`
+	SubnetNames          []string `json:"subnet_name"`
+	SubnetIDs            []string `json:"subnet_id"`
+	NetworkSecurityGroup string   `json:"network_security_group"`
 }
 
 var (
@@ -110,13 +111,13 @@ type StateConfiguration struct {
 	SubnetID           string `json:"subnet_id"`
 	NetworkAclID       string `json:"network_acl_id"`
 
-	SecurityGroupRole [4]string `json:"security_group_name"`
-	SecurityGroupID   [4]string `json:"security_group_id"`
+	//SecurityGroupRole [4]string `json:"security_group_name"`
+	//SecurityGroupID   [4]string `json:"security_group_id"`
 
-	GatewayRole    string `json:"gateway_role"`
-	GatewayID      string `json:"gateway_id"`
-	RouteTableName string `json:"route_table_name"`
-	RouteTableID   string `json:"route_table_id"`
+	//GatewayRole    string `json:"gateway_role"`
+	GatewayID string `json:"gateway_id"`
+	//RouteTableName string `json:"route_table_name"`
+	RouteTableID string `json:"route_table_id"`
 
 	SSHUser          string `json:"ssh_usr"`
 	SSHPrivateKeyLoc string `json:"ssh_private_key_location"`
@@ -184,7 +185,7 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 
 	obj.mxName.Lock()
 
-	if err := utils.IsValidName(resName); err != nil {
+	if err := helpers.IsValidName(resName); err != nil {
 		log.Error(err.Error())
 		return nil
 	}
@@ -204,7 +205,7 @@ func convertStateFromBytes(raw []byte) error {
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
 	fmt.Println(path)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
@@ -410,7 +411,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 			awsCloudState.InfoWorkerPlanes.PublicIPs = make([]string, no)
 			awsCloudState.InfoWorkerPlanes.PrivateIPs = make([]string, no)
 			awsCloudState.InfoWorkerPlanes.DiskNames = make([]string, no)
-			awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = make([]string, no)
+			//awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = make([]string, no)
 			awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = make([]string, no)
 			//awsCloudState.InfoWorkerPlanes.PublicIPNames = make([]string, no)
 			//awsCloudState.InfoWorkerPlanes.PublicIPIDs = make([]string, no)
@@ -426,7 +427,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 					awsCloudState.InfoWorkerPlanes.PublicIPs = append(awsCloudState.InfoWorkerPlanes.PublicIPs, "")
 					awsCloudState.InfoWorkerPlanes.PrivateIPs = append(awsCloudState.InfoWorkerPlanes.PrivateIPs, "")
 					awsCloudState.InfoWorkerPlanes.DiskNames = append(awsCloudState.InfoWorkerPlanes.DiskNames, "")
-					awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, "")
+					//awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames, "")
 					awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = append(awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs, "")
 					//awsCloudState.InfoWorkerPlanes.PublicIPNames = append(awsCloudState.InfoWorkerPlanes.PublicIPNames, "")
 					//awsCloudState.InfoWorkerPlanes.PublicIPIDs = append(awsCloudState.InfoWorkerPlanes.PublicIPIDs, "")
@@ -438,7 +439,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 				awsCloudState.InfoWorkerPlanes.PublicIPs = awsCloudState.InfoWorkerPlanes.PublicIPs[:newLen]
 				awsCloudState.InfoWorkerPlanes.PrivateIPs = awsCloudState.InfoWorkerPlanes.PrivateIPs[:newLen]
 				awsCloudState.InfoWorkerPlanes.DiskNames = awsCloudState.InfoWorkerPlanes.DiskNames[:newLen]
-				awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[:newLen]
+				//awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames = awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[:newLen]
 				awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs = awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[:newLen]
 				//awsCloudState.InfoWorkerPlanes.PublicIPNames = awsCloudState.InfoWorkerPlanes.PublicIPNames[:newLen]
 				//awsCloudState.InfoWorkerPlanes.PublicIPIDs = awsCloudState.InfoWorkerPlanes.PublicIPIDs[:newLen]
@@ -487,7 +488,7 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			awsCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
 			awsCloudState.InfoControlPlanes.PrivateIPs = make([]string, no)
 			awsCloudState.InfoControlPlanes.DiskNames = make([]string, no)
-			awsCloudState.InfoControlPlanes.NetworkInterfaceNames = make([]string, no)
+			//awsCloudState.InfoControlPlanes.NetworkInterfaceNames = make([]string, no)
 			awsCloudState.InfoControlPlanes.NetworkInterfaceIDs = make([]string, no)
 			//awsCloudState.InfoControlPlanes.PublicIPs = make([]string, no)
 			//awsCloudState.InfoControlPlanes.PublicIPIDs = make([]string, no)
@@ -530,7 +531,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			awsCloudState.InfoDatabase.PublicIPs = make([]string, no)
 			awsCloudState.InfoDatabase.PrivateIPs = make([]string, no)
 			awsCloudState.InfoDatabase.DiskNames = make([]string, no)
-			awsCloudState.InfoDatabase.NetworkInterfaceNames = make([]string, no)
+			//awsCloudState.InfoDatabase.NetworkInterfaceNames = make([]string, no)
 			awsCloudState.InfoDatabase.NetworkInterfaceIDs = make([]string, no)
 			//awsCloudState.InfoDatabase.PublicIPNames = make([]string, no)
 			//awsCloudState.InfoDatabase.PublicIPIDs = make([]string, no)
@@ -564,13 +565,13 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 	log.Print("Printing", "cloudstate", cloudstate)
 
 	// now create a file cloud-state.json in .ksctl/cluster/aws/clusterName
-	_, err = os.Create(utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME))
+	_, err = os.Create(helpers.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME))
 	if err != nil {
 		return "", err
 	}
 	//now write the cloudstate in the file
 
-	os.WriteFile(utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME), cloudstate, FILE_PERM_CLUSTER_STATE)
+	os.WriteFile(helpers.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME), cloudstate, FILE_PERM_CLUSTER_STATE)
 	return string(cloudstate), nil
 }
 

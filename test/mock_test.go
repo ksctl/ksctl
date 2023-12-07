@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
 
 func BenchmarkCivoTestingManaged(b *testing.B) {

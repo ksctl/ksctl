@@ -3,13 +3,16 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
+
+	// "github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
-	return utils.GetPath(flag, consts.CloudAws, clusterType, path...)
+	return helpers.GetPath(flag, consts.CloudAws, clusterType, path...)
 }
 
 func convertStateToBytes(state StateConfiguration) ([]byte, error) {
@@ -17,7 +20,7 @@ func convertStateToBytes(state StateConfiguration) ([]byte, error) {
 }
 
 func saveStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAws, clusterType, clusterDirName, STATE_FILE_NAME)
 	rawState, err := convertStateToBytes(*awsCloudState)
 	if err != nil {
 		return err
@@ -32,7 +35,7 @@ func validationOfArguments(obj *AwsProvider) error {
 		return err
 	}
 
-	if err := utils.IsValidName(obj.clusterName); err != nil {
+	if err := helpers.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 
@@ -58,8 +61,6 @@ func isValidRegion(obj *AwsProvider, reg string) error {
 // so will check if the string is in the consts
 
 func isValidVMSize(obj *AwsProvider, size string) error {
-	fmt.Println(size)
-	fmt.Println("......................................................")
 	validSize, err := obj.client.ListVMTypes(obj.ec2Client())
 	if err != nil {
 		return err

@@ -11,10 +11,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"gotest.tools/assert"
 )
 
@@ -38,8 +38,8 @@ func TestMain(m *testing.M) {
 
 	demoClient.Storage = localstate.InitStorage()
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azHA := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa)
-	azManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang)
+	azHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa)
+	azManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -117,7 +117,7 @@ func TestConsts(t *testing.T) {
 func TestGenPath(t *testing.T) {
 	assert.Equal(t,
 		generatePath(consts.UtilClusterPath, "abcd"),
-		utils.GetPath(consts.UtilClusterPath, "azure", "abcd"),
+		helpers.GetPath(consts.UtilClusterPath, "azure", "abcd"),
 		"genreatePath not compatable with utils.getpath()")
 }
 
@@ -476,7 +476,7 @@ func TestFirewallRules(t *testing.T) {
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -490,7 +490,7 @@ func checkCurrentStateFile(t *testing.T) {
 
 func checkCurrentStateFileHA(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
+	raw, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
@@ -514,7 +514,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -537,7 +537,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, azureCloudState.KubernetesVer, fakeAzure.metadata.k8sVersion)
 		assert.Assert(t, len(azureCloudState.ManagedClusterName) > 0, "Managed cluster Name not saved")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang, clusterDirName, KUBECONFIG_FILE_NAME)).Load()
 		if os.IsNotExist(err) {
 			t.Fatalf("kubeconfig should not be absent")
 		}
@@ -573,7 +573,7 @@ func TestManagedCluster(t *testing.T) {
 
 		assert.Equal(t, len(azureCloudState.ResourceGroupName), 0, "resource grp still present")
 		// at this moment the file is not present
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory still present")
 		}
@@ -603,7 +603,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, clusterDirName, fakeAzure.clusterName+" "+fakeAzure.resourceGroup+" "+fakeAzure.region, "clusterdir not equal")
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 
-		_, err := demoClient.Storage.Path(utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
+		_, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa, clusterDirName, STATE_FILE_NAME)).Load()
 		if os.IsExist(err) {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
@@ -630,7 +630,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, azureCloudState.SSHKeyName, fakeAzure.metadata.resName, "sshid must be present")
 
 		assert.Equal(t, azureCloudState.SSHUser, "azureuser", "ssh user not set")
-		assert.Equal(t, azureCloudState.SSHPrivateKeyLoc, utils.GetPath(consts.UtilSSHPath, consts.CloudAzure, clusterType, clusterDirName), "ssh private key loc missing")
+		assert.Equal(t, azureCloudState.SSHPrivateKeyLoc, helpers.GetPath(consts.UtilSSHPath, consts.CloudAzure, clusterType, clusterDirName), "ssh private key loc missing")
 
 		assert.Equal(t, azureCloudState.IsCompleted, false, "cluster should not be completed")
 		checkCurrentStateFileHA(t)

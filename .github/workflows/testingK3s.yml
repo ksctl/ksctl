@@ -5,7 +5,7 @@ on:
     - 'internal/k8sdistros/k3s/**'
     - 'internal/storage/**'
     - 'pkg/logger/**'
-    - 'pkg/utils/**'
+    - 'pkg/helpers/**'
     - 'go.mod'
     - 'go.sum'
     branches: [ main ]
@@ -14,7 +14,7 @@ on:
     - 'internal/k8sdistros/k3s/**'
     - 'internal/storage/**'
     - 'pkg/logger/**'
-    - 'pkg/utils/**'
+    - 'pkg/helpers/**'
     - 'go.mod'
     - 'go.sum'
 

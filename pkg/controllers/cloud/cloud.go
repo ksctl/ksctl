@@ -9,9 +9,9 @@ import (
 	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
 	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	localPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/local"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var log resources.LoggerFactory

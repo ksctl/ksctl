@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
@@ -16,25 +16,25 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	log.SetPackageName(string(consts.CloudAws))
 
 	log.Print("Enter your SUBSCRIPTION ID")
-	skey, err := utils.UserInputCredentials(log)
+	skey, err := helpers.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
 	log.Print("Enter your TENANT ID")
-	tid, err := utils.UserInputCredentials(log)
+	tid, err := helpers.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
 	log.Print("Enter your CLIENT ID")
-	cid, err := utils.UserInputCredentials(log)
+	cid, err := helpers.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
 
 	log.Print("Enter your CLIENT SECRET")
-	cs, err := utils.UserInputCredentials(log)
+	cs, err := helpers.UserInputCredentials(log)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	//}
 	// ADD SOME PING method to validate credentials
 
-	if err := utils.SaveCred(storage, log, apiStore, consts.CloudAzure); err != nil {
+	if err := helpers.SaveCred(storage, log, apiStore, consts.CloudAzure); err != nil {
 		return err
 	}
 
@@ -72,11 +72,11 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 }
 
 func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
-	return utils.GetPath(flag, consts.CloudAzure, clusterType, path...)
+	return helpers.GetPath(flag, consts.CloudAzure, clusterType, path...)
 }
 
 func saveStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
 	rawState, err := convertStateToBytes(*azureCloudState)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func saveStateHelper(storage resources.StorageFactory) error {
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
+	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
 	raw, err := storage.Path(path).Load()
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func loadStateHelper(storage resources.StorageFactory) error {
 
 func saveKubeconfigHelper(storage resources.StorageFactory, kubeconfig string) error {
 	rawState := []byte(kubeconfig)
-	path := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
+	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 
 	log.Debug("Printing", "path", path, "kubeconfig", kubeconfig)
 
@@ -162,7 +162,7 @@ func validationOfArguments(obj *AzureProvider) error {
 		return err
 	}
 
-	if err := utils.IsValidName(obj.clusterName); err != nil {
+	if err := helpers.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 

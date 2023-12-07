@@ -3,16 +3,16 @@
 cd ../pkg/ || exit 1
 
 echo "-----------------------------------"
-echo "|   Testing (pkg/utils)"
+echo "|   Testing (pkg/helpers)"
 echo "-----------------------------------"
 
-cd utils/
-go test -fuzz=Fuzz -fuzztime 10s -v cloud_test.go main.go
-go test -fuzz=Fuzz -fuzztime 10s -v cni_test.go main.go
-go test -fuzz=Fuzz -fuzztime 10s -v name_test.go main.go
-go test -fuzz=Fuzz -fuzztime 10s -v storage_test.go main.go
-go test -fuzz=Fuzz -fuzztime 10s -v distro_test.go main.go
-go test utils_test.go main.go -v && cd -
+cd helpers/
+go test -fuzz=Fuzz -fuzztime 10s -v cloud_test.go fields.go
+go test -fuzz=Fuzz -fuzztime 10s -v cni_test.go fields.go
+go test -fuzz=Fuzz -fuzztime 10s -v name_test.go fields.go
+go test -fuzz=Fuzz -fuzztime 10s -v storage_test.go fields.go
+go test -fuzz=Fuzz -fuzztime 10s -v distro_test.go fields.go
+go test . -v && cd -
 
 echo "-----------------------------------"
 echo "|   Testing (pkg/logger)"

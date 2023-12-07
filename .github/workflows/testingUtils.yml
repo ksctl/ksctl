@@ -2,13 +2,13 @@ name: Regression Test Utils
 on:
   push:
     paths:
-      - 'pkg/utils/**'
+      - 'pkg/helpers/**'
       - 'go.mod'
       - 'go.sum'
     branches: [ main ]
   pull_request:
     paths:
-      - 'pkg/utils/**'
+      - 'pkg/helpers/**'
       - 'go.mod'
       - 'go.sum'
 

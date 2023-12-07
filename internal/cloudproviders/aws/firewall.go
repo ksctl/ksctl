@@ -3,18 +3,19 @@ package aws
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
+
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
 
 func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 
-	// name := obj.metadata.resName
 	role := obj.metadata.role
 	obj.mxRole.Unlock()
 	obj.mxName.Unlock()
@@ -103,11 +104,6 @@ func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
 }
 
 func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, error) {
-	//SecurityGroup, err := obj.ec2Client().CreateSecurityGroup(context.Background(), &ec2.CreateSecurityGroupInput{
-	//	GroupName:   aws.String(string(Role + "securitygroup")),
-	//	Description: aws.String(obj.clusterName + "securitygroup"),
-	//	VpcId:       aws.String(awsCloudState.VPCID),
-	//})
 
 	SecurityGroupInput := ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(string(Role + "securitygroup")),
@@ -126,19 +122,9 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 
 		func() {
 			ingressrules := ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId: SecurityGroup.GroupId,
-				IpPermissions: []types.IpPermission{
-					{
-						FromPort: aws.Int32(0),
-						ToPort:   aws.Int32(65535),
-						IpRanges: []types.IpRange{
-							{
-								CidrIp: aws.String("0.0.0.0/0"),
-							},
-						},
-					},
-				},
-				CidrIp: aws.String("0.0.0.0/0"),
+				GroupId:    SecurityGroup.GroupId,
+				IpProtocol: aws.String("-1"),
+				CidrIp:     aws.String("0.0.0.0/0"),
 			}
 
 			obj.client.AuthorizeSecurityGroupIngress(context.Background(), obj.ec2Client(), ingressrules)
@@ -147,16 +133,11 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 				GroupId: SecurityGroup.GroupId,
 				IpPermissions: []types.IpPermission{
 					{
-						FromPort: aws.Int32(0),
-						ToPort:   aws.Int32(65535),
-						IpRanges: []types.IpRange{
-							{
-								CidrIp: aws.String("0.0.0.0/0"),
-							},
-						},
+						IpProtocol: aws.String("-1"),
+						FromPort:   aws.Int32(0),
+						ToPort:     aws.Int32(65535),
 					},
 				},
-				CidrIp: aws.String("0.0.0.0/0"),
 			}
 
 			obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules)
@@ -176,16 +157,11 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 				GroupId: SecurityGroup.GroupId,
 				IpPermissions: []types.IpPermission{
 					{
-						FromPort: aws.Int32(0),
-						ToPort:   aws.Int32(65535),
-						IpRanges: []types.IpRange{
-							{
-								CidrIp: aws.String("0.0.0.0/0"),
-							},
-						},
+						IpProtocol: aws.String("-1"),
+						FromPort:   aws.Int32(0),
+						ToPort:     aws.Int32(65535),
 					},
 				},
-				CidrIp: aws.String("0.0.0.0/0"),
 			}
 
 			obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules)
@@ -206,16 +182,11 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 				GroupId: SecurityGroup.GroupId,
 				IpPermissions: []types.IpPermission{
 					{
-						FromPort: aws.Int32(0),
-						ToPort:   aws.Int32(65535),
-						IpRanges: []types.IpRange{
-							{
-								CidrIp: aws.String("0.0.0.0/0"),
-							},
-						},
+						IpProtocol: aws.String("-1"),
+						FromPort:   aws.Int32(0),
+						ToPort:     aws.Int32(65535),
 					},
 				},
-				CidrIp: aws.String("0.0.0.0/0"),
 			}
 
 			obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules)
@@ -226,43 +197,9 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 		func() {
 
 			ingressrules := &ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId: SecurityGroup.GroupId,
-				IpPermissions: []types.IpPermission{
-					{
-						FromPort:   aws.Int32(80),
-						ToPort:     aws.Int32(80),
-						IpProtocol: aws.String("tcp"),
-					},
-					{
-						FromPort:   aws.Int32(443),
-						ToPort:     aws.Int32(443),
-						IpProtocol: aws.String("tcp"),
-					},
-					{
-						FromPort:   aws.Int32(6443),
-						ToPort:     aws.Int32(6443),
-						IpProtocol: aws.String("tcp"),
-					},
-					{
-						FromPort: aws.Int32(22),
-						ToPort:   aws.Int32(22),
-						IpRanges: []types.IpRange{
-							{
-								CidrIp: aws.String("0.0.0.0/0"),
-							},
-						},
-					},
-					{
-						FromPort: aws.Int32(0),
-						ToPort:   aws.Int32(65535),
-						IpRanges: []types.IpRange{
-							{
-								CidrIp: aws.String("0.0.0.0/0"),
-							},
-						},
-					},
-				},
-				CidrIp: aws.String("0.0.0.0/0"),
+				GroupId:    SecurityGroup.GroupId,
+				IpProtocol: aws.String("-1"),
+				CidrIp:     aws.String("0.0.0.0/0"),
 			}
 
 			err := obj.client.AuthorizeSecurityGroupIngress(context.Background(), obj.ec2Client(), *ingressrules)
@@ -274,31 +211,11 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 				GroupId: SecurityGroup.GroupId,
 				IpPermissions: []types.IpPermission{
 					{
-						FromPort:   aws.Int32(80),
-						ToPort:     aws.Int32(80),
-						IpProtocol: aws.String("tcp"),
-					},
-					{
-						FromPort:   aws.Int32(443),
-						ToPort:     aws.Int32(443),
-						IpProtocol: aws.String("tcp"),
-					},
-					{
-						FromPort:   aws.Int32(6443),
-						ToPort:     aws.Int32(6443),
-						IpProtocol: aws.String("tcp"),
-					},
-					{
-						FromPort: aws.Int32(22),
-						ToPort:   aws.Int32(22),
-						IpRanges: []types.IpRange{
-							{
-								CidrIp: aws.String("0.0.0.0/0"),
-							},
-						},
+						IpProtocol: aws.String("-1"),
+						FromPort:   aws.Int32(0),
+						ToPort:     aws.Int32(65535),
 					},
 				},
-				CidrIp: aws.String("0.0.0.0/0"),
 			}
 
 			err = obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), *egressrules)
@@ -315,65 +232,3 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 
 	return *SecurityGroup.GroupId, nil
 }
-
-//// TODO ADD FIREWALL RULES
-//func firewallRuleControlPlane(client *ec2.Client, GroupId string) {
-//
-//	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//
-//	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//
-//}
-//func firewallRuleWorkerPlane(client *ec2.Client, GroupId string) {
-//
-//	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//
-//	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//}
-//
-//func firewallRuleDataStore(client *ec2.Client, GroupId string) {
-//
-//	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//
-//	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//}
-//
-//func firewallRuleLoadBalancer(client *ec2.Client, GroupId string) {
-//
-//	client.AuthorizeSecurityGroupIngress(context.Background(), &ec2.AuthorizeSecurityGroupIngressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//
-//	client.AuthorizeSecurityGroupEgress(context.Background(), &ec2.AuthorizeSecurityGroupEgressInput{
-//		GroupId:    &GroupId,
-//		IpProtocol: aws.String("-1"),
-//		CidrIp:     aws.String("0.0.0.0/0"),
-//	})
-//
-//}

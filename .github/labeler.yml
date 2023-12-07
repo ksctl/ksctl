@@ -1,6 +1,6 @@
 'area/internal':
 - any: ['pkg/**', 'pkg/*']
-  all: ['!pkg/utils/**','!pkg/controllers/**','!pkg/resources/**']
+  all: ['!pkg/helpers/**','!pkg/controllers/**','!pkg/resources/**']
 
 'cloud/azure':
 - 'internal/cloudproviders/azure/*'
@@ -43,7 +43,7 @@
 - '.github/**/*'
 
 'area/pkg':
-- 'pkg/utils/*'
+- 'pkg/helpers/*'
 - 'pkg/controllers/*'
 - 'pkg/controllers/**/*'
 - 'pkg/resources/**'

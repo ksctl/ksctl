@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
@@ -41,7 +41,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	log.Debug("Printing", "k3sToken", k8sState.K3sToken)
 
-	path := utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+	path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 	err = saveStateHelper(storage, path)
 	if err != nil {
 		return log.NewError(err.Error())
@@ -73,7 +73,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		if err != nil {
 			return log.NewError(err.Error())
 		}
-		path := utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
+		path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
 		err = saveStateHelper(storage, path)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -95,7 +95,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 
 			log.Debug("Printing", "kubeconfig", kubeconfig)
 			// modify
-			path = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			path = helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 			err = saveKubeconfigHelper(storage, path, kubeconfig)
 			if err != nil {
 				return log.NewError(err.Error())
@@ -188,7 +188,7 @@ func (k3s *K3sDistro) GetKubeConfig(storage resources.StorageFactory) (path stri
 		return "", "", log.NewError("status is not correct")
 	}
 
-	path = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+	path = helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 	var raw []byte
 	raw, err = storage.Path(path).Load()

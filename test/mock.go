@@ -5,10 +5,10 @@ import (
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 var (
@@ -56,7 +56,7 @@ func AzureTestingManaged() error {
 	cli.Metadata.K8sVersion = "1.27"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang)
+	azManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -74,7 +74,7 @@ func CivoTestingManaged() error {
 	cli.Metadata.NoMP = 2
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
+	azManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(azManaged, 0755); err != nil {
 		panic(err)
@@ -90,7 +90,7 @@ func LocalTestingManaged() error {
 	cli.Metadata.NoMP = 5
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	localManaged := utils.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)
+	localManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)
 
 	if err := os.MkdirAll(localManaged, 0755); err != nil {
 		panic(err)
@@ -118,7 +118,7 @@ func CivoTestingHA() error {
 	cli.Metadata.K8sVersion = "1.27.4"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azHA := utils.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa)
+	azHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
@@ -154,7 +154,7 @@ func AzureTestingHA() error {
 	cli.Metadata.K8sVersion = "1.27.4"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azHA := utils.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa)
+	azHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa)
 
 	if err := os.MkdirAll(azHA, 0755); err != nil {
 		panic(err)
@@ -190,7 +190,7 @@ func AwsTestingHA() error {
 	cli.Metadata.K8sVersion = "1.27.4"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	awsHA := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, consts.ClusterTypeHa)
+	awsHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudAws, consts.ClusterTypeHa)
 
 	if err := os.MkdirAll(awsHA, 0755); err != nil {
 		panic(err)

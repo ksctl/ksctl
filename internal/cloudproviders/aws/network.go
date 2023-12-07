@@ -174,9 +174,6 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 			},
 		},
 		AvailabilityZone: aws.String("ap-south-1a"),
-
-		// TODO: Add the following parameters
-		// AvailabilityZoneId: aws.String(obj.AvailabilityZoneID),
 	}
 	response, err := obj.client.BeginCreateSubNet(ctx, subnetName, client, parameter)
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elb_types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
 
 func (obj *AwsProvider) ec2Client() *ec2.Client {
@@ -542,15 +542,15 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage reso
 		switch role {
 		case consts.RoleWp:
 			awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index] = ""
-			awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = ""
+			//awsCloudState.InfoWorkerPlanes.NetworkInterfaceNames[index] = ""
 		case consts.RoleCp:
 			awsCloudState.InfoControlPlanes.NetworkInterfaceIDs[index] = ""
-			awsCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = ""
+			//awsCloudState.InfoControlPlanes.NetworkInterfaceNames[index] = ""
 		case consts.RoleLb:
 			awsCloudState.InfoLoadBalancer.NetworkInterfaceName = ""
 		case consts.RoleDs:
 			awsCloudState.InfoDatabase.NetworkInterfaceIDs[index] = ""
-			awsCloudState.InfoDatabase.NetworkInterfaceNames[index] = ""
+			//awsCloudState.InfoDatabase.NetworkInterfaceNames[index] = ""
 		default:
 			return fmt.Errorf("invalid role %s", role)
 		}

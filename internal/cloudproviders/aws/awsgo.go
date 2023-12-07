@@ -84,11 +84,7 @@ type AwsGoClient struct {
 
 func (*AwsGoClient) AuthorizeSecurityGroupIngress(ctx context.Context, ec2Client *ec2.Client, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
 
-	_, err := ec2Client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId:    parameter.GroupId,
-		IpProtocol: parameter.IpProtocol,
-		CidrIp:     parameter.CidrIp,
-	})
+	_, err := ec2Client.AuthorizeSecurityGroupIngress(ctx, &parameter)
 	if err != nil {
 		log.Error("Error Authorizing Security Group Ingress", "error", err)
 	}
@@ -404,11 +400,7 @@ func (*AwsGoClient) DescribeInstanceState(ctx context.Context, ec2Client *ec2.Cl
 
 func (*AwsGoClient) AuthorizeSecurityGroupEgress(ctx context.Context, ec2Client *ec2.Client, parameter ec2.AuthorizeSecurityGroupEgressInput) error {
 
-	_, err := ec2Client.AuthorizeSecurityGroupEgress(ctx, &ec2.AuthorizeSecurityGroupEgressInput{
-		GroupId:    parameter.GroupId,
-		IpProtocol: parameter.IpProtocol,
-		//CidrIp:     parameter.CidrIp,
-	})
+	_, err := ec2Client.AuthorizeSecurityGroupEgress(ctx, &parameter)
 	if err != nil {
 		log.Error("Error Authorizing Security Group Egress", "error", err)
 	}

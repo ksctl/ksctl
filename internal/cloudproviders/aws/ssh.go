@@ -6,9 +6,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	. "github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
@@ -21,7 +21,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 		return nil
 	}
 
-	keyPairToUpload, err := utils.CreateSSHKeyPair(storage, log, CloudAws, clusterDirName)
+	keyPairToUpload, err := helpers.CreateSSHKeyPair(storage, log, consts.CloudAws, clusterDirName)
 	if err != nil {
 		log.Print("Error creating ssh key pair", "error", err)
 	}
@@ -48,7 +48,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 
 	awsCloudState.SSHKeyName = name
 	awsCloudState.SSHUser = "ubuntu"
-	awsCloudState.SSHPrivateKeyLoc = utils.GetPath(UtilSSHPath, CloudAws, clusterType, clusterDirName)
+	awsCloudState.SSHPrivateKeyLoc = helpers.GetPath(consts.UtilSSHPath, consts.CloudAws, clusterType, clusterDirName)
 
 	if err := saveStateHelper(storage); err != nil {
 		return err

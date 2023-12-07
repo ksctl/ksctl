@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/utils"
-	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 )
 
 func saveStateHelper(storage resources.StorageFactory, path string) error {
@@ -61,7 +61,7 @@ func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOpe
 
 		switch operation {
 		case consts.OperationStateCreate:
-			value = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			value = helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 
 		case consts.OperationStateDelete:
 			value = ""
@@ -74,7 +74,7 @@ func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOpe
 		switch operation {
 		case consts.OperationStateCreate:
 			key = "export KUBECONFIG"
-			value = utils.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
+			value = helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
 			box = key + "=" + fmt.Sprintf("\"%s\"", value)
 			log.Note("KUBECONFIG env var", key, value)
 
