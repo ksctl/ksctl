@@ -20,21 +20,14 @@ type Options struct {
 	Password string
 }
 
-type StorageConfiguration struct {
-	ClusterType string `json:"clustertype" bson:"clustertype" `
-	Region      string `json:"region" bson:"region"`
-	ClusterName string `json:"clustername" bson:"clustername"`
-	OtherInfo   string `json:"more" bson:"more"`
-}
-
 type ConfigurationStore interface {
 	ListDatabases() ([]string, error)
 
 	Disconnect() error
 
-	Write(cloud string, data StorageConfiguration) error
+	Write(cloud string, data StorageDocument) error
 
-	ReadOne(cloud, region, clustername, clusterType string) (*StorageConfiguration, error)
+	ReadOne(cloud, region, clustername, clusterType string) (StorageDocument, error)
 
 	DeleteOne(cloud, region, clustername, clusterType string) error
 
@@ -42,7 +35,7 @@ type ConfigurationStore interface {
 
 	IsPresent(cloud, region, clustername, clusterType string) bool
 
-	GetAllClusters(cloud string, filters bson.M) ([]StorageConfiguration, error)
+	GetAllClusters(cloud string, filters bson.M) ([]StorageDocument, error)
 
 	DeleteAllInCloud(cloud string) error
 }

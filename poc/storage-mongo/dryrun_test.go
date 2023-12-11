@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/kubesimplify/ksctl/pkg/utils/consts"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -12,7 +14,8 @@ var storage ConfigurationStore
 
 func TestMain(m *testing.M) {
 
-	_ = os.Setenv("MONGODB_HOSTNAME", "cluster0.fufupwy.mongodb.net")
+	fmt.Println("Init")
+	_ = os.Setenv("MONGODB_HOSTNAME", "cluster0.hlhdunk.mongodb.net")
 	_ = os.Setenv("MONGODB_USER", "dipankar")
 	_ = os.Setenv("MONGODB_PASSWORD", "1234")
 
@@ -55,29 +58,36 @@ func TestListDatabases(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
+	state := StorageDocument{ClusterType: "managed", Region: "eastus", ClusterName: "demo"}
+	state.CloudInfra.Civo = &CivoState{}
 
-	if err := storage.Write("civo", StorageConfiguration{ClusterType: "managed", Region: "eastus", ClusterName: "demo", OtherInfo: "nice"}); err != nil {
+	if err := storage.Write("civo", state); err != nil {
 		t.Fatalf("Unable to write: %v", err)
 	}
 
-	if err := storage.Write("civo", StorageConfiguration{ClusterType: "ha", Region: "eastus1", ClusterName: "demo", OtherInfo: "nice"}); err != nil {
+	state.ClusterType = "ha"
+	state.Region = "eastus1"
+	if err := storage.Write("civo", state); err != nil {
 		t.Fatalf("Unable to write: %v", err)
 	}
 
-	if err := storage.Write("civo", StorageConfiguration{ClusterType: "managed", Region: "westus", ClusterName: "demo1", OtherInfo: "nice"}); err != nil {
+	state.ClusterType = "managed"
+	state.Region = "westus"
+	state.ClusterName = "demo1"
+	if err := storage.Write("civo", StorageDocument{ClusterType: "managed", Region: "westus", ClusterName: "demo1"}); err != nil {
 		t.Fatalf("Unable to write: %v", err)
 	}
 }
 
 func TestGetAll(t *testing.T) {
-	data, err := storage.GetAllClusters("civo", bson.M{"clustertype": "ha"})
+	data, err := storage.GetAllClusters("civo", bson.M{"cluster_type": "ha"})
 
 	if err != nil {
 		t.Fatalf("unable to get all the clusters %v", err)
 	}
 	fmt.Printf("[[ CIVO HA ]]%+v\n", data)
 
-	data, err = storage.GetAllClusters("civo", bson.M{"clustertype": "managed"})
+	data, err = storage.GetAllClusters("civo", bson.M{"cluster_type": "managed"})
 
 	if err != nil {
 		t.Fatalf("unable to get all the clusters %v", err)
@@ -116,4 +126,152 @@ func TestDeleteAll(t *testing.T) {
 	if err := storage.DeleteAllInCloud("civo"); err != nil {
 		t.Fatalf("Unable to Delete: %v", err)
 	}
+}
+
+// go test -bench=BenchmarkEntireMongoStore -benchtime=1x -v
+func BenchmarkEntireMongoStore(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		createAzure(b)
+	}
+}
+
+var (
+	CLUSTER_NAME string = "demo-poc"
+	REGION       string = "ap-south-1"
+	CLOUD        string = "azure"
+	K8S          string = "k3s"
+)
+
+func createAzure(b *testing.B) {
+	if err := createManaged(StorageDocument{}); err != nil {
+		b.Fatalf("failed to create the managed cluster: %v", err)
+	}
+	if err := createHA(StorageDocument{}); err != nil {
+		b.Fatalf("failed to create the ha cluster: %v", err)
+	}
+
+	if err := deleteHA(); err != nil {
+		b.Fatalf("failed to delete the ha cluster: %v", err)
+	}
+	if err := deleteManaged(); err != nil {
+		b.Fatalf("failed to delete the managed cluster: %v", err)
+	}
+}
+
+// azzuming we know its azure and k3s
+func createManaged(state StorageDocument) error {
+	fmt.Println("@@@@ MANAGED CREATE @@@@")
+
+	state.CloudInfra.Azure = new(AzureState)
+
+	state.ClusterName = CLUSTER_NAME
+	state.Region = REGION
+	state.ClusterType = string(consts.ClusterTypeMang)
+
+	if err := createCloudPkg(state); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createHA(state StorageDocument) error {
+	fmt.Println("@@@@ HA CREATE @@@@")
+
+	state.CloudInfra.Azure = new(AzureState)
+	state.BootStrapConfig.K3s = new(K3sBootstrapState)
+
+	state.ClusterName = CLUSTER_NAME
+	state.Region = REGION
+	state.ClusterType = string(consts.ClusterTypeHa)
+
+	if err := createCloudPkg(state); err != nil {
+		return err
+	}
+	if err := createKubernetesPkg(state); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createCloudPkg(state StorageDocument) error {
+
+	state.CloudInfra.Azure.IsCompleted = true
+	state.CloudInfra.Azure.ResourceGroupName = "demo"
+
+	if state.ClusterType == string(consts.ClusterTypeMang) {
+		state.CloudInfra.Azure.ManagedClusterName = "demo"
+		state.CloudInfra.Azure.NoManagedNodes = 10
+
+		// simulating kubeconfig save
+		state.ClusterKubeConfig = "config"
+	} else {
+		state.CloudInfra.Azure.SubnetName = "dscsdc"
+		state.CloudInfra.Azure.SSHKeyName = "demo"
+		state.CloudInfra.Azure.VirtualNetworkID = "demo"
+	}
+
+	return storage.Write(CLOUD, state)
+}
+
+func createKubernetesPkg(state StorageDocument) error {
+	// its only invoked when ha is called
+
+	state.BootStrapConfig.K3s.SSHInfo.UserName = "root"
+	state.BootStrapConfig.K3s.K3sToken = "K3sscdcdwscsdfvcfdsv"
+	state.BootStrapConfig.K3s.DataStoreEndPoint = "mysqlcxdscscsc"
+
+	// simulating kubeconfig save
+	state.ClusterKubeConfig = "config"
+
+	return storage.Write(CLOUD, state)
+}
+
+func deleteManaged() error {
+	fmt.Println("@@@@ MANAGED DELETE @@@@")
+	state, err := storage.ReadOne(CLOUD, REGION, CLUSTER_NAME, string(consts.ClusterTypeMang))
+	if err != nil {
+		return err
+	}
+
+	raw, err := json.MarshalIndent(state, "", " ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(raw))
+
+	return storage.DeleteOne(CLOUD, REGION, CLUSTER_NAME, string(consts.ClusterTypeMang))
+}
+
+func deleteHA() error {
+	fmt.Println("@@@@ HA DELETE @@@@")
+	state, err := storage.ReadOne(CLOUD, REGION, CLUSTER_NAME, string(consts.ClusterTypeHa))
+	if err != nil {
+		return err
+	}
+
+	raw, err := json.MarshalIndent(state, "", " ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(raw))
+
+	state.BootStrapConfig.K3s = nil
+	if err := storage.Write(CLOUD, state); err != nil {
+		return err
+	}
+
+	state, err = storage.ReadOne(CLOUD, REGION, CLUSTER_NAME, string(consts.ClusterTypeHa))
+	if err != nil {
+		return err
+	}
+
+	raw, err = json.MarshalIndent(state, "", " ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(raw))
+
+	return storage.DeleteOne(CLOUD, REGION, CLUSTER_NAME, string(consts.ClusterTypeHa))
 }

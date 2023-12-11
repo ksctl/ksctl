@@ -23,22 +23,23 @@ func (db *MongoServer) ListDatabases() ([]string, error) {
 }
 
 func (db *MongoServer) Disconnect() error {
+	fmt.Println("Disconnecting mongodb")
 	return db.client.Disconnect(db.context)
 }
 
 func (db *MongoServer) IsPresent(cloud, region, clustername, clusterType string) bool {
 
 	c, err := db.client.Database(db.mongodbDatabase).Collection(cloud).Find(db.context, bson.M{
-		"clustertype": clusterType,
-		"region":      region,
-		"clustername": clustername,
+		"cluster_type": clusterType,
+		"region":       region,
+		"cluster_name": clustername,
 	})
 	fmt.Printf("%+v\n", err)
 	fmt.Printf("%+v\n", c)
 	return err != mongo.ErrNoDocuments && c.RemainingBatchLength() == 1
 }
 
-func (db *MongoServer) GetAllClusters(cloud string, filters bson.M) ([]StorageConfiguration, error) {
+func (db *MongoServer) GetAllClusters(cloud string, filters bson.M) ([]StorageDocument, error) {
 
 	c, err := db.client.Database(db.mongodbDatabase).Collection(cloud).Find(db.context, filters)
 	if err != nil {
@@ -46,46 +47,57 @@ func (db *MongoServer) GetAllClusters(cloud string, filters bson.M) ([]StorageCo
 	}
 	defer c.Close(context.Background())
 
-	var clusters []StorageConfiguration
+	var clusters []StorageDocument
 	for c.Next(context.Background()) {
-		var result *StorageConfiguration
+		var result StorageDocument
 		if err := c.Decode(&result); err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
-		clusters = append(clusters, *result)
+		clusters = append(clusters, result)
 	}
 	return clusters, nil
 }
 
-func (db *MongoServer) Write(cloud string, data StorageConfiguration) error {
+func (db *MongoServer) Write(cloud string, data StorageDocument) error {
+	bsonMap, err := bson.Marshal(data)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	res, err := db.client.Database(db.mongodbDatabase).Collection(cloud).InsertOne(db.context, data)
+	if db.IsPresent(cloud, data.Region, data.ClusterName, data.ClusterType) {
+		res := db.client.Database(db.mongodbDatabase).Collection(cloud).FindOneAndReplace(db.context, bson.M{
+			"cluster_type": data.ClusterType,
+			"region":       data.Region,
+			"cluster_name": data.ClusterName,
+		}, bsonMap)
+		fmt.Println(res)
+		return nil
+	}
 
-	fmt.Println(res)
-
+	_, err = db.client.Database(db.mongodbDatabase).Collection(cloud).InsertOne(db.context, bsonMap)
 	return err
 }
 
-func (db *MongoServer) ReadOne(cloud, region, clustername, clusterType string) (*StorageConfiguration, error) {
+func (db *MongoServer) ReadOne(cloud, region, clustername, clusterType string) (StorageDocument, error) {
 	ret := db.client.Database(db.mongodbDatabase).Collection(cloud).FindOne(db.context, bson.M{
-		"clustertype": clusterType,
-		"region":      region,
-		"clustername": clustername,
+		"cluster_type": clusterType,
+		"region":       region,
+		"cluster_name": clustername,
 	})
-	var result *StorageConfiguration
+	var result StorageDocument
 	err := ret.Decode(&result)
 	if err != nil {
-		return nil, err
+		return StorageDocument{}, err
 	}
-	fmt.Printf("%+v\n", result)
+
 	return result, nil
 }
 
 func (db *MongoServer) DeleteOne(cloud, region, clustername, clusterType string) error {
 	ret, err := db.client.Database(db.mongodbDatabase).Collection(cloud).DeleteOne(db.context, bson.M{
-		"clustertype": clusterType,
-		"region":      region,
-		"clustername": clustername,
+		"cluster_type": clusterType,
+		"region":       region,
+		"cluster_name": clustername,
 	})
 	if err != nil {
 		return err
