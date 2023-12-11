@@ -8,10 +8,10 @@ import (
 )
 
 type MongoServer struct {
-	client          *mongo.Client
-	mongoURI        string
-	context         context.Context
-	mongodbDatabase string
+	client         *mongo.Client
+	mongoURI       string
+	context        context.Context
+	databaseClient *mongo.Database
 }
 
 type Options struct {

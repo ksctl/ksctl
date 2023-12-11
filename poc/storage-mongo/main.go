@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,7 +28,7 @@ func (db *MongoServer) Disconnect() error {
 
 func (db *MongoServer) IsPresent(cloud, region, clustername, clusterType string) bool {
 
-	c, err := db.client.Database(db.mongodbDatabase).Collection(cloud).Find(db.context, bson.M{
+	c, err := db.databaseClient.Collection(cloud).Find(db.context, bson.M{
 		"cluster_type": clusterType,
 		"region":       region,
 		"cluster_name": clustername,
@@ -41,7 +40,7 @@ func (db *MongoServer) IsPresent(cloud, region, clustername, clusterType string)
 
 func (db *MongoServer) GetAllClusters(cloud string, filters bson.M) ([]StorageDocument, error) {
 
-	c, err := db.client.Database(db.mongodbDatabase).Collection(cloud).Find(db.context, filters)
+	c, err := db.databaseClient.Collection(cloud).Find(db.context, filters)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +60,11 @@ func (db *MongoServer) GetAllClusters(cloud string, filters bson.M) ([]StorageDo
 func (db *MongoServer) Write(cloud string, data StorageDocument) error {
 	bsonMap, err := bson.Marshal(data)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if db.IsPresent(cloud, data.Region, data.ClusterName, data.ClusterType) {
-		res := db.client.Database(db.mongodbDatabase).Collection(cloud).FindOneAndReplace(db.context, bson.M{
+		res := db.databaseClient.Collection(cloud).FindOneAndReplace(db.context, bson.M{
 			"cluster_type": data.ClusterType,
 			"region":       data.Region,
 			"cluster_name": data.ClusterName,
@@ -74,12 +73,12 @@ func (db *MongoServer) Write(cloud string, data StorageDocument) error {
 		return nil
 	}
 
-	_, err = db.client.Database(db.mongodbDatabase).Collection(cloud).InsertOne(db.context, bsonMap)
+	_, err = db.databaseClient.Collection(cloud).InsertOne(db.context, bsonMap)
 	return err
 }
 
 func (db *MongoServer) ReadOne(cloud, region, clustername, clusterType string) (StorageDocument, error) {
-	ret := db.client.Database(db.mongodbDatabase).Collection(cloud).FindOne(db.context, bson.M{
+	ret := db.databaseClient.Collection(cloud).FindOne(db.context, bson.M{
 		"cluster_type": clusterType,
 		"region":       region,
 		"cluster_name": clustername,
@@ -94,7 +93,7 @@ func (db *MongoServer) ReadOne(cloud, region, clustername, clusterType string) (
 }
 
 func (db *MongoServer) DeleteOne(cloud, region, clustername, clusterType string) error {
-	ret, err := db.client.Database(db.mongodbDatabase).Collection(cloud).DeleteOne(db.context, bson.M{
+	ret, err := db.databaseClient.Collection(cloud).DeleteOne(db.context, bson.M{
 		"cluster_type": clusterType,
 		"region":       region,
 		"cluster_name": clustername,
@@ -109,7 +108,7 @@ func (db *MongoServer) DeleteOne(cloud, region, clustername, clusterType string)
 }
 
 func (db *MongoServer) DeleteAllInCloud(cloud string) error {
-	ret, err := db.client.Database(db.mongodbDatabase).Collection(cloud).DeleteMany(db.context, bson.D{})
+	ret, err := db.databaseClient.Collection(cloud).DeleteMany(db.context, bson.D{})
 	if err != nil {
 		return err
 	}
@@ -120,7 +119,7 @@ func (db *MongoServer) DeleteAllInCloud(cloud string) error {
 }
 
 func NewClient(options Options) (ConfigurationStore, error) {
-	client := &MongoServer{context: context.Background(), mongodbDatabase: "ksctl"}
+	client := &MongoServer{context: context.Background()}
 
 	client.mongoURI = fmt.Sprintf("mongodb+srv://%s:%s@%s/?retryWrites=true&w=majority", options.Username, options.Password, options.Hostname)
 
@@ -131,6 +130,8 @@ func NewClient(options Options) (ConfigurationStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("MongoDB failed to connect. Reason: %w", err)
 	}
+
+	client.databaseClient = client.client.Database("ksctl")
 
 	return client, nil
 }
