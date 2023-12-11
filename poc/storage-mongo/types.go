@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -19,15 +20,29 @@ type Options struct {
 	Password string
 }
 
-type StorageConfiguration struct{}
+type StorageConfiguration struct {
+	ClusterType string `json:"clustertype" bson:"clustertype" `
+	Region      string `json:"region" bson:"region"`
+	ClusterName string `json:"clustername" bson:"clustername"`
+	OtherInfo   string `json:"more" bson:"more"`
+}
 
 type ConfigurationStore interface {
 	ListDatabases() ([]string, error)
+
 	Disconnect() error
 
-	Write(ctx context.Context, cloud string, data StorageConfiguration) error
+	Write(cloud string, data StorageConfiguration) error
 
-	Read(ctx context.Context, cloud, region, clustername string) (StorageConfiguration, error)
+	ReadOne(cloud, region, clustername, clusterType string) (*StorageConfiguration, error)
+
+	DeleteOne(cloud, region, clustername, clusterType string) error
 
 	Ping() error
+
+	IsPresent(cloud, region, clustername, clusterType string) bool
+
+	GetAllClusters(cloud string, filters bson.M) ([]StorageConfiguration, error)
+
+	DeleteAllInCloud(cloud string) error
 }
