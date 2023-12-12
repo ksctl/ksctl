@@ -3,15 +3,13 @@ package aws
 import (
 	"context"
 	"fmt"
-	"github.com/kubesimplify/ksctl/pkg/resources"
-	"strconv"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elb_types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/kubesimplify/ksctl/pkg/resources"
+	"strconv"
 
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
@@ -108,7 +106,7 @@ func (obj *AwsProvider) CreateRouteTable() {
 		log.Error("Error Creating Route Table", err)
 	}
 
-	log.Success("Route Table Created Successfully: ", *routeTable.RouteTable.RouteTableId)
+	log.Success("Route Table Created Successfully ", "id: ", *routeTable.RouteTable.RouteTableId)
 	RouteTableID = *routeTable.RouteTable.RouteTableId
 
 	for _, subnet := range SUBNETID {
@@ -132,7 +130,7 @@ func (obj *AwsProvider) CreateRouteTable() {
 		log.Error("Error Creating Route", err)
 	}
 
-	log.Success("Route Table Created Successfully: ", *routeTable.RouteTable.RouteTableId)
+	log.Success("Route Table Created Successfully: ", "id: ", *routeTable.RouteTable.RouteTableId)
 
 }
 
@@ -248,7 +246,7 @@ func (obj *AwsProvider) CreateListener() {
 		},
 	})
 
-	log.Success("Listener Created Successfully: ", *GLBARN.LoadBalancers[0].LoadBalancerArn)
+	log.Success("Listener Created Successfully: ", "id", *GLBARN.LoadBalancers[0].LoadBalancerArn)
 
 }
 
@@ -274,7 +272,7 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 	}
 
 	if len(vmName) == 0 {
-		log.Success("[skip] already deleted the vm", vmName)
+		log.Success("[skip] already deleted the vm", "vmname", vmName)
 	} else {
 
 		var errDel error
@@ -317,7 +315,7 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 		if errDel != nil {
 			return log.NewError(errDel.Error())
 		}
-		log.Success("Deleted the vm", "name", vmName)
+		log.Success("Deleted the vm", "id: ", vmName)
 
 	}
 	return nil
@@ -383,7 +381,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 		fmt.Println(errCreate)
 		return "", errCreate
 	}
-	log.Success("[aws] created the network interface ", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	log.Success("[aws] created the network interface ", "id: ", *nicresponse.NetworkInterface.NetworkInterfaceId)
 
 	return *nicresponse.NetworkInterface.NetworkInterfaceId, nil
 }
@@ -448,23 +446,15 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		},
 	}
 
-	//instanceop, err := ec2Client.RunInstances(context.Background(), parameter)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	panic("Error creating EC2 instance: " + err.Error())
-	//}
-
 	instanceop, err := obj.client.BeginCreateVM(context.Background(), ec2Client, parameter)
 	if err != nil {
 		log.Error("Error creating vm", "error", err)
 	}
 
-	time.Sleep(40 * time.Second)
 	if err != nil {
 		log.Error("Error creating vm", "error", err)
 	}
 
-	// get the instance public ip
 	instanceipinput := &ec2.DescribeInstancesInput{
 		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
 	}
@@ -515,7 +505,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		return errCreate
 	}
 
-	log.Success("[aws] created the instance ", *instanceop.Instances[0].InstanceId)
+	log.Success("Created virtual machine", "id: ", *instanceop.Instances[0].InstanceId)
 	return nil
 }
 
@@ -558,7 +548,7 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage reso
 		if err != nil {
 			log.Error("Error saving state", "error", err)
 		}
-		log.Success("[aws] deleted the network interface ", interfaceName)
+		log.Success("[aws] deleted the network interface ", "id: ", interfaceName)
 	}
 
 	return nil
@@ -585,8 +575,8 @@ func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.St
 		AllowReassociation: aws.Bool(true),
 	})
 
-	log.Success("[aws] created the public IP ", *allocRes.PublicIp)
-	log.Success("[aws] attached the public IP %s to the instance %s", *allocRes.PublicIp, instancid)
+	log.Success("[aws] created the public IP ", ":", *allocRes.PublicIp)
+	log.Success("[aws] attached the public IP %s to the instance %s", "id: ", *allocRes.PublicIp, instancid)
 	return nil, nil
 }
 

@@ -151,6 +151,9 @@ type metadata struct {
 }
 
 func ReturnAwsStruct(meta resources.Metadata, ClientOption func() AwsGo) (*AwsProvider, error) {
+	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log.SetPackageName(string(consts.CloudAws))
+
 	return &AwsProvider{
 		clusterName: meta.ClusterName,
 		region:      meta.Region,

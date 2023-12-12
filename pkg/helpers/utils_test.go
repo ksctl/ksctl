@@ -196,7 +196,7 @@ func TestSSHExecute(t *testing.T) {
 	sshTest.Username("fake")
 	assert.Assert(t, sshTest.Flag(UtilExecWithoutOutput).Script("").
 		IPv4("A.A.A.A").
-		FastMode(true).SSHExecute(storage, log) != nil, "ssh should fail")
+		FastMode(true).SSHExecute(storage, log, "") != nil, "ssh should fail")
 
 	fmt.Println("Cleanup..")
 	if err := os.RemoveAll(dir); err != nil {

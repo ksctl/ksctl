@@ -452,7 +452,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 		}
 	}
 
-	println("ALL VMs CREATED")
 	return nil
 }
 

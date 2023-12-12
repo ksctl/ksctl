@@ -64,7 +64,7 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 		return log.NewError(err.Error())
 	}
 
-	log.Success("Deleted network security group", "name", nsg)
+	log.Success("Deleted network security group", "id: ", nsg)
 
 	return nil
 }
@@ -92,7 +92,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return log.NewError("invalid role")
 	}
 	if len(nsg) != 0 {
-		log.Success("skipped firewall already created", "name", nsg)
+		log.Success("skipped firewall already created", "id: ", nsg)
 		return nil
 	}
 
@@ -160,7 +160,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return log.NewError(err.Error())
 	}
 
-	log.Success("Created network security group", "name", *resp.Name)
+	log.Success("Created network security group", "id :", *resp.Name)
 
 	return nil
 }

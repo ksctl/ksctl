@@ -126,22 +126,20 @@ func (*AwsGoClient) BeginCreateVM(ctx context.Context, ec2client *ec2.Client, pa
 		log.Error("Error Creating Instance", "error", err)
 	}
 
-	// TODO Wait until the instance is terminated.
-	// fetch instance info and wait until its running
-	//for {
-	//	instanceinfo := &ec2.DescribeInstancesInput{
-	//		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
-	//	}
-	//
-	//	instanceinforesponse, err := ec2Client.DescribeInstances(context.Background(), instanceinfo)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	if instanceinforesponse.Reservations[0].Instances[0].State.Name == "running" {
-	//		break
-	//	}
-	//}
+	// TODO Wait until the instance is running.
+	for {
+		instanceinfo := &ec2.DescribeInstancesInput{
+			InstanceIds: []string{*runResult.Instances[0].InstanceId},
+		}
+
+		instanceinforesponse, err := ec2client.DescribeInstances(context.Background(), instanceinfo)
+		if err != nil {
+			return nil, err
+		}
+		if instanceinforesponse.Reservations[0].Instances[0].State.Name == types.InstanceStateNameRunning {
+			break
+		}
+	}
 
 	return runResult, err
 }
