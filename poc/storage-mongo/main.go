@@ -33,8 +33,6 @@ func (db *MongoServer) IsPresent(cloud, region, clustername, clusterType string)
 		"region":       region,
 		"cluster_name": clustername,
 	})
-	fmt.Printf("%+v\n", err)
-	fmt.Printf("%+v\n", c)
 	return err != mongo.ErrNoDocuments && c.RemainingBatchLength() == 1
 }
 
@@ -69,7 +67,9 @@ func (db *MongoServer) Write(cloud string, data StorageDocument) error {
 			"region":       data.Region,
 			"cluster_name": data.ClusterName,
 		}, bsonMap)
-		fmt.Println(res)
+		if err := res.Err(); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -125,23 +125,19 @@ func NewClient(options Options) (ConfigurationStore, error) {
 
 	opts := mongoOptions.Client().ApplyURI(client.mongoURI)
 
-	var err error
-	client.client, err = mongo.Connect(client.context, opts)
+	mongoClient, err := mongo.Connect(client.context, opts)
 	if err != nil {
 		return nil, fmt.Errorf("MongoDB failed to connect. Reason: %w", err)
 	}
 
-	client.databaseClient = client.client.Database("ksctl")
-
-	return client, nil
-}
-
-func (db *MongoServer) Ping() error {
-
-	if err := db.client.Database("admin").RunCommand(db.context, bson.D{{"ping", 1}}).Err(); err != nil {
-		return err
+	if err := mongoClient.Database("admin").RunCommand(client.context, bson.D{{"ping", 1}}).Err(); err != nil {
+		return nil, err
 	}
 
 	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
-	return nil
+
+	client.databaseClient = mongoClient.Database("ksctl")
+	client.client = mongoClient
+
+	return client, nil
 }

@@ -3,31 +3,34 @@ package main
 import (
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/utils/consts"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type StorageDocument struct {
+	ID primitive.ObjectID `bson:"_id,omitempty"`
 
 	// composite primary key
 	ClusterType string `json:"cluster_type" bson:"cluster_type" `
 	Region      string `json:"region" bson:"region"`
 	ClusterName string `json:"cluster_name" bson:"cluster_name"`
 
-	CloudInfra      InfrastructureState      `json:"cloud_infrastructure_state" bson:"cloud_infrastructure_state,omitempty"`
-	BootStrapConfig KubernetesBootstrapState `json:"kubernetes_bootstrap_state" bson:"kubernetes_bootstrap_state,omitempty"`
+	CloudInfra      *InfrastructureState      `json:"cloud_infrastructure_state" bson:"cloud_infrastructure_state,omitempty"`
+	BootStrapConfig *KubernetesBootstrapState `json:"kubernetes_bootstrap_state" bson:"kubernetes_bootstrap_state,omitempty"`
 
 	ClusterKubeConfig string `json:"cluster_kubeconfig" bson:"cluster_kubeconfig"` // TODO: should we use k8s.io/kops/pkg/kubeconfig or only string
+
 	// ClusterKubeConfig kubeconfig.KubectlConfig `json:"cluster_kubeconfig" bson:"cluster_kubeconfig"`
 
 	SSHKeyPair SSHKeyPairState `json:"ssh_key_pair" bson:"ssh_key_pair"`
 }
 
 type InfrastructureState struct {
-	Azure *AzureState `json:"azure" bson:"azure"`
-	Civo  *CivoState  `json:"civo" bson:"civo"`
+	Azure *AzureState `json:"azure" bson:"azure,omitempty"`
+	Civo  *CivoState  `json:"civo" bson:"civo,omitempty"`
 }
 
 type KubernetesBootstrapState struct {
-	K3s *K3sBootstrapState `json:"k3s" bson:"k3s" `
+	K3s *K3sBootstrapState `json:"k3s" bson:"k3s,omitempty"`
 }
 
 type SSHKeyPairState struct {
@@ -79,7 +82,7 @@ type AzureState struct {
 type CivoState struct {
 	IsCompleted bool `json:"status" bson:"status"`
 
-	NetowkName string `json:"resource_group_name" bson:"resource_group_name"`
+	NetworkName string `json:"resource_group_name" bson:"resource_group_name"`
 }
 
 // specific to each infrastructure like civo or azure

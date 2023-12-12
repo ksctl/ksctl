@@ -31,8 +31,6 @@ type ConfigurationStore interface {
 
 	DeleteOne(cloud, region, clustername, clusterType string) error
 
-	Ping() error
-
 	IsPresent(cloud, region, clustername, clusterType string) bool
 
 	GetAllClusters(cloud string, filters bson.M) ([]StorageDocument, error)

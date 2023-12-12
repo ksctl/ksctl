@@ -15,7 +15,7 @@ var storage ConfigurationStore
 func TestMain(m *testing.M) {
 
 	fmt.Println("Init")
-	_ = os.Setenv("MONGODB_HOSTNAME", "cluster0.hlhdunk.mongodb.net")
+	_ = os.Setenv("MONGODB_HOSTNAME", "cluster0.r8uly4m.mongodb.net")
 	_ = os.Setenv("MONGODB_USER", "dipankar")
 	_ = os.Setenv("MONGODB_PASSWORD", "1234")
 
@@ -43,12 +43,6 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func TestPing(t *testing.T) {
-	if err := storage.Ping(); err != nil {
-		panic(err)
-	}
-}
-
 func TestListDatabases(t *testing.T) {
 	if databases, err := storage.ListDatabases(); err != nil {
 		return
@@ -59,7 +53,7 @@ func TestListDatabases(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	state := StorageDocument{ClusterType: "managed", Region: "eastus", ClusterName: "demo"}
-	state.CloudInfra.Civo = &CivoState{}
+	state.CloudInfra = &InfrastructureState{Civo: &CivoState{}}
 
 	if err := storage.Write("civo", state); err != nil {
 		t.Fatalf("Unable to write: %v", err)
@@ -128,11 +122,8 @@ func TestDeleteAll(t *testing.T) {
 	}
 }
 
-// go test -bench=BenchmarkEntireMongoStore -benchtime=1x -v
-func BenchmarkEntireMongoStore(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		createAzure(b)
-	}
+func TestEntireMongoStore(t *testing.T) {
+	createAzure(t)
 }
 
 var (
@@ -142,19 +133,19 @@ var (
 	K8S          string = "k3s"
 )
 
-func createAzure(b *testing.B) {
+func createAzure(t *testing.T) {
 	if err := createManaged(StorageDocument{}); err != nil {
-		b.Fatalf("failed to create the managed cluster: %v", err)
+		t.Fatalf("failed to create the managed cluster: %v", err)
 	}
 	if err := createHA(StorageDocument{}); err != nil {
-		b.Fatalf("failed to create the ha cluster: %v", err)
+		t.Fatalf("failed to create the ha cluster: %v", err)
 	}
 
 	if err := deleteHA(); err != nil {
-		b.Fatalf("failed to delete the ha cluster: %v", err)
+		t.Fatalf("failed to delete the ha cluster: %v", err)
 	}
 	if err := deleteManaged(); err != nil {
-		b.Fatalf("failed to delete the managed cluster: %v", err)
+		t.Fatalf("failed to delete the managed cluster: %v", err)
 	}
 }
 
@@ -162,7 +153,7 @@ func createAzure(b *testing.B) {
 func createManaged(state StorageDocument) error {
 	fmt.Println("@@@@ MANAGED CREATE @@@@")
 
-	state.CloudInfra.Azure = new(AzureState)
+	state.CloudInfra = &InfrastructureState{Azure: &AzureState{}}
 
 	state.ClusterName = CLUSTER_NAME
 	state.Region = REGION
@@ -178,8 +169,8 @@ func createManaged(state StorageDocument) error {
 func createHA(state StorageDocument) error {
 	fmt.Println("@@@@ HA CREATE @@@@")
 
-	state.CloudInfra.Azure = new(AzureState)
-	state.BootStrapConfig.K3s = new(K3sBootstrapState)
+	state.CloudInfra = &InfrastructureState{Azure: &AzureState{}}
+	state.BootStrapConfig = &KubernetesBootstrapState{K3s: &K3sBootstrapState{}}
 
 	state.ClusterName = CLUSTER_NAME
 	state.Region = REGION
