@@ -13,6 +13,9 @@ for now we are testing with k3s
 - [etcd-auto-tls](https://etcd.io/docs/v3.5/op-guide/clustering/#automatic-certificates)
 
 
+> **Note**
+There is configuration for the data-sir and WAL directory in etcd
+
 ## Work
 
 > https://github.com/etcd-io/etcd/releases/tag/v3.5.10
@@ -65,14 +68,15 @@ Description=etcd
 
 ExecStart=/usr/local/bin/etcd \\
   --name infra0 \\
-  --initial-advertise-peer-urls http://192.168.1.6:2380 \
-  --listen-peer-urls http://192.168.1.6:2380 \\
-  --listen-client-urls http://192.168.1.6:2379,http://127.0.0.1:2379 \\
-  --advertise-client-urls http://192.168.1.6:2379 \\
+  --initial-advertise-peer-urls https://192.168.1.2:2380 \
+  --listen-peer-urls https://192.168.1.2:2380 \\
+  --listen-client-urls http://192.168.1.2:2379,http://127.0.0.1:2379 \\
+  --advertise-client-urls http://192.168.1.2:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
-  --initial-cluster infra0=http://192.168.1.6:2380,infra1=http://192.168.1.7:2380,infra2=http://192.168.1.8:2380 \\
+  --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
   --log-outputs=/var/lib/etcd.log \\
   --initial-cluster-state new \\
+  --peer-auto-tls \\
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
@@ -97,14 +101,15 @@ Description=etcd
 [Service]
 ExecStart=/usr/local/bin/etcd \\
   --name infra1 \\
-  --initial-advertise-peer-urls http://192.168.1.7:2380 \
-  --listen-peer-urls http://192.168.1.7:2380 \\
-  --listen-client-urls http://192.168.1.7:2379,http://127.0.0.1:2379 \\
-  --advertise-client-urls http://192.168.1.7:2379 \\
+  --initial-advertise-peer-urls https://192.168.1.3:2380 \
+  --listen-peer-urls https://192.168.1.3:2380 \\
+  --listen-client-urls http://192.168.1.3:2379,http://127.0.0.1:2379 \\
+  --advertise-client-urls http://192.168.1.3:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
-  --initial-cluster infra0=http://192.168.1.6:2380,infra1=http://192.168.1.7:2380,infra2=http://192.168.1.8:2380 \\
+  --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
   --log-outputs=/var/lib/etcd.log \\
   --initial-cluster-state new \\
+  --peer-auto-tls \\
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
@@ -129,14 +134,15 @@ Description=etcd
 [Service]
 ExecStart=/usr/local/bin/etcd \\
   --name infra2 \\
-  --initial-advertise-peer-urls http://192.168.1.8:2380 \
-  --listen-peer-urls http://192.168.1.8:2380 \\
-  --listen-client-urls http://192.168.1.8:2379,http://127.0.0.1:2379 \\
-  --advertise-client-urls http://192.168.1.8:2379 \\
+  --initial-advertise-peer-urls https://192.168.1.4:2380 \
+  --listen-peer-urls https://192.168.1.4:2380 \\
+  --listen-client-urls http://192.168.1.4:2379,http://127.0.0.1:2379 \\
+  --advertise-client-urls http://192.168.1.4:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
-  --initial-cluster infra0=http://192.168.1.6:2380,infra1=http://192.168.1.7:2380,infra2=http://192.168.1.8:2380 \\
+  --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
   --log-outputs=/var/lib/etcd.log \\
   --initial-cluster-state new \\
+  --peer-auto-tls \\
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
@@ -157,22 +163,27 @@ sudo systemctl enable etcd
 sudo systemctl start etcd
 ```
 
+```bash
+etcdctl endpoint health -w=table --cluster
+etcdctl endpoint status -w=table --cluster
+```
+
 ### Create VMs for controlplane
 lets create 2 controlplane
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--datastore-endpoint "http://192.168.1.6:2379,http://192.168.1.7:2379,http://192.168.1.8:2379" \
-	--tls-san "74.220.20.36"
+	--datastore-endpoint "http://192.168.1.2:2379,http://192.168.1.3:2379,http://192.168.1.4:2379" \
+	--tls-san "<publicip>"
 ```
 
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
     --token "K106750583e6a35a52ce92add7a0c9a9177250f8f39c49e8d6b5810f1d352a9adab::server:294adbf8a30918379c243a2567d5f3d0" \
-    --datastore-endpoint "http://192.168.1.6:2379,http://192.168.1.7:2379,http://192.168.1.8:2379" \
-    --tls-san "74.220.20.36"
+    --datastore-endpoint "http://192.168.1.2:2379,http://192.168.1.3:2379,http://192.168.1.4:2379" \
+    --tls-san "<publicip>"
 ```
 
 ### Create VMs for workerplane
@@ -182,5 +193,5 @@ lets create 1 workerplane
 ```bash
 # workload
 k3s kubectl run nginx --image=nginx
-kubectl expose pod nginx --port=80 --type=LoadBalancer --name=nginx-service
+k3s kubectl expose pod nginx --port=80 --type=LoadBalancer --name=nginx-service
 ```
