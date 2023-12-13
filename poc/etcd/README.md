@@ -59,6 +59,8 @@ save /etc/systemd/system/etcd.service
 #### etcd-1
 
 ```bash
+mkdir -p /var/lib/etcd
+
 cat <<EOF > /etc/systemd/system/etcd.service
 
 [Unit]
@@ -74,10 +76,12 @@ ExecStart=/usr/local/bin/etcd \\
   --advertise-client-urls http://192.168.1.2:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
   --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
-  --log-outputs=/var/lib/etcd.log \\
+  --log-outputs=/var/lib/etcd/etcd.log \\
   --initial-cluster-state new \\
   --peer-auto-tls \\
-  --data-dir=/var/lib/etcd
+  --snapshot-count '10000' \\
+  --wal-dir=/var/lib/etcd/wal \\
+  --data-dir=/var/lib/etcd/data
 Restart=on-failure
 RestartSec=5
 
@@ -93,6 +97,8 @@ sudo systemctl enable etcd
 #### etcd-2
 
 ```bash
+mkdir -p /var/lib/etcd
+
 cat <<EOF > /etc/systemd/system/etcd.service
 
 [Unit]
@@ -107,10 +113,12 @@ ExecStart=/usr/local/bin/etcd \\
   --advertise-client-urls http://192.168.1.3:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
   --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
-  --log-outputs=/var/lib/etcd.log \\
+  --log-outputs=/var/lib/etcd/etcd.log \\
   --initial-cluster-state new \\
   --peer-auto-tls \\
-  --data-dir=/var/lib/etcd
+  --wal-dir=/var/lib/etcd/wal \\
+  --snapshot-count '10000' \\
+  --data-dir=/var/lib/etcd/data
 Restart=on-failure
 RestartSec=5
 
@@ -126,6 +134,8 @@ sudo systemctl enable etcd
 #### etcd-3
 
 ```bash
+mkdir -p /var/lib/etcd
+
 cat <<EOF > /etc/systemd/system/etcd.service
 
 [Unit]
@@ -140,10 +150,12 @@ ExecStart=/usr/local/bin/etcd \\
   --advertise-client-urls http://192.168.1.4:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
   --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
-  --log-outputs=/var/lib/etcd.log \\
+  --log-outputs=/var/lib/etcd/etcd.log \\
   --initial-cluster-state new \\
   --peer-auto-tls \\
-  --data-dir=/var/lib/etcd
+  --snapshot-count '10000' \\
+  --wal-dir=/var/lib/etcd/wal \\
+  --data-dir=/var/lib/etcd/data
 Restart=on-failure
 RestartSec=5
 
@@ -168,12 +180,13 @@ etcdctl endpoint health -w=table --cluster
 etcdctl endpoint status -w=table --cluster
 ```
 
-### Create VMs for controlplane
+### K3s
+
+#### Create VMs for controlplane
 lets create 2 controlplane
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "http://192.168.1.2:2379,http://192.168.1.3:2379,http://192.168.1.4:2379" \
 	--tls-san "<publicip>"
 ```
@@ -181,17 +194,23 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-    --token "K106750583e6a35a52ce92add7a0c9a9177250f8f39c49e8d6b5810f1d352a9adab::server:294adbf8a30918379c243a2567d5f3d0" \
+    --token "<token>" \
     --datastore-endpoint "http://192.168.1.2:2379,http://192.168.1.3:2379,http://192.168.1.4:2379" \
     --tls-san "<publicip>"
 ```
 
-### Create VMs for workerplane
+#### Create VMs for workerplane
 lets create 1 workerplane
 
 
+> Now Testing demo workload
 ```bash
 # workload
 k3s kubectl run nginx --image=nginx
 k3s kubectl expose pod nginx --port=80 --type=LoadBalancer --name=nginx-service
 ```
+
+
+### Kubeadm
+
+label: `TBD`
