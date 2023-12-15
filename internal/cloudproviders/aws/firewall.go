@@ -20,33 +20,13 @@ func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 	obj.mxRole.Unlock()
 	obj.mxName.Unlock()
 
-	switch role {
-	case consts.RoleCp:
-		_, err := obj.CreateSecurityGroup(obj.metadata.role)
-		if err != nil {
-			fmt.Println(err)
-		}
+	_, err := obj.CreateSecurityGroup(role)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	case consts.RoleWp:
-		_, err := obj.CreateSecurityGroup(role)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-	case consts.RoleLb:
-		_, err := obj.CreateSecurityGroup(role)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-	case consts.RoleDs:
-		_, err := obj.CreateSecurityGroup(role)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-	default:
-		return fmt.Errorf("invalid role")
+	if err := saveStateHelper(storage); err != nil {
+		log.Error("Error saving state", "error", err)
 	}
 
 	return nil
@@ -97,7 +77,7 @@ func (obj *AwsProvider) DelFirewall(factory resources.StorageFactory) error {
 			log.Error("Error saving state", "error", err)
 		}
 
-		log.Success("[aws] deleted the security group ", nsg)
+		log.Success("[aws] deleted the security group ", "id: ", nsg)
 	}
 
 	return nil
@@ -109,6 +89,29 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 		GroupName:   aws.String(string(Role + "securitygroup")),
 		Description: aws.String(obj.clusterName + "securitygroup"),
 		VpcId:       aws.String(awsCloudState.VPCID),
+	}
+
+	switch Role {
+	case consts.RoleCp:
+		if awsCloudState.InfoControlPlanes.NetworkSecurityGroup != "" {
+			log.Success("[skip] already created the security group ", "id: ", awsCloudState.InfoControlPlanes.NetworkSecurityGroup)
+			return awsCloudState.InfoControlPlanes.NetworkSecurityGroup, nil
+		}
+	case consts.RoleWp:
+		if awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup != "" {
+			log.Success("[skip] already created the security group ", "id: ", awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup)
+			return awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup, nil
+		}
+	case consts.RoleLb:
+		if awsCloudState.InfoLoadBalancer.NetworkSecurityGroup != "" {
+			log.Success("[skip] already created the security group ", "id: ", awsCloudState.InfoLoadBalancer.NetworkSecurityGroup)
+			return awsCloudState.InfoLoadBalancer.NetworkSecurityGroup, nil
+		}
+	case consts.RoleDs:
+		if awsCloudState.InfoDatabase.NetworkSecurityGroup != "" {
+			log.Success("[skip] already created the security group ", "id: ", awsCloudState.InfoDatabase.NetworkSecurityGroup)
+			return awsCloudState.InfoDatabase.NetworkSecurityGroup, nil
+		}
 	}
 
 	SecurityGroup, err := obj.client.BeginCreateSecurityGroup(context.Background(), obj.ec2Client(), SecurityGroupInput)
@@ -165,9 +168,10 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 			}
 
 			obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules)
+			awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+
 		}()
 
-		awsCloudState.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
 	case consts.RoleDs:
 		func() {
 
@@ -190,9 +194,9 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 			}
 
 			obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules)
+			awsCloudState.InfoDatabase.NetworkSecurityGroup = *SecurityGroup.GroupId
 		}()
 
-		awsCloudState.InfoDatabase.NetworkSecurityGroup = *SecurityGroup.GroupId
 	case consts.RoleLb:
 		func() {
 
@@ -222,9 +226,10 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 			if err != nil {
 				log.Error("Error creating security group", "error", err)
 			}
+
+			awsCloudState.InfoLoadBalancer.NetworkSecurityGroup = *SecurityGroup.GroupId
 		}()
 
-		awsCloudState.InfoLoadBalancer.NetworkSecurityGroup = *SecurityGroup.GroupId
 	default:
 		return "", fmt.Errorf("invalid role")
 

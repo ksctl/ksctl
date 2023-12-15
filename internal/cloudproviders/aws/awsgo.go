@@ -669,8 +669,6 @@ func (*AwsGoMockClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.Crea
 			},
 		},
 	}
-
-	fmt.Println("executing fake vpc creation")
 	return vpc, nil
 }
 

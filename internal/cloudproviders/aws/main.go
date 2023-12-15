@@ -194,7 +194,6 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 	}
 
 	obj.metadata.resName = resName
-	fmt.Println(obj.metadata.resName)
 	return obj
 }
 
@@ -396,7 +395,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, nil
 		}
-		log.Print("Prnting", "awsCloudState.InfoWorkerPlanes.Names", awsCloudState.InfoWorkerPlanes.Names)
+		//log.Print("Prnting", "awsCloudState.InfoWorkerPlanes.Names", awsCloudState.InfoWorkerPlanes.Names)
 		return len(awsCloudState.InfoWorkerPlanes.Names), nil
 	}
 	if no >= 0 {
@@ -453,7 +452,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 			return -1, err
 		}
 
-		log.Print("Printing", "awsCloudState.InfoWorkerPlanes", awsCloudState.InfoWorkerPlanes)
+		//log.Print("Printing", "awsCloudState.InfoWorkerPlanes", awsCloudState.InfoWorkerPlanes)
 
 		return -1, nil
 	}
@@ -497,7 +496,7 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			//awsCloudState.InfoControlPlanes.PublicIPIDs = make([]string, no)
 		}
 
-		log.Print("Printing", "awsCloudState.InfoControlplanes", awsCloudState.InfoControlPlanes)
+		log.Debug("Printing", "awsCloudState.InfoControlplanes", awsCloudState.InfoControlPlanes)
 		return -1, nil
 	}
 	return -1, log.NewError("constrains for no of controlplane >= 3 and odd number")
@@ -540,7 +539,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			//awsCloudState.InfoDatabase.PublicIPIDs = make([]string, no)
 		}
 
-		log.Print("Printing", "awsCloudState.InfoDatabase", awsCloudState.InfoDatabase)
+		log.Debug("Printing", "awsCloudState.InfoDatabase", awsCloudState.InfoDatabase)
 		return -1, nil
 	}
 	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")

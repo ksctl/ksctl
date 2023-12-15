@@ -324,6 +324,24 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role consts.KsctlRole) (string, error) {
 
 	securitygroup, err := fetchgroupid(role)
+
+	nicid := ""
+	switch role {
+	case consts.RoleWp:
+		nicid = awsCloudState.InfoWorkerPlanes.NetworkInterfaceIDs[index]
+	case consts.RoleCp:
+		nicid = awsCloudState.InfoControlPlanes.NetworkInterfaceIDs[index]
+	case consts.RoleLb:
+		nicid = awsCloudState.InfoLoadBalancer.NetworkInterfaceName
+	case consts.RoleDs:
+		nicid = awsCloudState.InfoDatabase.NetworkInterfaceIDs[index]
+	}
+
+	if len(nicid) != 0 {
+		log.Print("[skip] already created the network interface", "id", nicid)
+		return nicid, nil
+	}
+
 	if err != nil {
 		log.Error("Error fetching security group id", "error", err)
 	}
@@ -396,6 +414,22 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 
 	if obj.metadata.role == consts.RoleDs && indexNo > 0 {
 		log.Note("[skip] currently multiple datastore not supported")
+		return nil
+	}
+
+	vmName := ""
+	switch role {
+	case consts.RoleCp:
+		vmName = awsCloudState.InfoControlPlanes.Names[indexNo]
+	case consts.RoleDs:
+		vmName = awsCloudState.InfoDatabase.Names[indexNo]
+	case consts.RoleLb:
+		vmName = awsCloudState.InfoLoadBalancer.Name
+	case consts.RoleWp:
+		vmName = awsCloudState.InfoWorkerPlanes.Names[indexNo]
+	}
+	if len(vmName) != 0 {
+		log.Print("skipped vm already created", "name", vmName)
 		return nil
 	}
 
