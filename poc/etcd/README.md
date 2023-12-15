@@ -71,7 +71,7 @@ etcdctl --endpoints=https://192.168.1.6:2379 --key=etcd-key.pem --cert=etcd.pem 
 ### Create VMs for Datastore
 lets create 3 datastore
 
-**Installing**
+Install etcd on datastore server
 ```bash
 ETCD_VER=v3.5.10
 
@@ -97,17 +97,42 @@ rm -rf /tmp/etcd-download-test
 etcd --version
 etcdctl version
 etcdutl version
+
+
+mkdir -p /var/lib/etcd
 ```
 
-save /etc/systemd/system/etcd.service
+> save /etc/systemd/system/etcd.service
 
 
-// TODO: need to add for cssl thing https://github.com/etcd-io/etcd/tree/main/hack/tls-setup
+Run on the localsystem
+```bash
+cd openssl
+openssl genrsa -out ca-key.pem 2048
+openssl req -new -key ca-key.pem -out ca-csr.pem -subj "/CN=etcd cluster"
+openssl x509 -req -in ca-csr.pem -out ca.pem -days 3650 -signkey ca-key.pem -sha256
+openssl genrsa -out etcd-key.pem 2048
+openssl req -new -key etcd-key.pem -out etcd-csr.pem -subj "/CN=etcd"
+
+echo subjectAltName = DNS:localhost,IP:192.168.1.2,IP:192.168.1.3,IP:192.168.1.4,IP:127.0.0.1 > extfile.cnf
+openssl x509 -req -in etcd-csr.pem -CA ca.pem -CAkey ca-key.pem -CAcreateserial -days 3650 -out etcd.pem -sha256 -extfile extfile.cnf
+```
+
+> Important to note that when using the ssh access we have to use scp
+
+> when going to use golang we can use cat <<EOF thing with string
+
+> copy it to all `controlplane` nodes and also to the `datastore`
+
+> ALso mkdir `/var/lib/etcd` or any other directory where you want to keep the cert files in controlplane nodes
+
+```bash
+scp -v ca.pem etcd.pem etcd-key.pem root@<pub-ip>:/usr/lib/etcd/
+```
 
 #### etcd-1
 
 ```bash
-mkdir -p /var/lib/etcd
 
 cat <<EOF > /etc/systemd/system/etcd.service
 
@@ -120,8 +145,8 @@ ExecStart=/usr/local/bin/etcd \\
   --name infra0 \\
   --initial-advertise-peer-urls https://192.168.1.2:2380 \
   --listen-peer-urls https://192.168.1.2:2380 \\
-  --listen-client-urls http://192.168.1.2:2379,http://127.0.0.1:2379 \\
-  --advertise-client-urls http://192.168.1.2:2379 \\
+  --listen-client-urls https://192.168.1.2:2379,https://127.0.0.1:2379 \\
+  --advertise-client-urls https://192.168.1.2:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
   --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
   --log-outputs=/var/lib/etcd/etcd.log \\
@@ -129,6 +154,10 @@ ExecStart=/usr/local/bin/etcd \\
   --peer-auto-tls \\
   --snapshot-count '10000' \\
   --wal-dir=/var/lib/etcd/wal \\
+  --client-cert-auth \\
+  --trusted-ca-file=/var/lib/etcd/ca.pem \\
+  --cert-file=/var/lib/etcd/etcd.pem \\
+  --key-file=/var/lib/etcd/etcd-key.pem \\
   --data-dir=/var/lib/etcd/data
 Restart=on-failure
 RestartSec=5
@@ -145,7 +174,6 @@ sudo systemctl enable etcd
 #### etcd-2
 
 ```bash
-mkdir -p /var/lib/etcd
 
 cat <<EOF > /etc/systemd/system/etcd.service
 
@@ -157,14 +185,18 @@ ExecStart=/usr/local/bin/etcd \\
   --name infra1 \\
   --initial-advertise-peer-urls https://192.168.1.3:2380 \
   --listen-peer-urls https://192.168.1.3:2380 \\
-  --listen-client-urls http://192.168.1.3:2379,http://127.0.0.1:2379 \\
-  --advertise-client-urls http://192.168.1.3:2379 \\
+  --listen-client-urls https://192.168.1.3:2379,https://127.0.0.1:2379 \\
+  --advertise-client-urls https://192.168.1.3:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
   --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
   --log-outputs=/var/lib/etcd/etcd.log \\
   --initial-cluster-state new \\
   --peer-auto-tls \\
   --wal-dir=/var/lib/etcd/wal \\
+  --client-cert-auth \\
+  --trusted-ca-file=/var/lib/etcd/ca.pem \\
+  --cert-file=/var/lib/etcd/etcd.pem \\
+  --key-file=/var/lib/etcd/etcd-key.pem \\
   --snapshot-count '10000' \\
   --data-dir=/var/lib/etcd/data
 Restart=on-failure
@@ -182,7 +214,6 @@ sudo systemctl enable etcd
 #### etcd-3
 
 ```bash
-mkdir -p /var/lib/etcd
 
 cat <<EOF > /etc/systemd/system/etcd.service
 
@@ -194,14 +225,18 @@ ExecStart=/usr/local/bin/etcd \\
   --name infra2 \\
   --initial-advertise-peer-urls https://192.168.1.4:2380 \
   --listen-peer-urls https://192.168.1.4:2380 \\
-  --listen-client-urls http://192.168.1.4:2379,http://127.0.0.1:2379 \\
-  --advertise-client-urls http://192.168.1.4:2379 \\
+  --listen-client-urls https://192.168.1.4:2379,https://127.0.0.1:2379 \\
+  --advertise-client-urls https://192.168.1.4:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
   --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
   --log-outputs=/var/lib/etcd/etcd.log \\
   --initial-cluster-state new \\
   --peer-auto-tls \\
   --snapshot-count '10000' \\
+  --client-cert-auth \\
+  --trusted-ca-file=/var/lib/etcd/ca.pem \\
+  --cert-file=/var/lib/etcd/etcd.pem \\
+  --key-file=/var/lib/etcd/etcd-key.pem \\
   --wal-dir=/var/lib/etcd/wal \\
   --data-dir=/var/lib/etcd/data
 Restart=on-failure
@@ -224,8 +259,35 @@ sudo systemctl start etcd
 ```
 
 ```bash
-etcdctl endpoint health -w=table --cluster
-etcdctl endpoint status -w=table --cluster
+etcdctl \
+  --cacert=/var/lib/etcd/ca.pem \
+  --cert=/var/lib/etcd/etcd.pem \
+  --key=/var/lib/etcd/etcd-key.pem \
+  endpoint health \
+  -w=table \
+  --cluster
+
+etcdctl \
+  --cacert=/var/lib/etcd/ca.pem \
+  --cert=/var/lib/etcd/etcd.pem \
+  --key=/var/lib/etcd/etcd-key.pem \
+  endpoint status \
+  -w=table \
+  --cluster
+
+etcdctl \
+  --cacert=/var/lib/etcd/ca.pem \
+  --cert=/var/lib/etcd/etcd.pem \
+  --key=/var/lib/etcd/etcd-key.pem \
+  member list \
+  -w=table
+
+etcdctl \
+  --cacert=/var/lib/etcd/ca.pem \
+  --cert=/var/lib/etcd/etcd.pem \
+  --key=/var/lib/etcd/etcd-key.pem \
+  get / --prefix --keys-only
+
 ```
 
 ### K3s
@@ -235,27 +297,43 @@ lets create 2 controlplane
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-	--datastore-endpoint "http://192.168.1.2:2379,http://192.168.1.3:2379,http://192.168.1.4:2379" \
-	--tls-san "<publicip>"
+  --datastore-endpoint "https://192.168.1.2:2379,https://192.168.1.3:2379,https://192.168.1.4:2379" \
+  --datastore-cafile=/var/lib/etcd/ca.pem \
+  --datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+  --datastore-certfile=/var/lib/etcd/etcd.pem \
+  --tls-san "74.220.22.9"
 ```
 
-
+cat /var/lib/rancher/k3s/server/token
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-    --token "<token>" \
-    --datastore-endpoint "http://192.168.1.2:2379,http://192.168.1.3:2379,http://192.168.1.4:2379" \
-    --tls-san "<publicip>"
+  --token "<>" \
+  --datastore-endpoint "https://192.168.1.2:2379,https://192.168.1.3:2379,https://192.168.1.4:2379" \
+  --datastore-cafile=/var/lib/etcd/ca.pem \
+  --datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+  --datastore-certfile=/var/lib/etcd/etcd.pem \
+  --tls-san "<ip>"
 ```
 
 #### Create VMs for workerplane
 lets create 1 workerplane
-
+```bash
+curl -sfL https://get.k3s.io | sh -s - agent \
+  --token "<>" \
+  --server "https://<ip>:6443"
+```
 
 > Now Testing demo workload
 ```bash
+scp -i <> root@<pub-ip>:/etc/rancher/k3s/k3s.yaml config
+#edit the config with the pub ip of the loadbalanbcer
+```
+```bash
 # workload
-k3s kubectl run nginx --image=nginx
-k3s kubectl expose pod nginx --port=80 --type=LoadBalancer --name=nginx-service
+kubectl run nginx --image=nginx
+kubectl expose pod nginx --port=80 --type=LoadBalancer --name=nginx-service
+
+watch kubectl get no,po,svc,componentstatuses -A
 ```
 
 
