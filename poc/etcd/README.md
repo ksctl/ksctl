@@ -4,7 +4,8 @@
 we need to generate etcd for external datastore with tls
 
 > **Note**
-for now we are testing with k3s
+> - client connection is self-signed tls
+> - peer connection is auto-tls
 
 ## References
 - [k3s-datastore](https://docs.k3s.io/datastore)
@@ -19,54 +20,6 @@ There is configuration for the data-sir and WAL directory in etcd
 ## Work
 
 > https://github.com/etcd-io/etcd/releases/tag/v3.5.10
-
-### Create TLS certs (openssl)
-```bash
-cd openssl
-openssl genrsa -out ca-key.pem 2048
-openssl req -new -key ca-key.pem -out ca-csr.pem -subj "/CN=etcd cluster"
-
-openssl x509 -req -in ca-csr.pem -out ca.pem -days 3650 -signkey ca-key.pem -sha256
-
-
-################################
-
-openssl genrsa -out etcd-key.pem 2048
-openssl req -new -key etcd-key.pem -out etcd-csr.pem -subj "/CN=etcd"
-```
-
-```bash
-echo subjectAltName = DNS:localhost,IP:192.168.1.6,IP:127.0.0.1 > extfile.cnf
-openssl x509 -req -in etcd-csr.pem -CA ca.pem -CAkey ca-key.pem -CAcreateserial -days 3650 -out etcd.pem -sha256 -extfile extfile.cnf
-```
-
-> `etcd-key.pem` -> Client key
-> `etcd.pem` -> Client certificate
-> `ca.pem` -> CA certificate
-
-```bash
-etcd --name infra0 --initial-advertise-peer-urls https://192.168.1.6:2380 \
-  --listen-peer-urls https://192.168.1.6:2380 \
-  --listen-client-urls https://192.168.1.6:2379,https://127.0.0.1:2379 \
-  --advertise-client-urls https://192.168.1.6:2379 \
-  --initial-cluster-token etcd-cluster-1 \
-  --initial-cluster-state new \
-  --force-new-cluster \
-  --peer-auto-tls \
-  --wal-dir=wal \
-  --data-dir=data \
-  --client-cert-auth \
-  --trusted-ca-file=ca.pem \
-  --cert-file=etcd.pem \
-  --key-file=etcd-key.pem
-```
-
-```bash
-etcdctl --endpoints=https://192.168.1.6:2379 --key=etcd-key.pem --cert=etcd.pem --cacert=ca.pem  member list
-```
-
----
-
 
 ### Create VMs for Datastore
 lets create 3 datastore
@@ -117,6 +70,9 @@ openssl req -new -key etcd-key.pem -out etcd-csr.pem -subj "/CN=etcd"
 echo subjectAltName = DNS:localhost,IP:192.168.1.2,IP:192.168.1.3,IP:192.168.1.4,IP:127.0.0.1 > extfile.cnf
 openssl x509 -req -in etcd-csr.pem -CA ca.pem -CAkey ca-key.pem -CAcreateserial -days 3650 -out etcd.pem -sha256 -extfile extfile.cnf
 ```
+> `etcd-key.pem` -> Client key
+> `etcd.pem` -> Client certificate
+> `ca.pem` -> CA certificate
 
 > Important to note that when using the ssh access we have to use scp
 
@@ -295,13 +251,16 @@ etcdctl \
 #### Create VMs for controlplane
 lets create 2 controlplane
 
+> **Note**
+> copy the pem files to the contolplane vms before starting k3s
+
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
   --datastore-endpoint "https://192.168.1.2:2379,https://192.168.1.3:2379,https://192.168.1.4:2379" \
   --datastore-cafile=/var/lib/etcd/ca.pem \
   --datastore-keyfile=/var/lib/etcd/etcd-key.pem \
   --datastore-certfile=/var/lib/etcd/etcd.pem \
-  --tls-san "74.220.22.9"
+  --tls-san "<ip>"
 ```
 
 cat /var/lib/rancher/k3s/server/token
