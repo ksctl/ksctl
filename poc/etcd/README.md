@@ -12,7 +12,7 @@ we need to generate etcd for external datastore with tls
 - [k3s-external-db](https://docs.k3s.io/datastore/ha)
 - [etcd-self-signed-tls](https://github.com/etcd-io/etcd/tree/main/hack/tls-setup)
 - [etcd-auto-tls](https://etcd.io/docs/v3.5/op-guide/clustering/#automatic-certificates)
-
+- [automate-tls-certs-in-go](https://gist.github.com/shaneutt/5e1995295cff6721c89a71d13a71c251)
 
 > **Note**
 There is configuration for the data-sir and WAL directory in etcd
@@ -58,7 +58,7 @@ mkdir -p /var/lib/etcd
 > save /etc/systemd/system/etcd.service
 
 
-Run on the localsystem
+Run on the localsystem (MANUAL STEP TO GENERATE TLS CERTS)
 ```bash
 cd openssl
 openssl genrsa -out ca-key.pem 2048
@@ -76,14 +76,17 @@ openssl x509 -req -in etcd-csr.pem -CA ca.pem -CAkey ca-key.pem -CAcreateserial 
 
 > Important to note that when using the ssh access we have to use scp
 
-> when going to use golang we can use cat <<EOF thing with string
-
 > copy it to all `controlplane` nodes and also to the `datastore`
 
 > ALso mkdir `/var/lib/etcd` or any other directory where you want to keep the cert files in controlplane nodes
 
+Run on the localsystem (AUTOMATED STEP TO GENERATE TLS CERTS)
 ```bash
-scp -v ca.pem etcd.pem etcd-key.pem root@<pub-ip>:/usr/lib/etcd/
+go run . 192.168.1.2 192.168.1.3 192.168.1.4 # provide the private IP of the etcd to make ca only valid for SAN on them
+```
+
+```bash
+scp -i <pem key> ca.pem etcd.pem etcd-key.pem root@<pub-ip>:/var/lib/etcd/
 ```
 
 #### etcd-1
@@ -253,6 +256,10 @@ lets create 2 controlplane
 
 > **Note**
 > copy the pem files to the contolplane vms before starting k3s
+> make sure you mkdir the /var/lib/etcd
+  ```bash
+  scp -i <pem key> ca.pem etcd.pem etcd-key.pem root@<pub-ip>:/var/lib/etcd/
+  ```
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \

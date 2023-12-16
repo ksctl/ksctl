@@ -29,15 +29,23 @@ func WriteToFile(buffer *bytes.Buffer, fileName string) error {
 }
 
 func main() {
+	privateIPArgs := os.Args[1:]
+
+	var validIPAddresses []net.IP = []net.IP{net.IPv4(127, 0, 0, 1)}
+	for _, ip := range privateIPArgs {
+		if val := net.ParseIP(string(ip)); val != nil {
+			validIPAddresses = append(validIPAddresses, val)
+		} else {
+			panic("invalid ip address")
+		}
+	}
+	fmt.Printf("%s\n", validIPAddresses)
+	fmt.Printf("%#v\n", validIPAddresses)
+
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
-			Organization:  []string{"Company, INC."},
-			Country:       []string{"US"},
-			Province:      []string{""},
-			Locality:      []string{"San Francisco"},
-			StreetAddress: []string{"Golden Gate Bridge"},
-			PostalCode:    []string{"94016"},
+			CommonName: "etcd cluster",
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(2, 0, 0),
@@ -82,14 +90,10 @@ func main() {
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
 		Subject: pkix.Name{
-			Organization:  []string{"Company, INC."},
-			Country:       []string{"US"},
-			Province:      []string{""},
-			Locality:      []string{"San Francisco"},
-			StreetAddress: []string{"Golden Gate Bridge"},
-			PostalCode:    []string{"94016"},
+			CommonName: "etcd",
 		},
-		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1), net.IPv4(192, 168, 1, 6), net.IPv6loopback},
+		IPAddresses:  validIPAddresses,
+		DNSNames:     []string{"localhost"},
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(1, 0, 0),
 		SubjectKeyId: []byte{1, 2, 3, 4, 6},
