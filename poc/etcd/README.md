@@ -305,4 +305,110 @@ watch kubectl get no,po,svc,componentstatuses -A
 
 ### Kubeadm
 
-label: `TBD`
+[Refer-kubeadm-config.v1beta3](https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/)
+
+you can create a cluster-cert using $ kubeadm certs certificate-key You can also specify a custom --certificate-key during init that can later be used by join
+
+> kubeadm init --config <> --upload-certs
+```yaml
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+localAPIEndpoint:
+  advertiseAddress: 192.168.1.3
+  bindPort: 6443
+certificateKey: b1f5ee0874004360b4eed04c275724a84c360de52bfd22a961b006e577fb9ebd
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  taints: null
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+apiServer:
+  timeoutForControlPlane: 4m0s
+  certSANs:
+    - "74.220.22.236"
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns: {}
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+kubernetesVersion: 1.28.0
+controlPlaneEndpoint: "74.220.22.236:6443"
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+scheduler: {}
+```
+
+```
+to get --discovery-token-ca-cert-hash  the copy it
+openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1
+```
+
+```
+
+  kubeadm join 74.220.22.236:6443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:4ec0af85bce7b36812e89d5e8853df4429cd1c89ef03cb02a4d939d872a9d3ed \
+        --control-plane --certificate-key b1f5ee0874004360b4eed04c275724a84c360de52bfd22a961b006e577fb9ebd
+
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 74.220.22.236:6443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:4ec0af85bce7b36812e89d5e8853df4429cd1c89ef03cb02a4d939d872a9d3ed
+```
+
+
+> Refer to https://gist.github.com/saiyam1814/d87598cf55c71953e288cd22858c0593
+```bash
+echo "step1- install kubectl,kubeadm and kubelet 1.28.0"
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo "kubeadm install"
+sudo apt update -y
+sudo apt -y install vim git curl wget kubelet=1.28.0-00 kubeadm=1.28.0-00 kubectl=1.28.0-00
+
+echo "memory swapoff"
+sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+sudo swapoff -a
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+echo "Containerd setup"
+sudo tee /etc/modules-load.d/containerd.conf <<EOF
+overlay
+br_netfilter
+EOF
+sudo tee /etc/sysctl.d/kubernetes.conf<<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+sysctl --system
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt update -y
+echo -ne '\n' | sudo apt-get -y install containerd
+mkdir -p /etc/containerd
+containerd config default > /etc/containerd/config.toml
+sudo systemctl restart containerd
+sudo systemctl enable containerd
+sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+sudo systemctl restart containerd
+sudo systemctl enable kubelet
+echo "image pull and cluster setup"
+sudo kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock --kubernetes-version v1.28.0
+```
