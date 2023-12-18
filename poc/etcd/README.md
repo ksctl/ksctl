@@ -305,9 +305,28 @@ watch kubectl get no,po,svc,componentstatuses -A
 
 ### Kubeadm
 
+> In a High Availability (HA) cluster setup, where you have multiple control plane nodes, the localAPIEndpoint in the InitConfiguration is typically not used. The localAPIEndpoint specifies the endpoint that the control plane components advertise to other nodes in the cluster. In a HA setup, the API server is typically load-balanced, and each control plane node advertises itself at the load balancer's address.
+> 
+> Single Control Plane Node Setup:
+> In a single control plane node setup, you might specify the IP address and port of the single control plane node in localAPIEndpoint.
+>
+> High Availability (HA) Control Plane Setup:
+> In an HA setup, you generally set up a load balancer in front of multiple control plane nodes. The load balancer has a single IP address and distributes incoming requests among the control plane nodes.
+Each control plane node does not advertise itself directly; instead, they are behind the load balancer.
+The controlPlaneEndpoint in the ClusterConfiguration is typically used to specify the address and port of the load balancer.
+In summary, for HA setups, you often configure the controlPlaneEndpoint in the ClusterConfiguration to point to the load balancer's address, and you may not need to explicitly configure localAPIEndpoint in the InitConfiguration. The load balancer handles directing traffic to the active control plane node.
+
 [Refer-kubeadm-config.v1beta3](https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/)
 
 you can create a cluster-cert using $ kubeadm certs certificate-key You can also specify a custom --certificate-key during init that can later be used by join
+
+> **Note**
+> copy the pem files to the contolplane vms before starting k3s
+> make sure you mkdir the /var/lib/etcd
+  ```bash
+  mkdir -p /etcd/kubernetes/pki/etcd/ # before doing scp
+  scp -i <pem key> ca.pem etcd.pem etcd-key.pem root@<pub-ip>:/etcd/kubernetes/pki/etcd/
+  ```
 
 > kubeadm init --config <> --upload-certs
 ```yaml
@@ -321,10 +340,10 @@ bootstrapTokens:
   usages:
   - signing
   - authentication
-localAPIEndpoint:
-  advertiseAddress: 192.168.1.3
-  bindPort: 6443
-certificateKey: b1f5ee0874004360b4eed04c275724a84c360de52bfd22a961b006e577fb9ebd
+# localAPIEndpoint:
+#   advertiseAddress: 192.168.1.3
+#   bindPort: 6443
+certificateKey: 9194eaf3f94c89360a86dae833733070d4790a2d49f4b2f1a35c8759a5696109 # <output from $ kubeadm certs certificate-key> 
 nodeRegistration:
   criSocket: unix:///var/run/containerd/containerd.sock
   imagePullPolicy: IfNotPresent
@@ -335,41 +354,52 @@ kind: ClusterConfiguration
 apiServer:
   timeoutForControlPlane: 4m0s
   certSANs:
-    - "74.220.22.236"
+    - "74.220.21.154" # <pub ip>
+    - "127.0.0.1"
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
 controllerManager: {}
 dns: {}
 etcd:
-  local:
-    dataDir: /var/lib/etcd
+  external:
+    endpoints:
+    - "https://192.168.1.2:2379"
+    - "https://192.168.1.3:2379"
+    - "https://192.168.1.4:2379"
+    caFile: "/etcd/kubernetes/pki/etcd/ca.pem"
+    certFile: "/etcd/kubernetes/pki/etcd/etcd.pem"
+    keyFile: "/etcd/kubernetes/pki/etcd/etcd-key.pem"
 imageRepository: registry.k8s.io
 kubernetesVersion: 1.28.0
-controlPlaneEndpoint: "74.220.22.236:6443"
+controlPlaneEndpoint: "74.220.21.154:6443"  # <pub ip>
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
 scheduler: {}
 ```
 
-```
-to get --discovery-token-ca-cert-hash  the copy it
-openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1
-```
-
+to get --discovery-token-ca-cert-hash string you need to copy output of following command
+```bash
+$ openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1
 ```
 
-  kubeadm join 74.220.22.236:6443 --token abcdef.0123456789abcdef \
-        --discovery-token-ca-cert-hash sha256:4ec0af85bce7b36812e89d5e8853df4429cd1c89ef03cb02a4d939d872a9d3ed \
-        --control-plane --certificate-key b1f5ee0874004360b4eed04c275724a84c360de52bfd22a961b006e577fb9ebd
+join commands to reproduce
+```
+ kubeadm join 74.220.21.154:6443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:ffcdd89b647bf4e9448679b40fa4caf77f3345dffbcde490a2eb32980b91984c \
+        --control-plane --certificate-key 9194eaf3f94c89360a86dae833733070d4790a2d49f4b2f1a35c8759a5696109
 
+Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
+As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
+"kubeadm init phase upload-certs --upload-certs" to reload certs afterward.
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join 74.220.22.236:6443 --token abcdef.0123456789abcdef \
-        --discovery-token-ca-cert-hash sha256:4ec0af85bce7b36812e89d5e8853df4429cd1c89ef03cb02a4d939d872a9d3ed
+kubeadm join 74.220.21.154:6443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:ffcdd89b647bf4e9448679b40fa4caf77f3345dffbcde490a2eb32980b91984c
 ```
 
+> for the kubeconfig copied we dont need to edit the server address
 
 > Refer to https://gist.github.com/saiyam1814/d87598cf55c71953e288cd22858c0593
 ```bash
