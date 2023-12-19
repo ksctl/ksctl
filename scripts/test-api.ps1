@@ -58,3 +58,18 @@ Write-Output "--------------------------------------------"
 
 Set-Location cloudproviders\azure
 go test . -v && Set-Location -
+
+
+Write-Output "--------------------------------------------"
+Write-Output "|   Testing (internal/storage/local)"
+Write-Output "--------------------------------------------"
+
+Set-Location storage\local
+go test . -v && Set-Location -
+
+# Write-Output "-------------------------------------------------"
+# Write-Output "|   Testing (internal/storage/external/mongodb)"
+# Write-Output "-------------------------------------------------"
+#
+# Set-Location storage\external\mongodb
+# go test . -v && Set-Location -

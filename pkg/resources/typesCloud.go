@@ -89,13 +89,7 @@ type CloudFactory interface {
 	// it's used for the universal kubernetes for deletion of nodes which have to scale down
 	GetHostNameAllWorkerNode() []string
 
-	SwitchCluster(StorageFactory) error
-
-	// GetStateFiles it returns the civo-state.json
-	// WARN: sensitive info can be present
-	GetStateFile(StorageFactory) (string, error)
-
-	GetKubeconfigPath() string
+	IsPresent(StorageFactory) error
 
 	GetSecretTokens(StorageFactory) (map[string][]byte, error)
 }

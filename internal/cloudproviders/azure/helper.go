@@ -1,15 +1,18 @@
 package azure
 
 import (
-	"encoding/json"
 	"fmt"
-	"runtime"
 
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
+
+func GenerateResourceGroupName(clusterName, clusterType string) string {
+	return fmt.Sprintf("ksctl-resgrp-%s-%s", clusterType, clusterName)
+}
 
 func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
@@ -39,11 +42,14 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 		return err
 	}
 
-	apiStore := Credential{
-		SubscriptionID: skey,
-		TenantID:       tid,
-		ClientID:       cid,
-		ClientSecret:   cs,
+	apiStore := &types.CredentialsDocument{
+		InfraProvider: consts.CloudAzure,
+		Azure: &types.CredentialsAzure{
+			SubscriptionID: skey,
+			TenantID:       tid,
+			ClientID:       cid,
+			ClientSecret:   cs,
+		},
 	}
 
 	// FIXME: add ping pong for validation of credentials
@@ -64,105 +70,27 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	//}
 	// ADD SOME PING method to validate credentials
 
-	if err := helpers.SaveCred(storage, log, apiStore, consts.CloudAzure); err != nil {
+	if err := storage.WriteCredentials(consts.CloudAzure, apiStore); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
-	return helpers.GetPath(flag, consts.CloudAzure, clusterType, path...)
-}
-
-func saveStateHelper(storage resources.StorageFactory) error {
-	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
-	rawState, err := convertStateToBytes(*azureCloudState)
-	if err != nil {
-		return err
-	}
-	log.Debug("Printing", "rawState", string(rawState), "path", path)
-
-	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {
-	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, STATE_FILE_NAME)
-	raw, err := storage.Path(path).Load()
+	raw, err := storage.Read()
 	if err != nil {
-		return err
+		return log.NewError(err.Error())
 	}
-
-	log.Debug("Printing", "rawState", string(raw), "path", path)
-	return convertStateFromBytes(raw)
-}
-
-func saveKubeconfigHelper(storage resources.StorageFactory, kubeconfig string) error {
-	rawState := []byte(kubeconfig)
-	path := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-
-	log.Debug("Printing", "path", path, "kubeconfig", kubeconfig)
-
-	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
-}
-
-func convertStateToBytes(state StateConfiguration) ([]byte, error) {
-	return json.Marshal(state)
-}
-
-func convertStateFromBytes(raw []byte) error {
-	var data *StateConfiguration
-	if err := json.Unmarshal(raw, &data); err != nil {
-		return err
-	}
-	azureCloudState = data
+	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
+		return *x
+	}(raw)
 	return nil
-}
-
-func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOperation) {
-	key := ""
-	value := ""
-	box := ""
-	switch runtime.GOOS {
-	case "windows":
-		key = "$Env:KUBECONFIG"
-
-		switch operation {
-		case consts.OperationStateCreate:
-			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-
-		case consts.OperationStateDelete:
-			value = ""
-		}
-		box = key + "=" + fmt.Sprintf("\"%s\"", value)
-		log.Note("KUBECONFIG env var", key, value)
-
-	case "linux", "darwin":
-
-		switch operation {
-		case consts.OperationStateCreate:
-			key = "export KUBECONFIG"
-			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-			box = key + "=" + fmt.Sprintf("\"%s\"", value)
-			log.Note("KUBECONFIG env var", key, value)
-
-		case consts.OperationStateDelete:
-			key = "unset KUBECONFIG"
-			box = key
-			log.Note(key)
-		}
-	}
-
-	log.Box("KUBECONFIG env var", box)
 }
 
 func validationOfArguments(obj *AzureProvider) error {
 
 	if err := isValidRegion(obj, obj.region); err != nil {
-		return err
-	}
-
-	if err := helpers.IsValidName(obj.clusterName); err != nil {
 		return err
 	}
 

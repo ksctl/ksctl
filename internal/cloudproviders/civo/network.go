@@ -15,8 +15,8 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 	log.Debug("Printing", "Name", name)
 
 	// check if the networkID already exist
-	if len(civoCloudState.NetworkIDs.NetworkID) != 0 {
-		log.Print("skipped network creation found", "networkID", civoCloudState.NetworkIDs.NetworkID)
+	if len(mainStateDocument.CloudInfra.Civo.NetworkID) != 0 {
+		log.Print("skipped network creation found", "networkID", mainStateDocument.CloudInfra.Civo.NetworkID)
 		return nil
 	}
 
@@ -24,22 +24,11 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-	civoCloudState.NetworkIDs.NetworkID = res.ID
+	mainStateDocument.CloudInfra.Civo.NetworkID = res.ID
 	log.Debug("Printing", "networkID", res.ID)
 	log.Success("Created network", "name", name)
 
-	// NOTE: as network creation marks first resource we should create the directoy
-	// when its success
-
-	if err := storage.Path(generatePath(consts.UtilClusterPath, clusterType, clusterDirName)).
-		Permission(FILE_PERM_CLUSTER_DIR).CreateDir(); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
-
-	err = saveStateHelper(storage, path)
-	if err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 	return nil
@@ -48,15 +37,15 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 // DelNetwork implements resources.CloudFactory.
 func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 
-	if len(civoCloudState.NetworkIDs.NetworkID) == 0 {
+	if len(mainStateDocument.CloudInfra.Civo.NetworkID) == 0 {
 		log.Print("skipped network already deleted")
 	} else {
-		netID := civoCloudState.NetworkIDs.NetworkID
+		netID := mainStateDocument.CloudInfra.Civo.NetworkID
 
 		currRetryCounter := consts.KsctlCounterConsts(0)
 		for currRetryCounter < consts.CounterMaxWatchRetryCount {
 			var err error
-			_, err = obj.client.DeleteNetwork(civoCloudState.NetworkIDs.NetworkID)
+			_, err = obj.client.DeleteNetwork(mainStateDocument.CloudInfra.Civo.NetworkID)
 			if err != nil {
 				currRetryCounter++
 				log.Warn("RETRYING", err)
@@ -69,17 +58,14 @@ func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
 			return log.NewError("failed to delete network timeout")
 		}
 
-		civoCloudState.NetworkIDs.NetworkID = ""
-		if err := saveStateHelper(storage, generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)); err != nil {
+		mainStateDocument.CloudInfra.Civo.NetworkID = ""
+		if err := storage.Write(mainStateDocument); err != nil {
 			return log.NewError(err.Error())
 		}
 		log.Success("Deleted network", "networkID", netID)
 	}
-	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName)
 
-	printKubeconfig(storage, consts.OperationStateDelete)
-
-	if err := storage.Path(path).DeleteDir(); err != nil {
+	if err := storage.DeleteCluster(); err != nil {
 		return log.NewError(err.Error())
 	}
 	return nil

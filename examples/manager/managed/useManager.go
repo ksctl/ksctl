@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
@@ -24,7 +25,7 @@ func main() {
 	client.Metadata.LogVerbosity = 0
 	client.Metadata.LogWritter = os.Stdout
 
-	if err := control_pkg.InitializeStorageFactory(client); err != nil {
+	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "scalar"), client); err != nil {
 		panic(err)
 	}
 

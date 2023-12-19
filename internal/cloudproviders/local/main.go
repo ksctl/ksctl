@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/kubesimplify/ksctl/pkg/logger"
 
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -14,31 +14,25 @@ import (
 	cloudControlRes "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 )
 
-type StateConfiguration struct {
-	ClusterName string `json:"cluster_name"`
-	Distro      string `json:"distro"`
-	Version     string `json:"version"`
-	Nodes       int    `json:"nodes"`
-}
-
 type Metadata struct {
-	ResName string
-	Version string
-
-	Cni string
+	ResName           string
+	Version           string
+	tempDirKubeconfig string
+	Cni               string
 }
 
 type LocalProvider struct {
 	ClusterName string `json:"cluster_name"`
 	NoNodes     int    `json:"no_nodes"`
+	Region      string
 	Metadata
 
 	client LocalGo
 }
 
 var (
-	localState *StateConfiguration
-	log        resources.LoggerFactory
+	mainStateDocument *types.StorageDocument
+	log               resources.LoggerFactory
 )
 
 // GetSecretTokens implements resources.CloudFactory.
@@ -48,7 +42,7 @@ func (*LocalProvider) GetSecretTokens(resources.StorageFactory) (map[string][]by
 
 // GetStateFile implements resources.CloudFactory.
 func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
-	cloudstate, err := json.Marshal(localState)
+	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
 		return "", err
 	}
@@ -56,19 +50,18 @@ func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	return string(cloudstate), nil
 }
 
-const (
-	STATE_FILE = "kind-state.json"
-	KUBECONFIG = "kubeconfig"
-)
-
-func ReturnLocalStruct(metadata resources.Metadata, ClientOption func() LocalGo) (*LocalProvider, error) {
+func ReturnLocalStruct(metadata resources.Metadata, state *types.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
 	log = logger.NewDefaultLogger(metadata.LogVerbosity, metadata.LogWritter)
 	log.SetPackageName(string(consts.CloudLocal))
+
+	mainStateDocument = state
 
 	obj := &LocalProvider{
 		ClusterName: metadata.ClusterName,
 		client:      ClientOption(),
+		Region:      metadata.Region,
 	}
+	obj.Metadata.Version = metadata.K8sVersion
 
 	log.Debug("Printing", "localProvider", obj)
 
@@ -82,23 +75,18 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 		if isPresent(storage, cloud.ClusterName) {
 			return log.NewError("already present")
 		}
-		localState = &StateConfiguration{
-			ClusterName: cloud.ClusterName,
-			Distro:      "kind",
-		}
-		var err error
-		err = storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName)).
-			Permission(0750).CreateDir()
-		if err != nil {
-			return log.NewError(err.Error())
-		}
+		log.Debug("Fresh state!!")
 
-		err = saveStateHelper(storage, helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
-		if err != nil {
-			return log.NewError(err.Error())
-		}
+		mainStateDocument.ClusterName = cloud.ClusterName
+		mainStateDocument.Region = cloud.Region
+		mainStateDocument.CloudInfra = &types.InfrastructureState{Local: &types.StateConfigurationLocal{}}
+		mainStateDocument.InfraProvider = consts.CloudLocal
+		mainStateDocument.ClusterType = string(consts.ClusterTypeMang)
+
+		mainStateDocument.CloudInfra.Local.B.KubernetesDistro = "kind"
+		mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.Metadata.Version
 	case consts.OperationStateDelete, consts.OperationStateGet:
-		err := loadStateHelper(storage, helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, STATE_FILE))
+		err := loadStateHelper(storage)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -144,47 +132,39 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 	log.SetPackageName(string(consts.CloudLocal))
 
 	var data []cloudControlRes.AllClusterData
-
-	managedFolders, err := storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)).GetFolders()
+	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
+		"cloud":       string(consts.CloudLocal),
+		"clusterType": string(consts.ClusterTypeMang),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug("Printing", "managedFolderContents", managedFolders)
+	for K, Vs := range clusters {
+		for _, v := range Vs {
+			data = append(data, cloudControlRes.AllClusterData{
+				Provider: consts.CloudLocal,
+				Name:     v.ClusterName,
+				Region:   v.Region,
+				Type:     K,
 
-	for _, folder := range managedFolders {
+				NoMgt: v.CloudInfra.Local.Nodes,
 
-		path := helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, folder[0], STATE_FILE)
-		raw, err := storage.Path(path).Load()
-		if err != nil {
-			return nil, err
-		}
-		var clusterState *StateConfiguration
-		if err := json.Unmarshal(raw, &clusterState); err != nil {
-			return nil, err
-		}
-
-		data = append(data,
-			cloudControlRes.AllClusterData{
-				Provider:   consts.CloudLocal,
-				Name:       folder[0],
-				Region:     "N/A",
-				Type:       consts.ClusterTypeMang,
-				K8sDistro:  consts.KsctlKubernetes(clusterState.Distro),
-				K8sVersion: clusterState.Version,
-				NoMgt:      clusterState.Nodes,
+				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Local.B.KubernetesDistro),
+				K8sVersion: v.CloudInfra.Local.B.KubernetesVer,
 			})
+			log.Debug("Printing", "cloudClusterInfoFetched", data)
+
+		}
 	}
 
-	log.Debug("Printing", "clusterInfo", data)
 	return data, nil
 }
 
-func (obj *LocalProvider) SwitchCluster(storage resources.StorageFactory) error {
+func (obj *LocalProvider) IsPresent(storage resources.StorageFactory) error {
 
 	if isPresent(storage, obj.ClusterName) {
 
-		printKubeconfig(storage, consts.OperationStateCreate, obj.ClusterName)
 		return nil
 	}
 	return log.NewError("Cluster not found")

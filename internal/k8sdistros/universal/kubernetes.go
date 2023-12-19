@@ -3,6 +3,8 @@ package universal
 import (
 	"strings"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -51,27 +53,31 @@ func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	return nil
 }
 
-func (this *Kubernetes) ClientInit(kubeconfigPath string) (err error) {
+func (this *Kubernetes) ClientInit(kubeconfig string) (err error) {
 	log = logger.NewDefaultLogger(this.Metadata.LogVerbosity, this.Metadata.LogWritter)
 	log.SetPackageName("kubernetes-client")
 
-	this.config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	rawKubeconfig := []byte(kubeconfig)
+
+	this.config, err = clientcmd.BuildConfigFromKubeconfigGetter("", func() (*api.Config, error) {
+		return clientcmd.Load(rawKubeconfig)
+	})
 	if err != nil {
-		return log.NewError(err.Error())
+		return
 	}
 
 	this.apiextensionsClient, err = clientset.NewForConfig(this.config)
 	if err != nil {
-		return log.NewError(err.Error())
+		return
 	}
 
 	this.clientset, err = kubernetes.NewForConfig(this.config)
 	if err != nil {
-		return log.NewError(err.Error())
+		return
 	}
 
 	this.helmClient = new(HelmClient)
-	if err := this.helmClient.InitClient(kubeconfigPath); err != nil {
+	if err := this.helmClient.InitClient(kubeconfig); err != nil {
 		return log.NewError(err.Error())
 	}
 

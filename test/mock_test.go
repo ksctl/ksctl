@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"os"
 	"testing"
 
@@ -21,7 +22,7 @@ func BenchmarkCivoTestingManaged(b *testing.B) {
 	}
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-black-box-test"); err != nil {
 		panic(err)
 	}
 }
@@ -39,7 +40,7 @@ func BenchmarkCivoTestingHA(b *testing.B) {
 	}
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-black-box-test"); err != nil {
 		panic(err)
 	}
 }
@@ -57,7 +58,7 @@ func BenchmarkAzureTestingHA(b *testing.B) {
 	}
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-black-box-test"); err != nil {
 		panic(err)
 	}
 }
@@ -75,7 +76,7 @@ func BenchmarkAzureTestingManaged(b *testing.B) {
 	}
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-black-box-test"); err != nil {
 		panic(err)
 	}
 }
@@ -93,7 +94,7 @@ func BenchmarkLocalTestingManaged(b *testing.B) {
 	}
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-black-box-test"); err != nil {
 		panic(err)
 	}
 }

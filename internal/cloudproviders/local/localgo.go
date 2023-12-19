@@ -60,7 +60,7 @@ func (l *LocalGoMockClient) NewProvider(log resources.LoggerFactory, storage res
 }
 
 func (l *LocalGoMockClient) Create(name string, config cluster.CreateOption, image string, wait time.Duration, explictPath func() string) error {
-	path, err := createNecessaryConfigs(l.store, name)
+	path, err := createNecessaryConfigs(name)
 	l.log.Debug("Printing", "path", path, "error", err)
 	l.log.Success("Created the cluster",
 		"name", name, "config", config,

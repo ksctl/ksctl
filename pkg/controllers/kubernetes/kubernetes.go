@@ -4,6 +4,7 @@ import (
 	k3sPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/k3s"
 	kubeadmPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/kubeadm"
 	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -11,13 +12,13 @@ import (
 
 var log resources.LoggerFactory
 
-func HydrateK8sDistro(client *resources.KsctlClient) error {
+func HydrateK8sDistro(client *resources.KsctlClient, state *types.StorageDocument) error {
 	log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 	log.SetPackageName("ksctl-distro")
 
 	switch client.Metadata.K8sDistro {
 	case consts.K8sK3s:
-		client.Distro = k3sPkg.ReturnK3sStruct(client.Metadata)
+		client.Distro = k3sPkg.ReturnK3sStruct(client.Metadata, state)
 	case consts.K8sKubeadm:
 		client.Distro = kubeadmPkg.ReturnKubeadmStruct(client.Metadata)
 	default:
@@ -77,18 +78,13 @@ func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 	return nil
 }
 
-func DelWorkerPlanes(client *resources.KsctlClient, hostnames []string) error {
-
-	kubeconfigPath, _, err := client.Distro.GetKubeConfig(client.Storage)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
+func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames []string) error {
 
 	kubernetesClient := universal.Kubernetes{
 		Metadata:      client.Metadata,
 		StorageDriver: client.Storage,
 	}
-	if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+	if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
 		return log.NewError(err.Error())
 	}
 

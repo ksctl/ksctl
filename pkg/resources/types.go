@@ -48,11 +48,3 @@ type Metadata struct {
 	LogVerbosity int       `json:"log_verbosity"`
 	LogWritter   io.Writer `json:"log_writter"`
 }
-
-//// CobraCmd TODO: Move it to the cli repo
-//type CobraCmd struct {
-//	ClusterName string
-//	Region      string
-//	Client      KsctlClient
-//	Version     string
-//}

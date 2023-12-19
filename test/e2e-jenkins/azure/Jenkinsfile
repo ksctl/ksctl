@@ -18,19 +18,6 @@ pipeline {
                     /usr/local/go/bin/go run . -op create -file azure/create.json
 
                     /usr/local/go/bin/go run . -op get -file azure/get.json
-
-
-                    tree "/var/lib/jenkins/.ksctl/config"
-
-                    cd /var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure\\ test-e2e-azure-ksctl-managed-resgrp\\ eastus
-
-                    jq . cloud-state.json
-
-                    sleep 5s
-
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/managed/test-e2e-azure test-e2e-azure-ksctl-managed-resgrp eastus/kubeconfig"
-
-                    kubectl get nodes -owide
                 '''
             }
         }
@@ -44,18 +31,6 @@ pipeline {
                     /usr/local/go/bin/go run . -op create -file azure/create-ha.json
 
                     /usr/local/go/bin/go run . -op get -file azure/get.json
-
-                    tree "/var/lib/jenkins/.ksctl/config"
-
-                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
-
-                    jq . cloud-state.json
-                    jq . k8s-state.json
-                    sleep 5s
-
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
-
-                    kubectl get nodes -owide
                 '''
             }
         }
@@ -64,11 +39,36 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
+
                     cd test/e2e
+
+                    echo "@@@ Managed Cluster @@@"
+
+                    /usr/local/go/bin/go run . -op switch -file azure/switch.json
+
+                    tree "/var/lib/jenkins/.ksctl/state"
+
+                    cd /var/lib/jenkins/.ksctl/state/azure/managed/test-e2e-azure\\ eastus
+
+                    jq . state.json
+
+                    sleep 5s
+
+                    kubectl get nodes -owide
+
+                    echo "@@@ HA Cluster @@@"
 
                     /usr/local/go/bin/go run . -op switch -file azure/switch-ha.json
 
-                    /usr/local/go/bin/go run . -op switch -file azure/switch.json
+                    tree "/var/lib/jenkins/.ksctl/state"
+
+                    cd /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2
+
+                    jq . state.json
+                    sleep 5s
+
+                    kubectl get nodes -owide
                 '''
             }
         }
@@ -77,21 +77,20 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
+
                     cd test/e2e
 
                     sleep 15s
 
                     /usr/local/go/bin/go run . -op scaledown -file azure/scaledown-ha.json
 
-
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
-
                     kubectl get nodes -owide
 
-                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
+                    cd /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2
 
-                    jq . cloud-state.json
-                    jq . k8s-state.json
+                    jq . state.json
+
                 '''
             }
         }
@@ -100,19 +99,19 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
+
                     cd test/e2e
 
                     sleep 1m
                     /usr/local/go/bin/go run . -op scaleup -file azure/scaleup-ha.json
 
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure test-e2e-ha-azure-ksctl-ha-resgrp eastus2/kubeconfig"
-
                     kubectl get nodes -owide
 
-                    cd /var/lib/jenkins/.ksctl/config/azure/ha/test-e2e-ha-azure\\ test-e2e-ha-azure-ksctl-ha-resgrp\\ eastus2
+                    cd /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2
 
-                    jq . cloud-state.json
-                    jq . k8s-state.json
+                    jq . state.json
+
                 '''
             }
         }

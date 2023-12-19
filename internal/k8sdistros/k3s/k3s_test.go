@@ -1,10 +1,12 @@
 package k3s
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 
 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/helpers"
@@ -15,44 +17,50 @@ import (
 )
 
 var (
-	demoClient         *resources.KsctlClient
+	storeHA resources.StorageFactory
+
 	fakeClient         *K3sDistro
-	dir                = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
+	dir                = fmt.Sprintf("%s ksctl-k3s-test", os.TempDir())
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 )
 
 func TestMain(m *testing.M) {
 
-	demoClient = &resources.KsctlClient{}
-	demoClient.Metadata.ClusterName = "fake"
-	demoClient.Metadata.Region = "fake"
-	demoClient.Metadata.Provider = consts.CloudAzure
-	demoClient.Metadata.LogWritter = os.Stdout
-	demoClient.Metadata.LogVerbosity = -1
+	fakeClient = ReturnK3sStruct(resources.Metadata{
+		ClusterName:  "fake",
+		Region:       "fake",
+		Provider:     consts.CloudAzure,
+		IsHA:         true,
+		LogVerbosity: -1,
+		LogWritter:   os.Stdout,
+		NoCP:         7,
+		NoDS:         5,
+		NoWP:         10,
+		K8sDistro:    consts.K8sK3s,
+	}, &types.StorageDocument{})
 
-	demoClient.Distro = ReturnK3sStruct(demoClient.Metadata)
-	fakeClient = ReturnK3sStruct(demoClient.Metadata)
+	storeHA = localstate.InitStorage(-1, os.Stdout)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
+	_ = storeHA.Connect(context.TODO())
 
-	demoClient.Storage = localstate.InitStorage()
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
-	azHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg")
 
-	if err := os.MkdirAll(azHA, 0755); err != nil {
-		panic(err)
+	if err := helpers.CreateSSHKeyPair(log, mainStateDocument); err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
 	}
-	fmt.Println("Created tmp directories")
+
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
 		SSHState: cloudControlRes.SSHInfo{
-			PathPrivateKey: helpers.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"),
-			UserName:       "fakeuser",
+			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
+			UserName:   "fakeuser",
 		},
 		Metadata: cloudControlRes.Metadata{
 			ClusterName: "fake",
 			Provider:    consts.CloudAzure,
-			Region:      "fake-reg",
+			Region:      "fake",
 			ClusterType: consts.ClusterTypeHa,
-			ClusterDir:  "fake fake-resgrp fake-reg",
 		},
 		// public IPs
 		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
@@ -69,7 +77,7 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-k3s-test"); err != nil {
 		panic(err)
 	}
 
@@ -269,88 +277,51 @@ sudo ./worker-setup.sh
 
 func checkCurrentStateFile(t *testing.T) {
 
-	raw, err := demoClient.Storage.Path(helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)).Load()
+	raw, err := storeHA.Read()
 	if err != nil {
 		t.Fatalf("Unable to access statefile")
 	}
-	var data *StateConfiguration
-	if err := json.Unmarshal(raw, &data); err != nil {
-		t.Fatalf("Reason: %v", err)
-	}
 
-	assert.DeepEqual(t, k8sState, data)
-}
-
-func getState(t *testing.T) {
-	t.Run("check getState()", func(t *testing.T) {
-		expected, err := fakeClient.GetStateFile(demoClient.Storage)
-		assert.NilError(t, err, "no error should be there for getstate")
-
-		got, _ := json.Marshal(k8sState)
-		assert.DeepEqual(t, string(got), expected)
-	})
-
+	assert.DeepEqual(t, mainStateDocument, raw)
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, demoClient.Storage, consts.OperationStateCreate), nil, "should be initlize the state")
-
-	getState(t)
+	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, storeHA, consts.OperationStateCreate), nil, "should be initlize the state")
 
 	fakeClient.Version("1.27.1")
 
 	checkCurrentStateFile(t)
 
-	_, err := helpers.CreateSSHKeyPair(demoClient.Storage, log, consts.CloudAzure, k8sState.ClusterDir)
-	if err != nil {
-		t.Fatalf("Reason: %v", err)
-	}
-	t.Log(helpers.GetPath(consts.UtilSSHPath, consts.CloudAzure, consts.ClusterTypeHa, "fake fake-resgrp fake-reg"))
-
-	err = fakeClient.ConfigureLoadbalancer(demoClient.Storage)
+	err := fakeClient.ConfigureLoadbalancer(storeHA)
 	if err != nil {
 		t.Fatalf("Configure Loadbalancer unable to operate %v", err)
 	}
-	demoClient.Metadata.NoDS = len(fakeStateFromCloud.IPv4DataStores)
-	demoClient.Metadata.NoCP = len(fakeStateFromCloud.IPv4ControlPlanes)
-	demoClient.Metadata.NoDS = len(fakeStateFromCloud.IPv4DataStores)
+	noDS := len(fakeStateFromCloud.IPv4DataStores)
+	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
+	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
 
-	for no := 0; no < demoClient.Metadata.NoDS; no++ {
-		err := fakeClient.ConfigureDataStore(no, demoClient.Storage)
+	for no := 0; no < noDS; no++ {
+		err := fakeClient.ConfigureDataStore(no, storeHA)
 		if err != nil {
 			t.Fatalf("Configure Datastore unable to operate %v", err)
 		}
 	}
 
 	fakeClient.CNI("flannel")
-	for no := 0; no < demoClient.Metadata.NoCP; no++ {
-		err := fakeClient.ConfigureControlPlane(no, demoClient.Storage)
+	for no := 0; no < noCP; no++ {
+		err := fakeClient.ConfigureControlPlane(no, storeHA)
 		if err != nil {
 			t.Fatalf("Configure Controlplane unable to operate %v", err)
 		}
 	}
 
-	for no := 0; no < demoClient.Metadata.NoWP; no++ {
-		err := fakeClient.JoinWorkerplane(no, demoClient.Storage)
+	for no := 0; no < noWP; no++ {
+		err := fakeClient.JoinWorkerplane(no, storeHA)
 		if err != nil {
 			t.Fatalf("Configure Workerplane unable to operate %v", err)
 		}
 	}
 
-	t.Run("get kubeconfig test", func(t *testing.T) {
-		a, b, err := fakeClient.GetKubeConfig(demoClient.Storage)
-		assert.NilError(t, err, "get kubeconfig should be successful")
-
-		path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
-
-		var raw []byte
-		raw, err = demoClient.Storage.Path(path).Load()
-		assert.NilError(t, err, "kubeconfig missmatch")
-
-		assert.Equal(t, path, a, "path for the kubeconfig is missmatch")
-		assert.Equal(t, string(raw), b, "the kubeconfig must match")
-
-	})
 }
 
 func TestCNI(t *testing.T) {

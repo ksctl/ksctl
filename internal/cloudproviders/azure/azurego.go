@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -18,7 +19,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
@@ -291,29 +291,29 @@ func (obj *AzureGoClient) setRequiredENV_VAR(storage resources.StorageFactory, c
 
 	log.Warn(msg)
 
-	tokens, err := helpers.GetCred(storage, log, "azure")
+	credentials, err := storage.ReadCredentials(consts.CloudAzure)
 	if err != nil {
 		return err
 	}
 
-	obj.SubscriptionID = tokens["subscription_id"]
+	obj.SubscriptionID = credentials.Azure.SubscriptionID
 
-	err = os.Setenv("AZURE_SUBSCRIPTION_ID", tokens["subscription_id"])
+	err = os.Setenv("AZURE_SUBSCRIPTION_ID", credentials.Azure.SubscriptionID)
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv("AZURE_TENANT_ID", tokens["tenant_id"])
+	err = os.Setenv("AZURE_TENANT_ID", credentials.Azure.TenantID)
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv("AZURE_CLIENT_ID", tokens["client_id"])
+	err = os.Setenv("AZURE_CLIENT_ID", credentials.Azure.ClientID)
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv("AZURE_CLIENT_SECRET", tokens["client_secret"])
+	err = os.Setenv("AZURE_CLIENT_SECRET", credentials.Azure.ClientSecret)
 	if err != nil {
 		return err
 	}

@@ -12,15 +12,15 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 
 	log.Print("configuring Loadbalancer")
 
-	var controlPlaneIPs = make([]string, len(k8sState.PublicIPs.ControlPlanes))
-	for i := 0; i < len(k8sState.PublicIPs.ControlPlanes); i++ {
-		controlPlaneIPs[i] = k8sState.PrivateIPs.ControlPlanes[i] + ":6443"
+	var controlPlaneIPs = make([]string, len(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes))
+	for i := 0; i < len(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes); i++ {
+		controlPlaneIPs[i] = mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.ControlPlanes[i] + ":6443"
 	}
 
 	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		configLBscript(controlPlaneIPs)).
-		IPv4(k8sState.PublicIPs.Loadbalancer).
-		FastMode(true).SSHExecute(storage, log)
+		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer).
+		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
