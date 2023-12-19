@@ -1,11 +1,11 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers"
@@ -14,7 +14,7 @@ import (
 var (
 	cli        *resources.KsctlClient
 	controller controllers.Controller
-	dir        = fmt.Sprintf("%s/ksctl-black-box-test", os.TempDir())
+	dir        = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
 )
 
 func StartCloud() {
@@ -27,7 +27,7 @@ func StartCloud() {
 	cli.Metadata.LogVerbosity = -1
 	cli.Metadata.LogWritter = os.Stdout
 
-	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
+	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "demo"), cli); err != nil {
 		panic(err)
 	}
 }
@@ -40,7 +40,10 @@ func ExecuteManagedRun() error {
 	if err != nil {
 		return err
 	}
-
+	_, err = controller.SwitchCluster(cli)
+	if err != nil {
+		return err
+	}
 	err = controller.DeleteManagedCluster(cli)
 	if err != nil {
 		return err
@@ -56,13 +59,6 @@ func AzureTestingManaged() error {
 	cli.Metadata.K8sVersion = "1.27"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeMang)
-
-	if err := os.MkdirAll(azManaged, 0755); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Created tmp directories")
 
 	return ExecuteManagedRun()
 }
@@ -74,13 +70,6 @@ func CivoTestingManaged() error {
 	cli.Metadata.NoMP = 2
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
-
-	if err := os.MkdirAll(azManaged, 0755); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Created tmp directories")
 
 	return ExecuteManagedRun()
 }
@@ -90,13 +79,6 @@ func LocalTestingManaged() error {
 	cli.Metadata.NoMP = 5
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	localManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang)
-
-	if err := os.MkdirAll(localManaged, 0755); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Created tmp directories")
 
 	return ExecuteManagedRun()
 }
@@ -118,18 +100,15 @@ func CivoTestingHA() error {
 	cli.Metadata.K8sVersion = "1.27.4"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeHa)
-
-	if err := os.MkdirAll(azHA, 0755); err != nil {
-		panic(err)
-	}
-	fmt.Println("Created tmp directories")
 
 	err = controller.CreateHACluster(cli)
 	if err != nil {
 		return err
 	}
-
+	_, err = controller.SwitchCluster(cli)
+	if err != nil {
+		return err
+	}
 	err = controller.DeleteHACluster(cli)
 	if err != nil {
 		return err
@@ -154,14 +133,13 @@ func AzureTestingHA() error {
 	cli.Metadata.K8sVersion = "1.27.4"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azHA := helpers.GetPath(consts.UtilClusterPath, consts.CloudAzure, consts.ClusterTypeHa)
-
-	if err := os.MkdirAll(azHA, 0755); err != nil {
-		panic(err)
-	}
-	fmt.Println("Created tmp directories")
 
 	err = controller.CreateHACluster(cli)
+	if err != nil {
+		return err
+	}
+
+	_, err = controller.SwitchCluster(cli)
 	if err != nil {
 		return err
 	}

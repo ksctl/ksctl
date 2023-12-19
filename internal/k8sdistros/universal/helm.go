@@ -9,6 +9,14 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
+
+	"k8s.io/client-go/tools/clientcmd"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 )
 
 type HelmClient struct {
@@ -104,14 +112,76 @@ func (c *HelmClient) ListInstalledCharts() error {
 	return nil
 }
 
+////////////////// Using kubeconfig as content not as file in os //////////////////
+// Reference: https://github.com/helm/helm/issues/6910#issuecomment-601277026
+
+type SimpleRESTClientGetter struct {
+	Namespace  string
+	KubeConfig string
+}
+
+func NewRESTClientGetter(namespace, kubeConfig string) *SimpleRESTClientGetter {
+	return &SimpleRESTClientGetter{
+		Namespace:  namespace,
+		KubeConfig: kubeConfig,
+	}
+}
+
+func (c *SimpleRESTClientGetter) ToRESTConfig() (*rest.Config, error) {
+	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(c.KubeConfig))
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func (c *SimpleRESTClientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	config, err := c.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// The more groups you have, the more discovery requests you need to make.
+	// given 25 groups (our groups + a few custom conf) with one-ish version each, discovery needs to make 50 requests
+	// double it just so we don't end up here again for a while.  This config is only used for discovery.
+	config.Burst = 100
+
+	discoveryClient, _ := discovery.NewDiscoveryClientForConfig(config)
+	return memory.NewMemCacheClient(discoveryClient), nil
+}
+
+func (c *SimpleRESTClientGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	discoveryClient, err := c.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
+	expander := restmapper.NewShortcutExpander(mapper, discoveryClient)
+	return expander, nil
+}
+
+func (c *SimpleRESTClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	// use the standard defaults for this client command
+	// DEPRECATED: remove and replace with something more accurate
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+
+	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
+	overrides.Context.Namespace = c.Namespace
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides)
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
 func (client *HelmClient) InitClient(kubeconfig string) error {
 
 	client.settings = cli.New()
 	client.settings.Debug = true
-	client.settings.KubeConfig = kubeconfig
 
 	client.actionConfig = new(action.Configuration)
-	if err := client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Debug); err != nil {
+	if err := client.actionConfig.Init(NewRESTClientGetter(client.settings.Namespace(), kubeconfig), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Debug); err != nil {
 		return log.NewError(err.Error())
 	}
 	return nil

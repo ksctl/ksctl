@@ -9,7 +9,7 @@ import (
 func FuzzValidateStorage(f *testing.F) {
 	testcases := []string{
 		string(consts.StoreLocal),
-		string(consts.StoreRemote),
+		string(consts.StoreExtMongo),
 	}
 
 	for _, tc := range testcases {
@@ -20,7 +20,7 @@ func FuzzValidateStorage(f *testing.F) {
 		ok := ValidateStorage(consts.KsctlStore(store))
 		t.Logf("storage: %s and ok: %v", store, ok)
 		switch consts.KsctlStore(store) {
-		case consts.StoreLocal, consts.StoreRemote:
+		case consts.StoreLocal, consts.StoreExtMongo:
 			if !ok {
 				t.Errorf("Correct storage is invalid")
 			} else {

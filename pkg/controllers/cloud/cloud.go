@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kubesimplify/ksctl/internal/storage/types"
+
 	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
 	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	localPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/local"
@@ -15,7 +17,7 @@ import (
 
 var log resources.LoggerFactory
 
-func HydrateCloud(client *resources.KsctlClient, operation consts.KsctlOperation, fakeClient bool) error {
+func HydrateCloud(client *resources.KsctlClient, state *types.StorageDocument, operation consts.KsctlOperation, fakeClient bool) error {
 
 	log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 	log.SetPackageName("ksctl-cloud")
@@ -24,9 +26,9 @@ func HydrateCloud(client *resources.KsctlClient, operation consts.KsctlOperation
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
 		if !fakeClient {
-			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideClient)
+			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, state, civoPkg.ProvideClient)
 		} else {
-			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideMockCivoClient)
+			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, state, civoPkg.ProvideMockCivoClient)
 		}
 
 		if err != nil {
@@ -34,9 +36,9 @@ func HydrateCloud(client *resources.KsctlClient, operation consts.KsctlOperation
 		}
 	case consts.CloudAzure:
 		if !fakeClient {
-			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideClient)
+			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, state, azurePkg.ProvideClient)
 		} else {
-			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideMockClient)
+			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, state, azurePkg.ProvideMockClient)
 		}
 
 		if err != nil {
@@ -44,9 +46,9 @@ func HydrateCloud(client *resources.KsctlClient, operation consts.KsctlOperation
 		}
 	case consts.CloudLocal:
 		if !fakeClient {
-			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, localPkg.ProvideClient)
+			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, state, localPkg.ProvideClient)
 		} else {
-			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, localPkg.ProvideMockClient)
+			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, state, localPkg.ProvideMockClient)
 		}
 
 		if err != nil {

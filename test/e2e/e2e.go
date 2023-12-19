@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -43,7 +44,7 @@ func main() {
 
 	ksctlClient.Metadata = meta
 
-	err := controllers.InitializeStorageFactory(ksctlClient)
+	err := controllers.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "e2e"), ksctlClient)
 	if err != nil {
 		l.Error(err.Error())
 		os.Exit(1)

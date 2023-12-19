@@ -1,31 +1,33 @@
 package resources
 
 import (
-	"os"
+	"context"
+	"github.com/kubesimplify/ksctl/internal/storage/types"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
 
 type StorageFactory interface {
-	// Save the data in bytes to specific location
-	Save([]byte) error
+	// Kill to achieve graceful termination we can store a boolean flag in the
+	// storagedriver that whether there was any write operation if yes and a reference
+	//always present in the storagedriver we can make the driver write the struct once termination is triggered
+	Kill() error
 
-	// TODO: check if required
-	Destroy() error
+	// Connect TODO: transfer the Logverbosity and LogWriter and all other stuff
+	Connect(ctx context.Context) error
 
-	// Load gets contenets of file in bytes
-	Load() ([]byte, error)
+	Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 
-	// Path setter for path
-	Path(string) StorageFactory
+	Write(*types.StorageDocument) error
 
-	// Permission setter for permission
-	Permission(mode os.FileMode) StorageFactory
+	WriteCredentials(consts.KsctlCloud, *types.CredentialsDocument) error
 
-	// CreateDir creates directory
-	CreateDir() error
+	Read() (*types.StorageDocument, error)
 
-	// DeleteDir deletes directories
-	DeleteDir() error
+	ReadCredentials(consts.KsctlCloud) (*types.CredentialsDocument, error)
 
-	// GetFolders returns the folder's contents
-	GetFolders() ([][]string, error)
+	DeleteCluster() error
+
+	AlreadyCreated(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
+
+	GetOneOrMoreClusters(filters map[string]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error)
 }
