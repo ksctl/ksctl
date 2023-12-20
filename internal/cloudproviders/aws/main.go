@@ -214,7 +214,7 @@ func loadStateHelper(storage resources.StorageFactory) error {
 		return err
 	}
 
-	log.Print("raw", string(raw))
+	log.Print("raw", "", string(raw))
 	return convertStateFromBytes(raw)
 }
 
@@ -228,7 +228,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	}
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
 	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
-	log.Print("clusterDirName", clusterDirName)
+	log.Print("clusterDirName", "", clusterDirName)
 
 	errLoadState := loadStateHelper(storage)
 
