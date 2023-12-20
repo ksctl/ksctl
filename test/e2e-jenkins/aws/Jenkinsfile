@@ -1,0 +1,38 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_ACCESS_KEY_ID = ''
+        AWS_SECRET_ACCESS_KEY = ''
+    }
+
+    stages {
+        stage('ha cluster') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+                    export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+
+                    cd test/e2e
+
+                    /usr/bin/go run . -op create -file aws/create-ha.json
+
+                    /usr/bin/go run . -op get -file aws/get.json
+
+                    tree "/var/lib/jenkins/.ksctl/config"
+
+                    cd /var/lib/jenkins/.ksctl/config/aws/ha/test-e2e-ha-aws\\ test-e2e-ha-aws-ksctl-ha-vpc\\ ap-south-1
+
+                    jq . cloud-state.json
+                    jq . k8s-state.json
+                    sleep 5s
+
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/config/aws/ha/test-e2e-ha-aws test-e2e-ha-aws-ksctl-ha-resgrp us-east-1/kubeconfig"
+
+                    kubectl get nodes -owide
+                '''
+            }
+        }
+    }
+}

@@ -64,7 +64,7 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 		return log.NewError(err.Error())
 	}
 
-	log.Success("Deleted network security group", "name", nsg)
+	log.Success("Deleted network security group", "id: ", nsg)
 
 	return nil
 }
@@ -92,7 +92,7 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return log.NewError("invalid role")
 	}
 	if len(nsg) != 0 {
-		log.Success("skipped firewall already created", "name", nsg)
+		log.Success("skipped firewall already created", "id: ", nsg)
 		return nil
 	}
 
@@ -160,79 +160,73 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		return log.NewError(err.Error())
 	}
 
-	log.Success("Created network security group", "name", *resp.Name)
+	log.Success("Created network security group", "id :", *resp.Name)
 
 	return nil
 }
 
 // FIXME: add fine-grained rules
 func firewallRuleControlPlane() (securityRules []*armnetwork.SecurityRule) {
-	securityRules = []*armnetwork.SecurityRule{
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_6443"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](100),
-				Description:              to.Ptr("sample network security group inbound port 6443"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-			},
+	securityRules = append(securityRules, &armnetwork.SecurityRule{
+		Name: to.Ptr("sample_inbound_6443"),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("*"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](100),
+			Description:              to.Ptr("sample network security group inbound port 6443"),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 		},
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_30_to_35k"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-			},
+	}, &armnetwork.SecurityRule{
+		Name: to.Ptr("sample_inbound_30_to_35k"),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("*"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](101),
+			Description:              to.Ptr("sample network security group inbound port 30000-35000"),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 		},
-	}
+	})
 
 	return
 }
 
 // FIXME: add fine-grained rules
 func firewallRuleWorkerPlane() (securityRules []*armnetwork.SecurityRule) {
-	securityRules = []*armnetwork.SecurityRule{
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_6443"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](100),
-				Description:              to.Ptr("sample network security group inbound port 6443"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-			},
+	securityRules = append(securityRules, &armnetwork.SecurityRule{
+		Name: to.Ptr("sample_inbound_6443"),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("*"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](100),
+			Description:              to.Ptr("sample network security group inbound port 6443"),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 		},
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_30_to_35k"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-			},
+	}, &armnetwork.SecurityRule{
+		Name: to.Ptr("sample_inbound_30_to_35k"),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("*"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](101),
+			Description:              to.Ptr("sample network security group inbound port 30000-35000"),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 		},
-	}
+	})
 	return
 }
 
@@ -272,35 +266,32 @@ func firewallRuleLoadBalancer() (securityRules []*armnetwork.SecurityRule) {
 
 // FIXME: add fine-grained rules
 func firewallRuleDataStore() (securityRules []*armnetwork.SecurityRule) {
-	securityRules = []*armnetwork.SecurityRule{
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_6443"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](100),
-				Description:              to.Ptr("sample network security group inbound port 6443"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-			},
+	securityRules = append(securityRules, &armnetwork.SecurityRule{
+		Name: to.Ptr("sample_inbound_6443"),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("*"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](100),
+			Description:              to.Ptr("sample network security group inbound port 6443"),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 		},
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_30_to_35k"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-			},
+	}, &armnetwork.SecurityRule{
+		Name: to.Ptr("sample_inbound_30_to_35k"),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("*"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](101),
+			Description:              to.Ptr("sample network security group inbound port 30000-35000"),
+			Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 		},
-	}
+	})
 	return
 }

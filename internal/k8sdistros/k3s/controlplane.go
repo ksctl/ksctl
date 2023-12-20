@@ -22,7 +22,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
-		FastMode(true).SSHExecute(storage, log)
+		FastMode(true).SSHExecute(storage, log, k8sState.Provider)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -30,7 +30,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 	// K3stoken
 	err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptForK3sToken()).
 		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
-		SSHExecute(storage, log)
+		SSHExecute(storage, log, k8sState.Provider)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -69,7 +69,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 
 		err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
 			IPv4(k8sState.PublicIPs.ControlPlanes[noOfCP]).
-			FastMode(true).SSHExecute(storage, log)
+			FastMode(true).SSHExecute(storage, log, k8sState.Provider)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -84,7 +84,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 			log.Debug("fetching kubeconfig")
 			err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptKUBECONFIG()).
 				IPv4(k8sState.PublicIPs.ControlPlanes[0]).
-				FastMode(true).SSHExecute(storage, log)
+				FastMode(true).SSHExecute(storage, log, k8sState.Provider)
 			if err != nil {
 				return log.NewError(err.Error())
 			}

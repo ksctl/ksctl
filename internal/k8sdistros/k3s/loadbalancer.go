@@ -20,7 +20,7 @@ func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) er
 	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		configLBscript(controlPlaneIPs)).
 		IPv4(k8sState.PublicIPs.Loadbalancer).
-		FastMode(true).SSHExecute(storage, log)
+		FastMode(true).SSHExecute(storage, log, k8sState.Provider)
 	if err != nil {
 		return log.NewError(err.Error())
 	}

@@ -30,7 +30,7 @@ func main() {
 	var log resources.LoggerFactory = logger.NewDefaultLogger(-1, os.Stdout)
 	log.SetPackageName("ksctl-ssh")
 
-	if err := config.Flag(consts.UtilExecWithOutput).IPv4(*ip).Script(demoScript()).FastMode(true).SSHExecute(storage, log); err != nil {
+	if err := config.Flag(consts.UtilExecWithOutput).IPv4(*ip).Script(demoScript()).FastMode(true).SSHExecute(storage, log, ""); err != nil {
 		panic(err)
 	}
 
