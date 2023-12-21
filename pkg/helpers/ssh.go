@@ -32,7 +32,7 @@ type SSHPayload struct {
 }
 
 type SSHCollection interface {
-	SSHExecute(resources.StorageFactory, resources.LoggerFactory) error
+	SSHExecute(resources.StorageFactory, resources.LoggerFactory, consts.KsctlCloud) error
 	Flag(consts.KsctlUtilsConsts) SSHCollection
 	Script(string) SSHCollection
 	FastMode(bool) SSHCollection
@@ -79,7 +79,7 @@ func (ssh *SSHPayload) FastMode(mode bool) SSHCollection {
 	return ssh
 }
 
-func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log resources.LoggerFactory) error {
+func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log resources.LoggerFactory, provider consts.KsctlCloud) error {
 
 	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
 	if err != nil {
@@ -117,7 +117,7 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log r
 				gotFingerprint := ssh.FingerprintSHA256(remoteSvrHostKey)
 				keyType := remoteSvrHostKey.Type()
 				if keyType == ssh.KeyAlgoRSA {
-					recvFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
+					recvFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP, provider)
 					if err != nil {
 						return err
 					}
@@ -129,6 +129,35 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log r
 				return log.NewError("unsupported key type: %s", keyType)
 			})}
 
+	if provider == consts.CloudAws {
+		config = &ssh.ClientConfig{
+			User: "ubuntu",
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(signer),
+			},
+
+			HostKeyAlgorithms: []string{
+				ssh.KeyAlgoECDSA256,
+				ssh.KeyAlgoED25519,
+				// ssh.KeyAlgoRSA,
+			},
+			HostKeyCallback: ssh.HostKeyCallback(
+				func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+					actualFingerprint := ssh.FingerprintSHA256(key)
+					keyType := key.Type()
+					if keyType == ssh.KeyAlgoRSA || keyType == ssh.KeyAlgoDSA || keyType == ssh.KeyAlgoECDSA256 || keyType == ssh.KeyAlgoED25519 {
+						expectedFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP, provider)
+						if err != nil {
+							return err
+						}
+						if expectedFingerprint != actualFingerprint {
+							return fmt.Errorf("[ssh] mismatch of fingerprint")
+						}
+						return nil
+					}
+					return fmt.Errorf("[ssh] unsupported key type: %s", keyType)
+				})}
+	}
 	if !sshPayload.fastMode {
 		time.Sleep(consts.DurationSSHPause)
 	}
@@ -288,9 +317,17 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 
 // returnServerPublicKeys it uses the ssh-keygen and ssh-keyscan as OS deps
 // it uses this command -> ssh-keyscan -t rsa <remote_ssh_server_public_ipv4> | ssh-keygen -lf -
-func returnServerPublicKeys(publicIP string) (string, error) {
-	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
-	c2 := exec.Command("ssh-keygen", "-lf", "-")
+func returnServerPublicKeys(publicIP string, provider consts.KsctlCloud) (string, error) {
+	var c1 *exec.Cmd
+	var c2 *exec.Cmd
+
+	c1 = exec.Command("ssh-keyscan", "-t", "rsa", publicIP) // WARN: it requires the os to have these dependencies
+	c2 = exec.Command("ssh-keygen", "-lf", "-")             // WARN: it requires the os to have these dependencies
+
+	if provider == consts.CloudAws {
+		c1 = exec.Command("ssh-keyscan", "-t", "ecdsa", publicIP)
+		c2 = exec.Command("ssh-keygen", "-lf", "-")
+	}
 
 	r, w := io.Pipe()
 	c1.Stdout = w

@@ -35,7 +35,8 @@ func GetUserName() string {
 func getKubeconfig(provider consts.KsctlCloud, clusterType consts.KsctlClusterType, params ...string) string {
 	if provider != consts.CloudCivo &&
 		provider != consts.CloudLocal &&
-		provider != consts.CloudAzure {
+		provider != consts.CloudAzure &&
+		provider != consts.CloudAws {
 		return ""
 	}
 	var ret strings.Builder
