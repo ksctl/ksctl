@@ -23,7 +23,11 @@ func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory)
 	err = k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(k3s.K3sVer, k8sState.PrivateIPs.Loadbalancer, k8sState.K3sToken)).
 		IPv4(k8sState.PublicIPs.WorkerPlanes[idx]).
-		FastMode(true).SSHExecute(storage, log)
+		//<<<<<<< HEAD
+		FastMode(true).SSHExecute(storage, log, k8sState.Provider)
+	//=======
+	//		FastMode(true).SSHExecute(storage, log)
+	//>>>>>>> upstream/main
 	if err != nil {
 		return log.NewError(err.Error())
 	}
