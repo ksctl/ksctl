@@ -1,3 +1,11 @@
+# For the profiling Mock tests
+
+```bash
+go test -cpuprofile ../out/cpu.prof -memprofile ../out/mem.prof -bench . -benchtime=1x -cover -v
+go tool pprof cpu.prof
+go tool pprof mem.prof
+```
+
 # setting up jenkins for e2e
 
 ## jenkins
