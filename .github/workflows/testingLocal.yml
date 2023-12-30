@@ -24,9 +24,17 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      ) &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') != true ||
+        github.event.label.name != 'pr/lgtm'
+      )
 
     runs-on: ${{ matrix.os }}
-    if: ${{ github.event.label.name != 'pr/lgtm' }}
 
     steps:
       - uses: actions/checkout@v3
@@ -54,7 +62,15 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    if: ${{ github.event.label.name == 'pr/lgtm' }}
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      ) &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') ||
+        github.event.label.name == 'pr/lgtm'
+      )
     steps:
       - uses: actions/checkout@v3
       - name: Set up Go

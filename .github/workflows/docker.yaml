@@ -16,10 +16,16 @@ on:
       - 'httpserver/**'
       - 'Makefile'
     branches: [ main ]
+    types: [ labeled, opened, synchronize, reopened ]
 
 jobs:
   ksctl_scaler_http:
     runs-on: ubuntu-latest
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      )
 
     env:
       DOCKER_USERNAME: kubesimplify
