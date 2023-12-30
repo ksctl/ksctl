@@ -23,11 +23,18 @@ on:
       - 'pkg/**'
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
+    types: [ labeled, opened, synchronize, reopened ]
   schedule:
     - cron: '39 14 * * 2'
 
 jobs:
   analyze:
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      )
+
     name: Analyze
     runs-on: ubuntu-latest
     permissions:

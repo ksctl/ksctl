@@ -12,9 +12,16 @@ on:
     - 'pkg/**'
     branches:
     - main
+    types: [ labeled, opened, synchronize, reopened ]
 
 jobs:
   codecov:
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      )
+
     name: codecov coverage
     runs-on: ubuntu-latest
     steps:
