@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -112,8 +113,6 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 
 		awsCloudState.VPCID = *vpc.Vpc.VpcId
 		awsCloudState.VPCNAME = *vpc.Vpc.Tags[0].Value
-
-		log.Success("[aws] created the vpc ", "id: ", *vpc.Vpc.VpcId)
 
 		if err := obj.client.ModifyVpcAttribute(context.Background(), ec2client); err != nil {
 			return err

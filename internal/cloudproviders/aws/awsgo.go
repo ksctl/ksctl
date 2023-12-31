@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"os"
+	"time"
 )
 
 func ProvideClient() AwsGo {
@@ -99,6 +100,21 @@ func (*AwsGoClient) BeginCreateNIC(ctx context.Context, ec2client *ec2.Client, p
 		log.Error("Error Creating Network Interface", "error", err)
 	}
 
+	nicExistsWaiter := ec2.NewNetworkInterfaceAvailableWaiter(ec2client, func(nicwaiter *ec2.NetworkInterfaceAvailableWaiterOptions) {
+		nicwaiter.MinDelay = 20
+		nicwaiter.MaxDelay = 60
+	})
+
+	describeNICInput := &ec2.DescribeNetworkInterfacesInput{
+		NetworkInterfaceIds: []string{*nic.NetworkInterface.NetworkInterfaceId},
+	}
+
+	err = nicExistsWaiter.Wait(context.Background(), describeNICInput, 60*time.Second)
+
+	if err != nil {
+		log.Error("Error Waiting for Network Interface", "error", err)
+	}
+
 	return nic, err
 }
 
@@ -116,6 +132,20 @@ func (awsclient *AwsGoClient) BeginCreateSubNet(context context.Context, subnetN
 		log.Error("Error Creating Subnet", "error", err)
 	}
 
+	subnetExistsWaiter := ec2.NewSubnetAvailableWaiter(ec2client, func(subnetwaiter *ec2.SubnetAvailableWaiterOptions) {
+		subnetwaiter.MinDelay = 20
+		subnetwaiter.MaxDelay = 60
+	})
+
+	describeSubnetInput := &ec2.DescribeSubnetsInput{
+		SubnetIds: []string{*subnet.Subnet.SubnetId},
+	}
+
+	err = subnetExistsWaiter.Wait(context, describeSubnetInput, 60*time.Second)
+	if err != nil {
+		log.Error("Error Waiting for Subnet", "error", err)
+	}
+
 	return subnet, err
 }
 
@@ -126,19 +156,18 @@ func (*AwsGoClient) BeginCreateVM(ctx context.Context, ec2client *ec2.Client, pa
 		log.Error("Error Creating Instance", "error", err)
 	}
 
-	// TODO Wait until the instance is running.
-	for {
-		instanceinfo := &ec2.DescribeInstancesInput{
-			InstanceIds: []string{*runResult.Instances[0].InstanceId},
-		}
+	instanceExistsWaiter := ec2.NewInstanceRunningWaiter(ec2client, func(instancewaiter *ec2.InstanceRunningWaiterOptions) {
+		instancewaiter.MinDelay = 20
+		instancewaiter.MaxDelay = 60
+	})
 
-		instanceinforesponse, err := ec2client.DescribeInstances(context.Background(), instanceinfo)
-		if err != nil {
-			return nil, err
-		}
-		if instanceinforesponse.Reservations[0].Instances[0].State.Name == types.InstanceStateNameRunning {
-			break
-		}
+	describeInstanceInput := &ec2.DescribeInstancesInput{
+		InstanceIds: []string{*runResult.Instances[0].InstanceId},
+	}
+
+	err = instanceExistsWaiter.Wait(context.Background(), describeInstanceInput, 60*time.Second)
+	if err != nil {
+		log.Error("Error Waiting for Instance", "error", err)
 	}
 
 	return runResult, err
@@ -190,6 +219,20 @@ func (*AwsGoClient) BeginCreateVpc(ec2client *ec2.Client, parameter ec2.CreateVp
 	vpc, err := ec2client.CreateVpc(context.TODO(), &parameter)
 	if err != nil {
 		log.Error("Error Creating VPC", "error", err)
+	}
+
+	vpcExistsWaiter := ec2.NewVpcExistsWaiter(ec2client, func(vpcwaiter *ec2.VpcExistsWaiterOptions) {
+		vpcwaiter.MinDelay = 1
+		vpcwaiter.MaxDelay = 5
+	})
+
+	describeVpcInput := &ec2.DescribeVpcsInput{
+		VpcIds: []string{*vpc.Vpc.VpcId},
+	}
+
+	err = vpcExistsWaiter.Wait(context.Background(), describeVpcInput, 60*time.Second)
+	if err != nil {
+		log.Error("Error Waiting for VPC", "error", err)
 	}
 
 	return vpc, err
@@ -466,7 +509,7 @@ func (awsclient *AwsGoClient) ListLocations(ec2client *ec2.Client) (*string, err
 
 	result, err := ec2client.DescribeRegions(context.Background(), parameter)
 	if err != nil {
-		fmt.Println("Error describing regions:", err)
+		fmt.Println(err)
 		return nil, err
 	}
 

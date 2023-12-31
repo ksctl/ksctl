@@ -3,13 +3,15 @@ package aws
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strconv"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	elb_types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-	"strconv"
 
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
@@ -18,30 +20,6 @@ func (obj *AwsProvider) ec2Client() *ec2.Client {
 	ec2client := ec2.NewFromConfig(obj.session)
 	//TODO ADD ERROR HANDLING
 	return ec2client
-}
-
-func (obj *AwsProvider) vpcClienet() ec2.CreateVpcInput {
-
-	vpcClient := ec2.CreateVpcInput{
-		CidrBlock: aws.String("172.31.0.0/16"),
-	}
-	fmt.Println("VPC Client Created Successfully")
-	return vpcClient
-}
-
-func (obj *AwsProvider) CreateVPC() {
-
-	vpcClient := obj.vpcClienet()
-	ec2Client := obj.ec2Client()
-
-	vpc, err := ec2Client.CreateVpc(context.TODO(), &vpcClient)
-	if err != nil {
-		log.Error("Error Creating VPC", err)
-	}
-	awsCloudState.VPCID = *vpc.Vpc.VpcId
-	fmt.Print("VPC Created Successfully: ")
-	fmt.Println(*vpc.Vpc.VpcId)
-
 }
 
 func (obj *AwsProvider) CreateInternetGateway() error {
@@ -441,12 +419,17 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 		panic("Error creating network interface: " + err.Error())
 	}
 
+	ami, err := getLatestUbuntuAMI(ec2Client)
+	if err != nil {
+		log.Error("Error getting latest ubuntu ami", "error", err)
+	}
+
 	parameter := &ec2.RunInstancesInput{
-		ImageId:      aws.String("ami-0287a05f0ef0e9d9a"),
+		ImageId:      aws.String(ami),
 		InstanceType: types.InstanceType(vmtype),
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
-		KeyName:      aws.String("test-e2e-ha-aws-ssh"),
+		KeyName:      aws.String(awsCloudState.SSHKeyName),
 		Monitoring: &types.RunInstancesMonitoringEnabled{
 			Enabled: aws.Bool(true),
 		},
@@ -481,10 +464,6 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	}
 
 	instanceop, err := obj.client.BeginCreateVM(context.Background(), ec2Client, parameter)
-	if err != nil {
-		log.Error("Error creating vm", "error", err)
-	}
-
 	if err != nil {
 		log.Error("Error creating vm", "error", err)
 	}
@@ -543,6 +522,39 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, indexNo int) err
 	return nil
 }
 
+func getLatestUbuntuAMI(client *ec2.Client) (string, error) {
+	// Specify the filter for Ubuntu images
+	imageFilter := &ec2.DescribeImagesInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("name"),
+				Values: []string{"ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server*"},
+			},
+			{
+				Name:   aws.String("architecture"),
+				Values: []string{"x86_64"},
+			},
+		},
+	}
+
+	// Get the Ubuntu AMI images
+	resp, err := client.DescribeImages(context.TODO(), imageFilter)
+	if err != nil {
+		return "", fmt.Errorf("failed to describe images: %w", err)
+	}
+
+	if len(resp.Images) == 0 {
+		return "", fmt.Errorf("no images found")
+	}
+
+	// Sort images by creation date in descending order to get the latest one first
+	sort.Slice(resp.Images, func(i, j int) bool {
+		return *resp.Images[i].CreationDate > *resp.Images[j].CreationDate
+	})
+
+	return *resp.Images[0].ImageId, nil
+}
+
 func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
 
 	interfaceName := ""
@@ -588,10 +600,12 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage reso
 	return nil
 }
 
+// TODO : NOT CONFIRMED
 func (obj *AwsProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, index int, role string) error {
 	return nil
 }
 
+// TODO : NOT CONFIRMED
 func (obj *AwsProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string, index int, role string, instancid string) (*ec2.AllocateAddressOutput, error) {
 
 	ec2Client := obj.ec2Client()

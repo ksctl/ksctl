@@ -171,7 +171,7 @@ func ReturnAwsStruct(meta resources.Metadata, ClientOption func() AwsGo) (*AwsPr
 func NEWCLIENT() aws.Config {
 	NewSession, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("ap-south-1"),
-		config.WithSharedConfigProfile("default"),
+		// config.WithSharedConfigProfile("default"),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), "")),
 	)
 	if err != nil {

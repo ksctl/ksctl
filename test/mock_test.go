@@ -2,10 +2,9 @@ package test
 
 import (
 	"fmt"
+	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"os"
 	"testing"
-
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 )
 
 func BenchmarkCivoTestingManaged(b *testing.B) {
