@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+
 	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -19,9 +20,6 @@ func validationFields(meta resources.Metadata) error {
 	}
 	if !helpers.ValidateStorage(meta.StateLocation) {
 		return errors.New("invalid storage driver")
-	}
-	if err := helpers.IsValidName(meta.ClusterName); err != nil {
-		return err
 	}
 	log.Debug("Valid fields from user")
 	return nil
