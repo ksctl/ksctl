@@ -1,16 +1,13 @@
 package civo
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"runtime"
-
 	"github.com/civo/civogo"
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
+	"os"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -22,11 +19,14 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	}
 	log.Warn("environment vars not set: `CIVO_TOKEN`")
 
-	token, err := helpers.GetCred(storage, log, consts.CloudCivo)
+	credentials, err := storage.ReadCredentials(consts.CloudCivo)
 	if err != nil {
 		return ""
 	}
-	return token["token"]
+	if credentials.Civo == nil {
+		return ""
+	}
+	return credentials.Civo.Token
 }
 
 func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
@@ -50,52 +50,25 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	}
 	log.Print(id)
 
-	if err := helpers.SaveCred(storage, log, Credential{token}, consts.CloudCivo); err != nil {
+	if err := storage.WriteCredentials(consts.CloudCivo,
+		&types.CredentialsDocument{
+			InfraProvider: consts.CloudCivo,
+			Civo:          &types.CredentialsCivo{Token: token},
+		}); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func generatePath(flag consts.KsctlUtilsConsts, clusterType consts.KsctlClusterType, path ...string) string {
-	p := helpers.GetPath(flag, consts.CloudCivo, clusterType, path...)
-	log.Debug("Printing", "path", p)
-	return p
-}
-
-func saveStateHelper(storage resources.StorageFactory, path string) error {
-	rawState, err := convertStateToBytes(*civoCloudState)
-	if err != nil {
-		return err
-	}
-	return storage.Path(path).Permission(FILE_PERM_CLUSTER_STATE).Save(rawState)
-}
-
-func loadStateHelper(storage resources.StorageFactory, path string) error {
-	raw, err := storage.Path(path).Load()
+func loadStateHelper(storage resources.StorageFactory) error {
+	raw, err := storage.Read()
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-
-	return convertStateFromBytes(raw)
-}
-
-func saveKubeconfigHelper(storage resources.StorageFactory, path string, kubeconfig string) error {
-	rawState := []byte(kubeconfig)
-	log.Debug("Printing", "kubeconfig", kubeconfig, "path", path)
-
-	return storage.Path(path).Permission(FILE_PERM_CLUSTER_KUBECONFIG).Save(rawState)
-}
-
-func convertStateToBytes(state StateConfiguration) ([]byte, error) {
-	return json.Marshal(state)
-}
-
-func convertStateFromBytes(raw []byte) error {
-	var data *StateConfiguration
-	if err := json.Unmarshal(raw, &data); err != nil {
-		return err
-	}
-	civoCloudState = data
+	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
+		return *x
+	}(raw)
 	return nil
 }
 
@@ -151,10 +124,6 @@ func validationOfArguments(obj *CivoProvider) error {
 		return err
 	}
 
-	if err := helpers.IsValidName(obj.clusterName); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -187,41 +156,4 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 		}
 	}
 	return log.NewError("INVALID VM SIZE\nValid options: %v\n", validFromClient)
-}
-
-func printKubeconfig(storage resources.StorageFactory, operation consts.KsctlOperation) {
-	key := ""
-	value := ""
-	box := ""
-	switch runtime.GOOS {
-	case "windows":
-		key = "$Env:KUBECONFIG"
-
-		switch operation {
-		case consts.OperationStateCreate:
-			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-
-		case consts.OperationStateDelete:
-			value = ""
-		}
-		box = key + "=" + fmt.Sprintf("\"%s\"", value)
-		log.Note("KUBECONFIG env var", key, value)
-
-	case "linux", "darwin":
-
-		switch operation {
-		case consts.OperationStateCreate:
-			key = "export KUBECONFIG"
-			value = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-			box = key + "=" + fmt.Sprintf("\"%s\"", value)
-			log.Note("KUBECONFIG env var", key, value)
-
-		case consts.OperationStateDelete:
-			key = "unset KUBECONFIG"
-			box = key
-			log.Note(key)
-		}
-	}
-
-	log.Box("KUBECONFIG env var", box)
 }

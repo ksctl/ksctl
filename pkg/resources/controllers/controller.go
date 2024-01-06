@@ -6,7 +6,7 @@ type Controller interface {
 	CreateManagedCluster(*resources.KsctlClient) error
 	DeleteManagedCluster(*resources.KsctlClient) error
 
-	SwitchCluster(*resources.KsctlClient) error
+	SwitchCluster(*resources.KsctlClient) (*string, error)
 
 	GetCluster(*resources.KsctlClient) error
 

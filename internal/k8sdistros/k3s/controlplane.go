@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
@@ -15,34 +14,33 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 	var script string
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
-		script = scriptCP_1WithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
+		script = scriptCP_1WithoutCNI(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
 	} else {
-		script = scriptCP_1(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer)
+		script = scriptCP_1(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
 	}
 
 	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
-		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
-		FastMode(true).SSHExecute(storage, log)
+		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[0]).
+		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
 	// K3stoken
 	err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptForK3sToken()).
-		IPv4(k8sState.PublicIPs.ControlPlanes[0]).
-		SSHExecute(storage, log)
+		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[0]).
+		SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
 	log.Debug("fetching k3s token")
 
-	k8sState.K3sToken = strings.Trim(k3s.SSHInfo.GetOutput(), "\n")
+	mainStateDocument.K8sBootstrap.K3s.K3sToken = strings.Trim(k3s.SSHInfo.GetOutput(), "\n")
 
-	log.Debug("Printing", "k3sToken", k8sState.K3sToken)
+	log.Debug("Printing", "k3sToken", mainStateDocument.K8sBootstrap.K3s.K3sToken)
 
-	path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
-	err = saveStateHelper(storage, path)
+	err = storage.Write(mainStateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -62,45 +60,43 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		var script string
 
 		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
-			script = scriptCP_NWithoutCNI(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
+			script = scriptCP_NWithoutCNI(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		} else {
-			script = scriptCP_N(k3s.K3sVer, k8sState.DataStoreEndPoint, k8sState.PublicIPs.Loadbalancer, k8sState.K3sToken)
+			script = scriptCP_N(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		}
 
 		err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
-			IPv4(k8sState.PublicIPs.ControlPlanes[noOfCP]).
-			FastMode(true).SSHExecute(storage, log)
-		if err != nil {
-			return log.NewError(err.Error())
-		}
-		path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
-		err = saveStateHelper(storage, path)
+			IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[noOfCP]).
+			FastMode(true).SSHExecute(log)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 
-		if noOfCP+1 == len(k8sState.PublicIPs.ControlPlanes) {
+		err = storage.Write(mainStateDocument)
+		if err != nil {
+			return log.NewError(err.Error())
+		}
+
+		if noOfCP+1 == len(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes) {
 
 			log.Debug("fetching kubeconfig")
 			err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptKUBECONFIG()).
-				IPv4(k8sState.PublicIPs.ControlPlanes[0]).
-				FastMode(true).SSHExecute(storage, log)
+				IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[0]).
+				FastMode(true).SSHExecute(log)
 			if err != nil {
 				return log.NewError(err.Error())
 			}
 
 			kubeconfig := k3s.SSHInfo.GetOutput()
-			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", k8sState.PublicIPs.Loadbalancer, 1)
-			kubeconfig = strings.Replace(kubeconfig, "default", k8sState.ClusterName+"-"+k8sState.Region+"-"+string(k8sState.ClusterType)+"-"+string(k8sState.Provider)+"-ksctl", -1)
-
+			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer, 1)
+			kubeconfig = strings.Replace(kubeconfig, "default", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
+			mainStateDocument.ClusterKubeConfig = kubeconfig
 			log.Debug("Printing", "kubeconfig", kubeconfig)
 			// modify
-			path = helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
-			err = saveKubeconfigHelper(storage, path, kubeconfig)
+			err = storage.Write(mainStateDocument)
 			if err != nil {
 				return log.NewError(err.Error())
 			}
-			printKubeconfig(storage, consts.OperationStateCreate)
 		}
 
 	}
@@ -180,20 +176,4 @@ EOF
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
 `, ver, token, dbEndpoint, pubIPlb)
-}
-
-func (k3s *K3sDistro) GetKubeConfig(storage resources.StorageFactory) (path string, data string, err error) {
-
-	if len(k8sState.Provider) == 0 || len(k8sState.ClusterDir) == 0 || len(k8sState.ClusterDir) == 0 {
-		return "", "", log.NewError("status is not correct")
-	}
-
-	path = helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, KUBECONFIG_FILE_NAME)
-
-	var raw []byte
-	raw, err = storage.Path(path).Load()
-
-	data = string(raw)
-
-	return
 }

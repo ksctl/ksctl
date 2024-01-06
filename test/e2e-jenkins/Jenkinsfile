@@ -18,15 +18,6 @@ pipeline {
                 #!/bin/bash
                 /usr/local/go/bin/go version
 
-                mkdir -p ${HOME}/.ksctl/cred
-                mkdir -p ${HOME}/.ksctl/config/civo/ha
-                mkdir -p ${HOME}/.ksctl/config/azure/ha
-				mkdir -p ${HOME}/.ksctl/config/aws/ha
-                mkdir -p ${HOME}/.ksctl/config/azure/managed
-                mkdir -p ${HOME}/.ksctl/config/civo/managed
-				mkdir -p ${HOME}/.ksctl/config/aws/managed
-                mkdir -p ${HOME}/.ksctl/config/local/managed
-
                 echo "SETUP DONE"
                 '''
             }

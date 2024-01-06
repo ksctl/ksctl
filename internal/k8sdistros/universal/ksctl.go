@@ -4,18 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kubesimplify/ksctl/internal/storage/types"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
 	"time"
 
-	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
-	"github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -148,67 +147,20 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	return nil
 }
 
-func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, cloudstate, k8sstate string, secretKeys map[string][]byte) error {
+func (this *Kubernetes) KsctlConfigForController(kubeconfig string, globalState *types.StorageDocument, secretKeys map[string][]byte) error {
 
 	log.Print("Started to configure Cluster to add Ksctl specific resources")
-	rawCloudstate := []byte(cloudstate)
-
-	var sshPrivateKeyPath string
-	var sshPubKeyPath string
-	var clusterDir string
 
 	if err := this.namespaceCreate(KSCTL_SYS_NAMESPACE); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	switch this.Metadata.Provider {
-	case consts.CloudCivo:
-		var data *civo.StateConfiguration
-		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
-			return log.NewError(err.Error())
-		}
-
-		sshPrivateKeyPath = data.SSHPrivateKeyLoc
-		clusterDir = data.ClusterName + " " + data.Region
-		data.SSHPrivateKeyLoc = fmt.Sprintf("/app/ksctl-data/config/civo/ha/%s/keypair", clusterDir)
-
-		raw, err := json.Marshal(data)
-		if err != nil {
-			return log.NewError(err.Error())
-		}
-
-		cloudstate = string(raw)
-
-	case consts.CloudAzure:
-		var data *azure.StateConfiguration
-		if err := json.Unmarshal(rawCloudstate, &data); err != nil {
-			return log.NewError(err.Error())
-		}
-
-		sshPrivateKeyPath = data.SSHPrivateKeyLoc
-		clusterDir = data.ClusterName + " " + data.ResourceGroupName + " " + data.Region
-
-		data.SSHPrivateKeyLoc = fmt.Sprintf("/app/ksctl-data/config/azure/ha/%s/keypair", clusterDir)
-		raw, err := json.Marshal(data)
-		if err != nil {
-			return log.NewError(err.Error())
-		}
-		cloudstate = string(raw)
-	}
-
-	sshPubKeyPath = sshPrivateKeyPath + ".pub"
-
-	sshPrivate, err := this.StorageDriver.Path(sshPrivateKeyPath).Load()
+	var globalStateRaw []byte
+	var err error
+	globalStateRaw, err = json.Marshal(globalState)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-
-	sshPub, err := this.StorageDriver.Path(sshPubKeyPath).Load()
-	if err != nil {
-		return log.NewError(err.Error())
-	}
-
-	log.Debug("Printing", "cloud-state.json", cloudstate, "k8s-state.json", k8sstate, "kubeconfig", kubeconfig, "keypair.Public", string(sshPub), "keypair.Private", string(sshPrivate))
 
 	var state *corev1.ConfigMap = &corev1.ConfigMap{
 		TypeMeta: v1.TypeMeta{
@@ -218,13 +170,12 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 		ObjectMeta: v1.ObjectMeta{
 			Name: "ksctl-state",
 		},
-		Data: map[string]string{
-			"cloud-state.json": cloudstate,
-			"k8s-state.json":   k8sstate,
-			"kubeconfig":       kubeconfig,
-			"keypair.pub":      string(sshPub),
-			"keypair":          string(sshPrivate),
+		BinaryData: map[string][]byte{
+			"state.json": globalStateRaw,
 		},
+		//Data: map[string]any{
+		//	"state.json": cloudstate,
+		//},
 	}
 
 	log.Debug("Printing", "stateConfigMapManifest", state)
@@ -277,12 +228,12 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 	}
 
 	// NOTE: reconstruct according to the http server
-	newPath := fmt.Sprintf("/app/ksctl-data/config/%s/ha/%s", this.Metadata.Provider, clusterDir)
+	newPath := fmt.Sprintf("/app/ksctl-data/.ksctl/state/%s/ha/%s", this.Metadata.Provider, this.Metadata.ClusterName+" "+this.Metadata.Region)
 
 	replicas := int32(1)
 
 	execNewPath := strings.Join(strings.Split(newPath, " "), "\\ ")
-	rootFolder := fmt.Sprintf("/app/ksctl-data/config/%s/ha", this.Metadata.Provider)
+	rootFolder := fmt.Sprintf("/app/ksctl-data/.ksctl/config/%s/ha", this.Metadata.Provider)
 
 	log.Debug("Printing", "newPathForClusterAccordingToPodFileSystem", newPath, "rootFolderForClusterAccordingToPodFileSystem", rootFolder)
 
@@ -328,7 +279,7 @@ func (this *Kubernetes) KsctlConfigForController(kubeconfig, kubeconfigpath, clo
 							Image:   "alpine",
 							Command: []string{"sh", "-c"},
 							Args: []string{
-								fmt.Sprintf("ls -la /tmp%s && mkdir -p %s && cp -v /tmp%s/..data/kubeconfig %s/kubeconfig && cp -v /tmp%s/..data/cloud-state.json %s/cloud-state.json && cp -v /tmp%s/..data/k8s-state.json %s/k8s-state.json && cp -v /tmp%s/..data/keypair %s/keypair && cp -v /tmp%s/..data/keypair.pub %s/keypair.pub", execNewPath, rootFolder, execNewPath, execNewPath, execNewPath, execNewPath, execNewPath, execNewPath, execNewPath, execNewPath, execNewPath, execNewPath),
+								fmt.Sprintf("ls -la /tmp%s && mkdir -p %s && cp -v /tmp%s/..data/state.json %s/state.json", execNewPath, rootFolder, execNewPath, execNewPath),
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								corev1.VolumeMount{

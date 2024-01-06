@@ -20,14 +20,14 @@ type CloudResourceState struct {
 type Metadata struct {
 	ClusterName string
 	Region      string
-	ClusterDir  string
+	//ClusterDir  string
 	ClusterType consts.KsctlClusterType
 	Provider    consts.KsctlCloud
 }
 
 type SSHInfo struct {
-	UserName       string
-	PathPrivateKey string
+	UserName   string
+	PrivateKey string
 }
 
 type AllClusterData struct {

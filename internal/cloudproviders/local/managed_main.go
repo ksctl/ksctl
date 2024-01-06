@@ -1,9 +1,11 @@
 package local
 
 import (
+	"os"
 	"time"
 
 	"github.com/kubesimplify/ksctl/pkg/helpers"
+
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
@@ -12,13 +14,27 @@ import (
 func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) error {
 
 	cloud.client.NewProvider(log, storage, nil)
+	if len(cloud.Metadata.tempDirKubeconfig) == 0 {
+		var err error
+		cloud.Metadata.tempDirKubeconfig, err = os.MkdirTemp("", cloud.ClusterName+"*")
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(cloud.Metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig",
+			[]byte(mainStateDocument.ClusterKubeConfig), 0755); err != nil {
+			return err
+		}
+		defer func() {
+			_ = os.RemoveAll(cloud.Metadata.tempDirKubeconfig)
+		}()
+	}
 
-	if err := cloud.client.Delete(cloud.ClusterName, helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName, KUBECONFIG)); err != nil {
+	if err := cloud.client.Delete(cloud.ClusterName,
+		cloud.Metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig"); err != nil {
 		return log.NewError("failed to delete cluster %v", err)
 	}
-	printKubeconfig(storage, consts.OperationStateDelete, cloud.ClusterName)
 
-	if err := storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, cloud.ClusterName)).DeleteDir(); err != nil {
+	if err := storage.DeleteCluster(); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -40,15 +56,21 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 		return log.NewError(err.Error())
 	}
 
-	localState.Version = cloud.Metadata.Version
-	localState.Nodes = noOfNodes
+	mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.Metadata.Version
+	mainStateDocument.CloudInfra.Local.Nodes = noOfNodes
 
 	Wait := 50 * time.Second
+
+	cloud.tempDirKubeconfig, err = os.MkdirTemp("", cloud.ClusterName+"*")
+	if err != nil {
+		return err
+	}
+
 	ConfigHandler := func() string {
-		path, err := createNecessaryConfigs(storage, cloud.ClusterName)
+		path, err := createNecessaryConfigs(cloud.tempDirKubeconfig)
 		if err != nil {
 			log.Error("rollback Cannot continue 😢")
-			err = cloud.DelManagedCluster(storage)
+			err = cloud.DelManagedCluster(storage) // TODO: check if it works or not??
 			if err != nil {
 				log.Error(err.Error())
 				return "" // asumming it never comes here
@@ -56,16 +78,31 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 		}
 		return path
 	}
-	Image := "kindest/node:v" + localState.Version
+	Image := "kindest/node:v" + mainStateDocument.CloudInfra.Local.B.KubernetesVer
 
 	if err := cloud.client.Create(cloud.ClusterName, withConfig, Image, Wait, ConfigHandler); err != nil {
 		return log.NewError("failed to create cluster", "err", err)
 	}
 
-	printKubeconfig(storage, consts.OperationStateCreate, cloud.ClusterName)
-	return nil
-}
+	path := cloud.tempDirKubeconfig + helpers.PathSeparator + "kubeconfig"
+	if err != nil {
+		return err
+	}
 
-func (obj *LocalProvider) GetKubeconfigPath() string {
-	return helpers.GetPath(consts.UtilClusterPath, consts.CloudLocal, consts.ClusterTypeMang, obj.ClusterName, KUBECONFIG)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("kubeconfig", "kubeconfigTempPath", path)
+
+	mainStateDocument.ClusterKubeConfig = string(data)
+	mainStateDocument.CloudInfra.Local.B.IsCompleted = true
+
+	if err := storage.Write(mainStateDocument); err != nil {
+		return err
+	}
+	_ = os.RemoveAll(cloud.tempDirKubeconfig) // remove the temp directory
+
+	return nil
 }

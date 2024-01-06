@@ -5,32 +5,31 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
 // DelManagedCluster implements resources.CloudFactory.
 func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) error {
-	if len(azureCloudState.ManagedClusterName) == 0 {
+	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) == 0 {
 		log.Print("skipped already deleted AKS cluster")
 		return nil
 	}
 
-	pollerResp, err := obj.client.BeginDeleteAKS(azureCloudState.ManagedClusterName, nil)
+	pollerResp, err := obj.client.BeginDeleteAKS(mainStateDocument.CloudInfra.Azure.ManagedClusterName, nil)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-	log.Print("Deleting AKS cluster...", "name", azureCloudState.ManagedClusterName)
+	log.Print("Deleting AKS cluster...", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
 
 	_, err = obj.client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
-	log.Success("Deleted the AKS cluster", "name", azureCloudState.ManagedClusterName)
+	log.Success("Deleted the AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
 
-	azureCloudState.ManagedClusterName = ""
-	if err := saveStateHelper(storage); err != nil {
+	mainStateDocument.CloudInfra.Azure.ManagedClusterName = ""
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -46,19 +45,19 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 
 	log.Debug("Printing", "name", name, "vmtype", vmtype)
 
-	if len(azureCloudState.ManagedClusterName) != 0 {
-		log.Print("skipped already created AKS cluster", "name", azureCloudState.ManagedClusterName)
+	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) != 0 {
+		log.Print("skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
 		return nil
 	}
 
-	azureCloudState.NoManagedNodes = noOfNodes
-	azureCloudState.KubernetesVer = obj.metadata.k8sVersion
+	mainStateDocument.CloudInfra.Azure.NoManagedNodes = noOfNodes
+	mainStateDocument.CloudInfra.Azure.B.KubernetesVer = obj.metadata.k8sVersion
 
 	parameter := armcontainerservice.ManagedCluster{
-		Location: to.Ptr(azureCloudState.Region),
+		Location: to.Ptr(mainStateDocument.Region),
 		Properties: &armcontainerservice.ManagedClusterProperties{
 			DNSPrefix:         to.Ptr("aksgosdk"),
-			KubernetesVersion: to.Ptr(azureCloudState.KubernetesVer),
+			KubernetesVersion: to.Ptr(mainStateDocument.CloudInfra.Azure.B.KubernetesVer),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
 				NetworkPlugin: to.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(obj.metadata.cni)),
 			},
@@ -93,9 +92,9 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-	azureCloudState.ManagedClusterName = name
+	mainStateDocument.CloudInfra.Azure.ManagedClusterName = name
 
-	if err := saveStateHelper(storage); err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -106,10 +105,7 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 		return log.NewError(err.Error())
 	}
 
-	azureCloudState.IsCompleted = true
-	if err := saveStateHelper(storage); err != nil {
-		return log.NewError(err.Error())
-	}
+	mainStateDocument.CloudInfra.Azure.B.IsCompleted = true
 
 	kubeconfig, err := obj.client.ListClusterAdminCredentials(name, nil)
 	if err != nil {
@@ -117,16 +113,12 @@ func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, no
 	}
 	kubeconfigStr := string(kubeconfig.Kubeconfigs[0].Value)
 
-	if err := saveKubeconfigHelper(storage, kubeconfigStr); err != nil {
+	mainStateDocument.ClusterKubeConfig = kubeconfigStr
+
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	printKubeconfig(storage, consts.OperationStateCreate)
-
 	log.Success("created AKS", "name", *resp.Name)
 	return nil
-}
-
-func (obj *AzureProvider) GetKubeconfigPath() string {
-	return generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 }

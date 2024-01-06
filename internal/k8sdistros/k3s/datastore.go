@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
@@ -26,16 +25,15 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 
 	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(password)).
-		IPv4(k8sState.PublicIPs.DataStores[idx]).
-		FastMode(true).SSHExecute(storage, log)
+		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.DataStores[idx]).
+		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-	k8sState.DataStoreEndPoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", password, k8sState.PrivateIPs.DataStores[idx])
-	log.Debug("Printing", "datastoreEndpoint", k8sState.DataStoreEndPoint)
+	mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", password, mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores[idx])
+	log.Debug("Printing", "datastoreEndpoint", mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint)
 
-	path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
-	err = saveStateHelper(storage, path)
+	err = storage.Write(mainStateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}

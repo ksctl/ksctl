@@ -1,12 +1,11 @@
 package controllers
 
 import (
-	"errors"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"os"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/pkg/logger"
+	"github.com/kubesimplify/ksctl/internal/storage/types"
+	"github.com/kubesimplify/ksctl/pkg/helpers"
 
 	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
 	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
@@ -15,7 +14,6 @@ import (
 
 	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	"github.com/kubesimplify/ksctl/pkg/controllers/cloud"
 	"github.com/kubesimplify/ksctl/pkg/controllers/kubernetes"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
@@ -31,40 +29,6 @@ type KsctlControllerClient struct{}
 
 func GenKsctlController() *KsctlControllerClient {
 	return &KsctlControllerClient{}
-}
-
-func validationFields(meta resources.Metadata) error {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName("ksctl-manager")
-
-	if !helpers.ValidateCloud(meta.Provider) {
-		return errors.New("invalid cloud provider")
-	}
-	if !helpers.ValidateDistro(meta.K8sDistro) {
-		return errors.New("invalid kubernetes distro")
-	}
-	if !helpers.ValidateStorage(meta.StateLocation) {
-		return errors.New("invalid storage driver")
-	}
-	log.Debug("Valid fields from user")
-	return nil
-}
-
-func InitializeStorageFactory(client *resources.KsctlClient) error {
-
-	if log == nil {
-		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
-		log.SetPackageName("ksctl-manager")
-	}
-
-	switch client.Metadata.StateLocation {
-	case consts.StoreLocal:
-		client.Storage = localstate.InitStorage()
-	default:
-		return log.NewError("Currently Local state is supported!")
-	}
-	log.Debug("initialized storageFactory")
-	return nil
 }
 
 func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) error {
@@ -100,6 +64,22 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		return log.NewError(err.Error())
 	}
 
+	if client.Metadata.Provider == consts.CloudLocal {
+		client.Metadata.Region = "LOCAL"
+	}
+	if err := client.Storage.Setup(
+		client.Metadata.Provider,
+		client.Metadata.Region,
+		client.Metadata.ClusterName,
+		consts.ClusterTypeMang); err != nil {
+		return err
+	}
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
@@ -108,8 +88,11 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
 		return log.NewError("invalid CNI plugin")
 	}
+	var (
+		stateDocument *types.StorageDocument = &types.StorageDocument{}
+	)
 
-	if err := cloud.HydrateCloud(client, consts.OperationStateCreate, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationStateCreate, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 	// it gets supportForApps, supportForCNI, error
@@ -118,28 +101,30 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		log.Error(cloudResErr.Error())
 	}
 
-	kubeconfigPath := client.Cloud.GetKubeconfigPath()
-	if len(os.Getenv(string(consts.KsctlFeatureFlagApplications))) > 0 {
+	kubeconfig := stateDocument.ClusterKubeConfig
 
-		kubernetesClient := universal.Kubernetes{
+	var kubernetesClient universal.Kubernetes
+
+	if externalCNI || (len(client.Metadata.Applications) != 0 && externalApp) {
+		kubernetesClient = universal.Kubernetes{
 			Metadata:      client.Metadata,
 			StorageDriver: client.Storage,
 		}
-		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
 			return log.NewError(err.Error())
 		}
+	}
 
-		if externalCNI {
-			if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
-				return log.NewError(err.Error())
-			}
+	if externalCNI {
+		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
+			return log.NewError(err.Error())
 		}
+	}
 
-		if len(client.Metadata.Applications) != 0 && externalApp {
-			apps := strings.Split(client.Metadata.Applications, ",")
-			if err := kubernetesClient.InstallApplications(apps); err != nil {
-				return log.NewError(err.Error())
-			}
+	if len(client.Metadata.Applications) != 0 && externalApp {
+		apps := strings.Split(client.Metadata.Applications, ",")
+		if err := kubernetesClient.InstallApplications(apps); err != nil {
+			return log.NewError(err.Error())
 		}
 	}
 
@@ -156,11 +141,31 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 		return log.NewError(err.Error())
 	}
 
+	if client.Metadata.Provider == consts.CloudLocal {
+		client.Metadata.Region = "LOCAL"
+	}
+	if err := client.Storage.Setup(
+		client.Metadata.Provider,
+		client.Metadata.Region,
+		client.Metadata.ClusterName,
+		consts.ClusterTypeMang); err != nil {
+		return err
+	}
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+
+	var (
+		stateDocument *types.StorageDocument = &types.StorageDocument{}
+	)
+
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, consts.OperationStateDelete, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationStateDelete, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -172,39 +177,77 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.KsctlClient) error {
+func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.KsctlClient) (*string, error) {
 	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
+		return nil, log.NewError("Initalize the storage driver")
 	}
 	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
+		return nil, log.NewError(err.Error())
 	}
+
+	if client.Metadata.Provider == consts.CloudLocal {
+		client.Metadata.Region = "LOCAL"
+	}
+	clusterType := consts.ClusterTypeMang
+	if client.Metadata.IsHA {
+		clusterType = consts.ClusterTypeHa
+	}
+	if err := client.Storage.Setup(
+		client.Metadata.Provider,
+		client.Metadata.Region,
+		client.Metadata.ClusterName,
+		clusterType); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+	var (
+		stateDocument *types.StorageDocument = &types.StorageDocument{}
+	)
 
 	var err error
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
-		client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, civoPkg.ProvideClient)
+		client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, stateDocument, civoPkg.ProvideClient)
 		if err != nil {
-			return log.NewError(err.Error())
+			return nil, log.NewError(err.Error())
 		}
 	case consts.CloudAzure:
-		client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, azurePkg.ProvideClient)
+		client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, stateDocument, azurePkg.ProvideClient)
 		if err != nil {
-			return log.NewError(err.Error())
+			return nil, log.NewError(err.Error())
 		}
 	case consts.CloudLocal:
-		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, localPkg.ProvideClient)
+		client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, stateDocument, localPkg.ProvideClient)
 		if err != nil {
-			return log.NewError(err.Error())
+			return nil, log.NewError(err.Error())
 		}
 	}
 
-	if err := client.Cloud.SwitchCluster(client.Storage); err != nil {
-		return log.NewError(err.Error())
+	if err := client.Cloud.IsPresent(client.Storage); err != nil {
+		return nil, err
 	}
 
-	log.Success("successfully switched cluster")
-	return nil
+	read, err := client.Storage.Read()
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("data", "read", read)
+
+	kubeconfig := read.ClusterKubeConfig
+	log.Debug("data", "kubeconfig", kubeconfig)
+	path, err := helpers.WriteKubeConfig(kubeconfig)
+	log.Debug("data", "kubeconfigPath", path)
+	if err != nil {
+		return nil, err
+	}
+
+	printKubeConfig(path)
+
+	return &kubeconfig, nil
 }
 
 func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.KsctlClient) error {
@@ -214,6 +257,16 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 	if err := validationFields(client.Metadata); err != nil {
 		return log.NewError(err.Error())
 	}
+
+	if client.Metadata.Provider == consts.CloudLocal {
+		client.Metadata.Region = "LOCAL"
+	}
+
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
 
 	log.Note("Filter", "cloudProvider", string(client.Metadata.Provider))
 
@@ -278,6 +331,22 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError("Initalize the storage driver")
 	}
 
+	if err := client.Storage.Setup(
+		client.Metadata.Provider,
+		client.Metadata.Region,
+		client.Metadata.ClusterName,
+		consts.ClusterTypeHa); err != nil {
+		return err
+	}
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+	var (
+		stateDocument *types.StorageDocument = &types.StorageDocument{}
+	)
+
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
@@ -287,10 +356,10 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError("invalid CNI plugin")
 	}
 
-	if err := cloud.HydrateCloud(client, consts.OperationStateCreate, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationStateCreate, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
-	err := kubernetes.HydrateK8sDistro(client)
+	err := kubernetes.HydrateK8sDistro(client, stateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -315,21 +384,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError(err.Error())
 	}
 
-	//////// Done with cluster setup
-	cloudstate, err := client.Cloud.GetStateFile(client.Storage)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
-
-	k8sstate, err := client.Distro.GetStateFile(client.Storage)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
-
-	kubeconfigPath, kubeconfig, err := client.Distro.GetKubeConfig(client.Storage)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
+	kubeconfig := stateDocument.ClusterKubeConfig
 
 	var cloudSecret map[string][]byte
 	cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
@@ -337,45 +392,39 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError(err.Error())
 	}
 
+	var kubernetesClient universal.Kubernetes
+
+	if externalCNI || len(client.Metadata.Applications) != 0 {
+		kubernetesClient = universal.Kubernetes{
+			Metadata:      client.Metadata,
+			StorageDriver: client.Storage,
+		}
+		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
+			return log.NewError(err.Error())
+		}
+	}
+
+	if externalCNI {
+		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
+			return log.NewError(err.Error())
+		}
+	}
+
+	if len(client.Metadata.Applications) != 0 {
+		apps := strings.Split(client.Metadata.Applications, ",")
+		if err := kubernetesClient.InstallApplications(apps); err != nil {
+			return log.NewError(err.Error())
+		}
+	}
+
 	////// EXPERIMENTAL Features //////
 	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
 
-		kubernetesClient := universal.Kubernetes{
-			Metadata:      client.Metadata,
-			StorageDriver: client.Storage,
-		}
-		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
-			return log.NewError(err.Error())
-		}
-
-		if err = kubernetesClient.KsctlConfigForController(kubeconfig, kubeconfigPath, cloudstate, k8sstate, cloudSecret); err != nil {
+		if err = kubernetesClient.KsctlConfigForController(kubeconfig, stateDocument, cloudSecret); err != nil {
 			return log.NewError(err.Error())
 		}
 	}
 
-	if len(os.Getenv(string(consts.KsctlFeatureFlagApplications))) > 0 {
-
-		kubernetesClient := universal.Kubernetes{
-			Metadata:      client.Metadata,
-			StorageDriver: client.Storage,
-		}
-		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
-			return log.NewError(err.Error())
-		}
-
-		if externalCNI {
-			if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
-				return log.NewError(err.Error())
-			}
-		}
-
-		if len(client.Metadata.Applications) != 0 {
-			apps := strings.Split(client.Metadata.Applications, ",")
-			if err := kubernetesClient.InstallApplications(apps); err != nil {
-				return log.NewError(err.Error())
-			}
-		}
-	}
 	log.Success("successfully created ha cluster")
 
 	return nil
@@ -393,11 +442,26 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return log.NewError(err.Error())
 	}
 
+	if err := client.Storage.Setup(
+		client.Metadata.Provider,
+		client.Metadata.Region,
+		client.Metadata.ClusterName,
+		consts.ClusterTypeHa); err != nil {
+		return err
+	}
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+	var (
+		stateDocument *types.StorageDocument = &types.StorageDocument{}
+	)
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, consts.OperationStateDelete, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationStateDelete, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -405,7 +469,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 
 		// find a better way to get the kubeconfig location
 
-		err := kubernetes.HydrateK8sDistro(client)
+		err := kubernetes.HydrateK8sDistro(client, stateDocument)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -416,16 +480,14 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		if err != nil {
 			return log.NewError(err.Error())
 		}
-		kubeconfigPath, _, err := client.Distro.GetKubeConfig(client.Storage)
-		if err != nil {
-			return log.NewError(err.Error())
-		}
+
+		kubeconfig := stateDocument.ClusterKubeConfig
 
 		kubernetesClient := universal.Kubernetes{
 			Metadata:      client.Metadata,
 			StorageDriver: client.Storage,
 		}
-		if err := kubernetesClient.ClientInit(kubeconfigPath); err != nil {
+		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
 			return log.NewError(err.Error())
 		}
 
@@ -468,15 +530,31 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 		return log.NewError("this feature is only for ha clusters (for now)")
 	}
 
+	if err := client.Storage.Setup(
+		client.Metadata.Provider,
+		client.Metadata.Region,
+		client.Metadata.ClusterName,
+		consts.ClusterTypeHa); err != nil {
+		return err
+	}
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+	var (
+		stateDocument *types.StorageDocument = &types.StorageDocument{}
+	)
+
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, consts.OperationStateGet, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationStateGet, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	err := kubernetes.HydrateK8sDistro(client)
+	err := kubernetes.HydrateK8sDistro(client, stateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -526,15 +604,30 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		return log.NewError("this feature is only for ha clusters (for now)")
 	}
 
+	if err := client.Storage.Setup(
+		client.Metadata.Provider,
+		client.Metadata.Region,
+		client.Metadata.ClusterName,
+		consts.ClusterTypeHa); err != nil {
+		return err
+	}
+	defer func() {
+		if err := client.Storage.Kill(); err != nil {
+			log.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+	var (
+		stateDocument *types.StorageDocument = &types.StorageDocument{}
+	)
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, consts.OperationStateGet, fakeClient); err != nil {
+	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationStateGet, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	err := kubernetes.HydrateK8sDistro(client)
+	err := kubernetes.HydrateK8sDistro(client, stateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -556,7 +649,7 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		}
 
 		// move it to kubernetes controller
-		if err := kubernetes.DelWorkerPlanes(client, hostnames); err != nil {
+		if err := kubernetes.DelWorkerPlanes(client, stateDocument.ClusterKubeConfig, hostnames); err != nil {
 			return log.NewError(err.Error())
 		}
 	}

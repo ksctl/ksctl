@@ -30,36 +30,49 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: 1.21.0
+
     - name: Run coverage (UTILS)
       working-directory: pkg/helpers
       run: |
          go test -race -coverprofile=../../coverage-utils.out -covermode=atomic -v
          cd ../..
+
     - name: Run coverage (LOGGER)
       working-directory: pkg/logger
       run: |
         go test -race -coverprofile=../../coverage-logger.out -covermode=atomic -v
         cd ../..
+
     - name: Run coverage (K3S)
       working-directory: internal/k8sdistros/k3s
       run: |
         go test -race -coverprofile=../../../coverage-k3s.out -covermode=atomic -v
         cd ../../..
+
     - name: Run coverage (CIVO)
       working-directory: internal/cloudproviders/civo
       run: |
          go test -race -coverprofile=../../../coverage-civo.out -covermode=atomic -v
          cd ../../..
+
     - name: Run coverage (AZURE)
       working-directory: internal/cloudproviders/azure
       run: |
          go test -race -coverprofile=../../../coverage-azure.out -covermode=atomic -v
          cd ../../..
+
     - name: Run coverage (LOCAL)
       working-directory: internal/cloudproviders/local
       run: |
          go test -race -coverprofile=../../../coverage-local.out -covermode=atomic -v
          cd ../../..
+
+    - name: Run coverage (LOCAL-Storage)
+      working-directory: internal/storage/local
+      run: |
+         go test -race -coverprofile=../../../coverage-local-store.out -covermode=atomic -v
+         cd ../../..
+
     - name: Run coverage (TESTS)
       working-directory: test
       run: |

@@ -8,8 +8,6 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
-
-	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 )
 
 // NOTE: example command to run it
@@ -20,17 +18,21 @@ func main() {
 	ip := flag.String("ip", "", "ip address")
 	sshKeyPath := flag.String("ssh-key", "", "ssh private key path")
 
+	r, err := os.ReadFile(*sshKeyPath)
+	if err != nil {
+		panic(err)
+	}
+
 	flag.Parse()
 
 	var config helpers.SSHCollection = new(helpers.SSHPayload)
 	config.Username(*user)
-	config.LocPrivateKey(*sshKeyPath)
+	config.PrivateKey(string(r))
 
-	var storage resources.StorageFactory = localstate.InitStorage()
 	var log resources.LoggerFactory = logger.NewDefaultLogger(-1, os.Stdout)
 	log.SetPackageName("ksctl-ssh")
 
-	if err := config.Flag(consts.UtilExecWithOutput).IPv4(*ip).Script(demoScript()).FastMode(true).SSHExecute(storage, log); err != nil {
+	if err := config.Flag(consts.UtilExecWithOutput).IPv4(*ip).Script(demoScript()).FastMode(true).SSHExecute(log); err != nil {
 		panic(err)
 	}
 

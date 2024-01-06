@@ -52,3 +52,18 @@ echo "--------------------------------------------"
 cd cloudproviders/azure/
 go test . -v && cd -
 
+echo "--------------------------------------------"
+echo "|   Testing (internal/storage/local)"
+echo "--------------------------------------------"
+
+cd storage/local/
+go test . -v && cd -
+
+
+# echo "-------------------------------------------------"
+# echo "|   Testing (internal/storage/external/mongodb)"
+# echo "-------------------------------------------------"
+#
+# cd storage/external/mongodb/
+# go test . -v && cd -
+

@@ -35,17 +35,12 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 
 		if clusterDS.Ready {
 			fmt.Println("[civo] Booted Instance", name)
-			civoCloudState.IsCompleted = true
-			path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
-			if err := saveStateHelper(storage, path); err != nil {
-				return err
-			}
-			path = generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
-			err := saveKubeconfigHelper(storage, path, clusterDS.KubeConfig)
+			mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
+			mainStateDocument.ClusterKubeConfig = clusterDS.KubeConfig
+			err := storage.Write(mainStateDocument)
 			if err != nil {
 				return err
 			}
-			printKubeconfig(storage, consts.OperationStateCreate)
 			break
 		}
 		log.Debug("creating cluster..", "name", name, "Status", clusterDS.Status)
@@ -64,10 +59,10 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 
 	log.Debug("Printing", "name", name, "vmtype", vmtype)
 
-	if len(civoCloudState.ManagedClusterID) != 0 {
-		log.Print("skipped managed cluster creation found", civoCloudState.ManagedClusterID)
+	if len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) != 0 {
+		log.Print("skipped managed cluster creation found", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
 
-		if err := watchManagedCluster(obj, storage, civoCloudState.ManagedClusterID, name); err != nil {
+		if err := watchManagedCluster(obj, storage, mainStateDocument.CloudInfra.Civo.ManagedClusterID, name); err != nil {
 			return err
 		}
 
@@ -80,7 +75,7 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 		Region:            obj.region,
 		NumTargetNodes:    noOfNodes,
 		TargetNodesSize:   vmtype,
-		NetworkID:         civoCloudState.NetworkIDs.NetworkID,
+		NetworkID:         mainStateDocument.CloudInfra.Civo.NetworkID,
 		Applications:      obj.metadata.apps, // make the use of application and cni via some method
 		CNIPlugin:         obj.metadata.cni,  // make it use install application in the civo
 	}
@@ -100,43 +95,38 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 		return log.NewError(err.Error())
 	}
 
-	civoCloudState.NoManagedNodes = noOfNodes
-	civoCloudState.KubernetesDistro = string(consts.K8sK3s)
-	civoCloudState.KubernetesVer = obj.metadata.k8sVersion
-	civoCloudState.ManagedClusterID = resp.ID
+	mainStateDocument.CloudInfra.Civo.NoManagedNodes = noOfNodes
+	mainStateDocument.CloudInfra.Civo.B.KubernetesDistro = string(consts.K8sK3s)
+	mainStateDocument.CloudInfra.Civo.B.KubernetesVer = obj.metadata.k8sVersion
+	mainStateDocument.CloudInfra.Civo.ManagedClusterID = resp.ID
 
-	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
-	if err := saveStateHelper(storage, path); err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	if err := watchManagedCluster(obj, storage, resp.ID, name); err != nil {
 		return log.NewError(err.Error())
 	}
-	log.Success("Created Managed cluster", "clusterID", civoCloudState.ManagedClusterID)
+	log.Success("Created Managed cluster", "clusterID", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
 	return nil
 }
 
 // DelManagedCluster implements resources.CloudFactory.
 func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) error {
-	if len(civoCloudState.ManagedClusterID) == 0 {
-		log.Print("skipped network deletion found", "id", civoCloudState.ManagedClusterID)
+	if len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) == 0 {
+		log.Print("skipped network deletion found", "id", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
 		return nil
 	}
-	_, err := obj.client.DeleteKubernetesCluster(civoCloudState.ManagedClusterID)
+	_, err := obj.client.DeleteKubernetesCluster(mainStateDocument.CloudInfra.Civo.ManagedClusterID)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-	log.Success("Deleted Managed cluster", "clusterID", civoCloudState.ManagedClusterID)
-	civoCloudState.ManagedClusterID = ""
-	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
-	if err := saveStateHelper(storage, path); err != nil {
+	log.Success("Deleted Managed cluster", "clusterID", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
+	mainStateDocument.CloudInfra.Civo.ManagedClusterID = ""
+
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	return nil
-}
-
-func (obj *CivoProvider) GetKubeconfigPath() string {
-	return generatePath(consts.UtilClusterPath, clusterType, clusterDirName, KUBECONFIG_FILE_NAME)
 }

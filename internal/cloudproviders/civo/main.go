@@ -3,8 +3,9 @@ package civo
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
+
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 
 	"github.com/kubesimplify/ksctl/pkg/logger"
 
@@ -14,76 +15,11 @@ import (
 	cloud_control_res "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 )
 
-type InstanceID struct {
-	ControlNodes     []string `json:"controlnodeids"`
-	WorkerNodes      []string `json:"workernodeids"`
-	LoadBalancerNode string   `json:"loadbalancernodeid"`
-	DatabaseNode     []string `json:"databasenodeids"`
-}
-
-type HostNames struct {
-	ControlNodes     []string `json:"controlnode"`
-	WorkerNodes      []string `json:"workernode"`
-	LoadBalancerNode string   `json:"loadbalancernode"`
-	DatabaseNode     []string `json:"databasenodes"`
-}
-
-type NetworkID struct {
-	FirewallIDControlPlaneNode string `json:"fwidcontrolplanenode"`
-	FirewallIDWorkerNode       string `json:"fwidworkernode"`
-	FirewallIDLoadBalancerNode string `json:"fwidloadbalancenode"`
-	FirewallIDDatabaseNode     string `json:"fwiddatabasenode"`
-	NetworkID                  string `json:"clusternetworkid"`
-}
-
-type InstanceIP struct {
-	IPControlplane        []string
-	IPWorkerPlane         []string
-	IPLoadbalancer        string
-	IPDataStore           []string
-	PrivateIPControlplane []string
-	PrivateIPWorkerPlane  []string
-	PrivateIPLoadbalancer string
-	PrivateIPDataStore    []string
-}
-
-type StateConfiguration struct {
-	// at initial phase its building, only after the creation is done
-	// it has "DONE" status otherwise "BUILDING"
-	IsCompleted bool `json:"status"`
-
-	ClusterName      string `json:"clustername"`
-	Region           string `json:"region"`
-	ManagedClusterID string `json:"managed_cluster_id"`
-	NoManagedNodes   int    `json:"no_managed_cluster_nodes"`
-
-	SSHID            string `json:"ssh_id"`
-	SSHUser          string `json:"ssh_usr"`
-	SSHPrivateKeyLoc string `json:"ssh_private_key_location"`
-
-	InstanceIDs InstanceID `json:"instanceids"`
-	NetworkIDs  NetworkID  `json:"networkids"`
-	IPv4        InstanceIP `json:"ipv4_addr"`
-	HostNames   `json:"hostnames"`
-
-	KubernetesDistro string `json:"k8s_distro"`
-	KubernetesVer    string `json:"k8s_version"`
-}
-
 var (
-	civoCloudState *StateConfiguration
-	clusterDirName string
-	clusterType    consts.KsctlClusterType // it stores the ha or managed
+	mainStateDocument *types.StorageDocument
+	clusterType       consts.KsctlClusterType // it stores the ha or managed
 
 	log resources.LoggerFactory
-)
-
-const (
-	FILE_PERM_CLUSTER_DIR        = os.FileMode(0750)
-	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
-	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0755)
-	STATE_FILE_NAME              = string("cloud-state.json")
-	KUBECONFIG_FILE_NAME         = string("kubeconfig")
 )
 
 type metadata struct {
@@ -132,7 +68,7 @@ func (this *CivoProvider) GetSecretTokens(storage resources.StorageFactory) (map
 
 // GetStateFile implements resources.CloudFactory.
 func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
-	cloudstate, err := json.Marshal(civoCloudState)
+	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
 		return "", log.NewError(err.Error())
 	}
@@ -141,36 +77,31 @@ func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	return string(cloudstate), nil
 }
 
-type Credential struct {
-	Token string `json:"token"`
-}
-
 // GetStateForHACluster implements resources.CloudFactory.
 // WARN: the array copy is a shallow copy
 func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	payload := cloud_control_res.CloudResourceState{
 		SSHState: cloud_control_res.SSHInfo{
-			PathPrivateKey: civoCloudState.SSHPrivateKeyLoc,
-			UserName:       civoCloudState.SSHUser,
+			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
+			UserName:   mainStateDocument.CloudInfra.Civo.B.SSHUser,
 		},
 		Metadata: cloud_control_res.Metadata{
 			ClusterName: client.clusterName,
 			Provider:    consts.CloudCivo,
 			Region:      client.region,
 			ClusterType: clusterType,
-			ClusterDir:  clusterDirName,
 		},
 		// public IPs
-		IPv4ControlPlanes: civoCloudState.IPv4.IPControlplane,
-		IPv4DataStores:    civoCloudState.IPv4.IPDataStore,
-		IPv4WorkerPlanes:  civoCloudState.IPv4.IPWorkerPlane,
-		IPv4LoadBalancer:  civoCloudState.IPv4.IPLoadbalancer,
+		IPv4ControlPlanes: mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs,
+		IPv4DataStores:    mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs,
+		IPv4WorkerPlanes:  mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs,
+		IPv4LoadBalancer:  mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP,
 
 		// Private IPs
-		PrivateIPv4ControlPlanes: civoCloudState.IPv4.PrivateIPControlplane,
-		PrivateIPv4DataStores:    civoCloudState.IPv4.PrivateIPDataStore,
-		PrivateIPv4LoadBalancer:  civoCloudState.IPv4.PrivateIPLoadbalancer,
+		PrivateIPv4ControlPlanes: mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs,
+		PrivateIPv4DataStores:    mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs,
+		PrivateIPv4LoadBalancer:  mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP,
 	}
 	log.Debug("Printing", "cloudState", payload)
 	log.Success("Transferred Data, it's ready to be shipped!")
@@ -179,35 +110,36 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 
 func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
 
-	clusterDirName = obj.clusterName + " " + obj.region
 	if obj.haCluster {
 		clusterType = consts.ClusterTypeHa
 	} else {
 		clusterType = consts.ClusterTypeMang
 	}
 
-	civoCloudState = &StateConfiguration{}
-	errLoadState := loadStateHelper(storage, generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME))
+	errLoadState := loadStateHelper(storage)
 
 	switch operation {
 	case consts.OperationStateCreate:
-		if errLoadState == nil && civoCloudState.IsCompleted {
+		if errLoadState == nil && mainStateDocument.CloudInfra.Civo.B.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
 			return log.NewError("already exist")
 		}
 
-		if errLoadState == nil && !civoCloudState.IsCompleted {
+		if errLoadState == nil && !mainStateDocument.CloudInfra.Civo.B.IsCompleted {
 			// file present but not completed
 			log.Debug("RESUME triggered!!")
 		} else {
 			log.Debug("Fresh state!!")
-			civoCloudState = &StateConfiguration{
-				IsCompleted:      false,
-				Region:           obj.region,
-				ClusterName:      obj.clusterName,
-				KubernetesDistro: string(obj.k8sName),
-				KubernetesVer:    obj.k8sVersion,
+
+			mainStateDocument.ClusterName = obj.clusterName
+			mainStateDocument.InfraProvider = consts.CloudCivo
+			mainStateDocument.Region = obj.region
+			mainStateDocument.ClusterType = string(clusterType)
+			mainStateDocument.CloudInfra = &types.InfrastructureState{
+				Civo: &types.StateConfigurationCivo{},
 			}
+			mainStateDocument.CloudInfra.Civo.B.KubernetesVer = obj.k8sVersion
+			mainStateDocument.CloudInfra.Civo.B.KubernetesDistro = string(obj.k8sName)
 		}
 
 	case consts.OperationStateGet:
@@ -238,9 +170,11 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 	return nil
 }
 
-func ReturnCivoStruct(meta resources.Metadata, ClientOption func() CivoGo) (*CivoProvider, error) {
+func ReturnCivoStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudCivo))
+
+	mainStateDocument = state
 
 	obj := &CivoProvider{
 		clusterName: meta.ClusterName,
@@ -364,8 +298,8 @@ func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
 }
 
 func (*CivoProvider) GetHostNameAllWorkerNode() []string {
-	var hostnames []string = make([]string, len(civoCloudState.HostNames.WorkerNodes))
-	copy(hostnames, civoCloudState.HostNames.WorkerNodes)
+	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames))
+	copy(hostnames, mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames)
 	log.Debug("Printing", "hostnameOfWorkerPlanes", hostnames)
 	return hostnames
 }
@@ -376,32 +310,32 @@ func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 
 	if !setter {
 		// delete operation
-		if civoCloudState == nil {
+		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called!")
 		}
-		if civoCloudState.InstanceIDs.ControlNodes == nil {
+		if mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs == nil {
 			return -1, log.NewError("unable to fetch controlplane instanceID")
 		}
-		log.Debug("Printing", "InstanceIDsOfControlplanes", civoCloudState.InstanceIDs.ControlNodes)
-		return len(civoCloudState.InstanceIDs.ControlNodes), nil
+		log.Debug("Printing", "InstanceIDsOfControlplanes", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs)
+		return len(mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs), nil
 	}
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noCP = no
-		if civoCloudState == nil {
+		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called!")
 		}
 
-		currLen := len(civoCloudState.InstanceIDs.ControlNodes)
+		currLen := len(mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs)
 		if currLen == 0 {
-			civoCloudState.InstanceIDs.ControlNodes = make([]string, no)
-			civoCloudState.IPv4.IPControlplane = make([]string, no)
-			civoCloudState.IPv4.PrivateIPControlplane = make([]string, no)
-			civoCloudState.HostNames.ControlNodes = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames = make([]string, no)
 		}
-		log.Debug("Printing", "civoCloudState.InstanceIDs.ControlNodes", civoCloudState.InstanceIDs.ControlNodes)
-		log.Debug("Printing", "civoCloudState.IPv4.IPControlplane", civoCloudState.IPv4.IPControlplane)
-		log.Debug("Printing", "civoCloudState.IPv4.PrivateIPControlplane", civoCloudState.IPv4.PrivateIPControlplane)
-		log.Debug("Printing", "civoCloudState.HostNames.ControlNodes", civoCloudState.HostNames.ControlNodes)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames)
 		return -1, nil
 	}
 	return -1, log.NewError("constrains for no of controlplane >= 3 and odd number")
@@ -413,36 +347,36 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 
 	if !setter {
 		// delete operation
-		if civoCloudState == nil {
+		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called!")
 		}
-		if civoCloudState.InstanceIDs.DatabaseNode == nil {
+		if mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs == nil {
 			return -1, log.NewError("unable to fetch DataStore instanceID")
 		}
 
-		log.Debug("Printing", "InstanceIDsOfDatabaseNode", civoCloudState.InstanceIDs.DatabaseNode)
+		log.Debug("Printing", "InstanceIDsOfDatabaseNode", mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs)
 
-		return len(civoCloudState.InstanceIDs.DatabaseNode), nil
+		return len(mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs), nil
 	}
 	if no >= 1 && (no&1) == 1 {
 		obj.metadata.noDS = no
 
-		if civoCloudState == nil {
+		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called!")
 		}
 
-		currLen := len(civoCloudState.InstanceIDs.DatabaseNode)
+		currLen := len(mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs)
 		if currLen == 0 {
-			civoCloudState.InstanceIDs.DatabaseNode = make([]string, no)
-			civoCloudState.IPv4.IPDataStore = make([]string, no)
-			civoCloudState.IPv4.PrivateIPDataStore = make([]string, no)
-			civoCloudState.HostNames.DatabaseNode = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames = make([]string, no)
 		}
 
-		log.Debug("Printing", "civoCloudState.InstanceIDs.DatabaseNode", civoCloudState.InstanceIDs.DatabaseNode)
-		log.Debug("Printing", "civoCloudState.IPv4.IPDataStore", civoCloudState.IPv4.IPDataStore)
-		log.Debug("Printing", "civoCloudState.IPv4.PrivateIPDataStore", civoCloudState.IPv4.PrivateIPDataStore)
-		log.Debug("Printing", "civoCloudState.HostNames.DatabaseNode", civoCloudState.HostNames.DatabaseNode)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs", mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs", mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs", mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames", mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames)
 		return -1, nil
 	}
 	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")
@@ -455,31 +389,31 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 
 	if !setter {
 		// delete operation
-		if civoCloudState == nil {
+		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called!")
 		}
-		if civoCloudState.InstanceIDs.WorkerNodes == nil {
+		if mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs == nil {
 			return -1, log.NewError("unable to fetch workerplane instanceID")
 		}
 
-		log.Debug("Printing", "InstanceIDsOfWorkerPlane", civoCloudState.InstanceIDs.WorkerNodes)
+		log.Debug("Printing", "InstanceIDsOfWorkerPlane", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs)
 
-		return len(civoCloudState.InstanceIDs.WorkerNodes), nil
+		return len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs), nil
 	}
 	if no >= 0 {
 		obj.metadata.noWP = no
-		if civoCloudState == nil {
+		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called!")
 		}
-		currLen := len(civoCloudState.InstanceIDs.WorkerNodes)
+		currLen := len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs)
 
 		newLen := no
 
 		if currLen == 0 {
-			civoCloudState.InstanceIDs.WorkerNodes = make([]string, no)
-			civoCloudState.IPv4.IPWorkerPlane = make([]string, no)
-			civoCloudState.IPv4.PrivateIPWorkerPlane = make([]string, no)
-			civoCloudState.HostNames.WorkerNodes = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames = make([]string, no)
 		} else {
 			if currLen == newLen {
 				// no changes needed
@@ -487,29 +421,28 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 			} else if currLen < newLen {
 				// for up-scaling
 				for i := currLen; i < newLen; i++ {
-					civoCloudState.InstanceIDs.WorkerNodes = append(civoCloudState.InstanceIDs.WorkerNodes, "")
-					civoCloudState.IPv4.IPWorkerPlane = append(civoCloudState.IPv4.IPWorkerPlane, "")
-					civoCloudState.IPv4.PrivateIPWorkerPlane = append(civoCloudState.IPv4.PrivateIPWorkerPlane, "")
-					civoCloudState.HostNames.WorkerNodes = append(civoCloudState.HostNames.WorkerNodes, "")
+					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs, "")
+					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs, "")
+					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs, "")
+					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames, "")
 				}
 			} else {
 				// for downscaling
-				civoCloudState.InstanceIDs.WorkerNodes = civoCloudState.InstanceIDs.WorkerNodes[:newLen]
-				civoCloudState.IPv4.IPWorkerPlane = civoCloudState.IPv4.IPWorkerPlane[:newLen]
-				civoCloudState.IPv4.PrivateIPWorkerPlane = civoCloudState.IPv4.PrivateIPWorkerPlane[:newLen]
-				civoCloudState.HostNames.WorkerNodes = civoCloudState.HostNames.WorkerNodes[:newLen]
+				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[:newLen]
+				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[:newLen]
+				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[:newLen]
+				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames[:newLen]
 			}
 		}
-		path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
-
-		if err := saveStateHelper(storage, path); err != nil {
+		err := storage.Write(mainStateDocument)
+		if err != nil {
 			return -1, err
 		}
 
-		log.Debug("Printing", "civoCloudState.InstanceIDs.WorkerNodes", civoCloudState.InstanceIDs.WorkerNodes)
-		log.Debug("Printing", "civoCloudState.IPv4.IPWorkerPlane", civoCloudState.IPv4.IPWorkerPlane)
-		log.Debug("Printing", "civoCloudState.IPv4.PrivateIPWorkerPlane", civoCloudState.IPv4.PrivateIPWorkerPlane)
-		log.Debug("Printing", "civoCloudState.HostNames.WorkerNodes", civoCloudState.HostNames.WorkerNodes)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs)
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames)
 		return -1, nil
 	}
 	return -1, log.NewError("constrains for no of workerplane >= 0")
@@ -521,93 +454,56 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloud_control_res.AllClusterData
 
-	// first get all the directories of ha
-	haFolders, err := storage.Path(generatePath(consts.UtilClusterPath, consts.ClusterTypeHa)).GetFolders()
+	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
+		"cloud":       string(consts.CloudCivo),
+		"clusterType": "",
+	})
 	if err != nil {
-		return nil, log.NewError(err.Error())
+		return nil, err
 	}
 
-	for _, haFolder := range haFolders {
-		path := generatePath(consts.UtilClusterPath, consts.ClusterTypeHa, haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
-		raw, err := storage.Path(path).Load()
-		if err != nil {
-			return nil, log.NewError(err.Error())
-		}
-		var clusterState *StateConfiguration
-		if err := json.Unmarshal(raw, &clusterState); err != nil {
-			return nil, log.NewError(err.Error())
-		}
-		data = append(data,
-			cloud_control_res.AllClusterData{
+	for K, Vs := range clusters {
+		for _, v := range Vs {
+			data = append(data, cloud_control_res.AllClusterData{
 				Provider: consts.CloudCivo,
-				Name:     haFolder[0],
-				Region:   haFolder[1],
-				Type:     consts.ClusterTypeHa,
+				Name:     v.ClusterName,
+				Region:   v.Region,
+				Type:     K,
 
-				NoWP: len(clusterState.InstanceIDs.WorkerNodes),
-				NoCP: len(clusterState.InstanceIDs.ControlNodes),
-				NoDS: len(clusterState.InstanceIDs.DatabaseNode),
+				NoWP:  len(v.CloudInfra.Civo.InfoWorkerPlanes.VMIDs),
+				NoCP:  len(v.CloudInfra.Civo.InfoControlPlanes.VMIDs),
+				NoDS:  len(v.CloudInfra.Civo.InfoDatabase.VMIDs),
+				NoMgt: v.CloudInfra.Civo.NoManagedNodes,
 
-				K8sDistro:  consts.KsctlKubernetes(clusterState.KubernetesDistro),
-				K8sVersion: clusterState.KubernetesVer,
+				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Civo.B.KubernetesDistro),
+				K8sVersion: v.CloudInfra.Civo.B.KubernetesVer,
 			})
-		log.Debug("Printing", "cloudClusterInfoFeteched", data)
-	}
+			log.Debug("Printing", "cloudClusterInfoFetched", data)
 
-	managedFolders, err := storage.Path(generatePath(consts.UtilClusterPath, "managed")).GetFolders()
-	if err != nil {
-		return nil, log.NewError(err.Error())
-	}
-
-	for _, haFolder := range managedFolders {
-
-		path := generatePath(consts.UtilClusterPath, "managed", haFolder[0]+" "+haFolder[1], STATE_FILE_NAME)
-		raw, err := storage.Path(path).Load()
-		if err != nil {
-			return nil, log.NewError(err.Error())
 		}
-		var clusterState *StateConfiguration
-		if err := json.Unmarshal(raw, &clusterState); err != nil {
-			return nil, log.NewError(err.Error())
-		}
-
-		data = append(data,
-			cloud_control_res.AllClusterData{
-				Provider:   consts.CloudCivo,
-				Name:       haFolder[0],
-				Region:     haFolder[1],
-				Type:       consts.ClusterTypeMang,
-				K8sDistro:  consts.KsctlKubernetes(clusterState.KubernetesDistro),
-				K8sVersion: clusterState.KubernetesVer,
-				NoMgt:      clusterState.NoManagedNodes,
-			})
-
-		log.Debug("Printing", "cloudClusterInfoFetched", data)
 	}
+
 	return data, nil
 }
 
-func isPresent(storage resources.StorageFactory) bool {
-	_, err := storage.Path(helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, clusterType, clusterDirName, STATE_FILE_NAME)).Load()
-	if os.IsNotExist(err) {
+func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
+	err := storage.AlreadyCreated(consts.CloudCivo, region, name, ksctlClusterType)
+	if err != nil {
 		return false
 	}
 	return true
 }
 
-func (obj *CivoProvider) SwitchCluster(storage resources.StorageFactory) error {
-	clusterDirName = obj.clusterName + " " + obj.region
+func (obj *CivoProvider) IsPresent(storage resources.StorageFactory) error {
 	switch obj.haCluster {
 	case true:
 		clusterType = consts.ClusterTypeHa
-		if isPresent(storage) {
-			printKubeconfig(storage, consts.OperationStateCreate)
+		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
 			return nil
 		}
 	case false:
 		clusterType = consts.ClusterTypeMang
-		if isPresent(storage) {
-			printKubeconfig(storage, consts.OperationStateCreate)
+		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
 			return nil
 		}
 	}

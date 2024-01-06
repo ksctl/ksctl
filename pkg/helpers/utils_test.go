@@ -2,12 +2,12 @@ package helpers
 
 import (
 	"fmt"
+	"github.com/gookit/goutil/dump"
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 	"os"
 	"runtime"
-	"strings"
 	"testing"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
 	. "github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -22,6 +22,7 @@ var (
 		l.SetPackageName("utils")
 		return l
 	}()
+	mainStateDoc = &types.StorageDocument{}
 )
 
 func TestConsts(t *testing.T) {
@@ -32,7 +33,7 @@ func TestConsts(t *testing.T) {
 	assert.Equal(t, string(K8sK3s), "k3s", "k3s constant not correct assgined")
 	assert.Equal(t, string(K8sKubeadm), "kubeadm", "kubeadm constant not correct assgined")
 	assert.Equal(t, string(StoreLocal), "local", "local constant not correct assgined")
-	assert.Equal(t, string(StoreRemote), "remote", "remote constant not correct assgined")
+	assert.Equal(t, string(StoreExtMongo), "external-mongo", "remote constant not correct assgined")
 	assert.Equal(t, string(RoleCp), "controlplane", "controlplane constant not correct assgined")
 	assert.Equal(t, string(RoleLb), "loadbalancer", "loadbalancer constant not correct assgined")
 	assert.Equal(t, string(RoleDs), "datastore", "datastore constant not correct assgined")
@@ -59,9 +60,9 @@ func TestConsts(t *testing.T) {
 
 func TestGetUsername(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		assert.Equal(t, os.Getenv("USERPROFILE"), GetUserName(), "Unable to fetch correct username")
+		assert.Equal(t, os.Getenv(UserDir), GetUserName(), "Unable to fetch correct username")
 	} else {
-		assert.Equal(t, os.Getenv("HOME"), GetUserName(), "Unable to fetch correct username")
+		assert.Equal(t, os.Getenv(UserDir), GetUserName(), "Unable to fetch correct username")
 	}
 }
 
@@ -80,88 +81,12 @@ func TestCNIValidation(t *testing.T) {
 	}
 }
 
-func TestGetCredentials(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\cred\\XX-yy-Zz.json", GetUserName()), getCredentials("XX-yy-Zz"),
-			"unable to fetch the cred path")
-	} else {
-		assert.Equal(t, fmt.Sprintf("%s/.ksctl/cred/XX-yy-Zz.json", GetUserName()), getCredentials("XX-yy-Zz"),
-			"unable to fetch the cred path")
-	}
-}
-
-func TestGetPaths(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		dummy := fmt.Sprintf("%s\\.ksctl\\config\\xx\\Yy zz", GetUserName())
-		assert.Equal(t, dummy, getPaths("xx", "Yy zz"))
-		if strings.Compare(dummy, getPaths("xx", "Ydcsd")) == 0 {
-			t.Fatalf("GetPath testing failed")
-		}
-	} else {
-		dummy := fmt.Sprintf("%s/.ksctl/config/xx/Yy zz", GetUserName())
-		assert.Equal(t, dummy, getPaths("xx", "Yy zz"))
-		if strings.Compare(dummy, getPaths("xx", "Ydcsd")) == 0 {
-			t.Fatalf("GetPath testing failed")
-		}
-	}
-}
-
-func TestGetClusterPath(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		testProviders := map[string]string{
-			"civo":  fmt.Sprintf("%s\\.ksctl\\config\\civo\\Yy zz", GetUserName()),
-			"local": fmt.Sprintf("%s\\.ksctl\\config\\local\\Yy zz", GetUserName()),
-			"xx":    "",
-			"Xyz":   "",
-			"azure": fmt.Sprintf("%s\\.ksctl\\config\\azure\\Yy zz", GetUserName()),
-		}
-		for provider, expectedPath := range testProviders {
-			assert.Equal(t, expectedPath, getKubeconfig(KsctlCloud(provider), "Yy zz")) // must return empty string as its invalid provider
-		}
-	} else {
-		testProviders := map[string]string{
-			"civo":  fmt.Sprintf("%s/.ksctl/config/civo/Yy zz", GetUserName()),
-			"local": fmt.Sprintf("%s/.ksctl/config/local/Yy zz", GetUserName()),
-			"xx":    "",
-			"Xyz":   "",
-			"azure": fmt.Sprintf("%s/.ksctl/config/azure/Yy zz", GetUserName()),
-		}
-		for provider, expectedPath := range testProviders {
-			assert.Equal(t, expectedPath, getKubeconfig(KsctlCloud(provider), "Yy zz")) // must return empty string as its invalid provider
-		}
-	}
-}
-
-func TestGetOtherPath(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		assert.Equal(t, fmt.Sprintf("%s\\.ksctl\\config\\abcd\\Yy zz", GetUserName()), getPaths("abcd", "Yy zz"))
-	} else {
-		assert.Equal(t, fmt.Sprintf("%s/.ksctl/config/abcd/Yy zz", GetUserName()), getPaths("abcd", "Yy zz"))
-	}
-}
-
 func TestCreateSSHKeyPair(t *testing.T) {
-	// driver
-
-	t.Deadline()
-	provider := "Provider"
-	clusterName := "cluster"
-	clusterRegion := "RegionXYz" // with the region as well
-
-	t.Cleanup(func() {
-		_ = os.RemoveAll(GetPath(UtilOtherPath, KsctlCloud(provider), ClusterTypeHa))
-	})
-
-	path := GetPath(UtilOtherPath, KsctlCloud(provider), ClusterTypeHa, clusterName+" "+clusterRegion)
-	err := os.MkdirAll(path, 0755)
+	err := CreateSSHKeyPair(log, mainStateDoc)
 	if err != nil {
-		t.Fatalf("Unable to create dummy folder")
+		t.Fatal(err)
 	}
-	ksctl := resources.KsctlClient{Storage: localstate.InitStorage()}
-
-	if _, err := CreateSSHKeyPair(ksctl.Storage, log, KsctlCloud(provider), clusterName+" "+clusterRegion); err != nil {
-		t.Fatalf("Unable to create SSH keypair")
-	}
+	dump.Println(mainStateDoc.SSHKeyPair)
 }
 
 func TestIsValidClusterName(T *testing.T) {
@@ -177,26 +102,13 @@ func TestIsValidClusterName(T *testing.T) {
 }
 
 func TestSSHExecute(t *testing.T) {
-	var storage resources.StorageFactory = localstate.InitStorage()
-	assert.Equal(t, os.MkdirAll(GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd"), 0755), nil, "create folders")
-	_ = os.Setenv(string(KsctlCustomDirEnabled), dir)
-	azHA := GetPath(UtilClusterPath, CloudAzure, ClusterTypeHa, "abcd")
 
-	if err := os.MkdirAll(azHA, 0755); err != nil {
-		t.Fatalf("Reason: %v", err)
-	}
-	fmt.Println("Created tmp directories")
-
-	_, err := CreateSSHKeyPair(storage, log, CloudAzure, "abcd")
-	if err != nil {
-		t.Fatalf("Reason: %v", err)
-	}
 	var sshTest SSHCollection = &SSHPayload{}
-	sshTest.LocPrivateKey(GetPath(UtilSSHPath, CloudAzure, "ha", "abcd"))
 	sshTest.Username("fake")
+	sshTest.PrivateKey(mainStateDoc.SSHKeyPair.PrivateKey)
 	assert.Assert(t, sshTest.Flag(UtilExecWithoutOutput).Script("").
 		IPv4("A.A.A.A").
-		FastMode(true).SSHExecute(storage, log) != nil, "ssh should fail")
+		FastMode(true).SSHExecute(log) != nil, "ssh should fail")
 
 	fmt.Println("Cleanup..")
 	if err := os.RemoveAll(dir); err != nil {

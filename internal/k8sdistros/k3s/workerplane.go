@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
@@ -14,16 +13,15 @@ func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory)
 
 	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
 
-	path := helpers.GetPath(consts.UtilClusterPath, k8sState.Provider, k8sState.ClusterType, k8sState.ClusterDir, STATE_FILE_NAME)
-	err := saveStateHelper(storage, path)
+	err := storage.Write(mainStateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
 	err = k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
-		scriptWP(k3s.K3sVer, k8sState.PrivateIPs.Loadbalancer, k8sState.K3sToken)).
-		IPv4(k8sState.PublicIPs.WorkerPlanes[idx]).
-		FastMode(true).SSHExecute(storage, log)
+		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
+		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.WorkerPlanes[idx]).
+		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}

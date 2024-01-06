@@ -12,7 +12,7 @@ func switchCluster(ksctlClient *resources.KsctlClient) {
 
 	//ksctlClient.Metadata.Provider = consts.CloudAll
 
-	err := ksctlManager.SwitchCluster(ksctlClient)
+	_, err := ksctlManager.SwitchCluster(ksctlClient)
 	if err != nil {
 		l.Error(err.Error())
 		os.Exit(1)
