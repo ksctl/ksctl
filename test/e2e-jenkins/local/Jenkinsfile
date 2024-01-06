@@ -29,6 +29,10 @@ pipeline {
                     echo "@@@ Managed Cluster @@@"
 					/usr/local/go/bin/go run . -op switch -file local/switch.json
 
+                    tree "/var/lib/jenkins/.ksctl/state"
+
+                    jq -r . /var/lib/jenkins/.ksctl/state/local/managed/test-e2e-local\\ LOCAL/state.json
+
                     kubectl get nodes -owide
                 '''
             }

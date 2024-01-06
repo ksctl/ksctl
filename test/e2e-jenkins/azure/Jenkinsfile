@@ -49,9 +49,7 @@ pipeline {
 
                     tree "/var/lib/jenkins/.ksctl/state"
 
-                    cd /var/lib/jenkins/.ksctl/state/azure/managed/test-e2e-azure\\ eastus
-
-                    jq . state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/azure/managed/test-e2e-azure\\ eastus/state.json
 
                     sleep 5s
 
@@ -63,9 +61,8 @@ pipeline {
 
                     tree "/var/lib/jenkins/.ksctl/state"
 
-                    cd /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2
+                    jq -r . /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2/state.json
 
-                    jq . state.json
                     sleep 5s
 
                     kubectl get nodes -owide
@@ -87,9 +84,7 @@ pipeline {
 
                     kubectl get nodes -owide
 
-                    cd /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2
-
-                    jq . state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2/state.json
 
                 '''
             }
@@ -108,9 +103,7 @@ pipeline {
 
                     kubectl get nodes -owide
 
-                    cd /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2
-
-                    jq . state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-ha-azure\\ eastus2/state.json
 
                 '''
             }
