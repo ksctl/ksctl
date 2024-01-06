@@ -63,6 +63,9 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	if err := validationFields(client.Metadata); err != nil {
 		return log.NewError(err.Error())
 	}
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return err
+	}
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		client.Metadata.Region = "LOCAL"
@@ -141,6 +144,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 		return log.NewError(err.Error())
 	}
 
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return err
+	}
+
 	if client.Metadata.Provider == consts.CloudLocal {
 		client.Metadata.Region = "LOCAL"
 	}
@@ -183,6 +190,10 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	}
 	if err := validationFields(client.Metadata); err != nil {
 		return nil, log.NewError(err.Error())
+	}
+
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return nil, err
 	}
 
 	if client.Metadata.Provider == consts.CloudLocal {
@@ -327,6 +338,10 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError(err.Error())
 	}
 
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return err
+	}
+
 	if client.Storage == nil {
 		return log.NewError("Initalize the storage driver")
 	}
@@ -442,6 +457,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return log.NewError(err.Error())
 	}
 
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return err
+	}
+
 	if err := client.Storage.Setup(
 		client.Metadata.Provider,
 		client.Metadata.Region,
@@ -516,6 +535,10 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 		return log.NewError(err.Error())
 	}
 
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return err
+	}
+
 	if client.Metadata.IsHA && len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
 		// disable add AddWorkerPlaneNode when this feature is being used
 		return log.NewError("This Functionality is diabled for {HA type clusters}", "FEATURE_FLAG", consts.KsctlFeatureFlagHaAutoscale)
@@ -588,6 +611,10 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) error {
 	if err := validationFields(client.Metadata); err != nil {
 		return log.NewError(err.Error())
+	}
+
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return err
 	}
 
 	if client.Metadata.IsHA && len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
