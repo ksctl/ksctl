@@ -46,23 +46,18 @@ pipeline {
 
                     tree "/var/lib/jenkins/.ksctl/state"
 
-                    cd /var/lib/jenkins/.ksctl/state/civo/managed/test-e2e-civo\\ LON1
-
-                    jq . state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/managed/test-e2e-civo\\ LON1/state.json
 
                     sleep 5s
 
                     kubectl get nodes -owide
-
 
                     echo "@@@ HA Cluster @@@"
                     /usr/local/go/bin/go run . -op switch -file civo/switch-ha.json
 
                     tree "/var/lib/jenkins/.ksctl/state"
 
-                    cd /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-ha-civo\\ FRA1
-
-                    jq . state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-ha-civo\\ FRA1/state.json
 
                     sleep 5s
 
@@ -83,9 +78,8 @@ pipeline {
                     /usr/local/go/bin/go run . -op scaledown -file civo/scaledown-ha.json
 
                     kubectl get nodes -owide
-                    cd /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-ha-civo\\ FRA1
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-ha-civo\\ FRA1/state.json
 
-                    jq . state.json
                 '''
             }
         }
@@ -102,9 +96,8 @@ pipeline {
                     /usr/local/go/bin/go run . -op scaleup -file civo/scaleup-ha.json
 
                     kubectl get nodes -owide
-                    cd /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-ha-civo\\ FRA1
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-ha-civo\\ FRA1/state.json
 
-                    jq . state.json
                 '''
             }
         }
