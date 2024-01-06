@@ -4,7 +4,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/kubesimplify/ksctl/pkg/helpers"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
@@ -14,20 +13,23 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 	obj.mxName.Unlock()
 	log.Debug("Printing", "name", name)
 
-	if len(azureCloudState.SSHKeyName) != 0 {
-		log.Print("skipped ssh key already created", "name", azureCloudState.SSHKeyName)
+	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) != 0 {
+		log.Print("skipped ssh key already created", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
 		return nil
 	}
 
-	keyPairToUpload, err := helpers.CreateSSHKeyPair(storage, log, consts.CloudAzure, clusterDirName)
+	err := helpers.CreateSSHKeyPair(log, mainStateDocument)
 	if err != nil {
+		return log.NewError(err.Error())
+	}
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	parameters := armcompute.SSHPublicKeyResource{
 		Location: to.Ptr(obj.region),
 		Properties: &armcompute.SSHPublicKeyResourceProperties{
-			PublicKey: to.Ptr(keyPairToUpload),
+			PublicKey: to.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
 		},
 	}
 
@@ -38,16 +40,13 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 		return log.NewError(err.Error())
 	}
 
-	azureCloudState.SSHKeyName = name
-	azureCloudState.SSHUser = "azureuser"
-	azureCloudState.SSHPrivateKeyLoc = helpers.GetPath(consts.UtilSSHPath, consts.CloudAzure, clusterType, clusterDirName)
+	mainStateDocument.CloudInfra.Azure.B.SSHKeyName = name
+	mainStateDocument.CloudInfra.Azure.B.SSHUser = "azureuser"
 
-	log.Debug("Printing", "azureCloudState.SSHKeyName", azureCloudState.SSHKeyName, "azureCloudState.SSHPrivateKeyLoc", azureCloudState.SSHPrivateKeyLoc, "azureCloudState.SSHUser", azureCloudState.SSHUser)
-
-	if err := saveStateHelper(storage); err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
-	log.Success("created the ssh key pair", "name", azureCloudState.SSHKeyName)
+	log.Success("created the ssh key pair", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
 
 	return nil
 }
@@ -55,22 +54,21 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 // DelSSHKeyPair implements resources.CloudFactory.
 func (obj *AzureProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 
-	if len(azureCloudState.SSHKeyName) == 0 {
-		log.Print("skipped ssh key already deleted", "name", azureCloudState.SSHKeyName)
+	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) == 0 {
+		log.Print("skipped ssh key already deleted", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
 		return nil
 	}
 
-	if _, err := obj.client.DeleteSSHKey(azureCloudState.SSHKeyName, nil); err != nil {
+	if _, err := obj.client.DeleteSSHKey(mainStateDocument.CloudInfra.Azure.B.SSHKeyName, nil); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	sshName := azureCloudState.SSHKeyName
+	sshName := mainStateDocument.CloudInfra.Azure.B.SSHKeyName
 
-	azureCloudState.SSHKeyName = ""
-	azureCloudState.SSHUser = ""
-	azureCloudState.SSHPrivateKeyLoc = ""
+	mainStateDocument.CloudInfra.Azure.B.SSHKeyName = ""
+	mainStateDocument.CloudInfra.Azure.B.SSHUser = ""
 
-	if err := saveStateHelper(storage); err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 

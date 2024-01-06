@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 
@@ -72,11 +73,11 @@ func getHealth(c *gin.Context) {
 
 }
 
-func scaleUp(context *gin.Context) {
+func scaleUp(ctx *gin.Context) {
 	req := Metadata{}
 	// using BindJson method to serialize body with struct
-	if err := context.BindJSON(&req); err != nil {
-		_ = context.AbortWithError(http.StatusBadRequest, err)
+	if err := ctx.BindJSON(&req); err != nil {
+		_ = ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -90,8 +91,8 @@ func scaleUp(context *gin.Context) {
 	cli.Metadata.LogWritter = os.Stdout
 
 	cli.Metadata.K8sVersion = "1.27.1"
-	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
-		_ = context.AbortWithError(http.StatusInternalServerError, err)
+	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "scalar"), cli); err != nil {
+		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -104,18 +105,18 @@ func scaleUp(context *gin.Context) {
 
 	err := controller.AddWorkerPlaneNode(cli)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+		ctx.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 	} else {
-		context.JSON(http.StatusAccepted, &Response{OK: true, Response: "scaled up"})
+		ctx.JSON(http.StatusAccepted, &Response{OK: true, Response: "scaled up"})
 	}
 }
 
-func scaleDown(context *gin.Context) {
+func scaleDown(ctx *gin.Context) {
 
 	req := Metadata{}
 	// using BindJson method to serialize body with struct
-	if err := context.BindJSON(&req); err != nil {
-		_ = context.AbortWithError(http.StatusBadRequest, err)
+	if err := ctx.BindJSON(&req); err != nil {
+		_ = ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	cli = new(resources.KsctlClient)
@@ -128,8 +129,8 @@ func scaleDown(context *gin.Context) {
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = os.Stdout
 
-	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
-		_ = context.AbortWithError(http.StatusInternalServerError, err)
+	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "scalar"), cli); err != nil {
+		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -143,13 +144,13 @@ func scaleDown(context *gin.Context) {
 
 	err := controller.DelWorkerPlaneNode(cli)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+		ctx.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 	} else {
-		context.JSON(http.StatusAccepted, &Response{OK: true, Response: "scaled down"})
+		ctx.JSON(http.StatusAccepted, &Response{OK: true, Response: "scaled down"})
 	}
 }
 
-func getClusters(context *gin.Context) {
+func getClusters(ctx *gin.Context) {
 
 	cli = new(resources.KsctlClient)
 
@@ -158,32 +159,32 @@ func getClusters(context *gin.Context) {
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = os.Stdout
 
-	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
-		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "scalar"), cli); err != nil {
+		ctx.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 		return
 	}
 
 	var printerTable []cloudController.AllClusterData
 	data, err := civo_pkg.GetRAWClusterInfos(cli.Storage, cli.Metadata)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+		ctx.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 		return
 	}
 	printerTable = append(printerTable, data...)
 
 	data, err = azure_pkg.GetRAWClusterInfos(cli.Storage, cli.Metadata)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
+		ctx.JSON(http.StatusInternalServerError, &Response{OK: false, Errors: err.Error()})
 		return
 	}
 	printerTable = append(printerTable, data...)
 
-	context.JSON(http.StatusAccepted, &Response{OK: true, Response: printerTable})
+	ctx.JSON(http.StatusAccepted, &Response{OK: true, Response: printerTable})
 }
 
 func main() {
 
-	if err := os.Setenv(string(KsctlCustomDirEnabled), "/app/ksctl-data"); err != nil {
+	if err := os.Setenv(string(KsctlCustomDirEnabled), "app ksctl-data"); err != nil {
 		panic(err)
 	}
 

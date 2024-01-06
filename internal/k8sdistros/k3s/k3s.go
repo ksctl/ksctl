@@ -1,10 +1,9 @@
 package k3s
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
@@ -12,30 +11,9 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
 )
 
-type Instances struct {
-	ControlPlanes []string `json:"controlplanes"`
-	WorkerPlanes  []string `json:"workerplanes"`
-	DataStores    []string `json:"datastores"`
-	Loadbalancer  string   `json:"loadbalancer"`
-}
-
-type StateConfiguration struct {
-	K3sToken          string        `json:"k3s_token"`
-	DataStoreEndPoint string        `json:"datastore_endpoint"`
-	SSHInfo           cloud.SSHInfo `json:"cloud_ssh_info"` // contains data from cloud
-	PublicIPs         Instances     `json:"cloud_public_ips"`
-	PrivateIPs        Instances     `json:"cloud_private_ips"`
-
-	ClusterName string                  `json:"cluster_name"`
-	Region      string                  `json:"region"`
-	ClusterType consts.KsctlClusterType `json:"cluster_type"`
-	ClusterDir  string                  `json:"cluster_dir"`
-	Provider    consts.KsctlCloud       `json:"provider"`
-}
-
 var (
-	k8sState *StateConfiguration
-	log      resources.LoggerFactory
+	mainStateDocument *types.StorageDocument
+	log               resources.LoggerFactory
 )
 
 type K3sDistro struct {
@@ -45,30 +23,15 @@ type K3sDistro struct {
 	SSHInfo helpers.SSHCollection
 }
 
-const (
-	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
-	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0755)
-	STATE_FILE_NAME              = string("k8s-state.json")
-	KUBECONFIG_FILE_NAME         = string("kubeconfig")
-)
-
-func ReturnK3sStruct(meta resources.Metadata) *K3sDistro {
+func ReturnK3sStruct(meta resources.Metadata, state *types.StorageDocument) *K3sDistro {
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName("k3s")
+
+	mainStateDocument = state
 
 	return &K3sDistro{
 		SSHInfo: &helpers.SSHPayload{},
 	}
-}
-
-// GetStateFiles implements resources.DistroFactory.
-func (*K3sDistro) GetStateFile(resources.StorageFactory) (string, error) {
-	state, err := json.Marshal(k8sState)
-	if err != nil {
-		return "", err
-	}
-	log.Debug("Printing", "k3sState", string(state))
-	return string(state), nil
 }
 
 func scriptKUBECONFIG() string {
@@ -79,51 +42,31 @@ sudo cat /etc/rancher/k3s/k3s.yaml`
 // InitState implements resources.DistroFactory.
 // try to achieve deepCopy
 func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation consts.KsctlOperation) error {
-	// add the nil check here as well
-	path := helpers.GetPath(consts.UtilClusterPath, cloudState.Metadata.Provider, cloudState.Metadata.ClusterType, cloudState.Metadata.ClusterDir, STATE_FILE_NAME)
 
-	switch operation {
-	case consts.OperationStateCreate:
-		// add  a flag of completion check
-		k8sState = &StateConfiguration{}
-		k8sState.DataStoreEndPoint = ""
-		k8sState.K3sToken = ""
-
-	case consts.OperationStateGet:
-		raw, err := storage.Path(path).Load()
-		if err != nil {
-			return log.NewError(err.Error())
-		}
-		err = json.Unmarshal(raw, &k8sState)
-		if err != nil {
-			return log.NewError(err.Error())
-		}
+	if operation == consts.OperationStateCreate {
+		mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{K3s: &types.StateConfigurationK3s{}}
 	}
-	k8sState.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
-	k8sState.PrivateIPs.ControlPlanes = cloudState.PrivateIPv4ControlPlanes
 
-	k8sState.PublicIPs.DataStores = cloudState.IPv4DataStores
-	k8sState.PrivateIPs.DataStores = cloudState.PrivateIPv4DataStores
+	mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes
+	mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.ControlPlanes = cloudState.PrivateIPv4ControlPlanes
 
-	k8sState.PublicIPs.WorkerPlanes = cloudState.IPv4WorkerPlanes
+	mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.DataStores = cloudState.IPv4DataStores
+	mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores = cloudState.PrivateIPv4DataStores
 
-	k8sState.PublicIPs.Loadbalancer = cloudState.IPv4LoadBalancer
-	k8sState.PrivateIPs.Loadbalancer = cloudState.PrivateIPv4LoadBalancer
-	k8sState.SSHInfo = cloudState.SSHState
+	mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.WorkerPlanes = cloudState.IPv4WorkerPlanes
 
-	k3s.SSHInfo.LocPrivateKey(k8sState.SSHInfo.PathPrivateKey)
-	k3s.SSHInfo.Username(k8sState.SSHInfo.UserName)
+	mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer = cloudState.IPv4LoadBalancer
+	mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.LoadBalancer = cloudState.PrivateIPv4LoadBalancer
+	mainStateDocument.K8sBootstrap.K3s.B.SSHInfo = cloudState.SSHState
 
-	k8sState.ClusterName = cloudState.Metadata.ClusterName
-	k8sState.Region = cloudState.Metadata.Region
-	k8sState.Provider = cloudState.Metadata.Provider
-	k8sState.ClusterDir = cloudState.Metadata.ClusterDir
-	k8sState.ClusterType = cloudState.Metadata.ClusterType
-	err := saveStateHelper(storage, path)
+	k3s.SSHInfo.PrivateKey(mainStateDocument.K8sBootstrap.K3s.B.SSHInfo.PrivateKey)
+	k3s.SSHInfo.Username(mainStateDocument.K8sBootstrap.K3s.B.SSHInfo.UserName)
+
+	err := storage.Write(mainStateDocument)
 	if err != nil {
 		return log.NewError("failed to Initialized state from Cloud reason: %v", err)
 	}
-	log.Debug("Printing", "k3sState", k8sState)
+	log.Debug("Printing", "k3sState", mainStateDocument)
 
 	log.Print("Initialized state from Cloud")
 	return nil

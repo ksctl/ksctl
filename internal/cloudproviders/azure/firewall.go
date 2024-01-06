@@ -19,13 +19,13 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	nsg := ""
 	switch role {
 	case consts.RoleCp:
-		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName
 	case consts.RoleWp:
-		nsg = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName
 	case consts.RoleLb:
-		nsg = azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
-		nsg = azureCloudState.InfoDatabase.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
 	default:
 		return fmt.Errorf("invalid role")
 	}
@@ -47,20 +47,20 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	}
 	switch role {
 	case consts.RoleCp:
-		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = ""
-		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = ""
+		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName = ""
+		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID = ""
 	case consts.RoleWp:
-		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID = ""
-		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = ""
+		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID = ""
+		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName = ""
 	case consts.RoleLb:
-		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID = ""
-		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = ""
+		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID = ""
+		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName = ""
 	case consts.RoleDs:
-		azureCloudState.InfoDatabase.NetworkSecurityGroupID = ""
-		azureCloudState.InfoDatabase.NetworkSecurityGroupName = ""
+		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID = ""
+		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = ""
 	}
 
-	if err := saveStateHelper(storage); err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -81,13 +81,13 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	nsg := ""
 	switch role {
 	case consts.RoleCp:
-		nsg = azureCloudState.InfoControlPlanes.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName
 	case consts.RoleWp:
-		nsg = azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName
 	case consts.RoleLb:
-		nsg = azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
-		nsg = azureCloudState.InfoDatabase.NetworkSecurityGroupName
+		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
 	default:
 		return log.NewError("invalid role")
 	}
@@ -126,16 +126,16 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 	switch role {
 	case consts.RoleCp:
-		azureCloudState.InfoControlPlanes.NetworkSecurityGroupName = name
+		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName = name
 	case consts.RoleWp:
-		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupName = name
+		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName = name
 	case consts.RoleLb:
-		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupName = name
+		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName = name
 	case consts.RoleDs:
-		azureCloudState.InfoDatabase.NetworkSecurityGroupName = name
+		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = name
 	}
 
-	if err := saveStateHelper(storage); err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -147,16 +147,16 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 	switch role {
 	case consts.RoleCp:
-		azureCloudState.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
+		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
 	case consts.RoleWp:
-		azureCloudState.InfoWorkerPlanes.NetworkSecurityGroupID = *resp.ID
+		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID = *resp.ID
 	case consts.RoleLb:
-		azureCloudState.InfoLoadBalancer.NetworkSecurityGroupID = *resp.ID
+		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID = *resp.ID
 	case consts.RoleDs:
-		azureCloudState.InfoDatabase.NetworkSecurityGroupID = *resp.ID
+		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID = *resp.ID
 	}
 
-	if err := saveStateHelper(storage); err != nil {
+	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 

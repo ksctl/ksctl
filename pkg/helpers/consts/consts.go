@@ -59,8 +59,8 @@ const (
 )
 
 const (
-	StoreLocal  KsctlStore = "local"
-	StoreRemote KsctlStore = "remote"
+	StoreLocal    KsctlStore = "local"
+	StoreExtMongo KsctlStore = "external-mongo"
 )
 
 const (
@@ -79,13 +79,11 @@ const (
 	KsctlFakeFlag KsctlSpecialFlags = "KSCTL_FAKE_FLAG_ENABLED"
 
 	// KsctlCustomDirEnabled use this as environment variable to set a different home directory for ksctl during testing
+	// make sure the value is space seperated <directory> <directory> ....
 	KsctlCustomDirEnabled KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
 
 	// KsctlFeatureFlagHaAutoscale to be set if feature for AUTOSCALE is needed
 	KsctlFeatureFlagHaAutoscale KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_HA_AUTOSCALE"
-
-	// KsctlFeatureFlagApplications to be set if feature for install Application is needed
-	KsctlFeatureFlagApplications KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_APPLICATIONS"
 )
 
 const (

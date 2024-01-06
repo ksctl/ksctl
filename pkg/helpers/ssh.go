@@ -15,16 +15,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubesimplify/ksctl/internal/storage/types"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/resources"
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHPayload struct {
-	UserName       string
-	PathPrivateKey string
-	PublicIP       string
-	Output         string
+	UserName   string
+	Privatekey string
+	PublicIP   string
+	Output     string
 
 	flag     consts.KsctlUtilsConsts
 	script   string
@@ -32,59 +33,56 @@ type SSHPayload struct {
 }
 
 type SSHCollection interface {
-	SSHExecute(resources.StorageFactory, resources.LoggerFactory) error
+	SSHExecute(resources.LoggerFactory) error
 	Flag(consts.KsctlUtilsConsts) SSHCollection
 	Script(string) SSHCollection
 	FastMode(bool) SSHCollection
 	Username(string)
-	LocPrivateKey(string)
+	PrivateKey(string)
 	GetOutput() string
 	IPv4(ip string) SSHCollection
 }
 
-func (ssh *SSHPayload) Username(s string) {
-	ssh.UserName = s
+func (sshPayload *SSHPayload) Username(s string) {
+	sshPayload.UserName = s
 }
 
-func (ssh *SSHPayload) LocPrivateKey(s string) {
-	ssh.PathPrivateKey = s
+func (sshPayload *SSHPayload) PrivateKey(s string) {
+	sshPayload.Privatekey = s
 }
 
-func (ssh *SSHPayload) GetOutput() string {
-	out := ssh.Output
-	ssh.Output = ""
+func (sshPayload *SSHPayload) GetOutput() string {
+	out := sshPayload.Output
+	sshPayload.Output = ""
 	return out
 }
 
-func (ssh *SSHPayload) IPv4(ip string) SSHCollection {
-	ssh.PublicIP = ip
-	return ssh
+func (sshPayload *SSHPayload) IPv4(ip string) SSHCollection {
+	sshPayload.PublicIP = ip
+	return sshPayload
 }
 
-func (ssh *SSHPayload) Flag(execMethod consts.KsctlUtilsConsts) SSHCollection {
+func (sshPayload *SSHPayload) Flag(execMethod consts.KsctlUtilsConsts) SSHCollection {
 	if execMethod == consts.UtilExecWithOutput || execMethod == consts.UtilExecWithoutOutput {
-		ssh.flag = execMethod
-		return ssh
+		sshPayload.flag = execMethod
+		return sshPayload
 	}
 	return nil
 }
 
-func (ssh *SSHPayload) Script(s string) SSHCollection {
-	ssh.script = s
-	return ssh
+func (sshPayload *SSHPayload) Script(s string) SSHCollection {
+	sshPayload.script = s
+	return sshPayload
 }
 
-func (ssh *SSHPayload) FastMode(mode bool) SSHCollection {
-	ssh.fastMode = mode
-	return ssh
+func (sshPayload *SSHPayload) FastMode(mode bool) SSHCollection {
+	sshPayload.fastMode = mode
+	return sshPayload
 }
 
-func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log resources.LoggerFactory) error {
+func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 
-	privateKeyBytes, err := storage.Path(sshPayload.PathPrivateKey).Load()
-	if err != nil {
-		return err
-	}
+	privateKeyBytes := []byte(sshPayload.Privatekey)
 
 	// create signer
 	signer, err := signerFromPem(privateKeyBytes)
@@ -111,13 +109,14 @@ func (sshPayload *SSHPayload) SSHExecute(storage resources.StorageFactory, log r
 
 		HostKeyAlgorithms: []string{
 			ssh.KeyAlgoRSASHA256,
+			ssh.KeyAlgoED25519,
 		},
 		HostKeyCallback: ssh.HostKeyCallback(
 			func(hostname string, remote net.Addr, remoteSvrHostKey ssh.PublicKey) error {
 				gotFingerprint := ssh.FingerprintSHA256(remoteSvrHostKey)
 				keyType := remoteSvrHostKey.Type()
-				if keyType == ssh.KeyAlgoRSA {
-					recvFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP)
+				if keyType == ssh.KeyAlgoRSA || keyType == ssh.KeyAlgoED25519 {
+					recvFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP, keyType)
 					if err != nil {
 						return err
 					}
@@ -234,20 +233,18 @@ func generatePublicKey(log resources.LoggerFactory, privatekey *rsa.PublicKey) (
 	log.Print("Public key generated")
 	return pubKeyBytes, nil
 }
-func CreateSSHKeyPair(storage resources.StorageFactory, log resources.LoggerFactory, provider consts.KsctlCloud, clusterDir string) (string, error) {
-	savePrivateFileTo := GetPath(consts.UtilOtherPath, provider, consts.ClusterTypeHa, clusterDir, "keypair")
-	savePublicFileTo := GetPath(consts.UtilOtherPath, provider, consts.ClusterTypeHa, clusterDir, "keypair.pub")
+func CreateSSHKeyPair(log resources.LoggerFactory, state *types.StorageDocument) error {
 
 	bitSize := 4096
 
 	privateKey, err := generatePrivateKey(log, bitSize)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	publicKeyBytes, err := generatePublicKey(log, &privateKey.PublicKey)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	privateKeyBytes := encodePrivateKeyToPEM(log, privateKey)
@@ -255,15 +252,10 @@ func CreateSSHKeyPair(storage resources.StorageFactory, log resources.LoggerFact
 	log.Debug("Printing", "ssh pub key", string(publicKeyBytes))
 	log.Debug("Printing", "ssh private key", string(privateKeyBytes))
 
-	if err := storage.Path(savePrivateFileTo).Permission(0400).Save(privateKeyBytes); err != nil {
-		return "", err
-	}
+	state.SSHKeyPair.PrivateKey = string(privateKeyBytes)
+	state.SSHKeyPair.PublicKey = string(publicKeyBytes)
 
-	if err := storage.Path(savePublicFileTo).Permission(0600).Save(publicKeyBytes); err != nil {
-		return "", err
-	}
-
-	return string(publicKeyBytes), nil
+	return nil
 }
 
 func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
@@ -288,9 +280,17 @@ func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 
 // returnServerPublicKeys it uses the ssh-keygen and ssh-keyscan as OS deps
 // it uses this command -> ssh-keyscan -t rsa <remote_ssh_server_public_ipv4> | ssh-keygen -lf -
-func returnServerPublicKeys(publicIP string) (string, error) {
-	c1 := exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
-	c2 := exec.Command("ssh-keygen", "-lf", "-")
+func returnServerPublicKeys(publicIP string, keyType string) (string, error) {
+	var c1, c2 *exec.Cmd
+
+	switch keyType {
+	case ssh.KeyAlgoRSA:
+		c1 = exec.Command("ssh-keyscan", "-t", "rsa", publicIP)
+	case ssh.KeyAlgoED25519:
+		c1 = exec.Command("ssh-keyscan", "-t", "ed25519", publicIP)
+	}
+
+	c2 = exec.Command("ssh-keygen", "-lf", "-")
 
 	r, w := io.Pipe()
 	c1.Stdout = w

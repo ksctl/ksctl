@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers"
 	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
 	"github.com/kubesimplify/ksctl/pkg/logger"
 	"github.com/kubesimplify/ksctl/pkg/resources"
@@ -32,7 +32,7 @@ func StartCloud(w http.ResponseWriter) {
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = w
 
-	if err := control_pkg.InitializeStorageFactory(cli); err != nil {
+	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "scalar"), cli); err != nil {
 		panic(err)
 	}
 }
@@ -48,13 +48,6 @@ func createDummyCivo(w http.ResponseWriter, r *http.Request) {
 	cli.Metadata.NoMP = 2
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	azManaged := helpers.GetPath(consts.UtilClusterPath, consts.CloudCivo, consts.ClusterTypeMang)
-
-	if err := os.MkdirAll(azManaged, 0755); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Created tmp directories")
 
 	if err := controller.CreateManagedCluster(cli); err != nil {
 		log.Error("Error Encournted", "Reason", err.Error())

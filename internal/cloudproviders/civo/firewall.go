@@ -16,67 +16,65 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 	var firewallID string
 	switch role {
 	case consts.RoleCp:
-		if len(civoCloudState.NetworkIDs.FirewallIDControlPlaneNode) == 0 {
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes) == 0 {
 			log.Print("skipped firewall for controlplane already deleted")
 			return nil
 		}
-		firewallID = civoCloudState.NetworkIDs.FirewallIDControlPlaneNode
+		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes
 
-		_, err := obj.client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDControlPlaneNode)
+		_, err := obj.client.DeleteFirewall(mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 
-		civoCloudState.NetworkIDs.FirewallIDControlPlaneNode = ""
+		mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes = ""
 
 	case consts.RoleWp:
-		if len(civoCloudState.NetworkIDs.FirewallIDWorkerNode) == 0 {
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes) == 0 {
 			log.Print("skipped firewall for workerplane already deleted")
 			return nil
 		}
 
-		firewallID = civoCloudState.NetworkIDs.FirewallIDWorkerNode
+		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes
 
-		_, err := obj.client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDWorkerNode)
+		_, err := obj.client.DeleteFirewall(mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 
-		civoCloudState.NetworkIDs.FirewallIDWorkerNode = ""
+		mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes = ""
 	case consts.RoleDs:
-		if len(civoCloudState.NetworkIDs.FirewallIDDatabaseNode) == 0 {
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes) == 0 {
 			log.Print("skipped firewall for datastore already deleted")
 			return nil
 		}
 
-		firewallID = civoCloudState.NetworkIDs.FirewallIDDatabaseNode
+		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes
 
-		_, err := obj.client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDDatabaseNode)
+		_, err := obj.client.DeleteFirewall(mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 
-		civoCloudState.NetworkIDs.FirewallIDDatabaseNode = ""
+		mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes = ""
 	case consts.RoleLb:
-		if len(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode) == 0 {
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer) == 0 {
 			log.Print("skipped firewall for loadbalancer already deleted")
 			return nil
 		}
 
-		firewallID = civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode
+		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer
 
-		_, err := obj.client.DeleteFirewall(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode)
+		_, err := obj.client.DeleteFirewall(mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 
-		civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode = ""
+		mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer = ""
 	}
 
-	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
-
 	log.Success("Deleted firewall", "firewallID", firewallID)
-	return saveStateHelper(storage, path)
+	return storage.Write(mainStateDocument)
 }
 
 // NewFirewall implements resources.CloudFactory.
@@ -93,37 +91,37 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 	firewallConfig := &civogo.FirewallConfig{
 		Name:      name,
 		Region:    obj.region,
-		NetworkID: civoCloudState.NetworkIDs.NetworkID,
+		NetworkID: mainStateDocument.CloudInfra.Civo.NetworkID,
 	}
 
 	switch role {
 	case consts.RoleCp:
-		if len(civoCloudState.NetworkIDs.FirewallIDControlPlaneNode) != 0 {
-			log.Print("skipped firewall for controlplane found", civoCloudState.NetworkIDs.FirewallIDControlPlaneNode)
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes) != 0 {
+			log.Print("skipped firewall for controlplane found", mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes)
 			return nil
 		}
 
 		firewallConfig.Rules = firewallRuleControlPlane()
 
 	case consts.RoleWp:
-		if len(civoCloudState.NetworkIDs.FirewallIDWorkerNode) != 0 {
-			log.Print("skipped firewall for workerplane found", civoCloudState.NetworkIDs.FirewallIDWorkerNode)
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes) != 0 {
+			log.Print("skipped firewall for workerplane found", mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes)
 			return nil
 		}
 
 		firewallConfig.Rules = firewallRuleWorkerPlane()
 
 	case consts.RoleDs:
-		if len(civoCloudState.NetworkIDs.FirewallIDDatabaseNode) != 0 {
-			log.Print("skipped firewall for datastore found", civoCloudState.NetworkIDs.FirewallIDDatabaseNode)
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes) != 0 {
+			log.Print("skipped firewall for datastore found", mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes)
 			return nil
 		}
 
 		firewallConfig.Rules = firewallRuleDataStore()
 
 	case consts.RoleLb:
-		if len(civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode) != 0 {
-			log.Print("skipped firewall for loadbalancer found", civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode)
+		if len(mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer) != 0 {
+			log.Print("skipped firewall for loadbalancer found", mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer)
 			return nil
 		}
 
@@ -140,20 +138,17 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	switch role {
 	case consts.RoleCp:
-		civoCloudState.NetworkIDs.FirewallIDControlPlaneNode = firew.ID
+		mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes = firew.ID
 	case consts.RoleWp:
-		civoCloudState.NetworkIDs.FirewallIDWorkerNode = firew.ID
+		mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes = firew.ID
 	case consts.RoleDs:
-		civoCloudState.NetworkIDs.FirewallIDDatabaseNode = firew.ID
+		mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes = firew.ID
 	case consts.RoleLb:
-		civoCloudState.NetworkIDs.FirewallIDLoadBalancerNode = firew.ID
+		mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer = firew.ID
 	}
 
-	path := generatePath(consts.UtilClusterPath, clusterType, clusterDirName, STATE_FILE_NAME)
-	log.Debug("Printing", "path", path, "cloudState.networkIDS", civoCloudState.NetworkIDs)
-
 	log.Success("Created firewall", "name", name)
-	return saveStateHelper(storage, path)
+	return storage.Write(mainStateDocument)
 }
 
 func firewallRuleControlPlane() []civogo.FirewallRule {

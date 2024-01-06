@@ -27,17 +27,10 @@ type KubernetesFactory interface {
 	// it requires number
 	ConfigureDataStore(int, StorageFactory) error
 
-	// GetKubeConfig returns the path of kubeconfig
-	GetKubeConfig(StorageFactory) (path string, data string, err error)
-
 	// Version setter for version to be used
 	Version(string) DistroFactory
 
 	CNI(string) (externalCNI bool) // it will return error
-
-	// GetStateFiles it returns the k8s-state.json
-	// WARN: sensitive info can be present
-	GetStateFile(StorageFactory) (string, error)
 }
 
 type DistroFactory interface {
