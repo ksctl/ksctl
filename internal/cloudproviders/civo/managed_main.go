@@ -52,10 +52,8 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 // NewManagedCluster implements resources.CloudFactory.
 func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
 
-	name := obj.metadata.resName
-	vmtype := obj.metadata.vmType
-	obj.mxName.Unlock()
-	obj.mxVMType.Unlock()
+	name := <-obj.chResName
+	vmtype := <-obj.chVMType
 
 	log.Debug("Printing", "name", name, "vmtype", vmtype)
 

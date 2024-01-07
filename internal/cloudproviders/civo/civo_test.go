@@ -248,15 +248,14 @@ func TestResName(t *testing.T) {
 	if ret := fakeClientVars.Name("demo"); ret == nil {
 		t.Fatalf("returned nil for valid res name")
 	}
-	fakeClientVars.mxName.Unlock() // to unlock the mutex lock
-	if fakeClientVars.metadata.resName != "demo" {
+	name := <-fakeClientVars.chResName
+	if name != "demo" {
 		t.Fatalf("Correct assignment missing")
 	}
 
 	if ret := fakeClientVars.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
-	fakeClientVars.mxName.Unlock() // to unlock the mutex lock
 }
 
 func TestRole(t *testing.T) {
@@ -265,31 +264,29 @@ func TestRole(t *testing.T) {
 		if ret := fakeClientVars.Role(val); ret == nil {
 			t.Fatalf("returned nil for valid role")
 		}
-		fakeClientVars.mxRole.Unlock()
-		if fakeClientVars.metadata.role != val {
+		role := <-fakeClientVars.chRole
+		if role != val {
 			t.Fatalf("Correct assignment missing")
 		}
 	}
 	if ret := fakeClientVars.Role("fake"); ret != nil {
 		t.Fatalf("returned interface for invalid role")
 	}
-	fakeClientVars.mxRole.Unlock() // to unlock the mutex lock
 }
 
 func TestVMType(t *testing.T) {
 	if ret := fakeClientVars.VMType("g4s.kube.small"); ret == nil {
 		t.Fatalf("returned nil for valid vm type")
 	}
-	fakeClientVars.mxVMType.Unlock() // to unlock the mutex lock
+	vm := <-fakeClientVars.chVMType
 
-	if fakeClientVars.metadata.vmType != "g4s.kube.small" {
+	if vm != "g4s.kube.small" {
 		t.Fatalf("Correct assignment missing")
 	}
 
 	if ret := fakeClientVars.VMType(""); ret != nil {
 		t.Fatalf("returned interface for invalid vm type")
 	}
-	fakeClientVars.mxVMType.Unlock() // to unlock the mutex lock
 
 }
 

@@ -9,8 +9,7 @@ import (
 
 // NewNetwork implements resources.CloudFactory.
 func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
-	name := obj.metadata.resName
-	obj.mxName.Unlock()
+	name := <-obj.chResName
 
 	log.Debug("Printing", "Name", name)
 
