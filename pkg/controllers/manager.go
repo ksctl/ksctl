@@ -101,34 +101,13 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	// it gets supportForApps, supportForCNI, error
 	externalApp, externalCNI, cloudResErr := cloud.CreateManagedCluster(client)
 	if cloudResErr != nil {
-		log.Error(cloudResErr.Error())
+		return log.NewError(cloudResErr.Error())
 	}
 
 	kubeconfig := stateDocument.ClusterKubeConfig
 
-	var kubernetesClient universal.Kubernetes
-
-	if externalCNI || (len(client.Metadata.Applications) != 0 && externalApp) {
-		kubernetesClient = universal.Kubernetes{
-			Metadata:      client.Metadata,
-			StorageDriver: client.Storage,
-		}
-		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
-			return log.NewError(err.Error())
-		}
-	}
-
-	if externalCNI {
-		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
-			return log.NewError(err.Error())
-		}
-	}
-
-	if len(client.Metadata.Applications) != 0 && externalApp {
-		apps := strings.Split(client.Metadata.Applications, ",")
-		if err := kubernetesClient.InstallApplications(apps); err != nil {
-			return log.NewError(err.Error())
-		}
+	if err := kubernetes.InstallAdditionalTools(kubeconfig, externalCNI, externalApp, client, stateDocument); err != nil {
+		return log.NewError(err.Error())
 	}
 
 	log.Success("successfully created managed cluster")
@@ -401,43 +380,8 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 	kubeconfig := stateDocument.ClusterKubeConfig
 
-	var cloudSecret map[string][]byte
-	cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
-	if err != nil {
+	if err := kubernetes.InstallAdditionalTools(kubeconfig, externalCNI, true, client, stateDocument); err != nil {
 		return log.NewError(err.Error())
-	}
-
-	var kubernetesClient universal.Kubernetes
-
-	if externalCNI || len(client.Metadata.Applications) != 0 {
-		kubernetesClient = universal.Kubernetes{
-			Metadata:      client.Metadata,
-			StorageDriver: client.Storage,
-		}
-		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
-			return log.NewError(err.Error())
-		}
-	}
-
-	if externalCNI {
-		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
-			return log.NewError(err.Error())
-		}
-	}
-
-	if len(client.Metadata.Applications) != 0 {
-		apps := strings.Split(client.Metadata.Applications, ",")
-		if err := kubernetesClient.InstallApplications(apps); err != nil {
-			return log.NewError(err.Error())
-		}
-	}
-
-	////// EXPERIMENTAL Features //////
-	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
-
-		if err = kubernetesClient.KsctlConfigForController(kubeconfig, stateDocument, cloudSecret); err != nil {
-			return log.NewError(err.Error())
-		}
 	}
 
 	log.Success("successfully created ha cluster")
@@ -484,6 +428,8 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 		return log.NewError(err.Error())
 	}
 
+	// TODO: move it kubernetes controller
+	// FIXME: do we actually need it any more as storage driver can be in a single place thus no need to write the below magic
 	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
 
 		// find a better way to get the kubeconfig location
