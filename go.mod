@@ -14,9 +14,12 @@ require (
 	github.com/civo/civogo v0.3.53
 	github.com/fatih/color v1.16.0
 	github.com/gin-gonic/gin v1.9.1
+	github.com/goccy/go-json v0.10.2
+	github.com/gookit/goutil v0.6.14
 	github.com/rodaine/table v1.1.0
+	go.mongodb.org/mongo-driver v1.13.1
 	golang.org/x/crypto v0.15.0
-	golang.org/x/term v0.14.0
+	golang.org/x/term v0.16.0
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.13.2
 	k8s.io/api v0.28.4
@@ -72,7 +75,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -86,7 +88,6 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/gookit/color v1.5.4 // indirect
-	github.com/gookit/goutil v0.6.14 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
@@ -154,7 +155,6 @@ require (
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
@@ -162,7 +162,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
