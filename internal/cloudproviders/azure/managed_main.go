@@ -38,10 +38,8 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 
 // NewManagedCluster implements resources.CloudFactory.
 func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
-	name := obj.metadata.resName
-	vmtype := obj.metadata.vmType
-	obj.mxName.Unlock()
-	obj.mxVMType.Unlock()
+	name := <-obj.chResName
+	vmtype := <-obj.chVMType
 
 	log.Debug("Printing", "name", name, "vmtype", vmtype)
 

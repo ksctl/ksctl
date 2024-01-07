@@ -9,8 +9,7 @@ import (
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
-	name := obj.metadata.resName
-	obj.mxName.Unlock()
+	name := <-obj.chResName
 	log.Debug("Printing", "name", name)
 
 	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) != 0 {

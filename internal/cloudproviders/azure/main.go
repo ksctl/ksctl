@@ -17,10 +17,7 @@ import (
 )
 
 type metadata struct {
-	resName string
-	role    consts.KsctlRole
-	vmType  string
-	public  bool
+	public bool
 
 	// apps    string
 	cni     string
@@ -42,10 +39,12 @@ type AzureProvider struct {
 	region        string
 	sshPath       string
 	metadata
-	mxName   sync.Mutex
-	mxRole   sync.Mutex
-	mxVMType sync.Mutex
-	mxState  sync.Mutex
+
+	chResName chan string
+	chRole    chan consts.KsctlRole
+	chVMType  chan string
+
+	mu sync.Mutex
 
 	client AzureGo
 }
@@ -142,6 +141,11 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	case true:
 		clusterType = consts.ClusterTypeHa
 	}
+
+	obj.chResName = make(chan string, 1)
+	obj.chRole = make(chan consts.KsctlRole, 1)
+	obj.chVMType = make(chan string, 1)
+
 	obj.resourceGroup = GenerateResourceGroupName(obj.clusterName, string(clusterType))
 
 	errLoadState := loadStateHelper(storage)
@@ -225,24 +229,22 @@ func ReturnAzureStruct(meta resources.Metadata, state *types.StorageDocument, Cl
 
 // Name it will contain the name of the resource to be created
 func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
-	cloud.mxName.Lock()
 
 	if err := helpers.IsValidName(resName); err != nil {
 		log.Error(err.Error())
 		return nil
 	}
 
-	cloud.metadata.resName = resName
+	cloud.chResName <- resName
 	return cloud
 }
 
 // Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *AzureProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
-	cloud.mxRole.Lock()
 
 	switch resRole {
 	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
-		cloud.metadata.role = resRole
+		cloud.chRole <- resRole
 		return cloud
 	default:
 		log.Error("invalid role assumed")
@@ -253,13 +255,13 @@ func (cloud *AzureProvider) Role(resRole consts.KsctlRole) resources.CloudFactor
 
 // VMType it will contain which vmType to create
 func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
-	cloud.mxVMType.Lock()
 
-	cloud.metadata.vmType = size
 	if err := isValidVMSize(cloud, size); err != nil {
 		log.Error(err.Error())
 		return nil
 	}
+	cloud.chVMType <- size
+
 	return cloud
 }
 

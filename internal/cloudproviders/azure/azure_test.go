@@ -215,15 +215,17 @@ func TestResName(t *testing.T) {
 	if ret := fakeClientVars.Name("demo"); ret == nil {
 		t.Fatalf("returned nil for valid res name")
 	}
-	fakeClientVars.mxName.Unlock()
-	if fakeClientVars.metadata.resName != "demo" {
+
+	name := <-fakeClientVars.chResName
+
+	if name != "demo" {
 		t.Fatalf("Correct assignment missing")
 	}
 
 	if ret := fakeClientVars.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
-	fakeClientVars.mxName.Unlock()
+	//_ = <-fakeClientVars.chResName
 }
 
 func TestRole(t *testing.T) {
@@ -232,30 +234,30 @@ func TestRole(t *testing.T) {
 		if ret := fakeClientVars.Role(val); ret == nil {
 			t.Fatalf("returned nil for valid role")
 		}
-		fakeClientVars.mxRole.Unlock()
-		if fakeClientVars.metadata.role != val {
+		role := <-fakeClientVars.chRole
+		if role != val {
 			t.Fatalf("Correct assignment missing")
 		}
 	}
 	if ret := fakeClientVars.Role("fake"); ret != nil {
 		t.Fatalf("returned interface for invalid role")
 	}
-	fakeClientVars.mxRole.Unlock()
+	//_ = <-fakeClientVars.chRole
 }
 
 func TestVMType(t *testing.T) {
 	if ret := fakeClientVars.VMType("fake"); ret == nil {
 		t.Fatalf("returned nil for valid vm type")
 	}
-	fakeClientVars.mxVMType.Unlock()
-	if fakeClientVars.metadata.vmType != "fake" {
+	vm := <-fakeClientVars.chVMType
+	if vm != "fake" {
 		t.Fatalf("Correct assignment missing")
 	}
 
 	if ret := fakeClientVars.VMType(""); ret != nil {
 		t.Fatalf("returned interface for invalid vm type")
 	}
-	fakeClientVars.mxVMType.Unlock()
+	//_ = <-fakeClientVars.chVMType
 }
 
 func TestVisibility(t *testing.T) {
@@ -642,7 +644,7 @@ func TestHACluster(t *testing.T) {
 
 		assert.Equal(t, fakeClientHA.Name("fake-ssh").CreateUploadSSHKeyPair(storeHA), nil, "ssh key failed")
 
-		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.SSHKeyName, fakeClientHA.metadata.resName, "sshid must be present")
+		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.SSHKeyName, "fake-ssh", "sshid must be present")
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.SSHUser, "azureuser", "ssh user not set")
 
@@ -658,7 +660,7 @@ func TestHACluster(t *testing.T) {
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
 
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName, fakeClientHA.metadata.resName, "firewallID for controlplane absent")
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName, "fake-fw-cp", "firewallID for controlplane absent")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID) > 0, "fw id for controlplane missing")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
@@ -666,7 +668,8 @@ func TestHACluster(t *testing.T) {
 			fakeClientHA.Name("fake-fw-wp")
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName, fakeClientHA.metadata.resName, "firewallID for workerplane absent")
+
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName, "fake-fw-wp", "firewallID for workerplane absent")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID) > 0, "fw id for workerplane missing")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
@@ -674,7 +677,8 @@ func TestHACluster(t *testing.T) {
 			fakeClientHA.Name("fake-fw-lb")
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName, fakeClientHA.metadata.resName, "firewallID for loadbalacer absent")
+
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName, "fake-fw-lb", "firewallID for loadbalacer absent")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID) > 0, "fw id for loadbalacer missing")
 		})
 		t.Run("Datastore", func(t *testing.T) {
@@ -682,7 +686,8 @@ func TestHACluster(t *testing.T) {
 			fakeClientHA.Name("fake-fw-ds")
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName, fakeClientHA.metadata.resName, "firewallID for datastore absent")
+
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName, "fake-fw-ds", "firewallID for datastore absent")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID) > 0, "fw id for datastore missing")
 		})
 
@@ -696,16 +701,17 @@ func TestHACluster(t *testing.T) {
 			fakeClientHA.VMType("fake")
 
 			assert.Equal(t, fakeClientHA.NewVM(storeHA, 0), nil, "new vm failed")
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.Name, fakeClientHA.metadata.resName, "missmatch of Loadbalancer VM name")
+
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.Name, "fake-lb", "missmatch of Loadbalancer VM name")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.HostName) > 0, "missmatch of Loadbalancer vm hostname")
 
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.DiskName, fakeClientHA.metadata.resName+"-disk", "missmatch of Loadbalancer disk name")
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.DiskName, "fake-lb"+"-disk", "missmatch of Loadbalancer disk name")
 
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PublicIPName, fakeClientHA.metadata.resName+"-pub", "missmatch of Loadbalancer pub ip name")
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PublicIPName, "fake-lb"+"-pub", "missmatch of Loadbalancer pub ip name")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PublicIPID) > 0, "missmatch of Loadbalancer pub ip id must be created")
 			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PublicIP, "A.B.C.D", "missmatch of Loadbalancer pub ip")
 
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceName, fakeClientHA.metadata.resName+"-nic", "missmatch of Loadbalancer nic name")
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceName, "fake-lb"+"-nic", "missmatch of Loadbalancer nic name")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceID) > 0, "missmatch of Loadbalancer nic must be created")
 			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PrivateIP, "192.168.X.Y", "missmatch of Loadbalancer private ip NIC")
 
@@ -725,16 +731,17 @@ func TestHACluster(t *testing.T) {
 					fakeClientHA.VMType("fake")
 
 					assert.Equal(t, fakeClientHA.NewVM(storeHA, i), nil, "new vm failed")
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names[i], fakeClientHA.metadata.resName, "missmatch of controlplane VM name")
+
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names[i], fmt.Sprintf("fake-cp-%d", i), "missmatch of controlplane VM name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Hostnames[i]) > 0, "missmatch of controlplane vm hostname")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.DiskNames[i], fakeClientHA.metadata.resName+"-disk", "missmatch of controlplane disk name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.DiskNames[i], fmt.Sprintf("fake-cp-%d-disk", i), "missmatch of controlplane disk name")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPNames[i], fakeClientHA.metadata.resName+"-pub", "missmatch of controlplane pub ip name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPNames[i], fmt.Sprintf("fake-cp-%d-pub", i), "missmatch of controlplane pub ip name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPIDs[i]) > 0, "missmatch of controlplane pub ip id must be created")
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPs[i], "A.B.C.D", "missmatch of controlplane pub ip")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceNames[i], fakeClientHA.metadata.resName+"-nic", "missmatch of controlplane nic name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceNames[i], fmt.Sprintf("fake-cp-%d-nic", i), "missmatch of controlplane nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of controlplane nic must be created")
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of controlplane private ip NIC")
 
@@ -762,16 +769,16 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, fakeClientHA.NewVM(storeHA, i), nil, "new vm failed")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.Names[i], fakeClientHA.metadata.resName, "missmatch of datastore VM name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.Names[i], fmt.Sprintf("fake-ds-%d", i), "missmatch of datastore VM name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoDatabase.Hostnames[i]) > 0, "missmatch of datastore vm hostname")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.DiskNames[i], fakeClientHA.metadata.resName+"-disk", "missmatch of datastore disk name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.DiskNames[i], fmt.Sprintf("fake-ds-%d", i)+"-disk", "missmatch of datastore disk name")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPNames[i], fakeClientHA.metadata.resName+"-pub", "missmatch of datastore pub ip name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPNames[i], fmt.Sprintf("fake-ds-%d", i)+"-pub", "missmatch of datastore pub ip name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPIDs[i]) > 0, "missmatch of datastore pub ip id must be created")
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPs[i], "A.B.C.D", "missmatch of datastore pub ip")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[i], fakeClientHA.metadata.resName+"-nic", "missmatch of datastore nic name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[i], fmt.Sprintf("fake-ds-%d", i)+"-nic", "missmatch of datastore nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceIDs[i]) > 0, "missmatch of datastore nic must be created")
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs[i], "192.168.X.Y", "missmatch of datastore private ip NIC")
 
@@ -794,16 +801,16 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, fakeClientHA.NewVM(storeHA, i), nil, "new vm failed")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names[i], fakeClientHA.metadata.resName, "missmatch of workerplane VM name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names[i], fmt.Sprintf("fake-wp-%d", i), "missmatch of workerplane VM name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Hostnames[i]) > 0, "missmatch of workerplane vm hostname")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.DiskNames[i], fakeClientHA.metadata.resName+"-disk", "missmatch of workerplane disk name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.DiskNames[i], fmt.Sprintf("fake-wp-%d", i)+"-disk", "missmatch of workerplane disk name")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPNames[i], fakeClientHA.metadata.resName+"-pub", "missmatch of workerplane pub ip name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPNames[i], fmt.Sprintf("fake-wp-%d", i)+"-pub", "missmatch of workerplane pub ip name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPIDs[i]) > 0, "missmatch of workerplane pub ip id must be created")
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPs[i], "A.B.C.D", "missmatch of workerplane pub ip")
 
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceNames[i], fakeClientHA.metadata.resName+"-nic", "missmatch of workerplane nic name")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceNames[i], fmt.Sprintf("fake-wp-%d", i)+"-nic", "missmatch of workerplane nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of workerplane nic must be created")
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of workerplane private ip NIC")
 
