@@ -57,13 +57,10 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 // NewVM implements resources.CloudFactory.
 func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) error {
 
-	name := obj.metadata.resName
+	name := <-obj.chResName
 	indexNo := index
-	role := obj.metadata.role
-	vmtype := obj.metadata.vmType
-	obj.mxRole.Unlock()
-	obj.mxName.Unlock()
-	obj.mxVMType.Unlock()
+	role := <-obj.chRole
+	vmtype := <-obj.chVMType
 
 	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
@@ -128,7 +125,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 	var errCreateVM error
 
 	go func() {
-		obj.mxState.Lock()
+		obj.mu.Lock()
 
 		switch role {
 		case consts.RoleCp:
@@ -143,11 +140,11 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 
 		if err := storage.Write(mainStateDocument); err != nil {
 			errCreateVM = err
-			obj.mxState.Unlock()
+			obj.mu.Unlock()
 			close(done)
 			return
 		}
-		obj.mxState.Unlock()
+		obj.mu.Unlock()
 
 		if err := watchInstance(obj, storage, inst.ID, indexNo, role, name); err != nil {
 			errCreateVM = err
@@ -169,8 +166,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) error {
 
 	indexNo := index
-	role := obj.metadata.role
-	obj.mxRole.Unlock()
+	role := <-obj.chRole
 
 	log.Debug("Printing", "role", role, "indexNo", indexNo)
 
@@ -197,8 +193,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				return
 			}
 
-			obj.mxState.Lock()
-			defer obj.mxState.Unlock()
+			obj.mu.Lock()
+			defer obj.mu.Unlock()
 
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs[indexNo] = ""
@@ -227,8 +223,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				errCreateVM = err
 				return
 			}
-			obj.mxState.Lock()
-			defer obj.mxState.Unlock()
+			obj.mu.Lock()
+			defer obj.mu.Unlock()
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[indexNo] = ""
@@ -254,8 +250,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				errCreateVM = err
 				return
 			}
-			obj.mxState.Lock()
-			defer obj.mxState.Unlock()
+			obj.mu.Lock()
+			defer obj.mu.Unlock()
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs[indexNo] = ""
@@ -281,8 +277,8 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 				errCreateVM = err
 				return
 			}
-			obj.mxState.Lock()
-			defer obj.mxState.Unlock()
+			obj.mu.Lock()
+			defer obj.mu.Unlock()
 			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMID = ""
 			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP = ""
 			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP = ""
@@ -331,8 +327,8 @@ func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID s
 			pvIP := getInst.PrivateIP
 			hostNam := getInst.Hostname
 
-			obj.mxState.Lock()
-			defer obj.mxState.Unlock()
+			obj.mu.Lock()
+			defer obj.mu.Unlock()
 			// critical section
 			switch role {
 			case consts.RoleCp:

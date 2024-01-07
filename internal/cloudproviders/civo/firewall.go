@@ -8,8 +8,7 @@ import (
 
 // DelFirewall implements resources.CloudFactory.
 func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
-	role := obj.metadata.role
-	obj.mxRole.Unlock()
+	role := <-obj.chRole
 
 	log.Debug("Printing", "Role", role)
 
@@ -80,10 +79,8 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 // NewFirewall implements resources.CloudFactory.
 func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 
-	name := obj.metadata.resName
-	role := obj.metadata.role
-	obj.mxRole.Unlock()
-	obj.mxName.Unlock()
+	name := <-obj.chResName
+	role := <-obj.chRole
 
 	log.Debug("Printing", "Name", name)
 	log.Debug("Printing", "Role", role)

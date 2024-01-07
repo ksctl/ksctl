@@ -31,8 +31,7 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.
 func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
-	name := obj.metadata.resName
-	obj.mxName.Unlock()
+	name := <-obj.chResName
 
 	if len(mainStateDocument.CloudInfra.Civo.B.SSHID) != 0 {
 		log.Print("skipped ssh keypair already uploaded")
