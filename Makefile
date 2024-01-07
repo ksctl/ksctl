@@ -15,17 +15,6 @@ docker_build_httpserver:
 docker_push_registry_httpserver:
 	docker push docker.io/kubesimplify/ksctl:slim-v1
 
-# createFolders:
-# 	mkdir -p ${HOME}/.ksctl/cred
-# 	mkdir -p ${HOME}/.ksctl/config/civo/ha
-# 	mkdir -p ${HOME}/.ksctl/config/civo/managed
-# 	mkdir -p ${HOME}/.ksctl/config/azure/ha
-# 	mkdir -p ${HOME}/.ksctl/config/azure/managed
-# 	mkdir -p ${HOME}/.ksctl/config/aws/managed
-# 	mkdir -p ${HOME}/.ksctl/config/aws/ha
-# 	mkdir -p ${HOME}/.ksctl/config/local/managed
-# 	@echo "Configuration folders setup created done"
-
 deleteFolders:
 	rm -rf ${HOME}/.ksctl
 	@echo "Configuration folders setup deleted done"

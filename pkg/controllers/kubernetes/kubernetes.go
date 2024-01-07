@@ -1,6 +1,9 @@
 package kubernetes
 
 import (
+	"os"
+	"strings"
+
 	k3sPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/k3s"
 	kubeadmPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/kubeadm"
 	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
@@ -93,5 +96,71 @@ func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames
 			return log.NewError(err.Error())
 		}
 	}
+	return nil
+}
+
+func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, client *resources.KsctlClient, state *types.StorageDocument) error {
+
+	if log == nil {
+		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		log.SetPackageName("ksctl-distro")
+	}
+
+	var kubernetesClient universal.Kubernetes
+
+	if externalCNI || (len(client.Metadata.Applications) != 0 && externalApp) {
+		kubernetesClient = universal.Kubernetes{
+			Metadata:      client.Metadata,
+			StorageDriver: client.Storage,
+		}
+		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
+			return log.NewError(err.Error())
+		}
+	}
+
+	if externalCNI {
+		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
+			return log.NewError(err.Error())
+		}
+
+		log.Success("Done with installing k8s cni")
+	}
+
+	if len(client.Metadata.Applications) != 0 && externalApp {
+		apps := strings.Split(client.Metadata.Applications, ",")
+		if err := kubernetesClient.InstallApplications(apps); err != nil {
+			return log.NewError(err.Error())
+		}
+
+		log.Success("Done with installing k8s apps")
+	}
+
+	if err := installKsctlSpecificApps(client, kubeconfig, kubernetesClient, state); err != nil {
+		return log.NewError(err.Error())
+	}
+
+	log.Success("Done with installing additional k8s tools")
+	return nil
+}
+
+func installKsctlSpecificApps(client *resources.KsctlClient, kubeconfig string, kubernetesClient universal.Kubernetes, state *types.StorageDocument) error {
+
+	var cloudSecret map[string][]byte
+	var err error
+	cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
+	if err != nil {
+		return log.NewError(err.Error())
+	}
+
+	////// EXPERIMENTAL Features //////
+	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
+
+		if err = kubernetesClient.KsctlConfigForController(kubeconfig, state, cloudSecret); err != nil {
+			return log.NewError(err.Error())
+		}
+	}
+
+	log.Success("Done with installing ksctl k8s specific tools")
+
 	return nil
 }
