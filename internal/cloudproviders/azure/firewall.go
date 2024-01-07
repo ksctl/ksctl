@@ -11,8 +11,7 @@ import (
 
 // DelFirewall implements resources.CloudFactory.
 func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
-	role := obj.metadata.role
-	obj.mxRole.Unlock()
+	role := <-obj.chRole
 
 	log.Debug("Printing", "role", role)
 
@@ -71,10 +70,8 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 
 // NewFirewall implements resources.CloudFactory.
 func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
-	name := obj.metadata.resName
-	role := obj.metadata.role
-	obj.mxRole.Unlock()
-	obj.mxName.Unlock()
+	name := <-obj.chResName
+	role := <-obj.chRole
 
 	log.Debug("Printing", "name", name, "role", role)
 
