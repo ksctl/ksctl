@@ -2,7 +2,6 @@ package civo
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/kubesimplify/ksctl/internal/storage/types"
@@ -23,10 +22,7 @@ var (
 )
 
 type metadata struct {
-	resName string
-	role    consts.KsctlRole
-	vmType  string
-	public  bool
+	public bool
 
 	// purpose: application in managed cluster
 	apps string
@@ -40,21 +36,18 @@ type metadata struct {
 	k8sVersion string
 }
 
-func (m metadata) String() string {
-	return fmt.Sprintf("{ resName: '%s', role: '%s', vmtype: '%s' }\n", m.resName, m.role, m.vmType)
-}
-
 type CivoProvider struct {
 	clusterName string
 	haCluster   bool
 	region      string
 
-	mxName   sync.Mutex
-	mxRole   sync.Mutex
-	mxVMType sync.Mutex
-	mxState  sync.Mutex
+	mu sync.Mutex
 
 	metadata
+
+	chResName chan string
+	chRole    chan consts.KsctlRole
+	chVMType  chan string
 
 	client CivoGo
 }
@@ -115,6 +108,10 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 	} else {
 		clusterType = consts.ClusterTypeMang
 	}
+
+	obj.chResName = make(chan string, 1)
+	obj.chRole = make(chan consts.KsctlRole, 1)
+	obj.chVMType = make(chan string, 1)
 
 	errLoadState := loadStateHelper(storage)
 
@@ -192,23 +189,21 @@ func ReturnCivoStruct(meta resources.Metadata, state *types.StorageDocument, Cli
 
 // it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
-	cloud.mxName.Lock()
 
 	if err := helpers.IsValidName(resName); err != nil {
 		log.Error(err.Error())
 		return nil
 	}
-	cloud.metadata.resName = resName
+	cloud.chResName <- resName
 	return cloud
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
-	cloud.mxRole.Lock()
 
 	switch resRole {
 	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
-		cloud.metadata.role = resRole
+		cloud.chRole <- resRole
 		log.Debug("Printing", "Role", resRole)
 		return cloud
 	default:
@@ -219,13 +214,12 @@ func (cloud *CivoProvider) Role(resRole consts.KsctlRole) resources.CloudFactory
 
 // it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
-	cloud.mxVMType.Lock()
 
 	if err := isValidVMSize(cloud, size); err != nil {
 		log.Error(err.Error())
 		return nil
 	}
-	cloud.metadata.vmType = size
+	cloud.chVMType <- size
 	log.Debug("Printing", "VMSize", size)
 	return cloud
 }
