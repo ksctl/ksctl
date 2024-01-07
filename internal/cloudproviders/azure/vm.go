@@ -18,9 +18,8 @@ import (
 
 // DelVM implements resources.CloudFactory.
 func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) error {
-	role := obj.metadata.role
+	role := <-obj.chRole
 	indexNo := index
-	obj.mxRole.Unlock()
 
 	log.Debug("Printing", "role", role, "indexNo", indexNo)
 
@@ -56,8 +55,8 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 				errDel = err
 				return
 			}
-			obj.mxState.Lock()
-			defer obj.mxState.Unlock()
+			obj.mu.Lock()
+			defer obj.mu.Unlock()
 
 			switch role {
 			case consts.RoleWp:
@@ -107,13 +106,10 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 
 // NewVM implements resources.CloudFactory.
 func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) error {
-	name := obj.metadata.resName
+	name := <-obj.chResName
 	indexNo := index
-	role := obj.metadata.role
-	vmtype := obj.metadata.vmType
-	obj.mxRole.Unlock()
-	obj.mxName.Unlock()
-	obj.mxVMType.Unlock()
+	role := <-obj.chRole
+	vmtype := <-obj.chVMType
 
 	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
@@ -246,8 +242,8 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	var errCreateVM error
 	go func() {
 		defer close(done)
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -282,8 +278,8 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 			errCreateVM = err
 			return
 		}
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -360,8 +356,8 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 			errDelete = err
 			return
 		}
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -426,8 +422,8 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	var errCreate error
 	go func() {
 		defer close(done)
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -460,8 +456,8 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 			return
 		}
 
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -530,8 +526,8 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 			return
 		}
 
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -619,8 +615,8 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	var errCreate error
 	go func() {
 		defer close(done)
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -654,8 +650,8 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 			return
 		}
 
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
@@ -723,8 +719,8 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 			return
 		}
 
-		obj.mxState.Lock()
-		defer obj.mxState.Unlock()
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
