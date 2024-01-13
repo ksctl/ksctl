@@ -1,0 +1,16 @@
+{
+	"cluster_name": "test-e2e-ha-aws",
+	"kubernetes_version": "1.27.1",
+	"region": "ap-south-1",
+	"ha_cluster": true,
+	"cloud_provider": "aws",
+	"kubernetes_distro": "k3s",
+	"storage_type": "local",
+	"node_type_workerplane": "t2.micro",
+	"node_type_controlplane": "t2.micro",
+	"node_type_datastore": "t2.micro",
+	"node_type_loadbalancer": "t2.micro",
+	"desired_no_of_workerplane_nodes": 1,
+	"desired_no_of_controlplane_nodes": 3,
+	"desired_no_of_datastore_nodes": 1
+}

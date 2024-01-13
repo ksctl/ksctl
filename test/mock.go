@@ -150,3 +150,38 @@ func AzureTestingHA() error {
 	}
 	return nil
 }
+
+func AwsTestingHA() error {
+	var err error
+	cli.Metadata.LoadBalancerNodeType = "fake"
+	cli.Metadata.ControlPlaneNodeType = "fake"
+	cli.Metadata.WorkerPlaneNodeType = "fake"
+	cli.Metadata.DataStoreNodeType = "fake"
+
+	cli.Metadata.IsHA = true
+
+	cli.Metadata.Region = "fake"
+	cli.Metadata.Provider = consts.CloudAws
+	cli.Metadata.NoCP = 3
+	cli.Metadata.NoWP = 1
+	cli.Metadata.NoDS = 1
+	cli.Metadata.K8sVersion = "1.27.4"
+
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+
+	err = controller.CreateHACluster(cli)
+	if err != nil {
+		return err
+	}
+
+	_, err = controller.SwitchCluster(cli)
+	if err != nil {
+		return err
+	}
+
+	err = controller.DeleteHACluster(cli)
+	if err != nil {
+		return err
+	}
+	return nil
+}

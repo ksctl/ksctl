@@ -55,6 +55,7 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 
 	mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.WorkerPlanes = cloudState.IPv4WorkerPlanes
 
+	//DEPRICATED
 	mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer = cloudState.IPv4LoadBalancer
 	mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.LoadBalancer = cloudState.PrivateIPv4LoadBalancer
 	mainStateDocument.K8sBootstrap.K3s.B.SSHInfo = cloudState.SSHState

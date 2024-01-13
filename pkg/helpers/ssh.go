@@ -166,6 +166,8 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 	//if sshPayload.flag == UtilExecWithOutput {
 	session.Stdout = &buff // make the stdout be stored in buffer
 	//}
+
+	// ERROR DURING EXECUTION
 	err = session.Run(sshPayload.script)
 
 	bufferContent := buff.String()

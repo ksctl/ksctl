@@ -7,6 +7,7 @@ import (
 
 	"github.com/ksctl/ksctl/internal/storage/types"
 
+	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
 	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
 	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
 	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
@@ -44,6 +45,17 @@ func HydrateCloud(client *resources.KsctlClient, state *types.StorageDocument, o
 		if err != nil {
 			return log.NewError(err.Error())
 		}
+	case consts.CloudAws:
+		if !fakeClient {
+			client.Cloud, err = awsPkg.ReturnAwsStruct(client.Metadata, state, awsPkg.ProvideClient)
+		} else {
+			client.Cloud, err = awsPkg.ReturnAwsStruct(client.Metadata, state, awsPkg.ProvideMockClient)
+		}
+
+		if err != nil {
+			return log.NewError(err.Error())
+		}
+
 	case consts.CloudLocal:
 		if !fakeClient {
 			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, state, localPkg.ProvideClient)
@@ -442,7 +454,6 @@ func CreateHACluster(client *resources.KsctlClient) error {
 			return log.NewError(err.Error())
 		}
 	}
-
 	return nil
 }
 
