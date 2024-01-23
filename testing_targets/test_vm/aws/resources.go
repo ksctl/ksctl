@@ -76,7 +76,7 @@ func CreateInstance(client *ec2.Client, sgId *string) (*string, error) {
 		PublicKeyMaterial: []byte(ksctlState.SSHKeyPair.PublicKey),
 	}
 
-	if client.ImportKeyPair(context.Background(), parameter); err != nil {
+	if _, err := client.ImportKeyPair(context.Background(), parameter); err != nil {
 		return nil, err
 	}
 
