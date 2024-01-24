@@ -15,41 +15,41 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) != 0 {
 		log.Print("skipped already created the resource group", "name", mainStateDocument.CloudInfra.Azure.ResourceGroupName)
-		return nil
-	}
-	var err error
-	var resourceGroup armresources.ResourceGroupsClientCreateOrUpdateResponse
+	} else {
+		var err error
+		var resourceGroup armresources.ResourceGroupsClientCreateOrUpdateResponse
 
-	// NOTE: for the azure resource group we are not using the resName field
-	parameter := armresources.ResourceGroup{
-		Location: to.Ptr(obj.region),
-	}
+		// NOTE: for the azure resource group we are not using the resName field
+		parameter := armresources.ResourceGroup{
+			Location: to.Ptr(obj.region),
+		}
 
-	log.Debug("Printing", "resourceGrpConfig", parameter)
+		log.Debug("Printing", "resourceGrpConfig", parameter)
 
-	resourceGroup, err = obj.client.CreateResourceGrp(parameter, nil)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
-
-	mainStateDocument.CloudInfra.Azure.ResourceGroupName = *resourceGroup.Name
-
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
-	}
-	log.Success("created the resource group", "name", *resourceGroup.Name)
-
-	if obj.haCluster {
-		virtNet := obj.clusterName + "-vnet"
-		subNet := obj.clusterName + "-subnet"
-		// virtual net
-		if err := obj.CreateVirtualNetwork(ctx, storage, virtNet); err != nil {
+		resourceGroup, err = obj.client.CreateResourceGrp(parameter, nil)
+		if err != nil {
 			return log.NewError(err.Error())
 		}
 
-		// subnet
-		if err := obj.CreateSubnet(ctx, storage, subNet); err != nil {
+		mainStateDocument.CloudInfra.Azure.ResourceGroupName = *resourceGroup.Name
+
+		if err := storage.Write(mainStateDocument); err != nil {
 			return log.NewError(err.Error())
+		}
+		log.Success("created the resource group", "name", *resourceGroup.Name)
+
+		if obj.haCluster {
+			virtNet := obj.clusterName + "-vnet"
+			subNet := obj.clusterName + "-subnet"
+			// virtual net
+			if err := obj.CreateVirtualNetwork(ctx, storage, virtNet); err != nil {
+				return log.NewError(err.Error())
+			}
+
+			// subnet
+			if err := obj.CreateSubnet(ctx, storage, subNet); err != nil {
+				return log.NewError(err.Error())
+			}
 		}
 	}
 
