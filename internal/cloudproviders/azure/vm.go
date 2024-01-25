@@ -2,6 +2,8 @@ package azure
 
 import (
 	"context"
+	"sync"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
@@ -563,7 +565,9 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 }
 
 func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory,
+
 	nicName string, subnetID string, publicIPID string, networkSecurityGroupID string, index int, role consts.KsctlRole) error {
+	var wait_group sync.WaitGroup
 
 	interfaceName := ""
 	switch role {
@@ -615,6 +619,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	var errCreate error
 	go func() {
 		defer close(done)
+		defer wait_group.Done()
 		obj.mu.Lock()
 		defer obj.mu.Unlock()
 
@@ -644,6 +649,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	donePoll := make(chan struct{})
 	go func() {
 		defer close(donePoll)
+		defer wait_group.Done()
 		resp, err := obj.client.PollUntilDoneCreateNetInterface(ctx, pollerResponse, nil)
 		if err != nil {
 			errCreatenic = err
@@ -681,6 +687,8 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	log.Debug("Printing", "mainStateDocument", mainStateDocument)
 
 	log.Success("Created network interface", "name", nicName)
+
+	wait_group.Wait()
 	return nil
 }
 
