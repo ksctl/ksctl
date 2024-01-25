@@ -672,7 +672,6 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		}
 	}()
 
-	// Wait for both goroutines to finish before returning
 	waitGroup.Wait()
 
 	log.Debug("Printing", "mainStateDocument", mainStateDocument)
