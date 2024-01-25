@@ -565,9 +565,9 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 }
 
 func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory,
-
 	nicName string, subnetID string, publicIPID string, networkSecurityGroupID string, index int, role consts.KsctlRole) error {
-	var wait_group sync.WaitGroup
+
+	var waitGroup sync.WaitGroup // Renamed from wait_group to waitGroup
 
 	interfaceName := ""
 	switch role {
@@ -614,12 +614,13 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	if err != nil {
 		return err
 	}
-	// NOTE: Add the entry for name before polling starts so that state is present
-	done := make(chan struct{})
-	var errCreate error
+
+	// Increment the wait group counter before launching goroutines
+	waitGroup.Add(2)
+
+	// Goroutine for updating state before polling starts
 	go func() {
-		defer close(done)
-		defer wait_group.Done()
+		defer waitGroup.Done()
 		obj.mu.Lock()
 		defer obj.mu.Unlock()
 
@@ -628,31 +629,23 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 			mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceNames[index] = nicName
 		case consts.RoleCp:
 			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceNames[index] = nicName
-
 		case consts.RoleLb:
 			mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceName = nicName
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[index] = nicName
 		}
+
 		if err := storage.Write(mainStateDocument); err != nil {
-			errCreate = err
-			return
+			log.Error("Failed to write to storage:", err)
 		}
 	}()
-	<-done
-	if errCreate != nil {
-		return errCreate
-	}
-	log.Print("Creating the network interface...", "name", nicName)
 
-	var errCreatenic error //just to make sure its nil
-	donePoll := make(chan struct{})
+	// Goroutine for polling until network interface creation is complete
 	go func() {
-		defer close(donePoll)
-		defer wait_group.Done()
+		defer waitGroup.Done()
 		resp, err := obj.client.PollUntilDoneCreateNetInterface(ctx, pollerResponse, nil)
 		if err != nil {
-			errCreatenic = err
+			log.Error("Error while polling:", err)
 			return
 		}
 
@@ -666,7 +659,6 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		case consts.RoleCp:
 			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceIDs[index] = *resp.ID
 			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
-
 		case consts.RoleLb:
 			mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceID = *resp.ID
 			mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PrivateIP = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
@@ -676,19 +668,17 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {
-			errCreatenic = err
-			return
+			log.Error("Failed to write to storage:", err)
 		}
 	}()
-	<-donePoll
-	if errCreatenic != nil {
-		return errCreatenic
-	}
+
+	// Wait for both goroutines to finish before returning
+	waitGroup.Wait()
+
 	log.Debug("Printing", "mainStateDocument", mainStateDocument)
 
 	log.Success("Created network interface", "name", nicName)
 
-	wait_group.Wait()
 	return nil
 }
 
