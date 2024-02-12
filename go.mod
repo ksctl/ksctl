@@ -21,8 +21,8 @@ require (
 	github.com/gookit/goutil v0.6.14
 	github.com/rodaine/table v1.1.0
 	go.mongodb.org/mongo-driver v1.13.1
-	golang.org/x/crypto v0.17.0
-	golang.org/x/term v0.16.0
+	golang.org/x/crypto v0.19.0
+	golang.org/x/term v0.17.0
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.13.2
 	k8s.io/api v0.28.4
@@ -181,7 +181,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
