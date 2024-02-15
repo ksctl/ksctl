@@ -9,36 +9,36 @@ import (
 	"github.com/kubesimplify/ksctl/pkg/resources"
 )
 
-// NewNetwork implements resources.CloudFactory.
+// NewNetwork implements resources.CloudFactory
 func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	_ = <-obj.chResName
 
+	// Checking the resource is already created, if created then skip creating and create the virtual network and subnet
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) != 0 {
 		log.Print("skipped already created the resource group", "name", mainStateDocument.CloudInfra.Azure.ResourceGroupName)
-		return nil
+	} else {
+		var err error
+		var resourceGroup armresources.ResourceGroupsClientCreateOrUpdateResponse
+
+		// NOTE: for the azure resource group we are not using the resName field
+		parameter := armresources.ResourceGroup{
+			Location: to.Ptr(obj.region),
+		}
+
+		log.Debug("Printing", "resourceGrpConfig", parameter)
+
+		resourceGroup, err = obj.client.CreateResourceGrp(parameter, nil)
+		if err != nil {
+			return log.NewError(err.Error())
+		}
+
+		mainStateDocument.CloudInfra.Azure.ResourceGroupName = *resourceGroup.Name
+
+		if err := storage.Write(mainStateDocument); err != nil {
+			return log.NewError(err.Error())
+		}
+		log.Success("created the resource group", "name", *resourceGroup.Name)
 	}
-	var err error
-	var resourceGroup armresources.ResourceGroupsClientCreateOrUpdateResponse
-
-	// NOTE: for the azure resource group we are not using the resName field
-	parameter := armresources.ResourceGroup{
-		Location: to.Ptr(obj.region),
-	}
-
-	log.Debug("Printing", "resourceGrpConfig", parameter)
-
-	resourceGroup, err = obj.client.CreateResourceGrp(parameter, nil)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
-
-	mainStateDocument.CloudInfra.Azure.ResourceGroupName = *resourceGroup.Name
-
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
-	}
-	log.Success("created the resource group", "name", *resourceGroup.Name)
-
 	if obj.haCluster {
 		virtNet := obj.clusterName + "-vnet"
 		subNet := obj.clusterName + "-subnet"
@@ -222,7 +222,7 @@ func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage reso
 	vnet := mainStateDocument.CloudInfra.Azure.VirtualNetworkName
 	log.Debug("Printing", "virtNetName", vnet)
 	if len(vnet) == 0 {
-		log.Print("subnet already deleted", "name", vnet)
+		log.Print("virtual network already deleted", "name", vnet)
 		return nil
 	}
 
