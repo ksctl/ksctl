@@ -26,6 +26,10 @@
 'state/local':
 - 'internal/storage/local/*'
 
+'area/poc':
+- 'poc/**'
+- 'poc/*'
+
 'go':
 - '**/*.go'
 - 'go.mod'
