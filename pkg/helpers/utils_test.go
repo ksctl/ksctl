@@ -2,17 +2,18 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/internal/storage/types"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"os"
 	"runtime"
 	"testing"
 
+	"github.com/gookit/goutil/dump"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 var (
