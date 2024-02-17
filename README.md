@@ -22,8 +22,8 @@
    <img src="https://img.shields.io/github/last-commit/ksctl/ksctl?style=for-the-badge" />
    <br>
 
-   [![ci-test-go](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/kubesimplify/ksctl/actions/workflows/go-fmt.yaml)
-  [![codecov](https://codecov.io/gh/kubesimplify/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/kubesimplify/ksctl)
+   [![ci-test-go](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml)
+  [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
   [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
   [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
   [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
