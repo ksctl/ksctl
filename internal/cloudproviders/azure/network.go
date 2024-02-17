@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 // NewNetwork implements resources.CloudFactory

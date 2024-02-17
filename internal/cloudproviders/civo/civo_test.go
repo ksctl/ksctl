@@ -9,14 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 
-	"github.com/kubesimplify/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/internal/storage/types"
 
-	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	localstate "github.com/ksctl/ksctl/internal/storage/local"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
 	"gotest.tools/assert"
 )
 

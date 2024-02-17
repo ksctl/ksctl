@@ -4,13 +4,13 @@ import (
 	"os"
 	"strings"
 
-	k3sPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/k3s"
-	kubeadmPkg "github.com/kubesimplify/ksctl/internal/k8sdistros/kubeadm"
-	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
-	"github.com/kubesimplify/ksctl/internal/storage/types"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/logger"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	k3sPkg "github.com/ksctl/ksctl/internal/k8sdistros/k3s"
+	kubeadmPkg "github.com/ksctl/ksctl/internal/k8sdistros/kubeadm"
+	"github.com/ksctl/ksctl/internal/k8sdistros/universal"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 var log resources.LoggerFactory

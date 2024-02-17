@@ -2,8 +2,8 @@ package resources
 
 import (
 	"context"
-	"github.com/kubesimplify/ksctl/internal/storage/types"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
 type StorageFactory interface {

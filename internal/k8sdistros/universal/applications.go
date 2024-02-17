@@ -3,7 +3,7 @@ package universal
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 type InstallType string

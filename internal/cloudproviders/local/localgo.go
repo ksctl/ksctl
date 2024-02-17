@@ -1,7 +1,7 @@
 package local
 
 import (
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"time"
 )

@@ -4,21 +4,21 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubesimplify/ksctl/internal/storage/types"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers"
 
-	"github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
-	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
-	localPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/local"
-	"github.com/kubesimplify/ksctl/internal/k8sdistros/universal"
+	"github.com/ksctl/ksctl/internal/cloudproviders/azure"
+	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
+	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
+	"github.com/ksctl/ksctl/internal/k8sdistros/universal"
 
-	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
+	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
 
-	"github.com/kubesimplify/ksctl/pkg/controllers/cloud"
-	"github.com/kubesimplify/ksctl/pkg/controllers/kubernetes"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/resources"
-	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/controllers/kubernetes"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
+	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
 var (

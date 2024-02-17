@@ -3,8 +3,8 @@ package azure
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 // CreateUploadSSHKeyPair implements resources.CloudFactory.

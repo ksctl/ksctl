@@ -1,4 +1,4 @@
-module github.com/kubesimplify/ksctl
+module github.com/ksctl/ksctl
 
 go 1.21
 

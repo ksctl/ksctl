@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 func switchCluster(ksctlClient *resources.KsctlClient) {

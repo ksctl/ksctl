@@ -13,10 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/fatih/color"
-	ksctlTypes "github.com/kubesimplify/ksctl/internal/storage/types"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
-	"github.com/kubesimplify/ksctl/pkg/logger"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	ksctlTypes "github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 var ksctlLog resources.LoggerFactory = logger.NewDefaultLogger(0, os.Stdout)

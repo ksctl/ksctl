@@ -1,6 +1,6 @@
 package cloud
 
-import "github.com/kubesimplify/ksctl/pkg/helpers/consts"
+import "github.com/ksctl/ksctl/pkg/helpers/consts"
 
 // CloudResourceState provides the state which cloud provider creates
 // and which is consumed by the kubernetes to configure them

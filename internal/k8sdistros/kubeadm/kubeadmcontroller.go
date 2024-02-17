@@ -1,10 +1,10 @@
 package kubeadm
 
 import (
-	"github.com/kubesimplify/ksctl/internal/storage/types"
-	. "github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
 type KubeadmDistro struct {
@@ -27,7 +27,7 @@ func (*KubeadmDistro) ConfigureLoadbalancer(state resources.StorageFactory) erro
 }
 
 // InitState implements resources.DistroFactory.
-func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory, KsctlOperation) error {
+func (k8s *KubeadmDistro) InitState(cloud.CloudResourceState, resources.StorageFactory, consts.KsctlOperation) error {
 	return nil
 }
 

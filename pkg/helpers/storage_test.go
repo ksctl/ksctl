@@ -3,7 +3,7 @@ package helpers
 import (
 	"testing"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
 func FuzzValidateStorage(f *testing.F) {

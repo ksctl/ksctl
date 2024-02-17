@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
