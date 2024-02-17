@@ -4,10 +4,10 @@
 
 <h4 align="center">
     <a href="https://discord.com/invite/kubesimplify">Discord</a> |
-    <a href="https://ksctl.github.io/docs/">Website</a><br/><br/>
-    <a href="https://ksctl.github.io/docs/docs/intro">Intro</a> |
-    <a href="https://ksctl.github.io/docs/docs/contributions">Contribute</a> |
-    <a href="https://ksctl.github.io/docs/docs/roadmap">Roadmap</a><br/><br/>
+    <a href="https://docs.ksctl.com/">Website</a><br/><br/>
+    <a href="https://docs.ksctl.com/docs/intro">Intro</a> |
+    <a href="https://docs.ksctl.com/docs/contributions">Contribute</a> |
+    <a href="https://docs.ksctl.com/docs/roadmap">Roadmap</a><br/><br/>
 </h4>
 <br>
 <div align="center">
@@ -77,13 +77,13 @@ Windows | :heavy_check_mark:
 
 # Getting Started guide
 
-[Getting Started guide](https://ksctl.github.io/docs/docs/getting-started/cli/)
+[Getting Started guide](https://docs.ksctl.com/docs/getting-started/cli/)
 
 # Usage
 
-Please refer to the [CLI Reference guide](https://ksctl.github.io/docs/docs/reference/cli/)
+Please refer to the [CLI Reference guide](https://docs.ksctl.com/docs/reference/cli/)
 # Contribution Guidelines
-Please refer to our [contribution guide](https://ksctl.github.io/docs/docs/contribution-guidelines/) if you wish to contribute to the project :smile:
+Please refer to our [contribution guide](https://docs.ksctl.com/docs/contribution-guidelines/) if you wish to contribute to the project :smile:
 
 ## Thanks to all the contributors ❤️
 [Link to Contributors](https://github.com/ksctl/ksctl/graphs/contributors)
