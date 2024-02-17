@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"net/http"
 	"os"
 
@@ -84,8 +85,8 @@ func scaleUp(ctx *gin.Context) {
 	controller = control_pkg.GenKsctlController()
 
 	cli.Metadata.ClusterName = req.ClusterName
-	cli.Metadata.StateLocation = StoreLocal
-	cli.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
+	cli.Metadata.StateLocation = consts.StoreLocal
+	cli.Metadata.K8sDistro = consts.KsctlKubernetes(req.Distro)
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = os.Stdout
 
@@ -97,7 +98,7 @@ func scaleUp(ctx *gin.Context) {
 
 	cli.Metadata.IsHA = true
 	cli.Metadata.Region = req.Region
-	cli.Metadata.Provider = KsctlCloud(req.Cloud)
+	cli.Metadata.Provider = consts.KsctlCloud(req.Cloud)
 
 	cli.Metadata.WorkerPlaneNodeType = req.VMSizeWp
 	cli.Metadata.NoWP = int(req.NoWp)
@@ -122,8 +123,8 @@ func scaleDown(ctx *gin.Context) {
 	controller = control_pkg.GenKsctlController()
 
 	cli.Metadata.ClusterName = req.ClusterName
-	cli.Metadata.StateLocation = StoreLocal
-	cli.Metadata.K8sDistro = KsctlKubernetes(req.Distro)
+	cli.Metadata.StateLocation = consts.StoreLocal
+	cli.Metadata.K8sDistro = consts.KsctlKubernetes(req.Distro)
 
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = os.Stdout
@@ -135,7 +136,7 @@ func scaleDown(ctx *gin.Context) {
 
 	cli.Metadata.IsHA = true
 	cli.Metadata.Region = req.Region
-	cli.Metadata.Provider = KsctlCloud(req.Cloud)
+	cli.Metadata.Provider = consts.KsctlCloud(req.Cloud)
 
 	cli.Metadata.NoWP = int(req.NoWp)
 
@@ -153,7 +154,7 @@ func getClusters(ctx *gin.Context) {
 
 	cli = new(resources.KsctlClient)
 
-	cli.Metadata.StateLocation = StoreLocal
+	cli.Metadata.StateLocation = consts.StoreLocal
 
 	cli.Metadata.LogVerbosity = 0
 	cli.Metadata.LogWritter = os.Stdout
@@ -183,7 +184,7 @@ func getClusters(ctx *gin.Context) {
 
 func main() {
 
-	if err := os.Setenv(string(KsctlCustomDirEnabled), "app ksctl-data"); err != nil {
+	if err := os.Setenv(string(consts.KsctlCustomDirEnabled), "app ksctl-data"); err != nil {
 		panic(err)
 	}
 

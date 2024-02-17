@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gookit/goutil/dump"
 	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"os"
 	"runtime"
 	"testing"
@@ -25,36 +26,36 @@ var (
 )
 
 func TestConsts(t *testing.T) {
-	assert.Equal(t, string(CloudCivo), "civo", "civo constant not correct assigned")
-	assert.Equal(t, string(CloudAzure), "azure", "azure constant not correct assgined")
-	assert.Equal(t, string(CloudLocal), "local", "local constant not correct assgined")
-	assert.Equal(t, string(CloudAws), "aws", "aws constant not correct assgined")
-	assert.Equal(t, string(K8sK3s), "k3s", "k3s constant not correct assgined")
-	assert.Equal(t, string(K8sKubeadm), "kubeadm", "kubeadm constant not correct assgined")
-	assert.Equal(t, string(StoreLocal), "local", "local constant not correct assgined")
-	assert.Equal(t, string(StoreExtMongo), "external-mongo", "remote constant not correct assgined")
-	assert.Equal(t, string(RoleCp), "controlplane", "controlplane constant not correct assgined")
-	assert.Equal(t, string(RoleLb), "loadbalancer", "loadbalancer constant not correct assgined")
-	assert.Equal(t, string(RoleDs), "datastore", "datastore constant not correct assgined")
-	assert.Equal(t, string(RoleWp), "workerplane", "workerplane constant not correct assgined")
-	assert.Equal(t, string(ClusterTypeHa), "ha", "HA constant not correct assgined")
-	assert.Equal(t, string(ClusterTypeMang), "managed", "Managed constant not correct assgined")
-	assert.Equal(t, string(OperationStateCreate), "create", "operation create constant not correct assgined")
-	assert.Equal(t, string(OperationStateGet), "get", "operation get constant not correct assgined")
-	assert.Equal(t, string(OperationStateDelete), "delete", "operation delete constant not correct assgined")
-	assert.Equal(t, uint8(UtilClusterPath), uint8(1), "cluster_path constant not correct assgined")
-	assert.Equal(t, uint8(UtilOtherPath), uint8(3), "other_path constant not correct assgined")
-	assert.Equal(t, uint8(UtilSSHPath), uint8(2), "ssh_path constant not correct assgined")
-	assert.Equal(t, uint8(UtilCredentialPath), uint8(0), "credential_path constant not correct assgined")
-	assert.Equal(t, uint8(UtilExecWithoutOutput), uint8(0), "exec_without_output constant not correct assgined")
-	assert.Equal(t, uint8(UtilExecWithOutput), uint8(1), "exec_without_output constant not correct assgined")
+	assert.Equal(t, string(consts.CloudCivo), "civo", "civo constant not correct assigned")
+	assert.Equal(t, string(consts.CloudAzure), "azure", "azure constant not correct assgined")
+	assert.Equal(t, string(consts.CloudLocal), "local", "local constant not correct assgined")
+	assert.Equal(t, string(consts.K8sK3s), "k3s", "k3s constant not correct assgined")
+	assert.Equal(t, string(consts.CloudAws), "aws", "aws constant not correct assgined")
+	assert.Equal(t, string(consts.K8sKubeadm), "kubeadm", "kubeadm constant not correct assgined")
+	assert.Equal(t, string(consts.StoreLocal), "local", "local constant not correct assgined")
+	assert.Equal(t, string(consts.StoreExtMongo), "external-mongo", "remote constant not correct assgined")
+	assert.Equal(t, string(consts.RoleCp), "controlplane", "controlplane constant not correct assgined")
+	assert.Equal(t, string(consts.RoleLb), "loadbalancer", "loadbalancer constant not correct assgined")
+	assert.Equal(t, string(consts.RoleDs), "datastore", "datastore constant not correct assgined")
+	assert.Equal(t, string(consts.RoleWp), "workerplane", "workerplane constant not correct assgined")
+	assert.Equal(t, string(consts.ClusterTypeHa), "ha", "HA constant not correct assgined")
+	assert.Equal(t, string(consts.ClusterTypeMang), "managed", "Managed constant not correct assgined")
+	assert.Equal(t, string(consts.OperationStateCreate), "create", "operation create constant not correct assgined")
+	assert.Equal(t, string(consts.OperationStateGet), "get", "operation get constant not correct assgined")
+	assert.Equal(t, string(consts.OperationStateDelete), "delete", "operation delete constant not correct assgined")
+	assert.Equal(t, uint8(consts.UtilClusterPath), uint8(1), "cluster_path constant not correct assgined")
+	assert.Equal(t, uint8(consts.UtilOtherPath), uint8(3), "other_path constant not correct assgined")
+	assert.Equal(t, uint8(consts.UtilSSHPath), uint8(2), "ssh_path constant not correct assgined")
+	assert.Equal(t, uint8(consts.UtilCredentialPath), uint8(0), "credential_path constant not correct assgined")
+	assert.Equal(t, uint8(consts.UtilExecWithoutOutput), uint8(0), "exec_without_output constant not correct assgined")
+	assert.Equal(t, uint8(consts.UtilExecWithOutput), uint8(1), "exec_without_output constant not correct assgined")
 
-	assert.Equal(t, string(CNIAzure), "azure", "missmatch")
-	assert.Equal(t, string(CNIKind), "kind", "missmatch")
-	assert.Equal(t, string(CNINone), "none", "missmatch")
-	assert.Equal(t, string(CNICilium), "cilium", "missmatch")
-	assert.Equal(t, string(CNIFlannel), "flannel", "missmatch")
-	assert.Equal(t, string(CNIKubenet), "kubenet", "missmatch")
+	assert.Equal(t, string(consts.CNIAzure), "azure", "missmatch")
+	assert.Equal(t, string(consts.CNIKind), "kind", "missmatch")
+	assert.Equal(t, string(consts.CNINone), "none", "missmatch")
+	assert.Equal(t, string(consts.CNICilium), "cilium", "missmatch")
+	assert.Equal(t, string(consts.CNIFlannel), "flannel", "missmatch")
+	assert.Equal(t, string(consts.CNIKubenet), "kubenet", "missmatch")
 }
 
 func TestGetUsername(t *testing.T) {
@@ -67,16 +68,16 @@ func TestGetUsername(t *testing.T) {
 
 func TestCNIValidation(t *testing.T) {
 	cnitests := map[string]bool{
-		string(CNIAzure):   true,
-		string(CNIKubenet): true,
-		string(CNIFlannel): true,
-		string(CNICilium):  true,
-		string(CNIKind):    true,
-		"abcd":             false,
-		"":                 true,
+		string(consts.CNIAzure):   true,
+		string(consts.CNIKubenet): true,
+		string(consts.CNIFlannel): true,
+		string(consts.CNICilium):  true,
+		string(consts.CNIKind):    true,
+		"abcd":                    false,
+		"":                        true,
 	}
 	for k, v := range cnitests {
-		assert.Equal(t, v, ValidCNIPlugin(KsctlValidCNIPlugin(k)), "")
+		assert.Equal(t, v, ValidCNIPlugin(consts.KsctlValidCNIPlugin(k)), "")
 	}
 }
 
@@ -105,7 +106,7 @@ func TestSSHExecute(t *testing.T) {
 	var sshTest SSHCollection = &SSHPayload{}
 	sshTest.Username("fake")
 	sshTest.PrivateKey(mainStateDoc.SSHKeyPair.PrivateKey)
-	assert.Assert(t, sshTest.Flag(UtilExecWithoutOutput).Script("").
+	assert.Assert(t, sshTest.Flag(consts.UtilExecWithoutOutput).Script("").
 		IPv4("A.A.A.A").
 		FastMode(true).SSHExecute(log) != nil, "ssh should fail")
 

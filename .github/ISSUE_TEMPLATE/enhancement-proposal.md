@@ -13,4 +13,4 @@ assignees: ''
 
 ## Additional context
 
-Check [Contribution's guidelines](https://ksctl.github.io/docs/docs/contribution-guidelines/)
+Check [Contribution's guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)

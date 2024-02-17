@@ -19,4 +19,4 @@
 <!--Add here-->
 
 - [ ] Ran Tests locally
-- [ ] Checked [Contribution's guidelines](https://ksctl.github.io/docs/docs/contribution-guidelines/)
+- [ ] Checked [Contribution's guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)

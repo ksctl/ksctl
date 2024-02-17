@@ -25,10 +25,6 @@ WORKDIR /app
 
 COPY --from=builder /app/ksctlserver /app/ksctlserver
 
-
-RUN mkdir -p /app/ksctl-data/config/civo/ha && \
-	mkdir -p /app/ksctl-data/config/azure/ha
-
 ENTRYPOINT [ "/app/ksctlserver" ]
 
 EXPOSE 8080
