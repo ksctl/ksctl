@@ -3,12 +3,12 @@ package k3s
 import (
 	"fmt"
 
-	"github.com/kubesimplify/ksctl/internal/storage/types"
-	"github.com/kubesimplify/ksctl/pkg/helpers"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/logger"
-	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
 var (

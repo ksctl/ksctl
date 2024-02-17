@@ -5,14 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kubesimplify/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/internal/storage/types"
 
-	azurePkg "github.com/kubesimplify/ksctl/internal/cloudproviders/azure"
-	civoPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/civo"
-	localPkg "github.com/kubesimplify/ksctl/internal/cloudproviders/local"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/logger"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
+	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
+	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 var log resources.LoggerFactory

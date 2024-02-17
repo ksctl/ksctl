@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/logger"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 // NOTE: example command to run it

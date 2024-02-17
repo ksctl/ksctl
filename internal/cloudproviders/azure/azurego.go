@@ -3,7 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -19,7 +19,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 func ProvideClient() AzureGo {

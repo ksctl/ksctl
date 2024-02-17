@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kubesimplify/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/internal/storage/types"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
@@ -12,7 +12,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

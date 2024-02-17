@@ -1,7 +1,7 @@
 package resources
 
 import (
-	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
 type LoggerFactory interface {

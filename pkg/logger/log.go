@@ -8,8 +8,8 @@ import (
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
-	"github.com/kubesimplify/ksctl/pkg/resources"
-	cloudController "github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/resources"
+	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 	"github.com/rodaine/table"
 )
 

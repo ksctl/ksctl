@@ -4,9 +4,9 @@ import (
 	"context"
 	"os"
 
-	control_pkg "github.com/kubesimplify/ksctl/pkg/controllers"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 func main() {

@@ -13,6 +13,11 @@ assignees: ''
 # Describe the solution you'd like 👨‍💻👩‍💻
 <!-- A clear and concise description of what you want to happen. -->
 
+Any Documentation update required? If Yes then mention
+```
+
+```
+
 # Describe alternatives you've considered💠
 <!-- A clear and concise description of any alternative solutions or features you've considered. -->
 
@@ -24,4 +29,4 @@ assignees: ''
 - Kubeadm
 
 ## Additional context
-Check [Contribution's guidelines](https://kubesimplify.github.io/ksctl-docs/docs/contribution-guidelines/)
+Check [Contribution's guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)

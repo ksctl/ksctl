@@ -3,11 +3,11 @@ package controllers
 import (
 	"context"
 
-	externalmongostate "github.com/kubesimplify/ksctl/internal/storage/external/mongodb"
-	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/logger"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	externalmongostate "github.com/ksctl/ksctl/internal/storage/external/mongodb"
+	localstate "github.com/ksctl/ksctl/internal/storage/local"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 // InitializeStorageFactory it initializes the storage class

@@ -2,8 +2,8 @@ package civo
 
 import (
 	"github.com/civo/civogo"
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
-	"github.com/kubesimplify/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 // DelFirewall implements resources.CloudFactory.

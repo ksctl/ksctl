@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/kubesimplify/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

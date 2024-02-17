@@ -10,4 +10,4 @@
 
 ## Reporting a Vulnerability
 
-Check [contribution guide](./CONTRIBUTING.md) and also [website contribution page](https://kubesimplify.github.io/ksctl/docs/contributions)
+Check [contribution guide](./CONTRIBUTING.md) and also [website contribution page](https://docs.ksctl.com/docs/contribution-guidelines/)

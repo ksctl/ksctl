@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubesimplify/ksctl/pkg/resources"
-	"github.com/kubesimplify/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
 var (
