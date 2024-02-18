@@ -8,7 +8,7 @@ COPY . .
 
 RUN go mod tidy
 
-RUN cd httpserver && CGO_ENABLED=0 go build -v -o ksctlserver . && mv ksctlserver ..
+RUN cd ksctl-components/agent && CGO_ENABLED=0 go build -v -o ksctlagent . && mv ksctlagent ../..
 
 
 FROM alpine
@@ -23,8 +23,8 @@ USER ksctl
 
 WORKDIR /app
 
-COPY --from=builder /app/ksctlserver /app/ksctlserver
+COPY --from=builder /app/ksctlagent /app/ksctlagent
 
-ENTRYPOINT [ "/app/ksctlserver" ]
+ENTRYPOINT [ "/app/ksctlagent" ]
 
 EXPOSE 8080

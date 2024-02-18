@@ -88,7 +88,7 @@ func scaleUp(ctx *gin.Context) {
 	cli.Metadata.StateLocation = consts.StoreLocal
 	cli.Metadata.K8sDistro = consts.KsctlKubernetes(req.Distro)
 	cli.Metadata.LogVerbosity = 0
-	cli.Metadata.LogWritter = os.Stdout
+	cli.Metadata.LogWritter = os.Stdout // TODO: use w.httpResponseWriter
 
 	cli.Metadata.K8sVersion = "1.27.1"
 	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "scalar"), cli); err != nil {

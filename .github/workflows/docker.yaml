@@ -1,52 +1,45 @@
-
-name: Build and Push of Docker images
+name: release-ksctl-agent-ghcr
 on:
   push:
     paths:
     - 'internal/**'
     - 'pkg/**'
+    - 'go.mod'
+    - 'go.sum'
     - 'build/**'
-    - 'httpserver/**'
+    - 'build/agent/**'
+    - 'ksctl-components/agent/**'
     branches: [ main ]
-  pull_request:
-    paths:
-      - 'internal/**'
-      - 'pkg/**'
-      - 'build/**'
-      - 'httpserver/**'
-      - 'Makefile'
-    branches: [ main ]
-    types: [ labeled, opened, synchronize, reopened ]
+  # pull_request:
+  #   paths:
+  #     - 'internal/**'
+  #     - 'pkg/**'
+  #     - 'build/**'
+  #     - 'ksctl-agent/**'
+  #     - 'Makefile'
+  #   branches: [ main ]
+  #   types: [ labeled, opened, synchronize, reopened ]
 
 jobs:
-  ksctl_scaler_http:
+  ksctl-agent:
     runs-on: ubuntu-latest
-    if: |
-      (
-        github.event.label.name == 'tests/enable' ||
-        contains(github.event.pull_request.labels.*.name, 'tests/enable')
-      )
-
-    env:
-      DOCKER_USERNAME: kubesimplify
-      DOCKER_SECRET: ${{ secrets.DOCKER_PASS }}
-      HTTPSERVER: docker.io/kubesimplify/ksctl:slim-v1
-
+ 
+    permissions:
+      packages: write
+      contents: read
+ 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: Build the Docker image
-      run: docker build --file build/httpserver_slim/Dockerfile --tag $HTTPSERVER .
-
-    - name: Login docker.io
-      if: github.event_name == 'push'
-      uses: docker/login-action@v3
-      with:
-        registry: docker.io
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_SECRET }}
-
-    - name: Push to Docker
-      if: github.event_name == 'push'
-      run: docker push $HTTPSERVER
+      - name: Checkout
+        uses: actions/checkout@v3
+ 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+ 
+      - name: Build Inventory Image
+        run: |
+          docker build --file build/agent/Dockerfile --tag ghcr.io/ksctl/ksctl:agent-latest .
+          docker push ghcr.io/ksctl/ksctl:agent-latest
