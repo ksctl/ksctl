@@ -8,19 +8,14 @@ assignees: ''
 ---
 
 # Describe 🐞
-<!--A clear and concise description of what the bug is. -->
-## Provider in effect
-- Azure
-- Civo
-- Local
 
-# Reproduce 💻 ➡️  💻
+## How to Reproduce 💻 ➡️  💻
 <!-- Steps to reproduce the behavior -->
 
-# Possible Fix & Expected behavior🔧
+## Possible Fix & Expected behavior🔧
 <!-- A clear and concise description of what you expected to happen. -->
 
-# Screenshots :framed_picture:
+## Screenshots :framed_picture:
 <!-- If applicable, add screenshots to help explain your problem. -->
 
 ## Operating System
@@ -28,7 +23,12 @@ assignees: ''
 Add here
 
 ## ksctl version 
+`ksctl version: `
+
+# What it will bring?
+
 
 # Additional context
 Add any other context about the problem here.
 Check [Contribution's guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)
+

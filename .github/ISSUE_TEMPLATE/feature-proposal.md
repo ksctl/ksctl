@@ -8,25 +8,30 @@ assignees: ''
 ---
 
 # Is your feature request related to a problem?📖
-<!-- A clear and concise description of what the problem is. Ex. I'm always frustrated when [...] -->
+
+## Type
+- [ ] POC
+- [ ] Implementation
+
+## Issues
+### Completed Issue(s)
+- #9999
+
+### Related Issue(s)
+- #9999
 
 # Describe the solution you'd like 👨‍💻👩‍💻
-<!-- A clear and concise description of what you want to happen. -->
 
-Any Documentation update required? If Yes then mention
-```
+### Sub-Tasks
+- [ ] milestones or sub-task which needs to be coverted
 
-```
 
-# Describe alternatives you've considered💠
-<!-- A clear and concise description of any alternative solutions or features you've considered. -->
-
-# Provider in question
-- Civo
-- Local
-- Azure
-- K3s
-- Kubeadm
+### Needs Update
+- [ ] Docs
+- [ ] Cli
 
 ## Additional context
+
 Check [Contribution's guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)
+
+
