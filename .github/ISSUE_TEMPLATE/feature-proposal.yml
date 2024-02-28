@@ -1,0 +1,85 @@
+name: Feature Proposal
+title: "[Feature Proposal]: "
+description: Propose a new feature or enhancement
+labels: [ "kind/feature", "needs-triage" ]
+
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the initiative to propose a new feature! Please fill out the following details to help us understand your proposal better.
+
+  - type: input
+    id: why
+    attributes:
+      label: Purpose
+      description: why do we need this feature
+    validations:
+      required: false
+
+  - type: input
+    id: feature-name
+    attributes:
+      label: Feature Name
+      description: What would you like to call this feature?
+      placeholder: A brief, descriptive name for the feature
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: Describe the feature you're proposing. Include any specific details that can help us understand what it does and why it's beneficial.
+      placeholder: Detailed description of the feature
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: Benefits
+      description: Explain the benefits of this feature. How does it improve the project?
+      placeholder: Benefits and improvements
+    validations:
+      required: true
+
+  - type: textarea
+    id: potential-drawbacks
+    attributes:
+      label: Potential Drawbacks
+      description: Are there any potential drawbacks or downsides to implementing this feature?
+      placeholder: Possible downsides or challenges
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives-considered
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or features? If so, what are they and why were they not suitable?
+      placeholder: Alternative solutions or features
+    validations:
+      required: false
+
+
+  - type: checkboxes
+    id: updates
+    attributes:
+      label: Scope of changes
+      description: what all subprojects will be affected?
+      options:
+        - label: Cli
+        - label: UI
+        - label: Docs
+
+  - type: checkboxes
+    id: agreement
+    attributes:
+      label: Agreement
+      description: By submitting this feature proposal, you agree to engage in constructive discussion and follow our [Contribution Guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)
+      options:
+        - label: I agree to engage in constructive discussion and follow the Contribution Guidelines.
+          required: true
+

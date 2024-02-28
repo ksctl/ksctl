@@ -1,0 +1,76 @@
+name: Enhancement Proposal
+description: Suggest an enhancement for an existing feature or propose a new functionality
+title: "[Enhancement Proposal]: "
+labels: ["kind/enhancement", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Thank you for suggesting an enhancement.** Please fill in as much of the template below as you're able. Your proposal will help us understand your ideas better and improve the project.
+
+  - type: input
+    id: enhancement-title
+    attributes:
+      label: Enhancement Title
+      description: Provide a concise title for your enhancement proposal.
+      placeholder: Short and descriptive title
+    validations:
+      required: true
+
+  - type: textarea
+    id: enhancement-summary
+    attributes:
+      label: Summary of the Enhancement
+      description: A brief summary of the enhancement you're proposing.
+      placeholder: What enhancement are you proposing and why?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation-and-goals
+    attributes:
+      label: Motivation and Goals
+      description: What motivates you to propose this enhancement? What goals do you aim to achieve?
+      placeholder: Explain the motivation behind this proposal and what you hope to achieve.
+    validations:
+      required: true
+
+  - type: textarea
+    id: detailed-design
+    attributes:
+      label: Detailed Design
+      description: Describe in detail how this enhancement should be implemented. Include any specific technical requirements, methods, or steps.
+      placeholder: Detailed description of the enhancement's design and implementation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Have you considered any alternative solutions or features? Why is your proposed enhancement preferable?
+      placeholder: Describe any alternative solutions or features you've considered.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: updates
+    attributes:
+      label: Scope of changes
+      description: what all subprojects will be affected?
+      options:
+        - label: Cli
+        - label: UI
+        - label: Docs
+
+  - type: checkboxes
+    id: agreement
+    attributes:
+      label: Agreement
+      description: By submitting this feature proposal, you agree to engage in constructive discussion and follow our [Contribution Guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)
+      options:
+        - label: I agree to engage in constructive discussion and follow the Contribution Guidelines.
+          required: true
+
+
