@@ -2,11 +2,9 @@ package k3s
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
-	"strings"
-	"time"
 
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/resources"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -21,9 +19,12 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 		return nil
 	}
 
-	password := generateDBPassword(15)
+	password, err := helpers.GenRandomString(15)
+	if err != nil {
+		return log.NewError("Error in generating random string", "reason", err.Error())
+	}
 
-	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
+	err = k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(password)).
 		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute(log)
@@ -40,29 +41,6 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 	log.Success("configured DataStore", "number", strconv.Itoa(idx))
 
 	return nil
-}
-
-func generateDBPassword(passwordLen int) string {
-	var password strings.Builder
-	var (
-		lowerCharSet = "abcdedfghijklmnopqrst"
-		upperCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		numberSet    = "0123456789"
-		allCharSet   = lowerCharSet + upperCharSet + numberSet
-	)
-	rand.Seed(time.Now().Unix())
-
-	for i := 0; i < passwordLen; i++ {
-		random := rand.Intn(len(allCharSet))
-		password.WriteString(string(allCharSet[random]))
-	}
-
-	inRune := []rune(password.String())
-	rand.Shuffle(len(inRune), func(i, j int) {
-		inRune[i], inRune[j] = inRune[j], inRune[i]
-	})
-
-	return string(inRune)
 }
 
 func scriptDB(password string) string {
