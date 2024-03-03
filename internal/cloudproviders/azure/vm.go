@@ -2,9 +2,12 @@ package azure
 
 import (
 	"context"
+	"encoding/base64"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
@@ -180,6 +183,13 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	}
 	log.Debug("Printing", "netInterfaceID", netInterfaceID)
 
+	initScript, err := helpers.GenerateInitScriptForVM(name)
+	if err != nil {
+		return log.NewError(err.Error())
+	}
+
+	log.Debug("initscript", "script", initScript)
+
 	parameters := armcompute.VirtualMachine{
 		Location: to.Ptr(obj.region),
 		Identity: &armcompute.VirtualMachineIdentity{
@@ -206,10 +216,10 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 			HardwareProfile: &armcompute.HardwareProfile{
 				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes(vmtype)), // VM size include vCPUs,RAM,Data Disks,Temp storage.
 			},
-			OSProfile: &armcompute.OSProfile{ //
+			OSProfile: &armcompute.OSProfile{
 				ComputerName:  to.Ptr(name),
 				AdminUsername: to.Ptr(mainStateDocument.CloudInfra.Azure.B.SSHUser),
-				//CustomData:    to.Ptr(base64.StdEncoding.EncodeToString([]byte(script))),
+				CustomData:    to.Ptr(base64.StdEncoding.EncodeToString([]byte(initScript))),
 				LinuxConfiguration: &armcompute.LinuxConfiguration{
 					DisablePasswordAuthentication: to.Ptr(true),
 					SSH: &armcompute.SSHConfiguration{

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/civo/civogo"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/resources"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -99,6 +100,12 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 
 	networkID := mainStateDocument.CloudInfra.Civo.NetworkID
 
+	initScript, err := helpers.GenerateInitScriptForVM(name)
+	if err != nil {
+		return log.NewError(err.Error())
+	}
+	log.Debug("initscript", "script", initScript)
+
 	instanceConfig := &civogo.InstanceConfig{
 		Hostname:         name,
 		InitialUser:      mainStateDocument.CloudInfra.Civo.B.SSHUser,
@@ -109,7 +116,7 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 		NetworkID:        networkID,
 		SSHKeyID:         mainStateDocument.CloudInfra.Civo.B.SSHID,
 		PublicIPRequired: publicIP,
-		// Script:           initializationScript,  // TODO: add the os updates and other non necessary things before we try to configure in kubernetes may be security fixes
+		Script:           initScript,
 	}
 
 	log.Debug("Printing", "instanceConfig", instanceConfig)

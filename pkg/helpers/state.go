@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"os"
 	"strings"
@@ -51,4 +52,15 @@ func GenRandomString(length int) (string, error) {
 	}
 
 	return string(ret), nil
+}
+
+func GenerateInitScriptForVM(resName string) (string, error) {
+
+	postfixStr, err := GenRandomString(5)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`#!/bin/bash
+sudo hostname %s-%s
+`, resName, postfixStr), nil
 }
