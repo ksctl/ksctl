@@ -3,6 +3,7 @@ package controllers
 import (
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -372,6 +373,8 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	}
 
 	log.Warn("only cloud resources are having replay!")
+
+	time.Sleep(30 * time.Second) // hack to wait for all the cloud specific resources to be in consistent state
 	// Kubernetes controller
 	externalCNI, err := kubernetes.ConfigureCluster(client)
 	if err != nil {

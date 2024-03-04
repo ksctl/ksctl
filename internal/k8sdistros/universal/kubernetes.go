@@ -36,6 +36,7 @@ func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
 	kNodeName := ""
 	for _, node := range nodes.Items {
+		log.Debug("string compariazion", "nodeToDelete", nodeName, "kubernetesNodeName", node.Name)
 		if strings.HasPrefix(node.Name, nodeName) {
 			kNodeName = node.Name
 			break

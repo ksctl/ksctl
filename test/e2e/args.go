@@ -36,7 +36,12 @@ func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
 		os.Exit(1)
 	}
 
-	payload.LogVerbosity = 0
+	verbosityLevel := 0
+	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
+		verbosityLevel = -1
+	}
+
+	payload.LogVerbosity = verbosityLevel
 	payload.LogWritter = os.Stdout
 
 	return Operation(*arg1), payload
