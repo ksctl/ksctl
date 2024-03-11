@@ -315,6 +315,12 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 			return log.NewError(err.Error())
 		}
 		printerTable = append(printerTable, data...)
+
+		data, err = awsPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		if err != nil {
+			return log.NewError(err.Error())
+		}
+		printerTable = append(printerTable, data...)
 	}
 	log.Table(printerTable)
 
