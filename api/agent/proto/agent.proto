@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package calculator;
+
+option go_package = "./pb";
+
+service Calculator {
+  rpc ScaleUp(ReqScale) returns (UpdatedScale);
+  rpc ScaleDown(ReqScale) returns (UpdatedScale);
+}
+
+message ReqScale {
+  uint32 desiredWP = 1;
+}
+
+message UpdatedScale {
+  uint32 updatedWP = 1;
+}

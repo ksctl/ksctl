@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 GOOS_LINUX = linux
 GOOS_WINDOWS = windows
 GOOS_MACOS = darwin
@@ -73,3 +75,6 @@ mock_local_managed:
 test: unit_test_api mock_test
 	@echo "Done All tests"
 
+gen-agent:
+	@echo "generating new helpers"
+	protoc --proto_path=api/agent/proto api/agent/proto/*.proto --go_out=ksctl-components/agent --go-grpc_out=ksctl-components/agent
