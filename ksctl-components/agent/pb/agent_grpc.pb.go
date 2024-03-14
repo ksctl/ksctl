@@ -18,122 +18,158 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// CalculatorClient is the client API for Calculator service.
+// KsctlAgentClient is the client API for KsctlAgent service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type CalculatorClient interface {
-	ScaleUp(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*UpdatedScale, error)
-	ScaleDown(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*UpdatedScale, error)
+type KsctlAgentClient interface {
+	Scale(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*ResScale, error)
+	LoadBalancer(ctx context.Context, in *ReqLB, opts ...grpc.CallOption) (*ResLB, error)
+	Application(ctx context.Context, in *ReqApplication, opts ...grpc.CallOption) (*ResApplication, error)
 }
 
-type calculatorClient struct {
+type ksctlAgentClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewCalculatorClient(cc grpc.ClientConnInterface) CalculatorClient {
-	return &calculatorClient{cc}
+func NewKsctlAgentClient(cc grpc.ClientConnInterface) KsctlAgentClient {
+	return &ksctlAgentClient{cc}
 }
 
-func (c *calculatorClient) ScaleUp(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*UpdatedScale, error) {
-	out := new(UpdatedScale)
-	err := c.cc.Invoke(ctx, "/calculator.Calculator/ScaleUp", in, out, opts...)
+func (c *ksctlAgentClient) Scale(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*ResScale, error) {
+	out := new(ResScale)
+	err := c.cc.Invoke(ctx, "/ksctlAgent.KsctlAgent/Scale", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *calculatorClient) ScaleDown(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*UpdatedScale, error) {
-	out := new(UpdatedScale)
-	err := c.cc.Invoke(ctx, "/calculator.Calculator/ScaleDown", in, out, opts...)
+func (c *ksctlAgentClient) LoadBalancer(ctx context.Context, in *ReqLB, opts ...grpc.CallOption) (*ResLB, error) {
+	out := new(ResLB)
+	err := c.cc.Invoke(ctx, "/ksctlAgent.KsctlAgent/LoadBalancer", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// CalculatorServer is the server API for Calculator service.
-// All implementations must embed UnimplementedCalculatorServer
+func (c *ksctlAgentClient) Application(ctx context.Context, in *ReqApplication, opts ...grpc.CallOption) (*ResApplication, error) {
+	out := new(ResApplication)
+	err := c.cc.Invoke(ctx, "/ksctlAgent.KsctlAgent/Application", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// KsctlAgentServer is the server API for KsctlAgent service.
+// All implementations must embed UnimplementedKsctlAgentServer
 // for forward compatibility
-type CalculatorServer interface {
-	ScaleUp(context.Context, *ReqScale) (*UpdatedScale, error)
-	ScaleDown(context.Context, *ReqScale) (*UpdatedScale, error)
-	mustEmbedUnimplementedCalculatorServer()
+type KsctlAgentServer interface {
+	Scale(context.Context, *ReqScale) (*ResScale, error)
+	LoadBalancer(context.Context, *ReqLB) (*ResLB, error)
+	Application(context.Context, *ReqApplication) (*ResApplication, error)
+	mustEmbedUnimplementedKsctlAgentServer()
 }
 
-// UnimplementedCalculatorServer must be embedded to have forward compatible implementations.
-type UnimplementedCalculatorServer struct {
+// UnimplementedKsctlAgentServer must be embedded to have forward compatible implementations.
+type UnimplementedKsctlAgentServer struct {
 }
 
-func (UnimplementedCalculatorServer) ScaleUp(context.Context, *ReqScale) (*UpdatedScale, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ScaleUp not implemented")
+func (UnimplementedKsctlAgentServer) Scale(context.Context, *ReqScale) (*ResScale, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Scale not implemented")
 }
-func (UnimplementedCalculatorServer) ScaleDown(context.Context, *ReqScale) (*UpdatedScale, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ScaleDown not implemented")
+func (UnimplementedKsctlAgentServer) LoadBalancer(context.Context, *ReqLB) (*ResLB, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoadBalancer not implemented")
 }
-func (UnimplementedCalculatorServer) mustEmbedUnimplementedCalculatorServer() {}
+func (UnimplementedKsctlAgentServer) Application(context.Context, *ReqApplication) (*ResApplication, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Application not implemented")
+}
+func (UnimplementedKsctlAgentServer) mustEmbedUnimplementedKsctlAgentServer() {}
 
-// UnsafeCalculatorServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to CalculatorServer will
+// UnsafeKsctlAgentServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to KsctlAgentServer will
 // result in compilation errors.
-type UnsafeCalculatorServer interface {
-	mustEmbedUnimplementedCalculatorServer()
+type UnsafeKsctlAgentServer interface {
+	mustEmbedUnimplementedKsctlAgentServer()
 }
 
-func RegisterCalculatorServer(s grpc.ServiceRegistrar, srv CalculatorServer) {
-	s.RegisterService(&Calculator_ServiceDesc, srv)
+func RegisterKsctlAgentServer(s grpc.ServiceRegistrar, srv KsctlAgentServer) {
+	s.RegisterService(&KsctlAgent_ServiceDesc, srv)
 }
 
-func _Calculator_ScaleUp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _KsctlAgent_Scale_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReqScale)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CalculatorServer).ScaleUp(ctx, in)
+		return srv.(KsctlAgentServer).Scale(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/calculator.Calculator/ScaleUp",
+		FullMethod: "/ksctlAgent.KsctlAgent/Scale",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalculatorServer).ScaleUp(ctx, req.(*ReqScale))
+		return srv.(KsctlAgentServer).Scale(ctx, req.(*ReqScale))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Calculator_ScaleDown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqScale)
+func _KsctlAgent_LoadBalancer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqLB)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CalculatorServer).ScaleDown(ctx, in)
+		return srv.(KsctlAgentServer).LoadBalancer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/calculator.Calculator/ScaleDown",
+		FullMethod: "/ksctlAgent.KsctlAgent/LoadBalancer",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalculatorServer).ScaleDown(ctx, req.(*ReqScale))
+		return srv.(KsctlAgentServer).LoadBalancer(ctx, req.(*ReqLB))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Calculator_ServiceDesc is the grpc.ServiceDesc for Calculator service.
+func _KsctlAgent_Application_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqApplication)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KsctlAgentServer).Application(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ksctlAgent.KsctlAgent/Application",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KsctlAgentServer).Application(ctx, req.(*ReqApplication))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// KsctlAgent_ServiceDesc is the grpc.ServiceDesc for KsctlAgent service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Calculator_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "calculator.Calculator",
-	HandlerType: (*CalculatorServer)(nil),
+var KsctlAgent_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "ksctlAgent.KsctlAgent",
+	HandlerType: (*KsctlAgentServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ScaleUp",
-			Handler:    _Calculator_ScaleUp_Handler,
+			MethodName: "Scale",
+			Handler:    _KsctlAgent_Scale_Handler,
 		},
 		{
-			MethodName: "ScaleDown",
-			Handler:    _Calculator_ScaleDown_Handler,
+			MethodName: "LoadBalancer",
+			Handler:    _KsctlAgent_LoadBalancer_Handler,
+		},
+		{
+			MethodName: "Application",
+			Handler:    _KsctlAgent_Application_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
