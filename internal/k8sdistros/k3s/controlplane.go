@@ -108,11 +108,31 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 func scriptCP_1WithoutCNI(ver string, dbEndpoint, pubIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+
+EOF
+
+cat <<EOF > etcd.pem
+
+EOF
+
+cat <<EOF > etcd-key.pem
+
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--datastore-endpoint "%s" \
+	--datastore-endpoint "%shttps://192.168.1.2:2379,https://192.168.1.3:2379,https://192.168.1.4:2379" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
 	--tls-san %s
@@ -126,11 +146,31 @@ sudo ./control-setup.sh
 func scriptCP_NWithoutCNI(ver string, dbEndpoint, pubIPlb, token string) string {
 	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+
+EOF
+
+cat <<EOF > etcd.pem
+
+EOF
+
+cat <<EOF > etcd-key.pem
+
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
-	--datastore-endpoint="%s" \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
@@ -146,11 +186,31 @@ sudo ./control-setupN.sh
 func scriptCP_1(ver string, dbEndpoint, pubIPlb string) string {
 
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+
+EOF
+
+cat <<EOF > etcd.pem
+
+EOF
+
+cat <<EOF > etcd-key.pem
+
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--tls-san %s
 EOF
 
@@ -168,9 +228,33 @@ sudo cat /var/lib/rancher/k3s/server/token
 func scriptCP_N(ver string, dbEndpoint, pubIPlb, token string) string {
 	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+
+EOF
+
+cat <<EOF > etcd.pem
+
+EOF
+
+cat <<EOF > etcd-key.pem
+
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setupN.sh
 #!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
