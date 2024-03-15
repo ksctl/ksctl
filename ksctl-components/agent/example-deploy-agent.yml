@@ -52,6 +52,18 @@ data:
   mongo: LW5hbWU9bW9uZ28sTU9OR09EQl9VU0VSPWRlbW8sTU9OR09EQl9QQVNTV09SRD14eXosTU9OR09EQl9ETlM9eHV5Lnhjb20=
   local: LW5hbWU9bG9jYWw=
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ksctl-agent
+spec:
+  selector:
+    app: ksctl-agent
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
 # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
 apiVersion: apps/v1
 kind: Deployment
