@@ -55,6 +55,7 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: ksctl
   name: ksctl-agent
 spec:
   selector:
@@ -85,6 +86,7 @@ spec:
       containers:
       - name: ksctl-agent
         image: ghcr.io/ksctl/ksctl-agent:latest
+        imagePullPolicy: Always
         ports:
           - containerPort: 8080
             name: grpc-server
