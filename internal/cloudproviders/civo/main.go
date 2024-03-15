@@ -352,7 +352,7 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 
 		return len(mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs), nil
 	}
-	if no >= 1 && (no&1) == 1 {
+	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {

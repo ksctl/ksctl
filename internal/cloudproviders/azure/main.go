@@ -353,7 +353,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Debug("Printing", "mainStateDocument.CloudInfra.Azure.InfoDatabase.Names", mainStateDocument.CloudInfra.Azure.InfoDatabase.Names)
 		return len(mainStateDocument.CloudInfra.Azure.InfoDatabase.Names), nil
 	}
-	if no >= 1 && (no&1) == 1 {
+	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {

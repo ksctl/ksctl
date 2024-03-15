@@ -11,13 +11,14 @@ import (
 )
 
 // ConfigureDataStore implements resources.DistroFactory.
+// TODO: Update the k3s state struct and also script to use cat <<EOF for passing the certs as well
 func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
 	log.Print("configuring Datastore", "number", strconv.Itoa(idx))
 
-	if idx > 0 {
-		log.Warn("cluster of datastore not enabled!", "number", strconv.Itoa(idx))
-		return nil
-	}
+	//if idx > 0 {
+	//	log.Warn("cluster of datastore not enabled!", "number", strconv.Itoa(idx))
+	//	return nil
+	//}
 
 	password, err := helpers.GenRandomString(15)
 	if err != nil {
