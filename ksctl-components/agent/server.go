@@ -24,7 +24,7 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 
 	// figure out the how the data will be written to the logs
 	if err := scale.CallManager(string(in.Operation), in); err != nil {
-		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager")
+		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason:"+err.Error())
 	}
 
 	return &pb.ResScale{UpdatedWP: 999}, nil
