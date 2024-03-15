@@ -5,7 +5,9 @@ import (
 	"github.com/ksctl/ksctl/ksctl-components/agent/pb"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/scale"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 	"log/slog"
 	"net"
 )
@@ -15,12 +17,14 @@ type server struct {
 }
 
 func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, error) {
-	slog.Debug("WorkerNodes", "count", "DUMMY")
-	slog.Debug("Request", "reqScale", in)
+	slog.DebugContext(ctx, "WorkerNodes", "count", "DUMMY")
+	slog.DebugContext(ctx, "Request", "reqScale", in)
 
-	slog.Info("Processing Scale Request", "operation", in.Operation, "desired", in.ScaleTo)
+	slog.InfoContext(ctx, "Processing Scale Request", "operation", in.Operation, "desired", in.ScaleTo)
 
-	if err := scale.CallManager(string(in.Operation)); err != nil {
+	// figure out the how the data will be written to the logs
+	if err := scale.CallManager(string(in.Operation), in); err != nil {
+		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager")
 	}
 
 	return &pb.ResScale{UpdatedWP: 999}, nil
