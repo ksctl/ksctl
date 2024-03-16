@@ -376,7 +376,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Debug("Printing", "mainStateDocument.CloudInfra.Azure.InfoDatabase", mainStateDocument.CloudInfra.Azure.InfoDatabase)
 		return -1, nil
 	}
-	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")
+	return -1, log.NewError("constrains for no of Datastore>= 3 and odd number")
 }
 
 // NoOfWorkerPlane implements resources.CloudFactory.
