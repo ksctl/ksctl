@@ -4,36 +4,27 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/resources"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
 // ConfigureDataStore implements resources.DistroFactory.
-// TODO: Update the k3s state struct and also script to use cat <<EOF for passing the certs as well
 func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
 	log.Print("configuring Datastore", "number", strconv.Itoa(idx))
 
-	//if idx > 0 {
-	//	log.Warn("cluster of datastore not enabled!", "number", strconv.Itoa(idx))
-	//	return nil
-	//}
-
-	password, err := helpers.GenRandomString(15)
-	if err != nil {
-		return log.NewError("Error in generating random string", "reason", err.Error())
-	}
-
-	err = k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
-		scriptDB(password)).
+	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
+		scriptDB(
+			mainStateDocument.K8sBootstrap.K3s.B.CACert,
+			mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
+			mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+			mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
+			idx)).
 		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-	mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint = fmt.Sprintf("mysql://ksctl:%s@tcp(%s:3306)/ksctldb", password, mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores[idx])
-	log.Debug("Printing", "datastoreEndpoint", mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint)
 
 	err = storage.Write(mainStateDocument)
 	if err != nil {
@@ -44,7 +35,10 @@ func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFacto
 	return nil
 }
 
-func scriptDB(password string) string {
+func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) string {
+
+	clusterMembers := getEtcdMemberIPFieldForDatastore(privIPs)
+
 	return fmt.Sprintf(`#!/bin/bash
 set -xe
 
@@ -67,10 +61,6 @@ sudo mv -v /tmp/etcd-download-test/etcdctl /usr/local/bin
 sudo mv -v /tmp/etcd-download-test/etcdutl /usr/local/bin
 
 sudo rm -rf /tmp/etcd-download-test
-
-etcd --version
-etcdctl version
-etcdutl version
 
 sudo mkdir -p /var/lib/etcd
 
@@ -96,13 +86,13 @@ Description=etcd
 [Service]
 
 ExecStart=/usr/local/bin/etcd \\
-  --name infra0 \\
-  --initial-advertise-peer-urls https://192.168.1.2:2380 \
-  --listen-peer-urls https://192.168.1.2:2380 \\
-  --listen-client-urls https://192.168.1.2:2379,https://127.0.0.1:2379 \\
-  --advertise-client-urls https://192.168.1.2:2379 \\
+  --name infra%d \\
+  --initial-advertise-peer-urls https://%s:2380 \
+  --listen-peer-urls https://%s:2380 \\
+  --listen-client-urls https://%s:2379,https://127.0.0.1:2379 \\
+  --advertise-client-urls https://%s:2379 \\
   --initial-cluster-token etcd-cluster-1 \\
-  --initial-cluster infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380 \\
+  --initial-cluster %s \\
   --log-outputs=/var/lib/etcd/etcd.log \\
   --initial-cluster-state new \\
   --peer-auto-tls \\
@@ -128,5 +118,5 @@ sudo systemctl enable etcd
 
 sudo systemctl start etcd
 
-`)
+`, ca, etcd, key, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers)
 }
