@@ -28,7 +28,6 @@ func getEtcdMemberIPFieldForDatastore(ips []string) string {
 }
 
 func getEtcdMemberIPFieldForControlplane(ips []string) string {
-	//https://192.168.1.2:2379,https://192.168.1.3:2379,https://192.168.1.4:2379
 	tempDS := []string{}
 	for _, ip := range ips {
 		newValue := fmt.Sprintf("https://%s:2379", ip)
