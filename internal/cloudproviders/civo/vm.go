@@ -65,10 +65,6 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 
 	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
-	if role == consts.RoleDs && indexNo > 0 {
-		log.Note("skipped currently multiple datastore not supported", "vmName", name)
-		return nil
-	}
 
 	err := obj.foundStateVM(storage, indexNo, true, role, name)
 	if err == nil {

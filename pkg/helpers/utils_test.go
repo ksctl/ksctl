@@ -59,6 +59,19 @@ func TestConsts(t *testing.T) {
 	assert.Equal(t, string(consts.CNIKubenet), "kubenet", "missmatch")
 }
 
+func TestGenerateCerts(t *testing.T) {
+	if ca, etcd, key, err := GenerateCerts(log, []string{"192.168.1.1"}); err != nil {
+		t.Fatalf("it shouldn't fail, ca: %v, etcd: %v, key: %v, err: %v\n", ca, etcd, key, err)
+	}
+
+	if ca, etcd, key, err := GenerateCerts(log, []string{"192,168.1.1"}); err == nil ||
+		len(ca) != 0 ||
+		len(etcd) != 0 ||
+		len(key) != 0 {
+		t.Fatalf("it should fail, ca: %v, etcd: %v, key: %v, err: %v\n", ca, etcd, key, err)
+	}
+}
+
 func TestGetUsername(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		assert.Equal(t, os.Getenv(UserDir), GetUserName(), "Unable to fetch correct username")

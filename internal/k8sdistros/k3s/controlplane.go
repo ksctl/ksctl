@@ -14,9 +14,21 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 	var script string
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
-		script = scriptCP_1WithoutCNI(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
+		script = scriptCP_1WithoutCNI(
+			mainStateDocument.K8sBootstrap.K3s.B.CACert,
+			mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
+			mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+			k3s.K3sVer,
+			mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
+			mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
 	} else {
-		script = scriptCP_1(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
+		script = scriptCP_1(
+			mainStateDocument.K8sBootstrap.K3s.B.CACert,
+			mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
+			mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+			k3s.K3sVer,
+			mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
+			mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
 	}
 
 	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
@@ -60,9 +72,23 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		var script string
 
 		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
-			script = scriptCP_NWithoutCNI(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)
+			script = scriptCP_NWithoutCNI(
+				mainStateDocument.K8sBootstrap.K3s.B.CACert,
+				mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
+				mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+				k3s.K3sVer,
+				mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
+				mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		} else {
-			script = scriptCP_N(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.DataStoreEndPoint, mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)
+			script = scriptCP_N(
+				mainStateDocument.K8sBootstrap.K3s.B.CACert,
+				mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
+				mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+				k3s.K3sVer,
+				mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
+				mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		}
 
 		err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
@@ -105,14 +131,35 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 	return nil
 }
 
-func scriptCP_1WithoutCNI(ver string, dbEndpoint, pubIPlb string) string {
+func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) string {
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+%s
+EOF
+
+cat <<EOF > etcd.pem
+%s
+EOF
+
+cat <<EOF > etcd-key.pem
+%s
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
 	--tls-san %s
@@ -120,17 +167,38 @@ EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ver, dbEndpoint, pubIPlb)
+`, ca, etcd, key, ver, dbEndpoint, pubIPlb)
 }
 
-func scriptCP_NWithoutCNI(ver string, dbEndpoint, pubIPlb, token string) string {
+func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) string {
 	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+%s
+EOF
+
+cat <<EOF > etcd.pem
+%s
+EOF
+
+cat <<EOF > etcd-key.pem
+%s
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
-	--datastore-endpoint="%s" \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
@@ -139,24 +207,44 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, ver, token, dbEndpoint, pubIPlb)
+`, ca, etcd, key, ver, token, dbEndpoint, pubIPlb)
 }
 
 // scriptCP_1 script used to configure the control-plane-1 with no need of output inital
-func scriptCP_1(ver string, dbEndpoint, pubIPlb string) string {
-
+func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) string {
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+%s
+EOF
+
+cat <<EOF > etcd.pem
+%s
+EOF
+
+cat <<EOF > etcd-key.pem
+%s
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ver, dbEndpoint, pubIPlb)
+`, ca, etcd, key, ver, dbEndpoint, pubIPlb)
 }
 
 func scriptForK3sToken() string {
@@ -165,15 +253,40 @@ sudo cat /var/lib/rancher/k3s/server/token
 `
 }
 
-func scriptCP_N(ver string, dbEndpoint, pubIPlb, token string) string {
+func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) string {
 	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 	return fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+%s
+EOF
+
+cat <<EOF > etcd.pem
+%s
+EOF
+
+cat <<EOF > etcd-key.pem
+%s
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setupN.sh
 #!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, ver, token, dbEndpoint, pubIPlb)
+`, ca, etcd, key, ver, token, dbEndpoint, pubIPlb)
 }

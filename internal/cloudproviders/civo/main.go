@@ -352,7 +352,7 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 
 		return len(mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs), nil
 	}
-	if no >= 1 && (no&1) == 1 {
+	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {
@@ -373,7 +373,7 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Debug("Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames", mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames)
 		return -1, nil
 	}
-	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")
+	return -1, log.NewError("constrains for no of Datastore>= 3 and odd number")
 }
 
 // NoOfWorkerPlane implements resources.CloudFactory.

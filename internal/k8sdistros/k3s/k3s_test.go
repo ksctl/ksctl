@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 
 		// Private IPs
 		PrivateIPv4ControlPlanes: []string{"192.168.X.7", "192.168.X.9", "192.168.X.10"},
-		PrivateIPv4DataStores:    []string{"192.168.X.2"},
+		PrivateIPv4DataStores:    []string{"192.168.5.2"},
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
@@ -102,28 +102,69 @@ func TestK3sDistro_Version(t *testing.T) {
 func TestScriptsControlplane(t *testing.T) {
 
 	ver := []string{"1.26.1", "1.27"}
-	dbEndpoint := []string{"demo@(cd);dcwef", "mysql@demo@(cd);dcwef"}
+	privIP := []string{"9.9.9.9", "1.1.1.1"}
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privIP)
 	pubIP := []string{"192.16.9.2", "23.34.4.1"}
 	for i := 0; i < len(ver); i++ {
 		validWithCni := fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
+EOF
+
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
+
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ver[i], dbEndpoint[i], pubIP[i])
+`, ver[i], dbEndpoint, pubIP[i])
 
 		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
+EOF
+
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
+
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
 	--tls-san %s
@@ -131,12 +172,12 @@ EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ver[i], dbEndpoint[i], pubIP[i])
+`, ver[i], dbEndpoint, pubIP[i])
 
-		if validWithCni != scriptCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
+		if validWithCni != scriptCP_1("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i]) {
 			t.Fatalf("scipts for Controlplane 1 failed")
 		}
-		if validWithoutCni != scriptCP_1WithoutCNI(ver[i], dbEndpoint[i], pubIP[i]) {
+		if validWithoutCni != scriptCP_1WithoutCNI("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i]) {
 			t.Fatalf("scipts for Controlplane 1 failed")
 		}
 	}
@@ -151,21 +192,65 @@ sudo cat /var/lib/rancher/k3s/server/token
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
 	for i := 0; i < len(ver); i++ {
 		validWithCni := fmt.Sprintf(`#!/bin/bash
-cat <<EOF > control-setupN.sh
-#!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
 EOF
 
-sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
 
-		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
-	--datastore-endpoint="%s" \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
+`, ver[i], sampleToken, dbEndpoint, pubIP[i])
+
+		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
+EOF
+
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
+
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
@@ -174,49 +259,103 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
+`, ver[i], sampleToken, dbEndpoint, pubIP[i])
 
-		if rscript := scriptCP_N(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithCni {
+		if rscript := scriptCP_N("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i], sampleToken); rscript != validWithCni {
 			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithCni, rscript)
 		}
-		if rscript := scriptCP_NWithoutCNI(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithoutCni {
+		if rscript := scriptCP_NWithoutCNI("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i], sampleToken); rscript != validWithoutCni {
 			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithoutCni, rscript)
 		}
 	}
 }
 
 func TestScriptsDataStore(t *testing.T) {
-	password := "$$hello**"
+	ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
+	privIPs := []string{"9.9.9.9"}
+	clusterMembers := getEtcdMemberIPFieldForDatastore(privIPs)
+	currIdx := 0
 	valid := fmt.Sprintf(`#!/bin/bash
-sudo apt update
-sudo apt install -y mysql-server
+set -xe
 
-sudo systemctl start mysql
+ETCD_VER=v3.5.10
 
-sudo systemctl enable mysql
+GOOGLE_URL=https://storage.googleapis.com/etcd
+GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
+DOWNLOAD_URL=${GOOGLE_URL}
 
-cat <<EOF > mysqld.cnf
-[mysqld]
-user		= mysql
-bind-address		= 0.0.0.0
-#mysqlx-bind-address	= 127.0.0.1
+sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+sudo rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
 
-key_buffer_size		= 16M
-myisam-recover-options  = BACKUP
-log_error = /var/log/mysql/error.log
-max_binlog_size   = 100M
+curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
+
+sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+
+sudo mv -v /tmp/etcd-download-test/etcd /usr/local/bin
+sudo mv -v /tmp/etcd-download-test/etcdctl /usr/local/bin
+sudo mv -v /tmp/etcd-download-test/etcdutl /usr/local/bin
+
+sudo rm -rf /tmp/etcd-download-test
+
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
+EOF
+
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
+
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+cat <<EOF > etcd.service
+
+[Unit]
+Description=etcd
+
+[Service]
+
+ExecStart=/usr/local/bin/etcd \\
+  --name infra%d \\
+  --initial-advertise-peer-urls https://%s:2380 \
+  --listen-peer-urls https://%s:2380 \\
+  --listen-client-urls https://%s:2379,https://127.0.0.1:2379 \\
+  --advertise-client-urls https://%s:2379 \\
+  --initial-cluster-token etcd-cluster-1 \\
+  --initial-cluster %s \\
+  --log-outputs=/var/lib/etcd/etcd.log \\
+  --initial-cluster-state new \\
+  --peer-auto-tls \\
+  --snapshot-count '10000' \\
+  --wal-dir=/var/lib/etcd/wal \\
+  --client-cert-auth \\
+  --trusted-ca-file=/var/lib/etcd/ca.pem \\
+  --cert-file=/var/lib/etcd/etcd.pem \\
+  --key-file=/var/lib/etcd/etcd-key.pem \\
+  --data-dir=/var/lib/etcd/data
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
 
 EOF
 
-sudo mv mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
+sudo mv -v etcd.service /etc/systemd/system
 
-sudo systemctl restart mysql
+sudo systemctl daemon-reload
+sudo systemctl enable etcd
 
-sudo mysql -e "create user 'ksctl' identified by '%s';"
-sudo mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
+sudo systemctl start etcd
 
-`, password)
-	if valid != scriptDB(password) {
+`, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers)
+	if valid != scriptDB(ca, etcd, key, privIPs, currIdx) {
 		t.Fatalf("script for configuring datastore missmatch")
 	}
 }
@@ -334,4 +473,21 @@ func TestCNI(t *testing.T) {
 		got := fakeClient.CNI(k)
 		assert.Equal(t, got, v, "missmatch")
 	}
+}
+
+func TestGetEtcdMemberIPFieldForDatastore(t *testing.T) {
+	ips := []string{"9.9.9.9", "1.1.1.1"}
+	res1 := "infra0=https://9.9.9.9:2380,infra1=https://1.1.1.1:2380"
+	assert.Equal(t, res1, getEtcdMemberIPFieldForDatastore(ips), "it should be equal")
+
+	assert.Equal(t, "", getEtcdMemberIPFieldForDatastore([]string{}), "it should be equal")
+}
+
+func TestGetEtcdMemberIPFieldForControlplane(t *testing.T) {
+	ips := []string{"9.9.9.9", "1.1.1.1"}
+	res1 := "https://9.9.9.9:2379,https://1.1.1.1:2379"
+	assert.Equal(t, res1, getEtcdMemberIPFieldForControlplane(ips), "it should be equal")
+
+	assert.Equal(t, "", getEtcdMemberIPFieldForControlplane([]string{}), "it should be equal")
+
 }

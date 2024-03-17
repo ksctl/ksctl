@@ -45,6 +45,11 @@ func (k3s *K3sDistro) InitState(cloudState cloud.CloudResourceState, storage res
 
 	if operation == consts.OperationStateCreate {
 		mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{K3s: &types.StateConfigurationK3s{}}
+		var err error
+		mainStateDocument.K8sBootstrap.K3s.B.CACert, mainStateDocument.K8sBootstrap.K3s.B.EtcdCert, mainStateDocument.K8sBootstrap.K3s.B.EtcdKey, err = helpers.GenerateCerts(log, cloudState.PrivateIPv4DataStores)
+		if err != nil {
+			return err
+		}
 	}
 
 	mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes = cloudState.IPv4ControlPlanes

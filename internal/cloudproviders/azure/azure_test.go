@@ -144,15 +144,13 @@ func TestNoOfDataStore(t *testing.T) {
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(0, true)
-	// it should return error
 	if err == nil {
-		t.Fatalf("setter should fail on when no < 1 datastore provided_no: %d", 1)
+		t.Fatalf("setter should fail on when no < 3 datastore provided_no: %d", 1)
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(5, true)
-	// it should return error
 	if err != nil {
-		t.Fatalf("setter should not fail on when n >= 1 datastore err: %v", err)
+		t.Fatalf("setter should not fail on when n >= 3 datastore err: %v", err)
 	}
 
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
@@ -713,7 +711,7 @@ func TestHACluster(t *testing.T) {
 
 			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceName, "fake-lb"+"-nic", "missmatch of Loadbalancer nic name")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceID) > 0, "missmatch of Loadbalancer nic must be created")
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PrivateIP, "192.168.X.Y", "missmatch of Loadbalancer private ip NIC")
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PrivateIP, "192.168.1.2", "missmatch of Loadbalancer private ip NIC")
 
 			checkCurrentStateFileHA(t)
 		})
@@ -743,7 +741,7 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceNames[i], fmt.Sprintf("fake-cp-%d-nic", i), "missmatch of controlplane nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of controlplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of controlplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of controlplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -751,10 +749,6 @@ func TestHACluster(t *testing.T) {
 		})
 
 		t.Run("Datastores", func(t *testing.T) {
-			// NOTE: the noDS is set to 1 becuase current implementation is only for single datastore
-			// TODO: use the 1 as limit
-
-			fakeClientHA.metadata.noDS = 1
 
 			if _, err := fakeClientHA.NoOfDataStore(fakeClientHA.metadata.noDS, true); err != nil {
 				t.Fatalf("Failed to set the datastore")
@@ -780,7 +774,7 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[i], fmt.Sprintf("fake-ds-%d", i)+"-nic", "missmatch of datastore nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceIDs[i]) > 0, "missmatch of datastore nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs[i], "192.168.X.Y", "missmatch of datastore private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs[i], "192.168.1.2", "missmatch of datastore private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -812,7 +806,7 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceNames[i], fmt.Sprintf("fake-wp-%d", i)+"-nic", "missmatch of workerplane nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of workerplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of workerplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of workerplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
