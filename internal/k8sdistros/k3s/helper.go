@@ -18,7 +18,6 @@ func isValidK3sVersion(ver string) bool {
 }
 
 func getEtcdMemberIPFieldForDatastore(ips []string) string {
-	//infra0=https://192.168.1.2:2380,infra1=https://192.168.1.3:2380,infra2=https://192.168.1.4:2380
 	tempDS := []string{}
 	for idx, ip := range ips {
 		newValue := fmt.Sprintf("infra%d=https://%s:2380", idx, ip)
