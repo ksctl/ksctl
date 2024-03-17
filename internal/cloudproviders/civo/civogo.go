@@ -311,7 +311,7 @@ func (client *CivoGoMockClient) CreateInstance(config *civogo.InstanceConfig) (*
 	return &civogo.Instance{
 		ID:         generateRandomString(10),
 		Region:     config.Region,
-		PrivateIP:  "192.169.X.X",
+		PrivateIP:  "192.169.1.2",
 		PublicIP:   "A.B.C.D",
 		CreatedAt:  time.Now(),
 		FirewallID: config.FirewallID,
@@ -326,7 +326,7 @@ func (client *CivoGoMockClient) GetInstance(id string) (*civogo.Instance, error)
 
 	return &civogo.Instance{
 		ID:        id,
-		PrivateIP: "192.169.X.X",
+		PrivateIP: "192.169.1.2",
 		PublicIP:  "A.B.C.D",
 		Hostname:  "fake-hostname",
 		Status:    "ACTIVE",

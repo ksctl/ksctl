@@ -3,8 +3,9 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"os"
+
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 
@@ -817,7 +818,7 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateNetInterface(ctx context.Conte
 				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 					&armnetwork.InterfaceIPConfiguration{
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-							PrivateIPAddress: to.Ptr("192.168.X.Y"),
+							PrivateIPAddress: to.Ptr("192.168.1.2"),
 						},
 					},
 				},

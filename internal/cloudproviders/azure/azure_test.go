@@ -711,7 +711,7 @@ func TestHACluster(t *testing.T) {
 
 			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceName, "fake-lb"+"-nic", "missmatch of Loadbalancer nic name")
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkInterfaceID) > 0, "missmatch of Loadbalancer nic must be created")
-			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PrivateIP, "192.168.X.Y", "missmatch of Loadbalancer private ip NIC")
+			assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PrivateIP, "192.168.1.2", "missmatch of Loadbalancer private ip NIC")
 
 			checkCurrentStateFileHA(t)
 		})
@@ -741,7 +741,7 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceNames[i], fmt.Sprintf("fake-cp-%d-nic", i), "missmatch of controlplane nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of controlplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of controlplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of controlplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -774,7 +774,7 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[i], fmt.Sprintf("fake-ds-%d", i)+"-nic", "missmatch of datastore nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceIDs[i]) > 0, "missmatch of datastore nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs[i], "192.168.X.Y", "missmatch of datastore private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs[i], "192.168.1.2", "missmatch of datastore private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -806,7 +806,7 @@ func TestHACluster(t *testing.T) {
 
 					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceNames[i], fmt.Sprintf("fake-wp-%d", i)+"-nic", "missmatch of workerplane nic name")
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of workerplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PrivateIPs[i], "192.168.X.Y", "missmatch of workerplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of workerplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
