@@ -116,10 +116,6 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 
 	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
-	//if role == consts.RoleDs && indexNo > 0 {
-	//	log.Print("skipped currently multiple datastore not supported")
-	//	return nil
-	//}
 	pubIPName := name + "-pub"
 	nicName := name + "-nic"
 	diskName := name + "-disk"
