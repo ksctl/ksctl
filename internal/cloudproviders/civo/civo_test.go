@@ -192,13 +192,12 @@ func TestCivoProvider_NoOfDataStore(t *testing.T) {
 	_, err = fakeClientVars.NoOfDataStore(0, true)
 	// it should return error
 	if err == nil {
-		t.Fatalf("setter should fail on when no < 1 datastore provided_no: %d", 1)
+		t.Fatalf("setter should fail on when no < 3 datastore provided_no: %d", 1)
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(5, true)
-	// it should return error
 	if err != nil {
-		t.Fatalf("setter should not fail on when n >= 1 datastore err: %v", err)
+		t.Fatalf("setter should not fail on when n >= 3 datastore err: %v", err)
 	}
 
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
@@ -651,10 +650,6 @@ func TestHACluster(t *testing.T) {
 		})
 
 		t.Run("Datastores", func(t *testing.T) {
-			// NOTE: the noDS is set to 1 becuase current implementation is only for single datastore
-			// TODO: use the 1 as limit
-
-			fakeClientHA.metadata.noDS = 1
 
 			if _, err := fakeClientHA.NoOfDataStore(fakeClientHA.metadata.noDS, true); err != nil {
 				t.Fatalf("Failed to set the datastore")
