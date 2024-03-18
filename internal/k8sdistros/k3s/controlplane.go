@@ -249,7 +249,7 @@ sudo ./control-setup.sh
 
 func scriptForK3sToken() string {
 	return `#!/bin/bash
-sudo cat /var/lib/rancher/k3s/server/token
+sudo cat /var/lib/rancher/k3s/server/token &
 `
 }
 
