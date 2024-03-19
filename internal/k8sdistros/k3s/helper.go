@@ -17,16 +17,6 @@ func isValidK3sVersion(ver string) bool {
 	return false
 }
 
-func getEtcdMemberIPFieldForDatastore(ips []string) string {
-	tempDS := []string{}
-	for idx, ip := range ips {
-		newValue := fmt.Sprintf("infra%d=https://%s:2380", idx, ip)
-		tempDS = append(tempDS, newValue)
-	}
-
-	return strings.Join(tempDS, ",")
-}
-
 func getEtcdMemberIPFieldForControlplane(ips []string) string {
 	tempDS := []string{}
 	for _, ip := range ips {

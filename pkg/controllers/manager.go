@@ -16,10 +16,10 @@ import (
 	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
 
 	"github.com/ksctl/ksctl/pkg/controllers/cloud"
-	"github.com/ksctl/ksctl/pkg/controllers/kubernetes"
+	kubernetesController "github.com/ksctl/ksctl/pkg/controllers/kubernetes"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
-	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	cloudControllerResource "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
 var (
@@ -107,7 +107,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 
 	kubeconfig := stateDocument.ClusterKubeConfig
 
-	if err := kubernetes.InstallAdditionalTools(kubeconfig, externalCNI, externalApp, client, stateDocument); err != nil {
+	if err := kubernetesController.InstallAdditionalTools(kubeconfig, externalCNI, externalApp, client, stateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -261,7 +261,7 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 
 	log.Note("Filter", "cloudProvider", string(client.Metadata.Provider))
 
-	var printerTable []cloudController.AllClusterData
+	var printerTable []cloudControllerResource.AllClusterData
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
 		data, err := civoPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
@@ -354,7 +354,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationStateCreate, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
-	err := kubernetes.HydrateK8sDistro(client, stateDocument)
+	err := kubernetesController.Setup(client, stateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -364,10 +364,10 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError(cloudResErr.Error())
 	}
 	// Cloud done
-	var payload cloudController.CloudResourceState
+	var payload cloudControllerResource.CloudResourceState
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 
-	err = client.Distro.InitState(payload, client.Storage, consts.OperationStateCreate)
+	err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationStateCreate)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -376,14 +376,14 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 
 	time.Sleep(30 * time.Second) // hack to wait for all the cloud specific resources to be in consistent state
 	// Kubernetes controller
-	externalCNI, err := kubernetes.ConfigureCluster(client)
+	externalCNI, err := kubernetesController.ConfigureCluster(client)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
 	kubeconfig := stateDocument.ClusterKubeConfig
 
-	if err := kubernetes.InstallAdditionalTools(kubeconfig, externalCNI, true, client, stateDocument); err != nil {
+	if err := kubernetesController.InstallAdditionalTools(kubeconfig, externalCNI, true, client, stateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -437,14 +437,14 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 
 		// find a better way to get the kubeconfig location
 
-		err := kubernetes.HydrateK8sDistro(client, stateDocument)
+		err := kubernetesController.Setup(client, stateDocument)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
-		var payload cloudController.CloudResourceState
+		var payload cloudControllerResource.CloudResourceState
 		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 
-		err = client.Distro.InitState(payload, client.Storage, consts.OperationStateGet)
+		err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationStateGet)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -526,7 +526,7 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 		return log.NewError(err.Error())
 	}
 
-	err := kubernetes.HydrateK8sDistro(client, stateDocument)
+	err := kubernetesController.Setup(client, stateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -537,18 +537,18 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	}
 
 	// Cloud done
-	var payload cloudController.CloudResourceState
+	var payload cloudControllerResource.CloudResourceState
 	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 	// transfer the state
 
-	err = client.Distro.InitState(payload, client.Storage, consts.OperationStateGet)
+	err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationStateGet)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
 	log.Warn("[ksctl] only cloud resources are having replay!")
 	// Kubernetes controller
-	err = kubernetes.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
+	err = kubernetesController.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -603,7 +603,7 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 		return log.NewError(err.Error())
 	}
 
-	err := kubernetes.HydrateK8sDistro(client, stateDocument)
+	err := kubernetesController.Setup(client, stateDocument)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -615,17 +615,17 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 
 	log.Debug("K8s nodes to be deleted", "hostnames", strings.Join(hostnames, ";"))
 	if !fakeClient {
-		var payload cloudController.CloudResourceState
+		var payload cloudControllerResource.CloudResourceState
 		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
 		// transfer the state
 
-		err = client.Distro.InitState(payload, client.Storage, consts.OperationStateGet)
+		err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationStateGet)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
 
 		// move it to kubernetes controller
-		if err := kubernetes.DelWorkerPlanes(client, stateDocument.ClusterKubeConfig, hostnames); err != nil {
+		if err := kubernetesController.DelWorkerPlanes(client, stateDocument.ClusterKubeConfig, hostnames); err != nil {
 			return log.NewError(err.Error())
 		}
 	}

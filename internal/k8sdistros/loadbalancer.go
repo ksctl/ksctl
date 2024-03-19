@@ -1,32 +1,30 @@
-package k3s
+package k8sdistros
 
 import (
 	"fmt"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-// ConfigureLoadbalancer implements resources.DistroFactory.
-func (k3s *K3sDistro) ConfigureLoadbalancer(storage resources.StorageFactory) error {
-
+func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	log.Print("configuring Loadbalancer")
 
-	var controlPlaneIPs = make([]string, len(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes))
-	for i := 0; i < len(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes); i++ {
-		controlPlaneIPs[i] = mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.ControlPlanes[i] + ":6443"
+	var controlPlaneIPs = make([]string, len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes))
+
+	for i := 0; i < len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes); i++ {
+		controlPlaneIPs[i] = mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes[i] + ":6443"
 	}
 
-	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
+	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		configLBscript(controlPlaneIPs)).
-		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
 		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
 	log.Success("configured LoadBalancer")
-
 	return nil
 }
 

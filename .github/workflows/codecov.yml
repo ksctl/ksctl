@@ -49,6 +49,18 @@ jobs:
         go test -race -coverprofile=../../../coverage-k3s.out -covermode=atomic -v
         cd ../../..
 
+    - name: Run coverage (KUBEADM)
+      working-directory: internal/k8sdistros/kubeadm
+      run: |
+        go test -race -coverprofile=../../../coverage-kubeadm.out -covermode=atomic -v
+        cd ../../..
+
+    - name: Run coverage (K8S_DISTRIBUTION)
+      working-directory: internal/k8sdistros
+      run: |
+        go test -race -coverprofile=../../../coverage-k8s.out -covermode=atomic -v
+        cd ../../..
+
     - name: Run coverage (CIVO)
       working-directory: internal/cloudproviders/civo
       run: |

@@ -1,38 +1,47 @@
-package k3s
+package k8sdistros
 
 import (
 	"fmt"
-	"strconv"
-
-	"github.com/ksctl/ksctl/pkg/resources"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
+	"strconv"
+	"strings"
 )
 
-// ConfigureDataStore implements resources.DistroFactory.
-func (k3s *K3sDistro) ConfigureDataStore(idx int, storage resources.StorageFactory) error {
+func (p *PreBootstrap) ConfigureDataStore(no int, _ resources.StorageFactory) error {
+	idx := no
 	log.Print("configuring Datastore", "number", strconv.Itoa(idx))
 
-	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
+	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(
-			mainStateDocument.K8sBootstrap.K3s.B.CACert,
-			mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
-			mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
+			mainStateDocument.K8sBootstrap.B.CACert,
+			mainStateDocument.K8sBootstrap.B.EtcdCert,
+			mainStateDocument.K8sBootstrap.B.EtcdKey,
+			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
 			idx)).
-		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.DataStores[idx]).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
-	err = storage.Write(mainStateDocument)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
+	//err = storage.Write(mainStateDocument)
+	//if err != nil {
+	//	return log.NewError(err.Error())
+	//}
 	log.Success("configured DataStore", "number", strconv.Itoa(idx))
 
 	return nil
+}
+
+func getEtcdMemberIPFieldForDatastore(ips []string) string {
+	var tempDS []string
+	for idx, ip := range ips {
+		newValue := fmt.Sprintf("infra%d=https://%s:2380", idx, ip)
+		tempDS = append(tempDS, newValue)
+	}
+
+	return strings.Join(tempDS, ",")
 }
 
 func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) string {
