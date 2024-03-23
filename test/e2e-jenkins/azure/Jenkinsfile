@@ -99,11 +99,11 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
                     /usr/local/go/bin/go run . -op switch -file azure/switch-ha-kubeadm.json
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
-
-                    cd test/e2e
 
                     sleep 15s
 
@@ -121,11 +121,11 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
                     /usr/local/go/bin/go run . -op switch -file azure/switch-ha-kubeadm.json
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
-
-                    cd test/e2e
 
                     sleep 1m
                     /usr/local/go/bin/go run . -op scaleup -file azure/scaleup-ha-kubeadm.json
@@ -142,11 +142,11 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
                     /usr/local/go/bin/go run . -op switch -file azure/switch-ha.json
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
-
-                    cd test/e2e
 
                     sleep 15s
 
@@ -164,11 +164,10 @@ pipeline {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
                     /usr/local/go/bin/go run . -op switch -file azure/switch-ha.json
 
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
-
-                    cd test/e2e
 
                     sleep 1m
                     /usr/local/go/bin/go run . -op scaleup -file azure/scaleup-ha.json
