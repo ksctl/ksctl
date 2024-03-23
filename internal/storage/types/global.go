@@ -39,6 +39,7 @@ type InfrastructureState struct {
 }
 
 type KubernetesBootstrapState struct {
+	B       BaseK8sBootstrap           `json:"b" bson:"b"`
 	K3s     *StateConfigurationK3s     `json:"k3s,omitempty" bson:"k3s,omitempty"`
 	Kubeadm *StateConfigurationKubeadm `json:"kubeadm,omitempty" bson:"kubeadm,omitempty"`
 }

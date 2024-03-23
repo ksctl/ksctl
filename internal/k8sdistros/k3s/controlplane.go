@@ -9,38 +9,38 @@ import (
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
+func configureCP_1(storage resources.StorageFactory, k3s *K3s) error {
 
 	var script string
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(
-			mainStateDocument.K8sBootstrap.K3s.B.CACert,
-			mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+			mainStateDocument.K8sBootstrap.B.CACert,
+			mainStateDocument.K8sBootstrap.B.EtcdCert,
+			mainStateDocument.K8sBootstrap.B.EtcdKey,
 			k3s.K3sVer,
-			mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
-			mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
+			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
+			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer)
 	} else {
 		script = scriptCP_1(
-			mainStateDocument.K8sBootstrap.K3s.B.CACert,
-			mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+			mainStateDocument.K8sBootstrap.B.CACert,
+			mainStateDocument.K8sBootstrap.B.EtcdCert,
+			mainStateDocument.K8sBootstrap.B.EtcdKey,
 			k3s.K3sVer,
-			mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
-			mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer)
+			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
+			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer)
 	}
 
-	err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
-		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[0]).
+	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
 
 	// K3stoken
-	err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptForK3sToken()).
-		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[0]).
+	err = sshExecutor.Flag(consts.UtilExecWithOutput).Script(scriptForK3sToken()).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
@@ -48,7 +48,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 
 	log.Debug("fetching k3s token")
 
-	mainStateDocument.K8sBootstrap.K3s.K3sToken = strings.Trim(k3s.SSHInfo.GetOutput(), "\n")
+	mainStateDocument.K8sBootstrap.K3s.K3sToken = strings.Trim(sshExecutor.GetOutput(), "\n")
 
 	log.Debug("Printing", "k3sToken", mainStateDocument.K8sBootstrap.K3s.K3sToken)
 
@@ -60,9 +60,10 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3sDistro) error {
 }
 
 // ConfigureControlPlane implements resources.DistroFactory.
-func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
-	log.Print("configuring ControlPlane", "number", strconv.Itoa(noOfCP))
-	if noOfCP == 0 {
+func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
+	idx := noOfCP
+	log.Print("configuring ControlPlane", "number", strconv.Itoa(idx))
+	if idx == 0 {
 		err := configureCP_1(storage, k3s)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -73,26 +74,26 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 
 		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 			script = scriptCP_NWithoutCNI(
-				mainStateDocument.K8sBootstrap.K3s.B.CACert,
-				mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
-				mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+				mainStateDocument.K8sBootstrap.B.CACert,
+				mainStateDocument.K8sBootstrap.B.EtcdCert,
+				mainStateDocument.K8sBootstrap.B.EtcdKey,
 				k3s.K3sVer,
-				mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
-				mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
+				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		} else {
 			script = scriptCP_N(
-				mainStateDocument.K8sBootstrap.K3s.B.CACert,
-				mainStateDocument.K8sBootstrap.K3s.B.EtcdCert,
-				mainStateDocument.K8sBootstrap.K3s.B.EtcdKey,
+				mainStateDocument.K8sBootstrap.B.CACert,
+				mainStateDocument.K8sBootstrap.B.EtcdCert,
+				mainStateDocument.K8sBootstrap.B.EtcdKey,
 				k3s.K3sVer,
-				mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.DataStores,
-				mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
+				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		}
 
-		err := k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(script).
-			IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[noOfCP]).
+		err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
+			IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
 			FastMode(true).SSHExecute(log)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -103,18 +104,18 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 			return log.NewError(err.Error())
 		}
 
-		if noOfCP+1 == len(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes) {
+		if idx+1 == len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes) {
 
 			log.Debug("fetching kubeconfig")
-			err = k3s.SSHInfo.Flag(consts.UtilExecWithOutput).Script(scriptKUBECONFIG()).
-				IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.ControlPlanes[0]).
+			err = sshExecutor.Flag(consts.UtilExecWithOutput).Script(scriptKUBECONFIG()).
+				IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 				FastMode(true).SSHExecute(log)
 			if err != nil {
 				return log.NewError(err.Error())
 			}
 
-			kubeconfig := k3s.SSHInfo.GetOutput()
-			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.LoadBalancer, 1)
+			kubeconfig := sshExecutor.GetOutput()
+			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			kubeconfig = strings.Replace(kubeconfig, "default", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			log.Debug("Printing", "kubeconfig", kubeconfig)
@@ -126,7 +127,7 @@ func (k3s *K3sDistro) ConfigureControlPlane(noOfCP int, storage resources.Storag
 		}
 
 	}
-	log.Success("configured ControlPlane", "number", strconv.Itoa(noOfCP))
+	log.Success("configured ControlPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }

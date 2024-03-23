@@ -17,6 +17,7 @@ import (
 
 var log resources.LoggerFactory
 
+// HydrateCloud TODO: rename it to something good
 func HydrateCloud(client *resources.KsctlClient, state *types.StorageDocument, operation consts.KsctlOperation, fakeClient bool) error {
 
 	log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)

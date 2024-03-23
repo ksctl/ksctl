@@ -17,6 +17,8 @@ var (
 	dir        = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
 )
 
+// TODO: Mock test for scaleup and scaledown for the ha clusters
+
 func StartCloud() {
 	cli = new(resources.KsctlClient)
 	controller = control_pkg.GenKsctlController()
@@ -83,7 +85,7 @@ func LocalTestingManaged() error {
 	return ExecuteManagedRun()
 }
 
-func CivoTestingHA() error {
+func CivoTestingHAKubeadm() error {
 	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake.small"
 	cli.Metadata.ControlPlaneNodeType = "fake.small"
@@ -94,6 +96,41 @@ func CivoTestingHA() error {
 
 	cli.Metadata.Region = "LON1"
 	cli.Metadata.Provider = consts.CloudCivo
+	cli.Metadata.K8sDistro = consts.K8sKubeadm
+	cli.Metadata.NoCP = 5
+	cli.Metadata.NoWP = 1
+	cli.Metadata.NoDS = 3
+	cli.Metadata.K8sVersion = "1.28"
+
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+
+	err = controller.CreateHACluster(cli)
+	if err != nil {
+		return err
+	}
+	_, err = controller.SwitchCluster(cli)
+	if err != nil {
+		return err
+	}
+	err = controller.DeleteHACluster(cli)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CivoTestingHAK3s() error {
+	var err error
+	cli.Metadata.LoadBalancerNodeType = "fake.small"
+	cli.Metadata.ControlPlaneNodeType = "fake.small"
+	cli.Metadata.WorkerPlaneNodeType = "fake.small"
+	cli.Metadata.DataStoreNodeType = "fake.small"
+
+	cli.Metadata.IsHA = true
+
+	cli.Metadata.Region = "LON1"
+	cli.Metadata.Provider = consts.CloudCivo
+	cli.Metadata.K8sDistro = consts.K8sK3s
 	cli.Metadata.NoCP = 5
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
@@ -116,7 +153,7 @@ func CivoTestingHA() error {
 	return nil
 }
 
-func AzureTestingHA() error {
+func AzureTestingHAKubeadm() error {
 	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake"
 	cli.Metadata.ControlPlaneNodeType = "fake"
@@ -127,6 +164,43 @@ func AzureTestingHA() error {
 
 	cli.Metadata.Region = "fake"
 	cli.Metadata.Provider = consts.CloudAzure
+	cli.Metadata.K8sDistro = consts.K8sKubeadm
+	cli.Metadata.NoCP = 3
+	cli.Metadata.NoWP = 1
+	cli.Metadata.NoDS = 3
+	cli.Metadata.K8sVersion = "1.28"
+
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+
+	err = controller.CreateHACluster(cli)
+	if err != nil {
+		return err
+	}
+
+	_, err = controller.SwitchCluster(cli)
+	if err != nil {
+		return err
+	}
+
+	err = controller.DeleteHACluster(cli)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func AzureTestingHAK3s() error {
+	var err error
+	cli.Metadata.LoadBalancerNodeType = "fake"
+	cli.Metadata.ControlPlaneNodeType = "fake"
+	cli.Metadata.WorkerPlaneNodeType = "fake"
+	cli.Metadata.DataStoreNodeType = "fake"
+
+	cli.Metadata.IsHA = true
+
+	cli.Metadata.Region = "fake"
+	cli.Metadata.Provider = consts.CloudAzure
+	cli.Metadata.K8sDistro = consts.K8sK3s
 	cli.Metadata.NoCP = 3
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3

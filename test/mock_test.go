@@ -2,9 +2,10 @@ package test
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"os"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
@@ -34,7 +35,10 @@ func BenchmarkCivoTestingHA(b *testing.B) {
 	StartCloud()
 
 	for i := 0; i < b.N; i++ {
-		if err := CivoTestingHA(); err != nil {
+		if err := CivoTestingHAK3s(); err != nil {
+			b.Fatalf("failed, err: %v", err)
+		}
+		if err := CivoTestingHAKubeadm(); err != nil {
 			b.Fatalf("failed, err: %v", err)
 		}
 	}
@@ -52,7 +56,10 @@ func BenchmarkAzureTestingHA(b *testing.B) {
 	StartCloud()
 
 	for i := 0; i < b.N; i++ {
-		if err := AzureTestingHA(); err != nil {
+		if err := AzureTestingHAK3s(); err != nil {
+			b.Fatalf("failed, err: %v", err)
+		}
+		if err := AzureTestingHAKubeadm(); err != nil {
 			b.Fatalf("failed, err: %v", err)
 		}
 	}

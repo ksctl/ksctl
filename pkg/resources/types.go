@@ -1,21 +1,20 @@
 package resources
 
 import (
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"io"
+
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
 type KsctlClient struct {
-	// Cloud is the CloudProvider's factory interface
 	Cloud CloudFactory
 
-	// Distro is the Distrobution's factory interface
-	Distro DistroFactory
+	PreBootstrap PreKubernetesBootstrap
 
-	// Storage is the Storage's factory interface
+	Bootstrap KubernetesBootstrap
+
 	Storage StorageFactory
 
-	// Metadata is used by the cloudController and manager to use data from cli
 	Metadata Metadata
 }
 

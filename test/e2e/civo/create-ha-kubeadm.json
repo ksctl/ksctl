@@ -1,0 +1,16 @@
+{
+	"cluster_name": "test-e2e-kubeadm-ha-civo",
+	"kubernetes_version": "1.28",
+	"region": "FRA1",
+	"ha_cluster": true,
+	"cloud_provider": "civo",
+	"kubernetes_distro": "kubeadm",
+	"storage_type": "local",
+	"node_type_workerplane": "g3.medium",
+	"node_type_controlplane": "g3.medium",
+	"node_type_datastore": "g3.small",
+	"node_type_loadbalancer": "g3.small",
+	"desired_no_of_workerplane_nodes": 1,
+	"desired_no_of_controlplane_nodes": 3,
+	"desired_no_of_datastore_nodes": 3
+}

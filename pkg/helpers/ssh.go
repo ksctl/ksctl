@@ -32,6 +32,10 @@ type SSHPayload struct {
 	fastMode bool
 }
 
+func NewSSHExecute() SSHCollection {
+	return &SSHPayload{}
+}
+
 type SSHCollection interface {
 	SSHExecute(resources.LoggerFactory) error
 	Flag(consts.KsctlUtilsConsts) SSHCollection

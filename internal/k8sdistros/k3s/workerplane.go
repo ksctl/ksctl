@@ -9,7 +9,7 @@ import (
 )
 
 // JoinWorkerplane implements resources.DistroFactory.
-func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
+func (k3s *K3s) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
 
 	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
 
@@ -18,9 +18,9 @@ func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory)
 		return log.NewError(err.Error())
 	}
 
-	err = k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
-		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
-		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.WorkerPlanes[idx]).
+	err = sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
+		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())
