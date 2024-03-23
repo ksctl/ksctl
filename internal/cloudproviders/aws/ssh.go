@@ -29,7 +29,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 		PublicKeyMaterial: []byte(mainStateDocument.SSHKeyPair.PublicKey),
 	}
 
-	if err := obj.client.ImportKeyPair(context.Background(), obj.ec2Client(), parameter); err != nil {
+	if err := obj.client.ImportKeyPair(context.Background(), parameter); err != nil {
 		log.Error("Error uploading ssh key pair", "error", err)
 	}
 
@@ -50,7 +50,7 @@ func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Aws.B.SSHKeyName) == 0 {
 		log.Success("[skip] already deleted the ssh key", "", mainStateDocument.CloudInfra.Aws.B.SSHKeyName)
 	} else {
-		err := obj.client.DeleteSSHKey(context.Background(), obj.ec2Client(), mainStateDocument.CloudInfra.Aws.B.SSHKeyName)
+		err := obj.client.DeleteSSHKey(context.Background(), mainStateDocument.CloudInfra.Aws.B.SSHKeyName)
 		if err != nil {
 			return err
 		}

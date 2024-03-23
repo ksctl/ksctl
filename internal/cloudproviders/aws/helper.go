@@ -10,7 +10,7 @@ import (
 
 func validationOfArguments(obj *AwsProvider) error {
 
-	if err := isValidRegion(obj, obj.region); err != nil {
+	if err := isValidRegion(obj); err != nil {
 		return err
 	}
 
@@ -21,11 +21,9 @@ func validationOfArguments(obj *AwsProvider) error {
 	return nil
 }
 
-func isValidRegion(obj *AwsProvider, reg string) error {
+func isValidRegion(obj *AwsProvider) error {
 
-	ec2client := obj.ec2Client()
-
-	validReg, err := obj.client.ListLocations(ec2client)
+	validReg, err := obj.client.ListLocations()
 	if err != nil {
 		return err
 	}
@@ -40,7 +38,7 @@ func isValidRegion(obj *AwsProvider, reg string) error {
 // so will check if the string is in the consts
 
 func isValidVMSize(obj *AwsProvider, size string) error {
-	validSize, err := obj.client.ListVMTypes(obj.ec2Client())
+	validSize, err := obj.client.ListVMTypes()
 	if err != nil {
 		return err
 	}
@@ -54,26 +52,6 @@ func isValidVMSize(obj *AwsProvider, size string) error {
 
 	return fmt.Errorf("INVALID VM SIZE\nValid options %v\n", validSize)
 }
-
-//func isValidK8sVersion(obj *AwsProvider, ver string) error {
-//	res, err := obj.client.ListKubernetesVersions()
-//	if err != nil {
-//		return log.NewError("failed to finish the request: %v", err)
-//	}
-//
-//	log.Debug("Printing", "ListKubernetesVersions", res)
-//
-//	var vers []string
-//	for _, version := range res.Values {
-//		vers = append(vers, *version.Version)
-//	}
-//	for _, valver := range vers {
-//		if valver == ver {
-//			return nil
-//		}
-//	}
-//	return log.NewError("Invalid k8s version\nValid options: %v\n", vers)
-//}
 
 func loadStateHelper(storage resources.StorageFactory) error {
 	raw, err := storage.Read()

@@ -50,9 +50,10 @@ func (obj *AwsProvider) DelFirewall(storage resources.StorageFactory) error {
 		log.Print("skipped firewall already deleted")
 		return nil
 	} else {
-		err := obj.client.BeginDeleteSecurityGrp(context.Background(), obj.ec2Client(), nsg)
+		err := obj.client.BeginDeleteSecurityGrp(context.Background(), nsg)
 		if err != nil {
-			log.Error("Error deleting security group", "error", err)
+			log.NewError("Error deleting security group", "error", err)
+			return err
 		}
 
 		switch role {
@@ -73,7 +74,7 @@ func (obj *AwsProvider) DelFirewall(storage resources.StorageFactory) error {
 			log.Error("Error saving state", "error", err)
 		}
 
-		log.Success("[aws] deleted the security group ", "id: ", nsg)
+		log.Success("deleted the security group ", "id", nsg)
 	}
 
 	return nil
@@ -84,164 +85,98 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 	SecurityGroupInput := ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(string(Role + "securitygroup")),
 		Description: aws.String(obj.clusterName + "securitygroup"),
-		VpcId:       aws.String(mainStateDocument.CloudInfra.Aws.VPCID),
+		VpcId:       aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
 	}
 
 	switch Role {
 	case consts.RoleCp:
 		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id: ", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup, nil
 		}
 	case consts.RoleWp:
 		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id: ", mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup, nil
 		}
 	case consts.RoleLb:
 		if mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id: ", mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup, nil
 		}
 	case consts.RoleDs:
 		if mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id: ", mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup, nil
 		}
 	}
 
-	SecurityGroup, err := obj.client.BeginCreateSecurityGroup(context.Background(), obj.ec2Client(), SecurityGroupInput)
+	SecurityGroup, err := obj.client.BeginCreateSecurityGroup(context.Background(), SecurityGroupInput)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	switch Role {
-	case consts.RoleCp:
-		mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
-
-		func() {
-			ingressrules := ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId:    SecurityGroup.GroupId,
-				IpProtocol: aws.String("-1"),
-				CidrIp:     aws.String("0.0.0.0/0"),
-			}
-
-			if err := obj.client.AuthorizeSecurityGroupIngress(context.Background(), obj.ec2Client(), ingressrules); err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-
-			egressrules := ec2.AuthorizeSecurityGroupEgressInput{
-				GroupId: SecurityGroup.GroupId,
-				IpPermissions: []types.IpPermission{
-					{
-						IpProtocol: aws.String("-1"),
-						FromPort:   aws.Int32(0),
-						ToPort:     aws.Int32(65535),
-					},
-				},
-			}
-
-			if err := obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules); err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-		}()
-
-	case consts.RoleWp:
-		func() {
-
-			ingressrules := ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId:    SecurityGroup.GroupId,
-				IpProtocol: aws.String("-1"),
-				CidrIp:     aws.String("0.0.0.0/0"),
-			}
-
-			if err := obj.client.AuthorizeSecurityGroupIngress(context.Background(), obj.ec2Client(), ingressrules); err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-			egressrules := ec2.AuthorizeSecurityGroupEgressInput{
-				GroupId: SecurityGroup.GroupId,
-				IpPermissions: []types.IpPermission{
-					{
-						IpProtocol: aws.String("-1"),
-						FromPort:   aws.Int32(0),
-						ToPort:     aws.Int32(65535),
-					},
-				},
-			}
-
-			if err := obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules); err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
-
-		}()
-
-	case consts.RoleDs:
-		func() {
-
-			ingressrules := ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId:    SecurityGroup.GroupId,
-				IpProtocol: aws.String("-1"),
-				CidrIp:     aws.String("0.0.0.0/0"),
-			}
-
-			if err := obj.client.AuthorizeSecurityGroupIngress(context.Background(), obj.ec2Client(), ingressrules); err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-			egressrules := ec2.AuthorizeSecurityGroupEgressInput{
-				GroupId: SecurityGroup.GroupId,
-				IpPermissions: []types.IpPermission{
-					{
-						IpProtocol: aws.String("-1"),
-						FromPort:   aws.Int32(0),
-						ToPort:     aws.Int32(65535),
-					},
-				},
-			}
-
-			if err := obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), egressrules); err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = *SecurityGroup.GroupId
-		}()
-
-	case consts.RoleLb:
-		func() {
-
-			ingressrules := &ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId:    SecurityGroup.GroupId,
-				IpProtocol: aws.String("-1"),
-				CidrIp:     aws.String("0.0.0.0/0"),
-			}
-
-			err := obj.client.AuthorizeSecurityGroupIngress(context.Background(), obj.ec2Client(), *ingressrules)
-			if err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-
-			egressrules := &ec2.AuthorizeSecurityGroupEgressInput{
-				GroupId: SecurityGroup.GroupId,
-				IpPermissions: []types.IpPermission{
-					{
-						IpProtocol: aws.String("-1"),
-						FromPort:   aws.Int32(0),
-						ToPort:     aws.Int32(65535),
-					},
-				},
-			}
-
-			err = obj.client.AuthorizeSecurityGroupEgress(context.Background(), obj.ec2Client(), *egressrules)
-			if err != nil {
-				log.Error("Error creating security group", "error", err)
-			}
-
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup = *SecurityGroup.GroupId
-		}()
-
-	default:
-		return "", fmt.Errorf("invalid role")
-
-	}
+	obj.createSecurityGroupRules(Role, SecurityGroup)
 
 	return *SecurityGroup.GroupId, nil
+}
+
+func (obj *AwsProvider) createSecurityGroupRules(role consts.KsctlRole, SecurityGroup *ec2.CreateSecurityGroupOutput) {
+	var ip_protocol string
+	var cidr_ip string
+	var from_port int32
+	var to_port int32
+
+	switch role {
+	case consts.RoleLb:
+		ip_protocol = "-1"
+		cidr_ip = "0.0.0.0/0"
+		from_port = 0
+		to_port = 65535
+		mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup = *SecurityGroup.GroupId
+	case consts.RoleCp:
+		ip_protocol = "-1"
+		cidr_ip = "0.0.0.0/0"
+		from_port = 0
+		to_port = 65535
+		mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+	case consts.RoleWp:
+		ip_protocol = "-1"
+		cidr_ip = "0.0.0.0/0"
+		from_port = 0
+		to_port = 65535
+		mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+	case consts.RoleDs:
+		ip_protocol = "-1"
+		cidr_ip = "0.0.0.0/0"
+		from_port = 0
+		to_port = 65535
+		mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = *SecurityGroup.GroupId
+	default:
+		log.Error("Error creating security group", "error", "invalid role")
+	}
+	ingressrules := ec2.AuthorizeSecurityGroupIngressInput{
+		GroupId:    SecurityGroup.GroupId,
+		IpProtocol: aws.String(ip_protocol),
+		CidrIp:     aws.String(cidr_ip),
+	}
+
+	if err := obj.client.AuthorizeSecurityGroupIngress(context.Background(), ingressrules); err != nil {
+		log.Error("Error creating security group", "error", err)
+	}
+
+	egressrules := ec2.AuthorizeSecurityGroupEgressInput{
+		GroupId: SecurityGroup.GroupId,
+		IpPermissions: []types.IpPermission{
+			{
+				IpProtocol: aws.String(ip_protocol),
+				FromPort:   aws.Int32(from_port),
+				ToPort:     aws.Int32(to_port),
+			},
+		},
+	}
+
+	if err := obj.client.AuthorizeSecurityGroupEgress(context.Background(), egressrules); err != nil {
+		log.Error("Error creating security group", "error", err)
+	}
 }

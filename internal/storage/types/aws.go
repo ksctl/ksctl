@@ -4,18 +4,20 @@ import "github.com/ksctl/ksctl/pkg/helpers/consts"
 
 type AWSStateVm struct {
 	Vpc                  string `json:"vpc"`
-	Name                 string `json:"name"`
+	HostName             string `json:"name"`
 	DiskSize             string `json:"disk_size"`
 	InstanceType         string `json:"instance_type"`
 	InstanceID           string `json:"instance_id"`
 	Subnet               string `json:"subnet"`
 	NetworkSecurityGroup string `json:"network_security_group"`
-	PublicIPName         string `json:"public_ip_name"`
 	PublicIP             string `json:"public_ip"`
 	PrivateIP            string `json:"private_ip"`
 	NetworkInterfaceId   string `json:"network_interface_id"`
 }
-
+type CredentialsAws struct {
+	AcessKeyID     string
+	AcessKeySecret string
+}
 type metadata struct {
 	resName string
 	role    consts.KsctlRole
@@ -34,7 +36,7 @@ type metadata struct {
 	k8sVersion string
 }
 type AWSStateVms struct {
-	Names                []string `json:"names"`
+	HostNames            []string `json:"names"`
 	DiskNames            []string `json:"disk_name"`
 	InstanceIds          []string `json:"instance_id"`
 	PrivateIPs           []string `json:"private_ip"`
@@ -51,8 +53,8 @@ type StateConfigurationAws struct {
 	IsCompleted bool
 	ClusterName string `json:"cluster_name"`
 	Region      string `json:"region"`
-	VPCNAME     string `json:"vpc"`
-	VPCID       string `json:"vpc_id"`
+	VpcName     string `json:"vpc"`
+	VpcId       string `json:"vpc_id"`
 
 	ManagedClusterName string `json:"managed_cluster_name"`
 	NoManagedNodes     int    `json:"no_managed_nodes"`

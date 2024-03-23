@@ -7,10 +7,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/logger"
 
@@ -29,19 +25,11 @@ var (
 	clusterDirName    string
 )
 
-type Credential struct {
-	AccessKeyID string `json:"access_key_id"`
-	Secret      string `json:"secret_access_key"`
-}
-
 type AwsProvider struct {
-	clusterName string `json:"cluster_name"`
-	haCluster   bool   `json:"ha_cluster"`
-	region      string `json:"region"`
-	vpc         string `json:"vpc"`
-	accessKeyID string `json:"access_key_id"`
-	secret      string `json:"secret_access_key"`
-	session     aws.Config
+	clusterName string
+	haCluster   bool
+	region      string
+	vpc         string
 	metadata    metadata
 
 	mu sync.Mutex
@@ -52,15 +40,37 @@ type AwsProvider struct {
 	chVMType  chan string
 
 	client  AwsGo
-	SSHPath string `json:"ssh_key"`
+	SSHPath string
 }
 
-func (*AwsProvider) IsPresent(resources.StorageFactory) error {
-	return nil
+func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
+	err := storage.AlreadyCreated(consts.CloudAws, region, name, ksctlClusterType)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
-func (*AwsProvider) Version(string) resources.CloudFactory {
-	panic("unimplemented")
+func (obj *AwsProvider) IsPresent(storage resources.StorageFactory) error {
+
+	switch obj.haCluster {
+	case true:
+		clusterType = consts.ClusterTypeHa
+		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
+			return nil
+		}
+	case false:
+		clusterType = consts.ClusterTypeMang
+		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
+			return nil
+		}
+	}
+	return log.NewError("Cluster not found")
+}
+
+func (obj *AwsProvider) Version(ver string) resources.CloudFactory {
+	// TODO for ManagedCluster EKS
+	return obj
 }
 
 type metadata struct {
@@ -75,14 +85,6 @@ type metadata struct {
 	k8sName    consts.KsctlKubernetes
 	k8sVersion string
 }
-
-const (
-	FILE_PERM_CLUSTER_DIR        = os.FileMode(0750)
-	FILE_PERM_CLUSTER_STATE      = os.FileMode(0640)
-	FILE_PERM_CLUSTER_KUBECONFIG = os.FileMode(0755)
-	STATE_FILE_NAME              = string("cloud-state.json")
-	KUBECONFIG_FILE_NAME         = string("kubeconfig")
-)
 
 func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
@@ -99,26 +101,15 @@ func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, Clie
 			k8sName:    meta.K8sDistro,
 		},
 
-		session: NEWCLIENT(),
-		client:  ClientOption(),
+		client: ClientOption(),
 	}
+
+	obj.client.SetRegion(obj.region)
+	obj.client.SetVpc(obj.vpc)
 
 	log.Debug("Printing", "AwsProvider", obj)
 
 	return obj, nil
-}
-
-func NEWCLIENT() aws.Config {
-	NewSession, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("ap-south-1"),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), "")),
-	)
-	if err != nil {
-		log.Error(err.Error())
-	}
-	log.Success("AWS Session created successfully")
-
-	return NewSession
 }
 
 func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
@@ -145,8 +136,6 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	obj.chVMType = make(chan string, 1)
 
 	obj.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", obj.clusterName, clusterType)
-	clusterDirName = obj.clusterName + " " + obj.vpc + " " + obj.region
-	log.Print("clusterDirName", "", clusterDirName)
 
 	errLoadState := loadStateHelper(storage)
 
@@ -187,11 +176,8 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	}
 
 	if err := obj.client.InitClient(storage); err != nil {
-		fmt.Errorf("failed to initialize aws client reason:%s\n", err.Error())
+		log.NewError("failed to initialize aws client reason:%s\n", err.Error())
 	}
-
-	obj.client.SetRegion(obj.region)
-	obj.client.SetVpc(obj.vpc)
 
 	if err := validationOfArguments(obj); err != nil {
 		return log.NewError(err.Error())
@@ -281,20 +267,25 @@ func (obj *AwsProvider) SupportForApplications() bool {
 
 }
 
-//func (obj *AwsProvider) SupportForCNI() bool {
-//	//TODO implement me
-//	fmt.Println("AWS Support for CNI")
-//	return false
-//
-//}
-
 func (obj *AwsProvider) Application(s string) bool {
 	return true
 }
 
-func (obj *AwsProvider) CNI(s string) bool {
-	obj.metadata.cni = string(consts.CNINone)
-	return true
+func (obj *AwsProvider) CNI(s string) (externalCNI bool) {
+
+	log.Debug("Printing", "cni", s)
+	switch consts.KsctlValidCNIPlugin(s) {
+	case consts.CNICilium, consts.CNIFlannel:
+		obj.metadata.cni = s
+	case "":
+		obj.metadata.cni = string(consts.CNIFlannel)
+	default:
+		// nothing external
+		obj.metadata.cni = string(consts.CNINone)
+		return true
+	}
+
+	return false
 }
 
 func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
@@ -303,22 +294,22 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called")
 		}
-		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names == nil {
+		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames == nil {
 			return -1, nil
 		}
-		return len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names), nil
+		return len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames), nil
 	}
 	if no >= 0 {
 		obj.metadata.noWP = no
 		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called")
 		}
-		currLen := len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names)
+		currLen := len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 
 		newLen := no
 
 		if currLen == 0 {
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names = make([]string, no)
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = make([]string, no)
@@ -329,7 +320,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 				return -1, nil
 			} else if currLen < newLen {
 				for i := currLen; i < newLen; i++ {
-					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names, "")
+					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs, "")
@@ -337,7 +328,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs, "")
 				}
 			} else {
-				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names[:newLen]
+				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[:newLen]
@@ -361,12 +352,12 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called")
 		}
-		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names == nil {
+		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames == nil {
 			return -1, nil
 		}
 
-		log.Debug("Printing", "mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names)
-		return len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names), nil
+		log.Debug("Printing", "mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames)
+		return len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noCP = no
@@ -374,9 +365,9 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			return -1, log.NewError("state init not called")
 		}
 
-		currLen := len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names)
+		currLen := len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames)
 		if currLen == 0 {
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names = make([]string, no)
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs = make([]string, no)
@@ -397,12 +388,12 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called")
 		}
-		if mainStateDocument.CloudInfra.Aws.InfoDatabase.Names == nil {
+		if mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames == nil {
 			return -1, nil
 		}
 
-		log.Print("Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.Names)
-		return len(mainStateDocument.CloudInfra.Aws.InfoDatabase.Names), nil
+		log.Print("Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
+		return len(mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames), nil
 	}
 	if no >= 1 && (no&1) == 1 {
 		obj.metadata.noDS = no
@@ -411,9 +402,9 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			return -1, log.NewError("state init not called")
 		}
 
-		currLen := len(mainStateDocument.CloudInfra.Aws.InfoDatabase.Names)
+		currLen := len(mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
 		if currLen == 0 {
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.Names = make([]string, no)
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs = make([]string, no)
@@ -428,17 +419,10 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 }
 
 func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
-	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names))
-	copy(hostnames, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.Names)
+	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames))
+	copy(hostnames, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 	log.Debug("Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
-}
-
-func (obj *AwsProvider) SwitchCluster(factory resources.StorageFactory) error {
-	//TODO implement me
-	fmt.Println("AWS Switch Cluster")
-	return nil
-
 }
 
 func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, error) {
@@ -485,9 +469,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 				Region:   v.Region,
 				Type:     K,
 
-				NoWP:  len(v.CloudInfra.Aws.InfoWorkerPlanes.Names),
-				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.Names),
-				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.Names),
+				NoWP:  len(v.CloudInfra.Aws.InfoWorkerPlanes.HostNames),
+				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
+				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.HostNames),
 				NoMgt: v.CloudInfra.Aws.NoManagedNodes,
 
 				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Aws.B.KubernetesDistro),
