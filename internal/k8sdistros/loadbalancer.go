@@ -2,6 +2,8 @@ package k8sdistros
 
 import (
 	"fmt"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 
 	"github.com/ksctl/ksctl/pkg/resources"
@@ -9,6 +11,9 @@ import (
 
 func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	log.Print("configuring Loadbalancer")
+	p.mu.Lock()
+	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	p.mu.Unlock()
 
 	var controlPlaneIPs = make([]string, len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes))
 

@@ -2,12 +2,18 @@ package kubeadm
 
 import (
 	"fmt"
+	"strconv"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
-	"strconv"
 )
 
-func (p *Kubeadm) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
+func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage resources.StorageFactory) error {
+	p.mu.Lock()
+	idx := noOfWP
+	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	p.mu.Unlock()
 
 	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
 

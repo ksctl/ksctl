@@ -2,14 +2,20 @@ package k8sdistros
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
 	"strconv"
 	"strings"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 func (p *PreBootstrap) ConfigureDataStore(no int, _ resources.StorageFactory) error {
+	p.mu.Lock()
 	idx := no
+	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	p.mu.Unlock()
+
 	log.Print("configuring Datastore", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
@@ -25,10 +31,6 @@ func (p *PreBootstrap) ConfigureDataStore(no int, _ resources.StorageFactory) er
 		return log.NewError(err.Error())
 	}
 
-	//err = storage.Write(mainStateDocument)
-	//if err != nil {
-	//	return log.NewError(err.Error())
-	//}
 	log.Success("configured DataStore", "number", strconv.Itoa(idx))
 
 	return nil

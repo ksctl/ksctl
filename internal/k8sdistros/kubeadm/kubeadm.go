@@ -2,17 +2,19 @@ package kubeadm
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
-	"strings"
 )
 
 type Kubeadm struct {
 	KubeadmVer string
 	Cni        string
+	mu         *sync.Mutex
 }
 
 func (p *Kubeadm) Setup(storage resources.StorageFactory, operation consts.KsctlOperation) error {
@@ -23,8 +25,6 @@ func (p *Kubeadm) Setup(storage resources.StorageFactory, operation consts.Ksctl
 	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
-	sshExecutor.PrivateKey(mainStateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
-	sshExecutor.Username(mainStateDocument.K8sBootstrap.B.SSHInfo.UserName)
 	return nil
 }
 
@@ -66,17 +66,14 @@ func isValidKubeadmVersion(ver string) bool {
 var (
 	mainStateDocument *types.StorageDocument
 	log               resources.LoggerFactory
-	sshExecutor       helpers.SSHCollection
 )
 
 func NewClient(m resources.Metadata, state *types.StorageDocument) resources.KubernetesBootstrap {
-
 	log = logger.NewDefaultLogger(m.LogVerbosity, m.LogWritter)
 	log.SetPackageName("kubeadm")
 
 	mainStateDocument = state
-	sshExecutor = helpers.NewSSHExecute()
-	return &Kubeadm{}
+	return &Kubeadm{mu: &sync.Mutex{}}
 }
 
 func scriptInstallKubeadmAndOtherTools(ver string) string {

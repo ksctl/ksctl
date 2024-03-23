@@ -1,6 +1,8 @@
 package k8sdistros
 
 import (
+	"sync"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -12,7 +14,6 @@ import (
 var (
 	mainStateDocument *types.StorageDocument
 	log               resources.LoggerFactory
-	sshExecutor       helpers.SSHCollection
 )
 
 func NewPreBootStrap(m resources.Metadata, state *types.StorageDocument) resources.PreKubernetesBootstrap {
@@ -20,8 +21,7 @@ func NewPreBootStrap(m resources.Metadata, state *types.StorageDocument) resourc
 	log.SetPackageName("bootstrap")
 
 	mainStateDocument = state
-	sshExecutor = helpers.NewSSHExecute()
-	return &PreBootstrap{}
+	return &PreBootstrap{mu: &sync.Mutex{}}
 }
 
 func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation consts.KsctlOperation) error {
@@ -51,9 +51,6 @@ func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState, storage resour
 	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError("failed to Initialized state from Cloud reason: %v", err)
 	}
-
-	sshExecutor.PrivateKey(mainStateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
-	sshExecutor.Username(mainStateDocument.K8sBootstrap.B.SSHInfo.UserName)
 
 	log.Debug("Printing", "k3sState", mainStateDocument)
 

@@ -32,9 +32,16 @@ type SSHPayload struct {
 	fastMode bool
 }
 
-func NewSSHExecute() SSHCollection {
-	return &SSHPayload{}
+func NewSSHExecutor(mainStateDocument *types.StorageDocument) SSHCollection {
+	var sshExecutor SSHCollection = &SSHPayload{}
+	sshExecutor.PrivateKey(mainStateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
+	sshExecutor.Username(mainStateDocument.K8sBootstrap.B.SSHInfo.UserName)
+	return sshExecutor
 }
+
+// func NewSSHExecute() SSHCollection {
+// 	return &SSHPayload{}
+// }
 
 type SSHCollection interface {
 	SSHExecute(resources.LoggerFactory) error
@@ -158,32 +165,33 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 	defer conn.Close()
 
 	session, err := conn.NewSession()
-
 	if err != nil {
 		return err
 	}
-
 	defer session.Close()
-	var buff bytes.Buffer
+
+	var stdoutBuff, stderrBuff bytes.Buffer
+	session.Stdout = &stdoutBuff
+	session.Stderr = &stderrBuff
 
 	sshPayload.Output = ""
-	//if sshPayload.flag == UtilExecWithOutput {
-	session.Stdout = &buff // make the stdout be stored in buffer
-	//}
-	err = session.Run(sshPayload.script)
 
-	bufferContent := buff.String()
-	log.Debug("Printing", "CommandResult", bufferContent)
+	err = session.Run(sshPayload.script)
+	stdoutContent := stdoutBuff.String()
+	stderrContent := stderrBuff.String()
+
+	log.Debug("ssh outputs", "stdout", stdoutContent, "stderr", stderrContent)
 
 	if sshPayload.flag == consts.UtilExecWithOutput {
-		sshPayload.Output = bufferContent
+		sshPayload.Output = stdoutContent
 	}
 
 	if err != nil {
+		log.Error(stderrContent)
 		return err
 	}
 
-	log.Success("Success in executing the script")
+	log.Success("Successful in executing the script")
 
 	return nil
 }

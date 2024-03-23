@@ -65,7 +65,6 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 
 	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
-
 	err := obj.foundStateVM(storage, indexNo, true, role, name)
 	if err == nil {
 		return nil
