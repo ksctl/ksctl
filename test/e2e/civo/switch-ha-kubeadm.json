@@ -1,6 +1,6 @@
 {
 	"cluster_name": "test-e2e-kubeadm-ha-civo",
-	"region": "FRA1",
+	"region": "PHX1",
 	"ha_cluster": true,
 	"storage_type": "local",
 	"cloud_provider": "civo"

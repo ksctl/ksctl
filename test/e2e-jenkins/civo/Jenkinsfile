@@ -81,7 +81,7 @@ pipeline {
 
                     tree "/var/lib/jenkins/.ksctl/state"
 
-                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ FRA1/state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ PHX1/state.json
 
                     sleep 5s
 
@@ -104,7 +104,7 @@ pipeline {
                     /usr/local/go/bin/go run . -op scaledown -file civo/scaledown-ha-kubeadm.json
 
                     kubectl get nodes -owide
-                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ FRA1/state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ PHX1/state.json
 
                 '''
             }
@@ -123,7 +123,7 @@ pipeline {
                     /usr/local/go/bin/go run . -op scaleup -file civo/scaleup-ha-kubeadm.json
 
                     kubectl get nodes -owide
-                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ FRA1/state.json
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ PHX1/state.json
 
                 '''
             }

@@ -111,8 +111,7 @@ pipeline {
 
                     kubectl get nodes -owide
 
-                    jq -r . /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-kubeadm-ha-azure\\ centraindia/state.json
-
+                    jq -r . /var/lib/jenkins/.ksctl/state/azure/ha/test-e2e-kubeadm-ha-azure\\ centralindia/state.json
                 '''
             }
         }
