@@ -159,7 +159,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	if errCreate != nil {
 		return "", errCreate
 	}
-	log.Print("Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	log.Success("Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
 	return *nicresponse.NetworkInterface.NetworkInterfaceId, nil
 }
 
@@ -220,7 +220,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 		}
 	}
 
-	stringindexNo := fmt.Sprintf("%d", indexNo)
+	// stringindexNo := fmt.Sprintf("%d", indexNo)
 
 	nicid, err := obj.CreateNetworkInterface(context.TODO(), storage, name, indexNo, role)
 	if err != nil {
@@ -250,7 +250,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 				Tags: []types.Tag{
 					{
 						Key:   aws.String("Name"),
-						Value: aws.String(string(role) + stringindexNo),
+						Value: aws.String(name),
 					},
 				},
 			},
@@ -303,7 +303,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 		return log.NewError(errCreateVM.Error())
 	}
 
-	log.Print("creating vm...", "id", instanceId)
+	log.Print("creating vm...", "vmName", name)
 
 	done := make(chan struct{})
 
@@ -354,7 +354,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 
 	log.Debug("Printing", "mainStateDocument", mainStateDocument)
 
-	log.Success("Created the vm", "id", instanceId)
+	log.Success("Created the vm", "name", name)
 	return nil
 }
 

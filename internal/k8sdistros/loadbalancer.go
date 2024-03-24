@@ -22,7 +22,7 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	}
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
-		configLBscript(controlPlaneIPs)).
+		scriptConfigureLoadbalancer(controlPlaneIPs)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
 		FastMode(true).SSHExecute(log)
 	if err != nil {
@@ -33,13 +33,42 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	return nil
 }
 
-func configLBscript(controlPlaneIPs []string) string {
-	script := `#!/bin/bash
-sudo apt update
-sudo apt install haproxy -y
-sleep 2s
-sudo systemctl start haproxy && sudo systemctl enable haproxy
+func scriptConfigureLoadbalancer(controlPlaneIPs []string) resources.ScriptCollection {
+	collection := helpers.NewScriptCollection()
 
+	collection.Append(resources.Script{
+		Name:       "Install haproxy",
+		CanRetry:   true,
+		MaxRetries: 9,
+		ShellScript: `
+sudo apt update -y
+sudo apt install haproxy -y
+`,
+		ScriptExecutor: consts.LinuxBash,
+	})
+
+	collection.Append(resources.Script{
+		Name:           "enable and start systemd service for haproxy",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
+sudo systemctl start haproxy
+sudo systemctl enable haproxy
+`,
+	})
+
+	serverScript := ""
+	for index, controlPlaneIP := range controlPlaneIPs {
+		serverScript += fmt.Sprintf(`  server k3sserver-%d %s check
+`, index+1, controlPlaneIP)
+	}
+
+	collection.Append(resources.Script{
+		Name:           "create haproxy configuration",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 cat <<EOF > haproxy.cfg
 frontend kubernetes-frontend
   bind *:6443
@@ -54,17 +83,21 @@ backend kubernetes-backend
   mode tcp
   option tcp-check
   balance roundrobin
-`
-
-	for index, controlPlaneIP := range controlPlaneIPs {
-		script += fmt.Sprintf(`  server k3sserver-%d %s check
-`, index+1, controlPlaneIP)
-	}
-
-	script += `EOF
+%s
+EOF
 
 sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
+`, serverScript),
+	})
+
+	collection.Append(resources.Script{
+		Name:           "create haproxy configuration",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
 sudo systemctl restart haproxy
-`
-	return script
+`,
+	})
+
+	return collection
 }

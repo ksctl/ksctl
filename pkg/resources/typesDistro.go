@@ -24,3 +24,18 @@ type PreKubernetesBootstrap interface {
 
 	ConfigureLoadbalancer(StorageFactory) error
 }
+
+type Script struct {
+	Name           string
+	ShellScript    string
+	CanRetry       bool
+	MaxRetries     uint8
+	ScriptExecutor consts.KsctlSupportedScriptRunners
+}
+
+type ScriptCollection interface {
+	NextScript() *Script
+	String() string
+	Append(Script)
+	IsCompleted() bool
+}

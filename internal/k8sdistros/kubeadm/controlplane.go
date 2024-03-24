@@ -12,10 +12,11 @@ import (
 
 func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
 
-	installKubeadmTools := fmt.Sprintf("%s\n%s", scriptInstallKubeadmAndOtherTools(kubeadm.KubeadmVer), scriptTransferEtcdCerts(
+	installKubeadmTools := scriptTransferEtcdCerts(
+		scriptInstallKubeadmAndOtherTools(kubeadm.KubeadmVer),
 		mainStateDocument.K8sBootstrap.B.CACert,
 		mainStateDocument.K8sBootstrap.B.EtcdCert,
-		mainStateDocument.K8sBootstrap.B.EtcdKey))
+		mainStateDocument.K8sBootstrap.B.EtcdKey)
 
 	log.Print("Installing Kubeadm and copying etcd certificates")
 	if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
@@ -35,7 +36,7 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecut
 		return log.NewError(err.Error())
 	}
 
-	mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey = strings.Trim(sshExecutor.GetOutput(), "\n")
+	mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
 	log.Debug("Printing", "CertificateKey", mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey)
 
@@ -74,7 +75,7 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecut
 		return log.NewError(err.Error())
 	}
 
-	mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash = strings.Trim(sshExecutor.GetOutput(), "\n")
+	mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
 	log.Debug("Printing", "DiscoveryTokenCACertHash", mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash)
 
@@ -98,10 +99,11 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 		}
 	} else {
 
-		installKubeadmTools := fmt.Sprintf(`%s\n%s`, scriptInstallKubeadmAndOtherTools(p.KubeadmVer), scriptTransferEtcdCerts(
+		installKubeadmTools := scriptTransferEtcdCerts(
+			scriptInstallKubeadmAndOtherTools(p.KubeadmVer),
 			mainStateDocument.K8sBootstrap.B.CACert,
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.B.EtcdKey))
+			mainStateDocument.K8sBootstrap.B.EtcdKey)
 
 		log.Print("Installing Kubeadm and copying etcd certificates")
 
@@ -139,7 +141,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 				return log.NewError(err.Error())
 			}
 
-			kubeconfig := sshExecutor.GetOutput()
+			kubeconfig := sshExecutor.GetOutput()[0]
 			kubeconfig = strings.Replace(kubeconfig, "kubernetes-admin@kubernetes", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			log.Debug("Printing", "kubeconfig", kubeconfig)
@@ -155,19 +157,25 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 	return nil
 }
 
-func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIPDs []string) string {
-
-	var generateExternalEtcdConfig func([]string) string = func(ips []string) string {
-		var ret strings.Builder
-		for _, ip := range ips {
-			ret.WriteString(fmt.Sprintf("    - https://%s:2379\n", ip))
-		}
-		return ret.String()
+func generateExternalEtcdConfig(ips []string) string {
+	var ret strings.Builder
+	for _, ip := range ips {
+		ret.WriteString(fmt.Sprintf("    - https://%s:2379\n", ip))
 	}
+	return ret.String()
+}
+
+func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIPDs []string) resources.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
 
-	return fmt.Sprintf(`#!/bin/bash
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(resources.Script{
+		Name:       "store configuration for Controlplane0",
+		CanRetry:   true,
+		MaxRetries: 3,
+		ShellScript: fmt.Sprintf(`
 cat <<EOF > kubeadm-config.yml
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
@@ -213,26 +221,57 @@ networking:
 scheduler: {}
 EOF
 
+`, bootstrapToken, certificateKey, publicIPLb, etcdConf, ver, publicIPLb),
+	})
+
+	collection.Append(resources.Script{
+		Name:       "kubeadm init",
+		CanRetry:   true,
+		MaxRetries: 3,
+		ShellScript: `
 sudo kubeadm init --config kubeadm-config.yml --upload-certs
-`, bootstrapToken, certificateKey, publicIPLb, etcdConf, ver, publicIPLb)
+`,
+	})
+
+	return collection
 }
 
-func scriptGetKubeconfig() string {
-	return `#!/bin/bash
+func scriptGetKubeconfig() resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+	collection.Append(resources.Script{
+		Name:     "fetch kubeconfig",
+		CanRetry: false,
+		ShellScript: `
 sudo cat /etc/kubernetes/admin.conf
-`
+`,
+	})
+	return collection
 }
 
-func scriptDiscoveryTokenCACertHash() string {
-	return `#!/bin/bash
+func scriptDiscoveryTokenCACertHash() resources.ScriptCollection {
+	collection := helpers.NewScriptCollection()
+	collection.Append(resources.Script{
+		Name:     "fetch discovery token ca cert hash",
+		CanRetry: false,
+		ShellScript: `
 sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1
-`
+`,
+	})
+	return collection
 }
 
-func scriptGetCertificateKey() string {
-	return `#!/bin/bash
+func scriptGetCertificateKey() resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+	collection.Append(resources.Script{
+		Name:     "fetch bootstrap certificate key",
+		CanRetry: false,
+		ShellScript: `
 sudo kubeadm certs certificate-key
-`
+`,
+	})
+	return collection
 }
 
 func generatebootstrapToken() (string, error) {
@@ -252,10 +291,12 @@ func generatebootstrapToken() (string, error) {
 	return prefix + "." + postfix, nil
 }
 
-func scriptTransferEtcdCerts(ca, etcd, key string) string {
-	return fmt.Sprintf(`
-echo "This script needs to be used as in concatenation to install kubeadm tools"
-
+func scriptTransferEtcdCerts(collection resources.ScriptCollection, ca, etcd, key string) resources.ScriptCollection {
+	collection.Append(resources.Script{
+		Name:           "save etcd certificate",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 sudo mkdir -vp /etcd/kubernetes/pki/etcd/
 
 cat <<EOF > ca.pem
@@ -271,11 +312,23 @@ cat <<EOF > etcd-key.pem
 EOF
 
 sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
-`, ca, etcd, key)
+`, ca, etcd, key),
+	})
+
+	return collection
 }
 
-func scriptJoinControlplane(pubIPLb, token, cacertSHA, certKey string) string {
-	return fmt.Sprintf(`#!/bin/bash
+func scriptJoinControlplane(pubIPLb, token, cacertSHA, certKey string) resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+	collection.Append(resources.Script{
+		Name:           "Join Controlplane [1..N]",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s
-`, pubIPLb, token, cacertSHA, certKey)
+`, pubIPLb, token, cacertSHA, certKey),
+	})
+	return collection
 }

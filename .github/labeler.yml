@@ -16,9 +16,11 @@
 
 'distro/k3s':
 - 'internal/k8sdistros/k3s/*'
+- 'internal/k8sdistros/*'
 
 'distro/kubeadm':
 - 'internal/k8sdistros/kubeadm/*'
+- 'internal/k8sdistros/*'
 
 'distro/kubernetes-client-go':
 - 'internal/k8sdistros/universal/*'

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
@@ -76,8 +77,14 @@ func NewClient(m resources.Metadata, state *types.StorageDocument) resources.Kub
 	return &Kubeadm{mu: &sync.Mutex{}}
 }
 
-func scriptInstallKubeadmAndOtherTools(ver string) string {
-	return fmt.Sprintf(`#!/bin/bash
+func scriptInstallKubeadmAndOtherTools(ver string) resources.ScriptCollection {
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(resources.Script{
+		Name:           "disable swap and some kernel module adjustments",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
 sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 sudo swapoff -a
 
@@ -100,7 +107,15 @@ sudo sysctl --system
 sudo lsmod | grep br_netfilter
 sudo lsmod | grep overlay
 sudo sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
+`,
+	})
 
+	collection.Append(resources.Script{
+		Name:           "install containerd",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
 sudo apt-get update
 sudo apt-get install ca-certificates curl gnupg
 
@@ -115,18 +130,40 @@ echo \
 
 sudo apt-get update
 sudo apt-get install containerd.io -y
+`,
+	})
 
+	collection.Append(resources.Script{
+		Name:           "containerd config",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
 sudo mkdir -p /etc/containerd
-
 containerd config default > config.toml
-
 sudo mv -v config.toml /etc/containerd/config.toml
+`,
+	})
+
+	collection.Append(resources.Script{
+		Name:           "restart containerd systemd",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
 sudo systemctl restart containerd
 sudo systemctl enable containerd
 
 sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
 sudo systemctl restart containerd
+`,
+	})
 
+	collection.Append(resources.Script{
+		Name:           "install kubeadm, kubectl, kubelet",
+		CanRetry:       true,
+		MaxRetries:     9,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 sudo apt-get update -y
 
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
@@ -137,8 +174,19 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
-sudo apt-mark hold kubelet kubeadm kubectl
-
 sudo systemctl enable kubelet
-`, ver, ver)
+`, ver, ver),
+	})
+
+	collection.Append(resources.Script{
+		Name:           "apt mark kubenetes tool as hold",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
+		sudo apt-mark hold kubelet kubeadm kubectl
+
+		`,
+	})
+
+	return collection
 }

@@ -27,36 +27,38 @@ var (
 )
 
 func TestConsts(t *testing.T) {
-	assert.Equal(t, string(consts.CloudCivo), "civo", "civo constant not correct assigned")
-	assert.Equal(t, string(consts.CloudAzure), "azure", "azure constant not correct assgined")
-	assert.Equal(t, string(consts.CloudLocal), "local", "local constant not correct assgined")
-	assert.Equal(t, string(consts.K8sK3s), "k3s", "k3s constant not correct assgined")
-	assert.Equal(t, string(consts.CloudAws), "aws", "aws constant not correct assgined")
-	assert.Equal(t, string(consts.K8sKubeadm), "kubeadm", "kubeadm constant not correct assgined")
-	assert.Equal(t, string(consts.StoreLocal), "local", "local constant not correct assgined")
-	assert.Equal(t, string(consts.StoreExtMongo), "external-mongo", "remote constant not correct assgined")
-	assert.Equal(t, string(consts.RoleCp), "controlplane", "controlplane constant not correct assgined")
-	assert.Equal(t, string(consts.RoleLb), "loadbalancer", "loadbalancer constant not correct assgined")
-	assert.Equal(t, string(consts.RoleDs), "datastore", "datastore constant not correct assgined")
-	assert.Equal(t, string(consts.RoleWp), "workerplane", "workerplane constant not correct assgined")
-	assert.Equal(t, string(consts.ClusterTypeHa), "ha", "HA constant not correct assgined")
-	assert.Equal(t, string(consts.ClusterTypeMang), "managed", "Managed constant not correct assgined")
-	assert.Equal(t, string(consts.OperationStateCreate), "create", "operation create constant not correct assgined")
-	assert.Equal(t, string(consts.OperationStateGet), "get", "operation get constant not correct assgined")
-	assert.Equal(t, string(consts.OperationStateDelete), "delete", "operation delete constant not correct assgined")
-	assert.Equal(t, uint8(consts.UtilClusterPath), uint8(1), "cluster_path constant not correct assgined")
-	assert.Equal(t, uint8(consts.UtilOtherPath), uint8(3), "other_path constant not correct assgined")
-	assert.Equal(t, uint8(consts.UtilSSHPath), uint8(2), "ssh_path constant not correct assgined")
-	assert.Equal(t, uint8(consts.UtilCredentialPath), uint8(0), "credential_path constant not correct assgined")
-	assert.Equal(t, uint8(consts.UtilExecWithoutOutput), uint8(0), "exec_without_output constant not correct assgined")
-	assert.Equal(t, uint8(consts.UtilExecWithOutput), uint8(1), "exec_without_output constant not correct assgined")
+	assert.Equal(t, string(consts.CloudCivo), "civo")
+	assert.Equal(t, string(consts.CloudAzure), "azure")
+	assert.Equal(t, string(consts.CloudLocal), "local")
+	assert.Equal(t, string(consts.K8sK3s), "k3s")
+	assert.Equal(t, string(consts.CloudAws), "aws")
+	assert.Equal(t, string(consts.K8sKubeadm), "kubeadm")
+	assert.Equal(t, string(consts.StoreLocal), "local")
+	assert.Equal(t, string(consts.StoreExtMongo), "external-mongo")
+	assert.Equal(t, string(consts.RoleCp), "controlplane")
+	assert.Equal(t, string(consts.RoleLb), "loadbalancer")
+	assert.Equal(t, string(consts.RoleDs), "datastore")
+	assert.Equal(t, string(consts.RoleWp), "workerplane")
+	assert.Equal(t, string(consts.ClusterTypeHa), "ha")
+	assert.Equal(t, string(consts.ClusterTypeMang), "managed")
+	assert.Equal(t, string(consts.OperationStateCreate), "create")
+	assert.Equal(t, string(consts.OperationStateGet), "get")
+	assert.Equal(t, string(consts.OperationStateDelete), "delete")
+	assert.Equal(t, uint8(consts.UtilClusterPath), uint8(1))
+	assert.Equal(t, uint8(consts.UtilOtherPath), uint8(3))
+	assert.Equal(t, uint8(consts.UtilSSHPath), uint8(2))
+	assert.Equal(t, uint8(consts.UtilCredentialPath), uint8(0))
+	assert.Equal(t, uint8(consts.UtilExecWithoutOutput), uint8(0))
+	assert.Equal(t, uint8(consts.UtilExecWithOutput), uint8(1))
 
-	assert.Equal(t, string(consts.CNIAzure), "azure", "missmatch")
-	assert.Equal(t, string(consts.CNIKind), "kind", "missmatch")
-	assert.Equal(t, string(consts.CNINone), "none", "missmatch")
-	assert.Equal(t, string(consts.CNICilium), "cilium", "missmatch")
-	assert.Equal(t, string(consts.CNIFlannel), "flannel", "missmatch")
-	assert.Equal(t, string(consts.CNIKubenet), "kubenet", "missmatch")
+	assert.Equal(t, string(consts.CNIAzure), "azure")
+	assert.Equal(t, string(consts.CNIKind), "kind")
+	assert.Equal(t, string(consts.CNINone), "none")
+	assert.Equal(t, string(consts.CNICilium), "cilium")
+	assert.Equal(t, string(consts.CNIFlannel), "flannel")
+	assert.Equal(t, string(consts.CNIKubenet), "kubenet")
+	assert.Equal(t, string(consts.LinuxSh), "/bin/sh")
+	assert.Equal(t, string(consts.LinuxBash), "/bin/bash")
 }
 
 func TestGenerateCerts(t *testing.T) {
@@ -120,7 +122,7 @@ func TestSSHExecute(t *testing.T) {
 	var sshTest SSHCollection = &SSHPayload{}
 	sshTest.Username("fake")
 	sshTest.PrivateKey(mainStateDoc.SSHKeyPair.PrivateKey)
-	assert.Assert(t, sshTest.Flag(consts.UtilExecWithoutOutput).Script("").
+	assert.Assert(t, sshTest.Flag(consts.UtilExecWithoutOutput).Script(NewScriptCollection()).
 		IPv4("A.A.A.A").
 		FastMode(true).SSHExecute(log) != nil, "ssh should fail")
 
@@ -131,5 +133,64 @@ func TestSSHExecute(t *testing.T) {
 
 }
 
-// TODO: Add testing for credentials
-func TestSaveCred(t *testing.T) {}
+func TestScriptCollection(t *testing.T) {
+	var scripts *Scripts = func() *Scripts {
+		o := NewScriptCollection()
+		switch v := o.(type) {
+		case *Scripts:
+			return v
+		default:
+			return nil
+		}
+	}()
+
+	t.Run("init state test", func(t *testing.T) {
+		assert.Equal(t, scripts.currIdx, -1, "must be initialized with -1")
+		assert.Assert(t, scripts.mu != nil, "the mutext variable should be initialized!")
+		assert.Assert(t, scripts.data == nil)
+		assert.Equal(t, scripts.IsCompleted(), false, "must be empty")
+	})
+
+	t.Run("append scripts", func(t *testing.T) {
+		datas := []resources.Script{
+			{
+				ScriptExecutor: consts.LinuxBash,
+				CanRetry:       false,
+				Name:           "test",
+				MaxRetries:     0,
+				ShellScript:    "script",
+			},
+			{
+				ScriptExecutor: consts.LinuxSh,
+				CanRetry:       true,
+				Name:           "x test",
+				MaxRetries:     9,
+				ShellScript:    "demo",
+			},
+		}
+
+		for idx, data := range datas {
+			scripts.Append(data)
+			data.ShellScript = "#!" + string(data.ScriptExecutor) + "\n" + data.ShellScript
+
+			assert.Equal(t, scripts.currIdx, 0, "the first element added so index should be 0")
+			assert.DeepEqual(t, scripts.data[idx], data)
+		}
+
+	})
+
+	t.Run("get script", func(t *testing.T) {
+		v := scripts.NextScript()
+
+		expected := &resources.Script{
+			ScriptExecutor: consts.LinuxBash,
+			CanRetry:       false,
+			Name:           "test",
+			MaxRetries:     0,
+			ShellScript:    "#!/bin/bash\nscript",
+		}
+
+		assert.DeepEqual(t, v, expected)
+		assert.Equal(t, scripts.currIdx, 1, "the index must increment")
+	})
+}
