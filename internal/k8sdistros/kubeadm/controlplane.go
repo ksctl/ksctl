@@ -10,7 +10,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm) error {
+func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
 
 	installKubeadmTools := fmt.Sprintf("%s\n%s", scriptInstallKubeadmAndOtherTools(kubeadm.KubeadmVer), scriptTransferEtcdCerts(
 		mainStateDocument.K8sBootstrap.B.CACert,
@@ -85,10 +85,14 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm) error {
 }
 
 func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
+	p.mu.Lock()
 	idx := noOfCP
+	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	p.mu.Unlock()
+
 	log.Print("configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
-		err := configureCP_1(storage, p)
+		err := configureCP_1(storage, p, sshExecutor)
 		if err != nil {
 			return log.NewError(err.Error())
 		}

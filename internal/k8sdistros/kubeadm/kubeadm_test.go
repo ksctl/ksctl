@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -29,7 +30,6 @@ var (
 func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.StorageFactory, m resources.Metadata, state *types.StorageDocument) *Kubeadm {
 
 	mainStateDocument = state
-	sshExecutor = helpers.NewSSHExecute()
 	mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{}
 	var err error
 	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(log, x.PrivateIPv4DataStores)
@@ -49,9 +49,7 @@ func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.Sto
 	mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
 	mainStateDocument.K8sBootstrap.B.SSHInfo = x.SSHState
 
-	sshExecutor.PrivateKey(mainStateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
-	sshExecutor.Username(mainStateDocument.K8sBootstrap.B.SSHInfo.UserName)
-	return &Kubeadm{}
+	return &Kubeadm{mu: &sync.Mutex{}}
 }
 
 func TestMain(m *testing.M) {

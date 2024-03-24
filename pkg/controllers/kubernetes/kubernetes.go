@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/ksctl/ksctl/internal/k8sdistros"
 	k3sPkg "github.com/ksctl/ksctl/internal/k8sdistros/k3s"
@@ -34,34 +35,48 @@ func Setup(client *resources.KsctlClient, state *types.StorageDocument) error {
 }
 
 func ConfigureCluster(client *resources.KsctlClient) (bool, error) {
-	//waitForPre := &sync.WaitGroup{}
+	waitForPre := &sync.WaitGroup{}
 
-	if err := client.PreBootstrap.ConfigureLoadbalancer(client.Storage); err != nil {
-		return false, log.NewError(err.Error())
-	}
-	//go func() {
-	//	waitForPre.Add(1)
-	//	defer waitForPre.Done()
-	//	_ = client.PreBootstrap.ConfigureLoadbalancer(client.Storage)
-	//	// if err != nil {
-	//	// 	return false, log.NewError(err.Error())
-	//	// }
-	//}()
+	errChanLB := make(chan error, 1)
+	errChanDS := make(chan error, client.Metadata.NoDS)
+
+	waitForPre.Add(1 + client.Metadata.NoDS)
+
+	go func() {
+		defer waitForPre.Done()
+
+		err := client.PreBootstrap.ConfigureLoadbalancer(client.Storage)
+		if err != nil {
+			errChanLB <- err
+		}
+	}()
 
 	for no := 0; no < client.Metadata.NoDS; no++ {
-		if err := client.PreBootstrap.ConfigureDataStore(no, client.Storage); err != nil {
+		go func(i int) {
+			defer waitForPre.Done()
+
+			err := client.PreBootstrap.ConfigureDataStore(i, client.Storage)
+			if err != nil {
+				errChanDS <- err
+			}
+		}(no)
+	}
+	waitForPre.Wait()
+	close(errChanLB)
+	close(errChanDS)
+
+	for err := range errChanLB {
+		if err != nil {
 			return false, log.NewError(err.Error())
 		}
-		//waitForPre.Add(1)
-		//go func(i int) {
-		//	defer waitForPre.Done()
-		//	_ = client.PreBootstrap.ConfigureDataStore(i, client.Storage)
-		//}(no)
 	}
-	//waitForPre.Wait()
 
-	// TODO we can try to make it FIXME aka merge it
-	// WARN please fix it
+	for err := range errChanDS {
+		if err != nil {
+			return false, log.NewError(err.Error())
+		}
+	}
+
 	if err := client.Bootstrap.Setup(client.Storage, consts.OperationStateCreate); err != nil {
 		return false, log.NewError(err.Error())
 	}
@@ -73,45 +88,58 @@ func ConfigureCluster(client *resources.KsctlClient) (bool, error) {
 		return false, log.NewError("invalid version of self-managed k8s cluster")
 	}
 
-	//wg := &sync.WaitGroup{}
-
 	// wp[0,N] depends on cp[0]
 	err := client.Bootstrap.ConfigureControlPlane(0, client.Storage)
 	if err != nil {
 		return false, log.NewError(err.Error())
 	}
 
+	errChanCP := make(chan error, client.Metadata.NoCP-1)
+	errChanWP := make(chan error, client.Metadata.NoWP)
+
+	wg := &sync.WaitGroup{}
+
+	wg.Add(client.Metadata.NoCP - 1 + client.Metadata.NoWP)
+
 	for no := 1; no < client.Metadata.NoCP; no++ {
-		err := client.Bootstrap.ConfigureControlPlane(no, client.Storage)
+		go func(i int) {
+			defer wg.Done()
+			err := client.Bootstrap.ConfigureControlPlane(i, client.Storage)
+			if err != nil {
+				errChanCP <- err
+			}
+		}(no)
+	}
+	for no := 0; no < client.Metadata.NoWP; no++ {
+		go func(i int) {
+			defer wg.Done()
+			err := client.Bootstrap.JoinWorkerplane(i, client.Storage)
+			if err != nil {
+				errChanWP <- err
+			}
+		}(no)
+	}
+	wg.Wait()
+
+	close(errChanCP)
+	close(errChanWP)
+
+	for err := range errChanCP {
 		if err != nil {
 			return false, log.NewError(err.Error())
 		}
-		//wg.Add(1)
-		//go func(i int) {
-		//	defer wg.Done()
-		//	_ = client.Bootstrap.ConfigureControlPlane(i, client.Storage)
-		//}(no)
 	}
-	for no := 0; no < client.Metadata.NoWP; no++ {
-		err := client.Bootstrap.JoinWorkerplane(no, client.Storage)
-		if err != nil {
-			return externalCNI, log.NewError(err.Error())
-		}
-		//wg.Add(1)
-		//go func(i int) {
-		//	defer wg.Done()
-		//	_ = client.Bootstrap.JoinWorkerplane(i, client.Storage)
-		//}(no)
-	}
-	//wg.Wait()
 
+	for err := range errChanWP {
+		if err != nil {
+			return false, log.NewError(err.Error())
+		}
+	}
 	return externalCNI, nil
 }
 
 func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 
-	// TODO we can try to make it FIXME aka merge it
-	// WARN please fix it
 	if err := client.Bootstrap.Setup(client.Storage, consts.OperationStateGet); err != nil {
 		return log.NewError(err.Error())
 	}
@@ -119,20 +147,28 @@ func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 	if client.Bootstrap == nil {
 		return log.NewError("invalid version of self-managed k8s cluster")
 	}
-	//wg := &sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	errChan := make(chan error, end-start)
 
 	for no := start; no < end; no++ {
-		//wg.Add(1)
-		//go func(i int) {
-		//	defer wg.Done()
-		//	_ = client.Bootstrap.JoinWorkerplane(i, client.Storage)
-		//}(no)
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			err := client.Bootstrap.JoinWorkerplane(i, client.Storage)
+			if err != nil {
+				errChan <- err
+			}
+		}(no)
+	}
+	wg.Wait()
+	close(errChan)
 
-		if err := client.Bootstrap.JoinWorkerplane(no, client.Storage); err != nil {
+	for err := range errChan {
+		if err != nil {
 			return log.NewError(err.Error())
 		}
 	}
-	//wg.Wait()
+
 	return nil
 }
 

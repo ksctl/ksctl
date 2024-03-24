@@ -2,8 +2,9 @@ package k3s
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
@@ -12,13 +13,12 @@ import (
 var (
 	mainStateDocument *types.StorageDocument
 	log               resources.LoggerFactory
-
-	sshExecutor helpers.SSHCollection
 )
 
 type K3s struct {
 	K3sVer string
 	Cni    string
+	mu     *sync.Mutex
 }
 
 func NewClient(m resources.Metadata, state *types.StorageDocument) resources.KubernetesBootstrap {
@@ -26,8 +26,7 @@ func NewClient(m resources.Metadata, state *types.StorageDocument) resources.Kub
 	log.SetPackageName("k3s")
 
 	mainStateDocument = state
-	sshExecutor = helpers.NewSSHExecute()
-	return &K3s{}
+	return &K3s{mu: &sync.Mutex{}}
 }
 
 func (k3s *K3s) Setup(storage resources.StorageFactory, operation consts.KsctlOperation) error {
@@ -38,8 +37,6 @@ func (k3s *K3s) Setup(storage resources.StorageFactory, operation consts.KsctlOp
 	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
-	sshExecutor.PrivateKey(mainStateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
-	sshExecutor.Username(mainStateDocument.K8sBootstrap.B.SSHInfo.UserName)
 	return nil
 }
 

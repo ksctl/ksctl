@@ -5,11 +5,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func configureCP_1(storage resources.StorageFactory, k3s *K3s) error {
+// configureCP_1 is not meant for concurrency
+func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
 
 	var script string
 
@@ -61,10 +63,14 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3s) error {
 
 // ConfigureControlPlane implements resources.DistroFactory.
 func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
+	k3s.mu.Lock()
 	idx := noOfCP
+	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	k3s.mu.Unlock()
+
 	log.Print("configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
-		err := configureCP_1(storage, k3s)
+		err := configureCP_1(storage, k3s, sshExecutor)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -99,10 +105,10 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 			return log.NewError(err.Error())
 		}
 
-		err = storage.Write(mainStateDocument)
-		if err != nil {
-			return log.NewError(err.Error())
-		}
+		// err = storage.Write(mainStateDocument)
+		// if err != nil {
+		// 	return log.NewError(err.Error())
+		// }
 
 		if idx+1 == len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes) {
 
@@ -113,10 +119,13 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 			if err != nil {
 				return log.NewError(err.Error())
 			}
+			// as only a single case where it is getting invoked we actually don't need locks
 
 			kubeconfig := sshExecutor.GetOutput()
 			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			kubeconfig = strings.Replace(kubeconfig, "default", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
+			// k3s.mu.Lock()
+			// k3s.mu.Unlock()
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			log.Debug("Printing", "kubeconfig", kubeconfig)
 			// modify
