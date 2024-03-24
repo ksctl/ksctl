@@ -13,7 +13,7 @@ import (
 // configureCP_1 is not meant for concurrency
 func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
 
-	var script string
+	var script resources.ScriptCollection
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(
@@ -50,7 +50,7 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpe
 
 	log.Debug("fetching k3s token")
 
-	mainStateDocument.K8sBootstrap.K3s.K3sToken = strings.Trim(sshExecutor.GetOutput(), "\n")
+	mainStateDocument.K8sBootstrap.K3s.K3sToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
 	log.Debug("Printing", "k3sToken", mainStateDocument.K8sBootstrap.K3s.K3sToken)
 
@@ -76,7 +76,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 		}
 	} else {
 
-		var script string
+		var script resources.ScriptCollection
 
 		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 			script = scriptCP_NWithoutCNI(
@@ -121,11 +121,10 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 			}
 			// as only a single case where it is getting invoked we actually don't need locks
 
-			kubeconfig := sshExecutor.GetOutput()
+			kubeconfig := sshExecutor.GetOutput()[0]
 			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			kubeconfig = strings.Replace(kubeconfig, "default", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
-			// k3s.mu.Lock()
-			// k3s.mu.Unlock()
+
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			log.Debug("Printing", "kubeconfig", kubeconfig)
 			// modify
@@ -141,10 +140,12 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 	return nil
 }
 
-func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) string {
-	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
-
-	return fmt.Sprintf(`#!/bin/bash
+func getScriptForEtcdCerts(ca, etcd, key string) resources.Script {
+	return resources.Script{
+		Name:           "store etcd certificates",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 sudo mkdir -p /var/lib/etcd
 
 cat <<EOF > ca.pem
@@ -160,8 +161,24 @@ cat <<EOF > etcd-key.pem
 EOF
 
 sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+`, ca, etcd, key),
+	}
+}
 
+func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) resources.ScriptCollection {
 
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
+
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
+
+	collection.Append(resources.Script{
+		Name:           "Start K3s Controlplane-[0] without CNI",
+		MaxRetries:     9,
+		CanRetry:       true,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
@@ -177,30 +194,26 @@ EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ca, etcd, key, ver, dbEndpoint, pubIPlb)
+`, ver, dbEndpoint, pubIPlb),
+	})
+
+	return collection
 }
 
-func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) string {
-	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
+func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
+
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
-	return fmt.Sprintf(`#!/bin/bash
-sudo mkdir -p /var/lib/etcd
 
-cat <<EOF > ca.pem
-%s
-EOF
-
-cat <<EOF > etcd.pem
-%s
-EOF
-
-cat <<EOF > etcd-key.pem
-%s
-EOF
-
-sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
-
-
+	collection.Append(resources.Script{
+		Name:           "Start K3s Controlplane-[1..N] without CNI",
+		MaxRetries:     9,
+		CanRetry:       true,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
@@ -217,30 +230,26 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, ca, etcd, key, ver, token, dbEndpoint, pubIPlb)
+`, ver, token, dbEndpoint, pubIPlb),
+	})
+
+	return collection
 }
 
-// scriptCP_1 script used to configure the control-plane-1 with no need of output inital
-func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) string {
+func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
+
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
-	return fmt.Sprintf(`#!/bin/bash
-sudo mkdir -p /var/lib/etcd
 
-cat <<EOF > ca.pem
-%s
-EOF
-
-cat <<EOF > etcd.pem
-%s
-EOF
-
-cat <<EOF > etcd-key.pem
-%s
-EOF
-
-sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
-
-
+	collection.Append(resources.Script{
+		Name:           "Start K3s Controlplane-[0] with CNI",
+		MaxRetries:     9,
+		CanRetry:       true,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
@@ -254,36 +263,41 @@ EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ca, etcd, key, ver, dbEndpoint, pubIPlb)
+`, ver, dbEndpoint, pubIPlb),
+	})
+
+	return collection
 }
 
-func scriptForK3sToken() string {
-	return `#!/bin/bash
+func scriptForK3sToken() resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+	collection.Append(resources.Script{
+		Name:           "Get k3s server token",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
 sudo cat /var/lib/rancher/k3s/server/token
-`
+`,
+	})
+
+	return collection
 }
 
-func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) string {
-	//INSTALL_K3S_CHANNEL="v1.24.6+k3s1"   missing the usage of k3s version for ha
+func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
+
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
-	return fmt.Sprintf(`#!/bin/bash
-sudo mkdir -p /var/lib/etcd
 
-cat <<EOF > ca.pem
-%s
-EOF
-
-cat <<EOF > etcd.pem
-%s
-EOF
-
-cat <<EOF > etcd-key.pem
-%s
-EOF
-
-sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
-
-
+	collection.Append(resources.Script{
+		Name:           "Start K3s Controlplane-[1..N] with CNI",
+		MaxRetries:     9,
+		CanRetry:       true,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
@@ -298,5 +312,8 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, ca, etcd, key, ver, token, dbEndpoint, pubIPlb)
+`, ver, token, dbEndpoint, pubIPlb),
+	})
+
+	return collection
 }

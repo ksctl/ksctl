@@ -46,13 +46,15 @@ func getEtcdMemberIPFieldForDatastore(ips []string) string {
 	return strings.Join(tempDS, ",")
 }
 
-func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) string {
+func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) resources.ScriptCollection {
+	collection := helpers.NewScriptCollection()
 
-	clusterMembers := getEtcdMemberIPFieldForDatastore(privIPs)
-
-	return fmt.Sprintf(`#!/bin/bash
-set -xe
-
+	collection.Append(resources.Script{
+		Name:           "fetch etcd binaries and cleanup",
+		ScriptExecutor: consts.LinuxBash,
+		MaxRetries:     9,
+		CanRetry:       true,
+		ShellScript: `
 ETCD_VER=v3.5.10
 
 GOOGLE_URL=https://storage.googleapis.com/etcd
@@ -60,11 +62,20 @@ GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
 DOWNLOAD_URL=${GOOGLE_URL}
 
 sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-sudo rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
+sudo rm -rf /tmp/etcd-download-test
+mkdir -p /tmp/etcd-download-test
 
 curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
+`,
+	})
 
+	collection.Append(resources.Script{
+		Name:           "moving the downloaded binaries to specific location",
+		ScriptExecutor: consts.LinuxBash,
+		CanRetry:       false,
+		ShellScript: `
+ETCD_VER=v3.5.10
+tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
 sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
 
 sudo mv -v /tmp/etcd-download-test/etcd /usr/local/bin
@@ -72,7 +83,14 @@ sudo mv -v /tmp/etcd-download-test/etcdctl /usr/local/bin
 sudo mv -v /tmp/etcd-download-test/etcdutl /usr/local/bin
 
 sudo rm -rf /tmp/etcd-download-test
+`,
+	})
 
+	collection.Append(resources.Script{
+		Name:           "store the certificate files",
+		ScriptExecutor: consts.LinuxBash,
+		CanRetry:       false,
+		ShellScript: fmt.Sprintf(`
 sudo mkdir -p /var/lib/etcd
 
 cat <<EOF > ca.pem
@@ -88,6 +106,16 @@ cat <<EOF > etcd-key.pem
 EOF
 
 sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+`, ca, etcd, key),
+	})
+
+	clusterMembers := getEtcdMemberIPFieldForDatastore(privIPs)
+
+	collection.Append(resources.Script{
+		Name:           "configure etcd configuration file and systemd",
+		ScriptExecutor: consts.LinuxBash,
+		CanRetry:       false,
+		ShellScript: fmt.Sprintf(`
 
 cat <<EOF > etcd.service
 
@@ -123,11 +151,21 @@ WantedBy=multi-user.target
 EOF
 
 sudo mv -v etcd.service /etc/systemd/system
+`, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers),
+	})
 
+	collection.Append(resources.Script{
+		Name:           "restart the systemd and start etcd service",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
 sudo systemctl daemon-reload
 sudo systemctl enable etcd
 
 sudo systemctl start etcd
+`,
+	})
 
-`, ca, etcd, key, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers)
+	return collection
 }

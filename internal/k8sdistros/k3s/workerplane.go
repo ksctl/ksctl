@@ -36,8 +36,16 @@ func (k3s *K3s) JoinWorkerplane(no int, _ resources.StorageFactory) error {
 	return nil
 }
 
-func scriptWP(ver string, privateIPlb, token string) string {
-	return fmt.Sprintf(`#!/bin/bash
+func scriptWP(ver string, privateIPlb, token string) resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(resources.Script{
+		Name:           "Join the workerplane-[0..M]",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 cat <<EOF > worker-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443
@@ -45,5 +53,8 @@ EOF
 
 sudo chmod +x worker-setup.sh
 sudo ./worker-setup.sh
-`, ver, token, privateIPlb)
+`, ver, token, privateIPlb),
+	})
+
+	return collection
 }

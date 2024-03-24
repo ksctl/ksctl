@@ -9,4 +9,5 @@ const (
 	OpScaleDown = Operation("scaledown")
 	OpGet       = Operation("get")
 	OpSwitch    = Operation("switch")
+	OpCreds     = Operation("creds")
 )

@@ -24,3 +24,19 @@ type PreKubernetesBootstrap interface {
 
 	ConfigureLoadbalancer(StorageFactory) error
 }
+
+// TODO: need to figure out how the retry logic and advance things can be done?
+type Script struct {
+	Name           string
+	ShellScript    string
+	CanRetry       bool
+	MaxRetries     uint8
+	ScriptExecutor consts.KsctlSupportedScriptRunners
+}
+
+type ScriptCollection interface {
+	NextScript() *Script
+	String() string
+	Append(Script)
+	IsCompleted() bool
+}

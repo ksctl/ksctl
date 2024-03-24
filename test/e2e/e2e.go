@@ -63,6 +63,8 @@ func main() {
 		} else {
 			deleteManagedCluster(ksctlClient)
 		}
+	case OpCreds:
+		creds(ksctlClient)
 	case OpGet:
 		getClusters(ksctlClient)
 	case OpSwitch:

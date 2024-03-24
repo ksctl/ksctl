@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
@@ -40,9 +41,18 @@ func (k3s *K3s) Setup(storage resources.StorageFactory, operation consts.KsctlOp
 	return nil
 }
 
-func scriptKUBECONFIG() string {
-	return `#!/bin/bash
-sudo cat /etc/rancher/k3s/k3s.yaml`
+func scriptKUBECONFIG() resources.ScriptCollection {
+	collection := helpers.NewScriptCollection()
+	collection.Append(resources.Script{
+		Name:           "k3s kubeconfig",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
+sudo cat /etc/rancher/k3s/k3s.yaml
+`,
+	})
+
+	return collection
 }
 
 func (k3s *K3s) Version(ver string) resources.KubernetesBootstrap {
