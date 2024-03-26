@@ -1,8 +1,6 @@
 package types
 
 type StateConfigurationKubeadm struct {
-	B BaseK8sBootstrap `json:"b" bson:"b"`
-
 	// CertificateKey is only valid till 24 hours
 	CertificateKey string `json:"certificate_key" bson:"certificate_key"`
 

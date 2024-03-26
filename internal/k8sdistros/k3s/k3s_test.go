@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/logger"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
 
@@ -19,41 +22,47 @@ import (
 var (
 	storeHA resources.StorageFactory
 
-	fakeClient         *K3sDistro
+	fakeClient         *K3s
 	dir                = fmt.Sprintf("%s ksctl-k3s-test", os.TempDir())
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 )
 
+func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.StorageFactory, m resources.Metadata, state *types.StorageDocument) *K3s {
+
+	mainStateDocument = state
+	mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{}
+	var err error
+	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(log, x.PrivateIPv4DataStores)
+	if err != nil {
+		return nil
+	}
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes = x.IPv4ControlPlanes
+	mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes = x.PrivateIPv4ControlPlanes
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores = x.IPv4DataStores
+	mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores = x.PrivateIPv4DataStores
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes = x.IPv4WorkerPlanes
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer = x.IPv4LoadBalancer
+	mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
+	mainStateDocument.K8sBootstrap.B.SSHInfo = x.SSHState
+
+	return &K3s{mu: &sync.Mutex{}}
+}
+
 func TestMain(m *testing.M) {
-
-	fakeClient = ReturnK3sStruct(resources.Metadata{
-		ClusterName:  "fake",
-		Region:       "fake",
-		Provider:     consts.CloudAzure,
-		IsHA:         true,
-		LogVerbosity: -1,
-		LogWritter:   os.Stdout,
-		NoCP:         7,
-		NoDS:         5,
-		NoWP:         10,
-		K8sDistro:    consts.K8sK3s,
-	}, &types.StorageDocument{})
-
-	storeHA = localstate.InitStorage(-1, os.Stdout)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect(context.TODO())
-
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
-
-	if err := helpers.CreateSSHKeyPair(log, mainStateDocument); err != nil {
+	log = logger.NewDefaultLogger(-1, os.Stdout)
+	log.SetPackageName("k3s")
+	mainState := &types.StorageDocument{}
+	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
 	}
-
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
 		SSHState: cloudControlRes.SSHInfo{
-			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
+			PrivateKey: mainState.SSHKeyPair.PrivateKey,
 			UserName:   "fakeuser",
 		},
 		Metadata: cloudControlRes.Metadata{
@@ -70,9 +79,32 @@ func TestMain(m *testing.M) {
 
 		// Private IPs
 		PrivateIPv4ControlPlanes: []string{"192.168.X.7", "192.168.X.9", "192.168.X.10"},
-		PrivateIPv4DataStores:    []string{"192.168.X.2"},
+		PrivateIPv4DataStores:    []string{"192.168.5.2"},
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
+
+	fakeClient = NewClientHelper(fakeStateFromCloud, storeHA, resources.Metadata{
+		ClusterName:  "fake",
+		Region:       "fake",
+		Provider:     consts.CloudAzure,
+		IsHA:         true,
+		LogVerbosity: -1,
+		LogWritter:   os.Stdout,
+		NoCP:         7,
+		NoDS:         5,
+		NoWP:         10,
+		K8sDistro:    consts.K8sK3s,
+	}, &types.StorageDocument{})
+	if fakeClient == nil {
+		panic("unable to initialize")
+	}
+
+	storeHA = localstate.InitStorage(-1, os.Stdout)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
+	_ = storeHA.Connect(context.TODO())
+
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
 
 	exitVal := m.Run()
 
@@ -102,28 +134,69 @@ func TestK3sDistro_Version(t *testing.T) {
 func TestScriptsControlplane(t *testing.T) {
 
 	ver := []string{"1.26.1", "1.27"}
-	dbEndpoint := []string{"demo@(cd);dcwef", "mysql@demo@(cd);dcwef"}
+	privIP := []string{"9.9.9.9", "1.1.1.1"}
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privIP)
 	pubIP := []string{"192.16.9.2", "23.34.4.1"}
 	for i := 0; i < len(ver); i++ {
 		validWithCni := fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
+EOF
+
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
+
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ver[i], dbEndpoint[i], pubIP[i])
+`, ver[i], dbEndpoint, pubIP[i])
 
 		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
+EOF
+
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
+
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
 	--tls-san %s
@@ -131,12 +204,12 @@ EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ver[i], dbEndpoint[i], pubIP[i])
+`, ver[i], dbEndpoint, pubIP[i])
 
-		if validWithCni != scriptCP_1(ver[i], dbEndpoint[i], pubIP[i]) {
+		if validWithCni != scriptCP_1("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i]) {
 			t.Fatalf("scipts for Controlplane 1 failed")
 		}
-		if validWithoutCni != scriptCP_1WithoutCNI(ver[i], dbEndpoint[i], pubIP[i]) {
+		if validWithoutCni != scriptCP_1WithoutCNI("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i]) {
 			t.Fatalf("scipts for Controlplane 1 failed")
 		}
 	}
@@ -151,21 +224,65 @@ sudo cat /var/lib/rancher/k3s/server/token
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
 	for i := 0; i < len(ver); i++ {
 		validWithCni := fmt.Sprintf(`#!/bin/bash
-cat <<EOF > control-setupN.sh
-#!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server --token %s --datastore-endpoint="%s" --node-taint CriticalAddonsOnly=true:NoExecute --tls-san %s
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
 EOF
 
-sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
 
-		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
-	--datastore-endpoint="%s" \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
+`, ver[i], sampleToken, dbEndpoint, pubIP[i])
+
+		validWithoutCni := fmt.Sprintf(`#!/bin/bash
+sudo mkdir -p /var/lib/etcd
+
+cat <<EOF > ca.pem
+-- CA_CERT --
+EOF
+
+cat <<EOF > etcd.pem
+-- ETCD_CERT --
+EOF
+
+cat <<EOF > etcd-key.pem
+-- ETCD_KEY --
+EOF
+
+sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+
+
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
@@ -174,85 +291,14 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint[i], pubIP[i])
+`, ver[i], sampleToken, dbEndpoint, pubIP[i])
 
-		if rscript := scriptCP_N(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithCni {
+		if rscript := scriptCP_N("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i], sampleToken); rscript != validWithCni {
 			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithCni, rscript)
 		}
-		if rscript := scriptCP_NWithoutCNI(ver[i], dbEndpoint[i], pubIP[i], sampleToken); rscript != validWithoutCni {
+		if rscript := scriptCP_NWithoutCNI("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i], sampleToken); rscript != validWithoutCni {
 			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithoutCni, rscript)
 		}
-	}
-}
-
-func TestScriptsDataStore(t *testing.T) {
-	password := "$$hello**"
-	valid := fmt.Sprintf(`#!/bin/bash
-sudo apt update
-sudo apt install -y mysql-server
-
-sudo systemctl start mysql
-
-sudo systemctl enable mysql
-
-cat <<EOF > mysqld.cnf
-[mysqld]
-user		= mysql
-bind-address		= 0.0.0.0
-#mysqlx-bind-address	= 127.0.0.1
-
-key_buffer_size		= 16M
-myisam-recover-options  = BACKUP
-log_error = /var/log/mysql/error.log
-max_binlog_size   = 100M
-
-EOF
-
-sudo mv mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
-
-sudo systemctl restart mysql
-
-sudo mysql -e "create user 'ksctl' identified by '%s';"
-sudo mysql -e "create database ksctldb; grant all on ksctldb.* to 'ksctl';"
-
-`, password)
-	if valid != scriptDB(password) {
-		t.Fatalf("script for configuring datastore missmatch")
-	}
-}
-
-func TestScriptsLoadbalancer(t *testing.T) {
-	script := `#!/bin/bash
-sudo apt update
-sudo apt install haproxy -y
-sleep 2s
-sudo systemctl start haproxy && sudo systemctl enable haproxy
-
-cat <<EOF > haproxy.cfg
-frontend kubernetes-frontend
-  bind *:6443
-  mode tcp
-  option tcplog
-  timeout client 10s
-  default_backend kubernetes-backend
-
-backend kubernetes-backend
-  timeout connect 10s
-  timeout server 10s
-  mode tcp
-  option tcp-check
-  balance roundrobin
-  server k3sserver-1 127.0.0.1:6443 check
-  server k3sserver-2 127.0.0.2:6443 check
-  server k3sserver-3 127.0.0.3:6443 check
-EOF
-
-sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
-sudo systemctl restart haproxy
-`
-	array := []string{"127.0.0.1:6443", "127.0.0.2:6443", "127.0.0.3:6443"}
-	if script != configLBscript(array) {
-		t.Fatalf("script for configuring loadbalancer missmatch")
 	}
 }
 
@@ -286,26 +332,19 @@ func checkCurrentStateFile(t *testing.T) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.InitState(fakeStateFromCloud, storeHA, consts.OperationStateCreate), nil, "should be initlize the state")
+	// need to save the prublic ips...
+	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationStateCreate), nil, "should be initlize the state")
 
 	fakeClient.Version("1.27.1")
 
 	checkCurrentStateFile(t)
 
-	err := fakeClient.ConfigureLoadbalancer(storeHA)
-	if err != nil {
-		t.Fatalf("Configure Loadbalancer unable to operate %v", err)
-	}
-	noDS := len(fakeStateFromCloud.IPv4DataStores)
+	//err := fakeClient.ConfigureLoadbalancer(storeHA)
+	//if err != nil {
+	//	t.Fatalf("Configure Loadbalancer unable to operate %v", err)
+	//}
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
-
-	for no := 0; no < noDS; no++ {
-		err := fakeClient.ConfigureDataStore(no, storeHA)
-		if err != nil {
-			t.Fatalf("Configure Datastore unable to operate %v", err)
-		}
-	}
 
 	fakeClient.CNI("flannel")
 	for no := 0; no < noCP; no++ {
@@ -334,4 +373,12 @@ func TestCNI(t *testing.T) {
 		got := fakeClient.CNI(k)
 		assert.Equal(t, got, v, "missmatch")
 	}
+}
+
+func TestGetEtcdMemberIPFieldForControlplane(t *testing.T) {
+	ips := []string{"9.9.9.9", "1.1.1.1"}
+	res1 := "https://9.9.9.9:2379,https://1.1.1.1:2379"
+	assert.Equal(t, res1, getEtcdMemberIPFieldForControlplane(ips), "it should be equal")
+
+	assert.Equal(t, "", getEtcdMemberIPFieldForControlplane([]string{}), "it should be equal")
 }

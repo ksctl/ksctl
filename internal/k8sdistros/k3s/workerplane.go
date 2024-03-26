@@ -4,23 +4,28 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 // JoinWorkerplane implements resources.DistroFactory.
-func (k3s *K3sDistro) JoinWorkerplane(idx int, storage resources.StorageFactory) error {
+func (k3s *K3s) JoinWorkerplane(no int, _ resources.StorageFactory) error {
+	k3s.mu.Lock()
+	idx := no
+	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	k3s.mu.Unlock()
 
 	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
 
-	err := storage.Write(mainStateDocument)
-	if err != nil {
-		return log.NewError(err.Error())
-	}
+	// err := storage.Write(mainStateDocument)
+	// if err != nil {
+	// 	return log.NewError(err.Error())
+	// }
 
-	err = k3s.SSHInfo.Flag(consts.UtilExecWithoutOutput).Script(
-		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.K3s.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
-		IPv4(mainStateDocument.K8sBootstrap.K3s.B.PublicIPs.WorkerPlanes[idx]).
+	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
+		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute(log)
 	if err != nil {
 		return log.NewError(err.Error())

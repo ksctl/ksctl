@@ -1,10 +1,10 @@
 {
-	"cluster_name": "test-e2e-ha-civo",
-	"kubernetes_version": "1.27.1",
-	"region": "FRA1",
+	"cluster_name": "test-e2e-kubeadm-ha-civo",
+	"kubernetes_version": "1.28",
+	"region": "PHX1",
 	"ha_cluster": true,
 	"cloud_provider": "civo",
-	"kubernetes_distro": "k3s",
+	"kubernetes_distro": "kubeadm",
 	"storage_type": "local",
 	"node_type_workerplane": "g3.medium",
 	"desired_no_of_workerplane_nodes": 1

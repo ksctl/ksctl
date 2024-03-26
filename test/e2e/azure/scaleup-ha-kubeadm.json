@@ -1,0 +1,11 @@
+{
+	"cluster_name": "test-e2e-kubeadm-ha-azure",
+	"kubernetes_version": "1.28",
+	"region": "centralindia",
+	"ha_cluster": true,
+	"cloud_provider": "azure",
+	"kubernetes_distro": "kubeadm",
+	"storage_type": "local",
+	"node_type_workerplane": "Standard_F2s",
+	"desired_no_of_workerplane_nodes": 1
+}

@@ -1,5 +1,4 @@
-// NOTE: this go is refering to https://shaneutt.com/blog/golang-ca-and-signed-cert-go/
-package main
+package helpers
 
 import (
 	"bytes"
@@ -8,39 +7,30 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"math/big"
 	"net"
-	"os"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func WriteToFile(buffer *bytes.Buffer, fileName string) error {
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	n, err := buffer.WriteTo(file)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Written bytes=", n)
-	return nil
+// NOTE: this go is refering to https://shaneutt.com/blog/golang-ca-and-signed-cert-go/
+
+func extractBuffer(buffer *bytes.Buffer) string {
+	return buffer.String()
 }
 
-func main() {
-	privateIPArgs := os.Args[1:]
+func GenerateCerts(log resources.LoggerFactory, etcdMemPrivAddr []string) (caCert string, etcdCert string, etcdKey string, err error) {
 
 	var validIPAddresses []net.IP = []net.IP{net.IPv4(127, 0, 0, 1)}
-	for _, ip := range privateIPArgs {
+	for _, ip := range etcdMemPrivAddr {
 		if val := net.ParseIP(string(ip)); val != nil {
 			validIPAddresses = append(validIPAddresses, val)
 		} else {
-			panic("invalid ip address")
+			return "", "", "", log.NewError("invalid ip address")
 		}
 	}
-	fmt.Printf("%s\n", validIPAddresses)
-	fmt.Printf("%#v\n", validIPAddresses)
+	log.Debug("Etcd Members private ip", "ips", validIPAddresses)
 
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2019),
@@ -48,7 +38,7 @@ func main() {
 			CommonName: "etcd cluster",
 		},
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(2, 0, 0),
+		NotAfter:              time.Now().AddDate(2, 0, 0), // for 2 years
 		IsCA:                  true,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
@@ -57,12 +47,12 @@ func main() {
 
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
 
 	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
 	if err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
 
 	caPEM := new(bytes.Buffer)
@@ -70,23 +60,20 @@ func main() {
 		Type:  "CERTIFICATE",
 		Bytes: caBytes,
 	}); err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
 
-	if err := WriteToFile(caPEM, "ca.pem"); err != nil {
-		panic(err)
-	}
+	caCert = extractBuffer(caPEM)
+	log.Debug("CA CERTIFICATE", "ca.crt", caCert)
 
 	caPrivKeyPEM := new(bytes.Buffer)
 	if err := pem.Encode(caPrivKeyPEM, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
 	}); err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
 
-	// ca.pem and ca-key.pem done
-	////////////////////////////////////////////////////////////////////////////
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
 		Subject: pkix.Name{
@@ -102,18 +89,19 @@ func main() {
 	}
 	certPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
 	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &certPrivKey.PublicKey, caPrivKey)
 	if err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
+
 	certPEM := new(bytes.Buffer)
 	if err := pem.Encode(certPEM, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: certBytes,
 	}); err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
 
 	certPrivKeyPEM := new(bytes.Buffer)
@@ -121,12 +109,13 @@ func main() {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
 	}); err != nil {
-		panic(err)
+		return "", "", "", log.NewError(err.Error())
 	}
-	if err := WriteToFile(certPEM, "etcd.pem"); err != nil {
-		panic(err)
-	}
-	if err := WriteToFile(certPrivKeyPEM, "etcd-key.pem"); err != nil {
-		panic(err)
-	}
+
+	etcdCert = extractBuffer(certPEM)
+	etcdKey = extractBuffer(certPrivKeyPEM)
+
+	log.Debug("ETCD CERTIFICATE", "etcd.crt", etcdCert)
+	log.Debug("ETCD KEY", "key.pem", etcdKey)
+	return
 }

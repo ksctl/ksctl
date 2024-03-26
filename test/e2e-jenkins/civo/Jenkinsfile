@@ -20,13 +20,26 @@ pipeline {
             }
         }
 
-        stage('ha cluster') {
+        stage('create ha cluster k3s') {
             steps {
                 sh '''
                     #!/bin/bash
                     cd test/e2e
 
                     /usr/local/go/bin/go run . -op create -file civo/create-ha.json
+
+                    /usr/local/go/bin/go run . -op get -file civo/get.json
+                '''
+            }
+        }
+
+        stage('create ha cluster kubeadm') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op create -file civo/create-ha-kubeadm.json
 
                     /usr/local/go/bin/go run . -op get -file civo/get.json
                 '''
@@ -52,7 +65,7 @@ pipeline {
 
                     kubectl get nodes -owide
 
-                    echo "@@@ HA Cluster @@@"
+                    echo "@@@ HA Cluster (K3s) @@@"
                     /usr/local/go/bin/go run . -op switch -file civo/switch-ha.json
 
                     tree "/var/lib/jenkins/.ksctl/state"
@@ -62,17 +75,68 @@ pipeline {
                     sleep 5s
 
                     kubectl get nodes -owide
+
+                    echo "@@@ HA Cluster (Kubeadm) @@@"
+                    /usr/local/go/bin/go run . -op switch -file civo/switch-ha-kubeadm.json
+
+                    tree "/var/lib/jenkins/.ksctl/state"
+
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ PHX1/state.json
+
+                    sleep 5s
+
+                    kubectl get nodes -owide
                 '''
             }
         }
 
-        stage('ha-del-nodes') {
+
+        stage('ha-del-nodes kubeadm') {
             steps {
                 sh '''
                     #!/bin/bash
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op switch -file civo/switch-ha-kubeadm.json
                     export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
 
+                    sleep 30s
+                    /usr/local/go/bin/go run . -op scaledown -file civo/scaledown-ha-kubeadm.json
+
+                    kubectl get nodes -owide
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ PHX1/state.json
+
+                '''
+            }
+        }
+
+        stage('ha-add-nodes kubeadm') {
+            steps {
+                sh '''
+                    #!/bin/bash
                     cd test/e2e
+
+                    /usr/local/go/bin/go run . -op switch -file civo/switch-ha-kubeadm.json
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
+
+                    sleep 1m
+                    /usr/local/go/bin/go run . -op scaleup -file civo/scaleup-ha-kubeadm.json
+
+                    kubectl get nodes -owide
+                    jq -r . /var/lib/jenkins/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\\ PHX1/state.json
+
+                '''
+            }
+        }
+
+        stage('ha-del-nodes k3s') {
+            steps {
+                sh '''
+                    #!/bin/bash
+                    cd test/e2e
+
+                    /usr/local/go/bin/go run . -op switch -file civo/switch-ha.json
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
 
                     sleep 30s
                     /usr/local/go/bin/go run . -op scaledown -file civo/scaledown-ha.json
@@ -84,13 +148,14 @@ pipeline {
             }
         }
 
-        stage('ha-add-nodes') {
+        stage('ha-add-nodes k3s') {
             steps {
                 sh '''
                     #!/bin/bash
-                    export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
-
                     cd test/e2e
+
+                    /usr/local/go/bin/go run . -op switch -file civo/switch-ha.json
+                    export KUBECONFIG="/var/lib/jenkins/.ksctl/kubeconfig"
 
                     sleep 1m
                     /usr/local/go/bin/go run . -op scaleup -file civo/scaleup-ha.json
@@ -111,6 +176,7 @@ pipeline {
 
                 /usr/local/go/bin/go run . -op delete -file civo/delete.json
                 /usr/local/go/bin/go run . -op delete -file civo/delete-ha.json
+                /usr/local/go/bin/go run . -op delete -file civo/delete-ha-kubeadm.json
             '''
         }
     }
