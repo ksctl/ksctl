@@ -50,6 +50,11 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 		if err != nil {
 			return log.NewError(err.Error())
 		}
+	case consts.CloudAws:
+		err := awsPkg.GetInputCredential(client.Storage, client.Metadata)
+		if err != nil {
+			return log.NewError(err.Error())
+		}
 	default:
 		return log.NewError("Currently not supported!")
 	}

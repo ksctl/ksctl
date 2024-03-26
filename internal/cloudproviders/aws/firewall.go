@@ -2,7 +2,6 @@ package aws
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
@@ -18,11 +17,11 @@ func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 	_ = <-obj.chResName
 	_, err := obj.CreateSecurityGroup(role)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		log.Error("Error saving state", "error", err)
+		return log.NewError("Error saving state", "error", err)
 	}
 
 	return nil
@@ -43,7 +42,7 @@ func (obj *AwsProvider) DelFirewall(storage resources.StorageFactory) error {
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup
 	default:
-		return fmt.Errorf("invalid role")
+		return log.NewError("invalid role")
 	}
 
 	if len(nsg) == 0 {
@@ -52,7 +51,6 @@ func (obj *AwsProvider) DelFirewall(storage resources.StorageFactory) error {
 	} else {
 		err := obj.client.BeginDeleteSecurityGrp(context.Background(), nsg)
 		if err != nil {
-			log.NewError("Error deleting security group", "error", err)
 			return err
 		}
 
@@ -66,12 +64,12 @@ func (obj *AwsProvider) DelFirewall(storage resources.StorageFactory) error {
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = ""
 		default:
-			return fmt.Errorf("invalid role")
+			return log.NewError("invalid role")
 		}
 
 		err = storage.Write(mainStateDocument)
 		if err != nil {
-			log.Error("Error saving state", "error", err)
+			return log.NewError("Error saving state", "error", err)
 		}
 
 		log.Success("deleted the security group ", "id", nsg)
@@ -113,47 +111,39 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 
 	SecurityGroup, err := obj.client.BeginCreateSecurityGroup(context.Background(), SecurityGroupInput)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
-	obj.createSecurityGroupRules(Role, SecurityGroup)
+	err = obj.createSecurityGroupRules(Role, SecurityGroup)
+	if err != nil {
+		return "", err
+	}
 
 	return *SecurityGroup.GroupId, nil
 }
 
-func (obj *AwsProvider) createSecurityGroupRules(role consts.KsctlRole, SecurityGroup *ec2.CreateSecurityGroupOutput) {
+func (obj *AwsProvider) createSecurityGroupRules(role consts.KsctlRole, SecurityGroup *ec2.CreateSecurityGroupOutput) (err error) {
 	var ip_protocol string
 	var cidr_ip string
 	var from_port int32
 	var to_port int32
 
+	ip_protocol = "-1"
+	cidr_ip = "0.0.0.0/0"
+	from_port = 0
+	to_port = 65535
+
 	switch role {
 	case consts.RoleLb:
-		ip_protocol = "-1"
-		cidr_ip = "0.0.0.0/0"
-		from_port = 0
-		to_port = 65535
 		mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup = *SecurityGroup.GroupId
 	case consts.RoleCp:
-		ip_protocol = "-1"
-		cidr_ip = "0.0.0.0/0"
-		from_port = 0
-		to_port = 65535
 		mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
 	case consts.RoleWp:
-		ip_protocol = "-1"
-		cidr_ip = "0.0.0.0/0"
-		from_port = 0
-		to_port = 65535
 		mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
 	case consts.RoleDs:
-		ip_protocol = "-1"
-		cidr_ip = "0.0.0.0/0"
-		from_port = 0
-		to_port = 65535
 		mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = *SecurityGroup.GroupId
 	default:
-		log.Error("Error creating security group", "error", "invalid role")
+		return log.NewError("Error creating security group", "error", "invalid role")
 	}
 	ingressrules := ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId:    SecurityGroup.GroupId,
@@ -162,7 +152,7 @@ func (obj *AwsProvider) createSecurityGroupRules(role consts.KsctlRole, Security
 	}
 
 	if err := obj.client.AuthorizeSecurityGroupIngress(context.Background(), ingressrules); err != nil {
-		log.Error("Error creating security group", "error", err)
+		return err
 	}
 
 	egressrules := ec2.AuthorizeSecurityGroupEgressInput{
@@ -177,6 +167,7 @@ func (obj *AwsProvider) createSecurityGroupRules(role consts.KsctlRole, Security
 	}
 
 	if err := obj.client.AuthorizeSecurityGroupEgress(context.Background(), egressrules); err != nil {
-		log.Error("Error creating security group", "error", err)
+		return err
 	}
+	return nil
 }

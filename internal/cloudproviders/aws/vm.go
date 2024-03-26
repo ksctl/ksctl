@@ -17,11 +17,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
-// var (
-// 	GLBARN *elasticloadbalancingv2.CreateLoadBalancerOutput
-// 	GARN   *elasticloadbalancingv2.CreateTargetGroupOutput
-// )
-
 func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error {
 
 	role := <-obj.chRole
@@ -92,11 +87,11 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 }
 
 func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role consts.KsctlRole) (string, error) {
-	obj.nicprint.Do(func() {
-		log.Print("Creating the network interface...")
-	})
 
 	securitygroup, err := fetchgroupid(role)
+	if err != nil {
+		return "", err
+	}
 	nicid := ""
 	switch role {
 	case consts.RoleWp:
@@ -112,10 +107,6 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	if len(nicid) != 0 {
 		log.Print("[skip] already created the network interface", "id", nicid)
 		return nicid, nil
-	}
-
-	if err != nil {
-		log.Error("Error fetching security group id", "error", err)
 	}
 
 	interfaceparameter := &ec2.CreateNetworkInterfaceInput{
@@ -139,7 +130,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 
 	nicresponse, err := obj.client.BeginCreateNIC(ctx, interfaceparameter)
 	if err != nil {
-		log.Error("Error creating network interface", "error", err)
+		return "", err
 	}
 
 	var errCreate error
@@ -182,11 +173,6 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 
 	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
-	if role == consts.RoleDs && indexNo > 0 {
-		log.Print("skipped currently multiple datastore not supported")
-		return nil
-	}
-
 	instanceId := ""
 	switch role {
 	case consts.RoleCp:
@@ -200,6 +186,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 	}
 	if len(instanceId) != 0 {
 		log.Print("skipped vm already created", "name", instanceId)
+		// TODO: check the civo/vm.go
 		return nil
 	}
 
@@ -207,7 +194,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 
 	nicid, err := obj.CreateNetworkInterface(context.TODO(), storage, name, indexNo, role)
 	if err != nil {
-		log.NewError("Error creating network interface", "error", err)
+		return err
 	}
 
 	ami, err := obj.getLatestUbuntuAMI()
@@ -250,48 +237,82 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 
 	instanceop, err := obj.client.BeginCreateVM(context.Background(), parameter)
 	if err != nil {
-		log.Error("Error creating vm", "error", err)
+		return err
 	}
 
-	instanceipinput := &ec2.DescribeInstancesInput{
-		InstanceIds: []string{*instanceop.Instances[0].InstanceId},
-	}
-
-	instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceipinput)
-	if err != nil {
-		log.Error("Error getting instance state", "error", err)
-	}
-
-	publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
-	privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
+	instanceId = *instanceop.Instances[0].InstanceId
 
 	var errCreateVM error
 
+	done1 := make(chan struct{})
+	go func() {
+		defer close(done1)
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
+		switch role {
+		case consts.RoleCp:
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = instanceId
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames[indexNo] = name
+		case consts.RoleDs:
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = instanceId
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames[indexNo] = name
+		case consts.RoleLb:
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = instanceId
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.HostName = name
+		case consts.RoleWp:
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = instanceId
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[indexNo] = name
+		}
+
+		if err := storage.Write(mainStateDocument); err != nil {
+			errCreateVM = err
+		}
+	}()
+	<-done1
+	if errCreateVM != nil {
+		return log.NewError(errCreateVM.Error())
+	}
+
+	log.Print("creating vm...", "id", instanceId)
+
 	done := make(chan struct{})
+
 	go func() {
 		defer close(done)
+
+		err = obj.client.InstanceInitialWaiter(context.Background(), instanceId)
+		if err != nil {
+			errCreateVM = err
+			return
+		}
+
+		instanceipinput := &ec2.DescribeInstancesInput{
+			InstanceIds: []string{instanceId},
+		}
+
+		instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceipinput)
+		if err != nil {
+			errCreateVM = err
+			return
+		}
+
+		publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
+		privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
+
 		obj.mu.Lock()
 		defer obj.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = *instanceop.Instances[0].InstanceId
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[indexNo] = name
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = *instanceop.Instances[0].InstanceId
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames[indexNo] = name
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = *instanceop.Instances[0].InstanceId
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.HostName = name
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = *instanceop.Instances[0].InstanceId
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames[indexNo] = name
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
 		}
@@ -307,7 +328,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 
 	log.Debug("Printing", "mainStateDocument", mainStateDocument)
 
-	log.Success("Created the vm", "id", *instanceop.Instances[0].InstanceId)
+	log.Success("Created the vm", "id", instanceId)
 	return nil
 }
 
@@ -329,9 +350,9 @@ func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
 		},
 	}
 
-	resp, err := obj.client.GetLatestAMI(imageFilter)
+	resp, err := obj.client.FetchLatestAMIWithFilter(imageFilter)
 	if err != nil {
-		return "", fmt.Errorf("failed to describe images: %w", err)
+		return "", err
 	}
 	if len(resp.Images) == 0 {
 		return "", fmt.Errorf("no images found")
@@ -358,8 +379,6 @@ func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
 	}
 
 	selectedAMI := *savedImages[0].ImageId
-
-	log.Print("Selected ami image", "imageId", selectedAMI)
 
 	return selectedAMI, nil
 }
@@ -388,11 +407,11 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage reso
 		interfaceName = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index]
 	}
 	if len(interfaceName) == 0 {
-		log.Print("skipped network interface already deleted")
+		log.Print("[skip] already deleted the network interface")
 	} else {
 		err := obj.client.BeginDeleteNIC(interfaceName)
 		if err != nil {
-			log.Error("Error deleting network interface", "error", err)
+			return err
 		}
 		switch role {
 		case consts.RoleWp:
@@ -429,5 +448,5 @@ func fetchgroupid(role consts.KsctlRole) (string, error) {
 
 	}
 
-	return "", fmt.Errorf("invalid role %s", role)
+	return "", log.NewError("invalid role %s", role)
 }

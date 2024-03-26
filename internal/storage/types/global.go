@@ -8,6 +8,7 @@ import (
 // CredentialsDocument object which stores the credentials for each provider
 type CredentialsDocument struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty"`
+	Aws           *CredentialsAws    `json:"aws,omitempty" bson:"aws,omitempty"`
 	Azure         *CredentialsAzure  `json:"azure,omitempty" bson:"azure,omitempty"`
 	Civo          *CredentialsCivo   `json:"civo,omitempty" bson:"civo,omitempty"`
 	InfraProvider consts.KsctlCloud  `json:"cloud_provider" bson:"cloud_provider"`

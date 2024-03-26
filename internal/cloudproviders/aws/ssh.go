@@ -21,7 +21,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 
 	err := helpers.CreateSSHKeyPair(log, mainStateDocument)
 	if err != nil {
-		log.Print("Error creating ssh key pair", "error", err)
+		return log.NewError("Error creating ssh key pair", "error", err)
 	}
 
 	parameter := &ec2.ImportKeyPairInput{
@@ -30,7 +30,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 	}
 
 	if err := obj.client.ImportKeyPair(context.Background(), parameter); err != nil {
-		log.Error("Error uploading ssh key pair", "error", err)
+		return err
 	}
 
 	mainStateDocument.CloudInfra.Aws.B.SSHKeyName = name
@@ -61,11 +61,10 @@ func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 		mainStateDocument.CloudInfra.Aws.B.SSHUser = ""
 
 		if err := storage.Write(mainStateDocument); err != nil {
-			return log.NewError(err.Error())
+			return log.NewError("Error writing to storage", "error", err)
 		}
 
 		log.Success("deleted the ssh key pair", "name", sshName)
-		return nil
 	}
 
 	return nil

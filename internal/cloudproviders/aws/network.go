@@ -26,7 +26,7 @@ func (obj *AwsProvider) DelNetwork(storage resources.StorageFactory) error {
 	}
 
 	if mainStateDocument.CloudInfra.Aws.VpcId == "" {
-		log.Success("[aws] deleted the vpc ", "id", mainStateDocument.CloudInfra.Aws.VpcName)
+		log.Success("deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
 	} else {
 		err = obj.DeleteVpc(context.Background(), storage, mainStateDocument.CloudInfra.Aws.VpcId)
 		if err != nil {
@@ -34,11 +34,11 @@ func (obj *AwsProvider) DelNetwork(storage resources.StorageFactory) error {
 		}
 	}
 
-	if err := storage.DeleteCluster(); err != nil {
-		return log.NewError(err.Error())
-	}
+	log.Success("deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
 
-	log.Success("[aws] deleted the vpc ", "id", mainStateDocument.CloudInfra.Aws.VpcName)
+	if err := storage.DeleteCluster(); err != nil {
+		return log.NewError("Error deleting cluster from local storage", "error", err)
+	}
 
 	return nil
 }
@@ -52,10 +52,10 @@ func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage resources.Stor
 	mainStateDocument.CloudInfra.Aws.SubnetID = ""
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return log.NewError("Error saving state", "error", err)
 	}
 
-	log.Success("[aws] deleted the subnet ", "id", mainStateDocument.CloudInfra.Aws.SubnetName)
+	log.Success("deleted the subnet", "id", mainStateDocument.CloudInfra.Aws.SubnetName)
 
 	return nil
 }
@@ -72,7 +72,7 @@ func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage resources.Storage
 		return log.NewError(err.Error())
 	}
 
-	log.Success("deleted the vpc ", "id", mainStateDocument.CloudInfra.Aws.VpcName)
+	log.Success("deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
 	return nil
 }
 
@@ -113,10 +113,10 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {
-			return log.NewError(err.Error())
+			return log.NewError("Error saving state", "error", err)
 		}
 
-		log.Success("created the vpc ", "id", *vpc.Vpc.VpcId)
+		log.Success("created the vpc", "id", *vpc.Vpc.VpcId)
 
 	}
 
@@ -137,13 +137,20 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return log.NewError("Error saving state", "error", err)
 	}
 
 	return nil
 }
 
 func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
+
+	zones, err := obj.client.GetAvailabilityZones()
+	if err != nil {
+		return err
+	}
+
+	log.Print("Selected availability zone", "zone", *zones.AvailabilityZones[0].ZoneName)
 
 	if len(mainStateDocument.CloudInfra.Aws.SubnetID) != 0 {
 		log.Print("[skip] already created the subnet", mainStateDocument.CloudInfra.Aws.SubnetID)
@@ -164,7 +171,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 					},
 				},
 			},
-			AvailabilityZone: aws.String("ap-south-1a"),
+			AvailabilityZone: aws.String(*zones.AvailabilityZones[0].ZoneName),
 		}
 		response, err := obj.client.BeginCreateSubNet(ctx, subnetName, parameter)
 		if err != nil {
@@ -179,10 +186,10 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {
-			return log.NewError(err.Error())
+			return log.NewError("Error saving state", "error", err)
 		}
 
-		log.Success("created the subnet ", "id", *response.Subnet.Tags[0].Value)
+		log.Success("created the subnet", "id", *response.Subnet.Tags[0].Value)
 
 		naclinput := ec2.CreateNetworkAclInput{
 			VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
@@ -207,10 +214,10 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 		mainStateDocument.CloudInfra.Aws.NetworkAclID = *naclresp.NetworkAcl.NetworkAclId
 
 		if err := storage.Write(mainStateDocument); err != nil {
-			return log.NewError(err.Error())
+			return log.NewError("Error saving state", "error", err)
 		}
 
-		log.Success("created the network acl ", "id", *naclresp.NetworkAcl.NetworkAclId)
+		log.Success("created the network acl", "id", *naclresp.NetworkAcl.NetworkAclId)
 	}
 
 	return nil
@@ -256,10 +263,10 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resour
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {
-			return log.NewError(err.Error())
+			return log.NewError("Error saving state", "error", err)
 		}
-		log.Success("[aws] created the internet gateway ", "id", *gatewayresp.InternetGateway.InternetGatewayId)
-		log.Success("[aws] created the route table ", "id", *routeresponce.RouteTable.RouteTableId)
+		log.Success("created the internet gateway", "id", *gatewayresp.InternetGateway.InternetGatewayId)
+		log.Success("created the route table", "id", *routeresponce.RouteTable.RouteTableId)
 	}
 
 	return nil

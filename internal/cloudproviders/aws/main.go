@@ -22,8 +22,20 @@ var (
 	clusterType       consts.KsctlClusterType
 	ctx               context.Context
 	log               resources.LoggerFactory
-	clusterDirName    string
 )
+
+type metadata struct {
+	public bool
+	cni    string
+	// version string
+
+	noCP int
+	noWP int
+	noDS int
+
+	k8sName    consts.KsctlKubernetes
+	k8sVersion string
+}
 
 type AwsProvider struct {
 	clusterName string
@@ -34,7 +46,6 @@ type AwsProvider struct {
 
 	mu sync.Mutex
 
-	nicprint  sync.Once
 	chResName chan string
 	chRole    chan consts.KsctlRole
 	chVMType  chan string
@@ -45,10 +56,11 @@ type AwsProvider struct {
 
 func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
 	err := storage.AlreadyCreated(consts.CloudAws, region, name, ksctlClusterType)
-	if err != nil {
-		return false
-	}
-	return true
+	// if err != nil {
+	// 	return false
+	// }
+	// return true
+	return err == nil
 }
 
 func (obj *AwsProvider) IsPresent(storage resources.StorageFactory) error {
@@ -73,19 +85,6 @@ func (obj *AwsProvider) Version(ver string) resources.CloudFactory {
 	return obj
 }
 
-type metadata struct {
-	public  bool
-	cni     string
-	version string
-
-	noCP int
-	noWP int
-	noDS int
-
-	k8sName    consts.KsctlKubernetes
-	k8sVersion string
-}
-
 func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAws))
@@ -105,8 +104,6 @@ func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, Clie
 	}
 
 	obj.client.SetRegion(obj.region)
-	obj.client.SetVpc(obj.vpc)
-
 	log.Debug("Printing", "AwsProvider", obj)
 
 	return obj, nil
@@ -142,7 +139,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	switch opration {
 	case consts.OperationStateCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Aws.IsCompleted {
-			return fmt.Errorf("cluster %s already exists", obj.clusterName)
+			return log.NewError("cluster %s already exists", obj.clusterName)
 		}
 		if errLoadState == nil && !mainStateDocument.CloudInfra.Aws.IsCompleted {
 			log.Warn("Cluster state found but not completed, resuming operation")
@@ -176,11 +173,11 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	}
 
 	if err := obj.client.InitClient(storage); err != nil {
-		log.NewError("failed to initialize aws client reason:%s\n", err.Error())
+		return err
 	}
 
 	if err := validationOfArguments(obj); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	log.Debug("init cloud state")
@@ -190,6 +187,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 
 func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
 
+	// TODO: use DeepCopy()
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
 			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
@@ -277,15 +275,14 @@ func (obj *AwsProvider) CNI(s string) (externalCNI bool) {
 	switch consts.KsctlValidCNIPlugin(s) {
 	case consts.CNICilium, consts.CNIFlannel:
 		obj.metadata.cni = s
+		return false
 	case "":
 		obj.metadata.cni = string(consts.CNIFlannel)
+		return false
 	default:
-		// nothing external
 		obj.metadata.cni = string(consts.CNINone)
 		return true
 	}
-
-	return false
 }
 
 func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
@@ -395,7 +392,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Print("Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
 		return len(mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames), nil
 	}
-	if no >= 1 && (no&1) == 1 {
+	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {
@@ -415,7 +412,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Debug("Printing", "awsCloudState.InfoDatabase", mainStateDocument.CloudInfra.Aws.InfoDatabase)
 		return -1, nil
 	}
-	return -1, log.NewError("constrains for no of Datastore>= 1 and odd number")
+	return -1, log.NewError("constrains for no of Datastore>= 3 and odd number")
 }
 
 func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
@@ -428,7 +425,7 @@ func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
 func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
-		return "", err
+		return "", log.NewError("Error marshalling state", "error", err)
 	}
 	log.Debug("Printing", "cloudstate", cloudstate)
 	return string(cloudstate), nil
@@ -458,7 +455,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 		"clusterType": "",
 	})
 	if err != nil {
-		return nil, err
+		return nil, log.NewError("Error fetching cluster info", "error", err)
 	}
 
 	for K, Vs := range clusters {
