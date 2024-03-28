@@ -159,7 +159,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	if errCreate != nil {
 		return "", errCreate
 	}
-	log.Print("Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	log.Success("Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
 	return *nicresponse.NetworkInterface.NetworkInterfaceId, nil
 }
 

@@ -286,7 +286,7 @@ func (obj *AwsProvider) CNI(s string) (externalCNI bool) {
 }
 
 func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
-	log.Print("Printing", "desiredNumber", no, "setterOrNot", setter)
+	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called")
@@ -380,7 +380,7 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 }
 
 func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
-	log.Print("Printing", "desiredNumber", no, "setterOrNot", setter)
+	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		if mainStateDocument == nil {
 			return -1, log.NewError("state init not called")
@@ -389,7 +389,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			return -1, nil
 		}
 
-		log.Print("Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
+		log.Debug("Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
 		return len(mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
