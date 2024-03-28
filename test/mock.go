@@ -238,7 +238,7 @@ func AwsTestingHA() error {
 	cli.Metadata.Provider = consts.CloudAws
 	cli.Metadata.NoCP = 3
 	cli.Metadata.NoWP = 1
-	cli.Metadata.NoDS = 1
+	cli.Metadata.NoDS = 3
 	cli.Metadata.K8sVersion = "1.27.4"
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)

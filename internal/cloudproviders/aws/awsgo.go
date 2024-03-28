@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -65,9 +66,9 @@ type AwsGo interface {
 
 	BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error
 
-	DescribeInstanceState(ctx context.Context, instanceInput *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
+	DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error)
 
-	FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error)
+	FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error)
 	GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error)
 	AuthorizeSecurityGroupEgress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupEgressInput) error
 
@@ -113,16 +114,42 @@ func (awsclient *AwsGoClient) AuthorizeSecurityGroupIngress(ctx context.Context,
 	return nil
 }
 
-func (awsclient *AwsGoClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error) {
+func (awsclient *AwsGoClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
 	resp, err := awsclient.ec2Client.DescribeImages(context.TODO(), filter)
 	if err != nil {
-		return resp, log.NewError("failed to describe images: %w", err)
+		return "", log.NewError("failed to describe images: %w", err)
 	}
 	if len(resp.Images) == 0 {
-		return resp, log.NewError("no images found")
+		return "", log.NewError("no images found")
 	}
 
-	return resp, nil
+	if len(resp.Images) == 0 {
+		return "", log.NewError("no images found")
+	}
+
+	var savedImages []types.Image
+
+	for _, i := range resp.Images {
+		if trustedSource(*i.OwnerId) && *i.Public {
+			savedImages = append(savedImages, i)
+		}
+	}
+
+	sort.Slice(savedImages, func(i, j int) bool {
+		return *savedImages[i].CreationDate > *savedImages[j].CreationDate
+	})
+
+	for x := 0; x < 2; x++ {
+		i := savedImages[x]
+		if i.ImageOwnerAlias != nil {
+			log.Debug("ownerAlias", *i.ImageOwnerAlias)
+		}
+		log.Debug("Printing amis", "creationdate", *i.CreationDate, "public", *i.Public, "ownerid", *i.OwnerId, "architecture", i.Architecture.Values(), "name", *i.Name, "imageid", *i.ImageId)
+	}
+
+	selectedAMI := *savedImages[0].ImageId
+
+	return selectedAMI, nil
 }
 
 func (awsclient *AwsGoClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
@@ -338,7 +365,7 @@ func (awsgo *AwsGoClient) BeginDeleteVM(instanceID string) error {
 		InstanceIds: []string{instanceID},
 	}
 
-	err = ec2TerminatedWaiter.Wait(context.TODO(), describeEc2Inp, 100*time.Second)
+	err = ec2TerminatedWaiter.Wait(context.TODO(), describeEc2Inp, 200*time.Second)
 	if err != nil {
 		return log.NewError("failed to wait for instance to terminate, %v", err)
 	}
@@ -467,9 +494,13 @@ func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage re
 	return nil
 }
 
-func (awsclient *AwsGoClient) DescribeInstanceState(ctx context.Context, instanceInput *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
+func (awsclient *AwsGoClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
 
-	instanceinforesponse, err := awsclient.ec2Client.DescribeInstances(ctx, instanceInput)
+	instanceipinput := &ec2.DescribeInstancesInput{
+		InstanceIds: []string{instanceId},
+	}
+
+	instanceinforesponse, err := awsclient.ec2Client.DescribeInstances(ctx, instanceipinput)
 	if err != nil {
 		return instanceinforesponse, log.NewError("Error Describing Instances", "error", err)
 	}
@@ -777,8 +808,8 @@ func (*AwsGoMockClient) BeginDeleteNIC(nicID string) error {
 	return nil
 }
 
-func (*AwsGoMockClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error) {
-	return nil, nil
+func (*AwsGoMockClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
+	return "ami-1234567890", nil
 }
 
 func (*AwsGoMockClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error {
@@ -787,7 +818,13 @@ func (*AwsGoMockClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpI
 }
 
 func (*AwsGoMockClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
-	return nil, nil
+	return &ec2.DescribeAvailabilityZonesOutput{
+		AvailabilityZones: []types.AvailabilityZone{
+			{
+				ZoneName: aws.String("us-east-1a"),
+			},
+		},
+	}, nil
 }
 
 func (*AwsGoMockClient) BeginDeleteSubNet(ctx context.Context, storage resources.StorageFactory, subnetID string) error {
@@ -843,7 +880,7 @@ func (*AwsGoMockClient) CreateSSHKey() error {
 	return nil
 }
 
-func (*AwsGoMockClient) DescribeInstanceState(ctx context.Context, instanceInput *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
+func (*AwsGoMockClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
 
 	instanceinforesponse := &ec2.DescribeInstancesOutput{
 		Reservations: []types.Reservation{
@@ -915,7 +952,6 @@ func (*AwsGoMockClient) ModifySubnetAttribute(ctx context.Context) error {
 	return nil
 }
 func (*AwsGoMockClient) SetRegion(string) string {
-	mainStateDocument.CloudInfra.Aws.Region = "fakeregion"
 	return "fake-region"
 }
 

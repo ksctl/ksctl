@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -174,20 +173,50 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
 	instanceId := ""
+	instanceIp := ""
 	switch role {
 	case consts.RoleCp:
 		instanceId = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo]
+		instanceIp = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo]
 	case consts.RoleDs:
 		instanceId = mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo]
+		instanceIp = mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo]
 	case consts.RoleLb:
 		instanceId = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID
+		instanceIp = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP
 	case consts.RoleWp:
 		instanceId = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo]
+		instanceIp = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo]
 	}
-	if len(instanceId) != 0 {
+	if len(instanceId) != 0 && len(instanceIp) != 0 {
 		log.Print("skipped vm already created", "name", instanceId)
-		// TODO: check the civo/vm.go
 		return nil
+	} else if len(instanceId) != 0 && len(instanceIp) == 0 {
+		instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceId)
+		if err != nil {
+			return err
+		}
+
+		publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
+		privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
+
+		obj.mu.Lock()
+		defer obj.mu.Unlock()
+
+		switch role {
+		case consts.RoleWp:
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
+		case consts.RoleCp:
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
+		case consts.RoleLb:
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
+		case consts.RoleDs:
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
+		}
 	}
 
 	stringindexNo := fmt.Sprintf("%d", indexNo)
@@ -286,11 +315,7 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 			return
 		}
 
-		instanceipinput := &ec2.DescribeInstancesInput{
-			InstanceIds: []string{instanceId},
-		}
-
-		instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceipinput)
+		instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceId)
 		if err != nil {
 			errCreateVM = err
 			return
@@ -354,33 +379,8 @@ func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if len(resp.Images) == 0 {
-		return "", fmt.Errorf("no images found")
-	}
 
-	var savedImages []types.Image
-
-	for _, i := range resp.Images {
-		if trustedSource(*i.OwnerId) && *i.Public {
-			savedImages = append(savedImages, i)
-		}
-	}
-
-	sort.Slice(savedImages, func(i, j int) bool {
-		return *savedImages[i].CreationDate > *savedImages[j].CreationDate
-	})
-
-	for x := 0; x < 2; x++ {
-		i := savedImages[x]
-		if i.ImageOwnerAlias != nil {
-			log.Debug("ownerAlias", *i.ImageOwnerAlias)
-		}
-		log.Debug("Printing amis", "creationdate", *i.CreationDate, "public", *i.Public, "ownerid", *i.OwnerId, "architecture", i.Architecture.Values(), "name", *i.Name, "imageid", *i.ImageId)
-	}
-
-	selectedAMI := *savedImages[0].ImageId
-
-	return selectedAMI, nil
+	return resp, nil
 }
 
 // trustedSource: helper recieved from https://ubuntu.com/tutorials/search-and-launch-ubuntu-22-04-in-aws-using-cli#2-search-for-the-right-ami

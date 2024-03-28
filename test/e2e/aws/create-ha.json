@@ -12,5 +12,5 @@
 	"node_type_loadbalancer": "t2.micro",
 	"desired_no_of_workerplane_nodes": 1,
 	"desired_no_of_controlplane_nodes": 3,
-	"desired_no_of_datastore_nodes": 1
+	"desired_no_of_datastore_nodes": 3
 }
