@@ -25,7 +25,7 @@ const (
 	initialInstanceMaxDelay        = time.Second * 10
 	initialNicWaiterTime           = time.Second * 10
 	initialSubnetWaiterTime        = time.Second * 10
-	instanceInitialWaiterTime      = time.Second * 200
+	instanceInitialWaiterTime      = time.Second * 300
 	initialNicDeletionWaiterTime   = time.Second * 30
 	instanceInitialTerminationTime = time.Second * 200
 )
@@ -634,22 +634,28 @@ func (awsclient *AwsGoClient) ListLocations() (*string, error) {
 }
 
 func (awsclient *AwsGoClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
-
 	var vmTypes ec2.DescribeInstanceTypesOutput
-
-	parameter, err := awsclient.ec2Client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{
+	input := &ec2.DescribeInstanceTypesInput{
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("current-generation"),
 				Values: []string{"true"},
 			},
 		},
-	})
-	if err != nil {
-		return vmTypes, log.NewError("Error Describing Instance Types", "error", err)
 	}
 
-	vmTypes.InstanceTypes = append(vmTypes.InstanceTypes, parameter.InstanceTypes...)
+	for {
+		output, err := awsclient.ec2Client.DescribeInstanceTypes(context.Background(), input)
+		if err != nil {
+			return vmTypes, log.NewError("Error Describing Instance Types", "error", err)
+		}
+		vmTypes.InstanceTypes = append(vmTypes.InstanceTypes, output.InstanceTypes...)
+		if output.NextToken == nil {
+			break
+		}
+		input.NextToken = output.NextToken
+	}
+
 	return vmTypes, nil
 }
 
