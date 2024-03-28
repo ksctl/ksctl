@@ -8,6 +8,7 @@ import (
 // CredentialsDocument object which stores the credentials for each provider
 type CredentialsDocument struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty"`
+	Aws           *CredentialsAws    `json:"aws,omitempty" bson:"aws,omitempty"`
 	Azure         *CredentialsAzure  `json:"azure,omitempty" bson:"azure,omitempty"`
 	Civo          *CredentialsCivo   `json:"civo,omitempty" bson:"civo,omitempty"`
 	InfraProvider consts.KsctlCloud  `json:"cloud_provider" bson:"cloud_provider"`
@@ -24,15 +25,15 @@ type StorageDocument struct {
 	InfraProvider     consts.KsctlCloud      `json:"cloud_provider" bson:"cloud_provider"`
 	BootstrapProvider consts.KsctlKubernetes `json:"bootstrap_provider" bson:"bootstrap_provider"`
 
-	CloudInfra   *InfrastructureState      `json:"cloud_infrastructure_state" bson:"cloud_infrastructure_state,omitempty"`
-	K8sBootstrap *KubernetesBootstrapState `json:"kubernetes_bootstrap_state" bson:"kubernetes_bootstrap_state,omitempty"`
-
-	ClusterKubeConfig string `json:"cluster_kubeconfig" bson:"cluster_kubeconfig"`
+	CloudInfra        *InfrastructureState      `json:"cloud_infrastructure_state" bson:"cloud_infrastructure_state,omitempty"`
+	K8sBootstrap      *KubernetesBootstrapState `json:"kubernetes_bootstrap_state" bson:"kubernetes_bootstrap_state,omitempty"`
+	ClusterKubeConfig string                    `json:"cluster_kubeconfig" bson:"cluster_kubeconfig"`
 
 	SSHKeyPair SSHKeyPairState `json:"ssh_key_pair" bson:"ssh_key_pair"`
 }
 
 type InfrastructureState struct {
+	Aws   *StateConfigurationAws   `json:"aws,omitempty" bson:"aws,omitempty"`
 	Azure *StateConfigurationAzure `json:"azure,omitempty" bson:"azure,omitempty"`
 	Civo  *StateConfigurationCivo  `json:"civo,omitempty" bson:"civo,omitempty"`
 	Local *StateConfigurationLocal `json:"local,omitempty" bson:"local,omitempty"`

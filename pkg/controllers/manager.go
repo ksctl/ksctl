@@ -8,6 +8,7 @@ import (
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 
+	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
 	"github.com/ksctl/ksctl/internal/cloudproviders/azure"
 	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
 	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
@@ -46,6 +47,11 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 		}
 	case consts.CloudAzure:
 		err := azure.GetInputCredential(client.Storage, client.Metadata)
+		if err != nil {
+			return log.NewError(err.Error())
+		}
+	case consts.CloudAws:
+		err := awsPkg.GetInputCredential(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -201,6 +207,11 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 
 	var err error
 	switch client.Metadata.Provider {
+	case consts.CloudAws:
+		client.Cloud, err = awsPkg.ReturnAwsStruct(client.Metadata, stateDocument, awsPkg.ProvideClient)
+		if err != nil {
+			return nil, log.NewError(err.Error())
+		}
 	case consts.CloudCivo:
 		client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, stateDocument, civoPkg.ProvideClient)
 		if err != nil {
@@ -277,6 +288,13 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 		}
 		printerTable = append(printerTable, data...)
 
+	case consts.CloudAws:
+		data, err := awsPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		if err != nil {
+			return log.NewError(err.Error())
+		}
+		printerTable = append(printerTable, data...)
+
 	case consts.CloudAzure:
 		data, err := azurePkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
@@ -298,6 +316,12 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 		printerTable = append(printerTable, data...)
 
 		data, err = azurePkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		if err != nil {
+			return log.NewError(err.Error())
+		}
+		printerTable = append(printerTable, data...)
+
+		data, err = awsPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
 		if err != nil {
 			return log.NewError(err.Error())
 		}
