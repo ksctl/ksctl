@@ -78,5 +78,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	l.Print("Testing Completed", " ⏰ ", time.Since(timer))
+	l.Print("Testing Completed", " ⏰ ", time.Since(timer).String())
 }
