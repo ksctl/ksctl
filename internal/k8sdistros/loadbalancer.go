@@ -21,9 +21,6 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 		controlPlaneIPs[i] = mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes[i] + ":6443"
 	}
 
-	scripts := scriptConfigureLoadbalancer(controlPlaneIPs)
-	fmt.Println(scripts)
-
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptConfigureLoadbalancer(controlPlaneIPs)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
@@ -44,7 +41,7 @@ func scriptConfigureLoadbalancer(controlPlaneIPs []string) resources.ScriptColle
 		CanRetry:   true,
 		MaxRetries: 9,
 		ShellScript: `
-sudo apt update -y 
+sudo apt update -y
 sudo apt install haproxy -y
 `,
 		ScriptExecutor: consts.LinuxBash,

@@ -56,10 +56,6 @@ type AwsProvider struct {
 
 func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
 	err := storage.AlreadyCreated(consts.CloudAws, region, name, ksctlClusterType)
-	// if err != nil {
-	// 	return false
-	// }
-	// return true
 	return err == nil
 }
 
@@ -142,7 +138,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 			return log.NewError("cluster %s already exists", obj.clusterName)
 		}
 		if errLoadState == nil && !mainStateDocument.CloudInfra.Aws.IsCompleted {
-			log.Warn("Cluster state found but not completed, resuming operation")
+			log.Note("Cluster state found but not completed, resuming operation")
 		} else {
 			log.Debug("Fresh state!!")
 
