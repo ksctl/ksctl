@@ -41,5 +41,5 @@ jobs:
  
       - name: Build Inventory Image
         run: |
-          docker build --file build/agent/Dockerfile --tag ghcr.io/ksctl/ksctl:agent-latest .
-          docker push ghcr.io/ksctl/ksctl:agent-latest
+          docker build --file build/agent/Dockerfile --tag ghcr.io/ksctl/ksctl-agent:latest .
+          docker push ghcr.io/ksctl/ksctl-agent:latest
