@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -16,9 +17,17 @@ import (
 )
 
 const (
-	initialWait    = time.Second * 5
-	waiterMinDelay = time.Second * 5
-	waiterMaxDelay = time.Second * 10
+	initialNicMinDelay             = time.Second * 1
+	initialNicMaxDelay             = time.Second * 5
+	initialSubnetMinDelay          = time.Second * 1
+	initialSubnetMaxDelay          = time.Second * 5
+	initialInstanceMinDelay        = time.Second * 5
+	initialInstanceMaxDelay        = time.Second * 10
+	initialNicWaiterTime           = time.Second * 10
+	initialSubnetWaiterTime        = time.Second * 10
+	instanceInitialWaiterTime      = time.Second * 200
+	initialNicDeletionWaiterTime   = time.Second * 30
+	instanceInitialTerminationTime = time.Second * 200
 )
 
 func ProvideClient() AwsGo {
@@ -152,6 +161,16 @@ func (awsclient *AwsGoClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImage
 	return selectedAMI, nil
 }
 
+// trustedSource: helper recieved from https://ubuntu.com/tutorials/search-and-launch-ubuntu-22-04-in-aws-using-cli#2-search-for-the-right-ami
+func trustedSource(id string) bool {
+	// 679593333241
+	// 099720109477
+	if strings.Compare(id, "679593333241") != 0 && strings.Compare(id, "099720109477") != 0 {
+		return false
+	}
+	return true
+}
+
 func (awsclient *AwsGoClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
 	azs, err := awsclient.ec2Client.DescribeAvailabilityZones(context.TODO(), &ec2.DescribeAvailabilityZonesInput{
 		AllAvailabilityZones: aws.Bool(true),
@@ -171,15 +190,15 @@ func (awsclient *AwsGoClient) BeginCreateNIC(ctx context.Context, parameter *ec2
 	}
 
 	nicExistsWaiter := ec2.NewNetworkInterfaceAvailableWaiter(awsclient.ec2Client, func(nicwaiter *ec2.NetworkInterfaceAvailableWaiterOptions) {
-		nicwaiter.MinDelay = waiterMinDelay
-		nicwaiter.MaxDelay = waiterMaxDelay
+		nicwaiter.MinDelay = initialNicMinDelay
+		nicwaiter.MaxDelay = initialNicMaxDelay
 	})
 
 	describeNICInput := &ec2.DescribeNetworkInterfacesInput{
 		NetworkInterfaceIds: []string{*nic.NetworkInterface.NetworkInterfaceId},
 	}
 
-	err = nicExistsWaiter.Wait(context.Background(), describeNICInput, 60*time.Second)
+	err = nicExistsWaiter.Wait(context.Background(), describeNICInput, initialNicWaiterTime)
 
 	if err != nil {
 		log.NewError("Error Waiting for Network Interface", "error", err)
@@ -195,15 +214,15 @@ func (awsclient *AwsGoClient) BeginCreateSubNet(ctx context.Context, subnetName 
 	}
 
 	subnetExistsWaiter := ec2.NewSubnetAvailableWaiter(awsclient.ec2Client, func(subnetwaiter *ec2.SubnetAvailableWaiterOptions) {
-		subnetwaiter.MinDelay = waiterMinDelay
-		subnetwaiter.MaxDelay = waiterMaxDelay
+		subnetwaiter.MinDelay = initialSubnetMinDelay
+		subnetwaiter.MaxDelay = initialSubnetMaxDelay
 	})
 
 	describeSubnetInput := &ec2.DescribeSubnetsInput{
 		SubnetIds: []string{*subnet.Subnet.SubnetId},
 	}
 
-	err = subnetExistsWaiter.Wait(ctx, describeSubnetInput, 60*time.Second)
+	err = subnetExistsWaiter.Wait(ctx, describeSubnetInput, initialSubnetWaiterTime)
 	if err != nil {
 		return nil, log.NewError("Error Waiting for Subnet", "error", err)
 	}
@@ -277,7 +296,7 @@ func (awsclient *AwsGoClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2
 		VpcIds: []string{*vpc.Vpc.VpcId},
 	}
 
-	err = vpcExistsWaiter.Wait(context.Background(), describeVpcInput, initialWait)
+	err = vpcExistsWaiter.Wait(context.Background(), describeVpcInput, initialSubnetWaiterTime)
 	if err != nil {
 		return nil, log.NewError("Error Waiting for VPC", "error", err)
 	}
@@ -310,7 +329,7 @@ func (awsclient *AwsGoClient) BeginDeleteNIC(nicID string) error {
 		if nic.NetworkInterfaces[0].Status == "available" {
 			break
 		}
-		if time.Since(initialWater) > 30*time.Second {
+		if time.Since(initialWater) > initialNicDeletionWaiterTime {
 			return log.NewError("Error Waiting for Network Interface Timeout", "error", err)
 		}
 	}
@@ -357,15 +376,15 @@ func (awsgo *AwsGoClient) BeginDeleteVM(instanceID string) error {
 	}
 
 	ec2TerminatedWaiter := ec2.NewInstanceTerminatedWaiter(awsgo.ec2Client, func(itwo *ec2.InstanceTerminatedWaiterOptions) {
-		itwo.MinDelay = waiterMinDelay
-		itwo.MaxDelay = waiterMaxDelay
+		itwo.MinDelay = initialInstanceMinDelay
+		itwo.MaxDelay = initialInstanceMaxDelay
 	})
 
 	describeEc2Inp := &ec2.DescribeInstancesInput{
 		InstanceIds: []string{instanceID},
 	}
 
-	err = ec2TerminatedWaiter.Wait(context.TODO(), describeEc2Inp, 200*time.Second)
+	err = ec2TerminatedWaiter.Wait(context.TODO(), describeEc2Inp, instanceInitialTerminationTime)
 	if err != nil {
 		return log.NewError("failed to wait for instance to terminate, %v", err)
 	}
@@ -376,15 +395,15 @@ func (awsgo *AwsGoClient) BeginDeleteVM(instanceID string) error {
 func (awsclient *AwsGoClient) InstanceInitialWaiter(ctx context.Context, instanceID string) error {
 
 	instanceExistsWaiter := ec2.NewInstanceStatusOkWaiter(awsclient.ec2Client, func(instancewaiter *ec2.InstanceStatusOkWaiterOptions) {
-		instancewaiter.MinDelay = waiterMinDelay
-		instancewaiter.MaxDelay = waiterMaxDelay
+		instancewaiter.MinDelay = initialInstanceMinDelay
+		instancewaiter.MaxDelay = initialInstanceMaxDelay
 	})
 
 	describeInstanceInput := &ec2.DescribeInstanceStatusInput{
 		InstanceIds: []string{instanceID},
 	}
 
-	err := instanceExistsWaiter.Wait(ctx, describeInstanceInput, 5*time.Minute)
+	err := instanceExistsWaiter.Wait(ctx, describeInstanceInput, instanceInitialWaiterTime)
 	if err != nil {
 		return log.NewError("Error Waiting for Instance", "error", err)
 	}

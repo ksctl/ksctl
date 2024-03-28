@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -188,34 +187,36 @@ func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error
 		instanceId = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo]
 		instanceIp = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo]
 	}
-	if len(instanceId) != 0 && len(instanceIp) != 0 {
-		log.Print("skipped vm already created", "name", instanceId)
-		return nil
-	} else if len(instanceId) != 0 && len(instanceIp) == 0 {
-		instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceId)
-		if err != nil {
-			return err
-		}
+	if len(instanceId) != 0 {
+		if len(instanceIp) != 0 {
+			log.Print("skipped vm already created", "name", instanceId)
+			return nil
+		} else {
+			instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceId)
+			if err != nil {
+				return err
+			}
 
-		publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
-		privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
+			publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
+			privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
 
-		obj.mu.Lock()
-		defer obj.mu.Unlock()
+			obj.mu.Lock()
+			defer obj.mu.Unlock()
 
-		switch role {
-		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
-		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
-		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
-		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
+			switch role {
+			case consts.RoleWp:
+				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
+				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
+			case consts.RoleCp:
+				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
+				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
+			case consts.RoleLb:
+				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
+				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
+			case consts.RoleDs:
+				mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
+				mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
+			}
 		}
 	}
 
@@ -381,16 +382,6 @@ func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
 	}
 
 	return resp, nil
-}
-
-// trustedSource: helper recieved from https://ubuntu.com/tutorials/search-and-launch-ubuntu-22-04-in-aws-using-cli#2-search-for-the-right-ami
-func trustedSource(id string) bool {
-	// 679593333241
-	// 099720109477
-	if strings.Compare(id, "679593333241") != 0 && strings.Compare(id, "099720109477") != 0 {
-		return false
-	}
-	return true
 }
 
 func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {

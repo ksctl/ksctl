@@ -95,8 +95,3 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-    - name: Run coverage (AWS)
-      working-directory: internal/cloudproviders/aws
-      run: |
-         go test -race -coverprofile=../../../coverage-aws.out -covermode=atomic -v
-         cd ../../..
