@@ -21,13 +21,12 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage resources.StorageFactory) 
 		return log.NewError(err.Error())
 	}
 
-	script := fmt.Sprintf("%s\n%s",
+	script := scriptJoinWorkerplane(
 		scriptInstallKubeadmAndOtherTools(p.KubeadmVer),
-		scriptJoinWorkerplane(
-			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
-			mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
-			mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
-		))
+		mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
+		mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
+	)
 	log.Print("Installing Kubeadm and Joining WorkerNode to existing cluster")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
@@ -43,12 +42,17 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage resources.StorageFactory) 
 	return nil
 }
 
-func scriptJoinWorkerplane(pubIPLb, token, cacertSHA string) string {
+func scriptJoinWorkerplane(collection resources.ScriptCollection, pubIPLb, token, cacertSHA string) resources.ScriptCollection {
 
-	return fmt.Sprintf(`
-echo "To be used with kubeadm install"
-
+	collection.Append(resources.Script{
+		Name:           "Join K3s workerplane",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
 sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s
-`, pubIPLb, token, cacertSHA)
+`, pubIPLb, token, cacertSHA),
+	})
 
+	return collection
 }

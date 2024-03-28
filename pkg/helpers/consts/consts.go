@@ -22,13 +22,21 @@ type KsctlCounterConsts uint32
 
 type KsctlValidCNIPlugin string
 
+type KsctlSupportedScriptRunners string
+
+const (
+	LinuxSh   KsctlSupportedScriptRunners = "/bin/sh"
+	LinuxBash KsctlSupportedScriptRunners = "/bin/bash"
+)
+
 const (
 	DurationSSHPause time.Duration = 20 * time.Second
 )
 
 const (
-	CounterMaxRetryCount      KsctlCounterConsts = 8
-	CounterMaxWatchRetryCount KsctlCounterConsts = 4
+	CounterMaxRetryCount          KsctlCounterConsts = 8
+	CounterMaxNetworkSessionRetry KsctlCounterConsts = 9
+	CounterMaxWatchRetryCount     KsctlCounterConsts = 4
 )
 
 const (

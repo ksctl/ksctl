@@ -1,0 +1,7 @@
+{
+  "cluster_name": "test-e2e-kubeadm-ha-aws",
+  "region": "us-east-1",
+  "ha_cluster": true,
+  "cloud_provider": "aws",
+  "storage_type": "local"
+}
