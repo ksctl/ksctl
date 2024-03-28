@@ -25,7 +25,7 @@ const (
 	initialInstanceMaxDelay        = time.Second * 10
 	initialNicWaiterTime           = time.Second * 10
 	initialSubnetWaiterTime        = time.Second * 10
-	instanceInitialWaiterTime      = time.Second * 300
+	instanceInitialWaiterTime      = time.Minute * 10
 	initialNicDeletionWaiterTime   = time.Second * 30
 	instanceInitialTerminationTime = time.Second * 200
 )
