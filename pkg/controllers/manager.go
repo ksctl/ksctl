@@ -3,7 +3,6 @@ package controllers
 import (
 	"os"
 	"strings"
-	"time"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -396,10 +395,8 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError(err.Error())
 	}
 
-	log.Warn("only cloud resources are having replay!")
+	log.Note("only cloud resources are having replay!")
 
-	time.Sleep(30 * time.Second) // hack to wait for all the cloud specific resources to be in consistent state
-	// Kubernetes controller
 	externalCNI, err := kubernetesController.ConfigureCluster(client)
 	if err != nil {
 		return log.NewError(err.Error())
@@ -570,8 +567,7 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 		return log.NewError(err.Error())
 	}
 
-	log.Warn("[ksctl] only cloud resources are having replay!")
-	// Kubernetes controller
+	log.Note("Only cloud resources are having replay!")
 	err = kubernetesController.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
 	if err != nil {
 		return log.NewError(err.Error())

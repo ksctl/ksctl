@@ -582,9 +582,6 @@ func (mock *AzureGoMockClient) SetResourceGrp(s string) {
 	mock.ResourceGrp = s
 }
 
-// ListLocations: TODO: unable to mock the Pager so moved on with more work for ListLocation method
-// instead of it returning (*runtime.Pager[armsubscriptions.ClientListLocationsResponse], error)
-// it will return the ([]string, error)
 func (mock *AzureGoMockClient) ListLocations() ([]string, error) {
 	return []string{"eastus2", "centralindia", "fake"}, nil
 }

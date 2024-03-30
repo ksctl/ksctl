@@ -3,6 +3,7 @@ package k3s
 import (
 	"context"
 	"fmt"
+	testHelper "github.com/ksctl/ksctl/test/helpers"
 	"os"
 	"sync"
 	"testing"
@@ -137,144 +138,104 @@ func TestScriptsControlplane(t *testing.T) {
 	privIP := []string{"9.9.9.9", "1.1.1.1"}
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privIP)
 	pubIP := []string{"192.16.9.2", "23.34.4.1"}
-	for i := 0; i < len(ver); i++ {
-		validWithCni := fmt.Sprintf(`#!/bin/bash
-sudo mkdir -p /var/lib/etcd
-
-cat <<EOF > ca.pem
--- CA_CERT --
-EOF
-
-cat <<EOF > etcd.pem
--- ETCD_CERT --
-EOF
-
-cat <<EOF > etcd-key.pem
--- ETCD_KEY --
-EOF
-
-sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
-
-
-cat <<EOF > control-setup.sh
-#!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--datastore-endpoint "%s" \
-	--datastore-cafile=/var/lib/etcd/ca.pem \
-	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
-	--datastore-certfile=/var/lib/etcd/etcd.pem \
-	--tls-san %s
-EOF
-
-sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
-`, ver[i], dbEndpoint, pubIP[i])
-
-		validWithoutCni := fmt.Sprintf(`#!/bin/bash
-sudo mkdir -p /var/lib/etcd
-
-cat <<EOF > ca.pem
--- CA_CERT --
-EOF
-
-cat <<EOF > etcd.pem
--- ETCD_CERT --
-EOF
-
-cat <<EOF > etcd-key.pem
--- ETCD_KEY --
-EOF
-
-sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
-
-
-cat <<EOF > control-setup.sh
-#!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--datastore-endpoint "%s" \
-	--datastore-cafile=/var/lib/etcd/ca.pem \
-	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
-	--datastore-certfile=/var/lib/etcd/etcd.pem \
-	--flannel-backend=none \
-	--disable-network-policy \
-	--tls-san %s
-EOF
-
-sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
-`, ver[i], dbEndpoint, pubIP[i])
-
-		if validWithCni != scriptCP_1("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i]) {
-			t.Fatalf("scipts for Controlplane 1 failed")
-		}
-		if validWithoutCni != scriptCP_1WithoutCNI("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i]) {
-			t.Fatalf("scipts for Controlplane 1 failed")
-		}
-	}
-
-	k3sToken := `#!/bin/bash
-sudo cat /var/lib/rancher/k3s/server/token
-`
-	if k3sToken != scriptForK3sToken() {
-		t.Fatalf("script for the k3s token missmatch")
-	}
+	ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
 
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
-	for i := 0; i < len(ver); i++ {
-		validWithCni := fmt.Sprintf(`#!/bin/bash
-sudo mkdir -p /var/lib/etcd
 
-cat <<EOF > ca.pem
--- CA_CERT --
-EOF
+	t.Run("script for controlplane 0", func(t *testing.T) {
 
-cat <<EOF > etcd.pem
--- ETCD_CERT --
-EOF
+		t.Run("script without cni", func(t *testing.T) {
 
-cat <<EOF > etcd-key.pem
--- ETCD_KEY --
-EOF
+			for i := 0; i < len(ver); i++ {
 
-sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
-
-
-cat <<EOF > control-setupN.sh
+				testHelper.HelperTestTemplate(
+					t,
+					[]resources.Script{
+						getScriptForEtcdCerts(ca, etcd, key),
+						{
+							Name:           "Start K3s Controlplane-[0] without CNI",
+							MaxRetries:     9,
+							CanRetry:       true,
+							ScriptExecutor: consts.LinuxBash,
+							ShellScript: fmt.Sprintf(`
+cat <<EOF > control-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
-	--token %s \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
 	--datastore-cafile=/var/lib/etcd/ca.pem \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--flannel-backend=none \
+	--disable-network-policy \
 	--tls-san %s
 EOF
 
-sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint, pubIP[i])
+sudo chmod +x control-setup.sh
+sudo ./control-setup.sh
+`, ver[i], dbEndpoint, pubIP[i]),
+						},
+					},
+					func() resources.ScriptCollection { // Adjust the signature to match your needs
+						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, pubIP[i])
+					},
+				)
 
-		validWithoutCni := fmt.Sprintf(`#!/bin/bash
-sudo mkdir -p /var/lib/etcd
+			}
+		})
+		t.Run("script with cni", func(t *testing.T) {
 
-cat <<EOF > ca.pem
--- CA_CERT --
+			for i := 0; i < len(ver); i++ {
+				testHelper.HelperTestTemplate(
+					t,
+					[]resources.Script{
+						getScriptForEtcdCerts(ca, etcd, key),
+						{
+							Name:           "Start K3s Controlplane-[0] with CNI",
+							MaxRetries:     9,
+							CanRetry:       true,
+							ScriptExecutor: consts.LinuxBash,
+							ShellScript: fmt.Sprintf(`
+cat <<EOF > control-setup.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--tls-san %s
 EOF
 
-cat <<EOF > etcd.pem
--- ETCD_CERT --
-EOF
+sudo chmod +x control-setup.sh
+sudo ./control-setup.sh
+`, ver[i], dbEndpoint, pubIP[i]),
+						},
+					},
+					func() resources.ScriptCollection { // Adjust the signature to match your needs
+						return scriptCP_1(ca, etcd, key, ver[i], privIP, pubIP[i])
+					},
+				)
+			}
+		})
+	})
 
-cat <<EOF > etcd-key.pem
--- ETCD_KEY --
-EOF
+	t.Run("script for controlplane 1..N", func(t *testing.T) {
 
-sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+		t.Run("script without cni", func(t *testing.T) {
 
+			for i := 0; i < len(ver); i++ {
 
+				testHelper.HelperTestTemplate(
+					t,
+					[]resources.Script{
+						getScriptForEtcdCerts(ca, etcd, key),
+						{
+							Name:           "Start K3s Controlplane-[1..N] without CNI",
+							MaxRetries:     9,
+							CanRetry:       true,
+							ScriptExecutor: consts.LinuxBash,
+							ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
@@ -291,22 +252,109 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint, pubIP[i])
+`, ver[i], sampleToken, dbEndpoint, pubIP[i]),
+						},
+					},
+					func() resources.ScriptCollection { // Adjust the signature to match your needs
+						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, pubIP[i], sampleToken)
+					},
+				)
+			}
+		})
+		t.Run("script with cni", func(t *testing.T) {
 
-		if rscript := scriptCP_N("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i], sampleToken); rscript != validWithCni {
-			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithCni, rscript)
-		}
-		if rscript := scriptCP_NWithoutCNI("-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --", ver[i], privIP, pubIP[i], sampleToken); rscript != validWithoutCni {
-			t.Fatalf("scipts for Controlplane N failed, expected \n%s \ngot \n%s", validWithoutCni, rscript)
-		}
-	}
+			for i := 0; i < len(ver); i++ {
+
+				testHelper.HelperTestTemplate(
+					t,
+					[]resources.Script{
+						getScriptForEtcdCerts(ca, etcd, key),
+						{
+							Name:           "Start K3s Controlplane-[1..N] with CNI",
+							MaxRetries:     9,
+							CanRetry:       true,
+							ScriptExecutor: consts.LinuxBash,
+							ShellScript: fmt.Sprintf(`
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--tls-san %s
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh
+`, ver[i], sampleToken, dbEndpoint, pubIP[i]),
+						},
+					},
+					func() resources.ScriptCollection { // Adjust the signature to match your needs
+						return scriptCP_N(ca, etcd, key, ver[i], privIP, pubIP[i], sampleToken)
+					},
+				)
+			}
+		})
+	})
+
+	t.Run("get k3s token", func(t *testing.T) {
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:           "Get k3s server token",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: `
+sudo cat /var/lib/rancher/k3s/server/token
+`,
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptForK3sToken()
+			},
+		)
+	})
+
+	t.Run("get kubeconfig", func(t *testing.T) {
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:           "k3s kubeconfig",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: `
+sudo cat /etc/rancher/k3s/k3s.yaml
+`,
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptKUBECONFIG()
+			},
+		)
+	})
+
 }
 
 func TestSciprWorkerplane(t *testing.T) {
 	ver := "1.18"
 	token := "K#Sde43rew34"
 	private := "192.20.3.3"
-	script := fmt.Sprintf(`#!/bin/bash
+
+	t.Run("get kubeconfig", func(t *testing.T) {
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:           "Join the workerplane-[0..M]",
+					CanRetry:       true,
+					MaxRetries:     3,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: fmt.Sprintf(`
 cat <<EOF > worker-setup.sh
 #!/bin/bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443
@@ -314,11 +362,14 @@ EOF
 
 sudo chmod +x worker-setup.sh
 sudo ./worker-setup.sh
-`, ver, token, private)
-
-	if rscript := scriptWP(ver, private, token); rscript != script {
-		t.Fatalf("script for configuring the workerplane missmatch, expected \n%s \ngot \n%s", script, rscript)
-	}
+`, ver, token, private),
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptWP(ver, private, token)
+			},
+		)
+	})
 }
 
 func checkCurrentStateFile(t *testing.T) {
@@ -332,17 +383,12 @@ func checkCurrentStateFile(t *testing.T) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	// need to save the prublic ips...
 	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationStateCreate), nil, "should be initlize the state")
 
 	fakeClient.Version("1.27.1")
 
 	checkCurrentStateFile(t)
 
-	//err := fakeClient.ConfigureLoadbalancer(storeHA)
-	//if err != nil {
-	//	t.Fatalf("Configure Loadbalancer unable to operate %v", err)
-	//}
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
 

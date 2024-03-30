@@ -25,10 +25,10 @@ type SSHPayload struct {
 	UserName   string
 	Privatekey string
 	PublicIP   string
-	Output     string
+	Output     []string
 
 	flag     consts.KsctlUtilsConsts
-	script   string
+	script   resources.ScriptCollection
 	fastMode bool
 }
 
@@ -39,18 +39,14 @@ func NewSSHExecutor(mainStateDocument *types.StorageDocument) SSHCollection {
 	return sshExecutor
 }
 
-// func NewSSHExecute() SSHCollection {
-// 	return &SSHPayload{}
-// }
-
 type SSHCollection interface {
 	SSHExecute(resources.LoggerFactory) error
 	Flag(consts.KsctlUtilsConsts) SSHCollection
-	Script(string) SSHCollection
+	Script(resources.ScriptCollection) SSHCollection
 	FastMode(bool) SSHCollection
 	Username(string)
 	PrivateKey(string)
-	GetOutput() string
+	GetOutput() []string
 	IPv4(ip string) SSHCollection
 }
 
@@ -62,9 +58,10 @@ func (sshPayload *SSHPayload) PrivateKey(s string) {
 	sshPayload.Privatekey = s
 }
 
-func (sshPayload *SSHPayload) GetOutput() string {
-	out := sshPayload.Output
-	sshPayload.Output = ""
+func (sshPayload *SSHPayload) GetOutput() []string {
+	out := make([]string, len(sshPayload.Output))
+	copy(out, sshPayload.Output)
+	sshPayload.Output = nil
 	return out
 }
 
@@ -81,7 +78,7 @@ func (sshPayload *SSHPayload) Flag(execMethod consts.KsctlUtilsConsts) SSHCollec
 	return nil
 }
 
-func (sshPayload *SSHPayload) Script(s string) SSHCollection {
+func (sshPayload *SSHPayload) Script(s resources.ScriptCollection) SSHCollection {
 	sshPayload.script = s
 	return sshPayload
 }
@@ -89,6 +86,62 @@ func (sshPayload *SSHPayload) Script(s string) SSHCollection {
 func (sshPayload *SSHPayload) FastMode(mode bool) SSHCollection {
 	sshPayload.fastMode = mode
 	return sshPayload
+}
+
+func ExecuteScript(log resources.LoggerFactory, conn *ssh.Client, script string) (stdout string, stderr string, err error) {
+
+	netRetry := 0
+	for netRetry < int(consts.CounterMaxNetworkSessionRetry) {
+
+		stdout, stderr, err = func() (_stdout, _stderr string, _err error) {
+			var _session *ssh.Session
+
+			_session, _err = conn.NewSession()
+			if _err != nil {
+				return
+			}
+
+			defer _session.Close()
+
+			_bout := new(strings.Builder)
+			_berr := new(strings.Builder)
+			_session.Stdout = _bout
+			_session.Stderr = _berr
+
+			defer func() {
+				_stdout, _stderr = _bout.String(), _berr.String()
+			}()
+
+			_err = _session.Run(script)
+			return
+		}()
+
+		if err == nil {
+			return
+		}
+
+		if err != nil {
+			errV := ssh.ExitMissingError{}
+			scriptErrV := ssh.ExitError{}
+
+			fmt.Printf("Error checks err: %#v, errV: %#v, scriptErrV: %#v\n", err, errV, scriptErrV)
+			fmt.Printf("Error Erro() err: %#v, errV: %#v, scriptErrV: %#v\n", err.Error(), errV.Error(), scriptErrV.Error())
+
+			switch err.Error() {
+			case errV.Error():
+				log.Warn("Missing error code but exited. Reason can be session comm failure. Retrying!")
+				netRetry++
+			default:
+				// case scriptErrV.Error():
+				return // if any error which is not same as ExitMissingError
+			}
+		}
+	}
+
+	if netRetry == int(consts.CounterMaxNetworkSessionRetry) {
+		err = log.NewError("Retry failed with network problems: %v", err)
+	}
+	return
 }
 
 func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
@@ -104,10 +157,10 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 
 	if fake := os.Getenv(string(consts.KsctlFakeFlag)); len(fake) != 0 {
 		log.Debug("Exec Scripts for fake flag")
-		sshPayload.Output = ""
+		sshPayload.Output = []string{}
 
 		if sshPayload.flag == consts.UtilExecWithOutput {
-			sshPayload.Output = "random fake"
+			sshPayload.Output = []string{"random fake"}
 		}
 		return nil
 	}
@@ -117,6 +170,7 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
+		Timeout: time.Duration(5 * time.Minute),
 
 		HostKeyAlgorithms: []string{
 			ssh.KeyAlgoRSASHA256,
@@ -164,31 +218,50 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 	log.Print("Exec Scripts")
 	defer conn.Close()
 
-	session, err := conn.NewSession()
-	if err != nil {
-		return err
-	}
-	defer session.Close()
+	scripts := sshPayload.script
 
-	var stdoutBuff, stderrBuff bytes.Buffer
-	session.Stdout = &stdoutBuff
-	session.Stderr = &stderrBuff
+	for !scripts.IsCompleted() {
+		script := scripts.NextScript()
 
-	sshPayload.Output = ""
+		log.Print("Executing Sub-Script", "name", script.Name)
+		success := false
+		var scriptFailureReason error
+		var stdout, stderr string
+		var err error
 
-	err = session.Run(sshPayload.script)
-	stdoutContent := stdoutBuff.String()
-	stderrContent := stderrBuff.String()
+		if script.CanRetry {
+			retries := uint8(0)
 
-	log.Debug("ssh outputs", "stdout", stdoutContent, "stderr", stderrContent)
+			for retries < script.MaxRetries {
+				stdout, stderr, err = ExecuteScript(log, conn, script.ShellScript)
+				if err != nil {
+					log.Warn("Failure in executing script", "retryCount", retries)
+					scriptFailureReason = log.NewError("Execute Failure", "stderr", stderr)
+				} else {
+					log.Debug("ssh outputs", "stdout", stdout)
+					success = true
+					break
+				}
+				retries++
+			}
 
-	if sshPayload.flag == consts.UtilExecWithOutput {
-		sshPayload.Output = stdoutContent
-	}
+		} else {
+			stdout, stderr, err = ExecuteScript(log, conn, script.ShellScript)
+			if err != nil {
+				log.Error("Failure in executing script", "Reason", err)
+				scriptFailureReason = log.NewError("Execute Failure", "stderr", stderr)
+			} else {
+				success = true
+				log.Debug("ssh outputs", "stdout", stdout)
+			}
+		}
 
-	if err != nil {
-		log.Error(stderrContent)
-		return err
+		if !success {
+			return scriptFailureReason
+		}
+		if sshPayload.flag == consts.UtilExecWithOutput {
+			sshPayload.Output = append(sshPayload.Output, stdout)
+		}
 	}
 
 	log.Success("Successful in executing the script")
@@ -273,10 +346,9 @@ func CreateSSHKeyPair(log resources.LoggerFactory, state *types.StorageDocument)
 func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
 
 	// read pem block
-	err := errors.New("pem decode failed, no key found")
 	pemBlock, _ := pem.Decode(pemBytes)
 	if pemBlock == nil {
-		return nil, err
+		return nil, errors.New("pem decode failed, no key found")
 	}
 	if x509.IsEncryptedPEMBlock(pemBlock) {
 		return nil, fmt.Errorf("pem file is encrypted")

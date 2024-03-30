@@ -25,7 +25,7 @@ const (
 	initialInstanceMaxDelay        = time.Second * 10
 	initialNicWaiterTime           = time.Second * 10
 	initialSubnetWaiterTime        = time.Second * 10
-	instanceInitialWaiterTime      = time.Second * 200
+	instanceInitialWaiterTime      = time.Minute * 10
 	initialNicDeletionWaiterTime   = time.Second * 30
 	instanceInitialTerminationTime = time.Second * 200
 )
@@ -455,7 +455,7 @@ func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage re
 			return log.NewError("Error Deleting Route Table", "error", err)
 		}
 		mainStateDocument.CloudInfra.Aws.RouteTableID = ""
-		log.Success("deleted the route table ", mainStateDocument.CloudInfra.Aws.RouteTableID)
+		log.Success("deleted the route table", "id", mainStateDocument.CloudInfra.Aws.RouteTableID)
 		err = storage.Write(mainStateDocument)
 		if err != nil {
 			return log.NewError("Error Writing State File", "error", err)
@@ -486,7 +486,7 @@ func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage re
 			return log.NewError("Error Writing State File", "error", err)
 		}
 
-		log.Success("deleted the internet gateway ", mainStateDocument.CloudInfra.Aws.GatewayID)
+		log.Success("deleted the internet gateway", "id", mainStateDocument.CloudInfra.Aws.GatewayID)
 
 	}
 
@@ -507,7 +507,7 @@ func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage re
 		if err != nil {
 			return log.NewError("Error Writing State File", "error", err)
 		}
-		log.Success("deleted the network acl ", mainStateDocument.CloudInfra.Aws.NetworkAclID)
+		log.Success("deleted the network acl", "id", mainStateDocument.CloudInfra.Aws.NetworkAclID)
 
 	}
 	return nil
@@ -634,23 +634,28 @@ func (awsclient *AwsGoClient) ListLocations() (*string, error) {
 }
 
 func (awsclient *AwsGoClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
-
 	var vmTypes ec2.DescribeInstanceTypesOutput
-
-	parameter, err := awsclient.ec2Client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{
+	input := &ec2.DescribeInstanceTypesInput{
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("current-generation"),
 				Values: []string{"true"},
 			},
 		},
-		InstanceTypes: []types.InstanceType{"t2.micro"},
-	})
-	if err != nil {
-		return vmTypes, log.NewError("Error Describing Instance Types", "error", err)
 	}
 
-	vmTypes.InstanceTypes = append(vmTypes.InstanceTypes, parameter.InstanceTypes...)
+	for {
+		output, err := awsclient.ec2Client.DescribeInstanceTypes(context.Background(), input)
+		if err != nil {
+			return vmTypes, log.NewError("Error Describing Instance Types", "error", err)
+		}
+		vmTypes.InstanceTypes = append(vmTypes.InstanceTypes, output.InstanceTypes...)
+		if output.NextToken == nil {
+			break
+		}
+		input.NextToken = output.NextToken
+	}
+
 	return vmTypes, nil
 }
 
@@ -688,7 +693,7 @@ func (awsclient *AwsGoClient) ModifySubnetAttribute(ctx context.Context) error {
 
 func (awsclient *AwsGoClient) SetRegion(region string) string {
 	awsclient.region = region
-	log.Print("region set to: ", "", awsclient.region)
+	log.Debug("region set to", "code", awsclient.region)
 
 	return awsclient.region
 }
@@ -816,7 +821,7 @@ func (*AwsGoMockClient) BeginDeleteVpc(ctx context.Context, storage resources.St
 		return log.NewError("Error Writing State File", "error", err)
 	}
 
-	log.Success("deleted the vpc ", mainStateDocument.CloudInfra.Aws.VpcId)
+	log.Success("deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcId)
 
 	return nil
 

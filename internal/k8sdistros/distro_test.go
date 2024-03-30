@@ -3,6 +3,7 @@ package k8sdistros
 import (
 	"context"
 	"fmt"
+	testHelper "github.com/ksctl/ksctl/test/helpers"
 	"os"
 	"testing"
 
@@ -21,9 +22,16 @@ func TestScriptsDataStore(t *testing.T) {
 	privIPs := []string{"9.9.9.9"}
 	clusterMembers := getEtcdMemberIPFieldForDatastore(privIPs)
 	currIdx := 0
-	valid := fmt.Sprintf(`#!/bin/bash
-set -xe
 
+	testHelper.HelperTestTemplate(
+		t,
+		[]resources.Script{
+			{
+				Name:           "fetch etcd binaries and cleanup",
+				ScriptExecutor: consts.LinuxBash,
+				MaxRetries:     9,
+				CanRetry:       true,
+				ShellScript: `
 ETCD_VER=v3.5.10
 
 GOOGLE_URL=https://storage.googleapis.com/etcd
@@ -31,11 +39,19 @@ GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
 DOWNLOAD_URL=${GOOGLE_URL}
 
 sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-sudo rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
+sudo rm -rf /tmp/etcd-download-test
+mkdir -p /tmp/etcd-download-test
 
 curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+`,
+			},
+			{
+				Name:           "moving the downloaded binaries to specific location",
+				ScriptExecutor: consts.LinuxBash,
+				CanRetry:       false,
+				ShellScript: `
+ETCD_VER=v3.5.10
 tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-
 sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
 
 sudo mv -v /tmp/etcd-download-test/etcd /usr/local/bin
@@ -43,22 +59,35 @@ sudo mv -v /tmp/etcd-download-test/etcdctl /usr/local/bin
 sudo mv -v /tmp/etcd-download-test/etcdutl /usr/local/bin
 
 sudo rm -rf /tmp/etcd-download-test
-
+`,
+			},
+			{
+				Name:           "store the certificate files",
+				ScriptExecutor: consts.LinuxBash,
+				CanRetry:       false,
+				ShellScript: fmt.Sprintf(`
 sudo mkdir -p /var/lib/etcd
 
 cat <<EOF > ca.pem
--- CA_CERT --
+%s
 EOF
 
 cat <<EOF > etcd.pem
--- ETCD_CERT --
+%s
 EOF
 
 cat <<EOF > etcd-key.pem
--- ETCD_KEY --
+%s
 EOF
 
 sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
+`, ca, etcd, key),
+			},
+			{
+				Name:           "configure etcd configuration file and systemd",
+				ScriptExecutor: consts.LinuxBash,
+				CanRetry:       false,
+				ShellScript: fmt.Sprintf(`
 
 cat <<EOF > etcd.service
 
@@ -94,25 +123,58 @@ WantedBy=multi-user.target
 EOF
 
 sudo mv -v etcd.service /etc/systemd/system
-
+`, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers),
+			},
+			{
+				Name:           "restart the systemd and start etcd service",
+				CanRetry:       true,
+				MaxRetries:     3,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
 sudo systemctl daemon-reload
 sudo systemctl enable etcd
 
 sudo systemctl start etcd
-
-`, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers)
-	if valid != scriptDB(ca, etcd, key, privIPs, currIdx) {
-		t.Fatalf("script for configuring datastore missmatch")
-	}
+`,
+			},
+		},
+		func() resources.ScriptCollection { // Adjust the signature to match your needs
+			return scriptDB(ca, etcd, key, privIPs, currIdx)
+		},
+	)
 }
 
 func TestScriptsLoadbalancer(t *testing.T) {
-	script := `#!/bin/bash
-sudo apt update
-sudo apt install haproxy -y
-sleep 2s
-sudo systemctl start haproxy && sudo systemctl enable haproxy
+	array := []string{"127.0.0.1:6443", "127.0.0.2:6443", "127.0.0.3:6443"}
 
+	testHelper.HelperTestTemplate(
+		t,
+		[]resources.Script{
+			{
+				Name:       "Install haproxy",
+				CanRetry:   true,
+				MaxRetries: 9,
+				ShellScript: `
+sudo apt update -y
+sudo apt install haproxy -y
+`,
+				ScriptExecutor: consts.LinuxBash,
+			},
+			{
+				Name:           "enable and start systemd service for haproxy",
+				CanRetry:       true,
+				MaxRetries:     3,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
+sudo systemctl start haproxy
+sudo systemctl enable haproxy
+`,
+			},
+			{
+				Name:           "create haproxy configuration",
+				CanRetry:       false,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
 cat <<EOF > haproxy.cfg
 frontend kubernetes-frontend
   bind *:6443
@@ -130,15 +192,26 @@ backend kubernetes-backend
   server k3sserver-1 127.0.0.1:6443 check
   server k3sserver-2 127.0.0.2:6443 check
   server k3sserver-3 127.0.0.3:6443 check
+
 EOF
 
 sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
+`,
+			},
+			{
+				Name:           "create haproxy configuration",
+				CanRetry:       false,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
 sudo systemctl restart haproxy
-`
-	array := []string{"127.0.0.1:6443", "127.0.0.2:6443", "127.0.0.3:6443"}
-	if script != configLBscript(array) {
-		t.Fatalf("script for configuring loadbalancer missmatch")
-	}
+`,
+			},
+		},
+		func() resources.ScriptCollection { // Adjust the signature to match your needs
+			return scriptConfigureLoadbalancer(array)
+		},
+	)
+
 }
 
 func TestGetEtcdMemberIPFieldForDatastore(t *testing.T) {

@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
+
+	testHelper "github.com/ksctl/ksctl/test/helpers"
 
 	"github.com/ksctl/ksctl/pkg/logger"
 
@@ -128,8 +131,34 @@ func TestK3sDistro_Version(t *testing.T) {
 	}
 }
 
+func TestGeneratebootstrapToken(t *testing.T) {
+
+	got, err := generatebootstrapToken()
+	assert.Assert(t, err == nil, "there shouldn't be error")
+	pattern := regexp.MustCompile(`\A([a-z0-9]{6})\.([a-z0-9]{16})\z`)
+
+	if pattern.MatchString(got) {
+		fmt.Println("Pattern matches")
+		match := pattern.FindStringSubmatch(got)
+		fmt.Println("Full match:", match[0])
+		fmt.Println("First group:", match[1])
+		fmt.Println("Second group:", match[2])
+	} else {
+		t.Fatalf("regex didn't match the generated token")
+	}
+}
+
 func TestScriptInstallKubeadmAndOtherTools(t *testing.T) {
-	expected := `#!/bin/bash
+	ver := "1"
+
+	testHelper.HelperTestTemplate(
+		t,
+		[]resources.Script{
+			{
+				Name:           "disable swap and some kernel module adjustments",
+				CanRetry:       false,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
 sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 sudo swapoff -a
 
@@ -152,7 +181,14 @@ sudo sysctl --system
 sudo lsmod | grep br_netfilter
 sudo lsmod | grep overlay
 sudo sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
-
+`,
+			},
+			{
+				Name:           "install containerd",
+				CanRetry:       true,
+				MaxRetries:     3,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
 sudo apt-get update
 sudo apt-get install ca-certificates curl gnupg
 
@@ -167,73 +203,151 @@ echo \
 
 sudo apt-get update
 sudo apt-get install containerd.io -y
-
+`,
+			},
+			{
+				Name:           "containerd config",
+				CanRetry:       false,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
 sudo mkdir -p /etc/containerd
-
 containerd config default > config.toml
-
 sudo mv -v config.toml /etc/containerd/config.toml
+`,
+			},
+			{
+				Name:           "restart containerd systemd",
+				CanRetry:       true,
+				MaxRetries:     3,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
 sudo systemctl restart containerd
 sudo systemctl enable containerd
 
 sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
 sudo systemctl restart containerd
-
+`,
+			},
+			{
+				Name:           "install kubeadm, kubectl, kubelet",
+				CanRetry:       true,
+				MaxRetries:     9,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: fmt.Sprintf(`
 sudo apt-get update -y
 
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
-sudo apt-mark hold kubelet kubeadm kubectl
-
 sudo systemctl enable kubelet
-`
-	assert.Equal(t, expected, scriptInstallKubeadmAndOtherTools("1"), "expected to be same")
+`, ver, ver),
+			},
+			{
+				Name:           "apt mark kubenetes tool as hold",
+				CanRetry:       false,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: `
+		sudo apt-mark hold kubelet kubeadm kubectl
+
+		`,
+			},
+		},
+		func() resources.ScriptCollection { // Adjust the signature to match your needs
+			return scriptInstallKubeadmAndOtherTools(ver)
+		},
+	)
 }
 
 func TestScriptsControlplane(t *testing.T) {
 
 	t.Run("scriptGetCertificateKey", func(t *testing.T) {
-		expected := `#!/bin/bash
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:     "fetch bootstrap certificate key",
+					CanRetry: false,
+					ShellScript: `
 sudo kubeadm certs certificate-key
-`
-		assert.Equal(t, expected, scriptGetCertificateKey(), "it should be equal")
+`,
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptGetCertificateKey()
+			},
+		)
 	})
 
 	t.Run("scriptDiscoveryTokenCACertHash", func(t *testing.T) {
-		expected := `#!/bin/bash
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:     "fetch discovery token ca cert hash",
+					CanRetry: false,
+					ShellScript: `
 sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1
-`
-		assert.Equal(t, expected, scriptDiscoveryTokenCACertHash(), "it should be equal")
+`,
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptDiscoveryTokenCACertHash()
+			},
+		)
 	})
 
 	t.Run("scriptGetKubeconfig", func(t *testing.T) {
-		expected := `#!/bin/bash
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:     "fetch kubeconfig",
+					CanRetry: false,
+					ShellScript: `
 sudo cat /etc/kubernetes/admin.conf
-`
-		assert.Equal(t, expected, scriptGetKubeconfig(), "it should be equal")
+`,
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptGetKubeconfig()
+			},
+		)
 	})
 
 	t.Run("scriptAddKubeadmControlplane0", func(t *testing.T) {
-		expected := `#!/bin/bash
+		ver := "1"
+		bootstrapToken := "abcd"
+		certificateKey := "key"
+		publicIPLb := "1.1.1.1"
+		privateIPDs := []string{"8.8.8.8"}
+		etcdConf := generateExternalEtcdConfig(privateIPDs)
+
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:       "store configuration for Controlplane0",
+					CanRetry:   true,
+					MaxRetries: 3,
+					ShellScript: fmt.Sprintf(`
 cat <<EOF > kubeadm-config.yml
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
-  token: abcd
+  token: %s
   ttl: 24h0m0s
   usages:
   - signing
   - authentication
 
-certificateKey: key
+certificateKey: %s
 nodeRegistration:
   criSocket: unix:///var/run/containerd/containerd.sock
   imagePullPolicy: IfNotPresent
@@ -244,7 +358,7 @@ kind: ClusterConfiguration
 apiServer:
   timeoutForControlPlane: 4m0s
   certSANs:
-    - "1.1.1.1"
+    - "%s"
     - "127.0.0.1"
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
@@ -253,56 +367,92 @@ dns: {}
 etcd:
   external:
     endpoints:
-    - https://8.8.8.8:2379
-
+%s
     caFile: "/etcd/kubernetes/pki/etcd/ca.pem"
     certFile: "/etcd/kubernetes/pki/etcd/etcd.pem"
     keyFile: "/etcd/kubernetes/pki/etcd/etcd-key.pem"
 imageRepository: registry.k8s.io
-kubernetesVersion: 1.0
-controlPlaneEndpoint: "1.1.1.1:6443"
+kubernetesVersion: %s.0
+controlPlaneEndpoint: "%s:6443"
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
 scheduler: {}
 EOF
 
+`, bootstrapToken, certificateKey, publicIPLb, etcdConf, ver, publicIPLb),
+				},
+				{
+					Name:       "kubeadm init",
+					CanRetry:   true,
+					MaxRetries: 3,
+					ShellScript: `
 sudo kubeadm init --config kubeadm-config.yml --upload-certs
-`
-		assert.Equal(t, expected, scriptAddKubeadmControlplane0("1", "abcd", "key", "1.1.1.1", []string{"8.8.8.8"}), "it should be equal")
+`,
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptAddKubeadmControlplane0(ver, bootstrapToken, certificateKey, publicIPLb, privateIPDs)
+			},
+		)
 	})
 
 	t.Run("scriptTransferEtcdCerts", func(t *testing.T) {
-		expected := `
-echo "This script needs to be used as in concatenation to install kubeadm tools"
-
+		ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:           "save etcd certificate",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: fmt.Sprintf(`
 sudo mkdir -vp /etcd/kubernetes/pki/etcd/
 
 cat <<EOF > ca.pem
-ca
+%s
 EOF
 
 cat <<EOF > etcd.pem
-etcd
+%s
 EOF
 
 cat <<EOF > etcd-key.pem
-key
+%s
 EOF
 
 sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
-`
-
-		assert.Equal(t, expected, scriptTransferEtcdCerts("ca", "etcd", "key"))
+`, ca, etcd, key),
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptTransferEtcdCerts(helpers.NewScriptCollection(), ca, etcd, key)
+			},
+		)
 	})
 }
 
 func TestSciprWorkerplane(t *testing.T) {
-	expected := `#!/bin/bash
-sudo kubeadm join 192.2.2.2:6443 --token xyz --discovery-token-ca-cert-hash sha256:qewsdrfcv234 --control-plane --certificate-key abcd
-`
-
-	assert.Equal(t, expected, scriptJoinControlplane("192.2.2.2", "xyz", "qewsdrfcv234", "abcd"), "expected to be equal")
+	pubIPLb := "1.1.1.1"
+	token := "abcd"
+	cacertSHA := "x2r23erd23"
+	testHelper.HelperTestTemplate(
+		t,
+		[]resources.Script{
+			{
+				Name:           "Join K3s workerplane",
+				CanRetry:       true,
+				MaxRetries:     3,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript: fmt.Sprintf(`
+sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s
+`, pubIPLb, token, cacertSHA),
+			},
+		},
+		func() resources.ScriptCollection { // Adjust the signature to match your needs
+			return scriptJoinWorkerplane(helpers.NewScriptCollection(), pubIPLb, token, cacertSHA)
+		},
+	)
 }
 
 func checkCurrentStateFile(t *testing.T) {
