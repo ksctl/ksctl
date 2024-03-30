@@ -5,6 +5,6 @@
 	"ha_cluster": false,
 	"cloud_provider": "civo",
 	"storage_type": "local",
-	"desired_no_of_managed_nodes": 2,
+	"desired_no_of_managed_nodes": 1,
 	"node_type_managed": "g4s.kube.small"
 }

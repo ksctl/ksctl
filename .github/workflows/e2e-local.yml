@@ -1,0 +1,57 @@
+name: e2e for local
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  execute:
+    environment: e2e
+    env:
+      KUBECONFIG: ${{ vars.KUBECONFIG_KSCTL_LOC }}
+      PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
+    runs-on: e2e
+    defaults:
+      run:
+        working-directory: test/e2e
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            paths:
+              - 'internal/cloudproviders/local/*'
+              - 'internal/storage/**'
+              - 'pkg/helpers/**'
+              - 'pkg/logger/**'
+              - 'test/e2e/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'pkg/controllers/**'
+              - 'pkg/resources/**'
+              - '.github/workflows/e2e-local.yml'
+
+      - name: create (managed)
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          go run . -op create -file local/create.json
+          go run . -op get -file local/get.json
+
+      - name: switch (managed)
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          set -xe
+
+          go run . -op switch -file local/switch.json
+          tree ~/.ksctl/state
+          jq -r . ~/.ksctl/state/local/managed/test-e2e-local\ LOCAL/state.json
+          kubectl get nodes -owide
+
+      - name: delete (managed)
+        if: always() && steps.changes.outputs.paths == 'true'
+        run: |
+          set -xe
+
+          go run . -op delete -file local/delete.json

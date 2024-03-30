@@ -1,0 +1,104 @@
+name: e2e for ksctl
+
+on:
+  push:
+    paths:
+      - "go.mod"
+      - "go.sum"
+      - "test/e2e/**"
+      - "pkg/**"
+      - "internal/**"
+      - ".github/workflows/*"
+    branches:
+      - "main"
+  workflow_dispatch:
+
+jobs:
+  setup:
+    env:
+      PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
+
+    runs-on: e2e
+    steps:
+      - name: remove the .ksctl
+        run: |
+          rm -rf ${HOME}/.ksctl
+
+  local-e2e:
+    uses: ./.github/workflows/e2e-local.yml
+    needs: ["setup"]
+    secrets: inherit
+
+  civo-e2e:
+    uses: ./.github/workflows/e2e-civo.yml
+    needs: ["setup"]
+    secrets: inherit
+
+  azure-e2e:
+    uses: ./.github/workflows/e2e-azure.yml
+    needs: ["setup"]
+    secrets: inherit
+
+  aws-e2e:
+    uses: ./.github/workflows/e2e-aws.yml
+    needs: ["setup"]
+    secrets: inherit
+
+  notification:
+    runs-on: e2e
+    environment: e2e
+    env:
+      PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      RED: 16711680
+      GREEN: 65280
+      BLUE: 255
+      DISCORD_TITLE: "e2e Workflow Summary"
+      GITHUB_RUN: ${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}
+
+    if: always()
+    needs: [local-e2e, azure-e2e, civo-e2e, aws-e2e]
+    steps:
+      - name: Discord
+        run: |
+          set -xe
+          local_status=$(echo "${{ needs.local-e2e.result }}")
+          azure_status=$(echo "${{ needs.azure-e2e.result }}")
+          civo_status=$(echo "${{ needs.civo-e2e.result }}")
+          aws_status=$(echo "${{ needs.aws-e2e.result }}")
+
+
+          if [[ $local_status == "failure" || $azure_status == "failure" || $civo_status == "failure" || $aws_status == "failure" ]]; then
+            SUMMARY='### FAILURE :warning:'
+
+            if [[ $local_status == "failure" ]]; then
+              SUMMARY+='\n- Local-Kind'
+            fi
+
+            if [[ $azure_status == "failure" ]]; then
+              SUMMARY+='\n- Azure'
+            fi
+
+            if [[ $civo_status == "failure" ]]; then
+              SUMMARY+='\n- Civo'
+            fi
+
+            if [[ $aws_status == "failure" ]]; then
+              SUMMARY+='\n- AWS'
+            fi
+
+            curl --fail \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -d "{\"embeds\": [{ \"title\": \"${DISCORD_TITLE}\", \"description\": \"${SUMMARY}\", \"url\": \"${GITHUB_RUN}\", \"color\": $RED, \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\", \"footer\": {\"text\": \"no bots were harmed\"}, \"author\": {\"name\": \"github actions\" } }]}" \
+              $DISCORD_WEBHOOK_URL
+
+          else
+            SUMMARY='### SUCCESSFUL :rocket:'
+
+            curl --fail \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -d "{\"embeds\": [{ \"title\": \"${DISCORD_TITLE}\", \"description\": \"${SUMMARY}\", \"url\": \"${GITHUB_RUN}\", \"color\": $GREEN, \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\", \"footer\": {\"text\": \"no bots were harmed\"}, \"author\": {\"name\": \"github actions\" } }]}" \
+              $DISCORD_WEBHOOK_URL
+          fi
