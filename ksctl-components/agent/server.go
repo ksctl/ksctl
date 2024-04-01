@@ -31,10 +31,12 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 }
 
 func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, error) {
+	slog.DebugContext(ctx, "Request", "ReqLB", in)
 	return nil, nil
 }
 
 func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.ResApplication, error) {
+	slog.DebugContext(ctx, "Request", "ReqApplication", in)
 	return nil, nil
 }
 

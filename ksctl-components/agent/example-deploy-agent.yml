@@ -98,18 +98,6 @@ spec:
             secretKeyRef:
               key: mongo
               name: ksctl-storage
-#        volumeMounts:
-#        - name: config-file
-#          mountPath: /mnt/state.json
-#          subPath: state.json
-#      volumes:
-#        - name: config-file
-#          configMap:
-#            name: ksctl-state
-#            items:
-#              - key: state.json
-#                path: state.json
-#            defaultMode: 0644
       restartPolicy: Always
 ---
 # the configmap cannot be written
