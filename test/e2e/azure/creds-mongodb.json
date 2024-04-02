@@ -1,0 +1,4 @@
+{
+  "cloud_provider": "azure",
+  "storage_type": "external-mongo"
+}
