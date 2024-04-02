@@ -69,14 +69,13 @@ func getCredentialsFilters(cloud consts.KsctlCloud) bson.M {
 func (db *Store) Connect(ctx context.Context) error {
 	db.context = context.Background()
 
-	Username := os.Getenv("MONGODB_USER")
-	Password := os.Getenv("MONGODB_PASSWORD")
-	DNSSeedlist := os.Getenv("MONGODB_DNS")
-	if len(Username) == 0 || len(Password) == 0 || len(DNSSeedlist) == 0 {
-		return fmt.Errorf("environment vars not set for the storage to work")
+	connURI := os.Getenv("MONGODB_URI")
+
+	if len(connURI) == 0 {
+		return fmt.Errorf("environment vars not set for the storage to work. Hint: mongodb://${username}:${password}@${domain}:${port} or mongo+atlas mongodb+srv://${username}:${password}@${domain}")
 	}
 
-	db.mongoURI = fmt.Sprintf("mongodb+srv://%s:%s@%s/?retryWrites=true&w=majority", Username, Password, DNSSeedlist)
+	db.mongoURI = fmt.Sprintf("%s/?retryWrites=true&w=majority", connURI)
 
 	opts := mongoOptions.Client().ApplyURI(db.mongoURI)
 
