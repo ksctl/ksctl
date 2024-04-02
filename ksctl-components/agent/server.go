@@ -16,18 +16,21 @@ type server struct {
 	pb.UnimplementedKsctlAgentServer
 }
 
+// NOTE: assumption going to use
+//
+//	os.stdout as writer
+//	LOG_LEVEL env variable for verbosity
+
 func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, error) {
-	slog.DebugContext(ctx, "WorkerNodes", "count", "DUMMY")
 	slog.DebugContext(ctx, "Request", "reqScale", in)
 
-	slog.InfoContext(ctx, "Processing Scale Request", "operation", in.Operation, "desired", in.ScaleTo)
+	slog.InfoContext(ctx, "Processing Scale Request", "operation", in.Operation, "desired", in.DesiredNoOfWP)
 
-	// figure out the how the data will be written to the logs
 	if err := scale.CallManager(string(in.Operation), in); err != nil {
 		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason:"+err.Error())
 	}
 
-	return &pb.ResScale{UpdatedWP: 999}, nil
+	return &pb.ResScale{ActualNoOfWP: 999}, nil
 }
 
 func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, error) {
