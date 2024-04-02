@@ -187,7 +187,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *types.CredentialsD
 			}
 		}
 		return nil
-	}); err == nil {
+	}); err != nil {
 		return fmt.Errorf("cluster present: %w", err)
 	}
 
