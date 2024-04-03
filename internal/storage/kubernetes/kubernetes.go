@@ -1,17 +1,15 @@
-package configmap
+package kubernetes
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	v1 "k8s.io/api/core/v1"
 
-	"fmt"
 	"io"
-	"log/slog"
-	"os"
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -43,61 +41,15 @@ type Store struct {
 var log resources.LoggerFactory
 
 const (
-	CredsCollection      string = "credentials"
-	K8S_NAMESPACE        string = "ksctl"
-	K8S_CONFIGMAP_NAME   string = "ksctl-state"
-	K8S_STATE_FILE_NAME  string = "state.json"
-	K8S_CREDENTIALS_NAME string = "credentials.json"
+	K8S_NAMESPACE       string = "ksctl"
+	K8S_STATE_NAME      string = "ksctl-state"       // configmap name
+	K8S_CREDENTIAL_NAME string = "ksctl-credentials" // secret name
 )
 
 func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
 	log = logger.NewDefaultLogger(logVerbosity, logWriter)
 	log.SetPackageName(string(consts.StoreExtMongo))
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
-}
-
-func WorkOnK8s() error {
-
-	cm, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), configMapName, metav1.GetOptions{})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching ConfigMap: %v\n", err)
-		return err
-	}
-
-	type CM struct {
-		ClusterName string `json:"cluster_name"`
-		Region      string `json:"region"`
-		Count       int8   `json:"count"`
-	}
-	slog.Info("[original] ksctl-state.ksctl.cm", "entire", cm.Data)
-
-	fmt.Println("ConfigMap Data:")
-	if v, ok := cm.Data["state.json"]; ok {
-		slog.Info("ksctl-state.ksctl.cm", "state.json", v)
-		var updatedData CM
-
-		if err := json.Unmarshal([]byte(v), &updatedData); err != nil {
-			return err
-		}
-		updatedData.Count++
-		raw, err := json.Marshal(updatedData)
-		if err != nil {
-			return err
-		}
-
-		cm.Data["state.json"] = string(raw)
-
-	} else {
-		return fmt.Errorf("not found the correct key in the configmap")
-	}
-
-	updated, err := clientset.CoreV1().ConfigMaps(namespace).Update(context.TODO(), cm, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-	slog.Info("[updated] ksctl-state.ksctl.cm", "entire", updated.Data)
-
-	return nil
 }
 
 func (db *Store) Connect(ctx context.Context) error {
@@ -152,7 +104,7 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 }
 
 // ReadCredentials implements resources.StorageFactory.
-func (db *Store) ReadCredentials(_ consts.KsctlCloud) (*types.CredentialsDocument, error) {
+func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
@@ -160,7 +112,7 @@ func (db *Store) ReadCredentials(_ consts.KsctlCloud) (*types.CredentialsDocumen
 
 	log.Debug("storage.external.kubernetes.configmap.ReadCreds", "Store", db)
 
-	if c, ok := db.isPresent(); ok {
+	if c, ok := db.isPresentCreds(); ok {
 		var result *types.CredentialsDocument
 		raw := c.BinaryData[K8S_CREDENTIALS_NAME]
 
@@ -292,51 +244,51 @@ func (db *Store) DeleteCluster() error {
 	}
 }
 
+func helperGenerateKeyForState(db *Store) string {
+	return fmt.Sprintf("%s/%s/%s %s", db.cloudProvider, db.clusterType, db.clusterName, db.region)
+}
+
 func (db *Store) isPresent() (*v1.ConfigMap, bool) {
-	c, err := db.clientSet.CoreV1().ConfigMaps(K8S_NAMESPACE).Get(db.context, K8S_CONFIGMAP_NAME, metav1.GetOptions{})
+	c, err := db.clientSet.CoreV1().ConfigMaps(K8S_NAMESPACE).Get(db.context, K8S_STATE_NAME, metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
+		return nil, false
+	}
+	if _, ok := c.BinaryData[helperGenerateKeyForState(db)]; ok {
 		return nil, false
 	}
 	return c, true
 }
 
-func (db *Store) isPresentCreds() (*v1.ConfigMap, bool) {
-	c, err := db.clientSet.CoreV1().ConfigMaps(K8S_NAMESPACE).Get(db.context, K8S_CONFIGMAP_NAME, metav1.GetOptions{})
+func (db *Store) isPresentCreds(cloud string) (*v1.Secret, bool) {
+	c, err := db.clientSet.CoreV1().Secrets(K8S_NAMESPACE).Get(db.context, K8S_CREDENTIAL_NAME, metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
+		return nil, false
+	}
+	if _, ok := c.Data[cloud]; !ok {
 		return nil, false
 	}
 	return c, true
 }
 
-// func (db *Store) clusterPresent() error {
-// 	//c := db.databaseClient.Collection(db.cloudProvider).FindOne(db.context, getClusterFilters(db))
-// 	//if c.Err() != nil {
-// 	//	return c.Err()
-// 	//} else {
-// 	//	var x *types.StorageDocument
-// 	//	err := c.Decode(&x)
-// 	//	if err != nil {
-// 	//		return fmt.Errorf("unable to read data")
-// 	//	}
-// 	//}
-// 	////if c.RemainingBatchLength() == 1 {
-// 	////	return fmt.Errorf("not present")
-// 	////}
-// 	//return nil
-// }
+func (db *Store) clusterPresent() error {
+	if _, ok := db.isPresent(); !ok {
+		return log.NewError("cluster not present")
+	}
+	return nil
+}
 
 func (db *Store) AlreadyCreated(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error {
-	//db.mu.Lock()
-	//defer db.mu.Unlock()
-	//db.wg.Add(1)
-	//defer db.wg.Done()
-	//
-	//err := db.Setup(cloud, region, clusterName, clusterType)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//return db.clusterPresent()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.wg.Add(1)
+	defer db.wg.Done()
+
+	err := db.Setup(cloud, region, clusterName, clusterType)
+	if err != nil {
+		return err
+	}
+
+	return db.clusterPresent()
 }
 
 func (db *Store) GetOneOrMoreClusters(filters map[string]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
