@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"log/slog"
+	"net"
+
 	"github.com/ksctl/ksctl/ksctl-components/agent/pb"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/scale"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	"log/slog"
-	"net"
 )
 
 type server struct {
@@ -26,7 +27,7 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 
 	slog.InfoContext(ctx, "Processing Scale Request", "operation", in.Operation, "desired", in.DesiredNoOfWP)
 
-	if err := scale.CallManager(string(in.Operation), in); err != nil {
+	if err := scale.CallManager(in); err != nil {
 		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason:"+err.Error())
 	}
 
