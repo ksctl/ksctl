@@ -46,7 +46,7 @@ func ValidateStorage(storage consts.KsctlStore) bool {
 	}
 
 	switch storage {
-	case consts.StoreExtMongo, consts.StoreLocal:
+	case consts.StoreExtMongo, consts.StoreLocal, consts.StoreK8s:
 		return true
 	default:
 		return false
