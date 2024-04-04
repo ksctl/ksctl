@@ -28,6 +28,9 @@
 'state/local':
 - 'internal/storage/local/*'
 
+'state/kubernetes':
+- 'internal/storage/kubernetes/*'
+
 'area/poc':
 - 'poc/**'
 - 'poc/*'

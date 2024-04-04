@@ -34,17 +34,24 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
-# https://kubernetes.io/docs/concepts/configuration/configmap/
 apiVersion: v1
-kind: ConfigMap # for now keep it configmap later we can use secrets
+kind: Secret
+metadata:
+  name: ksctl-credentials
+  namespace: ksctl
+type: Opaque
+data:
+  azure: '{"ID":"000000000000000000000000","azure":{"subscription_id":"1","tenant_id":"2","client_id":"3","client_secret":"4"},"cloud_provider":"azure"}'
+
+---
+apiVersion: v1
+kind: ConfigMap
 metadata:
   namespace: ksctl
   name: ksctl-state
 data:
-  state.json: |
+  "azure/ha/test-e2e-ha-azure eastus2": |
     {"ID":"000000000000000000000000","cluster_type":"ha","region":"eastus2","cluster_name":"test-e2e-ha-azure","cloud_provider":"azure","bootstrap_provider":"","cloud_infrastructure_state":{"azure":{"b":{"status":true,"ssh_id":"","ssh_usr":"azureuser","sshkey_name":"test-e2e-ha-azure-ssh","k8s_distro":"k3s","k8s_version":"1.27.1"},"resource_group_name":"ksctl-resgrp-ha-test-e2e-ha-azure","managed_cluster_name":"","no_managed_cluster_nodes":0,"subnet_name":"test-e2e-ha-azure-subnet","subnet_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/virtualNetworks/test-e2e-ha-azure-vnet/subnets/test-e2e-ha-azure-subnet","virtual_network_name":"test-e2e-ha-azure-vnet","virtual_network_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/virtualNetworks/test-e2e-ha-azure-vnet","info_control_planes":{"names":["test-e2e-ha-azure-vm-cp-0","test-e2e-ha-azure-vm-cp-1","test-e2e-ha-azure-vm-cp-2"],"network_security_group_name":"test-e2e-ha-azure-fw-cp","network_security_group_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkSecurityGroups/test-e2e-ha-azure-fw-cp","disk_names":["test-e2e-ha-azure-vm-cp-0-disk","test-e2e-ha-azure-vm-cp-1-disk","test-e2e-ha-azure-vm-cp-2-disk"],"public_ip_names":["test-e2e-ha-azure-vm-cp-0-pub","test-e2e-ha-azure-vm-cp-1-pub","test-e2e-ha-azure-vm-cp-2-pub"],"public_ip_ids":["/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-cp-0-pub","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-cp-1-pub","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-cp-2-pub"],"private_ips":["10.1.0.6","10.1.0.7","10.1.0.10"],"public_ips":["40.75.102.199","40.75.101.254","20.44.99.229"],"network_interface_names":["test-e2e-ha-azure-vm-cp-0-nic","test-e2e-ha-azure-vm-cp-1-nic","test-e2e-ha-azure-vm-cp-2-nic"],"network_interface_ids":["/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-cp-0-nic","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-cp-1-nic","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-cp-2-nic"],"hostnames":["test-e2e-ha-azure-vm-cp-0","test-e2e-ha-azure-vm-cp-1","test-e2e-ha-azure-vm-cp-2"]},"info_worker_planes":{"names":["test-e2e-ha-azure-vm-wp-0"],"network_security_group_name":"test-e2e-ha-azure-fw-wp","network_security_group_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkSecurityGroups/test-e2e-ha-azure-fw-wp","disk_names":["test-e2e-ha-azure-vm-wp-0-disk"],"public_ip_names":["test-e2e-ha-azure-vm-wp-0-pub"],"public_ip_ids":["/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-wp-0-pub"],"private_ips":["10.1.0.4"],"public_ips":["40.75.101.23"],"network_interface_names":["test-e2e-ha-azure-vm-wp-0-nic"],"network_interface_ids":["/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-wp-0-nic"],"hostnames":["test-e2e-ha-azure-vm-wp-0"]},"info_database":{"names":["test-e2e-ha-azure-vm-db-0","test-e2e-ha-azure-vm-db-1","test-e2e-ha-azure-vm-db-2"],"network_security_group_name":"test-e2e-ha-azure-fw-db","network_security_group_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkSecurityGroups/test-e2e-ha-azure-fw-db","disk_names":["test-e2e-ha-azure-vm-db-0-disk","test-e2e-ha-azure-vm-db-1-disk","test-e2e-ha-azure-vm-db-2-disk"],"public_ip_names":["test-e2e-ha-azure-vm-db-0-pub","test-e2e-ha-azure-vm-db-1-pub","test-e2e-ha-azure-vm-db-2-pub"],"public_ip_ids":["/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-db-0-pub","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-db-1-pub","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-db-2-pub"],"private_ips":["10.1.0.8","10.1.0.9","10.1.0.5"],"public_ips":["40.75.103.21","40.75.101.130","40.75.100.222"],"network_interface_names":["test-e2e-ha-azure-vm-db-0-nic","test-e2e-ha-azure-vm-db-1-nic","test-e2e-ha-azure-vm-db-2-nic"],"network_interface_ids":["/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-db-0-nic","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-db-1-nic","/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-db-2-nic"],"hostnames":["test-e2e-ha-azure-vm-db-0","test-e2e-ha-azure-vm-db-1","test-e2e-ha-azure-vm-db-2"]},"info_load_balancer":{"name":"test-e2e-ha-azure-vm-lb","network_security_group_name":"test-e2e-ha-azure-fw-lb","network_security_group_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkSecurityGroups/test-e2e-ha-azure-fw-lb","disk_name":"test-e2e-ha-azure-vm-lb-disk","public_ip_name":"test-e2e-ha-azure-vm-lb-pub","public_ip_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/publicIPAddresses/test-e2e-ha-azure-vm-lb-pub","network_interface_name":"test-e2e-ha-azure-vm-lb-nic","network_interface_id":"/subscriptions/***/resourceGroups/ksctl-resgrp-ha-test-e2e-ha-azure/providers/Microsoft.Network/networkInterfaces/test-e2e-ha-azure-vm-lb-nic","private_ip":"10.1.0.11","public_ip":"20.44.98.229","hostname":"test-e2e-ha-azure-vm-lb"}}},"kubernetes_bootstrap_state":{"b":{"k8s_distro":"","k8s_version":"","cloud_ssh_info":{"UserName":"azureuser","PrivateKey":"-----BEGIN RSA PRIVATE KEY-----\nXXYYZZ-----END RSA PRIVATE KEY-----\n"},"cloud_public_ips":{"controlplanes":["40.75.102.199","40.75.101.254","20.44.99.229"],"workerplanes":["40.75.101.23"],"datastores":["40.75.103.21","40.75.101.130","40.75.100.222"],"loadbalancer":"20.44.98.229"},"cloud_private_ips":{"controlplanes":["10.1.0.6","10.1.0.7","10.1.0.10"],"workerplanes":null,"datastores":["10.1.0.8","10.1.0.9","10.1.0.5"],"loadbalancer":"10.1.0.11"},"ca_cert":"-----BEGIN CERTIFICATE-----\n\n-----END CERTIFICATE-----\n","etcd_cert":"-----BEGIN CERTIFICATE-----\n\n-----END CERTIFICATE-----\n","etcd_key":"-----BEGIN RSA PRIVATE KEY-----\n\n-----END RSA PRIVATE KEY-----\n"},"k3s":{"k3s_token":"K108wdccsc::server:XXYY"}},"cluster_kubeconfig":"XYZ==","ssh_key_pair":{"public_key":"PUB_KEY","private_key":"-----BEGIN RSA PRIVATE KEY-----\n-----END RSA PRIVATE KEY-----\n"}}
-  credentials.json: |
-    {"ID":"000000000000000000000000","azure":{"subscription_id":"1","tenant_id":"2","client_id":"3","client_secret":"4"},"cloud_provider":"azure"}
 ---
 apiVersion: v1
 kind: Secret
@@ -88,6 +95,11 @@ spec:
       containers:
       - name: ksctl-agent
         image: ghcr.io/ksctl/ksctl-agent:latest
+        livenessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
         imagePullPolicy: Always
         ports:
           - containerPort: 8080
@@ -95,13 +107,24 @@ spec:
         env:
         - name: LOG_LEVEL
           value: "DEBUG"
-        - name: CLOUD_TOKEN
-          value: "SUPER-SECRET"
-        - name: STORAGE_DRIVER
-          valueFrom:
-            secretKeyRef:
-              key: mongo
-              name: ksctl-storage
+
+        - name: KSCTL_CLUSTER_NAME
+          value: <insert_here>
+
+        - name: KSCTL_CLOUD
+          value: <insert_here>
+
+        - name: KSCTL_REGION
+          value: <insert_here>
+
+        - name: KSCTL_K8S_DISTRO
+          value: <insert_here>
+
+        # - name: MONGODB_URI
+        #   valueFrom:
+        #     secretKeyRef:
+        #       key: mongo
+        #       name: ksctl-storage
       restartPolicy: Always
 ---
 # the configmap cannot be written
@@ -113,11 +136,3 @@ spec:
 # NOTE: we are assuming that the external storage is used not like mongodb is used as a docker container inside the same computer whoch cannot be reached by the kubernetes cluster
 # for mongodb
 # $ docker run -d --name mongodb -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=1234 mongo
-#
-# $ cd test/e2e
-# $ export MONGODB_DNS="localhost:27017"
-# $ export IS_MONGODB_ATLAS="false"
-# $ export MONGODB_PASSWORD="1234"
-# $ export MONGODB_USER="root"
-######
-# TIP!: Consider using a single URI

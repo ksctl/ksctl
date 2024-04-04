@@ -59,6 +59,13 @@ echo "--------------------------------------------"
 cd storage/local/
 go test . -v && cd -
 
+echo "--------------------------------------------"
+echo "|   Testing (internal/storage/kubernetes)"
+echo "--------------------------------------------"
+
+cd storage/kubernetes/
+go test . -v && cd -
+
 
 # echo "-------------------------------------------------"
 # echo "|   Testing (internal/storage/external/mongodb)"

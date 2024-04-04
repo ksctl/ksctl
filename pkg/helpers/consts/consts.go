@@ -68,6 +68,7 @@ const (
 
 const (
 	StoreLocal    KsctlStore = "local"
+	StoreK8s      KsctlStore = "kubernetes"
 	StoreExtMongo KsctlStore = "external-mongo"
 )
 

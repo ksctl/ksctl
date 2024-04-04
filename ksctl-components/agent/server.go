@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"log/slog"
+	"net"
+
 	"github.com/ksctl/ksctl/ksctl-components/agent/pb"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/scale"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	"log/slog"
-	"net"
 )
 
 type server struct {
@@ -26,7 +28,7 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 
 	slog.InfoContext(ctx, "Processing Scale Request", "operation", in.Operation, "desired", in.DesiredNoOfWP)
 
-	if err := scale.CallManager(string(in.Operation), in); err != nil {
+	if err := scale.CallManager(in); err != nil {
 		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason:"+err.Error())
 	}
 
@@ -43,6 +45,15 @@ func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.Re
 	return nil, nil
 }
 
+type Health struct {
+	grpc_health_v1.UnimplementedHealthServer
+}
+
+func (h Health) Check(ctx context.Context, g *grpc_health_v1.HealthCheckRequest) (*grpc_health_v1.HealthCheckResponse, error) {
+	slog.InfoContext(ctx, "serving health", "grpc_health_v1", g.String())
+	return &grpc_health_v1.HealthCheckResponse{Status: grpc_health_v1.HealthCheckResponse_SERVING}, nil
+}
+
 func main() {
 	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -50,6 +61,11 @@ func main() {
 	}
 
 	s := grpc.NewServer()
+	defer s.Stop()
+	//hs := health.NewServer()                   // will default to respond with SERVING
+	//grpc_health_v1.RegisterHealthServer(s, hs) // registration
+	grpc_health_v1.RegisterHealthServer(s, &Health{}) // registration
+
 	reflection.Register(s) // for debugging purposes
 
 	pb.RegisterKsctlAgentServer(s, &server{}) // Register the server with the gRPC server
