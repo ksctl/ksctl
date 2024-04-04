@@ -26,6 +26,7 @@ func CallManager(in *pb.ReqScale) error {
 	client.Metadata.K8sDistro = consts.KsctlKubernetes(os.Getenv("KSCTL_K8S_DISTRO"))
 	client.Metadata.Region = os.Getenv("KSCTL_REGION")
 	client.Metadata.NoWP = int(in.DesiredNoOfWP)
+	client.Metadata.WorkerPlaneNodeType = in.NodeSizeOfWP // FIXME: we should have consistent nodeSize not a variable; then we can drop this
 	client.Metadata.LogVerbosity = helpers.LogVerbosity[os.Getenv("LOG_LEVEL")]
 	client.Metadata.StateLocation = consts.StoreK8s
 	client.Metadata.LogWritter = os.Stdout

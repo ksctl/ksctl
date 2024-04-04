@@ -32,7 +32,7 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason:"+err.Error())
 	}
 
-	return &pb.ResScale{ActualNoOfWP: 999}, nil
+	return &pb.ResScale{IsUpdated: true}, nil
 }
 
 func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, error) {

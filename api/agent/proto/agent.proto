@@ -24,10 +24,11 @@ service KsctlAgent {
 message ReqScale {
   ScaleOperation operation = 1;
   uint32 desiredNoOfWP = 2;
+  string nodeSizeOfWP = 3;
 }
 
 message ResScale {
-  uint32 actualNoOfWP = 1;
+  bool isUpdated = 1;
 }
 
 
