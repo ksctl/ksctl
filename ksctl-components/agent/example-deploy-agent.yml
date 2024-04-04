@@ -95,6 +95,11 @@ spec:
       containers:
       - name: ksctl-agent
         image: ghcr.io/ksctl/ksctl-agent:latest
+        livenessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
         imagePullPolicy: Always
         ports:
           - containerPort: 8080
