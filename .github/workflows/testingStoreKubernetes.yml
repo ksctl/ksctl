@@ -1,4 +1,4 @@
-name: Regression Test Local Store
+name: Regression Test kubernetes Store
 on:
   push:
     paths:
