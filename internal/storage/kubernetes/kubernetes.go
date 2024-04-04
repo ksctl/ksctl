@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -11,20 +12,15 @@ import (
 	"io"
 	"sync"
 
+	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	"github.com/ksctl/ksctl/internal/storage/types"
-	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 type Store struct {
-	context context.Context
-
 	cloudProvider string
 	clusterType   string
 	clusterName   string
@@ -32,13 +28,14 @@ type Store struct {
 
 	mu        *sync.Mutex
 	wg        *sync.WaitGroup
-	clientSet *kubernetes.Clientset
+	clientSet ClientSet
 }
 
 var log resources.LoggerFactory
 
+var K8S_NAMESPACE string = "ksctl"
+
 const (
-	K8S_NAMESPACE       string = "ksctl"
 	K8S_STATE_NAME      string = "ksctl-state"       // configmap name
 	K8S_CREDENTIAL_NAME string = "ksctl-credentials" // secret name
 )
@@ -50,16 +47,20 @@ func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory
 }
 
 func (db *Store) Connect(ctx context.Context) error {
-	db.context = ctx
+	var err error
 
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return log.NewError("Error loading in-cluster config: %v\n", err)
+	fakeClient := false
+	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+		fakeClient = true
 	}
 
-	db.clientSet, err = kubernetes.NewForConfig(config)
+	if !fakeClient {
+		db.clientSet, err = NewK8sClient(ctx)
+	} else {
+		db.clientSet, err = NewFakeK8sClient(ctx)
+	}
 	if err != nil {
-		return log.NewError("Error creating Kubernetes client: %v\n", err)
+		return err
 	}
 
 	log.Success("CONN to k8s configmap")
@@ -78,7 +79,6 @@ func (db *Store) Kill() error {
 	return db.disconnect()
 }
 
-// Read implements resources.StorageFactory.
 func (db *Store) Read() (*types.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -100,7 +100,6 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 	return nil, log.NewError("cluster not present")
 }
 
-// ReadCredentials implements resources.StorageFactory.
 func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -150,7 +149,6 @@ func generateConfigMap(name string, namespace string) *v1.ConfigMap {
 	}
 }
 
-// Write implements resources.StorageFactory.
 func (db *Store) Write(data *types.StorageDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -167,9 +165,7 @@ func (db *Store) Write(data *types.StorageDocument) error {
 	if c, ok := db.isPresent(); ok {
 		c.BinaryData[helperGenerateKeyForState(db)] = raw
 
-		if _, err := db.clientSet.CoreV1().
-			ConfigMaps(K8S_NAMESPACE).
-			Update(db.context, c, metav1.UpdateOptions{}); err != nil {
+		if _, err := db.clientSet.WriteConfigMap(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 		return nil
@@ -177,15 +173,12 @@ func (db *Store) Write(data *types.StorageDocument) error {
 	c := generateConfigMap(K8S_STATE_NAME, K8S_NAMESPACE)
 	c.BinaryData[helperGenerateKeyForState(db)] = raw
 
-	if _, err := db.clientSet.CoreV1().
-		ConfigMaps(K8S_NAMESPACE).
-		Update(db.context, c, metav1.UpdateOptions{}); err != nil {
+	if _, err := db.clientSet.WriteConfigMap(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	return nil
 }
 
-// WriteCredentials implements resources.StorageFactory.
 func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.CredentialsDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -202,9 +195,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.Credentia
 	if c, ok := db.isPresentCreds(string(cloud)); ok {
 		c.Data[string(cloud)] = raw
 
-		if _, err := db.clientSet.CoreV1().
-			Secrets(K8S_NAMESPACE).
-			Update(db.context, c, metav1.UpdateOptions{}); err != nil {
+		if _, err := db.clientSet.WriteSecret(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 		return nil
@@ -214,9 +205,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.Credentia
 
 	c.Data[string(cloud)] = raw
 
-	if _, err := db.clientSet.CoreV1().
-		Secrets(K8S_NAMESPACE).
-		Update(db.context, c, metav1.UpdateOptions{}); err != nil {
+	if _, err := db.clientSet.WriteSecret(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	return nil
@@ -253,7 +242,7 @@ func (db *Store) DeleteCluster() error {
 		return log.NewError("cluster doesn't exist")
 	} else {
 		delete(c.BinaryData, helperGenerateKeyForState(db))
-		_, err := db.clientSet.CoreV1().ConfigMaps(K8S_NAMESPACE).Update(db.context, c, metav1.UpdateOptions{})
+		_, err := db.clientSet.WriteConfigMap(K8S_NAMESPACE, c, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -266,19 +255,19 @@ func helperGenerateKeyForState(db *Store) string {
 }
 
 func (db *Store) isPresent() (*v1.ConfigMap, bool) {
-	c, err := db.clientSet.CoreV1().ConfigMaps(K8S_NAMESPACE).Get(db.context, K8S_STATE_NAME, metav1.GetOptions{})
-	if !errors.IsNotFound(err) {
+	c, err := db.clientSet.ReadConfigMap(K8S_NAMESPACE, K8S_STATE_NAME, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
 		return nil, false
 	}
-	if _, ok := c.BinaryData[helperGenerateKeyForState(db)]; ok {
+	if _, ok := c.BinaryData[helperGenerateKeyForState(db)]; !ok {
 		return nil, false
 	}
 	return c, true
 }
 
 func (db *Store) isPresentCreds(cloud string) (*v1.Secret, bool) {
-	c, err := db.clientSet.CoreV1().Secrets(K8S_NAMESPACE).Get(db.context, K8S_CREDENTIAL_NAME, metav1.GetOptions{})
-	if !errors.IsNotFound(err) {
+	c, err := db.clientSet.ReadSecret(K8S_NAMESPACE, K8S_CREDENTIAL_NAME, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
 		return nil, false
 	}
 	if _, ok := c.Data[cloud]; !ok {
@@ -349,7 +338,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[string]string) (map[consts.Ksc
 
 	clustersInfo := make(map[consts.KsctlClusterType][]*types.StorageDocument)
 
-	c, err := db.clientSet.CoreV1().ConfigMaps(K8S_NAMESPACE).Get(db.context, K8S_STATE_NAME, metav1.GetOptions{})
+	c, err := db.clientSet.ReadConfigMap(K8S_NAMESPACE, K8S_STATE_NAME, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
