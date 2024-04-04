@@ -16,6 +16,8 @@ import (
 
 func CallManager(in *pb.ReqScale) error {
 
+	// TODO: make the manager to not use kuberneteVer as a parameter instead it to be handled by the scaling thing
+	// Reason: we can update the ver without changing the env; by just changing the state along and it should be the single source of truth!
 	client := new(resources.KsctlClient)
 	controller := control_pkg.GenKsctlController()
 
@@ -27,6 +29,7 @@ func CallManager(in *pb.ReqScale) error {
 	client.Metadata.LogVerbosity = helpers.LogVerbosity[os.Getenv("LOG_LEVEL")]
 	client.Metadata.StateLocation = consts.StoreK8s
 	client.Metadata.LogWritter = os.Stdout
+	client.Metadata.IsHA = true
 
 	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "ksctl-agent"), client); err != nil {
 		return err
