@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -147,6 +148,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	return nil
 }
 
+// TODO: we will need a Job which will help us to trigger the ksctl-agent to perform import
 func (this *Kubernetes) KsctlConfigForController(kubeconfig string, globalState *types.StorageDocument, secretKeys map[string][]byte) error {
 
 	log.Print("Started to configure Cluster to add Ksctl specific resources")
