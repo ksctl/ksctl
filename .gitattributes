@@ -6,5 +6,3 @@
 *.md text=auto eol=lf
 *.mod text=auto eol=lf
 *.sum text=auto eol=lf
-
-* binary
