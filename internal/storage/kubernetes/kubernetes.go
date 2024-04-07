@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
+	defaultError "errors"
 	"fmt"
 	"os"
 	"strings"
@@ -39,6 +40,112 @@ const (
 	K8S_STATE_NAME      string = "ksctl-state"       // configmap name
 	K8S_CREDENTIAL_NAME string = "ksctl-credentials" // secret name
 )
+
+func copyStore(src *Store, dest *Store) {
+	dest.cloudProvider = src.cloudProvider
+	dest.clusterName = src.clusterName
+	dest.clusterType = src.clusterType
+	dest.region = src.region
+}
+
+func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.StorageStateExportImport, error) {
+
+	var cpyS *Store = s
+	copyStore(s, cpyS) // for storing the state of the store before import was called!
+
+	dest := new(resources.StorageStateExportImport)
+
+	_cloud := filters[consts.Cloud]
+	_clusterType := filters[consts.ClusterType]
+	_clusterName := filters[consts.Name]
+	_region := filters[consts.Region]
+
+	stateClustersForTypes, err := s.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       _cloud,
+		consts.ClusterType: _clusterType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, states := range stateClustersForTypes {
+		// NOTE: make sure both filters are available if not then it will not apply
+		if len(_clusterName) == 0 || len(_region) == 0 {
+			dest.Clusters = append(dest.Clusters, states...)
+			continue
+		}
+		for _, state := range states {
+			if _clusterName == state.ClusterName &&
+				_region == state.Region {
+				dest.Clusters = append(dest.Clusters, state)
+			}
+		}
+	}
+
+	if len(_cloud) == 0 {
+		// all the cloud provider credentials
+		for _, constsCloud := range []consts.KsctlCloud{
+			consts.CloudAws,
+			consts.CloudCivo,
+			consts.CloudLocal,
+			consts.CloudAzure,
+		} {
+			_v, _err := s.ReadCredentials(constsCloud)
+
+			if _err != nil {
+				if errors.IsNotFound(_err) ||
+					_err.Error() == "not found entry" {
+					continue
+				} else {
+					return nil, _err
+				}
+			}
+			dest.Credentials = append(dest.Credentials, _v)
+		}
+	} else {
+		_v, _err := s.ReadCredentials(consts.KsctlCloud(_cloud))
+		if _err != nil {
+			return nil, _err
+		}
+		dest.Credentials = append(dest.Credentials, _v)
+	}
+
+	copyStore(cpyS, s) // for restoring the state of the store before import was called!
+	return dest, nil
+}
+
+func (s *Store) Import(src *resources.StorageStateExportImport) error {
+	creds := src.Credentials
+	states := src.Clusters
+
+	var cpyS *Store = s
+	copyStore(s, cpyS) // for storing the state of the store before import was called!
+
+	for _, state := range states {
+		cloud := state.InfraProvider
+		region := state.Region
+		clusterName := state.ClusterName
+		clusterType := consts.KsctlClusterType(state.ClusterType)
+
+		if err := s.Setup(cloud, region, clusterName, clusterType); err != nil {
+			return err
+		}
+
+		if err := s.Write(state); err != nil {
+			return err
+		}
+	}
+
+	for _, cred := range creds {
+		cloud := cred.InfraProvider
+		if err := s.WriteCredentials(cloud, cred); err != nil {
+			return err
+		}
+	}
+
+	copyStore(cpyS, s) // for restoring the state of the store before import was called!
+	return nil
+}
 
 func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
 	log = logger.NewDefaultLogger(logVerbosity, logWriter)
@@ -108,17 +215,21 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDoc
 
 	log.Debug("storage.kubernetes.ReadCreds", "Store", db)
 
-	if c, ok := db.isPresentCreds(string(cloud)); ok {
+	if c, err := db.isPresentCreds(string(cloud)); err == nil {
 		var result *types.CredentialsDocument
 		raw := c.Data[string(cloud)]
 
-		if err := json.Unmarshal(raw, &result); err != nil {
-			return nil, err
+		if _err := json.Unmarshal(raw, &result); _err != nil {
+			return nil, _err
 		}
 
 		return result, nil
+	} else {
+		//if !errors.IsNotFound(err) {
+		return nil, err
+		//}
 	}
-	return nil, log.NewError("cluster not present")
+	//return nil, log.NewError("credentials not present")
 }
 
 func generateSecret(name string, namespace string) *v1.Secret {
@@ -192,13 +303,17 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.Credentia
 		return err
 	}
 
-	if c, ok := db.isPresentCreds(string(cloud)); ok {
+	if c, err := db.isPresentCreds(string(cloud)); err == nil {
 		c.Data[string(cloud)] = raw
 
-		if _, err := db.clientSet.WriteSecret(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
-			return err
+		if _, _err := db.clientSet.WriteSecret(K8S_NAMESPACE, c, metav1.UpdateOptions{}); _err != nil {
+			return _err
 		}
 		return nil
+	} else {
+		if !errors.IsNotFound(err) {
+			return err
+		}
 	}
 
 	c := generateSecret(K8S_CREDENTIAL_NAME, K8S_NAMESPACE)
@@ -259,21 +374,18 @@ func (db *Store) isPresent() (*v1.ConfigMap, bool) {
 	if errors.IsNotFound(err) {
 		return nil, false
 	}
-	if _, ok := c.BinaryData[helperGenerateKeyForState(db)]; !ok {
-		return nil, false
-	}
 	return c, true
 }
 
-func (db *Store) isPresentCreds(cloud string) (*v1.Secret, bool) {
+func (db *Store) isPresentCreds(cloud string) (*v1.Secret, error) {
 	c, err := db.clientSet.ReadSecret(K8S_NAMESPACE, K8S_CREDENTIAL_NAME, metav1.GetOptions{})
-	if errors.IsNotFound(err) {
-		return nil, false
+	if err != nil {
+		return nil, err
 	}
 	if _, ok := c.Data[cloud]; !ok {
-		return nil, false
+		return nil, defaultError.New("not found entry")
 	}
-	return c, true
+	return c, nil
 }
 
 func (db *Store) clusterPresent() error {
@@ -297,13 +409,13 @@ func (db *Store) AlreadyCreated(cloud consts.KsctlCloud, region, clusterName str
 	return db.clusterPresent()
 }
 
-func (db *Store) GetOneOrMoreClusters(filters map[string]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
+func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
-	clusterType := filters["clusterType"]
-	cloud := filters["cloud"]
+	clusterType := filters[consts.ClusterType]
+	cloud := filters[consts.Cloud]
 
 	var filterCloudPath, filterClusterType []string
 

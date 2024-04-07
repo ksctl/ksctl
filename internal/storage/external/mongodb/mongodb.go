@@ -41,6 +41,112 @@ const (
 	CredsCollection string = "credentials"
 )
 
+func copyStore(src *Store, dest *Store) {
+	dest.cloudProvider = src.cloudProvider
+	dest.clusterName = src.clusterName
+	dest.clusterType = src.clusterType
+	dest.region = src.region
+	dest.userid = src.userid
+}
+
+func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.StorageStateExportImport, error) {
+
+	var cpyS *Store = s
+	copyStore(s, cpyS) // for storing the state of the store before import was called!
+
+	dest := new(resources.StorageStateExportImport)
+
+	_cloud := filters[consts.Cloud]
+	_clusterType := filters[consts.ClusterType]
+	_clusterName := filters[consts.Name]
+	_region := filters[consts.Region]
+
+	stateClustersForTypes, err := s.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       _cloud,
+		consts.ClusterType: _clusterType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, states := range stateClustersForTypes {
+		// NOTE: make sure both filters are available if not then it will not apply
+		if len(_clusterName) == 0 || len(_region) == 0 {
+			dest.Clusters = append(dest.Clusters, states...)
+			continue
+		}
+		for _, state := range states {
+			if _clusterName == state.ClusterName &&
+				_region == state.Region {
+				dest.Clusters = append(dest.Clusters, state)
+			}
+		}
+	}
+
+	if len(_cloud) == 0 {
+		// all the cloud provider credentials
+		for _, constsCloud := range []consts.KsctlCloud{
+			consts.CloudAws,
+			consts.CloudCivo,
+			consts.CloudLocal,
+			consts.CloudAzure,
+		} {
+			_v, _err := s.ReadCredentials(constsCloud)
+
+			if _err != nil {
+				if errors.Is(_err, mongo.ErrNoDocuments) {
+					continue
+				} else {
+					return nil, _err
+				}
+			}
+			dest.Credentials = append(dest.Credentials, _v)
+		}
+	} else {
+		_v, _err := s.ReadCredentials(consts.KsctlCloud(_cloud))
+		if _err != nil {
+			return nil, _err
+		}
+		dest.Credentials = append(dest.Credentials, _v)
+	}
+
+	copyStore(cpyS, s) // for restoring the state of the store before import was called!
+	return dest, nil
+}
+
+func (s *Store) Import(src *resources.StorageStateExportImport) error {
+	creds := src.Credentials
+	states := src.Clusters
+
+	var cpyS *Store = s
+	copyStore(s, cpyS) // for storing the state of the store before import was called!
+
+	for _, state := range states {
+		cloud := state.InfraProvider
+		region := state.Region
+		clusterName := state.ClusterName
+		clusterType := consts.KsctlClusterType(state.ClusterType)
+
+		if err := s.Setup(cloud, region, clusterName, clusterType); err != nil {
+			return err
+		}
+
+		if err := s.Write(state); err != nil {
+			return err
+		}
+	}
+
+	for _, cred := range creds {
+		cloud := cred.InfraProvider
+		if err := s.WriteCredentials(cloud, cred); err != nil {
+			return err
+		}
+	}
+
+	copyStore(cpyS, s) // for restoring the state of the store before import was called!
+	return nil
+}
+
 func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
 	log = logger.NewDefaultLogger(logVerbosity, logWriter)
 	log.SetPackageName(string(consts.StoreExtMongo))
@@ -136,7 +242,7 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 
 		return result, nil
 	}
-	return nil, fmt.Errorf("cluster not present")
+	return nil, mongo.ErrNoDocuments
 }
 
 // ReadCredentials implements resources.StorageFactory.
@@ -159,7 +265,7 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDoc
 		}
 		return result, nil
 	}
-	return nil, fmt.Errorf("creds not present")
+	return nil, mongo.ErrNoDocuments
 }
 
 // Write implements resources.StorageFactory.
@@ -292,13 +398,13 @@ func (db *Store) AlreadyCreated(cloud consts.KsctlCloud, region, clusterName str
 	return db.clusterPresent()
 }
 
-func (db *Store) GetOneOrMoreClusters(filters map[string]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
+func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
-	clusterType := filters["clusterType"]
-	cloud := filters["cloud"]
+	clusterType := filters[consts.ClusterType]
+	cloud := filters[consts.Cloud]
 
 	var filterCloudPath, filterClusterType []string
 

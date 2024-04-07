@@ -132,9 +132,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 	log.SetPackageName(string(consts.CloudLocal))
 
 	var data []cloudControlRes.AllClusterData
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudLocal),
-		"clusterType": string(consts.ClusterTypeMang),
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudLocal),
+		consts.ClusterType: string(consts.ClusterTypeMang),
 	})
 	if err != nil {
 		return nil, err
