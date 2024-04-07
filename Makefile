@@ -1,80 +1,79 @@
 SHELL := /bin/bash
 
-GOOS_LINUX = linux
-GOOS_WINDOWS = windows
-GOOS_MACOS = darwin
-
-GOARCH_LINUX = amd64
-GOARCH_WINDOWS = amd64
-GOARCH_MACOS = arm64
-GOARCH_MACOS_INTEL = amd64
-
 CURR_TIME = $(shell date +%s)
 
-docker_build_httpserver:
-	docker build --file build/httpserver_slim/Dockerfile --tag docker.io/kubesimplify/ksctl:slim-v1 .
+include Makefile.components
 
-docker_push_registry_httpserver:
-	docker push docker.io/kubesimplify/ksctl:slim-v1
+KSCTL_AGENT_IMG ?= ghcr.io/ksctl/ksctl-agent:latest
 
-deleteFolders:
-	rm -rf ${HOME}/.ksctl
-	@echo "Configuration folders setup deleted done"
 
-install_linux:
-	@echo "Started to Install ksctl"
-	cd scripts && \
-		env GOOS=${GOOS_LINUX} GOARCH=${GOARCH_LINUX} ./builder.sh
+.PHONY: help
+help: ## Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\n\033[36m  _             _   _ \n | |           | | | |\n | | _____  ___| |_| |\n | |/ / __|/ __| __| |\n |   <\\__ \\ (__| |_| |\n |_|\\_\\___/\\___|\\__|_| \033[0m\n\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-install_macos:
-	@echo "Started to Install ksctl"
-	cd scripts && \
-		env GOOS=${GOOS_MACOS} GOARCH=${GOARCH_MACOS} ./builder.sh
+##@ Builder and Generator (Core)
 
-install_macos_intel:
-	@echo "Started to Install ksctl"
-	cd scripts && \
-		env GOOS=${GOOS_MACOS} GOARCH=${GOARCH_MACOS_INTEL} ./builder.sh
+.PHONY: gen-proto-agent
+gen-proto-agent: ## generate protobuf for ksctl agent
+	@echo "generating new helpers"
+	protoc --proto_path=api/agent/proto api/agent/proto/*.proto --go_out=api/gen/agent --go-grpc_out=api/gen/agent
 
-uninstall:
-	@echo "Started to Uninstall ksctl"
-	cd scripts && \
-		./uninstall.sh
 
-unit_test_api:
+.PHONY: docker-push-agent
+docker-push-agent: ## Push docker image for ksctl agent
+	$(CONTAINER_TOOL) push ${KSCTL_AGENT_IMG}
+
+
+.PHONY: docker-build-agent
+docker-build-agent: ## docker build agent
+	docker build \
+		--file build/agent/Dockerfile \
+		--build-arg="GO_VERSION=1.21" \
+		--tag ${KSCTL_AGENT_IMG} .
+
+
+##@ Unit Tests (Core)
+.PHONY: unit-all
+unit_test_api: ## all unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
 		chmod u+x test-api.sh && \
 		./test-api.sh
 
-mock_test:
+##@ Mock Tests (Core)
+.PHONY: mock-all
+mock_test: ## All Mock tests
 	@echo "Mock Test (integration)"
 	cd test/ && \
 		go test -bench=. -benchtime=1x -cover -v
 
-mock_civo_ha:
+.PHONY: mock-civo-ha
+mock_civo_ha: ## Civo HA mock test
 	cd test/ && \
  		go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
 
-mock_civo_managed:
+.PHONY: mock-civo-managed
+mock_civo_managed: ## Civo managed mock test
 	cd test/ && \
  		go test -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
 
-mock_azure_managed:
+.PHONY: mock-azure-managed
+mock_azure_managed: ## Azure managed mock test
 	cd test/ && \
  		go test -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
 
-mock_azure_ha:
+.PHONY: mock-azure-ha
+mock_azure_ha: ## Azure HA mock test
 	cd test/ && \
  		go test -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
 
-mock_local_managed:
+.PHONY: mock-local-managed
+mock_local_managed: ## Local managed mock test
 	cd test/ && \
  		go test -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
 
-test: unit_test_api mock_test
-	@echo "Done All tests"
 
-gen-agent:
-	@echo "generating new helpers"
-	protoc --proto_path=api/agent/proto api/agent/proto/*.proto --go_out=ksctl-components/agent --go-grpc_out=ksctl-components/agent
+##@ Complete Testing (Core)
+.PHONY: test-all
+test: unit_test_api mock_test ## do both unit and integration test
+	@echo "Done All tests"

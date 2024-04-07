@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
-	"google.golang.org/grpc/health/grpc_health_v1"
+	"encoding/json"
 	"log/slog"
 	"net"
 
-	"github.com/ksctl/ksctl/ksctl-components/agent/pb"
+	"github.com/ksctl/ksctl/pkg/resources"
+
+	"google.golang.org/grpc/health/grpc_health_v1"
+
+	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/scale"
+	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -33,6 +38,34 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 	}
 
 	return &pb.ResScale{IsUpdated: true}, nil
+}
+
+func (s *server) Storage(ctx context.Context, in *pb.ReqStore) (*pb.ResStore, error) {
+	slog.DebugContext(ctx, "Request", "reqStore", in)
+
+	// validate the request
+	if in.Operation == pb.StorageOperation_EXPORT {
+		return nil, status.Error(codes.Unimplemented, "operation is not supported")
+	}
+
+	v := in.Data
+	exportedData := new(resources.StorageStateExportImport)
+	if err := json.Unmarshal(v, &exportedData); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	client := new(resources.KsctlClient)
+
+	if _err := storage.NewStorageClient(ctx, client); _err != nil {
+		return nil, status.Error(codes.FailedPrecondition, _err.Error())
+	}
+
+	if _err := storage.HandleImport(client, exportedData); _err != nil {
+		return nil, status.Error(codes.Internal, _err.Error())
+	}
+
+	slog.Info("all imports are done")
+	return new(pb.ResStore), nil
 }
 
 func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, error) {

@@ -1,0 +1,110 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ksctl
+  labels:
+    app.kubernetes.io/name: ksctl
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ksctl-sa
+  namespace: ksctl
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ksctl-role
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  namespace: ksctl
+  name: ksctl-rb
+subjects:
+  - kind: ServiceAccount
+    name: ksctl-sa
+    namespace: ksctl
+roleRef:
+  kind: ClusterRole
+  name: ksctl-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ksctl
+  name: agent
+spec:
+  selector:
+    app.kubernetes.io/name: ksctl-agent
+    app.kubernetes.io/part-of: ksctl-components
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ksctl
+  name:  ksctl-agent
+  labels:
+    app.kubernetes.io/name: ksctl-agent
+    app.kubernetes.io/part-of: ksctl-components
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ksctl-agent
+      app.kubernetes.io/part-of: ksctl-components
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ksctl-agent
+        app.kubernetes.io/part-of: ksctl-components
+    spec:
+      serviceAccountName: ksctl-sa
+      containers:
+      - name: ksctl-agent
+        image: ghcr.io/ksctl/ksctl-agent:latest
+        livenessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+            name: grpc-server
+        env:
+        - name: LOG_LEVEL
+          value: "DEBUG"
+
+        - name: KSCTL_CLUSTER_NAME
+          value: "<insert_here>"
+
+        - name: KSCTL_CLOUD
+          value: "<insert_here>"
+
+        - name: KSCTL_REGION
+          value: "<insert_here>"
+
+        - name: KSCTL_K8S_DISTRO
+          value: "<insert_here>"
+      restartPolicy: Always
+---
+# TODO(user): need to use the specific standard labels
+#
+# app.kubernetes.io/name: mysql
+# app.kubernetes.io/instance: mysql-abcxzy
+# app.kubernetes.io/version: "5.7.21"
+# app.kubernetes.io/managed-by: helm
+# app.kubernetes.io/component: database
+# app.kubernetes.io/part-of: wordpress
+#
+# Refering to this https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/

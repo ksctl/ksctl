@@ -172,20 +172,39 @@ func getCredentialsFilters(cloud consts.KsctlCloud) bson.M {
 	}
 }
 
-func (db *Store) Connect(ctx context.Context) error {
-	db.context = context.Background()
-
+func fetchCreds() (string, error) {
 	connURI := os.Getenv("MONGODB_URI")
 
 	if len(connURI) == 0 {
-		return fmt.Errorf("environment vars not set for the storage to work. Hint: mongodb://${username}:${password}@${domain}:${port} or mongo+atlas mongodb+srv://${username}:${password}@${domain}")
+		return "", log.NewError("environment vars not set for the storage to work. Hint: mongodb://${username}:${password}@${domain}:${port} or mongo+atlas mongodb+srv://${username}:${password}@${domain}")
 	}
 
-	db.mongoURI = fmt.Sprintf("%s/?retryWrites=true&w=majority", connURI)
+	return fmt.Sprintf("%s/?retryWrites=true&w=majority", connURI), nil
+}
+
+func ExportEndpoint() (map[string][]byte, error) {
+	v, err := fetchCreds()
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string][]byte{
+		"MONGODB_URI": []byte(v),
+	}, nil
+}
+
+func (db *Store) Connect(ctx context.Context) error {
+	db.context = context.Background()
+
+	v, err := fetchCreds()
+	if err != nil {
+		return err
+	}
+
+	db.mongoURI = v
 
 	opts := mongoOptions.Client().ApplyURI(db.mongoURI)
 
-	var err error
 	db.client, err = mongo.Connect(db.context, opts)
 	if err != nil {
 		return fmt.Errorf("MongoDB failed to connect. Reason: %w", err)

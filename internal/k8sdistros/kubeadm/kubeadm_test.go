@@ -144,7 +144,7 @@ func TestGeneratebootstrapToken(t *testing.T) {
 		fmt.Println("First group:", match[1])
 		fmt.Println("Second group:", match[2])
 	} else {
-		t.Fatalf("regex didn't match the generated token")
+		t.Fatalf("regex didn't match the helper-gen token")
 	}
 }
 

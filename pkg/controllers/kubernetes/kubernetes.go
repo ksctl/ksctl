@@ -1,14 +1,14 @@
 package kubernetes
 
 import (
-	"os"
-	"strings"
 	"sync"
+
+	"github.com/ksctl/ksctl/internal/kubernetes"
 
 	"github.com/ksctl/ksctl/internal/k8sdistros"
 	k3sPkg "github.com/ksctl/ksctl/internal/k8sdistros/k3s"
 	kubeadmPkg "github.com/ksctl/ksctl/internal/k8sdistros/kubeadm"
-	"github.com/ksctl/ksctl/internal/k8sdistros/universal"
+	"github.com/ksctl/ksctl/internal/storage/external"
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -174,11 +174,11 @@ func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 
 func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames []string) error {
 
-	kubernetesClient := universal.Kubernetes{
+	kubernetesClient := kubernetes.Kubernetes{
 		Metadata:      client.Metadata,
 		StorageDriver: client.Storage,
 	}
-	if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
+	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -190,6 +190,7 @@ func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames
 	return nil
 }
 
+// InstallAdditionalTools TODO: chenages are here
 func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, client *resources.KsctlClient, state *types.StorageDocument) error {
 
 	if log == nil {
@@ -197,19 +198,16 @@ func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, cl
 		log.SetPackageName("ksctl-distro")
 	}
 
-	var kubernetesClient universal.Kubernetes
-
-	if externalCNI || (len(client.Metadata.Applications) != 0 && externalApp) {
-		kubernetesClient = universal.Kubernetes{
-			Metadata:      client.Metadata,
-			StorageDriver: client.Storage,
-		}
-		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
-			return log.NewError(err.Error())
-		}
+	kubernetesClient := kubernetes.Kubernetes{
+		Metadata:      client.Metadata,
+		StorageDriver: client.Storage,
 	}
 
-	if externalCNI {
+	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
+		return log.NewError(err.Error())
+	}
+
+	if externalCNI { // check if cni can be done via the stacks.application.ksctl.com
 		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
 			return log.NewError(err.Error())
 		}
@@ -217,38 +215,91 @@ func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, cl
 		log.Success("Done with installing k8s cni")
 	}
 
-	if len(client.Metadata.Applications) != 0 && externalApp {
-		apps := strings.Split(client.Metadata.Applications, ",")
-		if err := kubernetesClient.InstallApplications(apps); err != nil {
-			return log.NewError(err.Error())
-		}
-
-		log.Success("Done with installing k8s apps")
-	}
-
-	if err := installKsctlSpecificApps(client, kubeconfig, kubernetesClient, state); err != nil {
+	if err := installKsctlSpecificApps(client, kubernetesClient, state); err != nil {
 		return log.NewError(err.Error())
 	}
+
+	//if externalCNI || (len(client.Metadata.Applications) != 0 && externalApp) {
+	//	kubernetesClient = kubernetes.Kubernetes{
+	//		Metadata:      client.Metadata,
+	//		StorageDriver: client.Storage,
+	//	}
+	//	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
+	//		return log.NewError(err.Error())
+	//	}
+	//}
+
+	//
+	//if len(client.Metadata.Applications) != 0 && externalApp {
+	//	apps := strings.Split(client.Metadata.Applications, ",")
+	//	if err := kubernetesClient.InstallApplications(apps); err != nil {
+	//		return log.NewError(err.Error())
+	//	}
+	//
+	//	log.Success("Done with installing k8s apps")
+	//}
 
 	log.Success("Done with installing additional k8s tools")
 	return nil
 }
 
-func installKsctlSpecificApps(client *resources.KsctlClient, kubeconfig string, kubernetesClient universal.Kubernetes, state *types.StorageDocument) error {
+func installKsctlSpecificApps(client *resources.KsctlClient, kubernetesClient kubernetes.Kubernetes, state *types.StorageDocument) error {
 
-	var cloudSecret map[string][]byte
-	var err error
-	cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
-	if err != nil {
+	// Steps aka small actionalble tasks
+	// 0. Need to perform storage.Export() --> [DONE]
+	// 1. deploy ksctl agent  --> [DONE]
+	// 2. deploy the crd   --> [DONE]
+	// 3. deploy the storage controller using the manifests --> [DONE]
+	// 4. deploy the stateImport crd resource (aka the state files to be transfered)--> [DONE] [NOTE: keep some space for if else logic]
+	//   TODO: Need to think on external storage logic condition
+	// --->>> At this point Things are setup <<---
+	// 5. from here we need to do final apply of the ksctl controllers and crds (specifically we need application thing)
+	// --->>> Fully automated controllers and handler are installed <<<---
+	// here we stop the ksctl specific apps
+	// then we will continue with the user specific apps and cni (TODO: need to discuss on how are we going to plan these)
+
+	var (
+		exportedData         *resources.StorageStateExportImport
+		externalCredEndpoint map[string][]byte
+		isExternalStore      bool
+	)
+
+	switch client.Metadata.StateLocation {
+	case consts.StoreLocal:
+		var _err error
+		exportedData, _err = client.Storage.Export(map[consts.KsctlSearchFilter]string{
+			consts.Cloud:  string(client.Metadata.Provider),
+			consts.Name:   client.Metadata.ClusterName,
+			consts.Region: client.Metadata.Region,
+			consts.ClusterType: func() string {
+				if !client.Metadata.IsHA {
+					return string(consts.ClusterTypeMang)
+				}
+				return string(consts.ClusterTypeHa)
+			}(),
+		})
+		if _err != nil {
+			return _err
+		}
+
+	case consts.StoreExtMongo:
+		isExternalStore = true
+		var _err error
+		externalCredEndpoint, _err = external.HandleCreds(consts.StoreExtMongo)
+		if _err != nil {
+			return _err
+		}
+	case consts.StoreK8s:
+		// WARN: for now we are not going to transfer state if the ksctl core is already running in one cluster
+		// to a new cluster aka (k8s -> k8s)
+	}
+
+	if err := kubernetesClient.DeployAgent(client, externalCredEndpoint, isExternalStore); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	////// EXPERIMENTAL Features //////
-	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
-
-		if err = kubernetesClient.KsctlConfigForController(kubeconfig, state, cloudSecret); err != nil {
-			return log.NewError(err.Error())
-		}
+	if err := kubernetesClient.DeployRequiredControllers(exportedData, isExternalStore); err != nil {
+		return log.NewError(err.Error())
 	}
 
 	log.Success("Done with installing ksctl k8s specific tools")

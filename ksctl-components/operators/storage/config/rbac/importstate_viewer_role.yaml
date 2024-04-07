@@ -1,0 +1,27 @@
+# permissions for end users to view importstates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: importstate-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: storage
+    app.kubernetes.io/part-of: storage
+    app.kubernetes.io/managed-by: kustomize
+  name: importstate-viewer-role
+rules:
+- apiGroups:
+  - storage.ksctl.com
+  resources:
+  - importstates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - storage.ksctl.com
+  resources:
+  - importstates/status
+  verbs:
+  - get

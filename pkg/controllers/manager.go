@@ -4,16 +4,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ksctl/ksctl/internal/kubernetes"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
 	"github.com/ksctl/ksctl/internal/cloudproviders/azure"
 	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
-	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
-	"github.com/ksctl/ksctl/internal/k8sdistros/universal"
-
 	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
+	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
 
 	"github.com/ksctl/ksctl/pkg/controllers/cloud"
 	kubernetesController "github.com/ksctl/ksctl/pkg/controllers/kubernetes"
@@ -472,11 +472,11 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 
 		kubeconfig := stateDocument.ClusterKubeConfig
 
-		kubernetesClient := universal.Kubernetes{
+		kubernetesClient := kubernetes.Kubernetes{
 			Metadata:      client.Metadata,
 			StorageDriver: client.Storage,
 		}
-		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
+		if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
 			return log.NewError(err.Error())
 		}
 

@@ -9,6 +9,11 @@ enum ScaleOperation {
   SCALE_DOWN = 1;
 }
 
+enum StorageOperation {
+  IMPORT = 0;
+  EXPORT = 1;
+}
+
 enum ApplicationOperation {
   CREATE = 0;
   DELETE = 1;
@@ -17,8 +22,18 @@ enum ApplicationOperation {
 
 service KsctlAgent {
   rpc Scale(ReqScale) returns (ResScale);
+  rpc Storage(ReqStore) returns (ResStore);
   rpc LoadBalancer(ReqLB) returns (ResLB);
   rpc Application(ReqApplication) returns (ResApplication);
+}
+
+message ReqStore {
+  StorageOperation operation = 1;
+  bytes data = 2;
+}
+
+message ResStore {
+
 }
 
 message ReqScale {

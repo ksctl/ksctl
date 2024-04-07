@@ -43,11 +43,29 @@ func NewK8sClient(ctx context.Context) (ClientSet, error) {
 }
 
 func (c2 *Client) WriteConfigMap(namespace string, c *v1.ConfigMap, opts metav1.UpdateOptions) (*v1.ConfigMap, error) {
-	return c2.client.CoreV1().ConfigMaps(namespace).Update(c2.ctx, c, opts)
+	if ret, err := c2.client.CoreV1().ConfigMaps(namespace).Update(c2.ctx, c, opts); err != nil {
+		if errors.IsNotFound(err) {
+			return c2.client.CoreV1().ConfigMaps(namespace).Create(c2.ctx, c, metav1.CreateOptions{})
+		} else {
+			return nil, err
+		}
+
+	} else {
+		return ret, err
+	}
 }
 
 func (c2 *Client) WriteSecret(namespace string, s *v1.Secret, opts metav1.UpdateOptions) (*v1.Secret, error) {
-	return c2.client.CoreV1().Secrets(namespace).Update(c2.ctx, s, opts)
+	if ret, err := c2.client.CoreV1().Secrets(namespace).Update(c2.ctx, s, opts); err != nil {
+		if errors.IsNotFound(err) {
+			return c2.client.CoreV1().Secrets(namespace).Create(c2.ctx, s, metav1.CreateOptions{})
+		} else {
+			return nil, err
+		}
+
+	} else {
+		return ret, err
+	}
 }
 
 func (c2 *Client) ReadSecret(namespace, name string, opts metav1.GetOptions) (*v1.Secret, error) {

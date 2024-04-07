@@ -283,7 +283,7 @@ func generatePrivateKey(log resources.LoggerFactory, bitSize int) (*rsa.PrivateK
 		return nil, err
 	}
 
-	log.Print("Private Key generated")
+	log.Print("Private Key helper-gen")
 	return privateKey, nil
 }
 
@@ -315,7 +315,7 @@ func generatePublicKey(log resources.LoggerFactory, privatekey *rsa.PublicKey) (
 
 	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
 
-	log.Print("Public key generated")
+	log.Print("Public key helper-gen")
 	return pubKeyBytes, nil
 }
 func CreateSSHKeyPair(log resources.LoggerFactory, state *types.StorageDocument) error {

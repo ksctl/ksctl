@@ -1,4 +1,6 @@
-FROM golang:1.21 as builder
+# Build the manager binary
+ARG GO_VERSION=1.21
+FROM golang:${GO_VERSION} AS builder
 
 WORKDIR /app
 
@@ -28,3 +30,12 @@ COPY --from=builder /app/ksctlagent /app/ksctlagent
 ENTRYPOINT [ "/app/ksctlagent" ]
 
 EXPOSE 8080
+
+## Use distroless as minimal base image to package the manager binary
+## Refer to https://github.com/GoogleContainerTools/distroless for more details
+#FROM gcr.io/distroless/static:nonroot
+#WORKDIR /
+#COPY --from=builder /workspace/manager .
+#USER 65532:65532
+#
+#ENTRYPOINT ["/manager"]

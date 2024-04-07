@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ksctl/ksctl/ksctl-components/agent/pb"
+	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/helpers"
 
 	"os"
