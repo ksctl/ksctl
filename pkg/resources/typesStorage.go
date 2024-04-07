@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
@@ -12,7 +13,6 @@ type StorageFactory interface {
 	//always present in the storagedriver we can make the driver write the struct once termination is triggered
 	Kill() error
 
-	// Connect TODO: transfer the Logverbosity and LogWriter and all other stuff
 	Connect(ctx context.Context) error
 
 	Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
@@ -29,5 +29,16 @@ type StorageFactory interface {
 
 	AlreadyCreated(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 
-	GetOneOrMoreClusters(filters map[string]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error)
+	GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error)
+
+	// Export is not goroutine safe, but the child process it calls is!
+	Export(filters map[consts.KsctlSearchFilter]string) (*StorageStateExportImport, error)
+
+	// Import is not goroutine safe, but the child process it calls is!
+	Import(*StorageStateExportImport) error
+}
+
+type StorageStateExportImport struct {
+	Clusters    []*types.StorageDocument
+	Credentials []*types.CredentialsDocument
 }

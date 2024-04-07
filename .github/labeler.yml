@@ -31,6 +31,9 @@
 'state/kubernetes':
 - 'internal/storage/kubernetes/*'
 
+'state/external/mongodb':
+  - 'internal/storage/external/mongodb/*'
+
 'area/poc':
 - 'poc/**'
 - 'poc/*'

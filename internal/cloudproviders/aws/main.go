@@ -446,9 +446,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloudcontrolres.AllClusterData
 
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudAws),
-		"clusterType": "",
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudAws),
+		consts.ClusterType: "",
 	})
 	if err != nil {
 		return nil, log.NewError("Error fetching cluster info", "error", err)

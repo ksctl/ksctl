@@ -24,6 +24,15 @@ type KsctlValidCNIPlugin string
 
 type KsctlSupportedScriptRunners string
 
+type KsctlSearchFilter string
+
+const (
+	Cloud       KsctlSearchFilter = "cloud"
+	ClusterType KsctlSearchFilter = "clusterType"
+	Name        KsctlSearchFilter = "clusterName"
+	Region      KsctlSearchFilter = "region"
+)
+
 const (
 	LinuxSh   KsctlSupportedScriptRunners = "/bin/sh"
 	LinuxBash KsctlSupportedScriptRunners = "/bin/bash"
