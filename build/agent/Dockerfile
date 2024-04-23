@@ -2,6 +2,9 @@
 ARG GO_VERSION=1.21
 FROM golang:${GO_VERSION} AS builder
 
+ARG TARGETOS
+ARG TARGETARCH
+
 WORKDIR /app
 
 LABEL MAINTAINER="dipankar das"
@@ -10,7 +13,7 @@ COPY . .
 
 RUN go mod tidy
 
-RUN cd ksctl-components/agent && CGO_ENABLED=0 go build -v -o ksctlagent . && mv ksctlagent ../..
+RUN cd ksctl-components/agent && CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -o ksctlagent . && mv ksctlagent ../..
 
 
 FROM alpine
@@ -26,6 +29,9 @@ USER ksctl
 WORKDIR /app
 
 COPY --from=builder /app/ksctlagent /app/ksctlagent
+
+RUN mkdir -p /home/ksctl/.config/helm && \
+    touch /home/ksctl/.config/helm/repositories.yaml
 
 ENTRYPOINT [ "/app/ksctlagent" ]
 

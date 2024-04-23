@@ -10,16 +10,34 @@ import (
 
 func (this *Kubernetes) apiExtensionsApply(o *apiextensionsv1.CustomResourceDefinition) error {
 
-	_, err := this.apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(), o, v1.CreateOptions{})
+	_, err := this.apiextensionsClient.
+		ApiextensionsV1().
+		CustomResourceDefinitions().
+		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Update(context.Background(), o, v1.UpdateOptions{})
+			_, err = this.apiextensionsClient.
+				ApiextensionsV1().
+				CustomResourceDefinitions().
+				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return log.NewError(err.Error())
 			}
 		} else {
 			return log.NewError(err.Error())
 		}
+	}
+	return nil
+}
+
+func (this *Kubernetes) apiExtensionsDelete(o *apiextensionsv1.CustomResourceDefinition) error {
+
+	err := this.apiextensionsClient.
+		ApiextensionsV1().
+		CustomResourceDefinitions().
+		Delete(context.Background(), o.Name, v1.DeleteOptions{})
+	if err != nil {
+		return log.NewError(err.Error())
 	}
 	return nil
 }

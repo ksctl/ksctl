@@ -18,15 +18,27 @@ package controller
 
 import (
 	"context"
-	"github.com/fatih/color"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
+	"io"
+	"os"
 	"time"
 
+	storagev1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/storage/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+)
 
-	storagev1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/storage/api/v1alpha1"
+var (
+	log resources.LoggerFactory
+
+	LogVerbosity = map[string]int{
+		"DEBUG": -1,
+		"":      0,
+	}
+
+	LogWriter io.Writer = os.Stdout
 )
 
 // ImportStateReconciler reconciles a ImportState object
@@ -48,10 +60,8 @@ type ImportStateReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
 func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// TODO: make sure that all the controllers deployed are in ksctl namespace
-	l := log.FromContext(ctx).V(-1).WithName("ksctl-importer")
 
-	color.HiYellow("TRIGGERED")
+	log.Debug("Triggered Reconciliation")
 
 	exportedData := new(storagev1alpha1.ImportState)
 
@@ -60,12 +70,12 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if exportedData.Spec.Handled {
-		color.HiGreen("SKIPPED already handled")
+		log.Success("skipped!, already handled")
 		return ctrl.Result{}, nil
 	}
 
-	l.Info("debugging", "name", exportedData.Name, "namespace", exportedData.Namespace)
-	l.Info("calling ksctl agent with exported data")
+	log.Debug("Debugging", "name", exportedData.Name, "namespace", exportedData.Namespace)
+	log.Debug("exported Spec", "status", exportedData.Status, "rawData", len(exportedData.Spec.RawExportedData))
 
 	exportedData.Spec.Handled = true
 
@@ -75,20 +85,24 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	defer conn.Close()
 
 	if err != nil {
+		log.Error("New RPC Client", "Reason", err)
 		exportedData.Spec.Success = false
 		exportedData.Spec.ReasonOfFailure = err.Error()
 
 		if _err := r.Update(context.Background(), exportedData); _err != nil {
+			log.Error("update failed", "Reason", _err)
 			return ctrl.Result{}, _err
 		}
 		return ctrl.Result{}, err
 	}
 
 	if _err := ImportData(ctx, rpcClient, exportedData.Spec.RawExportedData); _err != nil {
+		log.Error("ImportData", "Reason", _err)
 		exportedData.Spec.Success = false
 		exportedData.Spec.ReasonOfFailure = _err.Error()
 
 		if __err := r.Update(context.Background(), exportedData); __err != nil {
+			log.Error("update failed", "Reason", _err)
 			return ctrl.Result{}, __err
 		}
 		return ctrl.Result{}, _err
@@ -97,15 +111,21 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	exportedData.Spec.Success = true
 
 	if _err := r.Update(context.Background(), exportedData); _err != nil {
+		log.Error("update failed", "Reason", _err)
 		return ctrl.Result{}, _err
 	}
 
-	color.HiGreen("called it successfully")
+	log.Success("Import was successful")
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ImportStateReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	log = logger.NewDefaultLogger(
+		LogVerbosity[os.Getenv("LOG_LEVEL")],
+		LogWriter)
+	log.SetPackageName("ksctl-storage-importer")
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&storagev1alpha1.ImportState{}).
 		Complete(r)

@@ -19,7 +19,6 @@ import (
 type metadata struct {
 	public bool
 
-	// apps    string
 	cni     string
 	version string
 
@@ -150,7 +149,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 
 	errLoadState := loadStateHelper(storage)
 	switch operation {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Azure.B.IsCompleted {
 			return log.NewError("cluster already exist")
 		}
@@ -170,13 +169,13 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 			mainStateDocument.CloudInfra.Azure.B.KubernetesDistro = string(obj.metadata.k8sName)
 		}
 
-	case consts.OperationStateDelete:
+	case consts.OperationDelete:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		log.Debug("Delete resource(s)")
 
-	case consts.OperationStateGet:
+	case consts.OperationGet:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
@@ -271,7 +270,7 @@ func (cloud *AzureProvider) Visibility(toBePublic bool) resources.CloudFactory {
 	return cloud
 }
 
-func (cloud *AzureProvider) Application(s string) (externalApps bool) {
+func (cloud *AzureProvider) Application(s []string) (externalApps bool) {
 	return true
 }
 

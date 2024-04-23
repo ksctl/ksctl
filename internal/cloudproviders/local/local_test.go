@@ -233,7 +233,7 @@ func TestManagedCluster(t *testing.T) {
 
 	}()
 
-	assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationStateCreate), nil, "Init must work before")
+	assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationCreate), nil, "Init must work before")
 	fakeClientManaged.Version("1.27.1")
 	fakeClientManaged.Name("fake")
 	assert.Equal(t, fakeClientManaged.NewManagedCluster(storeManaged, 2), nil, "managed cluster should be created")

@@ -8,12 +8,18 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (this *Kubernetes) clusterroleApply(o *rbacv1.ClusterRole) error {
+func (this *Kubernetes) clusterRoleApply(o *rbacv1.ClusterRole) error {
 
-	_, err := this.clientset.RbacV1().ClusterRoles().Create(context.Background(), o, v1.CreateOptions{})
+	_, err := this.clientset.
+		RbacV1().
+		ClusterRoles().
+		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.RbacV1().ClusterRoles().Update(context.Background(), o, v1.UpdateOptions{})
+			_, err = this.clientset.
+				RbacV1().
+				ClusterRoles().
+				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return log.NewError(err.Error())
 			}
@@ -24,28 +30,76 @@ func (this *Kubernetes) clusterroleApply(o *rbacv1.ClusterRole) error {
 	return nil
 }
 
-func (this *Kubernetes) clusterrolebindingApply(o *rbacv1.ClusterRoleBinding) error {
+func (this *Kubernetes) clusterRoleDelete(o *rbacv1.ClusterRole) error {
 
-	_, err := this.clientset.RbacV1().ClusterRoleBindings().Create(context.Background(), o, v1.CreateOptions{})
+	err := this.clientset.
+		RbacV1().
+		ClusterRoles().
+		Delete(context.Background(), o.Name, v1.DeleteOptions{})
+	if err != nil {
+		return log.NewError(err.Error())
+	}
+	return nil
+}
+
+func (this *Kubernetes) clusterRoleBindingDelete(o *rbacv1.ClusterRoleBinding) error {
+
+	err := this.clientset.
+		RbacV1().
+		ClusterRoleBindings().
+		Delete(context.Background(), o.Name, v1.DeleteOptions{})
+	if err != nil {
+		return log.NewError(err.Error())
+	}
+	return nil
+}
+
+func (this *Kubernetes) clusterRoleBindingApply(o *rbacv1.ClusterRoleBinding) error {
+
+	_, err := this.clientset.
+		RbacV1().
+		ClusterRoleBindings().
+		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.RbacV1().ClusterRoleBindings().Update(context.Background(), o, v1.UpdateOptions{})
+			_, err = this.clientset.
+				RbacV1().
+				ClusterRoleBindings().
+				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return log.NewError(err.Error())
 			}
 		} else {
 			return log.NewError(err.Error())
 		}
+	}
+	return nil
+}
+
+func (this *Kubernetes) roleDelete(o *rbacv1.Role, ns string) error {
+
+	err := this.clientset.
+		RbacV1().
+		Roles(ns).
+		Delete(context.Background(), o.Name, v1.DeleteOptions{})
+	if err != nil {
+		return log.NewError(err.Error())
 	}
 	return nil
 }
 
 func (this *Kubernetes) roleApply(o *rbacv1.Role, ns string) error {
 
-	_, err := this.clientset.RbacV1().Roles(ns).Create(context.Background(), o, v1.CreateOptions{})
+	_, err := this.clientset.
+		RbacV1().
+		Roles(ns).
+		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.RbacV1().Roles(ns).Update(context.Background(), o, v1.UpdateOptions{})
+			_, err = this.clientset.
+				RbacV1().
+				Roles(ns).
+				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return log.NewError(err.Error())
 			}
@@ -56,18 +110,36 @@ func (this *Kubernetes) roleApply(o *rbacv1.Role, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) rolebindingApply(o *rbacv1.RoleBinding, ns string) error {
+func (this *Kubernetes) roleBindingApply(o *rbacv1.RoleBinding, ns string) error {
 
-	_, err := this.clientset.RbacV1().RoleBindings(ns).Create(context.Background(), o, v1.CreateOptions{})
+	_, err := this.clientset.
+		RbacV1().
+		RoleBindings(ns).
+		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.RbacV1().RoleBindings(ns).Update(context.Background(), o, v1.UpdateOptions{})
+			_, err = this.clientset.
+				RbacV1().
+				RoleBindings(ns).
+				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return log.NewError(err.Error())
 			}
 		} else {
 			return log.NewError(err.Error())
 		}
+	}
+	return nil
+}
+
+func (this *Kubernetes) roleBindingDelete(o *rbacv1.RoleBinding, ns string) error {
+
+	err := this.clientset.
+		RbacV1().
+		RoleBindings(ns).
+		Delete(context.Background(), o.Name, v1.DeleteOptions{})
+	if err != nil {
+		return log.NewError(err.Error())
 	}
 	return nil
 }

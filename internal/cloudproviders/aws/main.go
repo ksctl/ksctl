@@ -133,7 +133,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	errLoadState := loadStateHelper(storage)
 
 	switch opration {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Aws.IsCompleted {
 			return log.NewError("cluster %s already exists", obj.clusterName)
 		}
@@ -153,13 +153,13 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 			mainStateDocument.CloudInfra.Aws.B.KubernetesDistro = string(obj.metadata.k8sName)
 		}
 
-	case consts.OperationStateDelete:
+	case consts.OperationDelete:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		log.Debug("Delete resource(s)")
 
-	case consts.OperationStateGet:
+	case consts.OperationGet:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
@@ -261,7 +261,7 @@ func (obj *AwsProvider) SupportForApplications() bool {
 
 }
 
-func (obj *AwsProvider) Application(s string) bool {
+func (obj *AwsProvider) Application(s []string) bool {
 	return true
 }
 

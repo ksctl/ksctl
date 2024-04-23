@@ -1,23 +1,26 @@
 package kubernetes
 
-func ciliumData() Application {
+import "fmt"
+
+func ciliumData(ver string) Application {
+	//1.14.2
 	return Application{
 		Name:       "cilium",
 		Namespace:  "<Helm-Managed>",
 		Url:        "https://helm.cilium.io/",
 		Maintainer: "Dipankar Das",
-		Version:    "1.14.2",
-		Metadata:   "Cilium is an open source, cloud native solution for providing, securing, and observing network connectivity between workloads, fueled by the revolutionary Kernel technology eBPF",
+		Version:    ver,
+		Metadata:   fmt.Sprintf("Cilium (Ver: %s) is an open source, cloud native solution for providing, securing, and observing network connectivity between workloads, fueled by the revolutionary Kernel technology eBPF", ver),
 		PostInstall: `
 Once all the components feel ready
-	cilium status
+	$ cilium status
 to check the status of the cilium installed
 		`,
 		InstallType: InstallHelm,
 		HelmConfig: []HelmOptions{
 			HelmOptions{
 				chartName:       "cilium/cilium",
-				chartVer:        "1.14.2",
+				chartVer:        ver,
 				releaseName:     "cilium",
 				namespace:       "kube-system",
 				createNamespace: false,

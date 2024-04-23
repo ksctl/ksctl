@@ -82,9 +82,9 @@ const (
 )
 
 const (
-	OperationStateGet    KsctlOperation = "get"
-	OperationStateCreate KsctlOperation = "create"
-	OperationStateDelete KsctlOperation = "delete"
+	OperationGet    KsctlOperation = "get"
+	OperationCreate KsctlOperation = "create"
+	OperationDelete KsctlOperation = "delete"
 )
 
 const (

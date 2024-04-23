@@ -1,13 +1,16 @@
 package kubernetes
 
-func istioData() Application {
+import "fmt"
+
+func istioData(ver string) Application {
+	//1.16.1
 	return Application{
 		Name:       "istio",
 		Namespace:  "<Helm-Managed>",
 		Url:        "https://istio-release.storage.googleapis.com/charts",
 		Maintainer: "Dipankar Das",
-		Version:    "1.16.1",
-		Metadata:   "Istio extends Kubernetes to establish a programmable, application-aware network using the powerful Envoy service proxy. Working with both Kubernetes and traditional workloads, Istio brings standard, kubernetes traffic management, telemetry, and security to complex deployments.",
+		Version:    ver,
+		Metadata:   fmt.Sprintf("Istio (Ver: %s) extends Kubernetes to establish a programmable, application-aware network using the powerful Envoy service proxy. Working with both Kubernetes and traditional workloads, Istio brings standard, kubernetes traffic management, telemetry, and security to complex deployments.", ver),
 		PostInstall: `
 TODO: Its blank
 		`,
@@ -15,7 +18,7 @@ TODO: Its blank
 		HelmConfig: []HelmOptions{
 			HelmOptions{
 				chartName:       "istio/base",
-				chartVer:        "1.16.1",
+				chartVer:        ver,
 				releaseName:     "istio-base",
 				namespace:       "istio-system",
 				createNamespace: true,
@@ -25,7 +28,7 @@ TODO: Its blank
 			},
 			HelmOptions{
 				chartName:       "istio/istiod",
-				chartVer:        "1.16.1",
+				chartVer:        ver,
 				releaseName:     "istiod",
 				namespace:       "istio-system",
 				createNamespace: false,

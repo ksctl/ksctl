@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
 	"os"
 	"time"
 
@@ -66,9 +68,29 @@ func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 	return nil
 }
 
+func (c *HelmClient) UninstallChart(namespace, releaseName string) error {
+
+	clientUninstall := action.NewUninstall(c.actionConfig)
+
+	clientUninstall.Wait = true
+	clientUninstall.Timeout = 5 * time.Minute
+
+	_, err := clientUninstall.Run(releaseName)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName string, createNamespace bool, arguments map[string]interface{}) error {
 
 	clientInstall := action.NewInstall(c.actionConfig)
+
+	// NOTE: Patch for the helm latest releases
+	if chartVer == "latest" {
+		chartVer = ""
+	}
+
 	clientInstall.ChartPathOptions.Version = chartVer
 	clientInstall.ReleaseName = releaseName
 	clientInstall.Namespace = namespace
@@ -78,7 +100,8 @@ func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName st
 	clientInstall.Wait = true
 	clientInstall.Timeout = 5 * time.Minute
 
-	chartPath, err := clientInstall.ChartPathOptions.LocateChart(chartName, c.settings)
+	chartPath, err := clientInstall.ChartPathOptions.
+		LocateChart(chartName, c.settings)
 	if err != nil {
 		return err
 	}
@@ -175,6 +198,14 @@ func (c *SimpleRESTClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig 
 
 ///////////////////////////////////////////////////////////////////////////////////
 
+type CustomLogger struct {
+	Logger resources.LoggerFactory
+}
+
+func (l *CustomLogger) HelmDebugf(format string, v ...interface{}) {
+	l.Logger.ExternalLogHandlerf(consts.LOG_DEBUG, format+"\n", v...)
+}
+
 func (client *HelmClient) NewKubeconfigHelmClient(kubeconfig string) error {
 
 	client.settings = cli.New()
@@ -182,7 +213,9 @@ func (client *HelmClient) NewKubeconfigHelmClient(kubeconfig string) error {
 
 	client.actionConfig = new(action.Configuration)
 
-	if err := client.actionConfig.Init(NewRESTClientGetter(client.settings.Namespace(), kubeconfig), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Debug); err != nil {
+	_log := &CustomLogger{Logger: log}
+
+	if err := client.actionConfig.Init(NewRESTClientGetter(client.settings.Namespace(), kubeconfig), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), _log.HelmDebugf); err != nil {
 		return log.NewError(err.Error())
 	}
 	return nil
@@ -194,7 +227,8 @@ func (client *HelmClient) NewInClusterHelmClient() (err error) {
 	client.settings.Debug = true
 	client.actionConfig = new(action.Configuration)
 
-	if err = client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Debug); err != nil {
+	_log := &CustomLogger{Logger: log}
+	if err = client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), _log.HelmDebugf); err != nil {
 		return
 	}
 	return nil
@@ -204,12 +238,14 @@ func installHelm(client *Kubernetes, appStruct Application) error {
 
 	repoName, repoUrl, charts := appStruct.Name, appStruct.Url, appStruct.HelmConfig
 
-	if err := client.helmClient.RepoAdd(repoName, repoUrl); err != nil {
+	if err := client.helmClient.
+		RepoAdd(repoName, repoUrl); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	for _, chart := range charts {
-		if err := client.helmClient.InstallChart(chart.chartVer, chart.chartName, chart.namespace, chart.releaseName, chart.createNamespace, chart.args); err != nil {
+		if err := client.helmClient.
+			InstallChart(chart.chartVer, chart.chartName, chart.namespace, chart.releaseName, chart.createNamespace, chart.args); err != nil {
 			return log.NewError(err.Error())
 		}
 	}
@@ -217,5 +253,19 @@ func installHelm(client *Kubernetes, appStruct Application) error {
 	if err := client.helmClient.ListInstalledCharts(); err != nil {
 		return log.NewError(err.Error())
 	}
+	return nil
+}
+
+func deleteHelm(client *Kubernetes, appStruct Application) error {
+
+	charts := appStruct.HelmConfig
+
+	for _, chart := range charts {
+		if err := client.helmClient.
+			UninstallChart(chart.namespace, chart.releaseName); err != nil {
+			return log.NewError(err.Error())
+		}
+	}
+
 	return nil
 }

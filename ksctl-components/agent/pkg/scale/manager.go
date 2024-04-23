@@ -14,7 +14,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func CallManager(in *pb.ReqScale) error {
+func CallManager(log resources.LoggerFactory, in *pb.ReqScale) error {
 
 	// TODO: make the manager to not use kuberneteVer as a parameter instead it to be handled by the scaling thing
 	// Reason: we can update the ver without changing the env; by just changing the state along and it should be the single source of truth!
@@ -29,8 +29,19 @@ func CallManager(in *pb.ReqScale) error {
 	client.Metadata.WorkerPlaneNodeType = in.NodeSizeOfWP // FIXME: we should have consistent nodeSize not a variable; then we can drop this
 	client.Metadata.LogVerbosity = helpers.LogVerbosity[os.Getenv("LOG_LEVEL")]
 	client.Metadata.StateLocation = consts.StoreK8s
-	client.Metadata.LogWritter = os.Stdout
-	client.Metadata.IsHA = true
+	client.Metadata.LogWritter = helpers.LogWriter
+	client.Metadata.IsHA = func() bool {
+		var _v bool
+		switch os.Getenv("KSCTL_CLUSTER_IS_HA") {
+		case "true":
+			return true
+		case "false":
+			return false
+		}
+		return _v
+	}()
+
+	log.Debug("Metadata for Application handler", "client.Metadata", client.Metadata)
 
 	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "ksctl-agent"), client); err != nil {
 		return err

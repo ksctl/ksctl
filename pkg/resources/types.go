@@ -41,8 +41,8 @@ type Metadata struct {
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
 
-	Applications string `json:"preinstalled_apps"`
-	CNIPlugin    string `json:"cni_plugin"`
+	Applications []string `json:"preinstalled_apps"`
+	CNIPlugin    string   `json:"cni_plugin"`
 
 	LogVerbosity int       `json:"log_verbosity"`
 	LogWritter   io.Writer `json:"log_writter"`

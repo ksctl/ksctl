@@ -75,7 +75,7 @@ func TestCivoProvider_InitState(t *testing.T) {
 
 	t.Run("Create state", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateCreate); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -89,21 +89,21 @@ func TestCivoProvider_InitState(t *testing.T) {
 		mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
 		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, true, "cluster should not be completed")
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateCreate); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to resume state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Get request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateGet); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationGet); err != nil {
 			t.Fatalf("Unable to get state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Delete request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateDelete); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationDelete); err != nil {
 			t.Fatalf("Unable to Delete state, Reason: %v", err)
 		}
 	})
@@ -435,7 +435,7 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeClientManaged.InitState(storeManaged, consts.OperationStateCreate); err != nil {
+		if err := fakeClientManaged.InitState(storeManaged, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -542,7 +542,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeClientHA.InitState(storeHA, consts.OperationStateCreate); err != nil {
+		if err := fakeClientHA.InitState(storeHA, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -744,7 +744,7 @@ func TestHACluster(t *testing.T) {
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {
 
-		if err := fakeClientHA.InitState(storeHA, consts.OperationStateDelete); err != nil {
+		if err := fakeClientHA.InitState(storeHA, consts.OperationDelete); err != nil {
 			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
 		}
 

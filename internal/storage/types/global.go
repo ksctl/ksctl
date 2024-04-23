@@ -30,6 +30,8 @@ type StorageDocument struct {
 	ClusterKubeConfig string                    `json:"cluster_kubeconfig" bson:"cluster_kubeconfig"`
 
 	SSHKeyPair SSHKeyPairState `json:"ssh_key_pair" bson:"ssh_key_pair"`
+
+	Addons KubernetesAddons `json:"addons" bson:"addons"`
 }
 
 type InfrastructureState struct {

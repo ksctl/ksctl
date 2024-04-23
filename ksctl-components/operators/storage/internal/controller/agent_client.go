@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"google.golang.org/grpc"
@@ -29,7 +28,6 @@ func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, erro
 
 func ImportData(ctx context.Context, client pb.KsctlAgentClient, data []byte) error {
 	_, err := client.Storage(ctx, &pb.ReqStore{Operation: pb.StorageOperation_IMPORT, Data: data})
-	fmt.Println("Errors from grpc storage Import: ", err)
 	if err != nil {
 		return err
 	}

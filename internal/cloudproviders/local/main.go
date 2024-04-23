@@ -71,7 +71,7 @@ func ReturnLocalStruct(metadata resources.Metadata, state *types.StorageDocument
 // InitState implements resources.CloudFactory.
 func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
 	switch operation {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if isPresent(storage, cloud.ClusterName) {
 			return log.NewError("already present")
 		}
@@ -85,7 +85,7 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 
 		mainStateDocument.CloudInfra.Local.B.KubernetesDistro = "kind"
 		mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.Metadata.Version
-	case consts.OperationStateDelete, consts.OperationStateGet:
+	case consts.OperationDelete, consts.OperationGet:
 		err := loadStateHelper(storage)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -101,7 +101,7 @@ func (cloud *LocalProvider) Name(resName string) resources.CloudFactory {
 	return cloud
 }
 
-func (cloud *LocalProvider) Application(s string) (externalApps bool) {
+func (cloud *LocalProvider) Application(s []string) (externalApps bool) {
 	return true
 }
 

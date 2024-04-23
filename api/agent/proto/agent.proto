@@ -19,6 +19,10 @@ enum ApplicationOperation {
   DELETE = 1;
   UPDATE = 2;
 }
+enum ApplicationType {
+  APP = 0;
+  CNI = 1;
+}
 
 service KsctlAgent {
   rpc Scale(ReqScale) returns (ResScale);
@@ -46,14 +50,20 @@ message ResScale {
   bool isUpdated = 1;
 }
 
+message Application {
+  string appName = 1;
+  ApplicationType appType = 2;
+  string version = 3;
+}
 
 message ReqApplication {
   ApplicationOperation operation = 1;
-  string appName = 2;
+  repeated Application apps = 2;
 }
 
-message ResApplication {}
-
+message ResApplication {
+  repeated string failedApps = 1;
+}
 
 message PortMappings {
   uint64 from = 1;

@@ -21,6 +21,7 @@ type Kubernetes struct {
 	clientset           *kubernetes.Clientset
 	apiextensionsClient *clientset.Clientset
 	helmClient          *HelmClient
+	InCluster           bool
 }
 
 var (
@@ -77,6 +78,7 @@ func (this *Kubernetes) NewInClusterClient() (err error) {
 	if err = this.helmClient.NewInClusterHelmClient(); err != nil {
 		return
 	}
+	this.InCluster = true // it helps us to identify if we are inside the cluster or not
 
 	initApps()
 

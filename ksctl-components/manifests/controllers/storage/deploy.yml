@@ -330,6 +330,8 @@ spec:
         env:
         - name: KSCTL_AGENT_URL
           value: agent.ksctl.svc.cluster.local:8080
+        - name: LOG_LEVEL
+          value: DEBUG
         image: ghcr.io/ksctl/ksctl-storage-controller:latest
         livenessProbe:
           httpGet:

@@ -3,6 +3,8 @@ package kubernetes
 import (
 	"sync"
 
+	"github.com/ksctl/ksctl/pkg/helpers"
+
 	"github.com/ksctl/ksctl/internal/kubernetes"
 
 	"github.com/ksctl/ksctl/internal/k8sdistros"
@@ -77,7 +79,7 @@ func ConfigureCluster(client *resources.KsctlClient) (bool, error) {
 		}
 	}
 
-	if err := client.Bootstrap.Setup(client.Storage, consts.OperationStateCreate); err != nil {
+	if err := client.Bootstrap.Setup(client.Storage, consts.OperationCreate); err != nil {
 		return false, log.NewError(err.Error())
 	}
 
@@ -140,7 +142,7 @@ func ConfigureCluster(client *resources.KsctlClient) (bool, error) {
 
 func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 
-	if err := client.Bootstrap.Setup(client.Storage, consts.OperationStateGet); err != nil {
+	if err := client.Bootstrap.Setup(client.Storage, consts.OperationGet); err != nil {
 		return log.NewError(err.Error())
 	}
 	client.Bootstrap = client.Bootstrap.Version(client.Metadata.K8sVersion)
@@ -190,8 +192,7 @@ func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames
 	return nil
 }
 
-// InstallAdditionalTools TODO: chenages are here
-func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, client *resources.KsctlClient, state *types.StorageDocument) error {
+func ApplicationsInCluster(client *resources.KsctlClient, state *types.StorageDocument, op consts.KsctlOperation) error {
 
 	if log == nil {
 		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
@@ -203,12 +204,55 @@ func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, cl
 		StorageDriver: client.Storage,
 	}
 
-	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
+	if err := kubernetesClient.NewInClusterClient(); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	if externalCNI { // check if cni can be done via the stacks.application.ksctl.com
-		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
+	_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+	if err != nil {
+		return err
+	}
+
+	if len(client.Metadata.CNIPlugin) != 0 {
+		_cni, err := helpers.ToApplicationTempl([]string{client.Metadata.CNIPlugin})
+		if err != nil {
+			return err
+		}
+
+		if err := kubernetesClient.InstallCNI(_cni[0], state, op); err != nil {
+			return err
+		}
+	}
+	if len(client.Metadata.Applications) != 0 {
+		return kubernetesClient.Applications(_apps, state, op)
+	}
+	return nil
+}
+
+func InstallAdditionalTools(externalCNI, externalApp bool, client *resources.KsctlClient, state *types.StorageDocument) error {
+
+	if log == nil {
+		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		log.SetPackageName("ksctl-distro")
+	}
+
+	kubernetesClient := kubernetes.Kubernetes{
+		Metadata:      client.Metadata,
+		StorageDriver: client.Storage,
+	}
+
+	if err := kubernetesClient.NewKubeconfigClient(state.ClusterKubeConfig); err != nil {
+		return log.NewError(err.Error())
+	}
+
+	if externalCNI {
+
+		_cni, err := helpers.ToApplicationTempl([]string{client.Metadata.CNIPlugin})
+		if err != nil {
+			return err
+		}
+		// Note: the CNI installer is only for one!
+		if err := kubernetesClient.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
 			return log.NewError(err.Error())
 		}
 
@@ -219,44 +263,23 @@ func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, cl
 		return log.NewError(err.Error())
 	}
 
-	//if externalCNI || (len(client.Metadata.Applications) != 0 && externalApp) {
-	//	kubernetesClient = kubernetes.Kubernetes{
-	//		Metadata:      client.Metadata,
-	//		StorageDriver: client.Storage,
-	//	}
-	//	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
-	//		return log.NewError(err.Error())
-	//	}
-	//}
+	if len(client.Metadata.Applications) != 0 && externalApp {
+		_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+		if err != nil {
+			return err
+		}
+		if err := kubernetesClient.Applications(_apps, state, consts.OperationCreate); err != nil {
+			return log.NewError(err.Error())
+		}
 
-	//
-	//if len(client.Metadata.Applications) != 0 && externalApp {
-	//	apps := strings.Split(client.Metadata.Applications, ",")
-	//	if err := kubernetesClient.InstallApplications(apps); err != nil {
-	//		return log.NewError(err.Error())
-	//	}
-	//
-	//	log.Success("Done with installing k8s apps")
-	//}
+		log.Success("Done with installing k8s apps")
+	}
 
 	log.Success("Done with installing additional k8s tools")
 	return nil
 }
 
 func installKsctlSpecificApps(client *resources.KsctlClient, kubernetesClient kubernetes.Kubernetes, state *types.StorageDocument) error {
-
-	// Steps aka small actionalble tasks
-	// 0. Need to perform storage.Export() --> [DONE]
-	// 1. deploy ksctl agent  --> [DONE]
-	// 2. deploy the crd   --> [DONE]
-	// 3. deploy the storage controller using the manifests --> [DONE]
-	// 4. deploy the stateImport crd resource (aka the state files to be transfered)--> [DONE] [NOTE: keep some space for if else logic]
-	//   TODO: Need to think on external storage logic condition
-	// --->>> At this point Things are setup <<---
-	// 5. from here we need to do final apply of the ksctl controllers and crds (specifically we need application thing)
-	// --->>> Fully automated controllers and handler are installed <<<---
-	// here we stop the ksctl specific apps
-	// then we will continue with the user specific apps and cni (TODO: need to discuss on how are we going to plan these)
 
 	var (
 		exportedData         *resources.StorageStateExportImport
@@ -298,7 +321,7 @@ func installKsctlSpecificApps(client *resources.KsctlClient, kubernetesClient ku
 		return log.NewError(err.Error())
 	}
 
-	if err := kubernetesClient.DeployRequiredControllers(exportedData, isExternalStore); err != nil {
+	if err := kubernetesClient.DeployRequiredControllers(exportedData, state, isExternalStore); err != nil {
 		return log.NewError(err.Error())
 	}
 

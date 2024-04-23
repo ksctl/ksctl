@@ -20,8 +20,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -94,12 +92,6 @@ func main() {
 	webhookServer := webhook.NewServer(webhook.Options{
 		TLSOpts: tlsOpts,
 	})
-	namespaces := []string{"ksctl"} // List of Namespaces
-	defaultNamespaces := make(map[string]cache.Config)
-
-	for _, ns := range namespaces {
-		defaultNamespaces[ns] = cache.Config{}
-	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
@@ -108,14 +100,11 @@ func main() {
 			SecureServing: secureMetrics,
 			TLSOpts:       tlsOpts,
 		},
-		Cache: cache.Options{
-			DefaultNamespaces: defaultNamespaces,
-		},
 
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "8ff0d439.ksctl.com",
+		LeaderElectionID:       "8ff0d440.ksctl.com",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

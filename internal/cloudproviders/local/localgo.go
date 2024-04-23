@@ -31,7 +31,7 @@ func ProvideClient() LocalGo {
 }
 
 func (l *LocalGoClient) NewProvider(log resources.LoggerFactory, _ resources.StorageFactory, options ...cluster.ProviderOption) {
-	logger := CustomLogger{log}
+	logger := &CustomLogger{Logger: log}
 	options = append(options, cluster.ProviderWithLogger(logger))
 	l.log = log
 	l.provider = cluster.NewProvider(options...)

@@ -5,9 +5,11 @@ import (
 	"io"
 	"log/slog"
 	"math"
+	"strings"
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 	"github.com/rodaine/table"
@@ -17,6 +19,10 @@ type Logger struct {
 	logger     *slog.Logger
 	moduleName string
 }
+
+const (
+	LimitCol = 80
+)
 
 func (l *Logger) SetPackageName(m string) {
 	l.moduleName = m
@@ -124,13 +130,55 @@ func (l *Logger) Table(data []cloudController.AllClusterData) {
 	tbl.Print()
 }
 
+func addLineTerminationForLongStrings(str string) string {
+
+	//arr with endline split
+	arrStr := strings.Split(str, "\n")
+
+	var helper func(string) string
+
+	helper = func(_str string) string {
+
+		if len(_str) < LimitCol {
+			return _str
+		}
+
+		x := string(helpers.DeepCopySlice[byte]([]byte(_str[:LimitCol])))
+		y := string(helpers.DeepCopySlice[byte]([]byte(helper(_str[LimitCol:]))))
+
+		// ks
+		// ^^
+		if x[len(x)-1] != ' ' && y[0] != ' ' {
+			x += "-"
+		}
+
+		_new := x + "\n" + y
+		return _new
+	}
+
+	for idx, line := range arrStr {
+		arrStr[idx] = helper(line)
+	}
+
+	return strings.Join(arrStr, "\n")
+}
+
 func (l *Logger) Box(title string, lines string) {
 	px := 4
+
 	if len(title) >= 2*px+len(lines) {
 		// some maths
 		px = int(math.Ceil(float64(len(title)-len(lines))/2)) + 1
 	}
+
 	l.Debug("PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
-	Box := box.New(box.Config{Px: px, Py: 2, Type: "Bold", TitlePos: "Top", Color: "Cyan"})
-	Box.Println(title, lines)
+
+	Box := box.New(box.Config{
+		Px:       px,
+		Py:       2,
+		Type:     "Bold",
+		TitlePos: "Top",
+		Color:    "Cyan"})
+
+	Box.Println(title, addLineTerminationForLongStrings(lines))
 }

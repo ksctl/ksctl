@@ -277,7 +277,7 @@ func (db *Store) Write(data *types.StorageDocument) error {
 	}
 
 	if c, ok := db.isPresent(); ok {
-		log.Debug("configmap for write was found", "configmap", c.BinaryData)
+		log.Debug("configmap for write was found")
 		if c.BinaryData == nil {
 			c.BinaryData = make(map[string][]byte)
 		}
@@ -313,7 +313,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.Credentia
 
 	if c, err := db.isPresentCreds(string(cloud)); err == nil {
 
-		log.Debug("secret for write was found", "secret", c.Data)
+		log.Debug("secret for write was found")
 		if c.Data == nil {
 			c.Data = make(map[string][]byte)
 		}

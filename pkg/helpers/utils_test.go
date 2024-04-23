@@ -41,9 +41,9 @@ func TestConsts(t *testing.T) {
 	assert.Equal(t, string(consts.RoleWp), "workerplane")
 	assert.Equal(t, string(consts.ClusterTypeHa), "ha")
 	assert.Equal(t, string(consts.ClusterTypeMang), "managed")
-	assert.Equal(t, string(consts.OperationStateCreate), "create")
-	assert.Equal(t, string(consts.OperationStateGet), "get")
-	assert.Equal(t, string(consts.OperationStateDelete), "delete")
+	assert.Equal(t, string(consts.OperationCreate), "create")
+	assert.Equal(t, string(consts.OperationGet), "get")
+	assert.Equal(t, string(consts.OperationDelete), "delete")
 	assert.Equal(t, uint8(consts.UtilClusterPath), uint8(1))
 	assert.Equal(t, uint8(consts.UtilOtherPath), uint8(3))
 	assert.Equal(t, uint8(consts.UtilSSHPath), uint8(2))
@@ -131,6 +131,26 @@ func TestSSHExecute(t *testing.T) {
 		panic(err)
 	}
 
+}
+
+func TestIsValidVersion(t *testing.T) {
+	testCases := map[string]bool{
+		"1.1.1":  true,
+		"latest": true,
+		"v1":     true,
+		"v1.1":   true,
+		"v1.1.1": true,
+		"1.1":    true,
+		"1":      true,
+		"v":      false,
+		"stable": true,
+	}
+
+	for ver, expected := range testCases {
+		err := IsValidVersion(ver)
+		var got bool = err == nil
+		assert.Equal(t, got, expected, fmt.Sprintf("Ver: %s, got: %v, expected: %v", ver, got, expected))
+	}
 }
 
 func TestScriptCollection(t *testing.T) {

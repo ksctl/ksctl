@@ -23,6 +23,15 @@ gen-proto-agent: ## generate protobuf for ksctl agent
 docker-push-agent: ## Push docker image for ksctl agent
 	$(CONTAINER_TOOL) push ${KSCTL_AGENT_IMG}
 
+PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
+.PHONY: docker-buildx-agent
+docker-buildx-agent: ## docker build agent
+		sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/agent/Dockerfile > build/agent/Dockerfile.cross
+		- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+		$(CONTAINER_TOOL) buildx use project-v3-builder
+		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.21" --tag ${KSCTL_AGENT_IMG} -f build/agent/Dockerfile.cross .
+		 - $(CONTAINER_TOOL) buildx rm project-v3-builder
+		 rm build/agent/Dockerfile.cross
 
 .PHONY: docker-build-agent
 docker-build-agent: ## docker build agent

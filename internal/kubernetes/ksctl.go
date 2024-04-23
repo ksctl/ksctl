@@ -4,28 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/dynamic"
-
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	KSCTL_SYS_NAMESPACE      = "ksctl"
-	KSCTL_SECRET_NAME        = "ksctl-ext-store"
 	KSCTL_SERVICE_ACC        = "ksctl-sa"
 	KSCTL_AGENT_CLUSTER_ROLE = "ksctl-agent-crole"
 	KSCTL_AGENT_CRBINDING    = "ksctl-agent-croleb"
@@ -101,11 +99,11 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	log.Debug("Printing", "clustername", clusterName, "region", region, "provider", provider, "distro", distro)
 
 	var destroyer *corev1.Pod = &corev1.Pod{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pod",
 			APIVersion: "v1",
 		},
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "scale-to-0",
 		},
 		Spec: corev1.PodSpec{
@@ -148,7 +146,7 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	count := consts.KsctlCounterConsts(0)
 	for {
 
-		status, err := this.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, v1.GetOptions{})
+		status, err := this.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return log.NewError(err.Error())
 		}
@@ -170,25 +168,33 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 	return nil
 }
 
-func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, isExternalStore bool) error {
+func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
+	log.Print("Started adding kubernetes ksctl specific controllers")
+	components := []string{"ksctl-application"}
 
 	if !isExternalStore {
-		err := this.InstallApplications([]string{"ksctl-storage"})
-		if err != nil {
-			return err
-		}
+		components = append(components, "ksctl-storage")
+	}
 
-		time.Sleep(10 * time.Second)
+	_apps, err := helpers.ToApplicationTempl(components)
+	if err != nil {
+		return err
+	}
+	err = this.Applications(_apps, state, consts.OperationCreate)
+	if err != nil {
+		return err
+	}
 
-		raw, err := json.Marshal(v)
-		if err != nil {
-			return err
+	if !isExternalStore {
+		raw, _err := json.Marshal(v)
+		if _err != nil {
+			return _err
 		}
 
 		log.Debug("Invoked dynamic client")
-		dynamicClient, err := dynamic.NewForConfig(this.config)
-		if err != nil {
-			panic(err.Error())
+		dynamicClient, __err := dynamic.NewForConfig(this.config)
+		if __err != nil {
+			panic(__err.Error())
 		}
 
 		// Define GVR (GroupVersionResource)
@@ -216,13 +222,12 @@ func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExpor
 		}
 
 		log.Note("deploying a resource of crd")
-		_, err = dynamicClient.Resource(gvr).
+
+		if _, err := dynamicClient.Resource(gvr).
 			Namespace(KSCTL_SYS_NAMESPACE).
-			Create(context.TODO(), importState, metav1.CreateOptions{})
-		if err != nil {
+			Create(context.TODO(), importState, metav1.CreateOptions{}); err != nil {
 			panic(err.Error())
 		}
-
 	}
 
 	log.Success("Done adding kubernetes ksctl specific controllers")
@@ -239,19 +244,19 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	}
 
 	serviceAccConfig := &corev1.ServiceAccount{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      KSCTL_SERVICE_ACC,
 			Namespace: KSCTL_SYS_NAMESPACE,
 			Labels:    labelsForKsctl,
 		},
 	}
 	log.Note("creating service account for ksctl agent")
-	if err := this.serviceaccountApply(serviceAccConfig, KSCTL_SYS_NAMESPACE); err != nil {
+	if err := this.serviceAccountApply(serviceAccConfig, KSCTL_SYS_NAMESPACE); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	clusterRole := &rbacv1.ClusterRole{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   KSCTL_AGENT_CLUSTER_ROLE,
 			Labels: labelsForKsctl,
 		},
@@ -261,30 +266,16 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 				Resources: []string{"*"},
 				Verbs:     []string{"*"},
 			},
-			// WARN: need to have specific resource access only
-			// {
-			// 	APIGroups: []string{
-			// 		"",
-			// 		"apps",
-			// 		"batch",
-			// 		"extensions",
-			// 		"networking.k8s.io",
-			// 		"rbac.authorization.k8s.io",
-			// 		"ksctl.com",
-			// 	},
-			// 	Resources: []string{"*"},
-			// 	Verbs:     []string{"*"},
-			// },
 		},
 	}
 
 	log.Note("creating clusterrole")
-	if err := this.clusterroleApply(clusterRole); err != nil {
+	if err := this.clusterRoleApply(clusterRole); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	clusterRoleBind := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   KSCTL_AGENT_CRBINDING,
 			Labels: labelsForKsctl,
 		},
@@ -303,7 +294,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	}
 
 	log.Note("creating clusterrolebinding")
-	if err := this.clusterrolebindingApply(clusterRoleBind); err != nil {
+	if err := this.clusterRoleBindingApply(clusterRoleBind); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -312,17 +303,17 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	agentSelector := helpers.DeepCopyMap[string, string](labelsForKsctl)
 	agentSelector["scope"] = "agent"
 	var ksctlServer *appsv1.Deployment = &appsv1.Deployment{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   KSCTL_AGENT_NAME,
 			Labels: agentSelector,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
-			Selector: &v1.LabelSelector{
+			Selector: &metav1.LabelSelector{
 				MatchLabels: agentSelector,
 			},
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Labels: agentSelector,
 				},
 				Spec: corev1.PodSpec{
@@ -348,7 +339,10 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 									Name:  "LOG_LEVEL",
 									Value: "DEBUG",
 								},
-
+								{
+									Name:  "KSCTL_CLUSTER_IS_HA",
+									Value: fmt.Sprintf("%v", client.Metadata.IsHA),
+								},
 								{
 									Name:  "KSCTL_CLUSTER_NAME",
 									Value: client.Metadata.ClusterName,
@@ -394,7 +388,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	if isExternalStore {
 
 		secretExt := &corev1.Secret{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:   KSCTL_EXT_STORE_SECRET,
 				Labels: labelsForKsctl,
 			},
@@ -426,7 +420,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	}
 
 	var serverService *corev1.Service = &corev1.Service{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   KSCTL_AGENT_SERVICE,
 			Labels: labelsForKsctl,
 		},
@@ -453,7 +447,10 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	count := consts.KsctlCounterConsts(0)
 	for {
 
-		status, err := this.clientset.AppsV1().Deployments(KSCTL_SYS_NAMESPACE).Get(context.Background(), ksctlServer.ObjectMeta.Name, v1.GetOptions{})
+		status, err := this.clientset.
+			AppsV1().
+			Deployments(KSCTL_SYS_NAMESPACE).
+			Get(context.Background(), ksctlServer.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return log.NewError(err.Error())
 		}

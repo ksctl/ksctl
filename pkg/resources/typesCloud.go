@@ -60,7 +60,7 @@ type CloudFactory interface {
 	Visibility(bool) CloudFactory
 
 	// Application for the comma seperated apps names (Managed cluster)
-	Application(string) bool
+	Application([]string) bool
 
 	// CNI for the CNI name (Managed cluster)
 	CNI(string) (willBeInstalled bool)

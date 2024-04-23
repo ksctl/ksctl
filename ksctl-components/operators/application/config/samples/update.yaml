@@ -1,0 +1,25 @@
+apiVersion: application.ksctl.com/v1alpha1
+kind: Stack
+metadata:
+  labels:
+    app.kubernetes.io/name: application
+    app.kubernetes.io/managed-by: kustomize
+  name: update-test
+  namespace: ksctl
+spec:
+  components:
+    - appName: argocd
+      appType: app
+      version: v2.9.12 # --> change to v2.10.7
+#      version: v2.10.7
+    - appName: argo-rollouts
+      appType: app
+      version: v1.6.4 # --> change to v1.6.6
+#      version: v1.6.6
+    - appName: prometheus-stack
+      appType: app
+      version: 55.0.0 # --> 58.2.2
+#      version: 58.2.2
+#    - appName: cilium
+#      appType: cni
+#      version: latest
