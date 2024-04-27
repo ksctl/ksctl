@@ -142,13 +142,15 @@ func TestApplications(t *testing.T) {
 		"abcd": "abcd,traefik2-nodeport,metrics-server",
 	}
 
-	for apps, setVal := range testPreInstalled {
-		if retApps := fakeClientVars.Application(apps); retApps {
+	for app, setVal := range testPreInstalled {
+		var _apps []string
+		if len(app) != 0 {
+			_apps = append(_apps, app)
+		}
+		if retApps := fakeClientVars.Application(_apps); retApps {
 			t.Fatalf("application shouldn't be external flag")
 		}
-		if fakeClientVars.metadata.apps != setVal {
-			t.Fatalf("apps dont match Expected `%s` but got `%s`", apps, setVal)
-		}
+		assert.Equal(t, fakeClientVars.metadata.apps, setVal, fmt.Sprintf("apps dont match Expected `%s` but got `%s`", setVal, fakeClientVars.metadata.apps))
 	}
 }
 
@@ -459,7 +461,7 @@ func TestManagedCluster(t *testing.T) {
 	t.Run("Create managed cluster", func(t *testing.T) {
 
 		fakeClientManaged.CNI("cilium")
-		fakeClientManaged.Application("abcd")
+		fakeClientManaged.Application([]string{"abcd"})
 
 		assert.Equal(t, fakeClientManaged.Name("fake").VMType("g4s.kube.small").NewManagedCluster(storeManaged, 5), nil, "managed cluster should be created")
 

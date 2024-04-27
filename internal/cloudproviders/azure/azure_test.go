@@ -320,7 +320,7 @@ func TestCniAndApps(t *testing.T) {
 		assert.Equal(t, got, v, "missmatch")
 	}
 
-	got := fakeClientVars.Application("abcd")
+	got := fakeClientVars.Application([]string{"abcd"})
 	if !got {
 		t.Fatalf("application should be external")
 	}

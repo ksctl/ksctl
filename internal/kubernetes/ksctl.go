@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"time"
 
 	"github.com/ksctl/ksctl/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -300,7 +302,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 
 	replicas := int32(1)
 
-	agentSelector := helpers.DeepCopyMap[string, string](labelsForKsctl)
+	agentSelector := utilities.DeepCopyMap[string, string](labelsForKsctl)
 	agentSelector["scope"] = "agent"
 	var ksctlServer *appsv1.Deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

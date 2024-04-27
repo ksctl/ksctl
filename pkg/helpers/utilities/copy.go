@@ -1,4 +1,4 @@
-package helpers
+package utilities
 
 func DeepCopyMap[K comparable, V string | any](src map[K]V) (dest map[K]V) {
 	dest = make(map[K]V)

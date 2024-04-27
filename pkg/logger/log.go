@@ -9,7 +9,7 @@ import (
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 	"github.com/rodaine/table"
@@ -143,8 +143,8 @@ func addLineTerminationForLongStrings(str string) string {
 			return _str
 		}
 
-		x := string(helpers.DeepCopySlice[byte]([]byte(_str[:LimitCol])))
-		y := string(helpers.DeepCopySlice[byte]([]byte(helper(_str[LimitCol:]))))
+		x := string(utilities.DeepCopySlice[byte]([]byte(_str[:LimitCol])))
+		y := string(utilities.DeepCopySlice[byte]([]byte(helper(_str[LimitCol:]))))
 
 		// ks
 		// ^^

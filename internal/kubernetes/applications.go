@@ -7,6 +7,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
 type InstallType string
@@ -252,7 +253,7 @@ func (this *Kubernetes) Applications(apps []types.Application, state *types.Stor
 				return log.NewError("App uninstall failed", "app", app, "errorMsg", err)
 			}
 
-			_cpyApp := helpers.DeepCopySlice[types.Application](state.Addons.Apps)
+			_cpyApp := utilities.DeepCopySlice[types.Application](state.Addons.Apps)
 			for _i, _app := range state.Addons.Apps {
 				if _i != _idx {
 					_cpyApp = append(_cpyApp, _app)

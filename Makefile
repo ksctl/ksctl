@@ -42,12 +42,81 @@ docker-build-agent: ## docker build agent
 
 
 ##@ Unit Tests (Core)
-.PHONY: unit-all
-unit_test_api: ## all unit test case
+
+.PHONY: unit_test_all
+unit_test_all: ## all unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		chmod u+x test-api.sh && \
-		./test-api.sh
+		/bin/bash test-api.sh
+
+.PHONY: unit_test_utils
+unit_test_utils: ## utils unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-utils.sh
+
+.PHONY: unit_test_logger
+unit_test_logger: ## logger unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-logger.sh
+
+.PHONY: unit_test_civo
+unit_test_civo: ## civo unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-civo.sh
+
+.PHONY: unit_test_local
+unit_test_local: ## local unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-local.sh
+
+.PHONY: unit_test_azure
+unit_test_azure: ## azure unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-azure.sh
+
+.PHONY: unit_test_k3s
+unit_test_k3s: ## k3s unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-k3s.sh
+
+.PHONY: unit_test_kubeadm
+unit_test_kubeadm: ## kubeadm unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-kubeadm.sh
+
+
+.PHONY: unit_test_bootstrap
+unit_test_bootstrap: ## bootstrap unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-bootstrap.sh
+
+
+.PHONY: unit_test_kubernetes-store
+unit_test_kubernetes-store: ## kubernetes-store unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-kubernetes-store.sh
+
+.PHONY: unit_test_local-store
+unit_test_local-store: ## local-store unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-local-store.sh
+
+
+.PHONY: unit_test_mongodb-store
+unit_test_mongodb-store: ## mongodb-store unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-mongodb-store.sh
 
 ##@ Mock Tests (Core)
 .PHONY: mock-all
