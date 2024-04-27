@@ -6,7 +6,7 @@
 	"cloud_provider": "civo",
 	"kubernetes_distro": "kubeadm",
 	"storage_type": "local",
-	"node_type_workerplane": "g3.medium",
+	"node_type_workerplane": "g3.large",
 	"node_type_controlplane": "g3.medium",
 	"node_type_datastore": "g3.small",
 	"node_type_loadbalancer": "g3.small",

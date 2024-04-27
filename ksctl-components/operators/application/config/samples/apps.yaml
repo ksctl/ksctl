@@ -11,12 +11,12 @@ spec:
     - appName: argocd
       appType: app
       version: stable
-    - appName: argo-rollouts
-      appType: app
-      version: latest
-    - appName: prometheus-stack
-      appType: app
-      version: latest
-    - appName: cilium
-      appType: cni
-      version: latest
+    # - appName: argo-rollouts
+    #   appType: app
+    #   version: latest
+    # - appName: prometheus-stack
+    #   appType: app
+    #   version: latest
+    # - appName: cilium
+    #   appType: cni
+    #   version: latest
