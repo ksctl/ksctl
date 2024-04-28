@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"os"
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -230,6 +231,10 @@ func ApplicationsInCluster(client *resources.KsctlClient, state *types.StorageDo
 }
 
 func InstallAdditionalTools(externalCNI, externalApp bool, client *resources.KsctlClient, state *types.StorageDocument) error {
+
+	if os.Getenv(string(consts.KsctlFakeFlag)) == "1" {
+		return nil
+	}
 
 	if log == nil {
 		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)

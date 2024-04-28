@@ -3,9 +3,11 @@ package controller
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -26,6 +28,9 @@ func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, erro
 }
 
 func appHandler(ctx context.Context, client pb.KsctlAgentClient, apps []applicationv1alpha1.Component, operation pb.ApplicationOperation) error {
+	if strings.Compare(os.Getenv(string(consts.KsctlFakeFlag)), ControllerTestSkip) == 0 { // to ecape test
+		return nil
+	}
 	var _apps []*pb.Application
 	for _, app := range apps {
 		_apps = append(_apps, &pb.Application{

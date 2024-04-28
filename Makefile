@@ -119,8 +119,8 @@ unit_test_mongodb-store: ## mongodb-store unit test case
 		/bin/bash test-mongodb-store.sh
 
 ##@ Mock Tests (Core)
-.PHONY: mock-all
-mock_test: ## All Mock tests
+.PHONY: mock_all
+mock_all: ## All Mock tests
 	@echo "Mock Test (integration)"
 	cd test/ && \
 		go test -bench=. -benchtime=1x -cover -v
@@ -153,5 +153,28 @@ mock_local_managed: ## Local managed mock test
 
 ##@ Complete Testing (Core)
 .PHONY: test-core
-test-core: unit_test_api mock_test ## do both unit and integration test
+test-core: unit_test_all mock_all ## do both unit and integration test
 	@echo "Done All tests"
+
+
+
+.PHONY: lint
+lint: golangci-lint ## Run golangci-lint linter & yamllint
+	@echo -e "\n\033[36mRunning for Ksctl (Core)\033[0m\n" && \
+		$(GOLANGCI_LINT) run && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
+	@echo -e "\n\033[36mRunning for Ksctl (Agent)\033[0m" && \
+		cd ksctl-components/agent && \
+		$(GOLANGCI_LINT) run && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
+	@echo -e "\n\033[36mRunning for Ksctl Controllers (Storage)\033[0m" && \
+		make lint-controller CONTROLLER=storage && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
+	@echo -e "\n\033[36mRunning for Ksctl Controllers (Application)\033[0m" && \
+		make lint-controller CONTROLLER=application && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
+
+.PHONY: test
+test: lint
+	make test-core
+	@echo -e "\n\033[36mTesting in ksctl-components\033[0m\n"
+	make test-controller CONTROLLER=storage
+	make test-controller CONTROLLER=application
+	# todo(user): add agent one
+

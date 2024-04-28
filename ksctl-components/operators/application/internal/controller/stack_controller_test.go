@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,6 +29,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
 )
 
 var _ = Describe("Stack Controller", func() {
@@ -41,6 +44,11 @@ var _ = Describe("Stack Controller", func() {
 			Namespace: "default", // TODO(user):Modify as needed
 		}
 		stack := &applicationv1alpha1.Stack{}
+		log = logger.NewDefaultLogger(
+			LogVerbosity["DEBUG"],
+			LogWriter)
+		log.SetPackageName("ksctl-storage-importer")
+		_ = os.Setenv(string(consts.KsctlFakeFlag), ControllerTestSkip)
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Stack")
@@ -52,6 +60,23 @@ var _ = Describe("Stack Controller", func() {
 						Namespace: "default",
 					},
 					// TODO(user): Specify other spec details if needed.
+					Spec: applicationv1alpha1.StackSpec{
+						Components: []applicationv1alpha1.Component{
+							{
+								AppName: "demo",
+								Version: "demo",
+								AppType: applicationv1alpha1.TypeApp,
+							},
+							{
+								AppName: "demo1",
+								AppType: applicationv1alpha1.TypeCNI,
+							},
+							{
+								AppName: "demo2",
+								AppType: "",
+							},
+						},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
