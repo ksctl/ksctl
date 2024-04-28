@@ -176,5 +176,4 @@ test: lint
 	@echo -e "\n\033[36mTesting in ksctl-components\033[0m\n"
 	make test-controller CONTROLLER=storage
 	make test-controller CONTROLLER=application
-	# todo(user): add agent one
 

@@ -17,9 +17,6 @@ var (
 	dir        = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
 )
 
-// TODO: Mock test for scaleup and scaledown for the ha clusters
-// Credentials
-
 func StartCloud() {
 	cli = new(resources.KsctlClient)
 	controller = control_pkg.GenKsctlController()
@@ -94,6 +91,24 @@ func ExecuteHARun() error {
 	}
 
 	if _, err := controller.SwitchCluster(cli); err != nil {
+		return err
+	}
+
+	if err := controller.GetCluster(cli); err != nil {
+		return err
+	}
+
+	cli.Metadata.NoWP = 0
+	if err := controller.DelWorkerPlaneNode(cli); err != nil {
+		return err
+	}
+
+	if err := controller.GetCluster(cli); err != nil {
+		return err
+	}
+
+	cli.Metadata.NoWP = 1
+	if err := controller.AddWorkerPlaneNode(cli); err != nil {
 		return err
 	}
 
