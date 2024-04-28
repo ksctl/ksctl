@@ -8,7 +8,7 @@ on:
     - 'go.sum'
     - 'build/**'
     - 'build/agent/**'
-    - 'ksctl-components/agent/**'
+    - 'ksctl-components/**'
     branches: [ main ]
   workflow_dispatch:
     
@@ -41,7 +41,18 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
 
-      - name: Build Inventory Image
+      - name: build and push ksctl agent
         run: |
-          docker build --file build/agent/Dockerfile --tag ghcr.io/ksctl/ksctl-agent:latest .
-          docker push ghcr.io/ksctl/ksctl-agent:latest
+          make docker-build-agent
+          make docker-push-agent
+          
+      
+      - name: build and push ksctl controller application
+        run: |
+          make docker-build-controller CONTROLLER=application
+          make docker-push-controller CONTROLLER=application
+
+      - name: build and push ksctl controller storage
+        run: |
+          make docker-build-controller CONTROLLER=storage
+          make docker-push-controller CONTROLLER=storage

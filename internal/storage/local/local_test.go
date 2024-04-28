@@ -431,6 +431,25 @@ func TestExportImport(t *testing.T) {
 	})
 }
 
+func TestExternalUsageFunctions(t *testing.T) {
+	extDb := db.(*Store)
+
+	locGot, okGot := extDb.PresentDirectory([]string{"demo03", "234"})
+	assert.Equal(t, locGot, "demo03"+helpers.PathSeparator+"234")
+	assert.Equal(t, okGot, false)
+
+	locGot, okGot = extDb.PresentDirectory([]string{helpers.GetUserName()})
+	assert.Equal(t, locGot, helpers.GetUserName())
+	assert.Equal(t, okGot, true)
+
+	err := extDb.CreateDirectory([]string{os.TempDir(), "ksctl-local-store-test"})
+	assert.Assert(t, err == nil)
+
+	locGot, err = extDb.CreateFileIfNotPresent([]string{os.TempDir(), "ksctl-local-store-test", "abcd.yml"})
+	assert.Assert(t, err == nil)
+	assert.Equal(t, locGot, os.TempDir()+helpers.PathSeparator+"ksctl-local-store-test"+helpers.PathSeparator+"abcd.yml")
+}
+
 func TestKill(t *testing.T) {
 	if err := db.Kill(); err != nil {
 		t.Fatal(err)
