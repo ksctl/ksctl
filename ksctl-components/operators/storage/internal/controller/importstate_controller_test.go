@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,6 +29,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	storagev1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/storage/api/v1alpha1"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
 )
 
 var _ = Describe("ImportState Controller", func() {
@@ -42,6 +45,12 @@ var _ = Describe("ImportState Controller", func() {
 		}
 		importstate := &storagev1alpha1.ImportState{}
 
+		log = logger.NewDefaultLogger(
+			LogVerbosity["DEBUG"],
+			LogWriter)
+		log.SetPackageName("ksctl-storage-importer")
+		_ = os.Setenv(string(consts.KsctlFakeFlag), ControllerTestSkip)
+
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind ImportState")
 			err := k8sClient.Get(ctx, typeNamespacedName, importstate)
@@ -51,7 +60,11 @@ var _ = Describe("ImportState Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: storagev1alpha1.ImportStateSpec{
+						RawExportedData: []byte("data"),
+						Handled:         false,
+						Success:         false,
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

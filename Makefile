@@ -152,6 +152,6 @@ mock_local_managed: ## Local managed mock test
 
 
 ##@ Complete Testing (Core)
-.PHONY: test-all
-test: unit_test_api mock_test ## do both unit and integration test
+.PHONY: test-core
+test-core: unit_test_api mock_test ## do both unit and integration test
 	@echo "Done All tests"

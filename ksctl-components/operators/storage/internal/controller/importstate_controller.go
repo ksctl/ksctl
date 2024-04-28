@@ -18,11 +18,13 @@ package controller
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
 	"io"
 	"os"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/resources"
 
 	storagev1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/storage/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +41,8 @@ var (
 	}
 
 	LogWriter io.Writer = os.Stdout
+
+	ControllerTestSkip string = "CONTROLLER"
 )
 
 // ImportStateReconciler reconciles a ImportState object
@@ -80,9 +84,13 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	exportedData.Spec.Handled = true
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+
 	rpcClient, conn, err := NewClient(ctx)
 	defer cancel()
-	defer conn.Close()
+
+	if os.Getenv(string(consts.KsctlFakeFlag)) != ControllerTestSkip { // to ecape test
+		defer conn.Close()
+	}
 
 	if err != nil {
 		log.Error("New RPC Client", "Reason", err)
