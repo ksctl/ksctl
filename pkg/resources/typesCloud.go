@@ -90,6 +90,4 @@ type CloudFactory interface {
 	GetHostNameAllWorkerNode() []string
 
 	IsPresent(StorageFactory) error
-
-	GetSecretTokens(StorageFactory) (map[string][]byte, error)
 }

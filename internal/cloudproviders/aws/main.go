@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -426,17 +425,6 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 	log.Debug("Printing", "cloudstate", cloudstate)
 	return string(cloudstate), nil
 
-}
-
-func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[string][]byte, error) {
-
-	acesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
-	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-
-	return map[string][]byte{
-		"aws_access_key_id":     []byte(acesskeyid),
-		"aws_secret_access_key": []byte(secret),
-	}, nil
 }
 
 func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {

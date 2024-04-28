@@ -3,7 +3,6 @@ package azure
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -55,23 +54,6 @@ var (
 	log               resources.LoggerFactory
 )
 
-// GetSecretTokens implements resources.CloudFactory.
-func (*AzureProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
-
-	envTenant := os.Getenv("AZURE_TENANT_ID")
-	envSub := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	envClientid := os.Getenv("AZURE_CLIENT_ID")
-	envClientsec := os.Getenv("AZURE_CLIENT_SECRET")
-
-	return map[string][]byte{
-		"AZURE_TENANT_ID":       []byte(envTenant),
-		"AZURE_SUBSCRIPTION_ID": []byte(envSub),
-		"AZURE_CLIENT_ID":       []byte(envClientid),
-		"AZURE_CLIENT_SECRET":   []byte(envClientsec),
-	}, nil
-}
-
-// GetStateFile implements resources.CloudFactory.
 func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {

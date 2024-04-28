@@ -35,12 +35,6 @@ var (
 	log               resources.LoggerFactory
 )
 
-// GetSecretTokens implements resources.CloudFactory.
-func (*LocalProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
-	return nil, nil
-}
-
-// GetStateFile implements resources.CloudFactory.
 func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {

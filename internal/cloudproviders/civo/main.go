@@ -53,14 +53,6 @@ type CivoProvider struct {
 	client CivoGo
 }
 
-// GetSecretTokens implements resources.CloudFactory.
-func (this *CivoProvider) GetSecretTokens(storage resources.StorageFactory) (map[string][]byte, error) {
-	return map[string][]byte{
-		"CIVO_TOKEN": []byte(fetchAPIKey(storage)), // use base64 conversion
-	}, nil
-}
-
-// GetStateFile implements resources.CloudFactory.
 func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
