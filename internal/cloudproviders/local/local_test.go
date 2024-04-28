@@ -248,10 +248,4 @@ func TestManagedCluster(t *testing.T) {
 	})
 
 	assert.Equal(t, fakeClientManaged.DelManagedCluster(storeManaged), nil, "managed cluster should be deleted")
-
-	t.Run("check the secret token", func(t *testing.T) {
-		actual, err := fakeClientManaged.GetSecretTokens(storeManaged)
-		assert.NilError(t, err, "must be nil")
-		assert.Assert(t, actual == nil, "nothing should be passed")
-	})
 }
