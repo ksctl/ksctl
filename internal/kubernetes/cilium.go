@@ -3,7 +3,6 @@ package kubernetes
 import "fmt"
 
 func ciliumData(ver string) Application {
-	//1.14.2
 	return Application{
 		Name:       "cilium",
 		Namespace:  "<Helm-Managed>",

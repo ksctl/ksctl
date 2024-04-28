@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"google.golang.org/grpc/health"
 	"net"
 	"os"
+
+	"github.com/ksctl/ksctl/pkg/logger"
+	"google.golang.org/grpc/health"
 
 	"github.com/ksctl/ksctl/pkg/resources"
 
@@ -44,7 +45,6 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 }
 
 func (s *server) Storage(ctx context.Context, in *pb.ReqStore) (*pb.ResStore, error) {
-	log.Debug("Request", "ReqStore", in)
 
 	// validate the request
 	if in.Operation == pb.StorageOperation_EXPORT {

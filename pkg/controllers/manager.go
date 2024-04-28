@@ -162,8 +162,6 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		return log.NewError(cloudResErr.Error())
 	}
 
-	// kubeconfig := stateDocument.ClusterKubeConfig
-
 	if err := kubernetesController.InstallAdditionalTools(externalCNI, externalApp, client, stateDocument); err != nil {
 		return log.NewError(err.Error())
 	}
@@ -453,8 +451,6 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-
-	//kubeconfig := stateDocument.ClusterKubeConfig
 
 	if err := kubernetesController.InstallAdditionalTools(externalCNI, true, client, stateDocument); err != nil {
 		return log.NewError(err.Error())

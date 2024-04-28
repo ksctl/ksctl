@@ -3,7 +3,9 @@ package kubernetes
 import "fmt"
 
 func storageImportData(ver string) Application {
-	ver = "251-sub-feature-ksctl-agent"
+	if ver == "latest" {
+		ver = "251-sub-feature-ksctl-agent"
+	}
 	return Application{
 		Name:       "ksctl-import-data",
 		Url:        fmt.Sprintf("https://raw.githubusercontent.com/ksctl/ksctl/%s/ksctl-components/manifests/controllers/storage/deploy.yml", ver),
@@ -20,7 +22,9 @@ As the controller and the crd are installed just need to apply storage data expo
 }
 
 func applicationStackData(ver string) Application {
-	ver = "251-sub-feature-ksctl-agent"
+	if ver == "latest" {
+		ver = "251-sub-feature-ksctl-agent"
+	}
 	return Application{
 		Name:       "ksctl-appplication-stack",
 		Url:        fmt.Sprintf("https://raw.githubusercontent.com/ksctl/ksctl/%s/ksctl-components/manifests/controllers/application/deploy.yml", ver),

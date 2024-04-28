@@ -3,7 +3,6 @@ package kubernetes
 import "fmt"
 
 func prometheusStackData(ver string) Application {
-	//51.7.0
 
 	return Application{
 		Name:       "prometheus-community",

@@ -5,7 +5,6 @@ import (
 )
 
 func argoRolloutsData(ver string) Application {
-	// 1.6.0
 	return Application{
 		Name:       "argo-rollouts",
 		Url:        fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/download/%s/install.yaml", ver),

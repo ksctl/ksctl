@@ -3,7 +3,6 @@ package kubernetes
 import "fmt"
 
 func istioData(ver string) Application {
-	//1.16.1
 	return Application{
 		Name:       "istio",
 		Namespace:  "<Helm-Managed>",

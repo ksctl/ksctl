@@ -2,12 +2,13 @@ package application
 
 import (
 	"context"
+	"os"
+
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/helpers"
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
-	"os"
 )
 
 func toKsctlControllerCompatableForm(app []*pb.Application, appType pb.ApplicationType) (_apps []string) {
@@ -22,9 +23,7 @@ func toKsctlControllerCompatableForm(app []*pb.Application, appType pb.Applicati
 			_apps = append(_apps, _app)
 		}
 	}
-	if len(_apps) == 0 {
 
-	}
 	return
 }
 
