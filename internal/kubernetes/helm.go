@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	localStore "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 	"os"
@@ -206,10 +207,72 @@ func (l *CustomLogger) HelmDebugf(format string, v ...interface{}) {
 	l.Logger.ExternalLogHandlerf(consts.LOG_DEBUG, format+"\n", v...)
 }
 
+func patchHelmDirectories(client *HelmClient) error {
+	usr, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	store := localStore.InitStorage(0, os.Stdout).(*localStore.Store)
+
+	pathConfig := []string{usr, ".config", "helm"}
+	_, okConfig := store.PresentDirectory(pathConfig)
+	if !okConfig {
+		if _err := store.CreateDirectory(pathConfig); _err != nil {
+			return _err
+		}
+	}
+
+	pathCache := []string{usr, ".cache", "helm", "repository"}
+	cachePath, okCache := store.PresentDirectory(pathCache)
+	if !okCache {
+		if _err := store.CreateDirectory(pathCache); _err != nil {
+			return _err
+		}
+	}
+
+	pathRegistry := []string{usr, ".config", "helm", "registry"}
+	_, okReg := store.PresentDirectory(pathRegistry)
+	if !okReg {
+		if _err := store.CreateDirectory(pathRegistry); _err != nil {
+			return _err
+		}
+	}
+
+	pathConfig = append(pathConfig, "repositories.yaml")
+	configPath, _err := store.CreateFileIfNotPresent(pathConfig)
+	if _err != nil {
+		return _err
+	}
+
+	pathRegistry = append(pathRegistry, "config.json")
+	registryPath, _err := store.CreateFileIfNotPresent(pathRegistry)
+	if _err != nil {
+		return _err
+	}
+
+	if err := store.Kill(); err != nil {
+		return err
+	}
+
+	if _err := os.Setenv("HELM_DRIVER", "secrets"); _err != nil {
+		return _err
+	}
+	client.settings.RepositoryConfig = configPath
+	client.settings.RepositoryCache = cachePath
+	client.settings.RegistryConfig = registryPath
+	log.Print("Updated the Helm configuration settings")
+
+	return nil
+}
+
 func (client *HelmClient) NewKubeconfigHelmClient(kubeconfig string) error {
 
 	client.settings = cli.New()
 	client.settings.Debug = true
+	if err := patchHelmDirectories(client); err != nil {
+		return err
+	}
 
 	client.actionConfig = new(action.Configuration)
 
@@ -225,6 +288,9 @@ func (client *HelmClient) NewInClusterHelmClient() (err error) {
 
 	client.settings = cli.New()
 	client.settings.Debug = true
+	if err := patchHelmDirectories(client); err != nil {
+		return err
+	}
 	client.actionConfig = new(action.Configuration)
 
 	_log := &CustomLogger{Logger: log}

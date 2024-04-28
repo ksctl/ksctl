@@ -47,6 +47,45 @@ func copyStore(src *Store, dest *Store) {
 	dest.userid = src.userid
 }
 
+func (s *Store) PresentDirectory(path []string) (loc string, isPresent bool) {
+	loc = strings.Join(path, helpers.PathSeparator)
+	_, err := os.ReadDir(loc)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+		return
+	}
+	isPresent = true
+	return
+}
+
+func (s *Store) CreateFileIfNotPresent(path []string) (loc string, err error) {
+	loc = strings.Join(path, helpers.PathSeparator)
+
+	if _, err = os.ReadFile(loc); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if _, _err := os.Create(loc); _err != nil {
+				err = _err
+				return
+			}
+			err = nil
+			return
+		}
+		return
+	}
+	return
+}
+
+func (s *Store) CreateDirectory(path []string) error {
+	loc := strings.Join(path, helpers.PathSeparator)
+
+	if err := os.MkdirAll(loc, dirPerm); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.StorageStateExportImport, error) {
 
 	var cpyS *Store = s
