@@ -1,7 +1,9 @@
 package logger
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/resources"
@@ -18,6 +20,17 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 
 	os.Exit(exitVal)
+}
+
+func TestHelperToAddLineTerminationForLongStrings(t *testing.T) {
+	test := fmt.Sprintf("Argo Rollouts (Ver: %s) is a Kubernetes controller and set of CRDs which provide advanced deployment capabilities such as blue-green, canary, canary analysis, experimentation, and progressive delivery features to Kubernetes.", "v1.2.4")
+
+	x := strings.Split(addLineTerminationForLongStrings(test), "\n")
+	for _, line := range x {
+		if len(line) > LimitCol+1 {
+			t.Errorf("Line too long: %s, got: %d, expected: %d", line, len(line), LimitCol)
+		}
+	}
 }
 
 func TestPrinters(t *testing.T) {

@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
@@ -18,6 +19,10 @@ type LoggerFactory interface {
 	Debug(msg string, v ...any)
 
 	SetPackageName(name string)
+
+	// To be used by external logging
+	ExternalLogHandler(msgType consts.CustomExternalLogLevel, message string)
+	ExternalLogHandlerf(msgType consts.CustomExternalLogLevel, format string, args ...interface{})
 
 	NewError(format string, v ...any) error
 

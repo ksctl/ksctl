@@ -26,7 +26,7 @@ func NewPreBootStrap(m resources.Metadata, state *types.StorageDocument) resourc
 
 func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState, storage resources.StorageFactory, operation consts.KsctlOperation) error {
 
-	if operation == consts.OperationStateCreate {
+	if operation == consts.OperationCreate {
 		mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{}
 		var err error
 		mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(log, cloudState.PrivateIPv4DataStores)

@@ -5,6 +5,6 @@
 	"cloud_provider": "local",
 	"storage_type": "external-mongo",
 	"desired_no_of_managed_nodes": 2,
-	"preinstalled_apps": "argocd,istio",
+	"preinstalled_apps": ["argocd" ,"istio"],
 	"cni_plugin": "cilium"
 }

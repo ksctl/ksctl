@@ -175,7 +175,7 @@ func TestCNIandApp(t *testing.T) {
 		assert.Equal(t, got, v, "missmatch")
 	}
 
-	got := fakeClientVars.Application("abcd")
+	got := fakeClientVars.Application([]string{"abcd"})
 	if !got {
 		t.Fatalf("application should be external")
 	}
@@ -233,7 +233,7 @@ func TestManagedCluster(t *testing.T) {
 
 	}()
 
-	assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationStateCreate), nil, "Init must work before")
+	assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationCreate), nil, "Init must work before")
 	fakeClientManaged.Version("1.27.1")
 	fakeClientManaged.Name("fake")
 	assert.Equal(t, fakeClientManaged.NewManagedCluster(storeManaged, 2), nil, "managed cluster should be created")
@@ -248,10 +248,4 @@ func TestManagedCluster(t *testing.T) {
 	})
 
 	assert.Equal(t, fakeClientManaged.DelManagedCluster(storeManaged), nil, "managed cluster should be deleted")
-
-	t.Run("check the secret token", func(t *testing.T) {
-		actual, err := fakeClientManaged.GetSecretTokens(storeManaged)
-		assert.NilError(t, err, "must be nil")
-		assert.Assert(t, actual == nil, "nothing should be passed")
-	})
 }

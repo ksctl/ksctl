@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -133,7 +132,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	errLoadState := loadStateHelper(storage)
 
 	switch opration {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Aws.IsCompleted {
 			return log.NewError("cluster %s already exists", obj.clusterName)
 		}
@@ -153,13 +152,13 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 			mainStateDocument.CloudInfra.Aws.B.KubernetesDistro = string(obj.metadata.k8sName)
 		}
 
-	case consts.OperationStateDelete:
+	case consts.OperationDelete:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		log.Debug("Delete resource(s)")
 
-	case consts.OperationStateGet:
+	case consts.OperationGet:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
@@ -261,7 +260,7 @@ func (obj *AwsProvider) SupportForApplications() bool {
 
 }
 
-func (obj *AwsProvider) Application(s string) bool {
+func (obj *AwsProvider) Application(s []string) bool {
 	return true
 }
 
@@ -428,17 +427,6 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 
 }
 
-func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[string][]byte, error) {
-
-	acesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
-	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-
-	return map[string][]byte{
-		"aws_access_key_id":     []byte(acesskeyid),
-		"aws_secret_access_key": []byte(secret),
-	}, nil
-}
-
 func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {
 
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
@@ -446,9 +434,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloudcontrolres.AllClusterData
 
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudAws),
-		"clusterType": "",
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudAws),
+		consts.ClusterType: "",
 	})
 	if err != nil {
 		return nil, log.NewError("Error fetching cluster info", "error", err)

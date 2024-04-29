@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"gotest.tools/v3/assert"
+
 	"github.com/goccy/go-json"
 	"github.com/gookit/goutil/dump"
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -134,6 +136,7 @@ func TestStore_RWDCredentials(t *testing.T) {
 		Azure: &types.CredentialsAzure{
 			ClientID: "client_id",
 		},
+		InfraProvider: consts.CloudAzure,
 	}
 	err := db.WriteCredentials(consts.CloudAzure, fakeData)
 	if err != nil {
@@ -162,10 +165,11 @@ func TestGetClusterInfo(t *testing.T) {
 			}
 
 			fakeData := &types.StorageDocument{
-				Region:      "regionAzure",
-				ClusterName: "name_managed",
-				ClusterType: "managed",
-				CloudInfra:  &types.InfrastructureState{Azure: &types.StateConfigurationAzure{}},
+				Region:        "regionAzure",
+				ClusterName:   "name_managed",
+				ClusterType:   "managed",
+				InfraProvider: consts.CloudAzure,
+				CloudInfra:    &types.InfrastructureState{Azure: &types.StateConfigurationAzure{}},
 			}
 
 			err := db.Write(fakeData)
@@ -182,10 +186,11 @@ func TestGetClusterInfo(t *testing.T) {
 			}
 
 			fakeData := &types.StorageDocument{
-				Region:      "regionCivo",
-				ClusterName: "name_managed",
-				ClusterType: "managed",
-				CloudInfra:  &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
+				Region:        "regionCivo",
+				ClusterName:   "name_managed",
+				ClusterType:   "managed",
+				InfraProvider: consts.CloudCivo,
+				CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
 			}
 
 			err := db.Write(fakeData)
@@ -206,11 +211,12 @@ func TestGetClusterInfo(t *testing.T) {
 			}
 
 			fakeData := &types.StorageDocument{
-				Region:       "regionCivo",
-				ClusterName:  "name_ha",
-				ClusterType:  "ha",
-				CloudInfra:   &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
-				K8sBootstrap: &types.KubernetesBootstrapState{K3s: &types.StateConfigurationK3s{}},
+				Region:        "regionCivo",
+				ClusterName:   "name_ha",
+				ClusterType:   "ha",
+				InfraProvider: consts.CloudCivo,
+				CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
+				K8sBootstrap:  &types.KubernetesBootstrapState{K3s: &types.StateConfigurationK3s{}},
 			}
 
 			err := db.Write(fakeData)
@@ -223,32 +229,225 @@ func TestGetClusterInfo(t *testing.T) {
 
 	t.Run("fetch cluster Infos", func(t *testing.T) {
 		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[string]string{"cloud": "all", "clusterType": ""})
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
 
 			if err != nil {
 				t.Fatal(err)
 			}
 			dump.Println(m)
+			assert.Check(t, len(m[consts.ClusterTypeHa]) == 1)
+			assert.Check(t, len(m[consts.ClusterTypeMang]) == 2)
 		}(t)
 
 		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[string]string{"cloud": "civo", "clusterType": "ha"})
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "civo", "clusterType": "ha"})
 
 			if err != nil {
 				t.Fatal(err)
 			}
 			dump.Println(m)
+			assert.Check(t, len(m[consts.ClusterTypeHa]) == 1)
+			assert.Check(t, len(m[consts.ClusterTypeMang]) == 0)
 		}(t)
 
 		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[string]string{"cloud": "azure", "clusterType": "managed"})
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "azure", "clusterType": "managed"})
 
 			if err != nil {
 				t.Fatal(err)
 			}
 			dump.Println(m)
+			assert.Check(t, len(m[consts.ClusterTypeHa]) == 0)
+			assert.Check(t, len(m[consts.ClusterTypeMang]) == 1)
 		}(t)
 	})
+}
+
+func TestExportImport(t *testing.T) {
+
+	var bkpData *resources.StorageStateExportImport
+
+	t.Run("Export all", func(t *testing.T) {
+		var _expect resources.StorageStateExportImport = resources.StorageStateExportImport{
+			Credentials: []*types.CredentialsDocument{
+				&types.CredentialsDocument{
+					Azure: &types.CredentialsAzure{
+						ClientID: "client_id",
+					},
+					InfraProvider: consts.CloudAzure,
+				},
+			},
+			Clusters: []*types.StorageDocument{
+				&types.StorageDocument{
+					Region:        "regionCivo",
+					ClusterName:   "name_ha",
+					ClusterType:   "ha",
+					InfraProvider: consts.CloudCivo,
+					CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
+					K8sBootstrap:  &types.KubernetesBootstrapState{K3s: &types.StateConfigurationK3s{}},
+				},
+				&types.StorageDocument{
+					Region:        "regionCivo",
+					ClusterName:   "name_managed",
+					ClusterType:   "managed",
+					InfraProvider: consts.CloudCivo,
+					CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
+				},
+
+				&types.StorageDocument{
+					Region:        "regionAzure",
+					ClusterName:   "name_managed",
+					ClusterType:   "managed",
+					InfraProvider: consts.CloudAzure,
+					CloudInfra:    &types.InfrastructureState{Azure: &types.StateConfigurationAzure{}},
+				},
+			},
+		}
+
+		dump.Println(_expect)
+		if _got, err := db.Export(map[consts.KsctlSearchFilter]string{}); err != nil {
+			t.Fatal(err)
+		} else {
+			dump.Println(_got)
+			bkpData = _got // storing the exported data
+
+			assert.Check(t, _got != nil && _got.Clusters != nil && _got.Credentials != nil)
+			assert.Check(t, len(_got.Credentials) == len(_expect.Credentials))
+			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
+
+			for _, g := range _got.Clusters {
+				assert.Check(t, g != nil)
+				v := false
+				for _, e := range _expect.Clusters {
+					if reflect.DeepEqual(e, g) {
+						v = true
+					}
+				}
+				assert.Check(t, v == true, "didn't find the exepcted cluster state")
+			}
+			for _, g := range _got.Credentials {
+				assert.Check(t, g != nil)
+				v := false
+				for _, e := range _expect.Credentials {
+					if reflect.DeepEqual(e, g) {
+						v = true
+					}
+				}
+				assert.Check(t, v == true, "didn't find the exepcted credentials state")
+			}
+		}
+	})
+
+	t.Run("delete all resources", func(t *testing.T) {
+
+		func(t *testing.T) {
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			dump.Println(m)
+		}(t)
+
+		if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-local-store-test"); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("import data", func(t *testing.T) {
+
+		if err := db.Import(bkpData); err != nil {
+			t.Fatal(err)
+		}
+
+		func(t *testing.T) {
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			dump.Println(m)
+			assert.Check(t, len(m[consts.ClusterTypeHa]) == 1)
+			assert.Check(t, len(m[consts.ClusterTypeMang]) == 2)
+		}(t)
+	})
+
+	t.Run("Export specific cluster", func(t *testing.T) {
+
+		var _expect resources.StorageStateExportImport = resources.StorageStateExportImport{
+			Credentials: []*types.CredentialsDocument{
+				&types.CredentialsDocument{
+					Azure: &types.CredentialsAzure{
+						ClientID: "client_id",
+					},
+					InfraProvider: consts.CloudAzure,
+				},
+			},
+			Clusters: []*types.StorageDocument{
+				&types.StorageDocument{
+					Region:        "regionAzure",
+					ClusterName:   "name_managed",
+					ClusterType:   "managed",
+					InfraProvider: consts.CloudAzure,
+					CloudInfra:    &types.InfrastructureState{Azure: &types.StateConfigurationAzure{}},
+				},
+			},
+		}
+
+		if _got, err := db.Export(map[consts.KsctlSearchFilter]string{
+			consts.Cloud:       string(consts.CloudAzure),
+			consts.ClusterType: string(consts.ClusterTypeMang),
+			consts.Name:        "name_managed",
+			consts.Region:      "regionAzure",
+		}); err != nil {
+			t.Fatal(err)
+		} else {
+			dump.Println(_got)
+			assert.Check(t, _got != nil && _got.Clusters != nil && _got.Credentials != nil)
+			assert.Check(t, len(_got.Credentials) == len(_expect.Credentials))
+			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
+
+			for _, g := range _got.Clusters {
+				assert.Check(t, g != nil)
+				v := false
+				for _, e := range _expect.Clusters {
+					if reflect.DeepEqual(e, g) {
+						v = true
+					}
+				}
+				assert.Check(t, v == true, "didn't find the exepcted cluster state")
+			}
+			for _, g := range _got.Credentials {
+				assert.Check(t, g != nil)
+				v := false
+				for _, e := range _expect.Credentials {
+					if reflect.DeepEqual(e, g) {
+						v = true
+					}
+				}
+				assert.Check(t, v == true, "didn't find the exepcted credentials state")
+			}
+		}
+	})
+}
+
+func TestExternalUsageFunctions(t *testing.T) {
+	extDb := db.(*Store)
+
+	locGot, okGot := extDb.PresentDirectory([]string{"demo03", "234"})
+	assert.Equal(t, locGot, "demo03"+helpers.PathSeparator+"234")
+	assert.Equal(t, okGot, false)
+
+	locGot, okGot = extDb.PresentDirectory([]string{helpers.GetUserName()})
+	assert.Equal(t, locGot, helpers.GetUserName())
+	assert.Equal(t, okGot, true)
+
+	err := extDb.CreateDirectory([]string{os.TempDir(), "ksctl-local-store-test"})
+	assert.Assert(t, err == nil)
+
+	locGot, err = extDb.CreateFileIfNotPresent([]string{os.TempDir(), "ksctl-local-store-test", "abcd.yml"})
+	assert.Assert(t, err == nil)
+	assert.Equal(t, locGot, os.TempDir()+helpers.PathSeparator+"ksctl-local-store-test"+helpers.PathSeparator+"abcd.yml")
 }
 
 func TestKill(t *testing.T) {

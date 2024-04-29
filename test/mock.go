@@ -17,8 +17,6 @@ var (
 	dir        = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
 )
 
-// TODO: Mock test for scaleup and scaledown for the ha clusters
-
 func StartCloud() {
 	cli = new(resources.KsctlClient)
 	controller = control_pkg.GenKsctlController()
@@ -36,18 +34,19 @@ func StartCloud() {
 
 func ExecuteManagedRun() error {
 
-	var err error
+	if err := controller.CreateManagedCluster(cli); err != nil {
+		return err
+	}
 
-	err = controller.CreateManagedCluster(cli)
-	if err != nil {
+	if _, err := controller.SwitchCluster(cli); err != nil {
 		return err
 	}
-	_, err = controller.SwitchCluster(cli)
-	if err != nil {
+
+	if err := controller.GetCluster(cli); err != nil {
 		return err
 	}
-	err = controller.DeleteManagedCluster(cli)
-	if err != nil {
+
+	if err := controller.DeleteManagedCluster(cli); err != nil {
 		return err
 	}
 	return nil
@@ -85,8 +84,45 @@ func LocalTestingManaged() error {
 	return ExecuteManagedRun()
 }
 
+func ExecuteHARun() error {
+
+	if err := controller.CreateHACluster(cli); err != nil {
+		return err
+	}
+
+	if _, err := controller.SwitchCluster(cli); err != nil {
+		return err
+	}
+
+	if err := controller.GetCluster(cli); err != nil {
+		return err
+	}
+
+	cli.Metadata.NoWP = 0
+	if err := controller.DelWorkerPlaneNode(cli); err != nil {
+		return err
+	}
+
+	if err := controller.GetCluster(cli); err != nil {
+		return err
+	}
+
+	cli.Metadata.NoWP = 1
+	if err := controller.AddWorkerPlaneNode(cli); err != nil {
+		return err
+	}
+
+	if err := controller.GetCluster(cli); err != nil {
+		return err
+	}
+
+	if err := controller.DeleteHACluster(cli); err != nil {
+		return err
+	}
+	return nil
+}
+
 func CivoTestingHAKubeadm() error {
-	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake.small"
 	cli.Metadata.ControlPlaneNodeType = "fake.small"
 	cli.Metadata.WorkerPlaneNodeType = "fake.small"
@@ -104,23 +140,10 @@ func CivoTestingHAKubeadm() error {
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
-	err = controller.CreateHACluster(cli)
-	if err != nil {
-		return err
-	}
-	_, err = controller.SwitchCluster(cli)
-	if err != nil {
-		return err
-	}
-	err = controller.DeleteHACluster(cli)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ExecuteHARun()
 }
 
 func CivoTestingHAK3s() error {
-	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake.small"
 	cli.Metadata.ControlPlaneNodeType = "fake.small"
 	cli.Metadata.WorkerPlaneNodeType = "fake.small"
@@ -138,23 +161,10 @@ func CivoTestingHAK3s() error {
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
-	err = controller.CreateHACluster(cli)
-	if err != nil {
-		return err
-	}
-	_, err = controller.SwitchCluster(cli)
-	if err != nil {
-		return err
-	}
-	err = controller.DeleteHACluster(cli)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ExecuteHARun()
 }
 
 func AzureTestingHAKubeadm() error {
-	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake"
 	cli.Metadata.ControlPlaneNodeType = "fake"
 	cli.Metadata.WorkerPlaneNodeType = "fake"
@@ -172,25 +182,10 @@ func AzureTestingHAKubeadm() error {
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
-	err = controller.CreateHACluster(cli)
-	if err != nil {
-		return err
-	}
-
-	_, err = controller.SwitchCluster(cli)
-	if err != nil {
-		return err
-	}
-
-	err = controller.DeleteHACluster(cli)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ExecuteHARun()
 }
 
 func AzureTestingHAK3s() error {
-	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake"
 	cli.Metadata.ControlPlaneNodeType = "fake"
 	cli.Metadata.WorkerPlaneNodeType = "fake"
@@ -208,25 +203,10 @@ func AzureTestingHAK3s() error {
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
-	err = controller.CreateHACluster(cli)
-	if err != nil {
-		return err
-	}
-
-	_, err = controller.SwitchCluster(cli)
-	if err != nil {
-		return err
-	}
-
-	err = controller.DeleteHACluster(cli)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ExecuteHARun()
 }
 
 func AwsTestingHA() error {
-	var err error
 	cli.Metadata.LoadBalancerNodeType = "fake"
 	cli.Metadata.ControlPlaneNodeType = "fake"
 	cli.Metadata.WorkerPlaneNodeType = "fake"
@@ -243,19 +223,5 @@ func AwsTestingHA() error {
 
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
-	err = controller.CreateHACluster(cli)
-	if err != nil {
-		return err
-	}
-
-	_, err = controller.SwitchCluster(cli)
-	if err != nil {
-		return err
-	}
-
-	err = controller.DeleteHACluster(cli)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ExecuteHARun()
 }

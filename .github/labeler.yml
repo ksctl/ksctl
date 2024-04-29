@@ -23,10 +23,16 @@
 - 'internal/k8sdistros/*'
 
 'distro/kubernetes-client-go':
-- 'internal/k8sdistros/universal/*'
+- 'internal/kubernetes/*'
 
 'state/local':
 - 'internal/storage/local/*'
+
+'state/kubernetes':
+- 'internal/storage/kubernetes/*'
+
+'state/external/mongodb':
+- 'internal/storage/external/mongodb/*'
 
 'area/poc':
 - 'poc/**'

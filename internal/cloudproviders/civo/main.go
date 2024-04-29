@@ -2,6 +2,7 @@ package civo
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -52,14 +53,6 @@ type CivoProvider struct {
 	client CivoGo
 }
 
-// GetSecretTokens implements resources.CloudFactory.
-func (this *CivoProvider) GetSecretTokens(storage resources.StorageFactory) (map[string][]byte, error) {
-	return map[string][]byte{
-		"CIVO_TOKEN": []byte(fetchAPIKey(storage)), // use base64 conversion
-	}, nil
-}
-
-// GetStateFile implements resources.CloudFactory.
 func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
@@ -116,7 +109,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 	errLoadState := loadStateHelper(storage)
 
 	switch operation {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Civo.B.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
 			return log.NewError("already exist")
@@ -139,14 +132,14 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 			mainStateDocument.CloudInfra.Civo.B.KubernetesDistro = string(obj.k8sName)
 		}
 
-	case consts.OperationStateGet:
+	case consts.OperationGet:
 
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		log.Debug("Get resources")
 
-	case consts.OperationStateDelete:
+	case consts.OperationDelete:
 
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
@@ -236,17 +229,17 @@ func (cloud *CivoProvider) SupportForApplications() bool {
 	return true
 }
 
-func aggregratedApps(s string) (ret string) {
+func aggregratedApps(s []string) (ret string) {
 	if len(s) == 0 {
 		ret = "traefik2-nodeport,metrics-server" // default: applications
 	} else {
-		ret = s + ",traefik2-nodeport,metrics-server"
+		ret = strings.Join(s, ",") + ",traefik2-nodeport,metrics-server"
 	}
 	log.Debug("Printing", "apps", ret)
 	return
 }
 
-func (client *CivoProvider) Application(s string) (externalApps bool) {
+func (client *CivoProvider) Application(s []string) (externalApps bool) {
 	client.metadata.apps = aggregratedApps(s)
 	return false
 }
@@ -448,9 +441,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloud_control_res.AllClusterData
 
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudCivo),
-		"clusterType": "",
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudCivo),
+		consts.ClusterType: "",
 	})
 	if err != nil {
 		return nil, err

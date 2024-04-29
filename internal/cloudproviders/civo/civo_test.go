@@ -75,7 +75,7 @@ func TestCivoProvider_InitState(t *testing.T) {
 
 	t.Run("Create state", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateCreate); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -89,21 +89,21 @@ func TestCivoProvider_InitState(t *testing.T) {
 		mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
 		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, true, "cluster should not be completed")
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateCreate); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to resume state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Get request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateGet); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationGet); err != nil {
 			t.Fatalf("Unable to get state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Delete request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateDelete); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationDelete); err != nil {
 			t.Fatalf("Unable to Delete state, Reason: %v", err)
 		}
 	})
@@ -142,13 +142,15 @@ func TestApplications(t *testing.T) {
 		"abcd": "abcd,traefik2-nodeport,metrics-server",
 	}
 
-	for apps, setVal := range testPreInstalled {
-		if retApps := fakeClientVars.Application(apps); retApps {
+	for app, setVal := range testPreInstalled {
+		var _apps []string
+		if len(app) != 0 {
+			_apps = append(_apps, app)
+		}
+		if retApps := fakeClientVars.Application(_apps); retApps {
 			t.Fatalf("application shouldn't be external flag")
 		}
-		if fakeClientVars.metadata.apps != setVal {
-			t.Fatalf("apps dont match Expected `%s` but got `%s`", apps, setVal)
-		}
+		assert.Equal(t, fakeClientVars.metadata.apps, setVal, fmt.Sprintf("apps dont match Expected `%s` but got `%s`", setVal, fakeClientVars.metadata.apps))
 	}
 }
 
@@ -435,7 +437,7 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeClientManaged.InitState(storeManaged, consts.OperationStateCreate); err != nil {
+		if err := fakeClientManaged.InitState(storeManaged, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -459,7 +461,7 @@ func TestManagedCluster(t *testing.T) {
 	t.Run("Create managed cluster", func(t *testing.T) {
 
 		fakeClientManaged.CNI("cilium")
-		fakeClientManaged.Application("abcd")
+		fakeClientManaged.Application([]string{"abcd"})
 
 		assert.Equal(t, fakeClientManaged.Name("fake").VMType("g4s.kube.small").NewManagedCluster(storeManaged, 5), nil, "managed cluster should be created")
 
@@ -542,7 +544,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeClientHA.InitState(storeHA, consts.OperationStateCreate); err != nil {
+		if err := fakeClientHA.InitState(storeHA, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -744,7 +746,7 @@ func TestHACluster(t *testing.T) {
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {
 
-		if err := fakeClientHA.InitState(storeHA, consts.OperationStateDelete); err != nil {
+		if err := fakeClientHA.InitState(storeHA, consts.OperationDelete); err != nil {
 			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
 		}
 
@@ -876,18 +878,4 @@ func TestHACluster(t *testing.T) {
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Civo.NetworkID) == 0, "network id still present")
 	})
 
-}
-func TestGetSecretTokens(t *testing.T) {
-	t.Run("expect demo data", func(t *testing.T) {
-		expected := map[string][]byte{
-			"CIVO_TOKEN": []byte("demo-fake"),
-		}
-
-		for key, val := range expected {
-			assert.NilError(t, os.Setenv(key, string(val)), "environment vars should be set")
-		}
-		actual, err := fakeClientVars.GetSecretTokens(nil) // non need to pass as we are providing the env var
-		assert.NilError(t, err, "unable to get the secret token from the client")
-		assert.DeepEqual(t, actual, expected)
-	})
 }

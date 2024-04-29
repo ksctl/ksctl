@@ -39,6 +39,150 @@ type Store struct {
 	wg            *sync.WaitGroup
 }
 
+func copyStore(src *Store, dest *Store) {
+	dest.cloudProvider = src.cloudProvider
+	dest.clusterName = src.clusterName
+	dest.clusterType = src.clusterType
+	dest.region = src.region
+	dest.userid = src.userid
+}
+
+func (s *Store) PresentDirectory(path []string) (loc string, isPresent bool) {
+	loc = strings.Join(path, helpers.PathSeparator)
+	_, err := os.ReadDir(loc)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+		return
+	}
+	isPresent = true
+	return
+}
+
+func (s *Store) CreateFileIfNotPresent(path []string) (loc string, err error) {
+	loc = strings.Join(path, helpers.PathSeparator)
+
+	if _, err = os.ReadFile(loc); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if _, _err := os.Create(loc); _err != nil {
+				err = _err
+				return
+			}
+			err = nil
+			return
+		}
+		return
+	}
+	return
+}
+
+func (s *Store) CreateDirectory(path []string) error {
+	loc := strings.Join(path, helpers.PathSeparator)
+
+	if err := os.MkdirAll(loc, dirPerm); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.StorageStateExportImport, error) {
+
+	var cpyS *Store = s
+	copyStore(s, cpyS) // for storing the state of the store before import was called!
+
+	dest := new(resources.StorageStateExportImport)
+
+	_cloud := filters[consts.Cloud]
+	_clusterType := filters[consts.ClusterType]
+	_clusterName := filters[consts.Name]
+	_region := filters[consts.Region]
+
+	stateClustersForTypes, err := s.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       _cloud,
+		consts.ClusterType: _clusterType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, states := range stateClustersForTypes {
+		// NOTE: make sure both filters are available if not then it will not apply
+		if len(_clusterName) == 0 || len(_region) == 0 {
+			dest.Clusters = append(dest.Clusters, states...)
+		}
+		for _, state := range states {
+			if _clusterName == state.ClusterName &&
+				_region == state.Region {
+				dest.Clusters = append(dest.Clusters, state)
+			}
+		}
+	}
+
+	if len(_cloud) == 0 {
+		// all the cloud provider credentials
+		for _, constsCloud := range []consts.KsctlCloud{
+			consts.CloudAws,
+			consts.CloudCivo,
+			consts.CloudLocal,
+			consts.CloudAzure,
+		} {
+			_v, _err := s.ReadCredentials(constsCloud)
+
+			if _err != nil {
+				if errors.Is(_err, os.ErrNotExist) {
+					continue
+				} else {
+					return nil, _err
+				}
+			}
+			dest.Credentials = append(dest.Credentials, _v)
+		}
+	} else {
+		_v, _err := s.ReadCredentials(consts.KsctlCloud(_cloud))
+		if _err != nil && !errors.Is(_err, os.ErrNotExist) {
+			return nil, _err
+		}
+		dest.Credentials = append(dest.Credentials, _v)
+	}
+
+	copyStore(cpyS, s) // for restoring the state of the store before import was called!
+	return dest, nil
+}
+
+func (s *Store) Import(src *resources.StorageStateExportImport) error {
+	creds := src.Credentials
+	states := src.Clusters
+
+	var cpyS *Store = s
+	copyStore(s, cpyS) // for storing the state of the store before import was called!
+
+	for _, state := range states {
+		cloud := state.InfraProvider
+		region := state.Region
+		clusterName := state.ClusterName
+		clusterType := consts.KsctlClusterType(state.ClusterType)
+
+		if err := s.Setup(cloud, region, clusterName, clusterType); err != nil {
+			return err
+		}
+
+		if err := s.Write(state); err != nil {
+			return err
+		}
+	}
+
+	for _, cred := range creds {
+		cloud := cred.InfraProvider
+		if err := s.WriteCredentials(cloud, cred); err != nil {
+			return err
+		}
+	}
+
+	copyStore(cpyS, s) // for restoring the state of the store before import was called!
+	return nil
+}
+
 func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
 	log = logger.NewDefaultLogger(logVerbosity, logWriter)
 	log.SetPackageName(string(consts.StoreLocal))
@@ -187,7 +331,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *types.CredentialsD
 			}
 		}
 		return nil
-	}); err == nil {
+	}); err != nil {
 		return fmt.Errorf("cluster present: %w", err)
 	}
 
@@ -258,6 +402,8 @@ func (db *Store) credentialsPresent(f func(error) error) error {
 		if f != nil {
 			if e := f(err); e != nil {
 				return e
+			} else {
+				return nil
 			}
 		}
 		return err
@@ -280,14 +426,14 @@ func (db *Store) AlreadyCreated(cloud consts.KsctlCloud, region, clusterName str
 	return db.clusterPresent(nil)
 }
 
-func (db *Store) GetOneOrMoreClusters(filter map[string]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
+func (db *Store) GetOneOrMoreClusters(filter map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	clusterType := filter["clusterType"]
-	cloud := filter["cloud"]
+	clusterType := filter[consts.ClusterType]
+	cloud := filter[consts.Cloud]
 
 	var filterCloudPath, filterClusterType []string
 

@@ -2,13 +2,16 @@ package kubernetes
 
 import (
 	"os"
-	"strings"
 	"sync"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
+
+	"github.com/ksctl/ksctl/internal/kubernetes"
 
 	"github.com/ksctl/ksctl/internal/k8sdistros"
 	k3sPkg "github.com/ksctl/ksctl/internal/k8sdistros/k3s"
 	kubeadmPkg "github.com/ksctl/ksctl/internal/k8sdistros/kubeadm"
-	"github.com/ksctl/ksctl/internal/k8sdistros/universal"
+	"github.com/ksctl/ksctl/internal/storage/external"
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -77,7 +80,7 @@ func ConfigureCluster(client *resources.KsctlClient) (bool, error) {
 		}
 	}
 
-	if err := client.Bootstrap.Setup(client.Storage, consts.OperationStateCreate); err != nil {
+	if err := client.Bootstrap.Setup(client.Storage, consts.OperationCreate); err != nil {
 		return false, log.NewError(err.Error())
 	}
 
@@ -140,7 +143,7 @@ func ConfigureCluster(client *resources.KsctlClient) (bool, error) {
 
 func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 
-	if err := client.Bootstrap.Setup(client.Storage, consts.OperationStateGet); err != nil {
+	if err := client.Bootstrap.Setup(client.Storage, consts.OperationGet); err != nil {
 		return log.NewError(err.Error())
 	}
 	client.Bootstrap = client.Bootstrap.Version(client.Metadata.K8sVersion)
@@ -174,11 +177,11 @@ func JoinMoreWorkerPlanes(client *resources.KsctlClient, start, end int) error {
 
 func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames []string) error {
 
-	kubernetesClient := universal.Kubernetes{
+	kubernetesClient := kubernetes.Kubernetes{
 		Metadata:      client.Metadata,
 		StorageDriver: client.Storage,
 	}
-	if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
+	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -190,65 +193,141 @@ func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames
 	return nil
 }
 
-func InstallAdditionalTools(kubeconfig string, externalCNI, externalApp bool, client *resources.KsctlClient, state *types.StorageDocument) error {
+func ApplicationsInCluster(client *resources.KsctlClient, state *types.StorageDocument, op consts.KsctlOperation) error {
 
 	if log == nil {
 		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 		log.SetPackageName("ksctl-distro")
 	}
 
-	var kubernetesClient universal.Kubernetes
+	kubernetesClient := kubernetes.Kubernetes{
+		Metadata:      client.Metadata,
+		StorageDriver: client.Storage,
+	}
 
-	if externalCNI || (len(client.Metadata.Applications) != 0 && externalApp) {
-		kubernetesClient = universal.Kubernetes{
-			Metadata:      client.Metadata,
-			StorageDriver: client.Storage,
+	if err := kubernetesClient.NewInClusterClient(); err != nil {
+		return log.NewError(err.Error())
+	}
+
+	_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+	if err != nil {
+		return err
+	}
+
+	if len(client.Metadata.CNIPlugin) != 0 {
+		_cni, err := helpers.ToApplicationTempl([]string{client.Metadata.CNIPlugin})
+		if err != nil {
+			return err
 		}
-		if err := kubernetesClient.ClientInit(kubeconfig); err != nil {
-			return log.NewError(err.Error())
+
+		if err := kubernetesClient.InstallCNI(_cni[0], state, op); err != nil {
+			return err
 		}
+	}
+	if len(client.Metadata.Applications) != 0 {
+		return kubernetesClient.Applications(_apps, state, op)
+	}
+	return nil
+}
+
+func InstallAdditionalTools(externalCNI, externalApp bool, client *resources.KsctlClient, state *types.StorageDocument) error {
+
+	if os.Getenv(string(consts.KsctlFakeFlag)) == "1" {
+		return nil
+	}
+
+	if log == nil {
+		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		log.SetPackageName("ksctl-distro")
+	}
+
+	kubernetesClient := kubernetes.Kubernetes{
+		Metadata:      client.Metadata,
+		StorageDriver: client.Storage,
+	}
+
+	if err := kubernetesClient.NewKubeconfigClient(state.ClusterKubeConfig); err != nil {
+		return log.NewError(err.Error())
 	}
 
 	if externalCNI {
-		if err := kubernetesClient.InstallCNI(client.Metadata.CNIPlugin); err != nil {
+
+		_cni, err := helpers.ToApplicationTempl([]string{client.Metadata.CNIPlugin})
+		if err != nil {
+			return err
+		}
+		// Note: the CNI installer is only for one!
+		if err := kubernetesClient.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
 			return log.NewError(err.Error())
 		}
 
 		log.Success("Done with installing k8s cni")
 	}
 
+	if err := installKsctlSpecificApps(client, kubernetesClient, state); err != nil {
+		return log.NewError(err.Error())
+	}
+
 	if len(client.Metadata.Applications) != 0 && externalApp {
-		apps := strings.Split(client.Metadata.Applications, ",")
-		if err := kubernetesClient.InstallApplications(apps); err != nil {
+		_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+		if err != nil {
+			return err
+		}
+		if err := kubernetesClient.Applications(_apps, state, consts.OperationCreate); err != nil {
 			return log.NewError(err.Error())
 		}
 
 		log.Success("Done with installing k8s apps")
 	}
 
-	if err := installKsctlSpecificApps(client, kubeconfig, kubernetesClient, state); err != nil {
-		return log.NewError(err.Error())
-	}
-
 	log.Success("Done with installing additional k8s tools")
 	return nil
 }
 
-func installKsctlSpecificApps(client *resources.KsctlClient, kubeconfig string, kubernetesClient universal.Kubernetes, state *types.StorageDocument) error {
+func installKsctlSpecificApps(client *resources.KsctlClient, kubernetesClient kubernetes.Kubernetes, state *types.StorageDocument) error {
 
-	var cloudSecret map[string][]byte
-	var err error
-	cloudSecret, err = client.Cloud.GetSecretTokens(client.Storage)
-	if err != nil {
+	var (
+		exportedData         *resources.StorageStateExportImport
+		externalCredEndpoint map[string][]byte
+		isExternalStore      bool
+	)
+
+	switch client.Metadata.StateLocation {
+	case consts.StoreLocal:
+		var _err error
+		exportedData, _err = client.Storage.Export(map[consts.KsctlSearchFilter]string{
+			consts.Cloud:  string(client.Metadata.Provider),
+			consts.Name:   client.Metadata.ClusterName,
+			consts.Region: client.Metadata.Region,
+			consts.ClusterType: func() string {
+				if !client.Metadata.IsHA {
+					return string(consts.ClusterTypeMang)
+				}
+				return string(consts.ClusterTypeHa)
+			}(),
+		})
+		if _err != nil {
+			return _err
+		}
+
+	case consts.StoreExtMongo:
+		isExternalStore = true
+		var _err error
+		externalCredEndpoint, _err = external.HandleCreds(consts.StoreExtMongo)
+		if _err != nil {
+			return _err
+		}
+	case consts.StoreK8s:
+		// WARN: for now we are not going to transfer state if the ksctl core is already running in one cluster
+		// to a new cluster aka (k8s -> k8s)
+	}
+
+	if err := kubernetesClient.DeployAgent(client, externalCredEndpoint, isExternalStore); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	////// EXPERIMENTAL Features //////
-	if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
-
-		if err = kubernetesClient.KsctlConfigForController(kubeconfig, state, cloudSecret); err != nil {
-			return log.NewError(err.Error())
-		}
+	if err := kubernetesClient.DeployRequiredControllers(exportedData, state, isExternalStore); err != nil {
+		return log.NewError(err.Error())
 	}
 
 	log.Success("Done with installing ksctl k8s specific tools")

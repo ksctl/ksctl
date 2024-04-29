@@ -3,7 +3,6 @@ package azure
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -19,7 +18,6 @@ import (
 type metadata struct {
 	public bool
 
-	// apps    string
 	cni     string
 	version string
 
@@ -56,23 +54,6 @@ var (
 	log               resources.LoggerFactory
 )
 
-// GetSecretTokens implements resources.CloudFactory.
-func (*AzureProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
-
-	envTenant := os.Getenv("AZURE_TENANT_ID")
-	envSub := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	envClientid := os.Getenv("AZURE_CLIENT_ID")
-	envClientsec := os.Getenv("AZURE_CLIENT_SECRET")
-
-	return map[string][]byte{
-		"AZURE_TENANT_ID":       []byte(envTenant),
-		"AZURE_SUBSCRIPTION_ID": []byte(envSub),
-		"AZURE_CLIENT_ID":       []byte(envClientid),
-		"AZURE_CLIENT_SECRET":   []byte(envClientsec),
-	}, nil
-}
-
-// GetStateFile implements resources.CloudFactory.
 func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
@@ -150,7 +131,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 
 	errLoadState := loadStateHelper(storage)
 	switch operation {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Azure.B.IsCompleted {
 			return log.NewError("cluster already exist")
 		}
@@ -170,13 +151,13 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 			mainStateDocument.CloudInfra.Azure.B.KubernetesDistro = string(obj.metadata.k8sName)
 		}
 
-	case consts.OperationStateDelete:
+	case consts.OperationDelete:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		log.Debug("Delete resource(s)")
 
-	case consts.OperationStateGet:
+	case consts.OperationGet:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
@@ -271,7 +252,7 @@ func (cloud *AzureProvider) Visibility(toBePublic bool) resources.CloudFactory {
 	return cloud
 }
 
-func (cloud *AzureProvider) Application(s string) (externalApps bool) {
+func (cloud *AzureProvider) Application(s []string) (externalApps bool) {
 	return true
 }
 
@@ -463,9 +444,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloudcontrolres.AllClusterData
 
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudAzure),
-		"clusterType": "",
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudAzure),
+		consts.ClusterType: "",
 	})
 	if err != nil {
 		return nil, err

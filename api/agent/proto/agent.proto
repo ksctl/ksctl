@@ -5,8 +5,13 @@ package ksctlAgent;
 option go_package = "./pb";
 
 enum ScaleOperation {
-  UP = 0;
-  DOWN = 1;
+  SCALE_UP = 0;
+  SCALE_DOWN = 1;
+}
+
+enum StorageOperation {
+  IMPORT = 0;
+  EXPORT = 1;
 }
 
 enum ApplicationOperation {
@@ -14,35 +19,51 @@ enum ApplicationOperation {
   DELETE = 1;
   UPDATE = 2;
 }
+enum ApplicationType {
+  APP = 0;
+  CNI = 1;
+}
 
 service KsctlAgent {
   rpc Scale(ReqScale) returns (ResScale);
+  rpc Storage(ReqStore) returns (ResStore);
   rpc LoadBalancer(ReqLB) returns (ResLB);
   rpc Application(ReqApplication) returns (ResApplication);
 }
 
+message ReqStore {
+  StorageOperation operation = 1;
+  bytes data = 2;
+}
 
-// TODO: ReqScale we need to think of were should the ksctl agent gets its data about the cluster?
-//  from
-//   1. inside this will read from a configmap
-//   2. get from the caller aka grpc client
+message ResStore {
+
+}
+
 message ReqScale {
   ScaleOperation operation = 1;
-  uint32 scaleTo = 2;
+  uint32 desiredNoOfWP = 2;
+  string nodeSizeOfWP = 3;
 }
 
 message ResScale {
-  uint32 updatedWP = 1;
+  bool isUpdated = 1;
 }
 
+message Application {
+  string appName = 1;
+  ApplicationType appType = 2;
+  string version = 3;
+}
 
 message ReqApplication {
   ApplicationOperation operation = 1;
-  string appName = 2;
+  repeated Application apps = 2;
 }
 
-message ResApplication {}
-
+message ResApplication {
+  repeated string failedApps = 1;
+}
 
 message PortMappings {
   uint64 from = 1;

@@ -24,6 +24,15 @@ type KsctlValidCNIPlugin string
 
 type KsctlSupportedScriptRunners string
 
+type KsctlSearchFilter string
+
+const (
+	Cloud       KsctlSearchFilter = "cloud"
+	ClusterType KsctlSearchFilter = "clusterType"
+	Name        KsctlSearchFilter = "clusterName"
+	Region      KsctlSearchFilter = "region"
+)
+
 const (
 	LinuxSh   KsctlSupportedScriptRunners = "/bin/sh"
 	LinuxBash KsctlSupportedScriptRunners = "/bin/bash"
@@ -68,13 +77,14 @@ const (
 
 const (
 	StoreLocal    KsctlStore = "local"
+	StoreK8s      KsctlStore = "kubernetes"
 	StoreExtMongo KsctlStore = "external-mongo"
 )
 
 const (
-	OperationStateGet    KsctlOperation = "get"
-	OperationStateCreate KsctlOperation = "create"
-	OperationStateDelete KsctlOperation = "delete"
+	OperationGet    KsctlOperation = "get"
+	OperationCreate KsctlOperation = "create"
+	OperationDelete KsctlOperation = "delete"
 )
 
 const (
