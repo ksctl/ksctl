@@ -6,6 +6,6 @@
 	"cloud_provider": "civo",
 	"kubernetes_distro": "kubeadm",
 	"storage_type": "local",
-	"node_type_workerplane": "g3.large",
+	"node_type_workerplane": "g3.medium",
 	"desired_no_of_workerplane_nodes": 1
 }
