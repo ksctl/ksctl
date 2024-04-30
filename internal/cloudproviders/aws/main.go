@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -19,7 +18,6 @@ import (
 var (
 	mainStateDocument *types.StorageDocument
 	clusterType       consts.KsctlClusterType
-	ctx               context.Context
 	log               resources.LoggerFactory
 )
 
@@ -49,8 +47,7 @@ type AwsProvider struct {
 	chRole    chan consts.KsctlRole
 	chVMType  chan string
 
-	client  AwsGo
-	SSHPath string
+	client AwsGo
 }
 
 func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {

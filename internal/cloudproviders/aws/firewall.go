@@ -14,7 +14,7 @@ import (
 func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	role := <-obj.chRole
-	_ = <-obj.chResName
+	<-obj.chResName
 	_, err := obj.CreateSecurityGroup(role)
 	if err != nil {
 		return err

@@ -2,12 +2,13 @@ package logger
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
 func (l *Logger) ExternalLogHandler(msgType consts.CustomExternalLogLevel, message string) {
-	fmt.Println(fmt.Sprintf("%s (package: %s) [%s] %v", time.Now(), l.moduleName, msgType, message))
+	fmt.Printf("%s (package: %s) [%s] %v\n", time.Now(), l.moduleName, msgType, message)
 }
 
 func (l *Logger) ExternalLogHandlerf(msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {

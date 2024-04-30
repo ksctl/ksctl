@@ -1,6 +1,6 @@
 
 ## THis is a userinput
-CONTROLLER ?= abcd
+CONTROLLER ?= ADD_YOUR_CONTROLLER
 
 allowed_controllers = storage application
 
@@ -19,9 +19,9 @@ endif
 
 check-controller:
 ifneq ($(findstring $(CONTROLLER),$(allowed_controllers)),)
-	@echo "Variable $(CONTROLLER) is valid"
+	@echo "Variable CONTROLLER $(CONTROLLER) is valid"
 else
-	$(error Variable $(CONTROLLER) is not allowed. Allowed values are: `$(allowed_controllers)`)
+	$(error Variable `CONTROLLER=$(CONTROLLER)` is not allowed. Allowed values are: `$(allowed_controllers)`)
 endif
 
 

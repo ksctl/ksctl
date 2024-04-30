@@ -31,7 +31,7 @@ func appHandler(ctx context.Context, client pb.KsctlAgentClient, apps []applicat
 	if strings.Compare(os.Getenv(string(consts.KsctlFakeFlag)), ControllerTestSkip) == 0 { // to ecape test
 		return nil
 	}
-	var _apps []*pb.Application
+	_apps := make([]*pb.Application, 0)
 	for _, app := range apps {
 		_apps = append(_apps, &pb.Application{
 			AppName: app.AppName,

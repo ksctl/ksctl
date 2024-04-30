@@ -478,10 +478,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
 	err := storage.AlreadyCreated(consts.CloudAzure, region, name, ksctlClusterType)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (obj *AzureProvider) IsPresent(storage resources.StorageFactory) error {

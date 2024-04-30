@@ -89,7 +89,11 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	defer cancel()
 
 	if os.Getenv(string(consts.KsctlFakeFlag)) != ControllerTestSkip { // to ecape test
-		defer conn.Close()
+		defer func() {
+			if err := conn.Close(); err != nil {
+				log.Error("Connection failed to close", "Reason", err)
+			}
+		}()
 	}
 
 	if err != nil {
