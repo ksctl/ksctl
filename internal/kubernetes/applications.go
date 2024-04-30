@@ -1,8 +1,6 @@
 package kubernetes
 
 import (
-	"fmt"
-
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 
@@ -28,19 +26,6 @@ type Application struct {
 	HelmConfig    []HelmOptions
 	KubectlConfig KubectlOptions
 	InstallType
-}
-
-func (a Application) String() string {
-	return fmt.Sprintf(`
-Name: %s
-Metadata: %s
-Namespace: %s
-Version: %s
-Maintainer: %s
-Source: %s
-InstallType: %s
-PostInstall: %s
-`, a.Name, a.Metadata, a.Namespace, a.Version, a.Maintainer, a.Url, a.InstallType, a.PostInstall)
 }
 
 var (

@@ -4,7 +4,7 @@ import "fmt"
 
 func storageImportData(ver string) Application {
 	if ver == "latest" {
-		ver = "251-sub-feature-ksctl-agent"
+		ver = "main"
 	}
 	return Application{
 		Name:       "ksctl-import-data",
@@ -23,7 +23,7 @@ As the controller and the crd are installed just need to apply storage data expo
 
 func applicationStackData(ver string) Application {
 	if ver == "latest" {
-		ver = "251-sub-feature-ksctl-agent"
+		ver = "main"
 	}
 	return Application{
 		Name:       "ksctl-appplication-stack",

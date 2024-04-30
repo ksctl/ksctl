@@ -172,10 +172,10 @@ func (this *Kubernetes) DeleteResourcesFromController() error {
 
 func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
 	log.Print("Started adding kubernetes ksctl specific controllers")
-	components := []string{"ksctl-application"}
+	components := []string{"ksctl-application@main"}
 
 	if !isExternalStore {
-		components = append(components, "ksctl-storage")
+		components = append(components, "ksctl-storage@main")
 	}
 
 	_apps, err := helpers.ToApplicationTempl(components)
