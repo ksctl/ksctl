@@ -43,16 +43,13 @@ jobs:
 
       - name: build and push ksctl agent
         run: |
-          make docker-build-agent
-          make docker-push-agent
+          make docker-buildx-agent
           
       
       - name: build and push ksctl controller application
         run: |
-          make docker-build-controller CONTROLLER=application
-          make docker-push-controller CONTROLLER=application
+          make docker-buildx-controller CONTROLLER=application
 
       - name: build and push ksctl controller storage
         run: |
-          make docker-build-controller CONTROLLER=storage
-          make docker-push-controller CONTROLLER=storage
+          make docker-buildx-controller CONTROLLER=storage
