@@ -8,15 +8,15 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (this *Kubernetes) netPolicyApply(o *networkingv1.NetworkPolicy, ns string) error {
+func (k *Kubernetes) netPolicyApply(o *networkingv1.NetworkPolicy, ns string) error {
 
-	_, err := this.clientset.
+	_, err := k.clientset.
 		NetworkingV1().
 		NetworkPolicies(ns).
 		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.
+			_, err = k.clientset.
 				NetworkingV1().
 				NetworkPolicies(ns).
 				Update(context.Background(), o, v1.UpdateOptions{})
@@ -30,9 +30,9 @@ func (this *Kubernetes) netPolicyApply(o *networkingv1.NetworkPolicy, ns string)
 	return nil
 }
 
-func (this *Kubernetes) netPolicyDelete(o *networkingv1.NetworkPolicy, ns string) error {
+func (k *Kubernetes) netPolicyDelete(o *networkingv1.NetworkPolicy, ns string) error {
 
-	err := this.clientset.
+	err := k.clientset.
 		NetworkingV1().
 		NetworkPolicies(ns).
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})

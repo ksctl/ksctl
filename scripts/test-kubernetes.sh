@@ -4,9 +4,9 @@ EXEC=$1
 cd ../internal/ || exit 1
 
 echo "--------------------------------------------"
-echo "|   Testing (internal/k8sdistros/k3s)"
+echo "|   Testing (internal/kubernetes)"
 echo "--------------------------------------------"
 
-cd k8sdistros/k3s/
+cd kubernetes
 GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 

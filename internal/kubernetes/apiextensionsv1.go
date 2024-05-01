@@ -8,15 +8,15 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (this *Kubernetes) apiExtensionsApply(o *apiextensionsv1.CustomResourceDefinition) error {
+func (k *Kubernetes) apiExtensionsApply(o *apiextensionsv1.CustomResourceDefinition) error {
 
-	_, err := this.apiextensionsClient.
+	_, err := k.apiextensionsClient.
 		ApiextensionsV1().
 		CustomResourceDefinitions().
 		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.apiextensionsClient.
+			_, err = k.apiextensionsClient.
 				ApiextensionsV1().
 				CustomResourceDefinitions().
 				Update(context.Background(), o, v1.UpdateOptions{})
@@ -30,9 +30,9 @@ func (this *Kubernetes) apiExtensionsApply(o *apiextensionsv1.CustomResourceDefi
 	return nil
 }
 
-func (this *Kubernetes) apiExtensionsDelete(o *apiextensionsv1.CustomResourceDefinition) error {
+func (k *Kubernetes) apiExtensionsDelete(o *apiextensionsv1.CustomResourceDefinition) error {
 
-	err := this.apiextensionsClient.
+	err := k.apiextensionsClient.
 		ApiextensionsV1().
 		CustomResourceDefinitions().
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})

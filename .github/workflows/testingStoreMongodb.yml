@@ -35,10 +35,8 @@ jobs:
 
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
-        working-directory: scripts
         run: |
-          chmod u+x test-mongodb-store.sh
-          ./test-mongodb-store.sh
+          make unit_test_mongodb-store
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}

@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	"fmt"
+	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"gotest.tools/v3/assert"
@@ -55,5 +57,66 @@ func TestGetApp(t *testing.T) {
 		assert.Equal(t, v, expect.expectedToExist)
 		assert.Equal(t, got.Name, expect.appName)
 		assert.Equal(t, got.Version, expect.version)
+	}
+}
+
+func TestPresentOrNot(t *testing.T) {
+	dummyState := new(types.StorageDocument)
+	dummyState.Addons.Cni = types.Application{Name: "cilium", Version: "latest"}
+
+	dummyState.Addons.Apps = []types.Application{
+		{
+			Name:    "dummy1",
+			Version: "",
+		},
+	}
+	testCases := []struct {
+		App               types.Application
+		TypeOfApp         EnumApplication
+		ExpectedIdx       int
+		ExpectedIsPresent bool
+	}{
+		{
+			App: types.Application{
+				Name:    "dummy1",
+				Version: "latest",
+			},
+			TypeOfApp:         App,
+			ExpectedIsPresent: true,
+			ExpectedIdx:       0,
+		},
+		{
+			App: types.Application{
+				Name:    "cilium",
+				Version: "latest",
+			},
+			TypeOfApp:         Cni,
+			ExpectedIsPresent: true,
+			ExpectedIdx:       -1,
+		},
+		{
+			App: types.Application{
+				Name:    "abcd",
+				Version: "latest",
+			},
+			TypeOfApp:         App,
+			ExpectedIsPresent: false,
+			ExpectedIdx:       -1,
+		},
+	}
+
+	for _, testCase := range testCases {
+		gotIdx, gotUpdatable := PresentOrNot(
+			testCase.App,
+			testCase.TypeOfApp,
+			dummyState,
+		)
+
+		assert.Check(t, gotUpdatable == testCase.ExpectedIsPresent,
+			fmt.Sprintf("App: %v, got: %v, expect: %v\n",
+				testCase.App, gotUpdatable, testCase.ExpectedIsPresent))
+		assert.Check(t, gotIdx == testCase.ExpectedIdx,
+			fmt.Sprintf("App: %v, got: %v, expect: %v\n",
+				testCase.App, gotIdx, testCase.ExpectedIdx))
 	}
 }

@@ -10,9 +10,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (this *Kubernetes) configMapApply(o *corev1.ConfigMap, ns string) error {
+func (k *Kubernetes) configMapApply(o *corev1.ConfigMap, ns string) error {
 
-	_, err := this.clientset.
+	_, err := k.clientset.
 		CoreV1().
 		ConfigMaps(ns).
 		Create(context.Background(), o, metav1.CreateOptions{})
@@ -20,7 +20,7 @@ func (this *Kubernetes) configMapApply(o *corev1.ConfigMap, ns string) error {
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 
-			_, err = this.clientset.
+			_, err = k.clientset.
 				CoreV1().
 				ConfigMaps(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
@@ -35,9 +35,9 @@ func (this *Kubernetes) configMapApply(o *corev1.ConfigMap, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) configMapDelete(o *corev1.ConfigMap, ns string) error {
+func (k *Kubernetes) configMapDelete(o *corev1.ConfigMap, ns string) error {
 
-	err := this.clientset.
+	err := k.clientset.
 		CoreV1().
 		ConfigMaps(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
@@ -48,9 +48,9 @@ func (this *Kubernetes) configMapDelete(o *corev1.ConfigMap, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) serviceDelete(o *corev1.Service, ns string) error {
+func (k *Kubernetes) serviceDelete(o *corev1.Service, ns string) error {
 
-	err := this.clientset.
+	err := k.clientset.
 		CoreV1().
 		Services(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
@@ -61,16 +61,16 @@ func (this *Kubernetes) serviceDelete(o *corev1.Service, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) serviceApply(o *corev1.Service, ns string) error {
+func (k *Kubernetes) serviceApply(o *corev1.Service, ns string) error {
 
-	_, err := this.clientset.
+	_, err := k.clientset.
 		CoreV1().
 		Services(ns).
 		Create(context.Background(), o, metav1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 
-			_, err = this.clientset.
+			_, err = k.clientset.
 				CoreV1().
 				Services(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
@@ -85,14 +85,14 @@ func (this *Kubernetes) serviceApply(o *corev1.Service, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) namespaceCreate(ns string) error {
+func (k *Kubernetes) namespaceCreate(ns string) error {
 
-	if _, err := this.clientset.
+	if _, err := k.clientset.
 		CoreV1().
 		Namespaces().
 		Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{}); err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.
+			_, err = k.clientset.
 				CoreV1().
 				Namespaces().
 				Update(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.UpdateOptions{})
@@ -106,9 +106,9 @@ func (this *Kubernetes) namespaceCreate(ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) namespaceDelete(ns string) error {
+func (k *Kubernetes) namespaceDelete(ns string) error {
 
-	if err := this.clientset.
+	if err := k.clientset.
 		CoreV1().
 		Namespaces().
 		Delete(context.Background(), ns, metav1.DeleteOptions{
@@ -121,7 +121,7 @@ func (this *Kubernetes) namespaceDelete(ns string) error {
 	}
 
 	for i := 0; i < int(consts.CounterMaxRetryCount); {
-		_, err := this.clientset.
+		_, err := k.clientset.
 			CoreV1().
 			Namespaces().
 			Get(context.Background(), ns, metav1.GetOptions{})
@@ -142,9 +142,9 @@ func (this *Kubernetes) namespaceDelete(ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) secretDelete(o *corev1.Secret, ns string) error {
+func (k *Kubernetes) secretDelete(o *corev1.Secret, ns string) error {
 
-	err := this.clientset.
+	err := k.clientset.
 		CoreV1().
 		Secrets(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
@@ -155,9 +155,9 @@ func (this *Kubernetes) secretDelete(o *corev1.Secret, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
+func (k *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
 
-	_, err := this.clientset.
+	_, err := k.clientset.
 		CoreV1().
 		Secrets(ns).
 		Create(context.Background(), o, metav1.CreateOptions{})
@@ -165,7 +165,7 @@ func (this *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 
-			_, err = this.clientset.
+			_, err = k.clientset.
 				CoreV1().
 				Secrets(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
@@ -180,9 +180,9 @@ func (this *Kubernetes) secretApply(o *corev1.Secret, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) PodApply(o *corev1.Pod, ns string) error {
+func (k *Kubernetes) PodApply(o *corev1.Pod, ns string) error {
 
-	_, err := this.clientset.
+	_, err := k.clientset.
 		CoreV1().
 		Pods(ns).
 		Create(context.Background(), o, metav1.CreateOptions{})
@@ -190,7 +190,7 @@ func (this *Kubernetes) PodApply(o *corev1.Pod, ns string) error {
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 
-			_, err = this.clientset.
+			_, err = k.clientset.
 				CoreV1().
 				Pods(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
@@ -205,9 +205,9 @@ func (this *Kubernetes) PodApply(o *corev1.Pod, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) PodDelete(o *corev1.Pod, ns string) error {
+func (k *Kubernetes) PodDelete(o *corev1.Pod, ns string) error {
 
-	err := this.clientset.
+	err := k.clientset.
 		CoreV1().
 		Pods(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
@@ -218,9 +218,9 @@ func (this *Kubernetes) PodDelete(o *corev1.Pod, ns string) error {
 	return nil
 }
 
-func (this *Kubernetes) serviceAccountDelete(o *corev1.ServiceAccount, ns string) error {
+func (k *Kubernetes) serviceAccountDelete(o *corev1.ServiceAccount, ns string) error {
 
-	err := this.clientset.
+	err := k.clientset.
 		CoreV1().
 		ServiceAccounts(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
@@ -230,15 +230,15 @@ func (this *Kubernetes) serviceAccountDelete(o *corev1.ServiceAccount, ns string
 	return nil
 }
 
-func (this *Kubernetes) serviceAccountApply(o *corev1.ServiceAccount, ns string) error {
+func (k *Kubernetes) serviceAccountApply(o *corev1.ServiceAccount, ns string) error {
 
-	_, err := this.clientset.
+	_, err := k.clientset.
 		CoreV1().
 		ServiceAccounts(ns).
 		Create(context.Background(), o, metav1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.
+			_, err = k.clientset.
 				CoreV1().
 				ServiceAccounts(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
@@ -252,15 +252,15 @@ func (this *Kubernetes) serviceAccountApply(o *corev1.ServiceAccount, ns string)
 	return nil
 }
 
-func (this *Kubernetes) nodesList() (*corev1.NodeList, error) {
-	return this.clientset.
+func (k *Kubernetes) nodesList() (*corev1.NodeList, error) {
+	return k.clientset.
 		CoreV1().
 		Nodes().
 		List(context.Background(), metav1.ListOptions{})
 }
 
-func (this *Kubernetes) nodeDelete(nodeName string) error {
-	return this.clientset.
+func (k *Kubernetes) nodeDelete(nodeName string) error {
+	return k.clientset.
 		CoreV1().
 		Nodes().
 		Delete(context.Background(), nodeName, metav1.DeleteOptions{})

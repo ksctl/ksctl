@@ -27,7 +27,7 @@ jobs:
   unit-test:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [macos-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
     if: |

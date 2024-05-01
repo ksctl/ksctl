@@ -45,10 +45,8 @@ jobs:
 
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
-        working-directory: scripts
         run: |
-          chmod u+x test-local.sh
-          ./test-local.sh
+          make unit_test_local
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}
@@ -78,7 +76,14 @@ jobs:
         with:
           go-version: 1.21.0
 
+
       - name: integration testing
         working-directory: test
+        if: ${{ matrix.os == 'windows-latest' }}
         run: go test -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
+
+      - name: integration testing
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: |
+          make mock_local_managed
 

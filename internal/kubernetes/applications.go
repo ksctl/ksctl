@@ -66,7 +66,7 @@ const (
 
 // NOTE: updatable means the app is present and we can upgrade or degrade the version as per users wish
 
-func PresentOrNot(app types.Application, typeOfApp EnumApplication, state *types.StorageDocument) (idx int, updatable bool) {
+func PresentOrNot(app types.Application, typeOfApp EnumApplication, state *types.StorageDocument) (idx int, isPresent bool) {
 	idx = -1
 
 	installedApps := state.Addons
@@ -74,14 +74,14 @@ func PresentOrNot(app types.Application, typeOfApp EnumApplication, state *types
 	switch typeOfApp {
 	case Cni:
 		if app.Name == installedApps.Cni.Name {
-			updatable = true
+			isPresent = true
 			return
 		}
 	case App:
 		for _idx, _app := range installedApps.Apps {
 			if _app.Name == app.Name {
 				idx = _idx
-				updatable = true
+				isPresent = true
 				return
 			}
 		}
@@ -90,7 +90,7 @@ func PresentOrNot(app types.Application, typeOfApp EnumApplication, state *types
 	return
 }
 
-func (this *Kubernetes) InstallCNI(cni types.Application, state *types.StorageDocument, op consts.KsctlOperation) error {
+func (k *Kubernetes) InstallCNI(cni types.Application, state *types.StorageDocument, op consts.KsctlOperation) error {
 
 	switch op {
 	case consts.OperationCreate:
@@ -100,38 +100,38 @@ func (this *Kubernetes) InstallCNI(cni types.Application, state *types.StorageDo
 				log.Success("Already Installed cni", "name", cni.Name, "version", cni.Version)
 				return nil
 			} else {
-				if this.InCluster {
+				if k.InCluster {
 					return log.NewError("We cannot install CNI due to Operation inside the cluster", "name", cni.Name, "version", cni.Version)
 				} else {
-					log.Box("Current Impl. doesn't support this", `
+					log.Box("Current Impl. doesn't support k", `
 Upgrade of CNI is not Possible as of now!
 Reason: if the cni is uninstalled it will lead to all pod in Pending mode
 thus we can't install cni without the help of state.
 So what we can do is Delete it and then
 
-solution is instead of performing this operation inside the cluster which will become hostile
-will perform this only from outside like the ksctl core for the cli or UI
+solution is instead of performing k operation inside the cluster which will become hostile
+will perform k only from outside like the ksctl core for the cli or UI
 so what we can do is we can tell ksctl core to fetch latest state and then we can perform operations
 
 another nice thing would be to reconcile every 2 or 5 minutes from the kubernetes cluster Export()
-	(Only this problem will occur for local based system)
+	(Only k problem will occur for local based system)
 advisiable to use external storage solution
 `)
 				}
 
 				// Step 1: delete the current install
 				// Step 2: install with the new Version
-				return nil // saftey return to avoid version conflicts, this feature is yet to be developed
+				return nil // saftey return to avoid version conflicts, k feature is yet to be developed
 			}
 		}
 
-		if err := installApplication(this, cni); err != nil {
+		if err := installApplication(k, cni); err != nil {
 			return log.NewError("Cni install failed", "name", cni, "errorMsg", err)
 		}
 		state.Addons.Cni.Name = cni.Name
 		state.Addons.Cni.Version = cni.Version
 
-		if err := this.StorageDriver.Write(state); err != nil {
+		if err := k.StorageDriver.Write(state); err != nil {
 			return err
 		}
 
@@ -145,14 +145,14 @@ advisiable to use external storage solution
 			return nil
 		}
 
-		if err := deleteApplication(this, cni); err != nil {
+		if err := deleteApplication(k, cni); err != nil {
 			return log.NewError("Cni uninstall failed", "name", cni, "errorMsg", err)
 		}
 
 		state.Addons.Cni.Name = ""
 		state.Addons.Cni.Version = ""
 
-		if err := this.StorageDriver.Write(state); err != nil {
+		if err := k.StorageDriver.Write(state); err != nil {
 			return err
 		}
 
@@ -165,7 +165,7 @@ advisiable to use external storage solution
 // Applications Important the sequence of the apps in the list are important
 // it executes from left to right one at a time
 // if it fails at any point of time it stop further installations
-func (this *Kubernetes) Applications(apps []types.Application, state *types.StorageDocument, op consts.KsctlOperation) error {
+func (k *Kubernetes) Applications(apps []types.Application, state *types.StorageDocument, op consts.KsctlOperation) error {
 
 	switch op {
 	case consts.OperationCreate:
@@ -182,7 +182,7 @@ func (this *Kubernetes) Applications(apps []types.Application, state *types.Stor
 					// Delete the App
 					isUpdate = true
 					prevVersion = state.Addons.Apps[_idx].Version
-					if err := deleteApplication(this, state.Addons.Apps[_idx]); err != nil {
+					if err := deleteApplication(k, state.Addons.Apps[_idx]); err != nil {
 						return log.NewError("Update of the App failed Step Uninstall",
 							"app", app.Name,
 							"FromVer", prevVersion,
@@ -194,7 +194,7 @@ func (this *Kubernetes) Applications(apps []types.Application, state *types.Stor
 				}
 			}
 
-			if err := installApplication(this, app); err != nil {
+			if err := installApplication(k, app); err != nil {
 				if isUpdate {
 					return log.NewError("Update of the App failed Step Install",
 						"app", app.Name,
@@ -212,7 +212,7 @@ func (this *Kubernetes) Applications(apps []types.Application, state *types.Stor
 					Version: app.Version,
 				})
 			}
-			if err := this.StorageDriver.Write(state); err != nil {
+			if err := k.StorageDriver.Write(state); err != nil {
 				return err
 			}
 
@@ -234,7 +234,7 @@ func (this *Kubernetes) Applications(apps []types.Application, state *types.Stor
 				continue
 			}
 
-			if err := deleteApplication(this, app); err != nil {
+			if err := deleteApplication(k, app); err != nil {
 				return log.NewError("App uninstall failed", "app", app, "errorMsg", err)
 			}
 
@@ -245,7 +245,7 @@ func (this *Kubernetes) Applications(apps []types.Application, state *types.Stor
 				}
 			}
 			state.Addons.Apps = _cpyApp
-			if err := this.StorageDriver.Write(state); err != nil {
+			if err := k.StorageDriver.Write(state); err != nil {
 				return err
 			}
 

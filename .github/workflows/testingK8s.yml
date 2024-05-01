@@ -41,10 +41,8 @@ jobs:
 
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
-        working-directory: scripts
         run: |
-          chmod u+x test-bootstrap.sh
-          ./test-bootstrap.sh
+          make unit_test_bootstrap
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}

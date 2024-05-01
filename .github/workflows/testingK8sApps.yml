@@ -1,17 +1,23 @@
-name: Regression Test Utils
+name: Regression Test Kubernetes apps
 on:
   push:
     paths:
-      - 'pkg/helpers/**'
-      - 'go.mod'
-      - 'go.sum'
+    - 'internal/kubernetes/**'
+    - 'internal/storage/**'
+    - 'pkg/logger/**'
+    - 'pkg/helpers/**'
+    - 'go.mod'
+    - 'go.sum'
     branches: [ main ]
   pull_request:
     types: [ labeled, opened, synchronize, reopened ]
     paths:
-      - 'pkg/helpers/**'
-      - 'go.mod'
-      - 'go.sum'
+    - 'internal/kubernetes/**'
+    - 'internal/storage/**'
+    - 'pkg/logger/**'
+    - 'pkg/helpers/**'
+    - 'go.mod'
+    - 'go.sum'
 
 jobs:
   unit-test:
@@ -36,9 +42,9 @@ jobs:
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
-          make unit_test_utils
+          make unit_test_kubernetes_apps
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}
         working-directory: scripts
-        run: .\test-utils.ps1
+        run: .\test-kubernetes.ps1

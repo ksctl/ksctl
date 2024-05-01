@@ -44,111 +44,117 @@ docker-build-agent: ## docker build agent
 ##@ Unit Tests (Core)
 
 .PHONY: unit_test_all
-unit_test_all: ## all unit test case
+unit_test_all: golang-test ## all unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-api.sh
+		/bin/bash test-api.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_utils
-unit_test_utils: ## utils unit test case
+unit_test_utils: golang-test ## utils unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-utils.sh
+		/bin/bash test-utils.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_logger
-unit_test_logger: ## logger unit test case
+unit_test_logger: golang-test ## logger unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-logger.sh
+		/bin/bash test-logger.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_civo
-unit_test_civo: ## civo unit test case
+unit_test_civo: golang-test ## civo unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-civo.sh
+		/bin/bash test-civo.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_local
-unit_test_local: ## local unit test case
+unit_test_local: golang-test ## local unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-local.sh
+		/bin/bash test-local.sh $(GO_TEST_COLOR)
+
+.PHONY: unit_test_kubernetes_apps
+unit_test_kubernetes_apps: golang-test ## azure unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-kubernetes.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_azure
-unit_test_azure: ## azure unit test case
+unit_test_azure: golang-test ## azure unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-azure.sh
+		/bin/bash test-azure.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_k3s
-unit_test_k3s: ## k3s unit test case
+unit_test_k3s: golang-test ## k3s unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-k3s.sh
+		/bin/bash test-k3s.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_kubeadm
-unit_test_kubeadm: ## kubeadm unit test case
+unit_test_kubeadm: golang-test ## kubeadm unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-kubeadm.sh
+		/bin/bash test-kubeadm.sh $(GO_TEST_COLOR)
 
 
 .PHONY: unit_test_bootstrap
-unit_test_bootstrap: ## bootstrap unit test case
+unit_test_bootstrap: golang-test ## bootstrap unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-bootstrap.sh
+		/bin/bash test-bootstrap.sh $(GO_TEST_COLOR)
 
 
 .PHONY: unit_test_kubernetes-store
-unit_test_kubernetes-store: ## kubernetes-store unit test case
+unit_test_kubernetes-store: golang-test ## kubernetes-store unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-kubernetes-store.sh
+		/bin/bash test-kubernetes-store.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_local-store
-unit_test_local-store: ## local-store unit test case
+unit_test_local-store: golang-test ## local-store unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-local-store.sh
+		/bin/bash test-local-store.sh $(GO_TEST_COLOR)
 
 
 .PHONY: unit_test_mongodb-store
-unit_test_mongodb-store: ## mongodb-store unit test case
+unit_test_mongodb-store: golang-test ## mongodb-store unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
-		/bin/bash test-mongodb-store.sh
+		/bin/bash test-mongodb-store.sh $(GO_TEST_COLOR)
 
 ##@ Mock Tests (Core)
 .PHONY: mock_all
-mock_all: ## All Mock tests
+mock_all: golang-test ## All Mock tests
 	@echo "Mock Test (integration)"
 	cd test/ && \
-		go test -bench=. -benchtime=1x -cover -v
+		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=. -benchtime=1x -cover -v
 
 .PHONY: mock-civo-ha
-mock_civo_ha: ## Civo HA mock test
+mock_civo_ha: golang-test ## Civo HA mock test
 	cd test/ && \
- 		go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
 
 .PHONY: mock-civo-managed
-mock_civo_managed: ## Civo managed mock test
+mock_civo_managed: golang-test ## Civo managed mock test
 	cd test/ && \
- 		go test -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
 
 .PHONY: mock-azure-managed
-mock_azure_managed: ## Azure managed mock test
+mock_azure_managed: golang-test ## Azure managed mock test
 	cd test/ && \
- 		go test -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
 
 .PHONY: mock-azure-ha
-mock_azure_ha: ## Azure HA mock test
+mock_azure_ha: golang-test ## Azure HA mock test
 	cd test/ && \
- 		go test -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
 
 .PHONY: mock-local-managed
-mock_local_managed: ## Local managed mock test
+mock_local_managed: golang-test ## Local managed mock test
 	cd test/ && \
- 		go test -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
 
 
 ##@ Complete Testing (Core)

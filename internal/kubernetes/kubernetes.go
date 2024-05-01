@@ -28,9 +28,9 @@ var (
 	log resources.LoggerFactory
 )
 
-func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
+func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
-	nodes, err := this.nodesList()
+	nodes, err := k.nodesList()
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -47,7 +47,7 @@ func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	if len(kNodeName) == 0 {
 		return log.NewError("Not found!")
 	}
-	err = this.nodeDelete(kNodeName)
+	err = k.nodeDelete(kNodeName)
 	if err != nil {
 		return log.NewError(err.Error())
 	}
@@ -55,61 +55,61 @@ func (this *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	return nil
 }
 
-func (this *Kubernetes) NewInClusterClient() (err error) {
-	log = logger.NewDefaultLogger(this.Metadata.LogVerbosity, this.Metadata.LogWritter)
+func (k *Kubernetes) NewInClusterClient() (err error) {
+	log = logger.NewDefaultLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
 	log.SetPackageName("kubernetes-client")
 
-	this.config, err = rest.InClusterConfig()
+	k.config, err = rest.InClusterConfig()
 	if err != nil {
 		return
 	}
 
-	this.apiextensionsClient, err = clientset.NewForConfig(this.config)
+	k.apiextensionsClient, err = clientset.NewForConfig(k.config)
 	if err != nil {
 		return
 	}
 
-	this.clientset, err = kubernetes.NewForConfig(this.config)
+	k.clientset, err = kubernetes.NewForConfig(k.config)
 	if err != nil {
 		return
 	}
 
-	this.helmClient = new(HelmClient)
-	if err = this.helmClient.NewInClusterHelmClient(); err != nil {
+	k.helmClient = new(HelmClient)
+	if err = k.helmClient.NewInClusterHelmClient(); err != nil {
 		return
 	}
-	this.InCluster = true // it helps us to identify if we are inside the cluster or not
+	k.InCluster = true // it helps us to identify if we are inside the cluster or not
 
 	initApps()
 
 	return nil
 }
 
-func (this *Kubernetes) NewKubeconfigClient(kubeconfig string) (err error) {
-	log = logger.NewDefaultLogger(this.Metadata.LogVerbosity, this.Metadata.LogWritter)
+func (k *Kubernetes) NewKubeconfigClient(kubeconfig string) (err error) {
+	log = logger.NewDefaultLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
 	log.SetPackageName("kubernetes-client")
 
 	rawKubeconfig := []byte(kubeconfig)
 
-	this.config, err = clientcmd.BuildConfigFromKubeconfigGetter("", func() (*api.Config, error) {
+	k.config, err = clientcmd.BuildConfigFromKubeconfigGetter("", func() (*api.Config, error) {
 		return clientcmd.Load(rawKubeconfig)
 	})
 	if err != nil {
 		return
 	}
 
-	this.apiextensionsClient, err = clientset.NewForConfig(this.config)
+	k.apiextensionsClient, err = clientset.NewForConfig(k.config)
 	if err != nil {
 		return
 	}
 
-	this.clientset, err = kubernetes.NewForConfig(this.config)
+	k.clientset, err = kubernetes.NewForConfig(k.config)
 	if err != nil {
 		return
 	}
 
-	this.helmClient = new(HelmClient)
-	if err = this.helmClient.NewKubeconfigHelmClient(kubeconfig); err != nil {
+	k.helmClient = new(HelmClient)
+	if err = k.helmClient.NewKubeconfigHelmClient(kubeconfig); err != nil {
 		return
 	}
 

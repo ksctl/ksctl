@@ -90,87 +90,87 @@ var (
 	}
 )
 
-func (this *Kubernetes) DeleteResourcesFromController() error {
-	log.Print("Started to configure Cluster to delete workerplanes")
+//func (k *Kubernetes) DeleteResourcesFromController() error {
+//	log.Print("Started to configure Cluster to delete workerplanes")
+//
+//	clusterName := k.Metadata.ClusterName
+//	region := k.Metadata.Region
+//	provider := k.Metadata.Provider
+//	distro := k.Metadata.K8sDistro
+//
+//	log.Debug("Printing", "clustername", clusterName, "region", region, "provider", provider, "distro", distro)
+//
+//	var destroyer *corev1.Pod = &corev1.Pod{
+//		TypeMeta: metav1.TypeMeta{
+//			Kind:       "Pod",
+//			APIVersion: "v1",
+//		},
+//		ObjectMeta: metav1.ObjectMeta{
+//			Name: "scale-to-0",
+//		},
+//		Spec: corev1.PodSpec{
+//
+//			PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
+//
+//			// Affinity: affinity,
+//
+//			Tolerations: tolerations,
+//
+//			RestartPolicy: corev1.RestartPolicyNever,
+//			Containers: []corev1.Container{
+//				{
+//					Name:    "destroyer",
+//					Image:   "alpine",
+//					Command: []string{"sh", "-c"},
+//					Args:    []string{fmt.Sprintf("apk add curl && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 0, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
+//
+//					Resources: corev1.ResourceRequirements{
+//						Limits: corev1.ResourceList{
+//							corev1.ResourceCPU:    resource.MustParse("50m"),
+//							corev1.ResourceMemory: resource.MustParse("50Mi"),
+//						},
+//						Requests: corev1.ResourceList{
+//							corev1.ResourceCPU:    resource.MustParse("10m"),
+//							corev1.ResourceMemory: resource.MustParse("10Mi"),
+//						},
+//					},
+//				},
+//			},
+//		},
+//	}
+//
+//	log.Debug("Printing", "destroyerPodManifest", destroyer)
+//
+//	if err := k.PodApply(destroyer, KSCTL_SYS_NAMESPACE); err != nil {
+//		return log.NewError(err.Error())
+//	}
+//
+//	count := consts.KsctlCounterConsts(0)
+//	for {
+//
+//		status, err := k.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, metav1.GetOptions{})
+//		if err != nil {
+//			return log.NewError(err.Error())
+//		}
+//		if status.Status.Phase == corev1.PodSucceeded {
+//			log.Success(fmt.Sprintf("Status of Job [%v]", status.Status.Phase))
+//			break
+//		}
+//		count++
+//		if count == consts.CounterMaxRetryCount*2 {
+//			return log.NewError("max retry reached")
+//		}
+//		log.Debug(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
+//		time.Sleep(10 * time.Second)
+//	}
+//
+//	time.Sleep(10 * time.Second) // to maintain a time gap for stable cluster and cloud resources
+//
+//	log.Success("Done configuring Cluster to Scale down the no of workerplane to 1")
+//	return nil
+//}
 
-	clusterName := this.Metadata.ClusterName
-	region := this.Metadata.Region
-	provider := this.Metadata.Provider
-	distro := this.Metadata.K8sDistro
-
-	log.Debug("Printing", "clustername", clusterName, "region", region, "provider", provider, "distro", distro)
-
-	var destroyer *corev1.Pod = &corev1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "scale-to-0",
-		},
-		Spec: corev1.PodSpec{
-
-			PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
-
-			// Affinity: affinity,
-
-			Tolerations: tolerations,
-
-			RestartPolicy: corev1.RestartPolicyNever,
-			Containers: []corev1.Container{
-				{
-					Name:    "destroyer",
-					Image:   "alpine",
-					Command: []string{"sh", "-c"},
-					Args:    []string{fmt.Sprintf("apk add curl && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 0, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
-
-					Resources: corev1.ResourceRequirements{
-						Limits: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("50m"),
-							corev1.ResourceMemory: resource.MustParse("50Mi"),
-						},
-						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("10m"),
-							corev1.ResourceMemory: resource.MustParse("10Mi"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	log.Debug("Printing", "destroyerPodManifest", destroyer)
-
-	if err := this.PodApply(destroyer, KSCTL_SYS_NAMESPACE); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	count := consts.KsctlCounterConsts(0)
-	for {
-
-		status, err := this.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, metav1.GetOptions{})
-		if err != nil {
-			return log.NewError(err.Error())
-		}
-		if status.Status.Phase == corev1.PodSucceeded {
-			log.Success(fmt.Sprintf("Status of Job [%v]", status.Status.Phase))
-			break
-		}
-		count++
-		if count == consts.CounterMaxRetryCount*2 {
-			return log.NewError("max retry reached")
-		}
-		log.Debug(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
-		time.Sleep(10 * time.Second)
-	}
-
-	time.Sleep(10 * time.Second) // to maintain a time gap for stable cluster and cloud resources
-
-	log.Success("Done configuring Cluster to Scale down the no of workerplane to 1")
-	return nil
-}
-
-func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
+func (k *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
 	log.Print("Started adding kubernetes ksctl specific controllers")
 	components := []string{"ksctl-application@main"}
 
@@ -182,7 +182,7 @@ func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExpor
 	if err != nil {
 		return err
 	}
-	err = this.Applications(_apps, state, consts.OperationCreate)
+	err = k.Applications(_apps, state, consts.OperationCreate)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExpor
 		}
 
 		log.Debug("Invoked dynamic client")
-		dynamicClient, __err := dynamic.NewForConfig(this.config)
+		dynamicClient, __err := dynamic.NewForConfig(k.config)
 		if __err != nil {
 			panic(__err.Error())
 		}
@@ -236,12 +236,12 @@ func (this *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExpor
 	return nil
 }
 
-func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEndpoint map[string][]byte, isExternalStore bool) error {
+func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEndpoint map[string][]byte, isExternalStore bool) error {
 
 	log.Print("Started to configure Cluster to add Ksctl specific resources")
 
 	log.Note("creating ksctl namespace")
-	if err := this.namespaceCreate(KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.namespaceCreate(KSCTL_SYS_NAMESPACE); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -253,7 +253,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 		},
 	}
 	log.Note("creating service account for ksctl agent")
-	if err := this.serviceAccountApply(serviceAccConfig, KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.serviceAccountApply(serviceAccConfig, KSCTL_SYS_NAMESPACE); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -272,7 +272,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	}
 
 	log.Note("creating clusterrole")
-	if err := this.clusterRoleApply(clusterRole); err != nil {
+	if err := k.clusterRoleApply(clusterRole); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -296,7 +296,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	}
 
 	log.Note("creating clusterrolebinding")
-	if err := this.clusterRoleBindingApply(clusterRoleBind); err != nil {
+	if err := k.clusterRoleBindingApply(clusterRoleBind); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -397,7 +397,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 			Data: externalStoreEndpoint,
 		}
 
-		if err := this.secretApply(secretExt, KSCTL_SYS_NAMESPACE); err != nil {
+		if err := k.secretApply(secretExt, KSCTL_SYS_NAMESPACE); err != nil {
 			return log.NewError(err.Error())
 		}
 
@@ -417,7 +417,7 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	}
 
 	log.Note("creating ksctl agent deployment")
-	if err := this.deploymentApply(ksctlServer, KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.deploymentApply(ksctlServer, KSCTL_SYS_NAMESPACE); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -442,14 +442,14 @@ func (this *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStore
 	}
 
 	log.Note("creating ksctl agent service")
-	if err := this.serviceApply(serverService, KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.serviceApply(serverService, KSCTL_SYS_NAMESPACE); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	count := consts.KsctlCounterConsts(0)
 	for {
 
-		status, err := this.clientset.
+		status, err := k.clientset.
 			AppsV1().
 			Deployments(KSCTL_SYS_NAMESPACE).
 			Get(context.Background(), ksctlServer.ObjectMeta.Name, metav1.GetOptions{})

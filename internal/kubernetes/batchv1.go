@@ -8,15 +8,15 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (this *Kubernetes) jobApply(o *batchv1.Job, ns string) error {
+func (k *Kubernetes) jobApply(o *batchv1.Job, ns string) error {
 
-	_, err := this.clientset.
+	_, err := k.clientset.
 		BatchV1().
 		Jobs(ns).
 		Create(context.Background(), o, v1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			_, err = this.clientset.
+			_, err = k.clientset.
 				BatchV1().
 				Jobs(ns).
 				Update(context.Background(), o, v1.UpdateOptions{})
@@ -29,9 +29,9 @@ func (this *Kubernetes) jobApply(o *batchv1.Job, ns string) error {
 	}
 	return nil
 }
-func (this *Kubernetes) jobDelete(o *batchv1.Job, ns string) error {
+func (k *Kubernetes) jobDelete(o *batchv1.Job, ns string) error {
 
-	err := this.clientset.
+	err := k.clientset.
 		BatchV1().
 		Jobs(ns).
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
