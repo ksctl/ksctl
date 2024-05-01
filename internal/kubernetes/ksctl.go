@@ -172,10 +172,10 @@ var (
 
 func (k *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
 	log.Print("Started adding kubernetes ksctl specific controllers")
-	components := []string{"ksctl-application@main"}
+	components := []string{"ksctl-application@latest"}
 
 	if !isExternalStore {
-		components = append(components, "ksctl-storage@main")
+		components = append(components, "ksctl-storage@latest")
 	}
 
 	_apps, err := helpers.ToApplicationTempl(components)
