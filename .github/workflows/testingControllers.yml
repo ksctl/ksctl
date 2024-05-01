@@ -1,0 +1,55 @@
+name: Regression Test Controller
+on:
+  push:
+    paths:
+      - 'api/**'
+      - 'build/**'
+      - 'ksctl-components/**'
+      - 'internal/storage/**'
+      - 'pkg/helpers/**'
+      - 'pkg/logger/**'
+      - 'go.mod'
+      - 'go.sum'
+    branches: [ main ]
+  pull_request:
+    types: [ labeled, opened, synchronize, reopened ]
+    paths:
+    - 'api/**'
+    - 'build/**'
+    - 'ksctl-components/**'
+    - 'internal/storage/**'
+    - 'pkg/helpers/**'
+    - 'pkg/logger/**'
+    - 'go.mod'
+    - 'go.sum'
+
+jobs:
+  unit-test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      )
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.0
+
+      - name: Testing storage controller
+        if: always()
+        run: |
+          make test-controller CONTROLLER=storage
+
+      - name: Testing application controller
+        if: always()
+        run: |
+          make test-controller CONTROLLER=application
+

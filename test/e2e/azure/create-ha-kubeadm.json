@@ -6,11 +6,12 @@
 	"cloud_provider": "azure",
 	"kubernetes_distro": "kubeadm",
 	"storage_type": "local",
-	"node_type_workerplane": "Standard_F2s",
+	"node_type_workerplane": "Standard_F4s",
 	"node_type_controlplane": "Standard_F2s",
 	"node_type_datastore": "Standard_F2s",
 	"node_type_loadbalancer": "Standard_F2s",
 	"desired_no_of_workerplane_nodes": 1,
 	"desired_no_of_controlplane_nodes": 3,
-	"desired_no_of_datastore_nodes": 3
+	"desired_no_of_datastore_nodes": 3,
+	"cni_plugin": "cilium"
 }

@@ -35,12 +35,6 @@ var (
 	log               resources.LoggerFactory
 )
 
-// GetSecretTokens implements resources.CloudFactory.
-func (*LocalProvider) GetSecretTokens(resources.StorageFactory) (map[string][]byte, error) {
-	return nil, nil
-}
-
-// GetStateFile implements resources.CloudFactory.
 func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
@@ -71,7 +65,7 @@ func ReturnLocalStruct(metadata resources.Metadata, state *types.StorageDocument
 // InitState implements resources.CloudFactory.
 func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
 	switch operation {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if isPresent(storage, cloud.ClusterName) {
 			return log.NewError("already present")
 		}
@@ -85,7 +79,7 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 
 		mainStateDocument.CloudInfra.Local.B.KubernetesDistro = "kind"
 		mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.Metadata.Version
-	case consts.OperationStateDelete, consts.OperationStateGet:
+	case consts.OperationDelete, consts.OperationGet:
 		err := loadStateHelper(storage)
 		if err != nil {
 			return log.NewError(err.Error())
@@ -101,7 +95,7 @@ func (cloud *LocalProvider) Name(resName string) resources.CloudFactory {
 	return cloud
 }
 
-func (cloud *LocalProvider) Application(s string) (externalApps bool) {
+func (cloud *LocalProvider) Application(s []string) (externalApps bool) {
 	return true
 }
 
@@ -132,9 +126,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 	log.SetPackageName(string(consts.CloudLocal))
 
 	var data []cloudControlRes.AllClusterData
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudLocal),
-		"clusterType": string(consts.ClusterTypeMang),
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudLocal),
+		consts.ClusterType: string(consts.ClusterTypeMang),
 	})
 	if err != nil {
 		return nil, err

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+EXEC=$1
+
 cd ../pkg/ || exit 1
 
 echo "-----------------------------------"
@@ -7,19 +9,19 @@ echo "|   Testing (pkg/helpers)"
 echo "-----------------------------------"
 
 cd helpers/
-go test -fuzz=Fuzz -fuzztime 10s -v cloud_test.go fields.go
-go test -fuzz=Fuzz -fuzztime 10s -v cni_test.go fields.go
-go test -fuzz=Fuzz -fuzztime 10s -v name_test.go fields.go
-go test -fuzz=Fuzz -fuzztime 10s -v storage_test.go fields.go
-go test -fuzz=Fuzz -fuzztime 10s -v distro_test.go fields.go
-go test . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v cloud_test.go fields.go
+GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v cni_test.go fields.go
+GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v name_test.go fields.go
+GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v storage_test.go fields.go
+GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v distro_test.go fields.go
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
 echo "-----------------------------------"
 echo "|   Testing (pkg/logger)"
 echo "-----------------------------------"
 
 cd logger/
-go test . -v -timeout 10s && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v -timeout 10s && cd -
 
 cd ../internal
 
@@ -28,14 +30,14 @@ echo "|   Testing (internal/k8sdistros/k3s)"
 echo "--------------------------------------------"
 
 cd k8sdistros/k3s/
-go test . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
 echo "--------------------------------------------"
 echo "|   Testing (internal/cloudproviders/local)"
 echo "--------------------------------------------"
 
 cd cloudproviders/local/
-go test . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
 
 echo "--------------------------------------------"
@@ -43,27 +45,34 @@ echo "|   Testing (internal/cloudproviders/civo)"
 echo "--------------------------------------------"
 
 cd cloudproviders/civo/
-go test . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
 echo "--------------------------------------------"
 echo "|   Testing (internal/cloudproviders/azure)"
 echo "--------------------------------------------"
 
 cd cloudproviders/azure/
-go test . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
 echo "--------------------------------------------"
 echo "|   Testing (internal/storage/local)"
 echo "--------------------------------------------"
 
 cd storage/local/
-go test . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+
+echo "--------------------------------------------"
+echo "|   Testing (internal/storage/kubernetes)"
+echo "--------------------------------------------"
+
+cd storage/kubernetes/
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
 
-# echo "-------------------------------------------------"
-# echo "|   Testing (internal/storage/external/mongodb)"
-# echo "-------------------------------------------------"
-#
-# cd storage/external/mongodb/
-# go test . -v && cd -
+echo "-------------------------------------------------"
+echo "|   Testing (internal/storage/external/mongodb)"
+echo "-------------------------------------------------"
+
+cd storage/external/mongodb/
+GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 

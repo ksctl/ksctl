@@ -1,10 +1,8 @@
 package aws
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -12,6 +10,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/resources"
 
 	cloudcontrolres "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
@@ -20,7 +19,6 @@ import (
 var (
 	mainStateDocument *types.StorageDocument
 	clusterType       consts.KsctlClusterType
-	ctx               context.Context
 	log               resources.LoggerFactory
 )
 
@@ -50,8 +48,7 @@ type AwsProvider struct {
 	chRole    chan consts.KsctlRole
 	chVMType  chan string
 
-	client  AwsGo
-	SSHPath string
+	client AwsGo
 }
 
 func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
@@ -133,7 +130,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	errLoadState := loadStateHelper(storage)
 
 	switch opration {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Aws.IsCompleted {
 			return log.NewError("cluster %s already exists", obj.clusterName)
 		}
@@ -153,13 +150,13 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 			mainStateDocument.CloudInfra.Aws.B.KubernetesDistro = string(obj.metadata.k8sName)
 		}
 
-	case consts.OperationStateDelete:
+	case consts.OperationDelete:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		log.Debug("Delete resource(s)")
 
-	case consts.OperationStateGet:
+	case consts.OperationGet:
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
@@ -183,7 +180,6 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 
 func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
 
-	// TODO: use DeepCopy()
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
 			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
@@ -195,13 +191,13 @@ func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (
 			Region:      mainStateDocument.Region,
 			ClusterType: clusterType,
 		},
-		IPv4ControlPlanes: mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs,
-		IPv4DataStores:    mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs,
-		IPv4WorkerPlanes:  mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs,
+		IPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs),
+		IPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs),
+		IPv4WorkerPlanes:  utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs),
 		IPv4LoadBalancer:  mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
 
-		PrivateIPv4ControlPlanes: mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs,
-		PrivateIPv4DataStores:    mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs,
+		PrivateIPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs),
+		PrivateIPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
 	}
 
@@ -261,7 +257,7 @@ func (obj *AwsProvider) SupportForApplications() bool {
 
 }
 
-func (obj *AwsProvider) Application(s string) bool {
+func (obj *AwsProvider) Application(s []string) bool {
 	return true
 }
 
@@ -412,8 +408,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 }
 
 func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
-	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames))
-	copy(hostnames, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
+	hostnames := utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 	log.Debug("Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }
@@ -428,17 +423,6 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 
 }
 
-func (obj *AwsProvider) GetSecretTokens(factory resources.StorageFactory) (map[string][]byte, error) {
-
-	acesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
-	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-
-	return map[string][]byte{
-		"aws_access_key_id":     []byte(acesskeyid),
-		"aws_secret_access_key": []byte(secret),
-	}, nil
-}
-
 func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {
 
 	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
@@ -446,9 +430,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloudcontrolres.AllClusterData
 
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudAws),
-		"clusterType": "",
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudAws),
+		consts.ClusterType: "",
 	})
 	if err != nil {
 		return nil, log.NewError("Error fetching cluster info", "error", err)

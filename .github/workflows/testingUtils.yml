@@ -35,10 +35,8 @@ jobs:
 
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
-        working-directory: scripts
         run: |
-          chmod u+x test-utils.sh
-          ./test-utils.sh
+          make unit_test_utils
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}

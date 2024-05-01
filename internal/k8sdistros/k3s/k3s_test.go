@@ -383,7 +383,7 @@ func checkCurrentStateFile(t *testing.T) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationStateCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
 
 	fakeClient.Version("1.27.1")
 

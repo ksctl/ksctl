@@ -11,9 +11,8 @@ import (
 
 // NewNetwork implements resources.CloudFactory
 func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
-	_ = <-obj.chResName
+	<-obj.chResName
 
-	// Checking the resource is already created, if created then skip creating and create the virtual network and subnet
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) != 0 {
 		log.Print("skipped already created the resource group", "name", mainStateDocument.CloudInfra.Azure.ResourceGroupName)
 	} else {

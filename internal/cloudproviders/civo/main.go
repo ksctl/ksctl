@@ -2,6 +2,7 @@ package civo
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloud_control_res "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
@@ -52,14 +54,6 @@ type CivoProvider struct {
 	client CivoGo
 }
 
-// GetSecretTokens implements resources.CloudFactory.
-func (this *CivoProvider) GetSecretTokens(storage resources.StorageFactory) (map[string][]byte, error) {
-	return map[string][]byte{
-		"CIVO_TOKEN": []byte(fetchAPIKey(storage)), // use base64 conversion
-	}, nil
-}
-
-// GetStateFile implements resources.CloudFactory.
 func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
@@ -71,7 +65,6 @@ func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
-// WARN: the array copy is a shallow copy
 func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	payload := cloud_control_res.CloudResourceState{
@@ -86,14 +79,14 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 			ClusterType: clusterType,
 		},
 		// public IPs
-		IPv4ControlPlanes: mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs,
-		IPv4DataStores:    mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs,
-		IPv4WorkerPlanes:  mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs,
+		IPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs),
+		IPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs),
+		IPv4WorkerPlanes:  utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs),
 		IPv4LoadBalancer:  mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP,
 
 		// Private IPs
-		PrivateIPv4ControlPlanes: mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs,
-		PrivateIPv4DataStores:    mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs,
+		PrivateIPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs),
+		PrivateIPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP,
 	}
 	log.Debug("Printing", "cloudState", payload)
@@ -116,7 +109,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 	errLoadState := loadStateHelper(storage)
 
 	switch operation {
-	case consts.OperationStateCreate:
+	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Civo.B.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
 			return log.NewError("already exist")
@@ -139,14 +132,14 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 			mainStateDocument.CloudInfra.Civo.B.KubernetesDistro = string(obj.k8sName)
 		}
 
-	case consts.OperationStateGet:
+	case consts.OperationGet:
 
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
 		log.Debug("Get resources")
 
-	case consts.OperationStateDelete:
+	case consts.OperationDelete:
 
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
@@ -236,17 +229,17 @@ func (cloud *CivoProvider) SupportForApplications() bool {
 	return true
 }
 
-func aggregratedApps(s string) (ret string) {
+func aggregratedApps(s []string) (ret string) {
 	if len(s) == 0 {
 		ret = "traefik2-nodeport,metrics-server" // default: applications
 	} else {
-		ret = s + ",traefik2-nodeport,metrics-server"
+		ret = strings.Join(s, ",") + ",traefik2-nodeport,metrics-server"
 	}
 	log.Debug("Printing", "apps", ret)
 	return
 }
 
-func (client *CivoProvider) Application(s string) (externalApps bool) {
+func (client *CivoProvider) Application(s []string) (externalApps bool) {
 	client.metadata.apps = aggregratedApps(s)
 	return false
 }
@@ -292,8 +285,7 @@ func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
 }
 
 func (*CivoProvider) GetHostNameAllWorkerNode() []string {
-	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames))
-	copy(hostnames, mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames)
+	hostnames := utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames)
 	log.Debug("Printing", "hostnameOfWorkerPlanes", hostnames)
 	return hostnames
 }
@@ -448,9 +440,9 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 	var data []cloud_control_res.AllClusterData
 
-	clusters, err := storage.GetOneOrMoreClusters(map[string]string{
-		"cloud":       string(consts.CloudCivo),
-		"clusterType": "",
+	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+		consts.Cloud:       string(consts.CloudCivo),
+		consts.ClusterType: "",
 	})
 	if err != nil {
 		return nil, err
@@ -482,10 +474,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 
 func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
 	err := storage.AlreadyCreated(consts.CloudCivo, region, name, ksctlClusterType)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (obj *CivoProvider) IsPresent(storage resources.StorageFactory) error {

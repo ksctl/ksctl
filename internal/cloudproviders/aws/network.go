@@ -77,7 +77,7 @@ func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage resources.Storage
 }
 
 func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
-	_ = <-obj.chResName
+	<-obj.chResName
 
 	if len(mainStateDocument.CloudInfra.Aws.VpcId) != 0 {
 		log.Print("[skip] already created the vpc", mainStateDocument.CloudInfra.Aws.VpcName)

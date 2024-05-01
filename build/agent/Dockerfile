@@ -1,4 +1,9 @@
-FROM golang:1.21 as builder
+# Build the manager binary
+ARG GO_VERSION=1.21
+FROM golang:${GO_VERSION} AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 
@@ -6,9 +11,9 @@ LABEL MAINTAINER="dipankar das"
 
 COPY . .
 
-RUN go mod tidy
+RUN go mod download
 
-RUN cd ksctl-components/agent && CGO_ENABLED=0 go build -v -o ksctlagent . && mv ksctlagent ../..
+RUN cd ksctl-components/agent && CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -v -o ksctlagent . && mv ksctlagent ../..
 
 
 FROM alpine

@@ -35,10 +35,8 @@ jobs:
 
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
-        working-directory: scripts
         run: |
-          chmod u+x test-logger.sh
-          ./test-logger.sh
+          make unit_test_logger
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}

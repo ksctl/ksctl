@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/ksctl/ksctl/internal/storage/types"
+
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 	"golang.org/x/term"
@@ -46,7 +48,7 @@ func ValidateStorage(storage consts.KsctlStore) bool {
 	}
 
 	switch storage {
-	case consts.StoreExtMongo, consts.StoreLocal:
+	case consts.StoreExtMongo, consts.StoreLocal, consts.StoreK8s:
 		return true
 	default:
 		return false
@@ -91,4 +93,52 @@ func IsValidName(clusterName string) error {
 	}
 
 	return nil
+}
+
+func IsValidVersion(ver string) error {
+	if ver == "latest" || ver == "stable" {
+		return nil
+	}
+
+	patternWithoutVPrefix := `^\d+(\.\d{1,2}){0,2}$`
+	patternWithVPrefix := `^v\d+(\.\d{1,2}){0,2}$`
+	matchStringWithoutVPrefix, err := regexp.MatchString(patternWithoutVPrefix, ver)
+	if err != nil {
+		return fmt.Errorf("failed to compile argo-rollouts regex. %v", err)
+	}
+	matchStringWithVPrefix, err := regexp.MatchString(patternWithVPrefix, ver)
+	if err != nil {
+		return fmt.Errorf("failed to compile argo-rollouts regex. %v", err)
+	}
+
+	if !matchStringWithoutVPrefix && !matchStringWithVPrefix {
+		return fmt.Errorf("version `%s` is not valid", ver)
+	}
+	return nil
+}
+
+func ToApplicationTempl(apps []string) ([]types.Application, error) {
+
+	_apps := make([]types.Application, 0)
+	for _, app := range apps {
+
+		temp := strings.Split(app, "@")
+
+		if len(temp) > 2 || len(app) == 0 {
+			return nil, fmt.Errorf("invalid format for application should be APP_NAME@VERSION")
+		}
+		if len(temp) == 1 {
+			// version was not specified
+			_apps = append(_apps, types.Application{
+				Name:    temp[0],
+				Version: "latest",
+			})
+		} else {
+			_apps = append(_apps, types.Application{
+				Name:    temp[0],
+				Version: temp[1],
+			})
+		}
+	}
+	return _apps, nil
 }

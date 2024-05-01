@@ -45,10 +45,8 @@ jobs:
 
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
-        working-directory: scripts
         run: |
-          chmod u+x test-civo.sh
-          ./test-civo.sh
+          make unit_test_civo
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}
@@ -80,6 +78,14 @@ jobs:
 
       - name: integration testing
         working-directory: test
+        if: ${{ matrix.os == 'windows-latest' }}
         run: |
           go test -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
           go test -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
+
+      - name: integration testing
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: |
+          make mock_civo_managed
+          make mock_civo_ha
+

@@ -19,7 +19,7 @@ type Kubeadm struct {
 }
 
 func (p *Kubeadm) Setup(storage resources.StorageFactory, operation consts.KsctlOperation) error {
-	if operation == consts.OperationStateCreate {
+	if operation == consts.OperationCreate {
 		mainStateDocument.K8sBootstrap.Kubeadm = &types.StateConfigurationKubeadm{}
 	}
 
@@ -53,7 +53,7 @@ func (p *Kubeadm) CNI(cni string) (externalCNI bool) {
 }
 
 func isValidKubeadmVersion(ver string) bool {
-	validVersion := []string{"1.28", "1.29"}
+	validVersion := []string{"1.28", "1.29", "1.30"}
 
 	for _, vver := range validVersion {
 		if vver == ver {

@@ -144,7 +144,7 @@ func TestGeneratebootstrapToken(t *testing.T) {
 		fmt.Println("First group:", match[1])
 		fmt.Println("Second group:", match[2])
 	} else {
-		t.Fatalf("regex didn't match the generated token")
+		t.Fatalf("regex didn't match the helper-gen token")
 	}
 }
 
@@ -465,7 +465,7 @@ func checkCurrentStateFile(t *testing.T) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationStateCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
 	fakeClient.Version("1.27.1")
 	checkCurrentStateFile(t)
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)

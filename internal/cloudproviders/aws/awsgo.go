@@ -201,7 +201,7 @@ func (awsclient *AwsGoClient) BeginCreateNIC(ctx context.Context, parameter *ec2
 	err = nicExistsWaiter.Wait(context.Background(), describeNICInput, initialNicWaiterTime)
 
 	if err != nil {
-		log.NewError("Error Waiting for Network Interface", "error", err)
+		return nil, log.NewError("Error Waiting for Network Interface", "error", err)
 	}
 
 	return nic, err

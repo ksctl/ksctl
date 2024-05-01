@@ -70,7 +70,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 		path, err := createNecessaryConfigs(cloud.tempDirKubeconfig)
 		if err != nil {
 			log.Error("rollback Cannot continue 😢")
-			err = cloud.DelManagedCluster(storage) // TODO: check if it works or not??
+			err = cloud.DelManagedCluster(storage)
 			if err != nil {
 				log.Error(err.Error())
 				return "" // asumming it never comes here

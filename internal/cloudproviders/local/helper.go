@@ -2,11 +2,12 @@ package local
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
-	"os"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
@@ -73,10 +74,7 @@ networking:
 
 func isPresent(storage resources.StorageFactory, clusterName string) bool {
 	err := storage.AlreadyCreated(consts.CloudLocal, "LOCAL", clusterName, consts.ClusterTypeMang)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func createNecessaryConfigs(storeDir string) (string, error) {

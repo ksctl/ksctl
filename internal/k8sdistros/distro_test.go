@@ -305,7 +305,7 @@ func NewClientHelper(m resources.Metadata, state *types.StorageDocument) *PreBoo
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.Setup(fakeStateFromCloud, storeHA, consts.OperationStateCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.Setup(fakeStateFromCloud, storeHA, consts.OperationCreate), nil, "should be initlize the state")
 	noDS := len(fakeStateFromCloud.IPv4DataStores)
 
 	err := fakeClient.ConfigureLoadbalancer(storeHA)

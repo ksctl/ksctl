@@ -41,10 +41,8 @@ jobs:
 
       - name: Testing
         if: ${{ matrix.os != 'windows-latest' }}
-        working-directory: scripts
         run: |
-          chmod u+x test-kubeadm.sh
-          ./test-kubeadm.sh
+          make unit_test_kubeadm
 
       - name: Testing
         if: ${{ matrix.os == 'windows-latest' }}
