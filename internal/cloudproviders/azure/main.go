@@ -11,6 +11,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloudcontrolres "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
@@ -18,8 +19,7 @@ import (
 type metadata struct {
 	public bool
 
-	cni     string
-	version string
+	cni string
 
 	// these are used for managing the state and are the size of the arrays
 	noCP int
@@ -35,7 +35,6 @@ type AzureProvider struct {
 	haCluster     bool
 	resourceGroup string
 	region        string
-	sshPath       string
 	metadata
 
 	chResName chan string
@@ -64,8 +63,7 @@ func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
 }
 
 func (*AzureProvider) GetHostNameAllWorkerNode() []string {
-	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Hostnames))
-	copy(hostnames, mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Hostnames)
+	hostnames := utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Hostnames)
 	log.Debug("Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }
@@ -83,7 +81,6 @@ func (obj *AzureProvider) Version(ver string) resources.CloudFactory {
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
-// WARN: the array copy is a shallow copy
 func (*AzureProvider) GetStateForHACluster(storage resources.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
@@ -97,14 +94,14 @@ func (*AzureProvider) GetStateForHACluster(storage resources.StorageFactory) (cl
 			ClusterType: clusterType,
 		},
 		// public IPs
-		IPv4ControlPlanes: mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPs,
-		IPv4DataStores:    mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPs,
-		IPv4WorkerPlanes:  mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPs,
+		IPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPs),
+		IPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPs),
+		IPv4WorkerPlanes:  utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPs),
 		IPv4LoadBalancer:  mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PublicIP,
 
 		// Private IPs
-		PrivateIPv4ControlPlanes: mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs,
-		PrivateIPv4DataStores:    mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs,
+		PrivateIPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PrivateIPs),
+		PrivateIPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.PrivateIP,
 	}
 	log.Debug("Printing", "azureStateTransferPayload", payload)

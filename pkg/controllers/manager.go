@@ -71,7 +71,7 @@ func (ksctlControlCli *KsctlControllerClient) Applications(client *resources.Ksc
 		fakeClient = true
 	}
 
-	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -151,7 +151,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 		stateDocument *types.StorageDocument = &types.StorageDocument{}
 	)
 
-	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
+	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 	// it gets supportForApps, supportForCNI, error
@@ -205,7 +205,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
+	if err := cloud.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -422,7 +422,7 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 		return log.NewError("invalid CNI plugin")
 	}
 
-	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
+	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 	err := kubernetesController.Setup(client, stateDocument)
@@ -494,7 +494,7 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
+	if err := cloud.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -587,7 +587,7 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -663,7 +663,7 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-	if err := cloud.HydrateCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
 		return log.NewError(err.Error())
 	}
 

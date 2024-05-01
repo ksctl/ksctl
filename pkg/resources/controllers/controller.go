@@ -5,7 +5,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-// Controller TODO: use the ksctlClient as the struct to whom the function act as a method
 type Controller interface {
 	CreateManagedCluster(*resources.KsctlClient) error
 	DeleteManagedCluster(*resources.KsctlClient) error

@@ -153,6 +153,48 @@ func TestIsValidVersion(t *testing.T) {
 	}
 }
 
+func TestToApplicationTempl(t *testing.T) {
+	testCases := []struct {
+		inp               string
+		Expected          types.Application
+		ExpectedIsInvalid bool
+	}{
+		{
+			inp:      "abcd@latest",
+			Expected: types.Application{Name: "abcd", Version: "latest"},
+		},
+		{
+			inp:      "abcd@123",
+			Expected: types.Application{Name: "abcd", Version: "123"},
+		},
+		{
+			inp:      "abcd",
+			Expected: types.Application{Name: "abcd", Version: "latest"},
+		},
+		{
+			inp:               "",
+			ExpectedIsInvalid: true,
+		},
+		{
+			inp:               "abcd@lald@",
+			ExpectedIsInvalid: true,
+		},
+	}
+
+	for _, testcase := range testCases {
+		got, err := ToApplicationTempl([]string{testcase.inp})
+		gotErr := err != nil
+
+		t.Logf("App: %v\n", testcase.inp)
+
+		assert.Check(t, gotErr == testcase.ExpectedIsInvalid,
+			fmt.Sprintf("app: %v, got: %v, expected: %v", testcase.inp, gotErr, testcase.ExpectedIsInvalid))
+		if len(got) != 0 {
+			assert.DeepEqual(t, got[0], testcase.Expected)
+		}
+	}
+}
+
 func TestScriptCollection(t *testing.T) {
 	var scripts *Scripts = func() *Scripts {
 		o := NewScriptCollection()

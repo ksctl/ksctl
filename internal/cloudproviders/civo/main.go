@@ -11,6 +11,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloud_control_res "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
@@ -64,7 +65,6 @@ func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
 }
 
 // GetStateForHACluster implements resources.CloudFactory.
-// WARN: the array copy is a shallow copy
 func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	payload := cloud_control_res.CloudResourceState{
@@ -79,14 +79,14 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 			ClusterType: clusterType,
 		},
 		// public IPs
-		IPv4ControlPlanes: mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs,
-		IPv4DataStores:    mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs,
-		IPv4WorkerPlanes:  mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs,
+		IPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs),
+		IPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs),
+		IPv4WorkerPlanes:  utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs),
 		IPv4LoadBalancer:  mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP,
 
 		// Private IPs
-		PrivateIPv4ControlPlanes: mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs,
-		PrivateIPv4DataStores:    mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs,
+		PrivateIPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs),
+		PrivateIPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP,
 	}
 	log.Debug("Printing", "cloudState", payload)
@@ -285,8 +285,7 @@ func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
 }
 
 func (*CivoProvider) GetHostNameAllWorkerNode() []string {
-	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames))
-	copy(hostnames, mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames)
+	hostnames := utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames)
 	log.Debug("Printing", "hostnameOfWorkerPlanes", hostnames)
 	return hostnames
 }

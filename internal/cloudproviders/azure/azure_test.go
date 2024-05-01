@@ -854,8 +854,6 @@ func TestHACluster(t *testing.T) {
 	// explicit clean
 	mainStateDocument = &types.StorageDocument{}
 
-	// TODO: check for the Passing the state to the kubernetes distribution function GetStateForHACluster
-
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {
 

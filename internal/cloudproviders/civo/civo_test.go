@@ -719,8 +719,6 @@ func TestHACluster(t *testing.T) {
 		assert.DeepEqual(t, string(got), expected)
 	})
 
-	// TODO: check for the Passing the state to the kubernetes distribution function GetStateForHACluster
-
 	t.Run("Get cluster ha", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{

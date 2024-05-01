@@ -10,6 +10,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/resources"
 
 	cloudcontrolres "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
@@ -179,7 +180,6 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 
 func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
 
-	// TODO: use DeepCopy()
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
 			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
@@ -191,13 +191,13 @@ func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (
 			Region:      mainStateDocument.Region,
 			ClusterType: clusterType,
 		},
-		IPv4ControlPlanes: mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs,
-		IPv4DataStores:    mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs,
-		IPv4WorkerPlanes:  mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs,
+		IPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs),
+		IPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs),
+		IPv4WorkerPlanes:  utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs),
 		IPv4LoadBalancer:  mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
 
-		PrivateIPv4ControlPlanes: mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs,
-		PrivateIPv4DataStores:    mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs,
+		PrivateIPv4ControlPlanes: utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs),
+		PrivateIPv4DataStores:    utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
 	}
 
@@ -408,8 +408,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 }
 
 func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
-	var hostnames []string = make([]string, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames))
-	copy(hostnames, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
+	hostnames := utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 	log.Debug("Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }

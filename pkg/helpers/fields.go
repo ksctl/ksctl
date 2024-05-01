@@ -121,8 +121,10 @@ func ToApplicationTempl(apps []string) ([]types.Application, error) {
 
 	_apps := make([]types.Application, 0)
 	for _, app := range apps {
+
 		temp := strings.Split(app, "@")
-		if len(temp) > 2 || len(temp) == 0 {
+
+		if len(temp) > 2 || len(app) == 0 {
 			return nil, fmt.Errorf("invalid format for application should be APP_NAME@VERSION")
 		}
 		if len(temp) == 1 {
