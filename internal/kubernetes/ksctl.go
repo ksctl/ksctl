@@ -4,13 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ksctl/ksctl/ksctl-components/storage"
 	"time"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-
 	"github.com/ksctl/ksctl/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -172,11 +169,30 @@ var (
 
 func (k *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
 	log.Print("Started adding kubernetes ksctl specific controllers")
-	components := []string{"ksctl-application@latest"}
 
 	if !isExternalStore {
-		components = append(components, "ksctl-storage@latest")
+		_err := func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			rpcClient, conn, err := storage.NewClient(ctx, state.ClusterKubeConfig)
+			defer cancel()
+			defer conn.Close()
+
+			if err != nil {
+				return err
+			}
+
+			raw, _err := json.Marshal(v)
+			if _err != nil {
+				return _err
+			}
+			return storage.ImportData(ctx, rpcClient, raw)
+		}()
+		if _err != nil {
+			return _err
+		}
 	}
+
+	components := []string{"ksctl-application@latest"}
 
 	_apps, err := helpers.ToApplicationTempl(components)
 	if err != nil {
@@ -185,51 +201,6 @@ func (k *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportIm
 	err = k.Applications(_apps, state, consts.OperationCreate)
 	if err != nil {
 		return err
-	}
-
-	if !isExternalStore {
-		raw, _err := json.Marshal(v)
-		if _err != nil {
-			return _err
-		}
-
-		log.Debug("Invoked dynamic client")
-		dynamicClient, __err := dynamic.NewForConfig(k.config)
-		if __err != nil {
-			panic(__err.Error())
-		}
-
-		// Define GVR (GroupVersionResource)
-		gvr := schema.GroupVersionResource{
-			Group:    "storage.ksctl.com",
-			Version:  "v1alpha1",
-			Resource: "importstates",
-		}
-
-		// Create an unstructured object
-		importState := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"apiVersion": "storage.ksctl.com/v1alpha1",
-				"kind":       "ImportState",
-				"metadata": map[string]interface{}{
-					"name":   "transfer-data-local-to-k8s",
-					"labels": labelsForKsctl,
-				},
-				"spec": map[string]interface{}{
-					"handled":         false,
-					"success":         true,
-					"rawExportedData": raw,
-				},
-			},
-		}
-
-		log.Note("deploying a resource of crd")
-
-		if _, err := dynamicClient.Resource(gvr).
-			Namespace(KSCTL_SYS_NAMESPACE).
-			Create(context.TODO(), importState, metav1.CreateOptions{}); err != nil {
-			panic(err.Error())
-		}
 	}
 
 	log.Success("Done adding kubernetes ksctl specific controllers")

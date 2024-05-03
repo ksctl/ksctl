@@ -15,7 +15,6 @@ import (
 func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, error) {
 	ksctlAgentUrl := os.Getenv("KSCTL_AGENT_URL")
 	opts := []grpc.DialOption{
-		// grpc.WithTransportCredentials(creds),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
