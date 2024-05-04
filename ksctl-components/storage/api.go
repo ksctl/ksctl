@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -36,8 +36,8 @@ func ExtractURLAndTLSCerts(kubeconfig string) (url string, tlsConf *tls.Config, 
 		return "", nil, err
 	}
 
-	cluster := config.Clusters["kind-kind"]
-	usr := config.AuthInfos["kind-kind"]
+	cluster := config.Clusters["kind-test-e2e-local"] // TODO: change and get it from clusterName
+	usr := config.AuthInfos["kind-test-e2e-local"]    // TODO: change and get it from clusterName
 
 	kubeapiURL := cluster.Server
 	caCert := cluster.CertificateAuthorityData
@@ -53,20 +53,21 @@ func ExtractURLAndTLSCerts(kubeconfig string) (url string, tlsConf *tls.Config, 
 
 func NewClient(ctx context.Context, kubeconfig string) (pb.KsctlAgentClient, *grpc.ClientConn, error) {
 
-	url, tlsConf, err := ExtractURLAndTLSCerts(kubeconfig)
+	_, _, err := ExtractURLAndTLSCerts(kubeconfig)
+	//url, tlsConf, err := ExtractURLAndTLSCerts(kubeconfig)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	urlSvr := fmt.Sprintf("127.0.0.1:8001/api/v1/namespaces/ksctl/services/agent/proxy/grpc")
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConf)),
+		//grpc.WithTransportCredentials(credentials.NewTLS(tlsConf)),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	// agent.ksctl.svc.cluster.local:8080
-	url = fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:%d/proxy/", url, "ksctl", "agent", 8080)
-	fmt.Println(url)
+	// agent.ksctl.svc.cluster.local:80
 
-	conn, err := grpc.DialContext(ctx, url, opts...)
+	conn, err := grpc.DialContext(ctx, urlSvr, opts...)
 	if err != nil {
 		return nil, conn, err
 	}

@@ -1,9 +1,8 @@
 {
 	"cluster_name": "test-e2e-local",
-	"kubernetes_version": "1.27.1",
+	"kubernetes_version": "1.29.2",
 	"ha_cluster": false,
 	"cloud_provider": "local",
 	"storage_type": "local",
-	"desired_no_of_managed_nodes": 2,
-	"cni_plugin": "cilium"
+	"desired_no_of_managed_nodes": 2
 }

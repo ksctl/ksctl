@@ -2,9 +2,7 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/ksctl/ksctl/ksctl-components/storage"
 	"time"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -170,27 +168,27 @@ var (
 func (k *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
 	log.Print("Started adding kubernetes ksctl specific controllers")
 
-	if !isExternalStore {
-		_err := func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			rpcClient, conn, err := storage.NewClient(ctx, state.ClusterKubeConfig)
-			defer cancel()
-			defer conn.Close()
-
-			if err != nil {
-				return err
-			}
-
-			raw, _err := json.Marshal(v)
-			if _err != nil {
-				return _err
-			}
-			return storage.ImportData(ctx, rpcClient, raw)
-		}()
-		if _err != nil {
-			return _err
-		}
-	}
+	//if !isExternalStore {
+	//	_err := func() error {
+	//		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	//		rpcClient, conn, err := storage.NewClient(ctx, state.ClusterKubeConfig)
+	//		defer cancel()
+	//		defer conn.Close()
+	//
+	//		if err != nil {
+	//			return err
+	//		}
+	//
+	//		raw, _err := json.Marshal(v)
+	//		if _err != nil {
+	//			return _err
+	//		}
+	//		return storage.ImportData(ctx, rpcClient, raw)
+	//	}()
+	//	if _err != nil {
+	//		return _err
+	//	}
+	//}
 
 	components := []string{"ksctl-application@latest"}
 
