@@ -33,6 +33,7 @@ func NewClient(m resources.Metadata, state *types.StorageDocument) resources.Kub
 func (k3s *K3s) Setup(storage resources.StorageFactory, operation consts.KsctlOperation) error {
 	if operation == consts.OperationCreate {
 		mainStateDocument.K8sBootstrap.K3s = &types.StateConfigurationK3s{}
+		mainStateDocument.BootstrapProvider = consts.K8sK3s
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {

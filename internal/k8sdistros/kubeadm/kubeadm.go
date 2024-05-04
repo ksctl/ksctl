@@ -21,6 +21,7 @@ type Kubeadm struct {
 func (p *Kubeadm) Setup(storage resources.StorageFactory, operation consts.KsctlOperation) error {
 	if operation == consts.OperationCreate {
 		mainStateDocument.K8sBootstrap.Kubeadm = &types.StateConfigurationKubeadm{}
+		mainStateDocument.BootstrapProvider = consts.K8sKubeadm
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
