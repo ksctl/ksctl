@@ -5,6 +5,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 
 	"github.com/ksctl/ksctl/pkg/resources"
 )
@@ -15,11 +16,7 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	var controlPlaneIPs = make([]string, len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes))
-
-	for i := 0; i < len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes); i++ {
-		controlPlaneIPs[i] = mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes[i] + ":6443"
-	}
+	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes)
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptConfigureLoadbalancer(controlPlaneIPs)).
@@ -60,7 +57,13 @@ sudo systemctl enable haproxy
 
 	serverScript := ""
 	for index, controlPlaneIP := range controlPlaneIPs {
-		serverScript += fmt.Sprintf(`  server k3sserver-%d %s check
+		serverScript += fmt.Sprintf(`  server k3sserver-%d %s:%d check
+`, index+1, controlPlaneIP, 6443)
+	}
+
+	nodePortScript := ""
+	for index, controlPlaneIP := range controlPlaneIPs {
+		nodePortScript += fmt.Sprintf(`  server k3sserver-%d %s
 `, index+1, controlPlaneIP)
 	}
 
@@ -77,7 +80,23 @@ frontend kubernetes-frontend
   timeout client 10s
   default_backend kubernetes-backend
 
+
+frontend kubernetes-nodeport
+  bind *:30000-35000
+  mode tcp
+  option tcplog
+  timeout client 10s
+  default_backend kubernetes-backend-nodeport
+
 backend kubernetes-backend
+  timeout connect 10s
+  timeout server 10s
+  mode tcp
+  option tcp-check
+  balance roundrobin
+%s
+
+backend kubernetes-backend-nodeport
   timeout connect 10s
   timeout server 10s
   mode tcp
@@ -87,7 +106,7 @@ backend kubernetes-backend
 EOF
 
 sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
-`, serverScript),
+`, serverScript, nodePortScript),
 	})
 
 	collection.Append(resources.Script{

@@ -85,11 +85,16 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 	log.Debug("Printing", "Name", name)
 	log.Debug("Printing", "Role", role)
 
+	createRules := false
+
 	firewallConfig := &civogo.FirewallConfig{
-		Name:      name,
-		Region:    obj.region,
-		NetworkID: mainStateDocument.CloudInfra.Civo.NetworkID,
+		CreateRules: &createRules,
+		Name:        name,
+		Region:      obj.region,
+		NetworkID:   mainStateDocument.CloudInfra.Civo.NetworkID,
 	}
+
+	netCidr := mainStateDocument.CloudInfra.Civo.NetworkCIDR
 
 	switch role {
 	case consts.RoleCp:
@@ -98,7 +103,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleControlPlane()
+		firewallConfig.Rules = firewallRuleControlPlane(netCidr)
 
 	case consts.RoleWp:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes) != 0 {
@@ -106,7 +111,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleWorkerPlane()
+		firewallConfig.Rules = firewallRuleWorkerPlane(netCidr)
 
 	case consts.RoleDs:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes) != 0 {
@@ -114,7 +119,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleDataStore()
+		firewallConfig.Rules = firewallRuleDataStore(netCidr)
 
 	case consts.RoleLb:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer) != 0 {
@@ -122,7 +127,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleLoadBalancer()
+		firewallConfig.Rules = firewallRuleLoadBalancer(netCidr)
 
 	}
 
@@ -148,18 +153,195 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 	return storage.Write(mainStateDocument)
 }
 
-func firewallRuleControlPlane() []civogo.FirewallRule {
-	return nil
+// need the CIdr range of the network so that internal network can be securied
+func firewallRuleControlPlane(internalNetCidr string) []civogo.FirewallRule {
+	return []civogo.FirewallRule{
+		// add ingress for the nodePort access
+		{
+			Label:     "K3s supervisor and Kubernetes API Server",
+			Protocol:  "tcp",
+			StartPort: "6443",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "Required only for Flannel VXLAN",
+			Protocol:  "tcp",
+			StartPort: "8472",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "Kubelet metrics",
+			Protocol:  "tcp",
+			StartPort: "10250",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "NodePort",
+			Protocol:  "tcp",
+			StartPort: "30000",
+			EndPort:   "35000",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "Required only ksctl bootstrappnig",
+			Protocol:  "tcp",
+			StartPort: "22",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Protocol:  "tcp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+		{
+			Protocol:  "udp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+	}
 }
 
-func firewallRuleWorkerPlane() []civogo.FirewallRule {
-	return nil
+func firewallRuleWorkerPlane(internalNetCidr string) []civogo.FirewallRule {
+	return []civogo.FirewallRule{
+		{
+			Label:     "Required only for Flannel VXLAN",
+			Protocol:  "udp",
+			StartPort: "8472",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "Kubelet metrics",
+			Protocol:  "tcp",
+			StartPort: "10250",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "Required only ksctl bootstrappnig",
+			Protocol:  "tcp",
+			StartPort: "22",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Protocol:  "tcp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+		{
+			Protocol:  "udp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+	}
 }
 
-func firewallRuleLoadBalancer() []civogo.FirewallRule {
-	return nil
+func firewallRuleLoadBalancer(internalNetCidr string) []civogo.FirewallRule {
+	return []civogo.FirewallRule{
+		{
+			Label:     "K3s supervisor and Kubernetes API Server",
+			Protocol:  "tcp",
+			StartPort: "6443",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "NodePort",
+			Protocol:  "tcp",
+			StartPort: "30000",
+			EndPort:   "35000",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "Required only ksctl bootstrappnig",
+			Protocol:  "tcp",
+			StartPort: "22",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Protocol:  "tcp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+		{
+			Protocol:  "udp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+	}
 }
 
-func firewallRuleDataStore() []civogo.FirewallRule {
-	return nil
+func firewallRuleDataStore(internalNetCidr string) []civogo.FirewallRule {
+	return []civogo.FirewallRule{
+		{
+			Label:     "Required only for HA with external etcd",
+			Protocol:  "tcp",
+			StartPort: "2379",
+			EndPort:   "2380",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Label:     "Required only ksctl bootstrappnig",
+			Protocol:  "tcp",
+			StartPort: "22",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "ingress",
+		},
+		{
+			Protocol:  "tcp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+		{
+			Protocol:  "udp",
+			StartPort: "1",
+			EndPort:   "65535",
+			Cidr:      []string{"0.0.0.0/0"},
+			Action:    "allow",
+			Direction: "egress",
+		},
+	}
 }
