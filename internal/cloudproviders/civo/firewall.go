@@ -2,6 +2,7 @@ package civo
 
 import (
 	"github.com/civo/civogo"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
@@ -156,240 +157,70 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 // need the CIdr range of the network so that internal network can be securied
 func firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
 
-	rules := []civogo.FirewallRule{
-		// add ingress for the nodePort access
-		{
-			Label:     "Kubernetes API Server",
-			Protocol:  "tcp",
-			StartPort: "6443",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-		{
-			Label:     "Kubelet API",
-			Protocol:  "tcp",
-			StartPort: "10250",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-		{
-			Label:     "NodePort",
-			Protocol:  "tcp",
-			StartPort: "30000",
-			EndPort:   "35000",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-
-		// For SSH access
-		{
-			Label:     "Required only ksctl bootstrappnig",
-			Protocol:  "tcp",
-			StartPort: "22",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-
-		// For all egress
-		{
-			Protocol:  "tcp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-		{
-			Protocol:  "udp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-	}
-
-	switch bootstrap {
-	case consts.K8sK3s:
-		rules = append(rules, civogo.FirewallRule{
-			Label:     "Required only for Flannel VXLAN",
-			Protocol:  "tcp",
-			StartPort: "8472",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		})
-	}
-	return rules
+	return convertToProviderSpecific(
+		helpers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+	)
 }
 
 func firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
-	rules := []civogo.FirewallRule{
-		{
-			Label:     "Kubelet API",
-			Protocol:  "tcp",
-			StartPort: "10250",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		},
 
-		// For SSH access
-		{
-			Label:     "Required only ksctl bootstrappnig",
-			Protocol:  "tcp",
-			StartPort: "22",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "ingress",
-		},
+	return convertToProviderSpecific(
+		helpers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+	)
+}
 
-		// For all egress
-		{
-			Protocol:  "tcp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-		{
-			Protocol:  "udp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-	}
+func firewallRuleLoadBalancer(internalNetCidr string) []civogo.FirewallRule {
+	return convertToProviderSpecific(
+		helpers.FirewallForLoadBalancer_BASE(),
+	)
+}
 
-	switch bootstrap {
-	case consts.K8sKubeadm:
-		rules = append(rules, civogo.FirewallRule{
-			Label:     "kube-proxy",
-			Protocol:  "tcp",
-			StartPort: "10256",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		})
+func convertToProviderSpecific(_rules []helpers.FirewallRule) []civogo.FirewallRule {
+	rules := []civogo.FirewallRule{}
+
+	for _, _r := range _rules {
+
+		var protocol, action, direction string
+
+		switch _r.Action {
+		case consts.FirewallActionAllow:
+			action = "allow"
+		case consts.FirewallActionDeny:
+			action = "deny"
+		}
+
+		switch _r.Protocol {
+		case consts.FirewallActionTCP:
+			protocol = "tcp"
+		case consts.FirewallActionUDP:
+			protocol = "udp"
+		}
+
+		switch _r.Direction {
+		case consts.FirewallActionIngress:
+			protocol = "ingress"
+		case consts.FirewallActionEgress:
+			protocol = "egress"
+		}
 
 		rules = append(rules, civogo.FirewallRule{
-			Label:     "NodePort Services",
-			Protocol:  "tcp",
-			StartPort: "30000",
-			EndPort:   "32767",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		})
+			Direction: direction,
+			Action:    action,
+			Protocol:  protocol,
 
-	case consts.K8sK3s:
-		rules = append(rules, civogo.FirewallRule{
-			Label:     "Required only for Flannel VXLAN",
-			Protocol:  "udp",
-			StartPort: "8472",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
+			Label:     _r.Description,
+			Cidr:      []string{_r.Cidr},
+			StartPort: _r.StartPort,
+			EndPort:   _r.EndPort,
 		})
 	}
 
 	return rules
-}
 
-func firewallRuleLoadBalancer(internalNetCidr string) []civogo.FirewallRule {
-	return []civogo.FirewallRule{
-		{
-			Label:     "Kubernetes API Server",
-			Protocol:  "tcp",
-			StartPort: "6443",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-		{
-			Label:     "NodePort",
-			Protocol:  "tcp",
-			StartPort: "30000",
-			EndPort:   "35000",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-
-		// For SSH access
-		{
-			Label:     "Required only ksctl bootstrappnig",
-			Protocol:  "tcp",
-			StartPort: "22",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-
-		// For all egress
-		{
-			Protocol:  "tcp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-		{
-			Protocol:  "udp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-	}
 }
 
 func firewallRuleDataStore(internalNetCidr string) []civogo.FirewallRule {
-	return []civogo.FirewallRule{
-		{
-			Label:     "Required only for HA with external etcd",
-			Protocol:  "tcp",
-			StartPort: "2379",
-			EndPort:   "2380",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-
-		// For SSH access
-		{
-			Label:     "Required only ksctl bootstrappnig",
-			Protocol:  "tcp",
-			StartPort: "22",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-
-		// For all egress
-		{
-			Protocol:  "tcp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-		{
-			Protocol:  "udp",
-			StartPort: "1",
-			EndPort:   "65535",
-			Cidr:      []string{"0.0.0.0/0"},
-			Action:    "allow",
-			Direction: "egress",
-		},
-	}
+	return convertToProviderSpecific(
+		helpers.FirewallForDataStore_BASE(internalNetCidr),
+	)
 }
