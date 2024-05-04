@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
+
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -63,6 +65,11 @@ func NewClient(ctx context.Context, kubeconfig string) (pb.KsctlAgentClient, *gr
 	opts := []grpc.DialOption{
 		//grpc.WithTransportCredentials(credentials.NewTLS(tlsConf)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			// create for me a connection which takes the url and outputs net.Conn
+			return net.Dial("tcp", addr)
+			//return httpClient.DoRequest(http.MethodGet, url.String(), nil)
+		}),
 	}
 
 	// agent.ksctl.svc.cluster.local:80
@@ -71,6 +78,10 @@ func NewClient(ctx context.Context, kubeconfig string) (pb.KsctlAgentClient, *gr
 	if err != nil {
 		return nil, conn, err
 	}
+
+	// 2 methods
+	// one is get the grpc client connection via the above method
+	// second expose the service via nodePort and access it
 
 	return pb.NewKsctlAgentClient(conn), conn, nil
 }
