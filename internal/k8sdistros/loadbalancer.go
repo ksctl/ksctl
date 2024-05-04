@@ -32,14 +32,16 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 
 func scriptConfigureLoadbalancer(controlPlaneIPs []string) resources.ScriptCollection {
 	collection := helpers.NewScriptCollection()
-
+	// HA proxy repo https://haproxy.debian.net/
 	collection.Append(resources.Script{
 		Name:       "Install haproxy",
 		CanRetry:   true,
 		MaxRetries: 9,
 		ShellScript: `
-sudo apt update -y
-sudo apt install haproxy -y
+sudo DEBIAN_FRONTEND=noninteractive apt update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends software-properties-common -y
+sudo DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:vbernat/haproxy-2.8 -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install haproxy=2.8.\* -y
 `,
 		ScriptExecutor: consts.LinuxBash,
 	})
@@ -110,8 +112,9 @@ sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
 	})
 
 	collection.Append(resources.Script{
-		Name:           "create haproxy configuration",
-		CanRetry:       false,
+		Name:           "restarting haproxy",
+		CanRetry:       true,
+		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: `
 sudo systemctl restart haproxy

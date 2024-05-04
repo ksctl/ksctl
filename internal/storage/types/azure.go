@@ -43,12 +43,14 @@ type StateConfigurationAzure struct {
 	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
 	NoManagedNodes     int    `json:"no_managed_cluster_nodes" bson:"no_managed_cluster_nodes"`
 
-	SubnetName         string        `json:"subnet_name" bson:"subnet_name"`
-	SubnetID           string        `json:"subnet_id" bson:"subnet_id"`
-	VirtualNetworkName string        `json:"virtual_network_name" bson:"virtual_network_name"`
-	VirtualNetworkID   string        `json:"virtual_network_id" bson:"virtual_network_id"`
-	InfoControlPlanes  AzureStateVMs `json:"info_control_planes" bson:"info_control_planes"`
-	InfoWorkerPlanes   AzureStateVMs `json:"info_worker_planes" bson:"info_worker_planes"`
-	InfoDatabase       AzureStateVMs `json:"info_database" bson:"info_database"`
-	InfoLoadBalancer   AzureStateVM  `json:"info_load_balancer" bson:"info_load_balancer"`
+	SubnetName         string `json:"subnet_name" bson:"subnet_name"`
+	SubnetID           string `json:"subnet_id" bson:"subnet_id"`
+	VirtualNetworkName string `json:"virtual_network_name" bson:"virtual_network_name"`
+	VirtualNetworkID   string `json:"virtual_network_id" bson:"virtual_network_id"`
+	NetCidr            string `json:"net_cidr" bson:"net_cidr"`
+
+	InfoControlPlanes AzureStateVMs `json:"info_control_planes" bson:"info_control_planes"`
+	InfoWorkerPlanes  AzureStateVMs `json:"info_worker_planes" bson:"info_worker_planes"`
+	InfoDatabase      AzureStateVMs `json:"info_database" bson:"info_database"`
+	InfoLoadBalancer  AzureStateVM  `json:"info_load_balancer" bson:"info_load_balancer"`
 }

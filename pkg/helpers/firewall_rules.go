@@ -6,6 +6,7 @@ import (
 
 type FirewallRule struct {
 	Description string
+	Name        string
 	Protocol    consts.FirewallRuleProtocol
 	Direction   consts.FirewallRuleDirection
 	Action      consts.FirewallRuleAction
@@ -17,6 +18,7 @@ type FirewallRule struct {
 
 func firewallRuleSSH() FirewallRule {
 	return FirewallRule{
+		Name:        "ksctl_ssh",
 		Description: "SSH port for ksctl to work",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionIngress,
@@ -30,6 +32,7 @@ func firewallRuleSSH() FirewallRule {
 
 func firewallRuleOutBoundAllUDP() FirewallRule {
 	return FirewallRule{
+		Name:        "all_udp_outgoing",
 		Description: "enable all the UDP outgoing traffic",
 		Protocol:    consts.FirewallActionUDP,
 		Direction:   consts.FirewallActionEgress,
@@ -43,6 +46,7 @@ func firewallRuleOutBoundAllUDP() FirewallRule {
 
 func firewallRuleOutBoundAllTCP() FirewallRule {
 	return FirewallRule{
+		Name:        "all_tcp_outgoing",
 		Description: "enable all the TCP outgoing traffic",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionEgress,
@@ -56,6 +60,7 @@ func firewallRuleOutBoundAllTCP() FirewallRule {
 
 func firewallRuleKubeApiServer(cidr string) FirewallRule {
 	return FirewallRule{
+		Name:        "kubernetes_api_server",
 		Description: "Kubernetes API Server",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionIngress,
@@ -69,6 +74,7 @@ func firewallRuleKubeApiServer(cidr string) FirewallRule {
 
 func firewallRuleKubeletApi(cidr string) FirewallRule {
 	return FirewallRule{
+		Name:        "kubelet_api",
 		Description: "Kubelet API",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionIngress,
@@ -82,6 +88,7 @@ func firewallRuleKubeletApi(cidr string) FirewallRule {
 
 func firewallRuleFlannel_VXLAN(cidr string) FirewallRule {
 	return FirewallRule{
+		Name:        "cni_flannel_vxlan",
 		Description: "Required only for Flannel VXLAN",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionIngress,
@@ -95,6 +102,7 @@ func firewallRuleFlannel_VXLAN(cidr string) FirewallRule {
 
 func firewallRuleKubeProxy(cidr string) FirewallRule {
 	return FirewallRule{
+		Name:        "kubernetes_kube_proxy",
 		Description: "kube-proxy",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionIngress,
@@ -108,6 +116,7 @@ func firewallRuleKubeProxy(cidr string) FirewallRule {
 
 func firewallRuleNodePort(cidr string) FirewallRule {
 	return FirewallRule{
+		Name:        "kubernetes_nodeport",
 		Description: "NodePort Services",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionIngress,
@@ -121,6 +130,7 @@ func firewallRuleNodePort(cidr string) FirewallRule {
 
 func firewallRuleEtcd(cidr string) FirewallRule {
 	return FirewallRule{
+		Name:        "etcd",
 		Description: "For HA with external etcd",
 		Protocol:    consts.FirewallActionTCP,
 		Direction:   consts.FirewallActionIngress,

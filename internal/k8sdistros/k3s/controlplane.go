@@ -193,7 +193,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 EOF
 
 sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
+sudo ./control-setup.sh &>> ksctl.log
 `, ver, dbEndpoint, pubIPlb),
 	})
 
@@ -229,7 +229,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 EOF
 
 sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
+sudo ./control-setupN.sh &>> ksctl.log
 `, ver, token, dbEndpoint, pubIPlb),
 	})
 
@@ -262,7 +262,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 EOF
 
 sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
+sudo ./control-setup.sh &>> ksctl.log
 `, ver, dbEndpoint, pubIPlb),
 	})
 
@@ -311,7 +311,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 EOF
 
 sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
+sudo ./control-setupN.sh &>> ksctl.log
 `, ver, token, dbEndpoint, pubIPlb),
 	})
 

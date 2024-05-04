@@ -602,11 +602,11 @@ func (awsclient *AwsGoClient) setRequiredENVVAR(storage resources.StorageFactory
 		return err
 	}
 
-	err = os.Setenv("AWS_ACCESS_KEY_ID", credentials.Aws.AcessKeyID)
+	err = os.Setenv("AWS_ACCESS_KEY_ID", credentials.Aws.AccessKeyId)
 	if err != nil {
 		return err
 	}
-	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentials.Aws.AcessKeySecret)
+	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentials.Aws.SecretAccessKey)
 	if err != nil {
 		return err
 	}

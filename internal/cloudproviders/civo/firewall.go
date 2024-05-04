@@ -129,7 +129,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleLoadBalancer(netCidr)
+		firewallConfig.Rules = firewallRuleLoadBalancer()
 	}
 
 	log.Debug("Printing", "FirewallRule", firewallConfig.Rules)
@@ -154,27 +154,6 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 	return storage.Write(mainStateDocument)
 }
 
-// need the CIdr range of the network so that internal network can be securied
-func firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
-
-	return convertToProviderSpecific(
-		helpers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
-	)
-}
-
-func firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
-
-	return convertToProviderSpecific(
-		helpers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
-	)
-}
-
-func firewallRuleLoadBalancer(internalNetCidr string) []civogo.FirewallRule {
-	return convertToProviderSpecific(
-		helpers.FirewallForLoadBalancer_BASE(),
-	)
-}
-
 func convertToProviderSpecific(_rules []helpers.FirewallRule) []civogo.FirewallRule {
 	rules := []civogo.FirewallRule{}
 
@@ -187,6 +166,8 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule) []civogo.FirewallR
 			action = "allow"
 		case consts.FirewallActionDeny:
 			action = "deny"
+		default:
+			action = "allow"
 		}
 
 		switch _r.Protocol {
@@ -194,13 +175,17 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule) []civogo.FirewallR
 			protocol = "tcp"
 		case consts.FirewallActionUDP:
 			protocol = "udp"
+		default:
+			protocol = "tcp"
 		}
 
 		switch _r.Direction {
 		case consts.FirewallActionIngress:
-			protocol = "ingress"
+			direction = "ingress"
 		case consts.FirewallActionEgress:
-			protocol = "egress"
+			direction = "egress"
+		default:
+			direction = "ingress"
 		}
 
 		rules = append(rules, civogo.FirewallRule{
@@ -216,7 +201,26 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule) []civogo.FirewallR
 	}
 
 	return rules
+}
 
+func firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
+
+	return convertToProviderSpecific(
+		helpers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+	)
+}
+
+func firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
+
+	return convertToProviderSpecific(
+		helpers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+	)
+}
+
+func firewallRuleLoadBalancer() []civogo.FirewallRule {
+	return convertToProviderSpecific(
+		helpers.FirewallForLoadBalancer_BASE(),
+	)
 }
 
 func firewallRuleDataStore(internalNetCidr string) []civogo.FirewallRule {

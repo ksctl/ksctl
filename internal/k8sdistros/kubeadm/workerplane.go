@@ -50,7 +50,7 @@ func scriptJoinWorkerplane(collection resources.ScriptCollection, pubIPLb, token
 		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s
+sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>> ksctl.log
 `, pubIPLb, token, cacertSHA),
 	})
 

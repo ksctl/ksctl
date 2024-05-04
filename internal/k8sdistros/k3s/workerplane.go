@@ -52,7 +52,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s
 EOF
 
 sudo chmod +x worker-setup.sh
-sudo ./worker-setup.sh
+sudo ./worker-setup.sh &>> ksctl.log
 `, ver, token, privateIPlb),
 	})
 

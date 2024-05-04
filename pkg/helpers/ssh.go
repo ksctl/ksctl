@@ -120,21 +120,14 @@ func ExecuteScript(log resources.LoggerFactory, conn *ssh.Client, script string)
 			return
 		}
 
-		if err != nil {
-			errV := ssh.ExitMissingError{}
-			scriptErrV := ssh.ExitError{}
+		missingStatusErr := ssh.ExitMissingError{}
 
-			fmt.Printf("Error checks err: %#v, errV: %#v, scriptErrV: %#v\n", err, errV, scriptErrV)
-			fmt.Printf("Error Erro() err: %#v, errV: %#v, scriptErrV: %#v\n", err.Error(), errV.Error(), scriptErrV.Error())
-
-			switch err.Error() {
-			case errV.Error():
-				log.Warn("Missing error code but exited. Reason can be session comm failure. Retrying!")
-				netRetry++
-			default:
-				// case scriptErrV.Error():
-				return // if any error which is not same as ExitMissingError
-			}
+		switch err.Error() {
+		case missingStatusErr.Error():
+			log.Warn("Missing error code but exited. Reason can be session comm failure. Retrying!")
+			netRetry++
+		default:
+			return // if any error which is not same as ExitMissingError
 		}
 	}
 

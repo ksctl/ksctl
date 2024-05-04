@@ -122,6 +122,7 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 	return *SecurityGroup.GroupId, nil
 }
 
+// Anchor for next steps
 func (obj *AwsProvider) createSecurityGroupRules(role consts.KsctlRole, SecurityGroup *ec2.CreateSecurityGroupOutput) (err error) {
 	var ip_protocol string
 	var cidr_ip string

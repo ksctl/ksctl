@@ -229,7 +229,7 @@ EOF
 		CanRetry:   true,
 		MaxRetries: 3,
 		ShellScript: `
-sudo kubeadm init --config kubeadm-config.yml --upload-certs
+sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
 `,
 	})
 
@@ -327,7 +327,7 @@ func scriptJoinControlplane(pubIPLb, token, cacertSHA, certKey string) resources
 		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s
+sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s  &>> ksctl.log
 `, pubIPLb, token, cacertSHA, certKey),
 	})
 	return collection
