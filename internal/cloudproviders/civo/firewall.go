@@ -104,7 +104,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleControlPlane(netCidr)
+		firewallConfig.Rules = firewallRuleControlPlane(netCidr, kubernetesDistro)
 
 	case consts.RoleWp:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes) != 0 {
@@ -112,7 +112,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleWorkerPlane(netCidr)
+		firewallConfig.Rules = firewallRuleWorkerPlane(netCidr, kubernetesDistro)
 
 	case consts.RoleDs:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes) != 0 {
@@ -129,7 +129,6 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 		}
 
 		firewallConfig.Rules = firewallRuleLoadBalancer(netCidr)
-
 	}
 
 	log.Debug("Printing", "FirewallRule", firewallConfig.Rules)
@@ -155,11 +154,12 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 }
 
 // need the CIdr range of the network so that internal network can be securied
-func firewallRuleControlPlane(internalNetCidr string) []civogo.FirewallRule {
-	return []civogo.FirewallRule{
+func firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
+
+	rules := []civogo.FirewallRule{
 		// add ingress for the nodePort access
 		{
-			Label:     "K3s supervisor and Kubernetes API Server",
+			Label:     "Kubernetes API Server",
 			Protocol:  "tcp",
 			StartPort: "6443",
 			Cidr:      []string{internalNetCidr},
@@ -167,15 +167,7 @@ func firewallRuleControlPlane(internalNetCidr string) []civogo.FirewallRule {
 			Direction: "ingress",
 		},
 		{
-			Label:     "Required only for Flannel VXLAN",
-			Protocol:  "tcp",
-			StartPort: "8472",
-			Cidr:      []string{internalNetCidr},
-			Action:    "allow",
-			Direction: "ingress",
-		},
-		{
-			Label:     "Kubelet metrics",
+			Label:     "Kubelet API",
 			Protocol:  "tcp",
 			StartPort: "10250",
 			Cidr:      []string{internalNetCidr},
@@ -191,6 +183,8 @@ func firewallRuleControlPlane(internalNetCidr string) []civogo.FirewallRule {
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For SSH access
 		{
 			Label:     "Required only ksctl bootstrappnig",
 			Protocol:  "tcp",
@@ -199,6 +193,8 @@ func firewallRuleControlPlane(internalNetCidr string) []civogo.FirewallRule {
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For all egress
 		{
 			Protocol:  "tcp",
 			StartPort: "1",
@@ -216,26 +212,33 @@ func firewallRuleControlPlane(internalNetCidr string) []civogo.FirewallRule {
 			Direction: "egress",
 		},
 	}
-}
 
-func firewallRuleWorkerPlane(internalNetCidr string) []civogo.FirewallRule {
-	return []civogo.FirewallRule{
-		{
+	switch bootstrap {
+	case consts.K8sK3s:
+		rules = append(rules, civogo.FirewallRule{
 			Label:     "Required only for Flannel VXLAN",
-			Protocol:  "udp",
+			Protocol:  "tcp",
 			StartPort: "8472",
 			Cidr:      []string{internalNetCidr},
 			Action:    "allow",
 			Direction: "ingress",
-		},
+		})
+	}
+	return rules
+}
+
+func firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
+	rules := []civogo.FirewallRule{
 		{
-			Label:     "Kubelet metrics",
+			Label:     "Kubelet API",
 			Protocol:  "tcp",
 			StartPort: "10250",
 			Cidr:      []string{internalNetCidr},
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For SSH access
 		{
 			Label:     "Required only ksctl bootstrappnig",
 			Protocol:  "tcp",
@@ -244,6 +247,8 @@ func firewallRuleWorkerPlane(internalNetCidr string) []civogo.FirewallRule {
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For all egress
 		{
 			Protocol:  "tcp",
 			StartPort: "1",
@@ -261,12 +266,46 @@ func firewallRuleWorkerPlane(internalNetCidr string) []civogo.FirewallRule {
 			Direction: "egress",
 		},
 	}
+
+	switch bootstrap {
+	case consts.K8sKubeadm:
+		rules = append(rules, civogo.FirewallRule{
+			Label:     "kube-proxy",
+			Protocol:  "tcp",
+			StartPort: "10256",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		})
+
+		rules = append(rules, civogo.FirewallRule{
+			Label:     "NodePort Services",
+			Protocol:  "tcp",
+			StartPort: "30000",
+			EndPort:   "32767",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		})
+
+	case consts.K8sK3s:
+		rules = append(rules, civogo.FirewallRule{
+			Label:     "Required only for Flannel VXLAN",
+			Protocol:  "udp",
+			StartPort: "8472",
+			Cidr:      []string{internalNetCidr},
+			Action:    "allow",
+			Direction: "ingress",
+		})
+	}
+
+	return rules
 }
 
 func firewallRuleLoadBalancer(internalNetCidr string) []civogo.FirewallRule {
 	return []civogo.FirewallRule{
 		{
-			Label:     "K3s supervisor and Kubernetes API Server",
+			Label:     "Kubernetes API Server",
 			Protocol:  "tcp",
 			StartPort: "6443",
 			Cidr:      []string{"0.0.0.0/0"},
@@ -282,6 +321,8 @@ func firewallRuleLoadBalancer(internalNetCidr string) []civogo.FirewallRule {
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For SSH access
 		{
 			Label:     "Required only ksctl bootstrappnig",
 			Protocol:  "tcp",
@@ -290,6 +331,8 @@ func firewallRuleLoadBalancer(internalNetCidr string) []civogo.FirewallRule {
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For all egress
 		{
 			Protocol:  "tcp",
 			StartPort: "1",
@@ -320,6 +363,8 @@ func firewallRuleDataStore(internalNetCidr string) []civogo.FirewallRule {
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For SSH access
 		{
 			Label:     "Required only ksctl bootstrappnig",
 			Protocol:  "tcp",
@@ -328,6 +373,8 @@ func firewallRuleDataStore(internalNetCidr string) []civogo.FirewallRule {
 			Action:    "allow",
 			Direction: "ingress",
 		},
+
+		// For all egress
 		{
 			Protocol:  "tcp",
 			StartPort: "1",
