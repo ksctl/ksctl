@@ -26,6 +26,23 @@ type KsctlSupportedScriptRunners string
 
 type KsctlSearchFilter string
 
+type FirewallRuleProtocol int
+
+type FirewallRuleAction int
+
+type FirewallRuleDirection int
+
+const (
+	FirewallActionAllow FirewallRuleAction = iota
+	FirewallActionDeny  FirewallRuleAction = iota
+
+	FirewallActionIngress FirewallRuleDirection = iota
+	FirewallActionEgress  FirewallRuleDirection = iota
+
+	FirewallActionTCP FirewallRuleProtocol = iota
+	FirewallActionUDP FirewallRuleProtocol = iota
+)
+
 const (
 	Cloud       KsctlSearchFilter = "cloud"
 	ClusterType KsctlSearchFilter = "clusterType"
