@@ -429,7 +429,7 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage reso
 func fetchgroupid(role consts.KsctlRole) (string, error) {
 	switch role {
 	case consts.RoleCp:
-		return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup, nil
+		return mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup, nil
 	case consts.RoleWp:
 		return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup, nil
 	case consts.RoleLb:

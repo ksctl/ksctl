@@ -127,7 +127,7 @@ func (obj *AwsProvider) CreateSecurityGroup(name string, role consts.KsctlRole) 
 		return "", err
 	}
 
-	log.Success("Created SecurityGroup", "name", string(role+"securitygroup"))
+	log.Success("Created SecurityGroup", "name", name)
 
 	return *SecurityGroup.GroupId, nil
 }
