@@ -90,7 +90,7 @@ func firewallRuleFlannel_VXLAN(cidr string) FirewallRule {
 	return FirewallRule{
 		Name:        "cni_flannel_vxlan",
 		Description: "Required only for Flannel VXLAN",
-		Protocol:    consts.FirewallActionTCP,
+		Protocol:    consts.FirewallActionUDP,
 		Direction:   consts.FirewallActionIngress,
 		Action:      consts.FirewallActionAllow,
 
