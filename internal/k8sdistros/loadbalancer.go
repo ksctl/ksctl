@@ -63,12 +63,6 @@ sudo systemctl enable haproxy
 `, index+1, controlPlaneIP, 6443)
 	}
 
-	nodePortScript := ""
-	for index, controlPlaneIP := range controlPlaneIPs {
-		nodePortScript += fmt.Sprintf(`  server k3sserver-%d %s
-`, index+1, controlPlaneIP)
-	}
-
 	collection.Append(resources.Script{
 		Name:           "create haproxy configuration",
 		CanRetry:       false,
@@ -82,23 +76,7 @@ frontend kubernetes-frontend
   timeout client 10s
   default_backend kubernetes-backend
 
-
-frontend kubernetes-nodeport
-  bind *:30000-35000
-  mode tcp
-  option tcplog
-  timeout client 10s
-  default_backend kubernetes-backend-nodeport
-
 backend kubernetes-backend
-  timeout connect 10s
-  timeout server 10s
-  mode tcp
-  option tcp-check
-  balance roundrobin
-%s
-
-backend kubernetes-backend-nodeport
   timeout connect 10s
   timeout server 10s
   mode tcp
@@ -108,16 +86,7 @@ backend kubernetes-backend-nodeport
 EOF
 
 sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
-`, serverScript, nodePortScript),
-	})
-
-	collection.Append(resources.Script{
-		Name:           "waiting for all cloudprovider specific ports are free for usage of range 30k-35k",
-		CanRetry:       false,
-		ScriptExecutor: consts.LinuxBash,
-		ShellScript: `
-sleep 1m
-`,
+`, serverScript),
 	})
 
 	collection.Append(resources.Script{

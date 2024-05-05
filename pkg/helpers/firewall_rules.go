@@ -114,7 +114,7 @@ func firewallRuleKubeProxy(cidr string) FirewallRule {
 	}
 }
 
-func firewallRuleNodePort(cidr string) FirewallRule {
+func firewallRuleNodePort() FirewallRule {
 	return FirewallRule{
 		Name:        "kubernetes_nodeport",
 		Description: "NodePort Services",
@@ -122,9 +122,9 @@ func firewallRuleNodePort(cidr string) FirewallRule {
 		Direction:   consts.FirewallActionIngress,
 		Action:      consts.FirewallActionAllow,
 
-		Cidr:      cidr,
+		Cidr:      "0.0.0.0/0",
 		StartPort: "30000",
-		EndPort:   "35000",
+		EndPort:   "32767",
 	}
 }
 
@@ -142,20 +142,12 @@ func firewallRuleEtcd(cidr string) FirewallRule {
 	}
 }
 
-func firewallRuleNodePortWorkerNodes(cidr string) FirewallRule {
-	rule := firewallRuleNodePort(cidr)
-	rule.Description = "NodePort Services for kubeadm"
-	rule.EndPort = "32767"
-
-	return rule
-}
-
 func FirewallForControlplane_BASE(cidr string, distro consts.KsctlKubernetes) []FirewallRule {
 
 	rules := []FirewallRule{
 		firewallRuleKubeApiServer(cidr),
 		firewallRuleKubeletApi(cidr),
-		firewallRuleNodePort(cidr),
+		firewallRuleNodePort(),
 		firewallRuleSSH(),
 		firewallRuleOutBoundAllUDP(),
 		firewallRuleOutBoundAllTCP(),
@@ -173,6 +165,7 @@ func FirewallForWorkerplane_BASE(cidr string, distro consts.KsctlKubernetes) []F
 	rules := []FirewallRule{
 		firewallRuleKubeletApi(cidr),
 		firewallRuleSSH(),
+		firewallRuleNodePort(),
 		firewallRuleOutBoundAllUDP(),
 		firewallRuleOutBoundAllTCP(),
 	}
@@ -183,7 +176,6 @@ func FirewallForWorkerplane_BASE(cidr string, distro consts.KsctlKubernetes) []F
 	case consts.K8sKubeadm:
 		rules = append(rules,
 			firewallRuleKubeProxy(cidr),
-			firewallRuleNodePortWorkerNodes(cidr),
 		)
 	}
 
@@ -193,7 +185,6 @@ func FirewallForWorkerplane_BASE(cidr string, distro consts.KsctlKubernetes) []F
 func FirewallForLoadBalancer_BASE() []FirewallRule {
 	return []FirewallRule{
 		firewallRuleKubeApiServer("0.0.0.0/0"),
-		firewallRuleNodePort("0.0.0.0/0"),
 		firewallRuleSSH(),
 		firewallRuleOutBoundAllUDP(),
 		firewallRuleOutBoundAllTCP(),

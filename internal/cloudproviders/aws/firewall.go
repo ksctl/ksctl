@@ -226,18 +226,6 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule, SgId *string) (ec2
 		}
 	}
 
-	// FIXME: small hack for aws for it to work nodePort
-	ingressRules = append(ingressRules, types.IpPermission{
-		FromPort:   to.Ptr[int32](int32(-1)),
-		ToPort:     to.Ptr[int32](int32(-1)),
-		IpProtocol: to.Ptr[string]("-1"),
-		IpRanges: []types.IpRange{
-			{
-				CidrIp: to.Ptr[string](mainStateDocument.CloudInfra.Aws.VpcCidr),
-			},
-		},
-	})
-
 	return ec2.AuthorizeSecurityGroupIngressInput{
 			GroupId:       SgId,
 			IpPermissions: ingressRules,
