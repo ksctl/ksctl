@@ -251,12 +251,18 @@ func InstallAdditionalTools(externalCNI, externalApp bool, client *resources.Ksc
 	}
 
 	if externalCNI {
+		var cni string
+		if len(client.Metadata.CNIPlugin) == 0 {
+			cni = "flannel"
+		} else {
+			cni = client.Metadata.CNIPlugin
+		}
 
-		_cni, err := helpers.ToApplicationTempl([]string{client.Metadata.CNIPlugin})
+		_cni, err := helpers.ToApplicationTempl([]string{cni})
 		if err != nil {
 			return err
 		}
-		// Note: the CNI installer is only for one!
+
 		if err := kubernetesClient.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
 			return log.NewError(err.Error())
 		}

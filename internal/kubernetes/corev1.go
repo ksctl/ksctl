@@ -2,8 +2,9 @@ package kubernetes
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -85,6 +86,27 @@ func (k *Kubernetes) serviceApply(o *corev1.Service, ns string) error {
 	return nil
 }
 
+func (k *Kubernetes) namespaceCreateManifest(ns *corev1.Namespace) error {
+
+	if _, err := k.clientset.
+		CoreV1().
+		Namespaces().
+		Create(context.Background(), ns, metav1.CreateOptions{}); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			_, err = k.clientset.
+				CoreV1().
+				Namespaces().
+				Update(context.Background(), ns, metav1.UpdateOptions{})
+			if err != nil {
+				return log.NewError(err.Error())
+			}
+		} else {
+			return log.NewError(err.Error())
+		}
+	}
+	return nil
+}
+
 func (k *Kubernetes) namespaceCreate(ns string) error {
 
 	if _, err := k.clientset.
@@ -103,6 +125,23 @@ func (k *Kubernetes) namespaceCreate(ns string) error {
 			return log.NewError(err.Error())
 		}
 	}
+	return nil
+}
+
+func (k *Kubernetes) namespaceDeleteManifest(ns *corev1.Namespace) error {
+
+	if err := k.clientset.
+		CoreV1().
+		Namespaces().
+		Delete(context.Background(), ns.Name, metav1.DeleteOptions{
+			GracePeriodSeconds: func() *int64 {
+				v := int64(0)
+				return &v
+			}(),
+		}); err != nil {
+		return log.NewError(err.Error())
+	}
+
 	return nil
 }
 

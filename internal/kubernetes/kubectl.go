@@ -60,6 +60,10 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 		case *apiextensionsv1.CustomResourceDefinition:
 			errRes = client.apiExtensionsDelete(o)
 
+		case *corev1.Namespace:
+			log.Debug("Namespace", "name", o.Name)
+			errRes = client.namespaceDeleteManifest(o)
+
 		case *appsv1.Deployment:
 
 			log.Debug("Deployment", "name", o.Name)
@@ -149,6 +153,10 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 
 		case *apiextensionsv1.CustomResourceDefinition:
 			errRes = client.apiExtensionsApply(o)
+
+		case *corev1.Namespace:
+			log.Debug("Namespace", "name", o.Name)
+			errRes = client.namespaceCreateManifest(o)
 
 		case *appsv1.Deployment:
 

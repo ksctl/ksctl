@@ -45,12 +45,11 @@ func (p *Kubeadm) CNI(cni string) (externalCNI bool) {
 	switch consts.KsctlValidCNIPlugin(cni) {
 	case "":
 		p.Cni = ""
-		return false
 	default:
 		// this tells us that CNI should be installed via the k8s client
 		p.Cni = string(consts.CNINone)
-		return true
 	}
+	return true
 }
 
 func isValidKubeadmVersion(ver string) bool {

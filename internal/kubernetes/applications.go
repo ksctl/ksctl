@@ -41,6 +41,7 @@ func initApps() {
 		"prometheus-stack":  prometheusStackData,
 		"ksctl-storage":     storageImportData,
 		"ksctl-application": applicationStackData,
+		"flannel":           flannelData,
 	}
 }
 
