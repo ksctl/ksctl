@@ -16,7 +16,7 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes)
+	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes)
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptConfigureLoadbalancer(controlPlaneIPs)).
