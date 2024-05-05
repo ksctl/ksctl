@@ -17,8 +17,8 @@ import (
 func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 
 	role := <-obj.chRole
-	<-obj.chResName
-	_, err := obj.CreateSecurityGroup(role)
+	name := <-obj.chResName
+	_, err := obj.CreateSecurityGroup(name, role)
 	if err != nil {
 		return err
 	}
@@ -75,39 +75,39 @@ func (obj *AwsProvider) DelFirewall(storage resources.StorageFactory) error {
 			return log.NewError("Error saving state", "error", err)
 		}
 
-		log.Success("deleted the security group ", "id", nsg)
+		log.Success("Deleted the security group", "id", nsg)
 	}
 
 	return nil
 }
 
-func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, error) {
+func (obj *AwsProvider) CreateSecurityGroup(name string, role consts.KsctlRole) (string, error) {
 
 	SecurityGroupInput := ec2.CreateSecurityGroupInput{
-		GroupName:   aws.String(string(Role + "securitygroup")),
-		Description: aws.String(obj.clusterName + "securitygroup"),
+		GroupName:   aws.String(name),
+		Description: aws.String(name + "-" + string(role)),
 		VpcId:       aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
 	}
 
-	switch Role {
+	switch role {
 	case consts.RoleCp:
 		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup, nil
 		}
 	case consts.RoleWp:
 		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup, nil
 		}
 	case consts.RoleLb:
 		if mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup, nil
 		}
 	case consts.RoleDs:
 		if mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup != "" {
-			log.Success("[skip] already created the security group ", "id", mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup)
+			log.Success("[skip] already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup)
 			return mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup, nil
 		}
 	}
@@ -122,10 +122,12 @@ func (obj *AwsProvider) CreateSecurityGroup(Role consts.KsctlRole) (string, erro
 
 	err = obj.createSecurityGroupRules(
 		consts.KsctlKubernetes(kubernetesDistro),
-		netCidr, Role, SecurityGroup)
+		netCidr, role, SecurityGroup)
 	if err != nil {
 		return "", err
 	}
+
+	log.Success("Created SecurityGroup", "name", string(role+"securitygroup"))
 
 	return *SecurityGroup.GroupId, nil
 }
