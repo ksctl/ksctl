@@ -22,7 +22,8 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpe
 			mainStateDocument.K8sBootstrap.B.EtcdKey,
 			k3s.K3sVer,
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer)
+			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer)
 	} else {
 		script = scriptCP_1(
 			mainStateDocument.K8sBootstrap.B.CACert,
@@ -165,7 +166,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 	}
 }
 
-func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) resources.ScriptCollection {
+func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, privIplb, pubIPlb string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -189,12 +190,13 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
+	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, ver, dbEndpoint, pubIPlb),
+`, ver, dbEndpoint, pubIPlb, privIplb),
 	})
 
 	return collection

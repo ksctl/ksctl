@@ -112,6 +112,15 @@ sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
 	})
 
 	collection.Append(resources.Script{
+		Name:           "waiting for all cloudprovider specific ports are free for usage of range 30k-35k",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
+sleep 1m
+`,
+	})
+
+	collection.Append(resources.Script{
 		Name:           "restarting haproxy",
 		CanRetry:       true,
 		MaxRetries:     3,

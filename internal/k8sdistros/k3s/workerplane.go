@@ -48,6 +48,7 @@ func scriptWP(ver string, privateIPlb, token string) resources.ScriptCollection 
 		ShellScript: fmt.Sprintf(`
 cat <<EOF > worker-setup.sh
 #!/bin/bash
+export K3S_DEBUG=true
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443
 EOF
 

@@ -23,7 +23,7 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage resources.StorageFactory) 
 
 	script := scriptJoinWorkerplane(
 		scriptInstallKubeadmAndOtherTools(p.KubeadmVer),
-		mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+		mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 		mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
 	)
@@ -42,7 +42,7 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage resources.StorageFactory) 
 	return nil
 }
 
-func scriptJoinWorkerplane(collection resources.ScriptCollection, pubIPLb, token, cacertSHA string) resources.ScriptCollection {
+func scriptJoinWorkerplane(collection resources.ScriptCollection, privateIPLb, token, cacertSHA string) resources.ScriptCollection {
 
 	collection.Append(resources.Script{
 		Name:           "Join K3s workerplane",
@@ -51,7 +51,7 @@ func scriptJoinWorkerplane(collection resources.ScriptCollection, pubIPLb, token
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: fmt.Sprintf(`
 sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>> ksctl.log
-`, pubIPLb, token, cacertSHA),
+`, privateIPLb, token, cacertSHA),
 	})
 
 	return collection

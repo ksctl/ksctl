@@ -55,6 +55,7 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecut
 		kubeadm.KubeadmVer,
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 		mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey,
+		mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 		mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores)
 
@@ -165,7 +166,7 @@ func generateExternalEtcdConfig(ips []string) string {
 	return ret.String()
 }
 
-func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIPDs []string) resources.ScriptCollection {
+func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, privateIpLb string, publicIPLb string, privateIPDs []string) resources.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
 
@@ -200,6 +201,7 @@ apiServer:
   timeoutForControlPlane: 4m0s
   certSANs:
     - "%s"
+    - "%s"
     - "127.0.0.1"
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
@@ -221,7 +223,7 @@ networking:
 scheduler: {}
 EOF
 
-`, bootstrapToken, certificateKey, publicIPLb, etcdConf, ver, publicIPLb),
+`, bootstrapToken, certificateKey, privateIpLb, publicIPLb, etcdConf, ver, publicIPLb),
 	})
 
 	collection.Append(resources.Script{
