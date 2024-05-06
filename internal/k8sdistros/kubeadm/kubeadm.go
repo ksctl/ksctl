@@ -116,11 +116,11 @@ sudo sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tabl
 		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: `
-sudo apt-get update
-sudo apt-get install ca-certificates curl gnupg
+sudo apt-get update -y
+sudo apt-get install ca-certificates curl gnupg -y
 
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
 echo \
@@ -128,7 +128,7 @@ echo \
   "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-sudo apt-get update
+sudo apt-get update -y
 sudo apt-get install containerd.io -y
 `,
 	})
@@ -168,11 +168,11 @@ sudo apt-get update -y
 
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --yes
 
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-sudo apt-get update
+sudo apt-get update -y
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo systemctl enable kubelet
 `, ver, ver),
