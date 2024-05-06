@@ -5,5 +5,5 @@
 	"cloud_provider": "local",
 	"storage_type": "local",
 	"desired_no_of_managed_nodes": 2,
-	"cni_plugin": "cilium"
+	"cni_plugin": "flannel"
 }
