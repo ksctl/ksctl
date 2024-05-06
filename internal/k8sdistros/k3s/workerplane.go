@@ -18,11 +18,6 @@ func (k3s *K3s) JoinWorkerplane(no int, _ resources.StorageFactory) error {
 
 	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
 
-	// err := storage.Write(mainStateDocument)
-	// if err != nil {
-	// 	return log.NewError(err.Error())
-	// }
-
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
@@ -48,6 +43,7 @@ func scriptWP(ver string, privateIPlb, token string) resources.ScriptCollection 
 		ShellScript: fmt.Sprintf(`
 cat <<EOF > worker-setup.sh
 #!/bin/bash
+/bin/bash /usr/local/bin/k3s-agent-uninstall.sh || echo "already deleted"
 export K3S_DEBUG=true
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443
 EOF

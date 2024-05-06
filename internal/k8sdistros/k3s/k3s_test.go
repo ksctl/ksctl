@@ -137,7 +137,8 @@ func TestScriptsControlplane(t *testing.T) {
 	ver := []string{"1.26.1", "1.27"}
 	privIP := []string{"9.9.9.9", "1.1.1.1"}
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privIP)
-	pubIP := []string{"192.16.9.2", "23.34.4.1"}
+	pubIPLb := []string{"192.16.9.2", "23.34.4.1"}
+	privateIPLb := []string{"192.16.9.2", "1.1.1.1"}
 	ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
 
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
@@ -168,16 +169,17 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
+	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh
-`, ver[i], dbEndpoint, pubIP[i]),
+`, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() resources.ScriptCollection { // Adjust the signature to match your needs
-						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, pubIP[i])
+						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, privateIPLb[i], pubIPLb[i])
 					},
 				)
 
