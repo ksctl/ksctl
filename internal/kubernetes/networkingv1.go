@@ -8,8 +8,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k *Kubernetes) netPolicyApply(o *networkingv1.NetworkPolicy, ns string) error {
+func (k *Kubernetes) netPolicyApply(o *networkingv1.NetworkPolicy) error {
 
+	ns := o.Namespace
 	_, err := k.clientset.
 		NetworkingV1().
 		NetworkPolicies(ns).
@@ -30,8 +31,9 @@ func (k *Kubernetes) netPolicyApply(o *networkingv1.NetworkPolicy, ns string) er
 	return nil
 }
 
-func (k *Kubernetes) netPolicyDelete(o *networkingv1.NetworkPolicy, ns string) error {
+func (k *Kubernetes) netPolicyDelete(o *networkingv1.NetworkPolicy) error {
 
+	ns := o.Namespace
 	err := k.clientset.
 		NetworkingV1().
 		NetworkPolicies(ns).

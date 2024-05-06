@@ -9,7 +9,6 @@ func flannelData(ver string) Application {
 	return Application{
 		Name:       "flannel",
 		Url:        fmt.Sprintf("https://github.com/flannel-io/flannel/releases/%s/download/kube-flannel.yml", ver),
-		Namespace:  "kube-flannel",
 		Maintainer: "Dipankar Das",
 		Version:    ver,
 		Metadata:   fmt.Sprintf("Flannel (Ver: %s) is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.", ver),

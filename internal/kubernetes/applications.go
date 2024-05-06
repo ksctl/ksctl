@@ -18,7 +18,6 @@ const (
 type Application struct {
 	Name          string
 	Url           string
-	Namespace     string
 	Version       string
 	Metadata      string
 	Maintainer    string

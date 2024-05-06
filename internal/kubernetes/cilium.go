@@ -5,7 +5,6 @@ import "fmt"
 func ciliumData(ver string) Application {
 	return Application{
 		Name:       "cilium",
-		Namespace:  "<Helm-Managed>",
 		Url:        "https://helm.cilium.io/",
 		Maintainer: "Dipankar Das",
 		Version:    ver,

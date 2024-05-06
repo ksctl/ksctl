@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -241,7 +240,9 @@ func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEnd
 	log.Print("Started to configure Cluster to add Ksctl specific resources")
 
 	log.Note("creating ksctl namespace")
-	if err := k.namespaceCreate(KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.namespaceCreate(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: KSCTL_SYS_NAMESPACE},
+	}); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -253,7 +254,7 @@ func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEnd
 		},
 	}
 	log.Note("creating service account for ksctl agent")
-	if err := k.serviceAccountApply(serviceAccConfig, KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.serviceAccountApply(serviceAccConfig); err != nil {
 		return log.NewError(err.Error())
 	}
 
@@ -306,8 +307,9 @@ func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEnd
 	agentSelector["scope"] = "agent"
 	var ksctlServer *appsv1.Deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   KSCTL_AGENT_NAME,
-			Labels: agentSelector,
+			Name:      KSCTL_AGENT_NAME,
+			Labels:    agentSelector,
+			Namespace: KSCTL_SYS_NAMESPACE,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -391,13 +393,14 @@ func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEnd
 
 		secretExt := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   KSCTL_EXT_STORE_SECRET,
-				Labels: labelsForKsctl,
+				Name:      KSCTL_EXT_STORE_SECRET,
+				Labels:    labelsForKsctl,
+				Namespace: KSCTL_SYS_NAMESPACE,
 			},
 			Data: externalStoreEndpoint,
 		}
 
-		if err := k.secretApply(secretExt, KSCTL_SYS_NAMESPACE); err != nil {
+		if err := k.secretApply(secretExt); err != nil {
 			return log.NewError(err.Error())
 		}
 
@@ -417,14 +420,15 @@ func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEnd
 	}
 
 	log.Note("creating ksctl agent deployment")
-	if err := k.deploymentApply(ksctlServer, KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.deploymentApply(ksctlServer); err != nil {
 		return log.NewError(err.Error())
 	}
 
 	var serverService *corev1.Service = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   KSCTL_AGENT_SERVICE,
-			Labels: labelsForKsctl,
+			Name:      KSCTL_AGENT_SERVICE,
+			Labels:    labelsForKsctl,
+			Namespace: KSCTL_SYS_NAMESPACE,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: agentSelector,
@@ -442,30 +446,12 @@ func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEnd
 	}
 
 	log.Note("creating ksctl agent service")
-	if err := k.serviceApply(serverService, KSCTL_SYS_NAMESPACE); err != nil {
+	if err := k.serviceApply(serverService); err != nil {
 		return log.NewError(err.Error())
 	}
 
-	count := consts.KsctlCounterConsts(0)
-	for {
-
-		status, err := k.clientset.
-			AppsV1().
-			Deployments(KSCTL_SYS_NAMESPACE).
-			Get(context.Background(), ksctlServer.ObjectMeta.Name, metav1.GetOptions{})
-		if err != nil {
-			return log.NewError(err.Error())
-		}
-		if status.Status.ReadyReplicas > 0 {
-			log.Success(fmt.Sprintf("~~> Few of the replica are ready [%v]", status.Status.ReadyReplicas))
-			break
-		}
-		count++
-		if count == consts.CounterMaxRetryCount*2 {
-			return log.NewError("max retry reached")
-		}
-		log.Warn(fmt.Sprintf("retrying current no of success [readyReplicas: %v]", status.Status.ReadyReplicas))
-		time.Sleep(10 * time.Second)
+	if err := k.deploymentReadyWait(ksctlServer.Name, ksctlServer.Namespace); err != nil {
+		return log.NewError(err.Error())
 	}
 
 	log.Success("Done configuring Cluster to add Ksctl specific resources")
