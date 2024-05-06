@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -61,52 +62,56 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 			errRes = client.apiExtensionsDelete(o)
 
 		case *corev1.Namespace:
-			log.Debug("Namespace", "name", o.Name)
+			log.Print("Namespace", "name", o.Name)
+			appStruct.Namespace = o.Name
 			errRes = client.namespaceDeleteManifest(o)
 
-		case *appsv1.Deployment:
+		case *appsv1.DaemonSet:
+			log.Print("Daemonset", "name", o.Name)
+			errRes = client.daemonsetDelete(o, appStruct.Namespace)
 
-			log.Debug("Deployment", "name", o.Name)
+		case *appsv1.Deployment:
+			log.Print("Deployment", "name", o.Name)
 			errRes = client.deploymentDelete(o, appStruct.Namespace)
 
 		case *corev1.Service:
-			log.Debug("Service", "name", o.Name)
+			log.Print("Service", "name", o.Name)
 			errRes = client.serviceDelete(o, appStruct.Namespace)
 
 		case *corev1.ServiceAccount:
-			log.Debug("ServiceAccount", "name", o.Name)
+			log.Print("ServiceAccount", "name", o.Name)
 			errRes = client.serviceAccountDelete(o, appStruct.Namespace)
 
 		case *corev1.ConfigMap:
-			log.Debug("ConfigMap", "name", o.Name)
+			log.Print("ConfigMap", "name", o.Name)
 			errRes = client.configMapDelete(o, appStruct.Namespace)
 
 		case *corev1.Secret:
-			log.Debug("Secret", "name", o.Name)
+			log.Print("Secret", "name", o.Name)
 			errRes = client.secretDelete(o, appStruct.Namespace)
 
 		case *appsv1.StatefulSet:
-			log.Debug("StatefulSet", "name", o.Name)
+			log.Print("StatefulSet", "name", o.Name)
 			errRes = client.statefulSetDelete(o, appStruct.Namespace)
 
 		case *rbacv1.ClusterRole:
-			log.Debug("ClusterRole", "name", o.Name)
+			log.Print("ClusterRole", "name", o.Name)
 			errRes = client.clusterRoleDelete(o)
 
 		case *rbacv1.ClusterRoleBinding:
-			log.Debug("ClusterRoleBinding", "name", o.Name)
+			log.Print("ClusterRoleBinding", "name", o.Name)
 			errRes = client.clusterRoleBindingDelete(o)
 
 		case *rbacv1.Role:
-			log.Debug("Role", "name", o.Name)
+			log.Print("Role", "name", o.Name)
 			errRes = client.roleDelete(o, appStruct.Namespace)
 
 		case *rbacv1.RoleBinding:
-			log.Debug("RoleBinding", "name", o.Name)
+			log.Print("RoleBinding", "name", o.Name)
 			errRes = client.roleBindingDelete(o, appStruct.Namespace)
 
 		case *networkingv1.NetworkPolicy:
-			log.Debug("NetworkPolicy", "name", o.Name)
+			log.Print("NetworkPolicy", "name", o.Name)
 			errRes = client.netPolicyDelete(o, appStruct.Namespace)
 
 		default:
@@ -140,6 +145,7 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 	}
 
 	for _, resource := range resources {
+		fmt.Println(resource)
 		decUnstructured := scheme.Codecs.UniversalDeserializer().Decode
 
 		obj, _, err := decUnstructured([]byte(resource), nil, nil)
@@ -155,52 +161,57 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 			errRes = client.apiExtensionsApply(o)
 
 		case *corev1.Namespace:
-			log.Debug("Namespace", "name", o.Name)
+			log.Print("Namespace", "name", o.Name)
+			// FIXED: as the naemspace is the first object being created change the existing one
+			appStruct.Namespace = o.Name
 			errRes = client.namespaceCreateManifest(o)
 
-		case *appsv1.Deployment:
+		case *appsv1.DaemonSet:
+			log.Print("Daemonset", "name", o.Name)
+			errRes = client.daemonsetApply(o, appStruct.Namespace)
 
-			log.Debug("Deployment", "name", o.Name)
+		case *appsv1.Deployment:
+			log.Print("Deployment", "name", o.Name)
 			errRes = client.deploymentApply(o, appStruct.Namespace)
 
 		case *corev1.Service:
-			log.Debug("Service", "name", o.Name)
+			log.Print("Service", "name", o.Name)
 			errRes = client.serviceApply(o, appStruct.Namespace)
 
 		case *corev1.ServiceAccount:
-			log.Debug("ServiceAccount", "name", o.Name)
+			log.Print("ServiceAccount", "name", o.Name)
 			errRes = client.serviceAccountApply(o, appStruct.Namespace)
 
 		case *corev1.ConfigMap:
-			log.Debug("ConfigMap", "name", o.Name)
+			log.Print("ConfigMap", "name", o.Name)
 			errRes = client.configMapApply(o, appStruct.Namespace)
 
 		case *corev1.Secret:
-			log.Debug("Secret", "name", o.Name)
+			log.Print("Secret", "name", o.Name)
 			errRes = client.secretApply(o, appStruct.Namespace)
 
 		case *appsv1.StatefulSet:
-			log.Debug("StatefulSet", "name", o.Name)
+			log.Print("StatefulSet", "name", o.Name)
 			errRes = client.statefulSetApply(o, appStruct.Namespace)
 
 		case *rbacv1.ClusterRole:
-			log.Debug("ClusterRole", "name", o.Name)
+			log.Print("ClusterRole", "name", o.Name)
 			errRes = client.clusterRoleApply(o)
 
 		case *rbacv1.ClusterRoleBinding:
-			log.Debug("ClusterRoleBinding", "name", o.Name)
+			log.Print("ClusterRoleBinding", "name", o.Name)
 			errRes = client.clusterRoleBindingApply(o)
 
 		case *rbacv1.Role:
-			log.Debug("Role", "name", o.Name)
+			log.Print("Role", "name", o.Name)
 			errRes = client.roleApply(o, appStruct.Namespace)
 
 		case *rbacv1.RoleBinding:
-			log.Debug("RoleBinding", "name", o.Name)
+			log.Print("RoleBinding", "name", o.Name)
 			errRes = client.roleBindingApply(o, appStruct.Namespace)
 
 		case *networkingv1.NetworkPolicy:
-			log.Debug("NetworkPolicy", "name", o.Name)
+			log.Print("NetworkPolicy", "name", o.Name)
 			errRes = client.netPolicyApply(o, appStruct.Namespace)
 
 		default:

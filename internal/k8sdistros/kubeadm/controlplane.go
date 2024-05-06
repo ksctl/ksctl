@@ -220,7 +220,7 @@ controlPlaneEndpoint: "%s:6443"
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
-  podSubnet: 10.192.0.0/12
+  podSubnet: 10.244.0.0/16
 scheduler: {}
 EOF
 
