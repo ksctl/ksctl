@@ -1,52 +1,130 @@
 package aws
 
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// 	"os"
-// 	"testing"
+import (
+	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	localstate "github.com/ksctl/ksctl/internal/storage/local"
+	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/resources"
+	"gotest.tools/v3/assert"
+	"os"
+	"strconv"
+	"testing"
+)
 
-// 	localstate "github.com/kubesimplify/ksctl/internal/storage/local"
-// 	"github.com/kubesimplify/ksctl/pkg/resources"
-// 	"github.com/kubesimplify/ksctl/pkg/utils"
-// 	"github.com/kubesimplify/ksctl/pkg/utils/consts"
-// 	"gotest.tools/assert"
-// )
+var (
+	demoClient *resources.KsctlClient
+	fakeaws    *AwsProvider
+	dir        = fmt.Sprintf("%s/ksctl-aws-test", os.TempDir())
+)
 
-// var (
-// 	demoClient *resources.KsctlClient
-// 	fakeaws    *AwsProvider
-// 	dir        = fmt.Sprintf("%s/ksctl-aws-test", os.TempDir())
-// )
+func TestMain(m *testing.M) {
+	demoClient = &resources.KsctlClient{}
+	demoClient.Metadata.ClusterName = "fake"
+	demoClient.Metadata.Region = "fake"
+	demoClient.Metadata.Provider = consts.CloudAws
+	demoClient.Metadata.LogVerbosity = -1
+	demoClient.Metadata.LogWritter = os.Stdout
+	state := new(types.StorageDocument)
+	demoClient.Cloud, _ = ReturnAwsStruct(demoClient.Metadata, state, ProvideMockClient)
 
-// func TestMain(m *testing.M) {
-// 	demoClient = &resources.KsctlClient{}
-// 	demoClient.Metadata.ClusterName = "fake"
-// 	demoClient.Metadata.Region = "fake"
-// 	demoClient.Metadata.Provider = consts.CloudAws
-// 	demoClient.Metadata.LogVerbosity = -1
-// 	demoClient.Metadata.LogWritter = os.Stdout
-// 	demoClient.Cloud, _ = ReturnAwsStruct(demoClient.Metadata, ProvideMockClient)
+	fakeaws, _ = ReturnAwsStruct(demoClient.Metadata, state, ProvideMockClient)
 
-// 	fakeaws, _ = ReturnAwsStruct(demoClient.Metadata, ProvideMockClient)
+	demoClient.Storage = localstate.InitStorage(-1, os.Stdout)
+	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
-// 	demoClient.Storage = localstate.InitStorage()
-// 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-// 	awsHa := utils.GetPath(consts.UtilClusterPath, consts.CloudAws, consts.ClusterTypeHa)
+	exitVal := m.Run()
 
-// 	if err := os.MkdirAll(awsHa, 0755); err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println("Created tmp directories")
-// 	exitVal := m.Run()
+	os.Exit(exitVal)
+}
 
-// 	fmt.Println("Cleanup..")
-// 	if err := os.RemoveAll(dir); err != nil {
-// 		panic(err)
-// 	}
+func TestFirewallRules(t *testing.T) {
+	_rules := []helpers.FirewallRule{
+		{
+			Description: "nice",
+			Name:        "hello",
+			Protocol:    consts.FirewallActionUDP,
+			Direction:   consts.FirewallActionEgress,
+			Action:      consts.FirewallActionDeny,
+			Cidr:        "1.1.1./0",
+			StartPort:   "34",
+			EndPort:     "34",
+		},
+		{
+			Description: "324nice",
+			Name:        "he23llo",
+			Protocol:    consts.FirewallActionTCP,
+			Direction:   consts.FirewallActionIngress,
+			Cidr:        "1.1.12./0",
+			StartPort:   "1",
+			EndPort:     "65000",
+		},
+	}
+	expectIng := ec2.AuthorizeSecurityGroupIngressInput{
+		GroupId: to.Ptr("143e124"),
+		IpPermissions: []awsTypes.IpPermission{
+			{
+				FromPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[1].StartPort)
+					return int32(_p)
+				}()),
+				ToPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[1].EndPort)
+					return int32(_p)
+				}()),
+				IpProtocol: to.Ptr[string]("tcp"),
+				IpRanges: []awsTypes.IpRange{
+					{
+						CidrIp:      to.Ptr[string](_rules[1].Cidr),
+						Description: to.Ptr[string](_rules[1].Description),
+					},
+				},
+			},
+		},
+	}
+	expectEgr := ec2.AuthorizeSecurityGroupEgressInput{
+		GroupId: to.Ptr("143e124"),
+		IpPermissions: []awsTypes.IpPermission{
+			{
+				FromPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[0].StartPort)
+					return int32(_p)
+				}()),
+				ToPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[0].EndPort)
+					return int32(_p)
+				}()),
+				IpProtocol: to.Ptr[string]("udp"),
+				IpRanges: []awsTypes.IpRange{
+					{
+						CidrIp:      to.Ptr[string](_rules[0].Cidr),
+						Description: to.Ptr[string](_rules[0].Description),
+					},
+				},
+			},
+		},
+	}
+	gotIng, gotEgr := convertToProviderSpecific(_rules, to.Ptr("143e124"))
 
-// 	os.Exit(exitVal)
-// }
+	// Compare the expected and actual values
+	assert.DeepEqual(t, expectIng.GroupId, gotIng.GroupId)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].FromPort, gotIng.IpPermissions[0].FromPort)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].ToPort, gotIng.IpPermissions[0].ToPort)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].IpProtocol, gotIng.IpPermissions[0].IpProtocol)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].IpRanges[0].CidrIp, gotIng.IpPermissions[0].IpRanges[0].CidrIp)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].IpRanges[0].Description, gotIng.IpPermissions[0].IpRanges[0].Description)
+
+	assert.DeepEqual(t, expectEgr.GroupId, gotEgr.GroupId)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].FromPort, gotEgr.IpPermissions[0].FromPort)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].ToPort, gotEgr.IpPermissions[0].ToPort)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].IpProtocol, gotEgr.IpPermissions[0].IpProtocol)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].IpRanges[0].CidrIp, gotEgr.IpPermissions[0].IpRanges[0].CidrIp)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].IpRanges[0].Description, gotEgr.IpPermissions[0].IpRanges[0].Description)
+}
 
 // // func TestInitState(t *testing.T) {
 
@@ -93,15 +171,6 @@ package aws
 // // 			t.Fatalf("Expected error but not got: %v", err)
 // // 		}
 // // 	})
-// // }
-
-// // func TestConsts(t *testing.T) {
-// // 	assert.Equal(t, KUBECONFIG_FILE_NAME, "kubeconfig", "kubeconfig file")
-// // 	assert.Equal(t, STATE_FILE_NAME, "cloud-state.json", "cloud state file")
-
-// // 	assert.Equal(t, FILE_PERM_CLUSTER_STATE, os.FileMode(0640), "state file permission mismatch")
-// // 	assert.Equal(t, FILE_PERM_CLUSTER_DIR, os.FileMode(0750), "cluster dir permission mismatch")
-// // 	assert.Equal(t, FILE_PERM_CLUSTER_KUBECONFIG, os.FileMode(0755), "kubeconfig file permission mismatch")
 // // }
 
 // // func TestNoOfControlPlane(t *testing.T) {
