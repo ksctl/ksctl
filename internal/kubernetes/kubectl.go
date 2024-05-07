@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -190,7 +189,6 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 	}
 
 	for _, resource := range resources {
-		fmt.Println(resource)
 		decUnstructured := scheme.Codecs.UniversalDeserializer().Decode
 
 		obj, _, err := decUnstructured([]byte(resource), nil, nil)
