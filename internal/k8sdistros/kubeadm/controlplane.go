@@ -144,6 +144,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 
 			kubeconfig := sshExecutor.GetOutput()[0]
 			kubeconfig = strings.Replace(kubeconfig, "kubernetes-admin@kubernetes", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
+			kubeconfig = strings.Replace(kubeconfig, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			log.Debug("Printing", "kubeconfig", kubeconfig)
 
