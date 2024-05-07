@@ -119,7 +119,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 		log.Print("Joining controlplane to existing cluster")
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(scriptJoinControlplane(
-				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 				mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
 				mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey,
@@ -166,7 +166,7 @@ func generateExternalEtcdConfig(ips []string) string {
 	return ret.String()
 }
 
-func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, privateIpLb string, publicIPLb string, privateIPDs []string) resources.ScriptCollection {
+func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) resources.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
 
@@ -224,7 +224,7 @@ networking:
 scheduler: {}
 EOF
 
-`, bootstrapToken, certificateKey, privateIpLb, publicIPLb, etcdConf, ver, publicIPLb),
+`, bootstrapToken, certificateKey, publicIPLb, privateIpLb, etcdConf, ver, publicIPLb),
 	})
 
 	collection.Append(resources.Script{
@@ -321,7 +321,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 	return collection
 }
 
-func scriptJoinControlplane(pubIPLb, token, cacertSHA, certKey string) resources.ScriptCollection {
+func scriptJoinControlplane(privateIPLb, token, cacertSHA, certKey string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 	collection.Append(resources.Script{
@@ -331,7 +331,7 @@ func scriptJoinControlplane(pubIPLb, token, cacertSHA, certKey string) resources
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: fmt.Sprintf(`
 sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s  &>> ksctl.log
-`, pubIPLb, token, cacertSHA, certKey),
+`, privateIPLb, token, cacertSHA, certKey),
 	})
 	return collection
 }
