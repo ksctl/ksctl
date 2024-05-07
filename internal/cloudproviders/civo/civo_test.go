@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -361,29 +362,50 @@ func TestCni(t *testing.T) {
 }
 
 func TestFirewallRules(t *testing.T) {
-	t.Run("Controlplane fw rules", func(t *testing.T) {
-		if firewallRuleControlPlane() != nil {
-			t.Fatalf("missmatch firewall rule")
-		}
-	})
+	_rules := []helpers.FirewallRule{
+		{
+			Description: "nice",
+			Name:        "hello",
+			Protocol:    consts.FirewallActionUDP,
+			Direction:   consts.FirewallActionEgress,
+			Action:      consts.FirewallActionDeny,
+			Cidr:        "1.1.1./0",
+			StartPort:   "34",
+			EndPort:     "13445",
+		},
+		{
+			Description: "324nice",
+			Name:        "he23llo",
+			Protocol:    consts.FirewallActionTCP,
+			Direction:   consts.FirewallActionIngress,
+			Cidr:        "1.1.12./0",
+			StartPort:   "1",
+			EndPort:     "65000",
+		},
+	}
+	expect := []civogo.FirewallRule{
+		{
+			Direction: "egress",
+			Action:    "deny",
+			Protocol:  "udp",
 
-	t.Run("Workerplane fw rules", func(t *testing.T) {
-		if firewallRuleWorkerPlane() != nil {
-			t.Fatalf("missmatch firewall rule")
-		}
-	})
+			Label:     _rules[0].Description,
+			Cidr:      []string{_rules[0].Cidr},
+			StartPort: _rules[0].StartPort,
+			EndPort:   _rules[0].EndPort,
+		},
+		{
+			Direction: "ingress",
+			Action:    "allow",
+			Protocol:  "tcp",
 
-	t.Run("Loadbalancer fw rules", func(t *testing.T) {
-		if firewallRuleLoadBalancer() != nil {
-			t.Fatalf("missmatch firewall rule")
-		}
-	})
-
-	t.Run("Datastore fw rules", func(t *testing.T) {
-		if firewallRuleDataStore() != nil {
-			t.Fatalf("missmatch firewall rule")
-		}
-	})
+			Label:     _rules[1].Description,
+			Cidr:      []string{_rules[1].Cidr},
+			StartPort: _rules[1].StartPort,
+			EndPort:   _rules[1].EndPort,
+		},
+	}
+	assert.DeepEqual(t, expect, convertToProviderSpecific(_rules))
 }
 
 func TestDeleteVarCluster(t *testing.T) {

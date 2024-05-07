@@ -90,7 +90,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 	if err != nil {
 		return err
 	}
-
+	mainStateDocument.CloudInfra.Azure.VirtualNetworkID = *resp.ID
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err
 	}

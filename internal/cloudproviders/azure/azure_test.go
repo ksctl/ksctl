@@ -8,12 +8,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -327,138 +326,62 @@ func TestCniAndApps(t *testing.T) {
 }
 
 func TestFirewallRules(t *testing.T) {
-	t.Run("Controlplane fw rules", func(t *testing.T) {
-		assert.DeepEqual(t, []*armnetwork.SecurityRule{
-			&armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_6443"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](100),
-					Description:              to.Ptr("sample network security group inbound port 6443"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-				},
+	_rules := []helpers.FirewallRule{
+		{
+			Description: "nice",
+			Name:        "hello",
+			Protocol:    consts.FirewallActionUDP,
+			Direction:   consts.FirewallActionEgress,
+			Action:      consts.FirewallActionDeny,
+			Cidr:        "1.1.1./0",
+			StartPort:   "34",
+			EndPort:     "34",
+		},
+		{
+			Description: "324nice",
+			Name:        "he23llo",
+			Protocol:    consts.FirewallActionTCP,
+			Direction:   consts.FirewallActionIngress,
+			Cidr:        "1.1.12./0",
+			StartPort:   "1",
+			EndPort:     "65000",
+		},
+	}
+	bkp := mainStateDocument.CloudInfra.Azure.NetCidr
+	mainStateDocument.CloudInfra.Azure.NetCidr = "x.y.z.a/b"
+	defer func() { mainStateDocument.CloudInfra.Azure.NetCidr = bkp }()
+	_expected := []*armnetwork.SecurityRule{
+		{
+			Name: to.Ptr(_rules[0].Name),
+			Properties: &armnetwork.SecurityRulePropertiesFormat{
+				SourceAddressPrefix:      to.Ptr(mainStateDocument.CloudInfra.Azure.NetCidr),
+				SourcePortRange:          to.Ptr("*"),
+				DestinationAddressPrefix: to.Ptr(_rules[0].Cidr),
+				DestinationPortRange:     to.Ptr(_rules[0].StartPort),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolUDP),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessDeny),
+				Priority:                 to.Ptr[int32](101),
+				Description:              to.Ptr(_rules[0].Description),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 			},
-			&armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_30_to_35k"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](101),
-					Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-				},
+		},
+		{
+			Name: to.Ptr(_rules[1].Name),
+			Properties: &armnetwork.SecurityRulePropertiesFormat{
+				SourceAddressPrefix:      to.Ptr(_rules[1].Cidr),
+				SourcePortRange:          to.Ptr("*"),
+				DestinationAddressPrefix: to.Ptr(mainStateDocument.CloudInfra.Azure.NetCidr),
+				DestinationPortRange:     to.Ptr(_rules[1].StartPort + "-" + _rules[1].EndPort),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Priority:                 to.Ptr[int32](102),
+				Description:              to.Ptr(_rules[1].Description),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 			},
-		}, firewallRuleControlPlane())
-	})
+		},
+	}
+	assert.DeepEqual(t, _expected, convertToProviderSpecific(_rules))
 
-	t.Run("Workerplane fw rules", func(t *testing.T) {
-		assert.DeepEqual(t, []*armnetwork.SecurityRule{
-			&armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_6443"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](100),
-					Description:              to.Ptr("sample network security group inbound port 6443"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-				},
-			},
-			&armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_30_to_35k"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](101),
-					Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-				},
-			},
-		}, firewallRuleWorkerPlane())
-	})
-
-	t.Run("Loadbalancer fw rules", func(t *testing.T) {
-
-		assert.DeepEqual(t, []*armnetwork.SecurityRule{
-			&armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_6443"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](100),
-					Description:              to.Ptr("sample network security group inbound port 6443"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-				},
-			}, &armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_30_to_35k"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](101),
-					Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-				},
-			},
-		}, firewallRuleLoadBalancer())
-	})
-
-	t.Run("Datastore fw rules", func(t *testing.T) {
-		assert.DeepEqual(t, []*armnetwork.SecurityRule{
-			&armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_6443"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](100),
-					Description:              to.Ptr("sample network security group inbound port 6443"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-				},
-			},
-			&armnetwork.SecurityRule{
-				Name: to.Ptr("sample_inbound_30_to_35k"),
-				Properties: &armnetwork.SecurityRulePropertiesFormat{
-					SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-					SourcePortRange:          to.Ptr("*"),
-					DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-					DestinationPortRange:     to.Ptr("*"),
-					Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-					Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-					Priority:                 to.Ptr[int32](101),
-					Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-					Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-				},
-			},
-		}, firewallRuleDataStore())
-
-	})
 }
 
 func TestDeleteVarCluster(t *testing.T) {
@@ -630,6 +553,7 @@ func TestHACluster(t *testing.T) {
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.ResourceGroupName, fakeClientHA.resourceGroup, "resource group not saved")
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.VirtualNetworkName, fakeClientHA.clusterName+"-vnet", "virtual net should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Azure.NetCidr, "10.1.0.0/16", "network cidr should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.SubnetName, fakeClientHA.clusterName+"-subnet", "subnet should be created")
 
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.VirtualNetworkID) > 0, "virtual net should be created")
