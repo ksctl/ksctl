@@ -3,10 +3,11 @@ package k3s
 import (
 	"context"
 	"fmt"
-	testHelper "github.com/ksctl/ksctl/test/helpers"
 	"os"
 	"sync"
 	"testing"
+
+	testHelper "github.com/ksctl/ksctl/test/helpers"
 
 	"github.com/ksctl/ksctl/pkg/logger"
 
@@ -138,7 +139,7 @@ func TestScriptsControlplane(t *testing.T) {
 	privIP := []string{"9.9.9.9", "1.1.1.1"}
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privIP)
 	pubIPLb := []string{"192.16.9.2", "23.34.4.1"}
-	privateIPLb := []string{"192.16.9.2", "1.1.1.1"}
+	privateIPLb := []string{"192.16.3.2", "1.1.1.1"}
 	ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
 
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
@@ -161,6 +162,9 @@ func TestScriptsControlplane(t *testing.T) {
 							ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setup.sh
 #!/bin/bash
+
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
@@ -174,12 +178,12 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 EOF
 
 sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
+sudo ./control-setup.sh &>> ksctl.log
 `, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() resources.ScriptCollection { // Adjust the signature to match your needs
-						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, privateIPLb[i], pubIPLb[i])
+						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
 					},
 				)
 
@@ -200,22 +204,24 @@ sudo ./control-setup.sh
 							ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setup.sh
 #!/bin/bash
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
 	--datastore-cafile=/var/lib/etcd/ca.pem \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
-`, ver[i], dbEndpoint, pubIP[i]),
+sudo ./control-setup.sh &>> ksctl.log
+`, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() resources.ScriptCollection { // Adjust the signature to match your needs
-						return scriptCP_1(ca, etcd, key, ver[i], privIP, pubIP[i])
+						return scriptCP_1(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
 					},
 				)
 			}
@@ -240,6 +246,7 @@ sudo ./control-setup.sh
 							ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setupN.sh
 #!/bin/bash
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
 	--datastore-endpoint "%s" \
@@ -249,16 +256,16 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
-	--tls-san %s
+	--server https://%s:6443
 EOF
 
 sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint, pubIP[i]),
+sudo ./control-setupN.sh &>> ksctl.log
+`, ver[i], sampleToken, dbEndpoint, privateIPLb[i]),
 						},
 					},
 					func() resources.ScriptCollection { // Adjust the signature to match your needs
-						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, pubIP[i], sampleToken)
+						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, privateIPLb[i], sampleToken)
 					},
 				)
 			}
@@ -279,6 +286,7 @@ sudo ./control-setupN.sh
 							ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setupN.sh
 #!/bin/bash
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
 	--datastore-endpoint "%s" \
@@ -286,16 +294,16 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--tls-san %s
+	--server https://%s:6443
 EOF
 
 sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
-`, ver[i], sampleToken, dbEndpoint, pubIP[i]),
+sudo ./control-setupN.sh &>> ksctl.log
+`, ver[i], sampleToken, dbEndpoint, privateIPLb[i]),
 						},
 					},
 					func() resources.ScriptCollection { // Adjust the signature to match your needs
-						return scriptCP_N(ca, etcd, key, ver[i], privIP, pubIP[i], sampleToken)
+						return scriptCP_N(ca, etcd, key, ver[i], privIP, privateIPLb[i], sampleToken)
 					},
 				)
 			}
@@ -359,11 +367,13 @@ func TestSciprWorkerplane(t *testing.T) {
 					ShellScript: fmt.Sprintf(`
 cat <<EOF > worker-setup.sh
 #!/bin/bash
+/bin/bash /usr/local/bin/k3s-agent-uninstall.sh || echo "already deleted"
+export K3S_DEBUG=true
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443
 EOF
 
 sudo chmod +x worker-setup.sh
-sudo ./worker-setup.sh
+sudo ./worker-setup.sh &>> ksctl.log
 `, ver, token, private),
 				},
 			},

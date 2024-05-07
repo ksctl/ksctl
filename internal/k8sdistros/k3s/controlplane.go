@@ -167,7 +167,8 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 	}
 }
 
-func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, privIplb, pubIPlb string) resources.ScriptCollection {
+func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
+	pubIPlb, privIplb string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -206,7 +207,8 @@ sudo ./control-setup.sh &>> ksctl.log
 	return collection
 }
 
-func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, privateIPLb string) resources.ScriptCollection {
+func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
+	privateIPLb string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -256,7 +258,8 @@ sudo cat /var/lib/rancher/k3s/server/token
 	return collection
 }
 
-func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string, privateIPlb, token string) resources.ScriptCollection {
+func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
+	privateIPlb, token string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -291,7 +294,8 @@ sudo ./control-setupN.sh &>> ksctl.log
 	return collection
 }
 
-func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, privateIPlb, token string) resources.ScriptCollection {
+func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
+	privateIPlb, token string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
