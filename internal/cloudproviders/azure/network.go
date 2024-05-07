@@ -2,7 +2,6 @@ package azure
 
 import (
 	"context"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -72,6 +71,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 			},
 		},
 	}
+	mainStateDocument.CloudInfra.Azure.NetCidr = "10.1.0.0/16"
 
 	log.Debug("Printing", "virtualNetworkConfig", parameters)
 
@@ -90,7 +90,6 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 	if err != nil {
 		return err
 	}
-
 	mainStateDocument.CloudInfra.Azure.VirtualNetworkID = *resp.ID
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err

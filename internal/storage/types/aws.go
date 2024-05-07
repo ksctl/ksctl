@@ -1,75 +1,59 @@
 package types
 
-import "github.com/ksctl/ksctl/pkg/helpers/consts"
-
 type AWSStateVm struct {
-	Vpc                  string `json:"vpc"`
-	HostName             string `json:"name"`
-	DiskSize             string `json:"disk_size"`
-	InstanceType         string `json:"instance_type"`
-	InstanceID           string `json:"instance_id"`
-	Subnet               string `json:"subnet"`
-	NetworkSecurityGroup string `json:"network_security_group"`
-	PublicIP             string `json:"public_ip"`
-	PrivateIP            string `json:"private_ip"`
-	NetworkInterfaceId   string `json:"network_interface_id"`
+	Vpc                  string `json:"vpc" bson:"vpc"`
+	HostName             string `json:"name" bson:"name"`
+	DiskSize             string `json:"disk_size" bson:"disk_size"`
+	InstanceType         string `json:"instance_type" bson:"instance_type"`
+	InstanceID           string `json:"instance_id" bson:"instance_id"`
+	Subnet               string `json:"subnet" bson:"subnet"`
+	NetworkSecurityGroup string `json:"network_security_group" bson:"network_security_group"`
+	PublicIP             string `json:"public_ip" bson:"public_ip"`
+	PrivateIP            string `json:"private_ip" bson:"private_ip"`
+	NetworkInterfaceId   string `json:"network_interface_id" bson:"network_interface_id"`
 }
+
 type CredentialsAws struct {
-	AcessKeyID     string
-	AcessKeySecret string
+	AccessKeyId     string `json:"access_key_id" bson:"access_key_id"`
+	SecretAccessKey string `json:"secret_access_key" bson:"secret_access_key"`
 }
-type metadata struct {
-	resName string
-	role    consts.KsctlRole
-	vmType  string
-	public  bool
 
-	apps    string
-	cni     string
-	version string
-
-	noCP int
-	noWP int
-	noDS int
-
-	k8sName    consts.KsctlKubernetes
-	k8sVersion string
-}
 type AWSStateVms struct {
-	HostNames            []string `json:"names"`
-	DiskNames            []string `json:"disk_name"`
-	InstanceIds          []string `json:"instance_id"`
-	PrivateIPs           []string `json:"private_ip"`
-	PublicIPs            []string `json:"public_ip"`
-	NetworkInterfaceIDs  []string `json:"network_interface_id"`
-	SubnetNames          []string `json:"subnet_name"`
-	SubnetIDs            []string `json:"subnet_id"`
-	NetworkSecurityGroup string   `json:"network_security_group"`
+	HostNames            []string `json:"names" bson:"name"`
+	DiskNames            []string `json:"disk_name" bson:"disk_name"`
+	InstanceIds          []string `json:"instance_id" bson:"instance_id"`
+	PrivateIPs           []string `json:"private_ip" bson:"private_ip"`
+	PublicIPs            []string `json:"public_ip" bson:"public_ip"`
+	NetworkInterfaceIDs  []string `json:"network_interface_id" bson:"network_interface_id"`
+	SubnetNames          []string `json:"subnet_name" bson:"subnet_name"`
+	SubnetIDs            []string `json:"subnet_id" bson:"subnet_id"`
+	NetworkSecurityGroup string   `json:"network_security_group" bson:"network_security_group"`
 }
 
 type StateConfigurationAws struct {
 	B BaseInfra `json:"b" bson:"b"`
 
 	IsCompleted bool
-	ClusterName string `json:"cluster_name"`
-	Region      string `json:"region"`
-	VpcName     string `json:"vpc"`
-	VpcId       string `json:"vpc_id"`
+	ClusterName string `json:"cluster_name" bson:"cluster_name"`
+	Region      string `json:"region" bson:"region"`
+	VpcName     string `json:"vpc" bson:"vpc"`
+	VpcId       string `json:"vpc_id" bson:"vpc_id"`
+	VpcCidr     string `json:"vpc_cidr" bson:"vpc_cidr"`
 
-	ManagedClusterName string `json:"managed_cluster_name"`
-	NoManagedNodes     int    `json:"no_managed_nodes"`
-	SubnetName         string `json:"subnet_name"`
-	SubnetID           string `json:"subnet_id"`
-	NetworkAclID       string `json:"network_acl_id"`
+	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
+	NoManagedNodes     int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
+	SubnetName         string `json:"subnet_name" bson:"subnet_name"`
+	SubnetID           string `json:"subnet_id" bson:"subnet_id"`
+	NetworkAclID       string `json:"network_acl_id" bson:"network_acl_id"`
 
-	GatewayID    string `json:"gateway_id"`
-	RouteTableID string `json:"route_table_id"`
+	GatewayID    string `json:"gateway_id" bson:"gateway_id"`
+	RouteTableID string `json:"route_table_id" bson:"route_table_id"`
 
-	InfoControlPlanes AWSStateVms `json:"info_control_planes"`
-	InfoWorkerPlanes  AWSStateVms `json:"info_worker_planes"`
-	InfoDatabase      AWSStateVms `json:"info_database"`
-	InfoLoadBalancer  AWSStateVm  `json:"info_load_balancer"`
+	InfoControlPlanes AWSStateVms `json:"info_control_planes" bson:"info_control_planes"`
+	InfoWorkerPlanes  AWSStateVms `json:"info_worker_planes" bson:"info_worker_planes"`
+	InfoDatabase      AWSStateVms `json:"info_database" bson:"info_database"`
+	InfoLoadBalancer  AWSStateVm  `json:"info_load_balancer" bson:"info_load_balancer"`
 
-	KubernetesDistro string `json:"k8s_distro"`
-	KubernetesVer    string `json:"k8s_version"`
+	KubernetesDistro string `json:"k8s_distro" bson:"k8s_distro"`
+	KubernetesVer    string `json:"k8s_version" bson:"k8s_version"`
 }

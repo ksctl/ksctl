@@ -97,6 +97,7 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 				},
 			},
 		}
+		mainStateDocument.CloudInfra.Aws.VpcCidr = "172.31.0.0/16"
 
 		log.Debug("Printing", "virtualprivatecloud", vpcclient)
 

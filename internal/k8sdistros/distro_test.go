@@ -145,7 +145,7 @@ sudo systemctl start etcd
 }
 
 func TestScriptsLoadbalancer(t *testing.T) {
-	array := []string{"127.0.0.1:6443", "127.0.0.2:6443", "127.0.0.3:6443"}
+	array := []string{"127.0.0.1", "127.0.0.2", "127.0.0.3"}
 
 	testHelper.HelperTestTemplate(
 		t,
@@ -155,8 +155,10 @@ func TestScriptsLoadbalancer(t *testing.T) {
 				CanRetry:   true,
 				MaxRetries: 9,
 				ShellScript: `
-sudo apt update -y
-sudo apt install haproxy -y
+sudo DEBIAN_FRONTEND=noninteractive apt update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends software-properties-common -y
+sudo DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:vbernat/haproxy-2.8 -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install haproxy=2.8.\* -y
 `,
 				ScriptExecutor: consts.LinuxBash,
 			},
@@ -199,8 +201,9 @@ sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
 `,
 			},
 			{
-				Name:           "create haproxy configuration",
-				CanRetry:       false,
+				Name:           "restarting haproxy",
+				CanRetry:       true,
+				MaxRetries:     3,
 				ScriptExecutor: consts.LinuxBash,
 				ShellScript: `
 sudo systemctl restart haproxy

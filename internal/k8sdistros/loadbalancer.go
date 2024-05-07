@@ -5,6 +5,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 
 	"github.com/ksctl/ksctl/pkg/resources"
 )
@@ -15,11 +16,7 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	var controlPlaneIPs = make([]string, len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes))
-
-	for i := 0; i < len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes); i++ {
-		controlPlaneIPs[i] = mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes[i] + ":6443"
-	}
+	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes)
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptConfigureLoadbalancer(controlPlaneIPs)).
@@ -35,14 +32,16 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 
 func scriptConfigureLoadbalancer(controlPlaneIPs []string) resources.ScriptCollection {
 	collection := helpers.NewScriptCollection()
-
+	// HA proxy repo https://haproxy.debian.net/
 	collection.Append(resources.Script{
 		Name:       "Install haproxy",
 		CanRetry:   true,
 		MaxRetries: 9,
 		ShellScript: `
-sudo apt update -y
-sudo apt install haproxy -y
+sudo DEBIAN_FRONTEND=noninteractive apt update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends software-properties-common -y
+sudo DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:vbernat/haproxy-2.8 -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install haproxy=2.8.\* -y
 `,
 		ScriptExecutor: consts.LinuxBash,
 	})
@@ -60,8 +59,8 @@ sudo systemctl enable haproxy
 
 	serverScript := ""
 	for index, controlPlaneIP := range controlPlaneIPs {
-		serverScript += fmt.Sprintf(`  server k3sserver-%d %s check
-`, index+1, controlPlaneIP)
+		serverScript += fmt.Sprintf(`  server k3sserver-%d %s:%d check
+`, index+1, controlPlaneIP, 6443)
 	}
 
 	collection.Append(resources.Script{
@@ -91,8 +90,9 @@ sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
 	})
 
 	collection.Append(resources.Script{
-		Name:           "create haproxy configuration",
-		CanRetry:       false,
+		Name:           "restarting haproxy",
+		CanRetry:       true,
+		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: `
 sudo systemctl restart haproxy

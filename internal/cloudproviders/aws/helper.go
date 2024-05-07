@@ -27,8 +27,8 @@ func GetInputCredential(storage resources.StorageFactory, meta resources.Metadat
 	apiStore := &types.CredentialsDocument{
 		InfraProvider: consts.CloudAws,
 		Aws: &types.CredentialsAws{
-			AcessKeyID:     acesskey,
-			AcessKeySecret: acesskeysecret,
+			AccessKeyId:     acesskey,
+			SecretAccessKey: acesskeysecret,
 		},
 	}
 

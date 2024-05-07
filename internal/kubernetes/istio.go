@@ -5,7 +5,6 @@ import "fmt"
 func istioData(ver string) Application {
 	return Application{
 		Name:       "istio",
-		Namespace:  "<Helm-Managed>",
 		Url:        "https://istio-release.storage.googleapis.com/charts",
 		Maintainer: "Dipankar Das",
 		Version:    ver,

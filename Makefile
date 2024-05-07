@@ -85,6 +85,12 @@ unit_test_azure: golang-test ## azure unit test case
 	cd scripts/ && \
 		/bin/bash test-azure.sh $(GO_TEST_COLOR)
 
+.PHONY: unit_test_aws
+unit_test_aws: golang-test ## aws unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-aws.sh $(GO_TEST_COLOR)
+
 .PHONY: unit_test_k3s
 unit_test_k3s: golang-test ## k3s unit test case
 	@echo "Unit Tests"
@@ -150,6 +156,12 @@ mock_azure_managed: golang-test ## Azure managed mock test
 mock_azure_ha: golang-test ## Azure HA mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
+
+.PHONY: mock-aws-ha
+mock_aws_ha: golang-test ## Aws HA mock test
+	cd test/ && \
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkAwsTestingHA -benchtime=1x -cover -v
+
 
 .PHONY: mock-local-managed
 mock_local_managed: golang-test ## Local managed mock test

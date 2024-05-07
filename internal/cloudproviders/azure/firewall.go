@@ -3,6 +3,8 @@ package azure
 import (
 	"fmt"
 
+	"github.com/ksctl/ksctl/pkg/helpers"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -92,17 +94,19 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 		log.Success("skipped firewall already created", "name", nsg)
 		return nil
 	}
+	netCidr := mainStateDocument.CloudInfra.Azure.NetCidr
+	kubernetesDistro := consts.KsctlKubernetes(mainStateDocument.CloudInfra.Azure.B.KubernetesDistro)
 
 	var securityRules []*armnetwork.SecurityRule
 	switch role {
 	case consts.RoleCp:
-		securityRules = firewallRuleControlPlane()
+		securityRules = firewallRuleControlPlane(netCidr, kubernetesDistro)
 	case consts.RoleWp:
-		securityRules = firewallRuleWorkerPlane()
+		securityRules = firewallRuleWorkerPlane(netCidr, kubernetesDistro)
 	case consts.RoleLb:
 		securityRules = firewallRuleLoadBalancer()
 	case consts.RoleDs:
-		securityRules = firewallRuleDataStore()
+		securityRules = firewallRuleDataStore(netCidr)
 	default:
 		return log.NewError("invalid role")
 	}
@@ -162,142 +166,98 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	return nil
 }
 
-// FIXME: add fine-grained rules
-func firewallRuleControlPlane() (securityRules []*armnetwork.SecurityRule) {
-	securityRules = []*armnetwork.SecurityRule{
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_6443"),
+func convertToProviderSpecific(_rules []helpers.FirewallRule) []*armnetwork.SecurityRule {
+	rules := []*armnetwork.SecurityRule{}
+	priority := int32(100)
+	for _, _r := range _rules {
+		priority++
+
+		var protocol armnetwork.SecurityRuleProtocol
+		var action armnetwork.SecurityRuleAccess
+		var direction armnetwork.SecurityRuleDirection
+		var portRange string
+		var srcCidr, destCidr string
+
+		switch _r.Action {
+		case consts.FirewallActionAllow:
+			action = armnetwork.SecurityRuleAccessAllow
+		case consts.FirewallActionDeny:
+			action = armnetwork.SecurityRuleAccessDeny
+		default:
+			action = armnetwork.SecurityRuleAccessAllow
+		}
+
+		switch _r.Protocol {
+		case consts.FirewallActionTCP:
+			protocol = armnetwork.SecurityRuleProtocolTCP
+		case consts.FirewallActionUDP:
+			protocol = armnetwork.SecurityRuleProtocolUDP
+		default:
+			protocol = armnetwork.SecurityRuleProtocolTCP
+		}
+
+		switch _r.Direction {
+		case consts.FirewallActionIngress:
+			direction = armnetwork.SecurityRuleDirectionInbound
+			srcCidr = _r.Cidr
+			destCidr = mainStateDocument.CloudInfra.Azure.NetCidr
+		case consts.FirewallActionEgress:
+			direction = armnetwork.SecurityRuleDirectionOutbound
+			destCidr = _r.Cidr
+			srcCidr = mainStateDocument.CloudInfra.Azure.NetCidr
+		default:
+			direction = armnetwork.SecurityRuleDirectionInbound
+		}
+
+		if _r.StartPort == _r.EndPort {
+			portRange = _r.StartPort
+		} else {
+			portRange = _r.StartPort + "-" + _r.EndPort
+			if portRange == "1-65535" {
+				portRange = "*"
+			}
+		}
+
+		rules = append(rules, &armnetwork.SecurityRule{
+			Name: to.Ptr(_r.Name),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+				SourceAddressPrefix:      to.Ptr(srcCidr),
 				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](100),
-				Description:              to.Ptr("sample network security group inbound port 6443"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+				DestinationAddressPrefix: to.Ptr(destCidr),
+				DestinationPortRange:     to.Ptr(portRange),
+				Protocol:                 to.Ptr(protocol),
+				Access:                   to.Ptr(action),
+				Priority:                 to.Ptr[int32](priority),
+				Description:              to.Ptr(_r.Description),
+				Direction:                to.Ptr(direction),
 			},
-		},
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_30_to_35k"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-			},
-		},
+		})
 	}
 
-	return
+	return rules
+
 }
 
-// FIXME: add fine-grained rules
-func firewallRuleWorkerPlane() (securityRules []*armnetwork.SecurityRule) {
-	securityRules = []*armnetwork.SecurityRule{
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_6443"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](100),
-				Description:              to.Ptr("sample network security group inbound port 6443"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-			},
-		},
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_30_to_35k"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-			},
-		},
-	}
-	return
+func firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
+	return convertToProviderSpecific(
+		helpers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+	)
 }
 
-// FIXME: add fine-grained rules
+func firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
+	return convertToProviderSpecific(
+		helpers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+	)
+}
+
 func firewallRuleLoadBalancer() (securityRules []*armnetwork.SecurityRule) {
-	securityRules = []*armnetwork.SecurityRule{
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_6443"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](100),
-				Description:              to.Ptr("sample network security group inbound port 6443"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-			},
-		}, &armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_30_to_35k"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-			},
-		},
-	}
-	return
+	return convertToProviderSpecific(
+		helpers.FirewallForLoadBalancer_BASE(),
+	)
 }
 
-// FIXME: add fine-grained rules
-func firewallRuleDataStore() (securityRules []*armnetwork.SecurityRule) {
-	securityRules = []*armnetwork.SecurityRule{
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_6443"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](100),
-				Description:              to.Ptr("sample network security group inbound port 6443"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-			},
-		},
-		&armnetwork.SecurityRule{
-			Name: to.Ptr("sample_inbound_30_to_35k"),
-			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-				DestinationPortRange:     to.Ptr("*"),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr("sample network security group inbound port 30000-35000"),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-			},
-		},
-	}
-	return
+func firewallRuleDataStore(internalNetCidr string) (securityRules []*armnetwork.SecurityRule) {
+	return convertToProviderSpecific(
+		helpers.FirewallForDataStore_BASE(internalNetCidr),
+	)
 }

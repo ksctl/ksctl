@@ -22,7 +22,8 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpe
 			mainStateDocument.K8sBootstrap.B.EtcdKey,
 			k3s.K3sVer,
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer)
+			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer)
 	} else {
 		script = scriptCP_1(
 			mainStateDocument.K8sBootstrap.B.CACert,
@@ -30,7 +31,8 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpe
 			mainStateDocument.K8sBootstrap.B.EtcdKey,
 			k3s.K3sVer,
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer)
+			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer)
 	}
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
@@ -85,7 +87,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 				mainStateDocument.K8sBootstrap.B.EtcdKey,
 				k3s.K3sVer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		} else {
 			script = scriptCP_N(
@@ -94,7 +96,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 				mainStateDocument.K8sBootstrap.B.EtcdKey,
 				k3s.K3sVer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		}
 
@@ -165,7 +167,8 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 	}
 }
 
-func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) resources.ScriptCollection {
+func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
+	pubIPlb, privIplb string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -181,6 +184,9 @@ func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pu
 		ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setup.sh
 #!/bin/bash
+
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
@@ -189,54 +195,20 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
+	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
-`, ver, dbEndpoint, pubIPlb),
+sudo ./control-setup.sh &>> ksctl.log
+`, ver, dbEndpoint, pubIPlb, privIplb),
 	})
 
 	return collection
 }
 
-func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) resources.ScriptCollection {
-
-	collection := helpers.NewScriptCollection()
-
-	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
-
-	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
-
-	collection.Append(resources.Script{
-		Name:           "Start K3s Controlplane-[1..N] without CNI",
-		MaxRetries:     9,
-		CanRetry:       true,
-		ScriptExecutor: consts.LinuxBash,
-		ShellScript: fmt.Sprintf(`
-cat <<EOF > control-setupN.sh
-#!/bin/bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
-	--token %s \
-	--datastore-endpoint "%s" \
-	--datastore-cafile=/var/lib/etcd/ca.pem \
-	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
-	--datastore-certfile=/var/lib/etcd/etcd.pem \
-	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--flannel-backend=none \
-	--disable-network-policy \
-	--tls-san %s
-EOF
-
-sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
-`, ver, token, dbEndpoint, pubIPlb),
-	})
-
-	return collection
-}
-
-func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb string) resources.ScriptCollection {
+func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
+	privateIPLb string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -252,18 +224,20 @@ func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb stri
 		ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setup.sh
 #!/bin/bash
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
 	--datastore-cafile=/var/lib/etcd/ca.pem \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
-sudo ./control-setup.sh
-`, ver, dbEndpoint, pubIPlb),
+sudo ./control-setup.sh &>> ksctl.log
+`, ver, dbEndpoint, pubIPlb, privateIPLb),
 	})
 
 	return collection
@@ -284,7 +258,8 @@ sudo cat /var/lib/rancher/k3s/server/token
 	return collection
 }
 
-func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, token string) resources.ScriptCollection {
+func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
+	privateIPlb, token string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -300,6 +275,7 @@ func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb, tok
 		ShellScript: fmt.Sprintf(`
 cat <<EOF > control-setupN.sh
 #!/bin/bash
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
 	--datastore-endpoint "%s" \
@@ -307,12 +283,50 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--tls-san %s
+	--server https://%s:6443
 EOF
 
 sudo chmod +x control-setupN.sh
-sudo ./control-setupN.sh
-`, ver, token, dbEndpoint, pubIPlb),
+sudo ./control-setupN.sh &>> ksctl.log
+`, ver, token, dbEndpoint, privateIPlb),
+	})
+
+	return collection
+}
+
+func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
+	privateIPlb, token string) resources.ScriptCollection {
+
+	collection := helpers.NewScriptCollection()
+
+	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
+
+	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
+
+	collection.Append(resources.Script{
+		Name:           "Start K3s Controlplane-[1..N] without CNI",
+		MaxRetries:     9,
+		CanRetry:       true,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: fmt.Sprintf(`
+cat <<EOF > control-setupN.sh
+#!/bin/bash
+/bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
+	--token %s \
+	--datastore-endpoint "%s" \
+	--datastore-cafile=/var/lib/etcd/ca.pem \
+	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
+	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--flannel-backend=none \
+	--disable-network-policy \
+	--server https://%s:6443
+EOF
+
+sudo chmod +x control-setupN.sh
+sudo ./control-setupN.sh &>> ksctl.log
+`, ver, token, dbEndpoint, privateIPlb),
 	})
 
 	return collection

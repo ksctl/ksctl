@@ -2,6 +2,7 @@ package civo
 
 import (
 	"github.com/civo/civogo"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
@@ -85,11 +86,17 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 	log.Debug("Printing", "Name", name)
 	log.Debug("Printing", "Role", role)
 
+	createRules := false
+
 	firewallConfig := &civogo.FirewallConfig{
-		Name:      name,
-		Region:    obj.region,
-		NetworkID: mainStateDocument.CloudInfra.Civo.NetworkID,
+		CreateRules: &createRules,
+		Name:        name,
+		Region:      obj.region,
+		NetworkID:   mainStateDocument.CloudInfra.Civo.NetworkID,
 	}
+
+	netCidr := mainStateDocument.CloudInfra.Civo.NetworkCIDR
+	kubernetesDistro := consts.KsctlKubernetes(mainStateDocument.CloudInfra.Civo.B.KubernetesDistro)
 
 	switch role {
 	case consts.RoleCp:
@@ -98,7 +105,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleControlPlane()
+		firewallConfig.Rules = firewallRuleControlPlane(netCidr, kubernetesDistro)
 
 	case consts.RoleWp:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes) != 0 {
@@ -106,7 +113,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleWorkerPlane()
+		firewallConfig.Rules = firewallRuleWorkerPlane(netCidr, kubernetesDistro)
 
 	case consts.RoleDs:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes) != 0 {
@@ -114,7 +121,7 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 			return nil
 		}
 
-		firewallConfig.Rules = firewallRuleDataStore()
+		firewallConfig.Rules = firewallRuleDataStore(netCidr)
 
 	case consts.RoleLb:
 		if len(mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer) != 0 {
@@ -123,7 +130,6 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 		}
 
 		firewallConfig.Rules = firewallRuleLoadBalancer()
-
 	}
 
 	log.Debug("Printing", "FirewallRule", firewallConfig.Rules)
@@ -148,18 +154,77 @@ func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
 	return storage.Write(mainStateDocument)
 }
 
-func firewallRuleControlPlane() []civogo.FirewallRule {
-	return nil
+func convertToProviderSpecific(_rules []helpers.FirewallRule) []civogo.FirewallRule {
+	rules := []civogo.FirewallRule{}
+
+	for _, _r := range _rules {
+
+		var protocol, action, direction string
+
+		switch _r.Action {
+		case consts.FirewallActionAllow:
+			action = "allow"
+		case consts.FirewallActionDeny:
+			action = "deny"
+		default:
+			action = "allow"
+		}
+
+		switch _r.Protocol {
+		case consts.FirewallActionTCP:
+			protocol = "tcp"
+		case consts.FirewallActionUDP:
+			protocol = "udp"
+		default:
+			protocol = "tcp"
+		}
+
+		switch _r.Direction {
+		case consts.FirewallActionIngress:
+			direction = "ingress"
+		case consts.FirewallActionEgress:
+			direction = "egress"
+		default:
+			direction = "ingress"
+		}
+
+		rules = append(rules, civogo.FirewallRule{
+			Direction: direction,
+			Action:    action,
+			Protocol:  protocol,
+
+			Label:     _r.Description,
+			Cidr:      []string{_r.Cidr},
+			StartPort: _r.StartPort,
+			EndPort:   _r.EndPort,
+		})
+	}
+
+	return rules
 }
 
-func firewallRuleWorkerPlane() []civogo.FirewallRule {
-	return nil
+func firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
+
+	return convertToProviderSpecific(
+		helpers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+	)
+}
+
+func firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) []civogo.FirewallRule {
+
+	return convertToProviderSpecific(
+		helpers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+	)
 }
 
 func firewallRuleLoadBalancer() []civogo.FirewallRule {
-	return nil
+	return convertToProviderSpecific(
+		helpers.FirewallForLoadBalancer_BASE(),
+	)
 }
 
-func firewallRuleDataStore() []civogo.FirewallRule {
-	return nil
+func firewallRuleDataStore(internalNetCidr string) []civogo.FirewallRule {
+	return convertToProviderSpecific(
+		helpers.FirewallForDataStore_BASE(internalNetCidr),
+	)
 }

@@ -55,6 +55,7 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecut
 		kubeadm.KubeadmVer,
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 		mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey,
+		mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 		mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores)
 
@@ -118,7 +119,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 		log.Print("Joining controlplane to existing cluster")
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(scriptJoinControlplane(
-				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
+				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 				mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
 				mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey,
@@ -143,6 +144,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 
 			kubeconfig := sshExecutor.GetOutput()[0]
 			kubeconfig = strings.Replace(kubeconfig, "kubernetes-admin@kubernetes", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
+			kubeconfig = strings.Replace(kubeconfig, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			log.Debug("Printing", "kubeconfig", kubeconfig)
 
@@ -165,7 +167,7 @@ func generateExternalEtcdConfig(ips []string) string {
 	return ret.String()
 }
 
-func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIPDs []string) resources.ScriptCollection {
+func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) resources.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
 
@@ -200,6 +202,7 @@ apiServer:
   timeoutForControlPlane: 4m0s
   certSANs:
     - "%s"
+    - "%s"
     - "127.0.0.1"
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
@@ -218,10 +221,11 @@ controlPlaneEndpoint: "%s:6443"
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
+  podSubnet: 10.244.0.0/16
 scheduler: {}
 EOF
 
-`, bootstrapToken, certificateKey, publicIPLb, etcdConf, ver, publicIPLb),
+`, bootstrapToken, certificateKey, publicIPLb, privateIpLb, etcdConf, ver, publicIPLb),
 	})
 
 	collection.Append(resources.Script{
@@ -229,7 +233,7 @@ EOF
 		CanRetry:   true,
 		MaxRetries: 3,
 		ShellScript: `
-sudo kubeadm init --config kubeadm-config.yml --upload-certs
+sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
 `,
 	})
 
@@ -318,7 +322,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 	return collection
 }
 
-func scriptJoinControlplane(pubIPLb, token, cacertSHA, certKey string) resources.ScriptCollection {
+func scriptJoinControlplane(privateIPLb, token, cacertSHA, certKey string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 	collection.Append(resources.Script{
@@ -327,8 +331,8 @@ func scriptJoinControlplane(pubIPLb, token, cacertSHA, certKey string) resources
 		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s
-`, pubIPLb, token, cacertSHA, certKey),
+sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s  &>> ksctl.log
+`, privateIPLb, token, cacertSHA, certKey),
 	})
 	return collection
 }

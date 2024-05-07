@@ -29,6 +29,7 @@ type StateConfigurationCivo struct {
 	FirewallIDLoadBalancer  string `json:"fwidloadbalancenode" bson:"fwidloadbalancenode"`
 	FirewallIDDatabaseNodes string `json:"fwiddatabasenode" bson:"fwiddatabasenode"`
 	NetworkID               string `json:"clusternetworkid" bson:"clusternetworkid"`
+	NetworkCIDR             string `json:"clusternetworkcidr" bson:"clusternetworkcidr"`
 
 	InfoControlPlanes CivoStateVMs `json:"info_control_planes" bson:"info_control_planes"`
 	InfoWorkerPlanes  CivoStateVMs `json:"info_worker_planes" bson:"info_worker_planes"`

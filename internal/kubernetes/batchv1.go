@@ -8,7 +8,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k *Kubernetes) jobApply(o *batchv1.Job, ns string) error {
+func (k *Kubernetes) jobApply(o *batchv1.Job) error {
+	ns := o.Namespace
 
 	_, err := k.clientset.
 		BatchV1().
@@ -29,7 +30,8 @@ func (k *Kubernetes) jobApply(o *batchv1.Job, ns string) error {
 	}
 	return nil
 }
-func (k *Kubernetes) jobDelete(o *batchv1.Job, ns string) error {
+func (k *Kubernetes) jobDelete(o *batchv1.Job) error {
+	ns := o.Namespace
 
 	err := k.clientset.
 		BatchV1().

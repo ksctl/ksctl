@@ -73,6 +73,12 @@ jobs:
          go test -race -coverprofile=../../../coverage-azure.out -covermode=atomic -v
          cd ../../..
 
+    - name: Run coverage (AWS)
+      working-directory: internal/cloudproviders/aws
+      run: |
+         go test -race -coverprofile=../../../coverage-aws.out -covermode=atomic -v
+         cd ../../..
+
     - name: Run coverage (LOCAL)
       working-directory: internal/cloudproviders/local
       run: |

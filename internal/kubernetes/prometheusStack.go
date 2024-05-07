@@ -6,7 +6,6 @@ func prometheusStackData(ver string) Application {
 
 	return Application{
 		Name:       "prometheus-community",
-		Namespace:  "<Helm-Managed>",
 		Url:        "https://prometheus-community.github.io/helm-charts",
 		Maintainer: "Dipankar Das",
 		Version:    ver,

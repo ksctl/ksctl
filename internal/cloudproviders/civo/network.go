@@ -24,7 +24,15 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 		return log.NewError(err.Error())
 	}
 	mainStateDocument.CloudInfra.Civo.NetworkID = res.ID
+
+	net, err := obj.client.GetNetwork(res.ID)
+	if err != nil {
+		return log.NewError(err.Error())
+	}
+	mainStateDocument.CloudInfra.Civo.NetworkCIDR = net.CIDR
+
 	log.Debug("Printing", "networkID", res.ID)
+	log.Debug("Printing", "networkCIDR", net.CIDR)
 	log.Success("Created network", "name", name)
 
 	if err := storage.Write(mainStateDocument); err != nil {

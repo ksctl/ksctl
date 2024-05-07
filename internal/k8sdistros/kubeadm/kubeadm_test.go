@@ -189,11 +189,11 @@ sudo sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tabl
 				MaxRetries:     3,
 				ScriptExecutor: consts.LinuxBash,
 				ShellScript: `
-sudo apt-get update
-sudo apt-get install ca-certificates curl gnupg
+sudo apt-get update -y
+sudo apt-get install ca-certificates curl gnupg -y
 
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
 echo \
@@ -201,7 +201,7 @@ echo \
   "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-sudo apt-get update
+sudo apt-get update -y
 sudo apt-get install containerd.io -y
 `,
 			},
@@ -238,11 +238,11 @@ sudo apt-get update -y
 
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --yes
 
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-sudo apt-get update
+sudo apt-get update -y
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo systemctl enable kubelet
 `, ver, ver),
@@ -324,6 +324,7 @@ sudo cat /etc/kubernetes/admin.conf
 		bootstrapToken := "abcd"
 		certificateKey := "key"
 		publicIPLb := "1.1.1.1"
+		privateIPLb := "5.1.1.1"
 		privateIPDs := []string{"8.8.8.8"}
 		etcdConf := generateExternalEtcdConfig(privateIPDs)
 
@@ -359,6 +360,7 @@ apiServer:
   timeoutForControlPlane: 4m0s
   certSANs:
     - "%s"
+    - "%s"
     - "127.0.0.1"
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
@@ -377,22 +379,47 @@ controlPlaneEndpoint: "%s:6443"
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
+  podSubnet: 10.244.0.0/16
 scheduler: {}
 EOF
 
-`, bootstrapToken, certificateKey, publicIPLb, etcdConf, ver, publicIPLb),
+`, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
 				},
 				{
 					Name:       "kubeadm init",
 					CanRetry:   true,
 					MaxRetries: 3,
 					ShellScript: `
-sudo kubeadm init --config kubeadm-config.yml --upload-certs
+sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
 `,
 				},
 			},
 			func() resources.ScriptCollection { // Adjust the signature to match your needs
-				return scriptAddKubeadmControlplane0(ver, bootstrapToken, certificateKey, publicIPLb, privateIPDs)
+				return scriptAddKubeadmControlplane0(ver, bootstrapToken, certificateKey, publicIPLb, privateIPLb, privateIPDs)
+			},
+		)
+	})
+
+	t.Run("script for joining controlplane", func(t *testing.T) {
+		privateIPLb := "1.1.1.1"
+		token := "abcd"
+		cacertSHA := "x2r23erd23"
+		crtKey := "xxyy"
+		testHelper.HelperTestTemplate(
+			t,
+			[]resources.Script{
+				{
+					Name:           "Join Controlplane [1..N]",
+					CanRetry:       true,
+					MaxRetries:     3,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: fmt.Sprintf(`
+sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s  &>> ksctl.log
+`, privateIPLb, token, cacertSHA, crtKey),
+				},
+			},
+			func() resources.ScriptCollection { // Adjust the signature to match your needs
+				return scriptJoinControlplane(privateIPLb, token, cacertSHA, crtKey)
 			},
 		)
 	})
@@ -433,7 +460,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 }
 
 func TestSciprWorkerplane(t *testing.T) {
-	pubIPLb := "1.1.1.1"
+	privateIPLb := "1.1.1.1"
 	token := "abcd"
 	cacertSHA := "x2r23erd23"
 	testHelper.HelperTestTemplate(
@@ -445,12 +472,12 @@ func TestSciprWorkerplane(t *testing.T) {
 				MaxRetries:     3,
 				ScriptExecutor: consts.LinuxBash,
 				ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s
-`, pubIPLb, token, cacertSHA),
+sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>> ksctl.log
+`, privateIPLb, token, cacertSHA),
 			},
 		},
 		func() resources.ScriptCollection { // Adjust the signature to match your needs
-			return scriptJoinWorkerplane(helpers.NewScriptCollection(), pubIPLb, token, cacertSHA)
+			return scriptJoinWorkerplane(helpers.NewScriptCollection(), privateIPLb, token, cacertSHA)
 		},
 	)
 }
@@ -488,7 +515,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 }
 func TestCNI(t *testing.T) {
 	testCases := map[string]bool{
-		"":                       false,
+		"":                       true,
 		string(consts.CNICilium): true,
 	}
 

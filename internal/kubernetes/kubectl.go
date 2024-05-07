@@ -10,11 +10,15 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type KubectlOptions struct {
 	createNamespace bool
+
+	// Namespace Only specify if createNamespace is true
+	namespace string
 }
 
 func getManifests(app Application) ([]string, error) {
@@ -60,50 +64,93 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 		case *apiextensionsv1.CustomResourceDefinition:
 			errRes = client.apiExtensionsDelete(o)
 
-		case *appsv1.Deployment:
+		case *corev1.Namespace:
+			log.Print("Namespace", "name", o.Name)
+			errRes = client.namespaceDelete(o, false)
 
-			log.Debug("Deployment", "name", o.Name)
-			errRes = client.deploymentDelete(o, appStruct.Namespace)
+		case *appsv1.DaemonSet:
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Daemonset", "name", o.Name)
+			errRes = client.daemonsetDelete(o)
+
+		case *appsv1.Deployment:
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Deployment", "name", o.Name)
+			errRes = client.deploymentDelete(o)
 
 		case *corev1.Service:
-			log.Debug("Service", "name", o.Name)
-			errRes = client.serviceDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Service", "name", o.Name)
+			errRes = client.serviceDelete(o)
 
 		case *corev1.ServiceAccount:
-			log.Debug("ServiceAccount", "name", o.Name)
-			errRes = client.serviceAccountDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ServiceAccount", "name", o.Name)
+			errRes = client.serviceAccountDelete(o)
 
 		case *corev1.ConfigMap:
-			log.Debug("ConfigMap", "name", o.Name)
-			errRes = client.configMapDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ConfigMap", "name", o.Name)
+			errRes = client.configMapDelete(o)
 
 		case *corev1.Secret:
-			log.Debug("Secret", "name", o.Name)
-			errRes = client.secretDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Secret", "name", o.Name)
+			errRes = client.secretDelete(o)
 
 		case *appsv1.StatefulSet:
-			log.Debug("StatefulSet", "name", o.Name)
-			errRes = client.statefulSetDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("StatefulSet", "name", o.Name)
+			errRes = client.statefulSetDelete(o)
 
 		case *rbacv1.ClusterRole:
-			log.Debug("ClusterRole", "name", o.Name)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ClusterRole", "name", o.Name)
 			errRes = client.clusterRoleDelete(o)
 
 		case *rbacv1.ClusterRoleBinding:
-			log.Debug("ClusterRoleBinding", "name", o.Name)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ClusterRoleBinding", "name", o.Name)
 			errRes = client.clusterRoleBindingDelete(o)
 
 		case *rbacv1.Role:
-			log.Debug("Role", "name", o.Name)
-			errRes = client.roleDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Role", "name", o.Name)
+			errRes = client.roleDelete(o)
 
 		case *rbacv1.RoleBinding:
-			log.Debug("RoleBinding", "name", o.Name)
-			errRes = client.roleBindingDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("RoleBinding", "name", o.Name)
+			errRes = client.roleBindingDelete(o)
 
 		case *networkingv1.NetworkPolicy:
-			log.Debug("NetworkPolicy", "name", o.Name)
-			errRes = client.netPolicyDelete(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("NetworkPolicy", "name", o.Name)
+			errRes = client.netPolicyDelete(o)
 
 		default:
 			log.Error("unexpected type", "obj", o)
@@ -115,7 +162,10 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 	}
 
 	if appStruct.KubectlConfig.createNamespace {
-		if err := client.namespaceDelete(appStruct.Namespace); err != nil {
+		if err := client.namespaceDelete(&corev1.Namespace{
+			ObjectMeta: v1.ObjectMeta{
+				Name: appStruct.KubectlConfig.namespace,
+			}}, true); err != nil {
 			return err
 		}
 	}
@@ -130,7 +180,10 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 	}
 
 	if appStruct.KubectlConfig.createNamespace {
-		if err := client.namespaceCreate(appStruct.Namespace); err != nil {
+		if err := client.namespaceCreate(&corev1.Namespace{
+			ObjectMeta: v1.ObjectMeta{
+				Name: appStruct.KubectlConfig.namespace,
+			}}); err != nil {
 			return err
 		}
 	}
@@ -150,50 +203,93 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 		case *apiextensionsv1.CustomResourceDefinition:
 			errRes = client.apiExtensionsApply(o)
 
-		case *appsv1.Deployment:
+		case *corev1.Namespace:
+			log.Print("Namespace", "name", o.Name)
+			errRes = client.namespaceCreate(o)
 
-			log.Debug("Deployment", "name", o.Name)
-			errRes = client.deploymentApply(o, appStruct.Namespace)
+		case *appsv1.DaemonSet:
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Daemonset", "name", o.Name)
+			errRes = client.daemonsetApply(o)
+
+		case *appsv1.Deployment:
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Deployment", "name", o.Name)
+			errRes = client.deploymentApply(o)
 
 		case *corev1.Service:
-			log.Debug("Service", "name", o.Name)
-			errRes = client.serviceApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Service", "name", o.Name)
+			errRes = client.serviceApply(o)
 
 		case *corev1.ServiceAccount:
-			log.Debug("ServiceAccount", "name", o.Name)
-			errRes = client.serviceAccountApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ServiceAccount", "name", o.Name)
+			errRes = client.serviceAccountApply(o)
 
 		case *corev1.ConfigMap:
-			log.Debug("ConfigMap", "name", o.Name)
-			errRes = client.configMapApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ConfigMap", "name", o.Name)
+			errRes = client.configMapApply(o)
 
 		case *corev1.Secret:
-			log.Debug("Secret", "name", o.Name)
-			errRes = client.secretApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Secret", "name", o.Name)
+			errRes = client.secretApply(o)
 
 		case *appsv1.StatefulSet:
-			log.Debug("StatefulSet", "name", o.Name)
-			errRes = client.statefulSetApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("StatefulSet", "name", o.Name)
+			errRes = client.statefulSetApply(o)
 
 		case *rbacv1.ClusterRole:
-			log.Debug("ClusterRole", "name", o.Name)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ClusterRole", "name", o.Name)
 			errRes = client.clusterRoleApply(o)
 
 		case *rbacv1.ClusterRoleBinding:
-			log.Debug("ClusterRoleBinding", "name", o.Name)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("ClusterRoleBinding", "name", o.Name)
 			errRes = client.clusterRoleBindingApply(o)
 
 		case *rbacv1.Role:
-			log.Debug("Role", "name", o.Name)
-			errRes = client.roleApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("Role", "name", o.Name)
+			errRes = client.roleApply(o)
 
 		case *rbacv1.RoleBinding:
-			log.Debug("RoleBinding", "name", o.Name)
-			errRes = client.roleBindingApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("RoleBinding", "name", o.Name)
+			errRes = client.roleBindingApply(o)
 
 		case *networkingv1.NetworkPolicy:
-			log.Debug("NetworkPolicy", "name", o.Name)
-			errRes = client.netPolicyApply(o, appStruct.Namespace)
+			if appStruct.KubectlConfig.createNamespace {
+				o.Namespace = appStruct.KubectlConfig.namespace
+			}
+			log.Print("NetworkPolicy", "name", o.Name)
+			errRes = client.netPolicyApply(o)
 
 		default:
 			log.Error("unexpected type", "obj", o)

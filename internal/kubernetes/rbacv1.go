@@ -76,11 +76,11 @@ func (k *Kubernetes) clusterRoleBindingApply(o *rbacv1.ClusterRoleBinding) error
 	return nil
 }
 
-func (k *Kubernetes) roleDelete(o *rbacv1.Role, ns string) error {
+func (k *Kubernetes) roleDelete(o *rbacv1.Role) error {
 
 	err := k.clientset.
 		RbacV1().
-		Roles(ns).
+		Roles(o.Namespace).
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
 		return log.NewError(err.Error())
@@ -88,8 +88,9 @@ func (k *Kubernetes) roleDelete(o *rbacv1.Role, ns string) error {
 	return nil
 }
 
-func (k *Kubernetes) roleApply(o *rbacv1.Role, ns string) error {
+func (k *Kubernetes) roleApply(o *rbacv1.Role) error {
 
+	ns := o.Namespace
 	_, err := k.clientset.
 		RbacV1().
 		Roles(ns).
@@ -110,7 +111,8 @@ func (k *Kubernetes) roleApply(o *rbacv1.Role, ns string) error {
 	return nil
 }
 
-func (k *Kubernetes) roleBindingApply(o *rbacv1.RoleBinding, ns string) error {
+func (k *Kubernetes) roleBindingApply(o *rbacv1.RoleBinding) error {
+	ns := o.Namespace
 
 	_, err := k.clientset.
 		RbacV1().
@@ -132,7 +134,8 @@ func (k *Kubernetes) roleBindingApply(o *rbacv1.RoleBinding, ns string) error {
 	return nil
 }
 
-func (k *Kubernetes) roleBindingDelete(o *rbacv1.RoleBinding, ns string) error {
+func (k *Kubernetes) roleBindingDelete(o *rbacv1.RoleBinding) error {
+	ns := o.Namespace
 
 	err := k.clientset.
 		RbacV1().

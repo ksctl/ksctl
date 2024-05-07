@@ -18,7 +18,6 @@ const (
 type Application struct {
 	Name          string
 	Url           string
-	Namespace     string
 	Version       string
 	Metadata      string
 	Maintainer    string
@@ -41,6 +40,7 @@ func initApps() {
 		"prometheus-stack":  prometheusStackData,
 		"ksctl-storage":     storageImportData,
 		"ksctl-application": applicationStackData,
+		"flannel":           flannelData,
 	}
 }
 
