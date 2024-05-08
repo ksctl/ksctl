@@ -4,7 +4,7 @@ CONTROLLER ?= ADD_YOUR_CONTROLLER
 
 allowed_controllers = storage application
 
-ENVTEST_K8S_VERSION = 1.29.0
+ENVTEST_K8S_VERSION = 1.30.0
 
 CONTROLLER_IMG = ghcr.io/ksctl/ksctl-${CONTROLLER}-controller:latest
 
