@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Start the container
-	if err := cli.ContainerStart(ctx, resp.ID, dockerTypes.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		panic(err)
 	}
 
@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 	}
 	_ = m.Run()
 
-	if err := cli.ContainerRemove(ctx, resp.ID, dockerTypes.ContainerRemoveOptions{Force: true}); err != nil {
+	if err := cli.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
 		panic(err)
 	}
 }
