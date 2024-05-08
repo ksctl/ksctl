@@ -256,16 +256,18 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
-	--server https://%s:6443
+	--server https://%s:6443 \
+    --tls-san %s \
+    --tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver[i], sampleToken, dbEndpoint, privateIPLb[i]),
+`, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() resources.ScriptCollection { // Adjust the signature to match your needs
-						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, privateIPLb[i], sampleToken)
+						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
 					},
 				)
 			}
@@ -294,16 +296,18 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--server https://%s:6443
+	--server https://%s:6443 \
+    --tls-san %s \
+    --tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver[i], sampleToken, dbEndpoint, privateIPLb[i]),
+`, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() resources.ScriptCollection { // Adjust the signature to match your needs
-						return scriptCP_N(ca, etcd, key, ver[i], privIP, privateIPLb[i], sampleToken)
+						return scriptCP_N(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
 					},
 				)
 			}

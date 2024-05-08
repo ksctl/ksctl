@@ -87,6 +87,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 				mainStateDocument.K8sBootstrap.B.EtcdKey,
 				k3s.K3sVer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
+				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		} else {
@@ -96,6 +97,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 				mainStateDocument.K8sBootstrap.B.EtcdKey,
 				k3s.K3sVer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
+				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.K3s.K3sToken)
 		}
@@ -259,7 +261,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 }
 
 func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
-	privateIPlb, token string) resources.ScriptCollection {
+	pubIplb, privateIPlb, token string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -283,19 +285,21 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--server https://%s:6443
+	--server https://%s:6443 \
+    --tls-san %s \
+    --tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver, token, dbEndpoint, privateIPlb),
+`, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
 	})
 
 	return collection
 }
 
 func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	privateIPlb, token string) resources.ScriptCollection {
+	pubIplb, privateIPlb, token string) resources.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -321,12 +325,14 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
-	--server https://%s:6443
+	--server https://%s:6443 \
+    --tls-san %s \
+    --tls-san %s
 EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver, token, dbEndpoint, privateIPlb),
+`, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
 	})
 
 	return collection
