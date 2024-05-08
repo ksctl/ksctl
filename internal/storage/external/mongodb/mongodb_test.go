@@ -3,12 +3,12 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types/image"
 	"io"
 	"os"
 	"reflect"
 	"testing"
 
-	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	reader, err := cli.ImagePull(ctx, "mongo", dockerTypes.ImagePullOptions{})
+	reader, err := cli.ImagePull(ctx, "mongo", image.PullOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Start the container
-	if err := cli.ContainerStart(ctx, resp.ID, dockerTypes.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		panic(err)
 	}
 
@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 	}
 	_ = m.Run()
 
-	if err := cli.ContainerRemove(ctx, resp.ID, dockerTypes.ContainerRemoveOptions{Force: true}); err != nil {
+	if err := cli.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
 		panic(err)
 	}
 }
