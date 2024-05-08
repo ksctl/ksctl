@@ -18,7 +18,10 @@ jobs:
     env:
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
 
-    runs-on: e2e
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [ svr-1, svr-2 ]
     steps:
       - name: remove the .ksctl
         run: |
