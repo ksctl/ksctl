@@ -34,7 +34,7 @@ func (l *GeneralLog) ExternalLogHandlerf(msgType consts.CustomExternalLogLevel, 
 	l.log(msgType, format, args...)
 }
 
-func formGroups(v ...any) (format string, vals []any) {
+func formGroups(l *GeneralLog, v ...any) (format string, vals []any) {
 	if len(v) == 0 {
 		return "\n", nil
 	}
@@ -43,6 +43,8 @@ func formGroups(v ...any) (format string, vals []any) {
 	defer func() {
 		format = _format.String()
 	}()
+	_format.WriteString("component=%s ")
+	vals = append(vals, color.MagentaString(l.moduleName))
 	i := 0
 	for ; i+1 < len(v); i += 2 {
 		if !reflect.TypeOf(v[i+1]).Implements(reflect.TypeOf((*error)(nil)).Elem()) &&
@@ -78,9 +80,9 @@ func (l *GeneralLog) log(msgType consts.CustomExternalLogLevel, msg string, args
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	prefix := fmt.Sprintf("%spkg: %s [%s] ", getTime(l.level), color.MagentaString(l.moduleName), msgType)
+	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), msgType)
 	msg = prefix + msg
-	format, _args := formGroups(args...)
+	format, _args := formGroups(l, args...)
 	if _args == nil {
 		fmt.Fprint(l.writter, msg+" "+format)
 	} else {
