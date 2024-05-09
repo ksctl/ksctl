@@ -70,7 +70,7 @@ var (
 )
 
 func NewClient(m resources.Metadata, state *types.StorageDocument) resources.KubernetesBootstrap {
-	log = logger.NewDefaultLogger(m.LogVerbosity, m.LogWritter)
+	log = logger.NewStructuredLogger(m.LogVerbosity, m.LogWritter)
 	log.SetPackageName("kubeadm")
 
 	mainStateDocument = state

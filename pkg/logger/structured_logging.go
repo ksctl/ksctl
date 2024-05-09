@@ -5,17 +5,19 @@ import (
 	"io"
 	"log/slog"
 	"math"
-	"strings"
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 	"github.com/rodaine/table"
+
+	"time"
+
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
-type Logger struct {
+type StructuredLog struct {
 	logger     *slog.Logger
 	moduleName string
 }
@@ -24,7 +26,17 @@ const (
 	LimitCol = 80
 )
 
-func (l *Logger) SetPackageName(m string) {
+func (l *StructuredLog) ExternalLogHandler(msgType consts.CustomExternalLogLevel, message string) {
+	fmt.Printf("%s (package: %s) [%s] %v\n", time.Now().Format(time.ANSIC), l.moduleName, msgType, message)
+}
+
+func (l *StructuredLog) ExternalLogHandlerf(msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
+	prefix := fmt.Sprintf("%s (package: %s) [%s] ", time.Now().Format(time.ANSIC), l.moduleName, msgType)
+	format = prefix + format
+	fmt.Printf(format, args...)
+}
+
+func (l *StructuredLog) SetPackageName(m string) {
 	l.moduleName = m
 }
 
@@ -39,7 +51,7 @@ func newLogger(out io.Writer, ver slog.Level, debug bool) *slog.Logger {
 	}))
 }
 
-func NewDefaultLogger(verbose int, out io.Writer) resources.LoggerFactory {
+func NewStructuredLogger(verbose int, out io.Writer) resources.LoggerFactory {
 	// LevelDebug Level = -4
 	// LevelInfo  Level = 0
 	// LevelWarn  Level = 4
@@ -50,7 +62,7 @@ func NewDefaultLogger(verbose int, out io.Writer) resources.LoggerFactory {
 	if verbose < 0 {
 		ve = slog.LevelDebug
 
-		return &Logger{logger: newLogger(out, ve, true)}
+		return &StructuredLog{logger: newLogger(out, ve, true)}
 
 	} else if verbose < 4 {
 		ve = slog.LevelInfo
@@ -60,35 +72,35 @@ func NewDefaultLogger(verbose int, out io.Writer) resources.LoggerFactory {
 		ve = slog.LevelError
 	}
 
-	return &Logger{logger: newLogger(out, ve, false)}
+	return &StructuredLog{logger: newLogger(out, ve, false)}
 }
 
-func (l *Logger) Print(msg string, args ...any) {
+func (l *StructuredLog) Print(msg string, args ...any) {
 	args = append([]any{"package", l.moduleName}, args...)
 	l.logger.Info(msg, args...)
 }
 
-func (l *Logger) Success(msg string, args ...any) {
+func (l *StructuredLog) Success(msg string, args ...any) {
 	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
 	args = append([]any{"package", l.moduleName, "msgType", "SUCCESS"}, args...)
 	l.logger.Info(msg, args...)
 }
 
-func (l *Logger) Note(msg string, args ...any) {
+func (l *StructuredLog) Note(msg string, args ...any) {
 	color.Set(color.FgBlue, color.Bold)
 	defer color.Unset()
 	args = append([]any{"package", l.moduleName, "msgType", "NOTE"}, args...)
 	l.logger.Info(msg, args...)
 }
 
-func (l *Logger) Debug(msg string, args ...any) {
+func (l *StructuredLog) Debug(msg string, args ...any) {
 	defer color.Unset()
 	args = append([]any{"package", l.moduleName}, args...)
 	l.logger.Debug(msg, args...)
 }
 
-func (l *Logger) Error(msg string, args ...any) {
+func (l *StructuredLog) Error(msg string, args ...any) {
 	color.Set(color.FgHiRed, color.Bold)
 	defer color.Unset()
 	args = append([]any{"package", l.moduleName}, args...)
@@ -97,20 +109,20 @@ func (l *Logger) Error(msg string, args ...any) {
 	l.logger.Error(msg, "Reason", msgStrErr)
 }
 
-func (l *Logger) NewError(format string, args ...any) error {
+func (l *StructuredLog) NewError(format string, args ...any) error {
 	l.Debug(format, args...)
 	args = append([]any{"err_package", l.moduleName}, args...)
 	return fmt.Errorf(format, args...)
 }
 
-func (l *Logger) Warn(msg string, args ...any) {
+func (l *StructuredLog) Warn(msg string, args ...any) {
 	color.Set(color.FgYellow, color.Bold)
 	defer color.Unset()
 	args = append([]any{"package", l.moduleName, "msgType", "WARN"}, args...)
 	l.logger.Warn(msg, args...)
 }
 
-func (l *Logger) Table(data []cloudController.AllClusterData) {
+func (l *StructuredLog) Table(data []cloudController.AllClusterData) {
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
@@ -130,40 +142,7 @@ func (l *Logger) Table(data []cloudController.AllClusterData) {
 	tbl.Print()
 }
 
-func addLineTerminationForLongStrings(str string) string {
-
-	//arr with endline split
-	arrStr := strings.Split(str, "\n")
-
-	var helper func(string) string
-
-	helper = func(_str string) string {
-
-		if len(_str) < LimitCol {
-			return _str
-		}
-
-		x := string(utilities.DeepCopySlice[byte]([]byte(_str[:LimitCol])))
-		y := string(utilities.DeepCopySlice[byte]([]byte(helper(_str[LimitCol:]))))
-
-		// ks
-		// ^^
-		if x[len(x)-1] != ' ' && y[0] != ' ' {
-			x += "-"
-		}
-
-		_new := x + "\n" + y
-		return _new
-	}
-
-	for idx, line := range arrStr {
-		arrStr[idx] = helper(line)
-	}
-
-	return strings.Join(arrStr, "\n")
-}
-
-func (l *Logger) Box(title string, lines string) {
+func (l *StructuredLog) Box(title string, lines string) {
 	px := 4
 
 	if len(title) >= 2*px+len(lines) {

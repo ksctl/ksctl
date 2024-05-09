@@ -19,7 +19,7 @@ var (
 
 func main() {
 	timer := time.Now()
-	l = logger.NewDefaultLogger(-1, os.Stdout)
+	l = logger.NewStructuredLogger(-1, os.Stdout)
 
 	operation, meta := GetReqPayload(l)
 

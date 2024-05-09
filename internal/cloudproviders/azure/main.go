@@ -184,7 +184,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 
 func ReturnAzureStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() AzureGo) (*AzureProvider, error) {
 
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAzure))
 
 	mainStateDocument = state
@@ -436,7 +436,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no i
 
 func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {
 
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAzure))
 
 	var data []cloudcontrolres.AllClusterData

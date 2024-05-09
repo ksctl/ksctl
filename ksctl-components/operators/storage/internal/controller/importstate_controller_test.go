@@ -45,7 +45,7 @@ var _ = Describe("ImportState Controller", func() {
 		}
 		importstate := &storagev1alpha1.ImportState{}
 
-		log = logger.NewDefaultLogger(
+		log = logger.NewStructuredLogger(
 			LogVerbosity["DEBUG"],
 			LogWriter)
 		log.SetPackageName("ksctl-storage-importer")

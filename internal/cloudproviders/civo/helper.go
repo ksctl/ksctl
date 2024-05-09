@@ -1,13 +1,14 @@
 package civo
 
 import (
+	"os"
+
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
-	"os"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
@@ -31,7 +32,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 
 func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
 
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudCivo))
 
 	log.Print("Enter CIVO TOKEN")

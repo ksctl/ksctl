@@ -133,7 +133,7 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ImportStateReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	log = logger.NewDefaultLogger(
+	log = logger.NewStructuredLogger(
 		LogVerbosity[os.Getenv("LOG_LEVEL")],
 		LogWriter)
 	log.SetPackageName("ksctl-storage-importer")

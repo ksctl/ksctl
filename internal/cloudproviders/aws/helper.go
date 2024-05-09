@@ -9,7 +9,7 @@ import (
 )
 
 func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAws))
 
 	log.Print("Enter your AWS ACCESS KEY")

@@ -196,7 +196,7 @@ func removeString(slice []string, s string) (result []string) {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *StackReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	log = logger.NewDefaultLogger(
+	log = logger.NewStructuredLogger(
 		LogVerbosity[os.Getenv("LOG_LEVEL")],
 		LogWriter)
 

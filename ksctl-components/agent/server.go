@@ -96,7 +96,7 @@ func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.Re
 
 func main() {
 
-	log = logger.NewDefaultLogger(
+	log = logger.NewStructuredLogger(
 		helpers.LogVerbosity[os.Getenv("LOG_LEVEL")],
 		helpers.LogWriter)
 	log.SetPackageName("ksctl-agent")

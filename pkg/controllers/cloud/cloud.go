@@ -20,7 +20,7 @@ var log resources.LoggerFactory
 
 func InitCloud(client *resources.KsctlClient, state *types.StorageDocument, operation consts.KsctlOperation, fakeClient bool) error {
 
-	log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+	log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 	log.SetPackageName("ksctl-cloud")
 
 	var err error

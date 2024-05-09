@@ -45,7 +45,7 @@ func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 }
 
 func ReturnLocalStruct(metadata resources.Metadata, state *types.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
-	log = logger.NewDefaultLogger(metadata.LogVerbosity, metadata.LogWritter)
+	log = logger.NewStructuredLogger(metadata.LogVerbosity, metadata.LogWritter)
 	log.SetPackageName(string(consts.CloudLocal))
 
 	mainStateDocument = state
@@ -122,7 +122,7 @@ func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
 }
 
 func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudControlRes.AllClusterData, error) {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudLocal))
 
 	var data []cloudControlRes.AllClusterData

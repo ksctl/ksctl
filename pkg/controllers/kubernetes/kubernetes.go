@@ -21,7 +21,7 @@ import (
 var log resources.LoggerFactory
 
 func Setup(client *resources.KsctlClient, state *types.StorageDocument) error {
-	log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+	log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 	log.SetPackageName("kubernetes-controller")
 
 	client.PreBootstrap = k8sdistros.NewPreBootStrap(client.Metadata, state) // NOTE: it needs the
@@ -196,7 +196,7 @@ func DelWorkerPlanes(client *resources.KsctlClient, kubeconfig string, hostnames
 func ApplicationsInCluster(client *resources.KsctlClient, state *types.StorageDocument, op consts.KsctlOperation) error {
 
 	if log == nil {
-		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 		log.SetPackageName("ksctl-distro")
 	}
 
@@ -237,7 +237,7 @@ func InstallAdditionalTools(externalCNI, externalApp bool, client *resources.Ksc
 	}
 
 	if log == nil {
-		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 		log.SetPackageName("ksctl-distro")
 	}
 

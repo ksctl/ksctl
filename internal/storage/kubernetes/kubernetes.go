@@ -154,7 +154,7 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 }
 
 func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
-	log = logger.NewDefaultLogger(logVerbosity, logWriter)
+	log = logger.NewStructuredLogger(logVerbosity, logWriter)
 	log.SetPackageName(string(consts.StoreK8s))
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 }

@@ -15,7 +15,7 @@ import (
 func InitializeStorageFactory(ctx context.Context, client *resources.KsctlClient) error {
 
 	if log == nil {
-		log = logger.NewDefaultLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
 		log.SetPackageName("ksctl-manager")
 	}
 

@@ -79,7 +79,7 @@ func (obj *AwsProvider) Version(ver string) resources.CloudFactory {
 }
 
 func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAws))
 
 	mainStateDocument = state
@@ -425,7 +425,7 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 
 func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {
 
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAws))
 
 	var data []cloudcontrolres.AllClusterData

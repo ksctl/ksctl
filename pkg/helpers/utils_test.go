@@ -19,7 +19,7 @@ import (
 var (
 	dir                         = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
 	log resources.LoggerFactory = func() resources.LoggerFactory {
-		var l resources.LoggerFactory = logger.NewDefaultLogger(-1, os.Stdout)
+		var l resources.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 		l.SetPackageName("utils")
 		return l
 	}()

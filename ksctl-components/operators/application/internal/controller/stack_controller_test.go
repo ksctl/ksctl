@@ -44,7 +44,7 @@ var _ = Describe("Stack Controller", func() {
 			Namespace: "default", // TODO(user):Modify as needed
 		}
 		stack := &applicationv1alpha1.Stack{}
-		log = logger.NewDefaultLogger(
+		log = logger.NewStructuredLogger(
 			LogVerbosity["DEBUG"],
 			LogWriter)
 		log.SetPackageName("ksctl-storage-importer")

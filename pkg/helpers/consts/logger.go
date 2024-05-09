@@ -7,6 +7,8 @@ type CustomExternalLogLevel string
 var (
 	LOG_WARNING = CustomExternalLogLevel(color.HiYellowString("WARN"))
 	LOG_ERROR   = CustomExternalLogLevel(color.HiRedString("ERR"))
-	LOG_INFO    = CustomExternalLogLevel(color.HiGreenString("INFO"))
-	LOG_DEBUG   = CustomExternalLogLevel(color.HiBlueString("DEBUG"))
+	LOG_INFO    = CustomExternalLogLevel(color.HiBlueString("INFO"))
+	LOG_NOTE    = CustomExternalLogLevel(color.CyanString("NOTE"))
+	LOG_SUCCESS = CustomExternalLogLevel(color.HiGreenString("PASS"))
+	LOG_DEBUG   = CustomExternalLogLevel(color.WhiteString("DEBUG"))
 )

@@ -39,7 +39,7 @@ func StartCloud(w http.ResponseWriter) {
 
 func createDummyCivo(w http.ResponseWriter, r *http.Request) {
 	StartCloud(w)
-	log := logger.NewDefaultLogger(-1, w)
+	log := logger.NewStructuredLogger(-1, w)
 	log.SetPackageName("example-http-logger")
 
 	cli.Metadata.Region = "LON1"

@@ -2,19 +2,20 @@ package kubernetes
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"gotest.tools/v3/assert"
-	"os"
-	"testing"
 )
 
 // Here we are going to test the helper functions
 
 func TestMain(m *testing.M) {
 
-	log = logger.NewDefaultLogger(-1, os.Stdout)
+	log = logger.NewStructuredLogger(-1, os.Stdout)
 	initApps()
 	m.Run()
 }

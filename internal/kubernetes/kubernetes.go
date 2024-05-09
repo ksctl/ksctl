@@ -55,7 +55,7 @@ func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 }
 
 func (k *Kubernetes) NewInClusterClient() (err error) {
-	log = logger.NewDefaultLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
+	log = logger.NewStructuredLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
 	log.SetPackageName("kubernetes-client")
 
 	k.config, err = rest.InClusterConfig()
@@ -85,7 +85,7 @@ func (k *Kubernetes) NewInClusterClient() (err error) {
 }
 
 func (k *Kubernetes) NewKubeconfigClient(kubeconfig string) (err error) {
-	log = logger.NewDefaultLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
+	log = logger.NewStructuredLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
 	log.SetPackageName("kubernetes-client")
 
 	rawKubeconfig := []byte(kubeconfig)

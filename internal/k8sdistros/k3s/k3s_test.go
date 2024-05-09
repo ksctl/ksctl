@@ -55,7 +55,7 @@ func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.Sto
 }
 
 func TestMain(m *testing.M) {
-	log = logger.NewDefaultLogger(-1, os.Stdout)
+	log = logger.NewStructuredLogger(-1, os.Stdout)
 	log.SetPackageName("k3s")
 	mainState := &types.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {

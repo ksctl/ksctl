@@ -161,7 +161,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 }
 
 func ReturnCivoStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudCivo))
 
 	mainStateDocument = state
@@ -435,7 +435,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 }
 
 func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloud_control_res.AllClusterData, error) {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudCivo))
 
 	var data []cloud_control_res.AllClusterData

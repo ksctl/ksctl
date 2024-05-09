@@ -20,7 +20,7 @@ var (
 func NewPreBootStrap(m resources.Metadata,
 	state *types.StorageDocument) resources.PreKubernetesBootstrap {
 
-	log = logger.NewDefaultLogger(m.LogVerbosity, m.LogWritter)
+	log = logger.NewStructuredLogger(m.LogVerbosity, m.LogWritter)
 	log.SetPackageName("bootstrap")
 
 	mainStateDocument = state

@@ -3,9 +3,10 @@ package k8sdistros
 import (
 	"context"
 	"fmt"
-	testHelper "github.com/ksctl/ksctl/test/helpers"
 	"os"
 	"testing"
+
+	testHelper "github.com/ksctl/ksctl/test/helpers"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/internal/storage/types"
@@ -234,7 +235,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	log = logger.NewDefaultLogger(-1, os.Stdout)
+	log = logger.NewStructuredLogger(-1, os.Stdout)
 	log.SetPackageName("bootstrap")
 	mainState := &types.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {

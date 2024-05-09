@@ -9,7 +9,7 @@ import (
 )
 
 func validationFields(meta resources.Metadata) error {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
+	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName("ksctl-manager")
 
 	if !helpers.ValidateCloud(meta.Provider) {
