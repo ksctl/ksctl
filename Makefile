@@ -179,10 +179,10 @@ test-core: unit_test_all mock_all ## do both unit and integration test
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter & yamllint
 	@echo -e "\n\033[36mRunning for Ksctl (Core)\033[0m\n" && \
-		$(GOLANGCI_LINT) run && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
+		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
 	@echo -e "\n\033[36mRunning for Ksctl (Agent)\033[0m" && \
 		cd ksctl-components/agent && \
-		$(GOLANGCI_LINT) run && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
+		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
 	@echo -e "\n\033[36mRunning for Ksctl Controllers (Storage)\033[0m" && \
 		make lint-controller CONTROLLER=storage && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
 	@echo -e "\n\033[36mRunning for Ksctl Controllers (Application)\033[0m" && \

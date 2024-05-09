@@ -62,7 +62,7 @@ vet: check-controller ## Run go vet against code.
 .PHONY: lint-controller
 lint-controller: check-controller golangci-lint ## Run golangci-lint linter & yamllint
 	cd ${WORKDIR} && \
-	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) run --timeout 10m
 
 
 .PHONY: lint-fix-controller
