@@ -1,32 +1,32 @@
 package resources
 
 import (
+	"context"
+
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
 type LoggerFactory interface {
-	Print(msg string, v ...any)
+	Print(ctx context.Context, msg string, v ...any)
 
-	Success(msg string, v ...any)
+	Success(ctx context.Context, msg string, v ...any)
 
-	Note(msg string, v ...any)
+	Note(ctx context.Context, msg string, v ...any)
 
-	Warn(msg string, v ...any)
+	Warn(ctx context.Context, msg string, v ...any)
 
-	Error(msg string, v ...any)
+	Error(ctx context.Context, msg string, v ...any)
 
-	Debug(msg string, v ...any)
-
-	SetPackageName(name string)
+	Debug(ctx context.Context, msg string, v ...any)
 
 	// To be used by external logging
-	ExternalLogHandler(msgType consts.CustomExternalLogLevel, message string)
-	ExternalLogHandlerf(msgType consts.CustomExternalLogLevel, format string, args ...interface{})
+	ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string)
+	ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{})
 
-	NewError(format string, v ...any) error
+	NewError(ctx context.Context, format string, v ...any) error
 
-	Table(data []cloudController.AllClusterData)
+	Table(ctx context.Context, data []cloudController.AllClusterData)
 
-	Box(title string, lines string)
+	Box(ctx context.Context, title string, lines string)
 }

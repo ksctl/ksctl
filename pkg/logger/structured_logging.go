@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -18,26 +19,21 @@ import (
 )
 
 type StructuredLog struct {
-	logger     *slog.Logger
-	moduleName string
+	logger *slog.Logger
 }
 
 const (
 	LimitCol = 80
 )
 
-func (l *StructuredLog) ExternalLogHandler(msgType consts.CustomExternalLogLevel, message string) {
-	fmt.Printf("%s (package: %s) [%s] %v\n", time.Now().Format(time.ANSIC), l.moduleName, msgType, message)
+func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
+	fmt.Printf("%s (package: %s) [%s] %v\n", time.Now().Format(time.ANSIC), ctx.Value(consts.ContextModuleNameKey), msgType, message)
 }
 
-func (l *StructuredLog) ExternalLogHandlerf(msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
-	prefix := fmt.Sprintf("%s (package: %s) [%s] ", time.Now().Format(time.ANSIC), l.moduleName, msgType)
+func (l *StructuredLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
+	prefix := fmt.Sprintf("%s (package: %s) [%s] ", time.Now().Format(time.ANSIC), ctx.Value(consts.ContextModuleNameKey), msgType)
 	format = prefix + format
 	fmt.Printf(format, args...)
-}
-
-func (l *StructuredLog) SetPackageName(m string) {
-	l.moduleName = m
 }
 
 func newLogger(out io.Writer, ver slog.Level, debug bool) *slog.Logger {
@@ -75,54 +71,53 @@ func NewStructuredLogger(verbose int, out io.Writer) resources.LoggerFactory {
 	return &StructuredLog{logger: newLogger(out, ve, false)}
 }
 
-func (l *StructuredLog) Print(msg string, args ...any) {
-	args = append([]any{"package", l.moduleName}, args...)
+func (l *StructuredLog) Print(ctx context.Context, msg string, args ...any) {
+	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey)}, args...)
 	l.logger.Info(msg, args...)
 }
 
-func (l *StructuredLog) Success(msg string, args ...any) {
+func (l *StructuredLog) Success(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
-	args = append([]any{"package", l.moduleName, "msgType", "SUCCESS"}, args...)
+	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey), "msgType", "SUCCESS"}, args...)
 	l.logger.Info(msg, args...)
 }
 
-func (l *StructuredLog) Note(msg string, args ...any) {
+func (l *StructuredLog) Note(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgBlue, color.Bold)
 	defer color.Unset()
-	args = append([]any{"package", l.moduleName, "msgType", "NOTE"}, args...)
+	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey), "msgType", "NOTE"}, args...)
 	l.logger.Info(msg, args...)
 }
 
-func (l *StructuredLog) Debug(msg string, args ...any) {
+func (l *StructuredLog) Debug(ctx context.Context, msg string, args ...any) {
 	defer color.Unset()
-	args = append([]any{"package", l.moduleName}, args...)
+	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey)}, args...)
 	l.logger.Debug(msg, args...)
 }
 
-func (l *StructuredLog) Error(msg string, args ...any) {
+func (l *StructuredLog) Error(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgHiRed, color.Bold)
 	defer color.Unset()
-	args = append([]any{"package", l.moduleName}, args...)
+	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey)}, args...)
 
 	msgStrErr := fmt.Sprintf("%v", args)
 	l.logger.Error(msg, "Reason", msgStrErr)
 }
 
-func (l *StructuredLog) NewError(format string, args ...any) error {
-	l.Debug(format, args...)
-	args = append([]any{"err_package", l.moduleName}, args...)
+func (l *StructuredLog) NewError(ctx context.Context, format string, args ...any) error {
+	args = append([]any{"err_package", ctx.Value(consts.ContextModuleNameKey)}, args...)
 	return fmt.Errorf(format, args...)
 }
 
-func (l *StructuredLog) Warn(msg string, args ...any) {
+func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgYellow, color.Bold)
 	defer color.Unset()
-	args = append([]any{"package", l.moduleName, "msgType", "WARN"}, args...)
+	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey), "msgType", "WARN"}, args...)
 	l.logger.Warn(msg, args...)
 }
 
-func (l *StructuredLog) Table(data []cloudController.AllClusterData) {
+func (l *StructuredLog) Table(ctx context.Context, data []cloudController.AllClusterData) {
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
@@ -142,7 +137,7 @@ func (l *StructuredLog) Table(data []cloudController.AllClusterData) {
 	tbl.Print()
 }
 
-func (l *StructuredLog) Box(title string, lines string) {
+func (l *StructuredLog) Box(ctx context.Context, title string, lines string) {
 	px := 4
 
 	if len(title) >= 2*px+len(lines) {
@@ -150,7 +145,7 @@ func (l *StructuredLog) Box(title string, lines string) {
 		px = int(math.Ceil(float64(len(title)-len(lines))/2)) + 1
 	}
 
-	l.Debug("PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
+	l.Debug(ctx, "PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
 
 	Box := box.New(box.Config{
 		Px:       px,

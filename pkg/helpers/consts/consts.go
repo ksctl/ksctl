@@ -129,3 +129,7 @@ const (
 	CNIKind    KsctlValidCNIPlugin = "kind"
 	CNINone    KsctlValidCNIPlugin = "none"
 )
+
+const (
+	ContextModuleNameKey string = "component"
+)

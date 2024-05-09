@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -22,12 +23,29 @@ import (
 
 var (
 	log resources.LoggerFactory
+	ctx context.Context
 )
 
 type KsctlControllerClient struct{}
 
 func GenKsctlController() *KsctlControllerClient {
 	return &KsctlControllerClient{}
+}
+
+// NOTE: get the logger from the controller manager calls
+// use the context.COntext with value sets to use the context aware logging
+func setupConfigurations(client *resources.KsctlClient) (context.Context, error) {
+
+	if client.Storage == nil {
+		return nil, 
+	}
+	if err := validationFields(client.Metadata); err != nil {
+	}
+
+	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+		return err
+	}
+
 }
 
 func (ksctlControlCli *KsctlControllerClient) Applications(client *resources.KsctlClient, op consts.KsctlOperation) error {

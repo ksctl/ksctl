@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math"
@@ -26,11 +27,11 @@ type GeneralLog struct {
 	level      uint
 }
 
-func (l *GeneralLog) ExternalLogHandler(msgType consts.CustomExternalLogLevel, message string) {
+func (l *GeneralLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
 	l.log(msgType, message)
 }
 
-func (l *GeneralLog) ExternalLogHandlerf(msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
+func (l *GeneralLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
 	l.log(msgType, format, args...)
 }
 
@@ -117,36 +118,36 @@ func NewGeneralLogger(verbose int, out io.Writer) resources.LoggerFactory {
 	}
 }
 
-func (l *GeneralLog) Print(msg string, args ...any) {
+func (l *GeneralLog) Print(ctx context.Context, msg string, args ...any) {
 	l.log(consts.LOG_INFO, msg, args...)
 }
 
-func (l *GeneralLog) Success(msg string, args ...any) {
+func (l *GeneralLog) Success(ctx context.Context, msg string, args ...any) {
 	l.log(consts.LOG_SUCCESS, msg, args...)
 }
 
-func (l *GeneralLog) Note(msg string, args ...any) {
+func (l *GeneralLog) Note(ctx context.Context, msg string, args ...any) {
 	l.log(consts.LOG_NOTE, msg, args...)
 }
 
-func (l *GeneralLog) Debug(msg string, args ...any) {
+func (l *GeneralLog) Debug(ctx context.Context, msg string, args ...any) {
 	l.log(consts.LOG_DEBUG, msg, args...)
 }
 
-func (l *GeneralLog) Error(msg string, args ...any) {
+func (l *GeneralLog) Error(ctx context.Context, msg string, args ...any) {
 	l.log(consts.LOG_ERROR, msg, args...)
 }
 
-func (l *GeneralLog) NewError(format string, args ...any) error {
+func (l *GeneralLog) NewError(ctx context.Context, format string, args ...any) error {
 	// TODO: add the package info!
 	return fmt.Errorf(format, args...)
 }
 
-func (l *GeneralLog) Warn(msg string, args ...any) {
+func (l *GeneralLog) Warn(ctx context.Context, msg string, args ...any) {
 	l.log(consts.LOG_WARNING, msg, args...)
 }
 
-func (l *GeneralLog) Table(data []cloudController.AllClusterData) {
+func (l *GeneralLog) Table(ctx context.Context, data []cloudController.AllClusterData) {
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
@@ -166,7 +167,7 @@ func (l *GeneralLog) Table(data []cloudController.AllClusterData) {
 	tbl.Print()
 }
 
-func (l *GeneralLog) Box(title string, lines string) {
+func (l *GeneralLog) Box(ctx context.Context, title string, lines string) {
 	px := 4
 
 	if len(title) >= 2*px+len(lines) {
@@ -174,7 +175,7 @@ func (l *GeneralLog) Box(title string, lines string) {
 		px = int(math.Ceil(float64(len(title)-len(lines))/2)) + 1
 	}
 
-	l.Debug("PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
+	l.Debug(ctx, "PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
 
 	Box := box.New(box.Config{
 		Px:       px,
