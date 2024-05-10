@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -20,6 +21,7 @@ var (
 	mainStateDocument *types.StorageDocument
 	clusterType       consts.KsctlClusterType
 	log               resources.LoggerFactory
+	awsCtx            context.Context
 )
 
 type metadata struct {
@@ -78,9 +80,38 @@ func (obj *AwsProvider) Version(ver string) resources.CloudFactory {
 	return obj
 }
 
-func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
-	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudAws))
+func (cloud *AwsProvider) Credential(storage resources.StorageFactory) error {
+	log.Print(awsCtx, "Enter your AWS ACCESS KEY")
+	acesskey, err := helpers.UserInputCredentials(log)
+	if err != nil {
+		return err
+	}
+
+	log.Print(awsCtx, "Enter your AWS SECRET KEY")
+	acesskeysecret, err := helpers.UserInputCredentials(log)
+	if err != nil {
+		return err
+	}
+
+	apiStore := &types.CredentialsDocument{
+		InfraProvider: consts.CloudAws,
+		Aws: &types.CredentialsAws{
+			AccessKeyId:     acesskey,
+			SecretAccessKey: acesskeysecret,
+		},
+	}
+
+	if err := storage.WriteCredentials(consts.CloudAws, apiStore); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
+	log = parentLogger // intentional shallow copy so that we can use the same
+	// logger to be used multiple places
+	awsCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "aws")
 
 	mainStateDocument = state
 
@@ -97,7 +128,7 @@ func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, Clie
 	}
 
 	obj.client.SetRegion(obj.region)
-	log.Debug("Printing", "AwsProvider", obj)
+	log.Debug(awsCtx, "Printing", "AwsProvider", obj)
 
 	return obj, nil
 }

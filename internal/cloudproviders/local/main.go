@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -33,6 +34,7 @@ type LocalProvider struct {
 var (
 	mainStateDocument *types.StorageDocument
 	log               resources.LoggerFactory
+	localCtx          context.Context
 )
 
 func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
@@ -44,20 +46,21 @@ func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	return string(cloudstate), nil
 }
 
-func ReturnLocalStruct(metadata resources.Metadata, state *types.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
-	log = logger.NewStructuredLogger(metadata.LogVerbosity, metadata.LogWritter)
-	log.SetPackageName(string(consts.CloudLocal))
+func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
+	log = parentLogger // intentional shallow copy so that we can use the same
+	// logger to be used multiple places
+	localCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "local")
 
 	mainStateDocument = state
 
 	obj := &LocalProvider{
-		ClusterName: metadata.ClusterName,
+		ClusterName: meta.ClusterName,
 		client:      ClientOption(),
-		Region:      metadata.Region,
+		Region:      meta.Region,
 	}
-	obj.Metadata.Version = metadata.K8sVersion
+	obj.Metadata.Version = meta.K8sVersion
 
-	log.Debug("Printing", "localProvider", obj)
+	log.Debug(localCtx, "Printing", "localProvider", obj)
 
 	return obj, nil
 }
@@ -165,6 +168,9 @@ func (obj *LocalProvider) IsPresent(storage resources.StorageFactory) error {
 }
 
 // //// NOT IMPLEMENTED //////
+func (cloud *LocalProvider) Credential(_ resources.StorageFactory) error {
+	panic("no support")
+}
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *LocalProvider) Role(consts.KsctlRole) resources.CloudFactory {

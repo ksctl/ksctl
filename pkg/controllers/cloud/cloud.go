@@ -12,24 +12,22 @@ import (
 	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
 	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-var log resources.LoggerFactory
+var (
+	log resources.LoggerFactory
+)
 
 func InitCloud(client *resources.KsctlClient, state *types.StorageDocument, operation consts.KsctlOperation, fakeClient bool) error {
-
-	log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
-	log.SetPackageName("ksctl-cloud")
 
 	var err error
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
 		if !fakeClient {
-			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, state, civoPkg.ProvideClient)
+			client.Cloud, err = civoPkg.NewClient(client.Metadata, state, civoPkg.ProvideClient)
 		} else {
-			client.Cloud, err = civoPkg.ReturnCivoStruct(client.Metadata, state, civoPkg.ProvideMockCivoClient)
+			client.Cloud, err = civoPkg.NewClient(client.Metadata, state, civoPkg.ProvideMockCivoClient)
 		}
 
 		if err != nil {
@@ -37,9 +35,9 @@ func InitCloud(client *resources.KsctlClient, state *types.StorageDocument, oper
 		}
 	case consts.CloudAzure:
 		if !fakeClient {
-			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, state, azurePkg.ProvideClient)
+			client.Cloud, err = azurePkg.NewClient(client.Metadata, state, azurePkg.ProvideClient)
 		} else {
-			client.Cloud, err = azurePkg.ReturnAzureStruct(client.Metadata, state, azurePkg.ProvideMockClient)
+			client.Cloud, err = azurePkg.NewClient(client.Metadata, state, azurePkg.ProvideMockClient)
 		}
 
 		if err != nil {
@@ -47,9 +45,9 @@ func InitCloud(client *resources.KsctlClient, state *types.StorageDocument, oper
 		}
 	case consts.CloudAws:
 		if !fakeClient {
-			client.Cloud, err = awsPkg.ReturnAwsStruct(client.Metadata, state, awsPkg.ProvideClient)
+			client.Cloud, err = awsPkg.NewClient(client.Metadata, state, awsPkg.ProvideClient)
 		} else {
-			client.Cloud, err = awsPkg.ReturnAwsStruct(client.Metadata, state, awsPkg.ProvideMockClient)
+			client.Cloud, err = awsPkg.NewClient(client.Metadata, state, awsPkg.ProvideMockClient)
 		}
 
 		if err != nil {
@@ -58,9 +56,9 @@ func InitCloud(client *resources.KsctlClient, state *types.StorageDocument, oper
 
 	case consts.CloudLocal:
 		if !fakeClient {
-			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, state, localPkg.ProvideClient)
+			client.Cloud, err = localPkg.NewClient(client.Metadata, state, localPkg.ProvideClient)
 		} else {
-			client.Cloud, err = localPkg.ReturnLocalStruct(client.Metadata, state, localPkg.ProvideMockClient)
+			client.Cloud, err = localPkg.NewClient(client.Metadata, state, localPkg.ProvideMockClient)
 		}
 
 		if err != nil {

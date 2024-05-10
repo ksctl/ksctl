@@ -24,6 +24,9 @@ type CloudFactory interface {
 	// DelNetwork delete Network
 	DelNetwork(StorageFactory) error
 
+	// Credential
+	Credential(StorageFactory) error
+
 	// InitState is used to initalize the state of that partular cloud provider
 	// its internal state and cloud provider's client
 	// NOTE: multiple mode of OPERATIONS

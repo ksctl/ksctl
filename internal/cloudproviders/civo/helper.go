@@ -3,11 +3,8 @@ package civo
 import (
 	"os"
 
-	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/internal/storage/types"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
@@ -28,38 +25,6 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 		return ""
 	}
 	return credentials.Civo.Token
-}
-
-func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
-
-	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudCivo))
-
-	log.Print("Enter CIVO TOKEN")
-	token, err := helpers.UserInputCredentials(log)
-	if err != nil {
-		return err
-	}
-	client, err := civogo.NewClient(token, "LON1")
-	if err != nil {
-		return err
-	}
-	id := client.GetAccountID()
-
-	if len(id) == 0 {
-		return log.NewError("Invalid user")
-	}
-	log.Print(id)
-
-	if err := storage.WriteCredentials(consts.CloudCivo,
-		&types.CredentialsDocument{
-			InfraProvider: consts.CloudCivo,
-			Civo:          &types.CredentialsCivo{Token: token},
-		}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func loadStateHelper(storage resources.StorageFactory) error {

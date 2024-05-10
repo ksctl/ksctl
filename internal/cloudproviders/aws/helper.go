@@ -3,41 +3,8 @@ package aws
 import (
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
-
-func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
-	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudAws))
-
-	log.Print("Enter your AWS ACCESS KEY")
-	acesskey, err := helpers.UserInputCredentials(log)
-	if err != nil {
-		return err
-	}
-
-	log.Print("Enter your AWS SECRET KEY")
-	acesskeysecret, err := helpers.UserInputCredentials(log)
-	if err != nil {
-		return err
-	}
-
-	apiStore := &types.CredentialsDocument{
-		InfraProvider: consts.CloudAws,
-		Aws: &types.CredentialsAws{
-			AccessKeyId:     acesskey,
-			SecretAccessKey: acesskeysecret,
-		},
-	}
-
-	if err := storage.WriteCredentials(consts.CloudAws, apiStore); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func validationOfArguments(obj *AwsProvider) error {
 

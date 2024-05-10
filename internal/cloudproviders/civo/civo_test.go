@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 
 	func() {
 
-		fakeClientVars, _ = ReturnCivoStruct(resources.Metadata{
+		fakeClientVars, _ = NewClient(resources.Metadata{
 			ClusterName:  "demo",
 			Region:       "LON1",
 			Provider:     consts.CloudCivo,
@@ -443,7 +443,7 @@ func checkCurrentStateFileHA(t *testing.T) {
 func TestManagedCluster(t *testing.T) {
 
 	func() {
-		fakeClientManaged, _ = ReturnCivoStruct(resources.Metadata{
+		fakeClientManaged, _ = NewClient(resources.Metadata{
 			ClusterName:  "demo-managed",
 			Region:       "LON1",
 			Provider:     consts.CloudCivo,
@@ -542,7 +542,7 @@ func TestManagedCluster(t *testing.T) {
 
 func TestHACluster(t *testing.T) {
 	func() {
-		fakeClientHA, _ = ReturnCivoStruct(resources.Metadata{
+		fakeClientHA, _ = NewClient(resources.Metadata{
 			ClusterName:  "demo-ha",
 			Region:       "LON1",
 			Provider:     consts.CloudCivo,

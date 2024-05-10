@@ -1,17 +1,18 @@
 package civo
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"sync"
 
+	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/internal/storage/types"
-
-	"github.com/ksctl/ksctl/pkg/logger"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloud_control_res "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
@@ -19,8 +20,8 @@ import (
 var (
 	mainStateDocument *types.StorageDocument
 	clusterType       consts.KsctlClusterType // it stores the ha or managed
-
-	log resources.LoggerFactory
+	civoCtx           context.Context
+	log               resources.LoggerFactory
 )
 
 type metadata struct {
@@ -160,9 +161,39 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 	return nil
 }
 
-func ReturnCivoStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
-	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudCivo))
+func (cloud *CivoProvider) Credential(storage resources.StorageFactory) error {
+
+	log.Print(civoCtx, "Enter CIVO TOKEN")
+	token, err := helpers.UserInputCredentials(log)
+	if err != nil {
+		return err
+	}
+	client, err := civogo.NewClient(token, "LON1")
+	if err != nil {
+		return err
+	}
+	id := client.GetAccountID()
+
+	if len(id) == 0 {
+		return log.NewError(civoCtx, "Invalid user")
+	}
+	log.Print(civoCtx, "Recieved accountId", "userId", id)
+
+	if err := storage.WriteCredentials(consts.CloudCivo,
+		&types.CredentialsDocument{
+			InfraProvider: consts.CloudCivo,
+			Civo:          &types.CredentialsCivo{Token: token},
+		}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
+	log = parentLogger // intentional shallow copy so that we can use the same
+	// logger to be used multiple places
+	civoCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "civo")
 
 	mainStateDocument = state
 
@@ -176,7 +207,7 @@ func ReturnCivoStruct(meta resources.Metadata, state *types.StorageDocument, Cli
 		},
 		client: ClientOption(),
 	}
-	log.Debug("Printing", "CivoProvider", obj)
+	log.Debug(civoCtx, "Printing", "CivoProvider", obj)
 	return obj, nil
 }
 
