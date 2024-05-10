@@ -28,14 +28,14 @@ type GeneralLog struct {
 }
 
 func (l *GeneralLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
-	l.log(msgType, message)
+	l.log(ctx, msgType, message)
 }
 
 func (l *GeneralLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
-	l.log(msgType, format, args...)
+	l.log(ctx, msgType, format, args...)
 }
 
-func formGroups(l *GeneralLog, v ...any) (format string, vals []any) {
+func formGroups(ctx context.Context, l *GeneralLog, v ...any) (format string, vals []any) {
 	if len(v) == 0 {
 		return "\n", nil
 	}
@@ -45,7 +45,7 @@ func formGroups(l *GeneralLog, v ...any) (format string, vals []any) {
 		format = _format.String()
 	}()
 	_format.WriteString("component=%s ")
-	vals = append(vals, color.MagentaString(l.moduleName))
+	vals = append(vals, color.MagentaString(getPackageName(ctx)))
 	i := 0
 	for ; i+1 < len(v); i += 2 {
 		if !reflect.TypeOf(v[i+1]).Implements(reflect.TypeOf((*error)(nil)).Elem()) &&
@@ -75,7 +75,25 @@ func isLogEnabled(level uint, msgType consts.CustomExternalLogLevel) bool {
 	return true
 }
 
-func (l *GeneralLog) log(msgType consts.CustomExternalLogLevel, msg string, args ...any) {
+func (l *GeneralLog) logErrorf(ctx context.Context, msg string, args ...any) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), consts.LOG_ERROR)
+	msg = prefix + msg
+	format, _args := formGroups(ctx, l, args...)
+
+	var errMsg error
+	if _args == nil {
+		errMsg = fmt.Errorf(msg + " " + format)
+	} else {
+		errMsg = fmt.Errorf(msg+" "+format, _args...)
+	}
+	fmt.Fprintln(l.writter, errMsg)
+
+	return errMsg
+}
+
+func (l *GeneralLog) log(ctx context.Context, msgType consts.CustomExternalLogLevel, msg string, args ...any) {
 	if !isLogEnabled(l.level, msgType) {
 		return
 	}
@@ -83,16 +101,12 @@ func (l *GeneralLog) log(msgType consts.CustomExternalLogLevel, msg string, args
 	defer l.mu.Unlock()
 	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), msgType)
 	msg = prefix + msg
-	format, _args := formGroups(l, args...)
+	format, _args := formGroups(ctx, l, args...)
 	if _args == nil {
 		fmt.Fprint(l.writter, msg+" "+format)
 	} else {
 		fmt.Fprintf(l.writter, msg+" "+format, _args...)
 	}
-}
-
-func (l *GeneralLog) SetPackageName(m string) {
-	l.moduleName = m
 }
 
 func getTime(level uint) string {
@@ -119,32 +133,31 @@ func NewGeneralLogger(verbose int, out io.Writer) resources.LoggerFactory {
 }
 
 func (l *GeneralLog) Print(ctx context.Context, msg string, args ...any) {
-	l.log(consts.LOG_INFO, msg, args...)
+	l.log(ctx, consts.LOG_INFO, msg, args...)
 }
 
 func (l *GeneralLog) Success(ctx context.Context, msg string, args ...any) {
-	l.log(consts.LOG_SUCCESS, msg, args...)
+	l.log(ctx, consts.LOG_SUCCESS, msg, args...)
 }
 
 func (l *GeneralLog) Note(ctx context.Context, msg string, args ...any) {
-	l.log(consts.LOG_NOTE, msg, args...)
+	l.log(ctx, consts.LOG_NOTE, msg, args...)
 }
 
 func (l *GeneralLog) Debug(ctx context.Context, msg string, args ...any) {
-	l.log(consts.LOG_DEBUG, msg, args...)
+	l.log(ctx, consts.LOG_DEBUG, msg, args...)
 }
 
 func (l *GeneralLog) Error(ctx context.Context, msg string, args ...any) {
-	l.log(consts.LOG_ERROR, msg, args...)
+	l.log(ctx, consts.LOG_ERROR, msg, args...)
 }
 
-func (l *GeneralLog) NewError(ctx context.Context, format string, args ...any) error {
-	// TODO: add the package info!
-	return fmt.Errorf(format, args...)
+func (l *GeneralLog) NewError(ctx context.Context, msg string, args ...any) error {
+	return l.logErrorf(ctx, msg, args...)
 }
 
 func (l *GeneralLog) Warn(ctx context.Context, msg string, args ...any) {
-	l.log(consts.LOG_WARNING, msg, args...)
+	l.log(ctx, consts.LOG_WARNING, msg, args...)
 }
 
 func (l *GeneralLog) Table(ctx context.Context, data []cloudController.AllClusterData) {

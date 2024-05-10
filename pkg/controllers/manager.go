@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"github.com/ksctl/ksctl/pkg/resources/controllers"
 	"os"
 	"strings"
 
@@ -22,42 +23,48 @@ import (
 )
 
 var (
-	log resources.LoggerFactory
-	ctx context.Context
+	ctxLog context.Context
 )
 
-type KsctlControllerClient struct{}
-
-func GenKsctlController() *KsctlControllerClient {
-	return &KsctlControllerClient{}
+type KsctlControllerClient struct {
+	ctx    context.Context
+	log    resources.LoggerFactory
+	client *resources.KsctlClient
 }
 
-// NOTE: get the logger from the controller manager calls
-// use the context.COntext with value sets to use the context aware logging
-func setupConfigurations(client *resources.KsctlClient) (context.Context, error) {
-
-	if client.Storage == nil {
-		return nil, 
+func GenKsctlController(
+	ctx context.Context,
+	log resources.LoggerFactory,
+	client *resources.KsctlClient,
+) controllers.Controller {
+	return &KsctlControllerClient{
+		ctx:    ctx,
+		log:    log,
+		client: client,
 	}
-	if err := validationFields(client.Metadata); err != nil {
+}
+
+func (manager *KsctlControllerClient) setupConfigurations() error {
+	ctxLog = context.WithValue(manager.ctx, consts.ContextModuleNameKey, "ksctl-manager")
+
+	if manager.client.Storage == nil {
+		return manager.log.NewError(ctxLog, "Initalize the storage driver")
+	}
+	if err := validationFields(manager.client.Metadata); err != nil {
+		return manager.log.NewError(ctxLog, "field validation failed", "Reason", err)
 	}
 
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+	if err := helpers.IsValidName(manager.client.Metadata.ClusterName); err != nil {
 		return err
 	}
-
+	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) Applications(client *resources.KsctlClient, op consts.KsctlOperation) error {
+func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) error {
 
-	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
-	}
-	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
 
@@ -77,7 +84,7 @@ func (ksctlControlCli *KsctlControllerClient) Applications(client *resources.Ksc
 	}
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
-			log.Error("StorageClass Kill failed", "reason", err)
+			log.Error(manager.ctx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
 	var (
@@ -89,21 +96,24 @@ func (ksctlControlCli *KsctlControllerClient) Applications(client *resources.Ksc
 		fakeClient = true
 	}
 
+	// TODO: pass the context and logger
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	if op != consts.OperationCreate && op != consts.OperationDelete {
-		return log.NewError("Invalid operation")
+		return log.NewError(manager.ctx, "Invalid operation")
 	}
 
 	return kubernetesController.ApplicationsInCluster(client, stateDocument, op)
 }
 
-func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.KsctlClient) error {
+func (manager *KsctlControllerClient) Credentials() error {
+	log := manager.log
+	client := manager.client
 
 	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
+		return log.NewError(manager.ctx, "Initalize the storage driver")
 	}
 
 	switch client.Metadata.Provider {
@@ -130,14 +140,10 @@ func (ksctlControlCli *KsctlControllerClient) Credentials(client *resources.Ksct
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resources.KsctlClient) error {
-	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
-	}
-	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
-	}
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+func (manager *KsctlControllerClient) CreateManagedCluster() error {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
 
@@ -186,16 +192,11 @@ func (ksctlControlCli *KsctlControllerClient) CreateManagedCluster(client *resou
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resources.KsctlClient) error {
+func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 
-	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
-	}
-	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
 
@@ -235,15 +236,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteManagedCluster(client *resou
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.KsctlClient) (*string, error) {
-	if client.Storage == nil {
-		return nil, log.NewError("Initalize the storage driver")
-	}
-	if err := validationFields(client.Metadata); err != nil {
-		return nil, log.NewError(err.Error())
-	}
-
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return nil, err
 	}
 
@@ -317,7 +313,10 @@ func (ksctlControlCli *KsctlControllerClient) SwitchCluster(client *resources.Ks
 	return &kubeconfig, nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.KsctlClient) error {
+func (manager *KsctlControllerClient) GetCluster() error {
+	client := manager.client
+	log := manager.log
+
 	if client.Storage == nil {
 		return log.NewError("Initalize the storage driver")
 	}
@@ -399,20 +398,14 @@ func (ksctlControlCli *KsctlControllerClient) GetCluster(client *resources.Ksctl
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.KsctlClient) error {
+func (manager *KsctlControllerClient) CreateHACluster() error {
 	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
 	}
-	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return err
-	}
-
-	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
 	}
 
 	if err := client.Storage.Setup(
@@ -477,19 +470,14 @@ func (ksctlControlCli *KsctlControllerClient) CreateHACluster(client *resources.
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.KsctlClient) error {
+func (manager *KsctlControllerClient) DeleteHACluster() error {
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
 	}
-	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
-	}
-	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
 
@@ -562,12 +550,10 @@ func (ksctlControlCli *KsctlControllerClient) DeleteHACluster(client *resources.
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resources.KsctlClient) error {
-	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
 
@@ -577,9 +563,6 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	//}
 	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
-	}
-	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
 	}
 	if !client.Metadata.IsHA {
 		return log.NewError("this feature is only for ha clusters (for now)")
@@ -639,12 +622,11 @@ func (ksctlControlCli *KsctlControllerClient) AddWorkerPlaneNode(client *resourc
 	return nil
 }
 
-func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resources.KsctlClient) error {
-	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(err.Error())
-	}
+func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 
-	if err := helpers.IsValidName(client.Metadata.ClusterName); err != nil {
+	client := manager.client
+	log := manager.log
+	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
 
@@ -654,9 +636,6 @@ func (ksctlControlCli *KsctlControllerClient) DelWorkerPlaneNode(client *resourc
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError("ha not supported")
-	}
-	if client.Storage == nil {
-		return log.NewError("Initalize the storage driver")
 	}
 	if !client.Metadata.IsHA {
 		return log.NewError("this feature is only for ha clusters (for now)")

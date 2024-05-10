@@ -2,22 +2,21 @@ package controllers
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 type Controller interface {
-	CreateManagedCluster(*resources.KsctlClient) error
-	DeleteManagedCluster(*resources.KsctlClient) error
+	CreateManagedCluster() error
+	DeleteManagedCluster() error
 
-	SwitchCluster(*resources.KsctlClient) (*string, error)
-	Applications(*resources.KsctlClient, consts.KsctlOperation) error
-	GetCluster(*resources.KsctlClient) error
+	SwitchCluster() (*string, error)
+	Applications(consts.KsctlOperation) error
+	GetCluster() error
 
-	Credentials(*resources.KsctlClient) error
+	Credentials() error
 
-	CreateHACluster(*resources.KsctlClient) error
-	DeleteHACluster(*resources.KsctlClient) error
+	CreateHACluster() error
+	DeleteHACluster() error
 
-	AddWorkerPlaneNode(*resources.KsctlClient) error
-	DelWorkerPlaneNode(*resources.KsctlClient) error
+	AddWorkerPlaneNode() error
+	DelWorkerPlaneNode() error
 }
