@@ -525,24 +525,18 @@ func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClus
 	return data, nil
 }
 
-func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
+func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) error {
 	err := storage.AlreadyCreated(consts.CloudAzure, region, name, ksctlClusterType)
-	return err == nil
+	if err != nil {
+		return log.NewError(azureCtx, "Cluster not found", "ErrStorage", err)
+	}
+	return nil
 }
 
 func (obj *AzureProvider) IsPresent(storage types.StorageFactory) error {
 
-	switch obj.haCluster {
-	case true:
-		clusterType = consts.ClusterTypeHa
-		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
-			return nil
-		}
-	case false:
-		clusterType = consts.ClusterTypeMang
-		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
-			return nil
-		}
+	if obj.haCluster {
+		return isPresent(storage, consts.ClusterTypeHa, obj.clusterName, obj.region)
 	}
-	return log.NewError(azureCtx, "Cluster not found")
+	return isPresent(storage, consts.ClusterTypeMang, obj.clusterName, obj.region)
 }

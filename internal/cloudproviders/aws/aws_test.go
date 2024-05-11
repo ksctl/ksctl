@@ -1,26 +1,32 @@
 package aws
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-	"gotest.tools/v3/assert"
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/types"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"gotest.tools/v3/assert"
 )
 
 var (
-	demoClient *types.KsctlClient
-	fakeaws    *AwsProvider
-	dir        = fmt.Sprintf("%s/ksctl-aws-test", os.TempDir())
+	demoClient   *types.KsctlClient
+	fakeaws      *AwsProvider
+	dir                              = fmt.Sprintf("%s/ksctl-aws-test", os.TempDir())
+	parentCtx    context.Context     = context.TODO()
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
@@ -28,14 +34,15 @@ func TestMain(m *testing.M) {
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
 	demoClient.Metadata.Provider = consts.CloudAws
-	demoClient.Metadata.LogVerbosity = -1
-	demoClient.Metadata.LogWritter = os.Stdout
 	state := new(storageTypes.StorageDocument)
-	demoClient.Cloud, _ = ReturnAwsStruct(demoClient.Metadata, state, ProvideMockClient)
+	demoClient.Cloud, _ = NewClient(
+		parentCtx,
+		demoClient.Metadata,
+		parentLogger, state, ProvideMockClient)
 
-	fakeaws, _ = ReturnAwsStruct(demoClient.Metadata, state, ProvideMockClient)
+	fakeaws, _ = NewClient(parentCtx, demoClient.Metadata, parentLogger, state, ProvideMockClient)
 
-	demoClient.Storage = localstate.InitStorage(-1, os.Stdout)
+	demoClient.Storage = localstate.InitStorage(parentCtx, parentLogger)
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
 	exitVal := m.Run()

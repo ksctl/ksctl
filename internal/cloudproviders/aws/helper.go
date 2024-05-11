@@ -12,7 +12,7 @@ func validationOfArguments(obj *AwsProvider) error {
 		return err
 	}
 
-	if err := helpers.IsValidName(obj.clusterName); err != nil {
+	if err := helpers.IsValidName(awsCtx, log, obj.clusterName); err != nil {
 		return err
 	}
 
@@ -25,8 +25,9 @@ func isValidRegion(obj *AwsProvider) error {
 	if err != nil {
 		return err
 	}
-	if validReg == nil {
-		return log.NewError("no region found")
+
+	if validReg == nil { // FIXME: do we actually need this?
+		return log.NewError(awsCtx, "no region found")
 	}
 
 	return nil
@@ -45,13 +46,13 @@ func isValidVMSize(obj *AwsProvider, size string) error {
 		}
 	}
 
-	return log.NewError("INVALID VM SIZE\nValid options %v\n", validSize)
+	return log.NewError(awsCtx, "invalid vm size", "Valid options", validSize)
 }
 
 func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
-		return log.NewError("Error reading state", "error", err)
+		return err
 	}
 	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x

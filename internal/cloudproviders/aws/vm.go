@@ -3,7 +3,6 @@ package aws
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -20,7 +19,7 @@ func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) erro
 	role := <-obj.chRole
 	indexNo := index
 
-	log.Debug("Printing", "role", role, "indexNo", indexNo)
+	log.Debug(awsCtx, "Printing", "role", role, "indexNo", indexNo)
 
 	vmName := ""
 
@@ -36,7 +35,7 @@ func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) erro
 	}
 
 	if len(vmName) == 0 {
-		log.Success("[skip] already deleted the vm")
+		log.Success(awsCtx, "skipped already deleted the vm")
 	} else {
 
 		var errDel error
@@ -63,7 +62,7 @@ func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) erro
 				mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = ""
 			}
 
-			err = obj.DeleteNetworkInterface(context.Background(), storage, indexNo, role)
+			err = obj.DeleteNetworkInterface(awsCtx, storage, indexNo, role)
 			if err != nil {
 				errDel = err
 				return
@@ -76,10 +75,9 @@ func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) erro
 		}()
 		<-donePoll
 		if errDel != nil {
-			return log.NewError(errDel.Error())
+			return errDel
 		}
-		log.Success("Deleted the vm", "id", vmName)
-
+		log.Success(awsCtx, "Deleted the vm", "id", vmName)
 	}
 	return nil
 }
@@ -103,7 +101,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 	}
 
 	if len(nicid) != 0 {
-		log.Print("[skip] already created the network interface", "id", nicid)
+		log.Print(awsCtx, "skipped already created the network interface", "id", nicid)
 		return nicid, nil
 	}
 
@@ -149,7 +147,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
 
 		default:
-			errCreate = fmt.Errorf("invalid role %s", role)
+			errCreate = log.NewError(awsCtx, "invalid role", "role", role)
 		}
 		if err := storage.Write(mainStateDocument); err != nil {
 			errCreate = err
@@ -159,7 +157,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 	if errCreate != nil {
 		return "", errCreate
 	}
-	log.Success("Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	log.Success(awsCtx, "Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
 	return *nicresponse.NetworkInterface.NetworkInterfaceId, nil
 }
 
@@ -169,7 +167,7 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 	role := <-obj.chRole
 	vmtype := <-obj.chVMType
 
-	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
+	log.Debug(awsCtx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
 	instanceId := ""
 	instanceIp := ""
@@ -189,10 +187,10 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 	}
 	if len(instanceId) != 0 {
 		if len(instanceIp) != 0 {
-			log.Print("skipped vm already created", "name", instanceId)
+			log.Print(awsCtx, "skipped vm already created", "name", instanceId)
 			return nil
 		} else {
-			instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceId)
+			instance_ip, err := obj.client.DescribeInstanceState(awsCtx, instanceId)
 			if err != nil {
 				return err
 			}
@@ -220,20 +218,18 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		}
 	}
 
-	// stringindexNo := fmt.Sprintf("%d", indexNo)
-
-	nicid, err := obj.CreateNetworkInterface(context.TODO(), storage, name, indexNo, role)
+	nicid, err := obj.CreateNetworkInterface(awsCtx, storage, name, indexNo, role)
 	if err != nil {
 		return err
 	}
 
 	ami, err := obj.getLatestUbuntuAMI()
 	if err != nil {
-		log.Error("Error getting latest ubuntu ami", "error", err)
+		log.Error(awsCtx, "Error getting latest ubuntu ami", "Reason", err)
 	}
 	initScript, err := helpers.GenerateInitScriptForVM(name)
 	if err != nil {
-		log.Error("Error generating init script", "error", err)
+		log.Error(awsCtx, "Error generating init script", "Reason", err)
 	}
 	initScriptBase64 := base64.StdEncoding.EncodeToString([]byte(initScript))
 
@@ -265,7 +261,7 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		UserData: aws.String(initScriptBase64),
 	}
 
-	instanceop, err := obj.client.BeginCreateVM(context.Background(), parameter)
+	instanceop, err := obj.client.BeginCreateVM(awsCtx, parameter)
 	if err != nil {
 		return err
 	}
@@ -300,23 +296,23 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 	}()
 	<-done1
 	if errCreateVM != nil {
-		return log.NewError(errCreateVM.Error())
+		return errCreateVM
 	}
 
-	log.Print("creating vm...", "vmName", name)
+	log.Print(awsCtx, "creating vm", "vmName", name)
 
 	done := make(chan struct{})
 
 	go func() {
 		defer close(done)
 
-		err = obj.client.InstanceInitialWaiter(context.Background(), instanceId)
+		err = obj.client.InstanceInitialWaiter(awsCtx, instanceId)
 		if err != nil {
 			errCreateVM = err
 			return
 		}
 
-		instance_ip, err := obj.client.DescribeInstanceState(context.Background(), instanceId)
+		instance_ip, err := obj.client.DescribeInstanceState(awsCtx, instanceId)
 		if err != nil {
 			errCreateVM = err
 			return
@@ -349,12 +345,12 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 	}()
 	<-done
 	if errCreateVM != nil {
-		return log.NewError(errCreateVM.Error())
+		return errCreateVM
 	}
 
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
+	log.Debug(awsCtx, "Printing", "mainStateDocument", mainStateDocument)
 
-	log.Success("Created the vm", "name", name)
+	log.Success(awsCtx, "Created the vm", "name", name)
 	return nil
 }
 
@@ -398,7 +394,7 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage ksct
 		interfaceName = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index]
 	}
 	if len(interfaceName) == 0 {
-		log.Print("[skip] already deleted the network interface")
+		log.Print(awsCtx, "skipped already deleted the network interface")
 	} else {
 		err := obj.client.BeginDeleteNIC(interfaceName)
 		if err != nil {
@@ -414,13 +410,13 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage ksct
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = ""
 		default:
-			return fmt.Errorf("invalid role %s", role)
+			return log.NewError(awsCtx, "invalid role", "role", role)
 		}
 		err = storage.Write(mainStateDocument)
 		if err != nil {
-			log.Error("Error saving state", "error", err)
+			return err
 		}
-		log.Success("deleted the network interface", "id", interfaceName)
+		log.Success(awsCtx, "deleted the network interface", "id", interfaceName)
 	}
 
 	return nil
@@ -439,5 +435,5 @@ func fetchgroupid(role consts.KsctlRole) (string, error) {
 
 	}
 
-	return "", log.NewError("invalid role %s", role)
+	return "", log.NewError(awsCtx, "invalid role", "role", role)
 }

@@ -101,39 +101,42 @@ type AwsGoClient struct {
 }
 
 func newEC2Client(region string) (aws.Config, error) {
-	NewSession, err := config.LoadDefaultConfig(context.TODO(),
+	NewSession, err := config.LoadDefaultConfig(awsCtx,
 		config.WithRegion(region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), "")),
+		config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(
+				os.Getenv("AWS_ACCESS_KEY_ID"),
+				os.Getenv("AWS_SECRET_ACCESS_KEY"),
+				"",
+			),
+		),
 	)
 	if err != nil {
-		return NewSession, log.NewError("Error Creating AWS Session", "error", err)
+		return NewSession, log.NewError(awsCtx, "Error Creating AWS Session", "Reason", err)
 	}
-	log.Success("AWS Session created successfully")
+	log.Success(awsCtx, "AWS Session created successfully")
 
 	return NewSession, nil
 }
 
-func (awsclient *AwsGoClient) AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
+func (awsclient *AwsGoClient) AuthorizeSecurityGroupIngress(ctx context.Context,
+	parameter ec2.AuthorizeSecurityGroupIngressInput) error {
 
 	_, err := awsclient.ec2Client.AuthorizeSecurityGroupIngress(ctx, &parameter)
 	if err != nil {
-		return log.NewError("Error Authorizing Security Group Ingress", "error", err)
+		return log.NewError(awsCtx, "Error Authorizing Security Group Ingress", "Reason", err)
 	}
 
 	return nil
 }
 
 func (awsclient *AwsGoClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
-	resp, err := awsclient.ec2Client.DescribeImages(context.TODO(), filter)
+	resp, err := awsclient.ec2Client.DescribeImages(awsCtx, filter)
 	if err != nil {
-		return "", log.NewError("failed to describe images: %w", err)
+		return "", log.NewError(awsCtx, "failed to describe images", "Reason", err)
 	}
 	if len(resp.Images) == 0 {
-		return "", log.NewError("no images found")
-	}
-
-	if len(resp.Images) == 0 {
-		return "", log.NewError("no images found")
+		return "", log.NewError(awsCtx, "no images found")
 	}
 
 	var savedImages []types.Image
@@ -151,9 +154,9 @@ func (awsclient *AwsGoClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImage
 	for x := 0; x < 2; x++ {
 		i := savedImages[x]
 		if i.ImageOwnerAlias != nil {
-			log.Debug("ownerAlias", *i.ImageOwnerAlias)
+			log.Debug(awsCtx, "ownerAlias", *i.ImageOwnerAlias)
 		}
-		log.Debug("Printing amis", "creationdate", *i.CreationDate, "public", *i.Public, "ownerid", *i.OwnerId, "architecture", i.Architecture.Values(), "name", *i.Name, "imageid", *i.ImageId)
+		log.Debug(awsCtx, "Printing amis", "creationdate", *i.CreationDate, "public", *i.Public, "ownerid", *i.OwnerId, "architecture", i.Architecture.Values(), "name", *i.Name, "imageid", *i.ImageId)
 	}
 
 	selectedAMI := *savedImages[0].ImageId
@@ -172,11 +175,11 @@ func trustedSource(id string) bool {
 }
 
 func (awsclient *AwsGoClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
-	azs, err := awsclient.ec2Client.DescribeAvailabilityZones(context.TODO(), &ec2.DescribeAvailabilityZonesInput{
+	azs, err := awsclient.ec2Client.DescribeAvailabilityZones(awsCtx, &ec2.DescribeAvailabilityZonesInput{
 		AllAvailabilityZones: aws.Bool(true),
 	})
 	if err != nil {
-		return azs, log.NewError("failed to describe availability zones: %w", err)
+		return azs, log.NewError(awsCtx, "failed to describe availability zones", "Reason", err)
 	}
 
 	return azs, nil
@@ -186,7 +189,7 @@ func (awsclient *AwsGoClient) BeginCreateNIC(ctx context.Context, parameter *ec2
 
 	nic, err := awsclient.ec2Client.CreateNetworkInterface(ctx, parameter)
 	if err != nil {
-		return nil, log.NewError("Error Creating Network Interface", "error", err)
+		return nil, log.NewError(awsCtx, "Error Creating Network Interface", "Reason", err)
 	}
 
 	nicExistsWaiter := ec2.NewNetworkInterfaceAvailableWaiter(awsclient.ec2Client, func(nicwaiter *ec2.NetworkInterfaceAvailableWaiterOptions) {
@@ -198,10 +201,10 @@ func (awsclient *AwsGoClient) BeginCreateNIC(ctx context.Context, parameter *ec2
 		NetworkInterfaceIds: []string{*nic.NetworkInterface.NetworkInterfaceId},
 	}
 
-	err = nicExistsWaiter.Wait(context.Background(), describeNICInput, initialNicWaiterTime)
+	err = nicExistsWaiter.Wait(awsCtx, describeNICInput, initialNicWaiterTime)
 
 	if err != nil {
-		return nil, log.NewError("Error Waiting for Network Interface", "error", err)
+		return nil, log.NewError(awsCtx, "Error Waiting for Network Interface", "Reason", err)
 	}
 
 	return nic, err
@@ -210,7 +213,7 @@ func (awsclient *AwsGoClient) BeginCreateNIC(ctx context.Context, parameter *ec2
 func (awsclient *AwsGoClient) BeginCreateSubNet(ctx context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
 	subnet, err := awsclient.ec2Client.CreateSubnet(ctx, &parameter)
 	if err != nil {
-		return nil, log.NewError("Error Creating Subnet", "error", err)
+		return nil, log.NewError(awsCtx, "Error Creating Subnet", "Reason", err)
 	}
 
 	subnetExistsWaiter := ec2.NewSubnetAvailableWaiter(awsclient.ec2Client, func(subnetwaiter *ec2.SubnetAvailableWaiterOptions) {
@@ -224,7 +227,7 @@ func (awsclient *AwsGoClient) BeginCreateSubNet(ctx context.Context, subnetName 
 
 	err = subnetExistsWaiter.Wait(ctx, describeSubnetInput, initialSubnetWaiterTime)
 	if err != nil {
-		return nil, log.NewError("Error Waiting for Subnet", "error", err)
+		return nil, log.NewError(awsCtx, "Error Waiting for Subnet", "Reason", err)
 	}
 
 	return subnet, err
@@ -234,7 +237,7 @@ func (awsclient *AwsGoClient) BeginCreateVM(ctx context.Context, parameter *ec2.
 
 	runResult, err := awsclient.ec2Client.RunInstances(ctx, parameter)
 	if err != nil {
-		return nil, log.NewError("Error Creating Instance", "error", err)
+		return nil, log.NewError(awsCtx, "Error Creating Instance", "Reason", err)
 	}
 
 	return runResult, err
@@ -242,38 +245,38 @@ func (awsclient *AwsGoClient) BeginCreateVM(ctx context.Context, parameter *ec2.
 
 func (awsclient *AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
 
-	createInternetGateway, err := awsclient.ec2Client.CreateInternetGateway(context.TODO(), &gatewayparameter)
+	createInternetGateway, err := awsclient.ec2Client.CreateInternetGateway(awsCtx, &gatewayparameter)
 	if err != nil {
-		return nil, nil, log.NewError("Error Creating Internet Gateway", "error", err)
+		return nil, nil, log.NewError(awsCtx, "Error Creating Internet Gateway", "Reason", err)
 	}
 
-	_, err = awsclient.ec2Client.AttachInternetGateway(context.TODO(), &ec2.AttachInternetGatewayInput{
+	_, err = awsclient.ec2Client.AttachInternetGateway(awsCtx, &ec2.AttachInternetGatewayInput{
 		InternetGatewayId: aws.String(*createInternetGateway.InternetGateway.InternetGatewayId),
 		VpcId:             aws.String(vpcid),
 	})
 	if err != nil {
-		return nil, nil, log.NewError("Error Attaching Internet Gateway", "error", err)
+		return nil, nil, log.NewError(awsCtx, "Error Attaching Internet Gateway", "Reason", err)
 	}
 
 	mainStateDocument.CloudInfra.Aws.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 
-	routeTable, err := awsclient.ec2Client.CreateRouteTable(context.TODO(), &routeTableparameter)
+	routeTable, err := awsclient.ec2Client.CreateRouteTable(awsCtx, &routeTableparameter)
 	if err != nil {
-		return nil, nil, log.NewError("Error Creating Route Table", "error", err)
+		return nil, nil, log.NewError(awsCtx, "Error Creating Route Table", "Reason", err)
 	}
 
 	mainStateDocument.CloudInfra.Aws.RouteTableID = *routeTable.RouteTable.RouteTableId
 
-	_, err = awsclient.ec2Client.CreateRoute(context.TODO(), &ec2.CreateRouteInput{
+	_, err = awsclient.ec2Client.CreateRoute(awsCtx, &ec2.CreateRouteInput{
 		DestinationCidrBlock: aws.String("0.0.0.0/0"),
 		GatewayId:            aws.String(mainStateDocument.CloudInfra.Aws.GatewayID),
 		RouteTableId:         aws.String(mainStateDocument.CloudInfra.Aws.RouteTableID),
 	})
 	if err != nil {
-		return nil, nil, log.NewError("Error Creating Route", "error", err)
+		return nil, nil, log.NewError(awsCtx, "Error Creating Route", "Reason", err)
 	}
 
-	_, err = awsclient.ec2Client.AssociateRouteTable(context.Background(), &ec2.AssociateRouteTableInput{
+	_, err = awsclient.ec2Client.AssociateRouteTable(awsCtx, &ec2.AssociateRouteTableInput{
 		RouteTableId: aws.String(*routeTable.RouteTable.RouteTableId),
 		SubnetId:     aws.String(mainStateDocument.CloudInfra.Aws.SubnetID),
 	})
@@ -282,9 +285,9 @@ func (awsclient *AwsGoClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInte
 }
 
 func (awsclient *AwsGoClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
-	vpc, err := awsclient.ec2Client.CreateVpc(context.TODO(), &parameter)
+	vpc, err := awsclient.ec2Client.CreateVpc(awsCtx, &parameter)
 	if err != nil {
-		return nil, log.NewError("Error Creating VPC", "error", err)
+		return nil, log.NewError(awsCtx, "Error Creating VPC", "Reason", err)
 	}
 
 	vpcExistsWaiter := ec2.NewVpcExistsWaiter(awsclient.ec2Client, func(vpcwaiter *ec2.VpcExistsWaiterOptions) {
@@ -296,9 +299,9 @@ func (awsclient *AwsGoClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2
 		VpcIds: []string{*vpc.Vpc.VpcId},
 	}
 
-	err = vpcExistsWaiter.Wait(context.Background(), describeVpcInput, initialSubnetWaiterTime)
+	err = vpcExistsWaiter.Wait(awsCtx, describeVpcInput, initialSubnetWaiterTime)
 	if err != nil {
-		return nil, log.NewError("Error Waiting for VPC", "error", err)
+		return nil, log.NewError(awsCtx, "Error Waiting for VPC", "Reason", err)
 	}
 
 	return vpc, err
@@ -310,7 +313,7 @@ func (awsclient *AwsGoClient) BeginDeleteVpc(ctx context.Context, storage ksctlT
 		VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
 	})
 	if err != nil {
-		return log.NewError("Error Deleting VPC", "error", err)
+		return log.NewError(awsCtx, "Error Deleting VPC", "Reason", err)
 	}
 
 	return nil
@@ -320,24 +323,24 @@ func (awsclient *AwsGoClient) BeginDeleteVpc(ctx context.Context, storage ksctlT
 func (awsclient *AwsGoClient) BeginDeleteNIC(nicID string) error {
 	initialWater := time.Now()
 	for {
-		nic, err := awsclient.ec2Client.DescribeNetworkInterfaces(context.Background(), &ec2.DescribeNetworkInterfacesInput{
+		nic, err := awsclient.ec2Client.DescribeNetworkInterfaces(awsCtx, &ec2.DescribeNetworkInterfacesInput{
 			NetworkInterfaceIds: []string{nicID},
 		})
 		if err != nil {
-			return log.NewError("Error Describing Network Interface", "error", err)
+			return log.NewError(awsCtx, "Error Describing Network Interface", "Reason", err)
 		}
 		if nic.NetworkInterfaces[0].Status == "available" {
 			break
 		}
 		if time.Since(initialWater) > initialNicDeletionWaiterTime {
-			return log.NewError("Error Waiting for Network Interface Timeout", "error", err)
+			return log.NewError(awsCtx, "Error Waiting for Network Interface Timeout", "Reason", err)
 		}
 	}
-	_, err := awsclient.ec2Client.DeleteNetworkInterface(context.Background(), &ec2.DeleteNetworkInterfaceInput{
+	_, err := awsclient.ec2Client.DeleteNetworkInterface(awsCtx, &ec2.DeleteNetworkInterfaceInput{
 		NetworkInterfaceId: aws.String(nicID),
 	})
 	if err != nil {
-		log.Success("[skip] already deleted the nic", nicID)
+		log.Success(awsCtx, "skipped already deleted the nic", "id", nicID)
 		return nil
 	}
 
@@ -350,7 +353,7 @@ func (awsclient *AwsGoClient) BeginDeleteSecurityGrp(ctx context.Context, securi
 		GroupId: aws.String(securityGrpID),
 	})
 	if err != nil {
-		return log.NewError("Error Deleting Security Group", "error", err)
+		return log.NewError(awsCtx, "Error Deleting Security Group", "Reason", err)
 	}
 	return nil
 }
@@ -361,7 +364,7 @@ func (awsclient *AwsGoClient) BeginDeleteSubNet(ctx context.Context, storage ksc
 		SubnetId: aws.String(subnetID),
 	})
 	if err != nil {
-		return log.NewError("Error Deleting Subnet", "error", err)
+		return log.NewError(awsCtx, "Error Deleting Subnet", "Reason", err)
 	}
 
 	return nil
@@ -370,9 +373,9 @@ func (awsclient *AwsGoClient) BeginDeleteSubNet(ctx context.Context, storage ksc
 
 func (awsgo *AwsGoClient) BeginDeleteVM(instanceID string) error {
 
-	_, err := awsgo.ec2Client.TerminateInstances(context.TODO(), &ec2.TerminateInstancesInput{InstanceIds: []string{instanceID}})
+	_, err := awsgo.ec2Client.TerminateInstances(awsCtx, &ec2.TerminateInstancesInput{InstanceIds: []string{instanceID}})
 	if err != nil {
-		return log.NewError("failed to delete instance, %v", err)
+		return log.NewError(awsCtx, "failed to delete instance", "Reason", err)
 	}
 
 	ec2TerminatedWaiter := ec2.NewInstanceTerminatedWaiter(awsgo.ec2Client, func(itwo *ec2.InstanceTerminatedWaiterOptions) {
@@ -384,9 +387,9 @@ func (awsgo *AwsGoClient) BeginDeleteVM(instanceID string) error {
 		InstanceIds: []string{instanceID},
 	}
 
-	err = ec2TerminatedWaiter.Wait(context.TODO(), describeEc2Inp, instanceInitialTerminationTime)
+	err = ec2TerminatedWaiter.Wait(awsCtx, describeEc2Inp, instanceInitialTerminationTime)
 	if err != nil {
-		return log.NewError("failed to wait for instance to terminate, %v", err)
+		return log.NewError(awsCtx, "failed to wait for instance to terminate", "Reason", err)
 	}
 
 	return nil
@@ -405,7 +408,7 @@ func (awsclient *AwsGoClient) InstanceInitialWaiter(ctx context.Context, instanc
 
 	err := instanceExistsWaiter.Wait(ctx, describeInstanceInput, instanceInitialWaiterTime)
 	if err != nil {
-		return log.NewError("Error Waiting for Instance", "error", err)
+		return log.NewError(awsCtx, "Error Waiting for Instance", "Reason", err)
 	}
 
 	return nil
@@ -415,7 +418,7 @@ func (awsclient *AwsGoClient) BeginCreateNetworkAcl(ctx context.Context, paramet
 
 	naclresp, err := awsclient.ec2Client.CreateNetworkAcl(ctx, &parameter)
 	if err != nil {
-		return nil, log.NewError("Error Creating Network ACL", "error", err)
+		return nil, log.NewError(awsCtx, "Error Creating Network ACL", "Reason", err)
 	}
 
 	_, err = awsclient.ec2Client.CreateNetworkAclEntry(ctx, &ec2.CreateNetworkAclEntryInput{
@@ -427,7 +430,7 @@ func (awsclient *AwsGoClient) BeginCreateNetworkAcl(ctx context.Context, paramet
 		Egress:       aws.Bool(true),
 	})
 	if err != nil {
-		return nil, log.NewError("Error Creating Network ACL Entry", "error", err)
+		return nil, log.NewError(awsCtx, "Error Creating Network ACL Entry", "Reason", err)
 	}
 
 	return naclresp, nil
@@ -437,7 +440,7 @@ func (awsclient *AwsGoClient) BeginCreateSecurityGroup(ctx context.Context, para
 
 	securitygroup, err := awsclient.ec2Client.CreateSecurityGroup(ctx, &parameter)
 	if err != nil {
-		return nil, log.NewError("Error Creating Security Group", "error", err)
+		return nil, log.NewError(awsCtx, "Error Creating Security Group", "Reason", err)
 	}
 
 	return securitygroup, nil
@@ -446,24 +449,24 @@ func (awsclient *AwsGoClient) BeginCreateSecurityGroup(ctx context.Context, para
 func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
 	if mainStateDocument.CloudInfra.Aws.RouteTableID == "" {
-		log.Success("[skip] already deleted the route table")
+		log.Success(awsCtx, "skipped already deleted the route table")
 	} else {
 		_, err := awsclient.ec2Client.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{
 			RouteTableId: aws.String(mainStateDocument.CloudInfra.Aws.RouteTableID),
 		})
 		if err != nil {
-			return log.NewError("Error Deleting Route Table", "error", err)
+			return log.NewError(awsCtx, "Error Deleting Route Table", "Reason", err)
 		}
 		mainStateDocument.CloudInfra.Aws.RouteTableID = ""
-		log.Success("deleted the route table", "id", mainStateDocument.CloudInfra.Aws.RouteTableID)
+		log.Success(awsCtx, "deleted the route table", "id", mainStateDocument.CloudInfra.Aws.RouteTableID)
 		err = storage.Write(mainStateDocument)
 		if err != nil {
-			return log.NewError("Error Writing State File", "error", err)
+			return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
 		}
 	}
 
 	if mainStateDocument.CloudInfra.Aws.GatewayID == "" {
-		log.Success("[skip] already deleted the internet gateway")
+		log.Success(awsCtx, "skipped already deleted the internet gateway")
 	} else {
 		_, err := awsclient.ec2Client.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
 			InternetGatewayId: aws.String(mainStateDocument.CloudInfra.Aws.GatewayID),
@@ -471,22 +474,22 @@ func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage ks
 		})
 
 		if err != nil {
-			return log.NewError("Error Detaching Internet Gateway", "error", err)
+			return log.NewError(awsCtx, "Error Detaching Internet Gateway", "Reason", err)
 		}
 
 		_, err = awsclient.ec2Client.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{
 			InternetGatewayId: aws.String(mainStateDocument.CloudInfra.Aws.GatewayID),
 		})
 		if err != nil {
-			return log.NewError("Error Deleting Internet Gateway", "error", err)
+			return log.NewError(awsCtx, "Error Deleting Internet Gateway", "Reason", err)
 		}
 		mainStateDocument.CloudInfra.Aws.GatewayID = ""
 		err = storage.Write(mainStateDocument)
 		if err != nil {
-			return log.NewError("Error Writing State File", "error", err)
+			return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
 		}
 
-		log.Success("deleted the internet gateway", "id", mainStateDocument.CloudInfra.Aws.GatewayID)
+		log.Success(awsCtx, "deleted the internet gateway", "id", mainStateDocument.CloudInfra.Aws.GatewayID)
 
 	}
 
@@ -499,15 +502,15 @@ func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage ks
 		})
 
 		if err != nil {
-			return log.NewError("Error Deleting Network ACL", "error", err)
+			return log.NewError(awsCtx, "Error Deleting Network ACL", "Reason", err)
 		}
 
 		mainStateDocument.CloudInfra.Aws.NetworkAclID = ""
 		err = storage.Write(mainStateDocument)
 		if err != nil {
-			return log.NewError("Error Writing State File", "error", err)
+			return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
 		}
-		log.Success("deleted the network acl", "id", mainStateDocument.CloudInfra.Aws.NetworkAclID)
+		log.Success(awsCtx, "deleted the network acl", "id", mainStateDocument.CloudInfra.Aws.NetworkAclID)
 
 	}
 	return nil
@@ -521,7 +524,7 @@ func (awsclient *AwsGoClient) DescribeInstanceState(ctx context.Context, instanc
 
 	instanceinforesponse, err := awsclient.ec2Client.DescribeInstances(ctx, instanceipinput)
 	if err != nil {
-		return instanceinforesponse, log.NewError("Error Describing Instances", "error", err)
+		return instanceinforesponse, log.NewError(awsCtx, "Error Describing Instances", "Reason", err)
 	}
 
 	return instanceinforesponse, nil
@@ -531,7 +534,7 @@ func (awsclient *AwsGoClient) AuthorizeSecurityGroupEgress(ctx context.Context, 
 
 	_, err := awsclient.ec2Client.AuthorizeSecurityGroupEgress(ctx, &parameter)
 	if err != nil {
-		return log.NewError("Error Authorizing Security Group Egress", "error", err)
+		return log.NewError(awsCtx, "Error Authorizing Security Group Egress", "Reason", err)
 	}
 
 	return nil
@@ -543,7 +546,7 @@ func (awsclient *AwsGoClient) DeleteSSHKey(ctx context.Context, name string) err
 		KeyName: aws.String(name),
 	})
 	if err != nil {
-		return log.NewError("Error Deleting Key Pair", "error", err)
+		return log.NewError(awsCtx, "Error Deleting Key Pair", "Reason", err)
 	}
 
 	return nil
@@ -551,16 +554,16 @@ func (awsclient *AwsGoClient) DeleteSSHKey(ctx context.Context, name string) err
 
 func (awsclient *AwsGoClient) InitClient(storage ksctlTypes.StorageFactory) error {
 
-	err := awsclient.setRequiredENVVAR(storage, context.Background())
+	err := awsclient.setRequiredENVVAR(storage, awsCtx)
 	if err != nil {
-		return log.NewError("Error Setting Required Environment Variables", "error", err)
+		return log.NewError(awsCtx, "Error Setting Required Environment Variables", "Reason", err)
 	}
 
 	awsclient.storage = storage
 	awsclient.region = mainStateDocument.Region
 	ec2client, err := newEC2Client(awsclient.region)
 	if err != nil {
-		return log.NewError("Error Creating EC2 Client", "error", err)
+		return log.NewError(awsCtx, "Error Creating EC2 Client", "Reason", err)
 	}
 
 	awsclient.ec2Client = ec2.NewFromConfig(ec2client)
@@ -570,7 +573,7 @@ func (awsclient *AwsGoClient) InitClient(storage ksctlTypes.StorageFactory) erro
 func (awsclient *AwsGoClient) ImportKeyPair(ctx context.Context, input *ec2.ImportKeyPairInput) error {
 
 	if _, err := awsclient.ec2Client.ImportKeyPair(ctx, input); err != nil {
-		return log.NewError("Error Importing Key Pair", "error", err)
+		return log.NewError(awsCtx, "Error Importing Key Pair", "Reason", err)
 	}
 
 	return nil
@@ -595,7 +598,7 @@ func (awsclient *AwsGoClient) setRequiredENVVAR(storage ksctlTypes.StorageFactor
 		msg = msg + " AWS_SECRET_ACCESS_KEY"
 	}
 
-	log.Warn(msg)
+	log.Warn(awsCtx, msg)
 
 	credentials, err := storage.ReadCredentials(consts.CloudAws)
 	if err != nil {
@@ -619,9 +622,9 @@ func (awsclient *AwsGoClient) ListLocations() (*string, error) {
 		AllRegions: aws.Bool(true),
 	}
 
-	result, err := awsclient.ec2Client.DescribeRegions(context.Background(), parameter)
+	result, err := awsclient.ec2Client.DescribeRegions(awsCtx, parameter)
 	if err != nil {
-		return nil, log.NewError("Error Describing Regions", "error", err)
+		return nil, log.NewError(awsCtx, "Error Describing Regions", "Reason", err)
 	}
 
 	for _, region := range result.Regions {
@@ -630,7 +633,7 @@ func (awsclient *AwsGoClient) ListLocations() (*string, error) {
 		}
 	}
 
-	return nil, log.NewError("region not found")
+	return nil, log.NewError(awsCtx, "region not found")
 }
 
 func (awsclient *AwsGoClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
@@ -645,9 +648,9 @@ func (awsclient *AwsGoClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, er
 	}
 
 	for {
-		output, err := awsclient.ec2Client.DescribeInstanceTypes(context.Background(), input)
+		output, err := awsclient.ec2Client.DescribeInstanceTypes(awsCtx, input)
 		if err != nil {
-			return vmTypes, log.NewError("Error Describing Instance Types", "error", err)
+			return vmTypes, log.NewError(awsCtx, "Error Describing Instance Types", "Reason", err)
 		}
 		vmTypes.InstanceTypes = append(vmTypes.InstanceTypes, output.InstanceTypes...)
 		if output.NextToken == nil {
@@ -667,9 +670,9 @@ func (awsclient *AwsGoClient) ModifyVpcAttribute(ctx context.Context) error {
 			Value: aws.Bool(true),
 		},
 	}
-	_, err := awsclient.ec2Client.ModifyVpcAttribute(context.Background(), modifyvpcinput)
+	_, err := awsclient.ec2Client.ModifyVpcAttribute(awsCtx, modifyvpcinput)
 	if err != nil {
-		return log.NewError("Error Modifying VPC Attribute", "error", err)
+		return log.NewError(awsCtx, "Error Modifying VPC Attribute", "Reason", err)
 	}
 
 	return nil
@@ -683,9 +686,9 @@ func (awsclient *AwsGoClient) ModifySubnetAttribute(ctx context.Context) error {
 			Value: aws.Bool(true),
 		},
 	}
-	_, err := awsclient.ec2Client.ModifySubnetAttribute(context.Background(), modifyusbnetinput)
+	_, err := awsclient.ec2Client.ModifySubnetAttribute(awsCtx, modifyusbnetinput)
 	if err != nil {
-		return log.NewError("Error Modifying Subnet Attribute", "error", err)
+		return log.NewError(awsCtx, "Error Modifying Subnet Attribute", "Reason", err)
 	}
 
 	return nil
@@ -693,14 +696,14 @@ func (awsclient *AwsGoClient) ModifySubnetAttribute(ctx context.Context) error {
 
 func (awsclient *AwsGoClient) SetRegion(region string) string {
 	awsclient.region = region
-	log.Debug("region set to", "code", awsclient.region)
+	log.Debug(awsCtx, "region set", "code", awsclient.region)
 
 	return awsclient.region
 }
 
 func (awsclient *AwsGoClient) SetVpc(vpc string) string {
 	awsclient.vpc = vpc
-	log.Print("vpc set to: ", "", awsclient.vpc)
+	log.Print(awsCtx, "vpc set", "name", awsclient.vpc)
 
 	return awsclient.vpc
 }
@@ -818,10 +821,10 @@ func (*AwsGoMockClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.S
 	mainStateDocument.CloudInfra.Aws.VpcId = ""
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError("Error Writing State File", "error", err)
+		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
 	}
 
-	log.Success("deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcId)
+	log.Success(awsCtx, "deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcId)
 
 	return nil
 
@@ -856,10 +859,10 @@ func (*AwsGoMockClient) BeginDeleteSubNet(ctx context.Context, storage ksctlType
 	mainStateDocument.CloudInfra.Aws.SubnetID = ""
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError("Error Writing State File", "error", err)
+		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
 	}
 
-	log.Success("deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetName)
+	log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetName)
 
 	return nil
 
