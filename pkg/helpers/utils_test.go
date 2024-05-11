@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -20,7 +21,6 @@ var (
 	dir                         = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
 	log resources.LoggerFactory = func() resources.LoggerFactory {
 		var l resources.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
-		l.SetPackageName("utils")
 		return l
 	}()
 	mainStateDoc = &types.StorageDocument{}
@@ -69,11 +69,13 @@ func TestConsts(t *testing.T) {
 }
 
 func TestGenerateCerts(t *testing.T) {
-	if ca, etcd, key, err := GenerateCerts(log, []string{"192.168.1.1"}); err != nil {
+	if ca, etcd, key, err := GenerateCerts(
+		context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"), log, []string{"192.168.1.1"}); err != nil {
 		t.Fatalf("it shouldn't fail, ca: %v, etcd: %v, key: %v, err: %v\n", ca, etcd, key, err)
 	}
 
-	if ca, etcd, key, err := GenerateCerts(log, []string{"192,168.1.1"}); err == nil ||
+	if ca, etcd, key, err := GenerateCerts(
+		context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"), log, []string{"192,168.1.1"}); err == nil ||
 		len(ca) != 0 ||
 		len(etcd) != 0 ||
 		len(key) != 0 {
@@ -105,7 +107,7 @@ func TestCNIValidation(t *testing.T) {
 }
 
 func TestCreateSSHKeyPair(t *testing.T) {
-	err := CreateSSHKeyPair(log, mainStateDoc)
+	err := CreateSSHKeyPair(context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"), log, mainStateDoc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,12 +128,15 @@ func TestIsValidClusterName(T *testing.T) {
 
 func TestSSHExecute(t *testing.T) {
 
-	var sshTest SSHCollection = &SSHPayload{}
+	var sshTest SSHCollection = &SSHPayload{
+		ctx: context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"),
+		log: log,
+	}
 	sshTest.Username("fake")
 	sshTest.PrivateKey(mainStateDoc.SSHKeyPair.PrivateKey)
 	assert.Assert(t, sshTest.Flag(consts.UtilExecWithoutOutput).Script(NewScriptCollection()).
 		IPv4("A.A.A.A").
-		FastMode(true).SSHExecute(log) != nil, "ssh should fail")
+		FastMode(true).SSHExecute() != nil, "ssh should fail")
 
 	fmt.Println("Cleanup..")
 	if err := os.RemoveAll(dir); err != nil {

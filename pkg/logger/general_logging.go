@@ -35,7 +35,7 @@ func (l *GeneralLog) ExternalLogHandlerf(ctx context.Context, msgType consts.Cus
 	l.log(ctx, msgType, format, args...)
 }
 
-func formGroups(ctx context.Context, l *GeneralLog, v ...any) (format string, vals []any) {
+func formGroups(ctx context.Context, v ...any) (format string, vals []any) {
 	if len(v) == 0 {
 		return "\n", nil
 	}
@@ -80,7 +80,7 @@ func (l *GeneralLog) logErrorf(ctx context.Context, msg string, args ...any) err
 	defer l.mu.Unlock()
 	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), consts.LOG_ERROR)
 	msg = prefix + msg
-	format, _args := formGroups(ctx, l, args...)
+	format, _args := formGroups(ctx, args...)
 
 	var errMsg error
 	if _args == nil {
@@ -101,7 +101,7 @@ func (l *GeneralLog) log(ctx context.Context, msgType consts.CustomExternalLogLe
 	defer l.mu.Unlock()
 	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), msgType)
 	msg = prefix + msg
-	format, _args := formGroups(ctx, l, args...)
+	format, _args := formGroups(ctx, args...)
 	if _args == nil {
 		fmt.Fprint(l.writter, msg+" "+format)
 	} else {
