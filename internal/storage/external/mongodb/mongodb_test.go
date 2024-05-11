@@ -3,11 +3,12 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/image"
 	"io"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/docker/docker/api/types/image"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -17,12 +18,15 @@ import (
 	"github.com/gookit/goutil/dump"
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
-	db resources.StorageFactory
+	db           resources.StorageFactory
+	parentCtx    context.Context         = context.TODO()
+	parentLogger resources.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
@@ -77,7 +81,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitStorage(t *testing.T) {
-	db = InitStorage(-1, os.Stdout)
+	db = InitStorage(parentCtx, parentLogger)
 	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
 	if err != nil {
 		t.Fatal(err)

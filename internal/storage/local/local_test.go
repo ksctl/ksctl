@@ -15,13 +15,16 @@ import (
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 var (
 	db resources.StorageFactory
 
-	dir = fmt.Sprintf("%s ksctl-local-store-test", os.TempDir())
+	parentCtx    context.Context         = context.TODO()
+	parentLogger resources.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	dir                                  = fmt.Sprintf("%s ksctl-local-store-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
@@ -33,7 +36,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitStorage(t *testing.T) {
-	db = InitStorage(-1, os.Stdout)
+	db = InitStorage(parentCtx, parentLogger)
 	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
 	if err != nil {
 		t.Fatal(err)

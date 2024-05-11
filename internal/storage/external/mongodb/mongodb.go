@@ -176,7 +176,7 @@ func fetchCreds() (string, error) {
 	connURI := os.Getenv("MONGODB_URI")
 
 	if len(connURI) == 0 {
-		return "", log.NewError("environment vars not set for the storage to work. Hint: mongodb://${username}:${password}@${domain}:${port} or mongo+atlas mongodb+srv://${username}:${password}@${domain}")
+		return "", log.NewError(storeCtx, "environment vars not set for the storage to work.", "Hint", "mongodb://${username}:${password}@${domain}:${port} or mongo+atlas mongodb+srv://${username}:${password}@${domain}")
 	}
 
 	return fmt.Sprintf("%s/?retryWrites=true&w=majority", connURI), nil
@@ -222,7 +222,7 @@ func (db *Store) Connect(ctx context.Context) error {
 	default:
 		return fmt.Errorf("invalid type for context value `USERID`")
 	}
-	log.Success("CONN to MongoDB")
+	log.Success(storeCtx, "CONN to MongoDB")
 
 	return nil
 }
@@ -233,7 +233,7 @@ func (db *Store) disconnect() error {
 
 func (db *Store) Kill() error {
 	db.wg.Wait()
-	defer log.Success("Mongodb Storage Got Killed")
+	defer log.Success(storeCtx, "Mongodb Storage Got Killed")
 
 	return db.disconnect()
 }
@@ -245,7 +245,7 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.external.mongodb.Read", "Store", db)
+	log.Debug(storeCtx, "storage.external.mongodb.Read", "Store", db)
 
 	if db.isPresent() {
 		ret := db.databaseClient.Collection(db.cloudProvider).FindOne(db.context, getClusterFilters(db))
@@ -270,7 +270,7 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDoc
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
-	log.Debug("storage.external.mongodb.ReadCredentials", "Store", db)
+	log.Debug(storeCtx, "storage.external.mongodb.ReadCredentials", "Store", db)
 
 	if db.isPresentCreds(cloud) {
 		ret := db.databaseClient.Collection(CredsCollection).FindOne(db.context, getCredentialsFilters(cloud))
@@ -293,7 +293,7 @@ func (db *Store) Write(data *types.StorageDocument) error {
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
-	log.Debug("storage.external.mongodb.Write", "Store", db)
+	log.Debug(storeCtx, "storage.external.mongodb.Write", "Store", db)
 
 	bsonMap, err := bson.Marshal(data)
 	if err != nil {
@@ -319,7 +319,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.Credentia
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.external.mongodb.WriteCredentials", "Store", db)
+	log.Debug(storeCtx, "storage.external.mongodb.WriteCredentials", "Store", db)
 
 	bsonMap, err := bson.Marshal(data)
 	if err != nil {
@@ -353,7 +353,7 @@ func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clus
 	db.region = region
 	db.clusterType = string(clusterType)
 
-	log.Debug("storage.external.mongodb.Setup", "Store", db)
+	log.Debug(storeCtx, "storage.external.mongodb.Setup", "Store", db)
 	return nil
 }
 
@@ -363,7 +363,7 @@ func (db *Store) DeleteCluster() error {
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.external.mongodb.Delete", "Store", db)
+	log.Debug(storeCtx, "storage.external.mongodb.Delete", "Store", db)
 
 	if !db.isPresent() {
 		return fmt.Errorf("cluster doesn't exist")
@@ -454,7 +454,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 	case "":
 		filterClusterType = append(filterClusterType, string(consts.ClusterTypeMang), string(consts.ClusterTypeHa))
 	}
-	log.Debug("storage.external.mongodb.GetOneOrMoreClusters", "filter", filters, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
+	log.Debug(storeCtx, "storage.external.mongodb.GetOneOrMoreClusters", "filter", filters, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
 
 	clustersInfo := make(map[consts.KsctlClusterType][]*types.StorageDocument)
 
@@ -481,7 +481,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 			c.Close(context.Background())
 
 			clustersInfo[consts.KsctlClusterType(clusterType)] = append(clustersInfo[consts.KsctlClusterType(clusterType)], clusters...)
-			log.Debug("storage.external.mongodb.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
+			log.Debug(storeCtx, "storage.external.mongodb.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
 		}
 	}
 
