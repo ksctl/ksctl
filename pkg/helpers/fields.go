@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -14,18 +15,17 @@ import (
 	"golang.org/x/term"
 )
 
-func UserInputCredentials(logging resources.LoggerFactory) (string, error) {
+func UserInputCredentials(ctx context.Context, logging resources.LoggerFactory) (string, error) {
 
-	logging.Print("Enter Secret-> ")
+	logging.Print(ctx, "Enter Secret")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
 	if len(bytePassword) == 0 {
-		logging.Error("Empty secret passed!")
-		return UserInputCredentials(logging)
+		logging.Error(ctx, "Empty secret passed!")
+		return UserInputCredentials(ctx, logging)
 	}
-	logging.Print("\n")
 	return strings.TrimSpace(string(bytePassword)), nil
 }
 

@@ -2,9 +2,10 @@ package helpers
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
-	"sync"
 )
 
 // Scripts is goroutine safe
@@ -18,7 +19,6 @@ func NewScriptCollection() resources.ScriptCollection {
 	return &Scripts{
 		mu:      &sync.Mutex{},
 		currIdx: -1,
-		//data:    nil,
 	}
 }
 

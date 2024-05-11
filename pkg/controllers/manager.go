@@ -15,16 +15,13 @@ import (
 	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
 	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
 
+	bootstrapController "github.com/ksctl/ksctl/pkg/controllers/bootstrap"
 	"github.com/ksctl/ksctl/pkg/controllers/cloud"
-	kubernetesController "github.com/ksctl/ksctl/pkg/controllers/kubernetes"
+	cloudController "github.com/ksctl/ksctl/pkg/controllers/cloud"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/resources"
 	cloudControllerResource "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
-
-// TODO: need to pass the same context with no child creation to
-// 1. cloud controller
-// 2. bootstrap controller
 
 var (
 	controllerCtx context.Context
@@ -35,6 +32,11 @@ type KsctlControllerClient struct {
 	client *resources.KsctlClient
 }
 
+// TODO: add the log.Error for the source
+// let the manager.go do the log.Error
+// and make sure that the log struct dont use the packageModule name
+// we want the module of source to be present only
+
 func GenKsctlController(
 	ctx context.Context,
 	log resources.LoggerFactory,
@@ -42,6 +44,9 @@ func GenKsctlController(
 ) controllers.Controller {
 
 	controllerCtx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-manager")
+
+	cloudController.InitLogger(controllerCtx, log)
+	bootstrapController.InitLogger(controllerCtx, log)
 
 	return &KsctlControllerClient{
 		log:    log,
@@ -108,7 +113,7 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 		return log.NewError(controllerCtx, "Invalid operation")
 	}
 
-	return kubernetesController.ApplicationsInCluster(client, stateDocument, op)
+	return bootstrapController.ApplicationsInCluster(client, stateDocument, op)
 }
 
 func (manager *KsctlControllerClient) Credentials() error {
@@ -191,7 +196,7 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 		return log.NewError(controllerCtx, cloudResErr.Error())
 	}
 
-	if err := kubernetesController.InstallAdditionalTools(externalCNI, externalApp, client, stateDocument); err != nil {
+	if err := bootstrapController.InstallAdditionalTools(externalCNI, externalApp, client, stateDocument); err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
@@ -442,7 +447,7 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
-	err := kubernetesController.Setup(client, stateDocument)
+	err := bootstrapController.Setup(client, stateDocument)
 	if err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
@@ -462,12 +467,12 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 
 	log.Note(controllerCtx, "only cloud resources are having replay!")
 
-	externalCNI, err := kubernetesController.ConfigureCluster(client)
+	externalCNI, err := bootstrapController.ConfigureCluster(client)
 	if err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
-	if err := kubernetesController.InstallAdditionalTools(externalCNI, true, client, stateDocument); err != nil {
+	if err := bootstrapController.InstallAdditionalTools(externalCNI, true, client, stateDocument); err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
@@ -598,7 +603,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
-	err := kubernetesController.Setup(client, stateDocument)
+	err := bootstrapController.Setup(client, stateDocument)
 	if err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
@@ -619,7 +624,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 	}
 
 	log.Note(controllerCtx, "Only cloud resources are having replay!")
-	err = kubernetesController.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
+	err = bootstrapController.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
 	if err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
@@ -670,7 +675,7 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
-	err := kubernetesController.Setup(client, stateDocument)
+	err := bootstrapController.Setup(client, stateDocument)
 	if err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
@@ -692,7 +697,7 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 		}
 
 		// move it to kubernetes controller
-		if err := kubernetesController.DelWorkerPlanes(client, stateDocument.ClusterKubeConfig, hostnames); err != nil {
+		if err := bootstrapController.DelWorkerPlanes(client, stateDocument.ClusterKubeConfig, hostnames); err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
 	}
