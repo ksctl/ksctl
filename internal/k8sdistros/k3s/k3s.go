@@ -1,19 +1,21 @@
 package k3s
 
 import (
+	"context"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"sync"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
 var (
 	mainStateDocument *storageTypes.StorageDocument
 	log               types.LoggerFactory
+	k3sCtx            context.Context
 )
 
 type K3s struct {
@@ -22,9 +24,9 @@ type K3s struct {
 	mu     *sync.Mutex
 }
 
-func NewClient(m types.Metadata, state *storageTypes.StorageDocument) types.KubernetesBootstrap {
-	log = logger.NewStructuredLogger(m.LogVerbosity, m.LogWritter)
-	log.SetPackageName("k3s")
+func NewClient(parentCtx context.Context, parentLog types.LoggerFactory, state *storageTypes.StorageDocument) types.KubernetesBootstrap {
+	k3sCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.K8sK3s))
+	log = parentLog
 
 	mainStateDocument = state
 	return &K3s{mu: &sync.Mutex{}}
@@ -37,7 +39,7 @@ func (k3s *K3s) Setup(storage types.StorageFactory, operation consts.KsctlOperat
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	return nil
 }
@@ -57,17 +59,19 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 }
 
 func (k3s *K3s) Version(ver string) types.KubernetesBootstrap {
-	if isValidK3sVersion(ver) {
+	if err := isValidK3sVersion(ver); err == nil {
 		// valid
 		k3s.K3sVer = fmt.Sprintf("v%s+k3s1", ver)
-		log.Debug("Printing", "k3s.K3sVer", k3s.K3sVer)
+		log.Debug(k3sCtx, "Printing", "k3s.K3sVer", k3s.K3sVer)
 		return k3s
+	} else {
+		log.Error(k3sCtx, err.Error())
+		return nil
 	}
-	return nil
 }
 
 func (k3s *K3s) CNI(cni string) (externalCNI bool) {
-	log.Debug("Printing", "cni", cni)
+	log.Debug(k3sCtx, "Printing", "cni", cni)
 	switch consts.KsctlValidCNIPlugin(cni) {
 	case consts.CNIFlannel, "":
 		k3s.Cni = string(consts.CNIFlannel)

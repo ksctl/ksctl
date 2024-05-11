@@ -5,16 +5,15 @@ import (
 	"strings"
 )
 
-func isValidK3sVersion(ver string) bool {
+func isValidK3sVersion(ver string) error {
 	validVersion := []string{"1.29.4", "1.27.4", "1.27.1", "1.26.7", "1.25.12"} // TODO: check
 
 	for _, vver := range validVersion {
 		if vver == ver {
-			return true
+			return nil
 		}
 	}
-	log.Error(strings.Join(validVersion, " "))
-	return false
+	return log.NewError(k3sCtx, "invalid k3s version", "valid versions", strings.Join(validVersion, " "))
 }
 
 func getEtcdMemberIPFieldForControlplane(ips []string) string {

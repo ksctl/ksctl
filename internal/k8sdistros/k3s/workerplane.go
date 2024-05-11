@@ -13,20 +13,20 @@ import (
 func (k3s *K3s) JoinWorkerplane(no int, _ types.StorageFactory) error {
 	k3s.mu.Lock()
 	idx := no
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(k3sCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	k3s.mu.Unlock()
 
-	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
+	log.Print(k3sCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
-		FastMode(true).SSHExecute(log)
+		FastMode(true).SSHExecute()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("configured WorkerPlane", "number", strconv.Itoa(idx))
+	log.Success(k3sCtx, "configured WorkerPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }
