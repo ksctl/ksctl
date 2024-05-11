@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/ksctl/ksctl/internal/storage/types"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/logger"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
+	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 type Metadata struct {
@@ -32,12 +31,12 @@ type LocalProvider struct {
 }
 
 var (
-	mainStateDocument *types.StorageDocument
-	log               resources.LoggerFactory
+	mainStateDocument *storageTypes.StorageDocument
+	log               types.LoggerFactory
 	localCtx          context.Context
 )
 
-func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
+func (*LocalProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
 		return "", err
@@ -46,7 +45,7 @@ func (*LocalProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	return string(cloudstate), nil
 }
 
-func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
+func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
 	localCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudLocal))
@@ -65,8 +64,8 @@ func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger 
 	return obj, nil
 }
 
-// InitState implements resources.CloudFactory.
-func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
+// InitState implements types.CloudFactory.
+func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
 	switch operation {
 	case consts.OperationCreate:
 		if isPresent(storage, cloud.ClusterName) {
@@ -76,7 +75,7 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 
 		mainStateDocument.ClusterName = cloud.ClusterName
 		mainStateDocument.Region = cloud.Region
-		mainStateDocument.CloudInfra = &types.InfrastructureState{Local: &types.StateConfigurationLocal{}}
+		mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{Local: &storageTypes.StateConfigurationLocal{}}
 		mainStateDocument.InfraProvider = consts.CloudLocal
 		mainStateDocument.ClusterType = string(consts.ClusterTypeMang)
 
@@ -93,7 +92,7 @@ func (cloud *LocalProvider) InitState(storage resources.StorageFactory, operatio
 }
 
 // it will contain the name of the resource to be created
-func (cloud *LocalProvider) Name(resName string) resources.CloudFactory {
+func (cloud *LocalProvider) Name(resName string) types.CloudFactory {
 	cloud.Metadata.ResName = resName
 	return cloud
 }
@@ -116,15 +115,15 @@ func (client *LocalProvider) CNI(s string) (externalCNI bool) {
 	return false
 }
 
-// Version implements resources.CloudFactory.
-func (cloud *LocalProvider) Version(ver string) resources.CloudFactory {
+// Version implements types.CloudFactory.
+func (cloud *LocalProvider) Version(ver string) types.CloudFactory {
 	// TODO: validation of version
 	log.Debug("Printing", "k8sVersion", ver)
 	cloud.Metadata.Version = ver
 	return cloud
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudControlRes.AllClusterData, error) {
+func GetRAWClusterInfos(storage types.StorageFactory, meta types.Metadata) ([]cloudControlRes.AllClusterData, error) {
 	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudLocal))
 
@@ -158,7 +157,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 	return data, nil
 }
 
-func (obj *LocalProvider) IsPresent(storage resources.StorageFactory) error {
+func (obj *LocalProvider) IsPresent(storage types.StorageFactory) error {
 
 	if isPresent(storage, obj.ClusterName) {
 
@@ -168,22 +167,22 @@ func (obj *LocalProvider) IsPresent(storage resources.StorageFactory) error {
 }
 
 // //// NOT IMPLEMENTED //////
-func (cloud *LocalProvider) Credential(_ resources.StorageFactory) error {
+func (cloud *LocalProvider) Credential(_ types.StorageFactory) error {
 	panic("no support")
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *LocalProvider) Role(consts.KsctlRole) resources.CloudFactory {
+func (cloud *LocalProvider) Role(consts.KsctlRole) types.CloudFactory {
 	return nil
 }
 
 // it will contain which vmType to create
-func (cloud *LocalProvider) VMType(string) resources.CloudFactory {
+func (cloud *LocalProvider) VMType(string) types.CloudFactory {
 	return nil
 }
 
 // whether to have the resource as public or private (i.e. VMs)
-func (cloud *LocalProvider) Visibility(bool) resources.CloudFactory {
+func (cloud *LocalProvider) Visibility(bool) types.CloudFactory {
 	return nil
 }
 
@@ -191,63 +190,63 @@ func (*LocalProvider) GetHostNameAllWorkerNode() []string {
 	return nil
 }
 
-// CreateUploadSSHKeyPair implements resources.CloudFactory.
-func (*LocalProvider) CreateUploadSSHKeyPair(state resources.StorageFactory) error {
+// CreateUploadSSHKeyPair implements types.CloudFactory.
+func (*LocalProvider) CreateUploadSSHKeyPair(state types.StorageFactory) error {
 	return nil
 
 }
 
-// DelFirewall implements resources.CloudFactory.
-func (*LocalProvider) DelFirewall(state resources.StorageFactory) error {
+// DelFirewall implements types.CloudFactory.
+func (*LocalProvider) DelFirewall(state types.StorageFactory) error {
 	return nil
 }
 
-// DelNetwork implements resources.CloudFactory.
-func (*LocalProvider) DelNetwork(state resources.StorageFactory) error {
+// DelNetwork implements types.CloudFactory.
+func (*LocalProvider) DelNetwork(state types.StorageFactory) error {
 	return nil
 }
 
-// DelSSHKeyPair implements resources.CloudFactory.
-func (*LocalProvider) DelSSHKeyPair(state resources.StorageFactory) error {
+// DelSSHKeyPair implements types.CloudFactory.
+func (*LocalProvider) DelSSHKeyPair(state types.StorageFactory) error {
 	return nil
 }
 
-// DelVM implements resources.CloudFactory.
-func (*LocalProvider) DelVM(resources.StorageFactory, int) error {
+// DelVM implements types.CloudFactory.
+func (*LocalProvider) DelVM(types.StorageFactory, int) error {
 	return nil
 }
 
-// GetStateForHACluster implements resources.CloudFactory.
-func (*LocalProvider) GetStateForHACluster(state resources.StorageFactory) (cloud.CloudResourceState, error) {
+// GetStateForHACluster implements types.CloudFactory.
+func (*LocalProvider) GetStateForHACluster(state types.StorageFactory) (cloud.CloudResourceState, error) {
 	return cloud.CloudResourceState{}, fmt.Errorf("[local] should not be implemented")
 }
 
-// NewFirewall implements resources.CloudFactory.
-func (*LocalProvider) NewFirewall(state resources.StorageFactory) error {
+// NewFirewall implements types.CloudFactory.
+func (*LocalProvider) NewFirewall(state types.StorageFactory) error {
 	return nil
 }
 
-// NewNetwork implements resources.CloudFactory.
-func (*LocalProvider) NewNetwork(state resources.StorageFactory) error {
+// NewNetwork implements types.CloudFactory.
+func (*LocalProvider) NewNetwork(state types.StorageFactory) error {
 	return nil
 }
 
-// NewVM implements resources.CloudFactory.
-func (*LocalProvider) NewVM(resources.StorageFactory, int) error {
+// NewVM implements types.CloudFactory.
+func (*LocalProvider) NewVM(types.StorageFactory, int) error {
 	return nil
 }
 
-// NoOfControlPlane implements resources.CloudFactory.
+// NoOfControlPlane implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfControlPlane(int, bool) (int, error) {
 	return -1, fmt.Errorf("[local] unsupported operation")
 }
 
-// NoOfDataStore implements resources.CloudFactory.
+// NoOfDataStore implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfDataStore(int, bool) (int, error) {
 	return -1, fmt.Errorf("[local] unsupported operation")
 }
 
-// NoOfWorkerPlane implements resources.CloudFactory.
-func (cloud *LocalProvider) NoOfWorkerPlane(resources.StorageFactory, int, bool) (int, error) {
+// NoOfWorkerPlane implements types.CloudFactory.
+func (cloud *LocalProvider) NoOfWorkerPlane(types.StorageFactory, int, bool) (int, error) {
 	return -1, fmt.Errorf("[local] unsupported operation")
 }

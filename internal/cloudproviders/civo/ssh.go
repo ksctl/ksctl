@@ -2,11 +2,11 @@ package civo
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelSSHKeyPair implements resources.CloudFactory.
-func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
+// DelSSHKeyPair implements types.CloudFactory.
+func (obj *CivoProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Civo.B.SSHID) == 0 {
 		log.Print(civoCtx, "skipped ssh keypair already deleted")
 		return nil
@@ -26,8 +26,8 @@ func (obj *CivoProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
 	return storage.Write(mainStateDocument)
 }
 
-// CreateUploadSSHKeyPair implements resources.CloudFactory.
-func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
+// CreateUploadSSHKeyPair implements types.CloudFactory.
+func (obj *CivoProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
 	name := <-obj.chResName
 
 	if len(mainStateDocument.CloudInfra.Civo.B.SSHID) != 0 {
@@ -52,7 +52,7 @@ func (obj *CivoProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory
 	return nil
 }
 
-func (obj *CivoProvider) uploadSSH(storage resources.StorageFactory, resName, pubKey string) error {
+func (obj *CivoProvider) uploadSSH(storage types.StorageFactory, resName, pubKey string) error {
 	sshResp, err := obj.client.NewSSHKey(resName, pubKey)
 	if err != nil {
 		return err

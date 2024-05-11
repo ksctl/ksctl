@@ -7,18 +7,18 @@ import (
 
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
-	"github.com/ksctl/ksctl/pkg/resources/controllers"
+	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/types/controllers"
 )
 
 var (
-	cli        *resources.KsctlClient
+	cli        *types.KsctlClient
 	controller controllers.Controller
 	dir        = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
 )
 
 func StartCloud() {
-	cli = new(resources.KsctlClient)
+	cli = new(types.KsctlClient)
 	controller = control_pkg.GenKsctlController()
 
 	cli.Metadata.ClusterName = "fake"

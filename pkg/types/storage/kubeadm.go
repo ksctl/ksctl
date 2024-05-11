@@ -1,4 +1,4 @@
-package types
+package storage
 
 type StateConfigurationKubeadm struct {
 	// CertificateKey is only valid till 24 hours

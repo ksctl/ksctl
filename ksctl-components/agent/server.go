@@ -9,7 +9,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/logger"
 	"google.golang.org/grpc/health"
 
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 
 	"google.golang.org/grpc/health/grpc_health_v1"
 
@@ -29,7 +29,7 @@ type server struct {
 }
 
 var (
-	log resources.LoggerFactory
+	log types.LoggerFactory
 )
 
 func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, error) {
@@ -53,13 +53,13 @@ func (s *server) Storage(ctx context.Context, in *pb.ReqStore) (*pb.ResStore, er
 	}
 
 	v := in.Data
-	exportedData := new(resources.StorageStateExportImport)
+	exportedData := new(types.StorageStateExportImport)
 	if err := json.Unmarshal(v, &exportedData); err != nil {
 		log.Error("Unable to Unmarshal exported data", "Reason", err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	client := new(resources.KsctlClient)
+	client := new(types.KsctlClient)
 
 	if _err := storage.NewStorageClient(ctx, log, client); _err != nil {
 		log.Error("NewStorageClient", "Reason", _err)

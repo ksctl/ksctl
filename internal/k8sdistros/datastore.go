@@ -7,10 +7,10 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (p *PreBootstrap) ConfigureDataStore(no int, _ resources.StorageFactory) error {
+func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error {
 	p.mu.Lock()
 	idx := no
 	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
@@ -46,10 +46,10 @@ func getEtcdMemberIPFieldForDatastore(ips []string) string {
 	return strings.Join(tempDS, ",")
 }
 
-func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) resources.ScriptCollection {
+func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "fetch etcd binaries and cleanup",
 		ScriptExecutor: consts.LinuxBash,
 		MaxRetries:     9,
@@ -69,7 +69,7 @@ curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/
 `,
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "moving the downloaded binaries to specific location",
 		ScriptExecutor: consts.LinuxBash,
 		CanRetry:       false,
@@ -86,7 +86,7 @@ sudo rm -rf /tmp/etcd-download-test
 `,
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "store the certificate files",
 		ScriptExecutor: consts.LinuxBash,
 		CanRetry:       false,
@@ -111,7 +111,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 
 	clusterMembers := getEtcdMemberIPFieldForDatastore(privIPs)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "configure etcd configuration file and systemd",
 		ScriptExecutor: consts.LinuxBash,
 		CanRetry:       false,
@@ -154,7 +154,7 @@ sudo mv -v etcd.service /etc/systemd/system
 `, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers),
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "restart the systemd and start etcd service",
 		CanRetry:       true,
 		MaxRetries:     3,

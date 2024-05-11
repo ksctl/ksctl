@@ -1,4 +1,4 @@
-package types
+package storage
 
 type KubernetesAddons struct {
 	Apps []Application `json:"apps" bson:"apps"`

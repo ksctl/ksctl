@@ -5,11 +5,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// NewNetwork implements resources.CloudFactory
-func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
+// NewNetwork implements types.CloudFactory
+func (obj *AzureProvider) NewNetwork(storage types.StorageFactory) error {
 	<-obj.chResName
 
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) != 0 {
@@ -54,7 +54,7 @@ func (obj *AzureProvider) NewNetwork(storage resources.StorageFactory) error {
 	return nil
 }
 
-func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage resources.StorageFactory, resName string) error {
+func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage types.StorageFactory, resName string) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.VirtualNetworkName) != 0 {
 		log.Print("skipped virtualNetwork already created", "name", mainStateDocument.CloudInfra.Azure.VirtualNetworkName)
@@ -98,7 +98,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage reso
 	return nil
 }
 
-func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
+func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage types.StorageFactory, subnetName string) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.SubnetName) != 0 {
 		log.Print("skipped subnet already created", "name", mainStateDocument.CloudInfra.Azure.VirtualNetworkName)
@@ -138,8 +138,8 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage resources.St
 	return nil
 }
 
-// DelNetwork implements resources.CloudFactory.
-func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
+// DelNetwork implements types.CloudFactory.
+func (obj *AzureProvider) DelNetwork(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) == 0 {
 		log.Print("skipped already deleted the resource group")
@@ -185,7 +185,7 @@ func (obj *AzureProvider) DelNetwork(storage resources.StorageFactory) error {
 
 }
 
-func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage resources.StorageFactory) error {
+func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage types.StorageFactory) error {
 
 	subnet := mainStateDocument.CloudInfra.Azure.SubnetName
 	log.Debug("Printing", "subnetName", subnet)
@@ -215,7 +215,7 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage resources.St
 	return nil
 }
 
-func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage resources.StorageFactory) error {
+func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage types.StorageFactory) error {
 
 	vnet := mainStateDocument.CloudInfra.Azure.VirtualNetworkName
 	log.Debug("Printing", "virtNetName", vnet)

@@ -3,19 +3,18 @@ package helpers
 import (
 	"context"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"golang.org/x/term"
 )
 
-func UserInputCredentials(ctx context.Context, logging resources.LoggerFactory) (string, error) {
+func UserInputCredentials(ctx context.Context, logging types.LoggerFactory) (string, error) {
 
 	logging.Print(ctx, "Enter Secret")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -82,7 +81,7 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 }
 
-func IsValidName(ctx context.Context, log resources.LoggerFactory, clusterName string) error {
+func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName string) error {
 	if len(clusterName) > 50 {
 		return log.NewError(ctx, "name is too long", "name", clusterName)
 	}
@@ -95,7 +94,7 @@ func IsValidName(ctx context.Context, log resources.LoggerFactory, clusterName s
 	return nil
 }
 
-func IsValidVersion(ctx context.Context, log resources.LoggerFactory, ver string) error {
+func IsValidVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
 	if ver == "latest" || ver == "stable" {
 		return nil
 	}
@@ -117,9 +116,9 @@ func IsValidVersion(ctx context.Context, log resources.LoggerFactory, ver string
 	return nil
 }
 
-func ToApplicationTempl(apps []string) ([]types.Application, error) {
+func ToApplicationTempl(apps []string) ([]storageTypes.Application, error) {
 
-	_apps := make([]types.Application, 0)
+	_apps := make([]storageTypes.Application, 0)
 	for _, app := range apps {
 
 		temp := strings.Split(app, "@")
@@ -129,12 +128,12 @@ func ToApplicationTempl(apps []string) ([]types.Application, error) {
 		}
 		if len(temp) == 1 {
 			// version was not specified
-			_apps = append(_apps, types.Application{
+			_apps = append(_apps, storageTypes.Application{
 				Name:    temp[0],
 				Version: "latest",
 			})
 		} else {
-			_apps = append(_apps, types.Application{
+			_apps = append(_apps, storageTypes.Application{
 				Name:    temp[0],
 				Version: temp[1],
 			})

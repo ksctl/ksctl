@@ -3,30 +3,29 @@ package cloud
 import (
 	"context"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"sync"
 	"time"
-
-	"github.com/ksctl/ksctl/internal/storage/types"
 
 	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
 	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
 	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
 	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 var (
-	log           resources.LoggerFactory
+	log           types.LoggerFactory
 	controllerCtx context.Context
 )
 
-func InitLogger(ctx context.Context, _log resources.LoggerFactory) {
+func InitLogger(ctx context.Context, _log types.LoggerFactory) {
 	log = _log
 	controllerCtx = ctx
 }
 
-func InitCloud(client *resources.KsctlClient, state *types.StorageDocument, operation consts.KsctlOperation, fakeClient bool) error {
+func InitCloud(client *types.KsctlClient, state *storageTypes.StorageDocument, operation consts.KsctlOperation, fakeClient bool) error {
 
 	var err error
 	switch client.Metadata.Provider {
@@ -86,7 +85,7 @@ func pauseOperation(seconds time.Duration) {
 	time.Sleep(seconds * time.Second)
 }
 
-func DeleteHACluster(client *resources.KsctlClient) error {
+func DeleteHACluster(client *types.KsctlClient) error {
 
 	var err error
 
@@ -221,7 +220,7 @@ func DeleteHACluster(client *resources.KsctlClient) error {
 }
 
 // AddWorkerNodes the user provides the desired no of workerplane not the no of workerplanes to be added
-func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
+func AddWorkerNodes(client *types.KsctlClient) (int, error) {
 
 	var err error
 	currWP, err := client.Cloud.NoOfWorkerPlane(client.Storage, client.Metadata.NoWP, false)
@@ -266,7 +265,7 @@ func AddWorkerNodes(client *resources.KsctlClient) (int, error) {
 }
 
 // DelWorkerNodes uses the noWP as the desired count of workerplane which is desired
-func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
+func DelWorkerNodes(client *types.KsctlClient) ([]string, error) {
 
 	hostnames := client.Cloud.GetHostNameAllWorkerNode()
 
@@ -314,7 +313,7 @@ func DelWorkerNodes(client *resources.KsctlClient) ([]string, error) {
 
 }
 
-func CreateHACluster(client *resources.KsctlClient) error {
+func CreateHACluster(client *types.KsctlClient) error {
 	var err error
 	err = client.Cloud.Name(client.Metadata.ClusterName + "-net").NewNetwork(client.Storage)
 	if err != nil {
@@ -462,7 +461,7 @@ func CreateHACluster(client *resources.KsctlClient) error {
 	return nil
 }
 
-func CreateManagedCluster(client *resources.KsctlClient) (bool, bool, error) {
+func CreateManagedCluster(client *types.KsctlClient) (bool, bool, error) {
 
 	if client.Metadata.Provider != consts.CloudLocal {
 		if err := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(client.Storage); err != nil {
@@ -492,7 +491,7 @@ func CreateManagedCluster(client *resources.KsctlClient) (bool, bool, error) {
 	return externalApps, externalCNI, nil
 }
 
-func DeleteManagedCluster(client *resources.KsctlClient) error {
+func DeleteManagedCluster(client *types.KsctlClient) error {
 
 	if err := client.Cloud.DelManagedCluster(client.Storage); err != nil {
 		return err

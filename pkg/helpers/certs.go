@@ -12,7 +12,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 // NOTE: this go is refering to https://shaneutt.com/blog/golang-ca-and-signed-cert-go/
@@ -21,7 +21,7 @@ func extractBuffer(buffer *bytes.Buffer) string {
 	return buffer.String()
 }
 
-func GenerateCerts(ctx context.Context, log resources.LoggerFactory, etcdMemPrivAddr []string) (caCert string, etcdCert string, etcdKey string, err error) {
+func GenerateCerts(ctx context.Context, log types.LoggerFactory, etcdMemPrivAddr []string) (caCert string, etcdCert string, etcdKey string, err error) {
 
 	var validIPAddresses []net.IP = []net.IP{net.IPv4(127, 0, 0, 1)}
 	for _, ip := range etcdMemPrivAddr {

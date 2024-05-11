@@ -1,10 +1,10 @@
-package resources
+package types
 
 import (
 	"context"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 type LoggerFactory interface {

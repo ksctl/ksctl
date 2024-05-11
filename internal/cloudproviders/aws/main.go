@@ -4,23 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/logger"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 
-	cloudcontrolres "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	cloudcontrolres "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
-	mainStateDocument *types.StorageDocument
+	mainStateDocument *storageTypes.StorageDocument
 	clusterType       consts.KsctlClusterType
-	log               resources.LoggerFactory
+	log               types.LoggerFactory
 	awsCtx            context.Context
 )
 
@@ -53,12 +53,12 @@ type AwsProvider struct {
 	client AwsGo
 }
 
-func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
+func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
 	err := storage.AlreadyCreated(consts.CloudAws, region, name, ksctlClusterType)
 	return err == nil
 }
 
-func (obj *AwsProvider) IsPresent(storage resources.StorageFactory) error {
+func (obj *AwsProvider) IsPresent(storage types.StorageFactory) error {
 
 	switch obj.haCluster {
 	case true:
@@ -75,12 +75,12 @@ func (obj *AwsProvider) IsPresent(storage resources.StorageFactory) error {
 	return log.NewError("Cluster not found")
 }
 
-func (obj *AwsProvider) Version(ver string) resources.CloudFactory {
+func (obj *AwsProvider) Version(ver string) types.CloudFactory {
 	// TODO for ManagedCluster EKS
 	return obj
 }
 
-func (cloud *AwsProvider) Credential(storage resources.StorageFactory) error {
+func (cloud *AwsProvider) Credential(storage types.StorageFactory) error {
 	log.Print(awsCtx, "Enter your AWS ACCESS KEY")
 	acesskey, err := helpers.UserInputCredentials(log)
 	if err != nil {
@@ -93,9 +93,9 @@ func (cloud *AwsProvider) Credential(storage resources.StorageFactory) error {
 		return err
 	}
 
-	apiStore := &types.CredentialsDocument{
+	apiStore := &storageTypes.CredentialsDocument{
 		InfraProvider: consts.CloudAws,
-		Aws: &types.CredentialsAws{
+		Aws: &storageTypes.CredentialsAws{
 			AccessKeyId:     acesskey,
 			SecretAccessKey: acesskeysecret,
 		},
@@ -108,7 +108,7 @@ func (cloud *AwsProvider) Credential(storage resources.StorageFactory) error {
 	return nil
 }
 
-func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
+func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
 	awsCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAws))
@@ -133,7 +133,7 @@ func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger 
 	return obj, nil
 }
 
-func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
+func (obj *AwsProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(resName); err != nil {
 		log.Error(err.Error())
@@ -143,7 +143,7 @@ func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
 	return obj
 }
 
-func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration consts.KsctlOperation) error {
+func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
@@ -174,8 +174,8 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 			mainStateDocument.InfraProvider = consts.CloudAws
 			mainStateDocument.ClusterType = string(clusterType)
 			mainStateDocument.Region = obj.region
-			mainStateDocument.CloudInfra = &types.InfrastructureState{
-				Aws: &types.StateConfigurationAws{},
+			mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{
+				Aws: &storageTypes.StateConfigurationAws{},
 			}
 			mainStateDocument.CloudInfra.Aws.B.KubernetesVer = obj.metadata.k8sVersion
 			mainStateDocument.CloudInfra.Aws.B.KubernetesDistro = string(obj.metadata.k8sName)
@@ -191,7 +191,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Debug("Get resources")
+		log.Debug("Get storage")
 	default:
 		return log.NewError("Invalid operation for init state")
 	}
@@ -209,7 +209,7 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	return nil
 }
 
-func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
+func (obj *AwsProvider) GetStateForHACluster(storage types.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
 
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
@@ -238,21 +238,21 @@ func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (
 	return payload, nil
 }
 
-func (obj *AwsProvider) NewManagedCluster(factory resources.StorageFactory, i int) error {
+func (obj *AwsProvider) NewManagedCluster(factory types.StorageFactory, i int) error {
 	//TODO implement me
 	fmt.Println("AWS New Managed Cluster")
 	return nil
 
 }
 
-func (obj *AwsProvider) DelManagedCluster(factory resources.StorageFactory) error {
+func (obj *AwsProvider) DelManagedCluster(factory types.StorageFactory) error {
 	//TODO implement me
 	fmt.Println("AWS Del Managed Cluster")
 	return nil
 
 }
 
-func (obj *AwsProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
+func (obj *AwsProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	switch resRole {
 	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
@@ -265,7 +265,7 @@ func (obj *AwsProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
 	}
 }
 
-func (obj *AwsProvider) VMType(size string) resources.CloudFactory {
+func (obj *AwsProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(obj, size); err != nil {
 		log.Error(err.Error())
@@ -276,7 +276,7 @@ func (obj *AwsProvider) VMType(size string) resources.CloudFactory {
 	return obj
 }
 
-func (obj *AwsProvider) Visibility(toBePublic bool) resources.CloudFactory {
+func (obj *AwsProvider) Visibility(toBePublic bool) types.CloudFactory {
 	obj.metadata.public = toBePublic
 	return obj
 }
@@ -308,7 +308,7 @@ func (obj *AwsProvider) CNI(s string) (externalCNI bool) {
 	}
 }
 
-func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
+func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
 	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		if mainStateDocument == nil {
@@ -444,7 +444,7 @@ func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
 	return hostnames
 }
 
-func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, error) {
+func (obj *AwsProvider) GetStateFile(factory types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
 		return "", log.NewError("Error marshalling state", "error", err)
@@ -454,7 +454,7 @@ func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, 
 
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {
+func GetRAWClusterInfos(storage types.StorageFactory, meta types.Metadata) ([]cloudcontrolres.AllClusterData, error) {
 
 	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAws))

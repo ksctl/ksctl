@@ -5,12 +5,12 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
-func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int, creationMode bool, role consts.KsctlRole, name string) error {
+func (obj *CivoProvider) foundStateVM(storage types.StorageFactory, idx int, creationMode bool, role consts.KsctlRole, name string) error {
 
 	var instID string = ""
 	var pubIP string = ""
@@ -55,8 +55,8 @@ func (obj *CivoProvider) foundStateVM(storage resources.StorageFactory, idx int,
 	return log.NewError(civoCtx, "skipped already deleted vm", "role", role)
 }
 
-// NewVM implements resources.CloudFactory.
-func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) error {
+// NewVM implements types.CloudFactory.
+func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	name := <-obj.chResName
 	indexNo := index
@@ -164,8 +164,8 @@ func (obj *CivoProvider) NewVM(storage resources.StorageFactory, index int) erro
 	return errCreateVM
 }
 
-// DelVM implements resources.CloudFactory.
-func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) error {
+// DelVM implements types.CloudFactory.
+func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 
 	indexNo := index
 	role := <-obj.chRole
@@ -301,7 +301,7 @@ func (obj *CivoProvider) DelVM(storage resources.StorageFactory, index int) erro
 	return errCreateVM
 }
 
-func watchInstance(obj *CivoProvider, storage resources.StorageFactory, instID string, idx int, role consts.KsctlRole, name string) error {
+func watchInstance(obj *CivoProvider, storage types.StorageFactory, instID string, idx int, role consts.KsctlRole, name string) error {
 	for {
 		// NOTE: this is prone to network failure
 

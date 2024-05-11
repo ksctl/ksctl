@@ -2,18 +2,18 @@ package k3s
 
 import (
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 var (
-	mainStateDocument *types.StorageDocument
-	log               resources.LoggerFactory
+	mainStateDocument *storageTypes.StorageDocument
+	log               types.LoggerFactory
 )
 
 type K3s struct {
@@ -22,7 +22,7 @@ type K3s struct {
 	mu     *sync.Mutex
 }
 
-func NewClient(m resources.Metadata, state *types.StorageDocument) resources.KubernetesBootstrap {
+func NewClient(m types.Metadata, state *storageTypes.StorageDocument) types.KubernetesBootstrap {
 	log = logger.NewStructuredLogger(m.LogVerbosity, m.LogWritter)
 	log.SetPackageName("k3s")
 
@@ -30,9 +30,9 @@ func NewClient(m resources.Metadata, state *types.StorageDocument) resources.Kub
 	return &K3s{mu: &sync.Mutex{}}
 }
 
-func (k3s *K3s) Setup(storage resources.StorageFactory, operation consts.KsctlOperation) error {
+func (k3s *K3s) Setup(storage types.StorageFactory, operation consts.KsctlOperation) error {
 	if operation == consts.OperationCreate {
-		mainStateDocument.K8sBootstrap.K3s = &types.StateConfigurationK3s{}
+		mainStateDocument.K8sBootstrap.K3s = &storageTypes.StateConfigurationK3s{}
 		mainStateDocument.BootstrapProvider = consts.K8sK3s
 	}
 
@@ -42,9 +42,9 @@ func (k3s *K3s) Setup(storage resources.StorageFactory, operation consts.KsctlOp
 	return nil
 }
 
-func scriptKUBECONFIG() resources.ScriptCollection {
+func scriptKUBECONFIG() types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "k3s kubeconfig",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -56,7 +56,7 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 	return collection
 }
 
-func (k3s *K3s) Version(ver string) resources.KubernetesBootstrap {
+func (k3s *K3s) Version(ver string) types.KubernetesBootstrap {
 	if isValidK3sVersion(ver) {
 		// valid
 		k3s.K3sVer = fmt.Sprintf("v%s+k3s1", ver)

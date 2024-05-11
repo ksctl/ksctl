@@ -4,10 +4,10 @@ import (
 	"errors"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func validationFields(meta resources.Metadata) error {
+func validationFields(meta types.Metadata) error {
 
 	if !helpers.ValidateCloud(meta.Provider) {
 		return errors.New("invalid cloud provider")

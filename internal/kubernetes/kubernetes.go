@@ -6,7 +6,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -14,8 +14,8 @@ import (
 )
 
 type Kubernetes struct {
-	Metadata            resources.Metadata
-	StorageDriver       resources.StorageFactory
+	Metadata            types.Metadata
+	StorageDriver       types.StorageFactory
 	config              *rest.Config
 	clientset           *kubernetes.Clientset
 	apiextensionsClient *clientset.Clientset
@@ -24,7 +24,7 @@ type Kubernetes struct {
 }
 
 var (
-	log resources.LoggerFactory
+	log types.LoggerFactory
 )
 
 func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {

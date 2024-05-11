@@ -7,10 +7,10 @@ import (
 	"github.com/civo/civogo"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id string, name string) error {
+func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id string, name string) error {
 
 	for {
 		// clusterDS fetches the current state of kubernetes cluster given its id
@@ -48,8 +48,8 @@ func watchManagedCluster(obj *CivoProvider, storage resources.StorageFactory, id
 	return nil
 }
 
-// NewManagedCluster implements resources.CloudFactory.
-func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
+// NewManagedCluster implements types.CloudFactory.
+func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 
 	name := <-obj.chResName
 	vmtype := <-obj.chVMType
@@ -108,8 +108,8 @@ func (obj *CivoProvider) NewManagedCluster(storage resources.StorageFactory, noO
 	return nil
 }
 
-// DelManagedCluster implements resources.CloudFactory.
-func (obj *CivoProvider) DelManagedCluster(storage resources.StorageFactory) error {
+// DelManagedCluster implements types.CloudFactory.
+func (obj *CivoProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) == 0 {
 		log.Print(civoCtx, "skipped network deletion found", "id", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
 		return nil

@@ -7,13 +7,13 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 // configureCP_1 is not meant for concurrency
-func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
+func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
 
-	var script resources.ScriptCollection
+	var script types.ScriptCollection
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(
@@ -63,8 +63,8 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpe
 	return nil
 }
 
-// ConfigureControlPlane implements resources.DistroFactory.
-func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
+// ConfigureControlPlane implements storage.DistroFactory.
+func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) error {
 	k3s.mu.Lock()
 	idx := noOfCP
 	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
@@ -78,7 +78,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 		}
 	} else {
 
-		var script resources.ScriptCollection
+		var script types.ScriptCollection
 
 		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 			script = scriptCP_NWithoutCNI(
@@ -144,8 +144,8 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 	return nil
 }
 
-func getScriptForEtcdCerts(ca, etcd, key string) resources.Script {
-	return resources.Script{
+func getScriptForEtcdCerts(ca, etcd, key string) types.Script {
+	return types.Script{
 		Name:           "store etcd certificates",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -170,7 +170,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 }
 
 func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIPlb, privIplb string) resources.ScriptCollection {
+	pubIPlb, privIplb string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -178,7 +178,7 @@ func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[0] without CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -210,7 +210,7 @@ sudo ./control-setup.sh &>> ksctl.log
 }
 
 func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
-	privateIPLb string) resources.ScriptCollection {
+	privateIPLb string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -218,7 +218,7 @@ func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[0] with CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -245,10 +245,10 @@ sudo ./control-setup.sh &>> ksctl.log
 	return collection
 }
 
-func scriptForK3sToken() resources.ScriptCollection {
+func scriptForK3sToken() types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Get k3s server token",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -261,7 +261,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 }
 
 func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) resources.ScriptCollection {
+	pubIplb, privateIPlb, token string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -269,7 +269,7 @@ func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[1..N] with CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -299,7 +299,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 }
 
 func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) resources.ScriptCollection {
+	pubIplb, privateIPlb, token string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -307,7 +307,7 @@ func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[1..N] without CNI",
 		MaxRetries:     9,
 		CanRetry:       true,

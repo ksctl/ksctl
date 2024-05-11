@@ -10,12 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
-func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error {
+func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) error {
 
 	role := <-obj.chRole
 	indexNo := index
@@ -84,7 +84,7 @@ func (obj *AwsProvider) DelVM(storage resources.StorageFactory, index int) error
 	return nil
 }
 
-func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory, resName string, index int, role consts.KsctlRole) (string, error) {
+func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksctlTypes.StorageFactory, resName string, index int, role consts.KsctlRole) (string, error) {
 
 	securitygroup, err := fetchgroupid(role)
 	if err != nil {
@@ -163,7 +163,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage reso
 	return *nicresponse.NetworkInterface.NetworkInterfaceId, nil
 }
 
-func (obj *AwsProvider) NewVM(storage resources.StorageFactory, index int) error {
+func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) error {
 	name := <-obj.chResName
 	indexNo := index
 	role := <-obj.chRole
@@ -384,7 +384,7 @@ func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
 	return resp, nil
 }
 
-func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage ksctlTypes.StorageFactory, index int, role consts.KsctlRole) error {
 
 	interfaceName := ""
 	switch role {

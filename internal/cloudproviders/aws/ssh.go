@@ -6,10 +6,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
+func (obj *AwsProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
 
 	name := <-obj.chResName
 	log.Debug("Printing", "name", name)
@@ -45,7 +45,7 @@ func (obj *AwsProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory)
 
 }
 
-func (obj *AwsProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
+func (obj *AwsProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Aws.B.SSHKeyName) == 0 {
 		log.Success("[skip] already deleted the ssh key", "", mainStateDocument.CloudInfra.Aws.B.SSHKeyName)

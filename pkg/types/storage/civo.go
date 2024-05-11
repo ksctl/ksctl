@@ -1,4 +1,4 @@
-package types
+package storage
 
 type CivoStateVMs struct {
 	VMIDs      []string `json:"vm_ids" bson:"vm_ids"`

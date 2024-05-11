@@ -8,11 +8,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelFirewall implements resources.CloudFactory.
-func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
+// DelFirewall implements types.CloudFactory.
+func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 	role := <-obj.chRole
 
 	log.Debug("Printing", "role", role)
@@ -70,8 +70,8 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	return nil
 }
 
-// NewFirewall implements resources.CloudFactory.
-func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
+// NewFirewall implements types.CloudFactory.
+func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 	name := <-obj.chResName
 	role := <-obj.chRole
 

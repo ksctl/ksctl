@@ -1,7 +1,7 @@
 package main
 
 import (
-	ksctlController "github.com/ksctl/ksctl/pkg/resources/controllers"
+	ksctlController "github.com/ksctl/ksctl/pkg/types/controllers"
 	"os"
 )
 

@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
 
 const (
@@ -41,7 +41,7 @@ func ProvideMockClient() AwsGo {
 type AwsGo interface {
 	AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error
 
-	InitClient(storage resources.StorageFactory) error
+	InitClient(storage ksctlTypes.StorageFactory) error
 
 	ListLocations() (*string, error)
 
@@ -53,9 +53,9 @@ type AwsGo interface {
 
 	BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error)
 
-	BeginDeleteVirtNet(ctx context.Context, storage resources.StorageFactory) error
+	BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error
 
-	BeginDeleteSubNet(ctx context.Context, storage resources.StorageFactory, subnetID string) error
+	BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error
 
 	DeleteSSHKey(ctx context.Context, name string) error
 
@@ -67,7 +67,7 @@ type AwsGo interface {
 
 	BeginDeleteNIC(nicID string) error
 
-	BeginDeleteVpc(ctx context.Context, storage resources.StorageFactory) error
+	BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error
 
 	BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error)
 
@@ -97,7 +97,7 @@ type AwsGoClient struct {
 	region    string
 	vpc       string
 	ec2Client *ec2.Client
-	storage   resources.StorageFactory
+	storage   ksctlTypes.StorageFactory
 }
 
 func newEC2Client(region string) (aws.Config, error) {
@@ -304,7 +304,7 @@ func (awsclient *AwsGoClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2
 	return vpc, err
 }
 
-func (awsclient *AwsGoClient) BeginDeleteVpc(ctx context.Context, storage resources.StorageFactory) error {
+func (awsclient *AwsGoClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
 	_, err := awsclient.ec2Client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
 		VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
@@ -355,7 +355,7 @@ func (awsclient *AwsGoClient) BeginDeleteSecurityGrp(ctx context.Context, securi
 	return nil
 }
 
-func (awsclient *AwsGoClient) BeginDeleteSubNet(ctx context.Context, storage resources.StorageFactory, subnetID string) error {
+func (awsclient *AwsGoClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
 
 	_, err := awsclient.ec2Client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
 		SubnetId: aws.String(subnetID),
@@ -443,7 +443,7 @@ func (awsclient *AwsGoClient) BeginCreateSecurityGroup(ctx context.Context, para
 	return securitygroup, nil
 }
 
-func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage resources.StorageFactory) error {
+func (awsclient *AwsGoClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
 	if mainStateDocument.CloudInfra.Aws.RouteTableID == "" {
 		log.Success("[skip] already deleted the route table")
@@ -549,7 +549,7 @@ func (awsclient *AwsGoClient) DeleteSSHKey(ctx context.Context, name string) err
 	return nil
 }
 
-func (awsclient *AwsGoClient) InitClient(storage resources.StorageFactory) error {
+func (awsclient *AwsGoClient) InitClient(storage ksctlTypes.StorageFactory) error {
 
 	err := awsclient.setRequiredENVVAR(storage, context.Background())
 	if err != nil {
@@ -576,7 +576,7 @@ func (awsclient *AwsGoClient) ImportKeyPair(ctx context.Context, input *ec2.Impo
 	return nil
 }
 
-func (awsclient *AwsGoClient) setRequiredENVVAR(storage resources.StorageFactory, _ context.Context) error {
+func (awsclient *AwsGoClient) setRequiredENVVAR(storage ksctlTypes.StorageFactory, _ context.Context) error {
 
 	envacesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
 	envkeysecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
@@ -813,7 +813,7 @@ func (awsclient *AwsGoMockClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (
 	return vpc, nil
 }
 
-func (*AwsGoMockClient) BeginDeleteVpc(ctx context.Context, storage resources.StorageFactory) error {
+func (*AwsGoMockClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
 	mainStateDocument.CloudInfra.Aws.VpcId = ""
 
@@ -851,7 +851,7 @@ func (*AwsGoMockClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOu
 	}, nil
 }
 
-func (*AwsGoMockClient) BeginDeleteSubNet(ctx context.Context, storage resources.StorageFactory, subnetID string) error {
+func (*AwsGoMockClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
 
 	mainStateDocument.CloudInfra.Aws.SubnetID = ""
 
@@ -895,7 +895,7 @@ func (*AwsGoMockClient) BeginDeleteVM(vmname string) error {
 	return nil
 }
 
-func (*AwsGoMockClient) BeginDeleteVirtNet(ctx context.Context, storage resources.StorageFactory) error {
+func (*AwsGoMockClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
 	return nil
 }
@@ -934,7 +934,7 @@ func (*AwsGoMockClient) InstanceInitialWaiter(ctx context.Context, instanceID st
 	return nil
 }
 
-func (*AwsGoMockClient) InitClient(storage resources.StorageFactory) error {
+func (*AwsGoMockClient) InitClient(storage ksctlTypes.StorageFactory) error {
 	return nil
 }
 

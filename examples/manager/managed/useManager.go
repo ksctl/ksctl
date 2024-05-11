@@ -6,11 +6,11 @@ import (
 
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 func main() {
-	client := new(resources.KsctlClient)
+	client := new(types.KsctlClient)
 	controller := control_pkg.GenKsctlController()
 
 	client.Metadata.ClusterName = "example-cluster"

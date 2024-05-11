@@ -1,25 +1,25 @@
 package local
 
 import (
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"time"
 )
 
 type LocalGo interface {
-	NewProvider(log resources.LoggerFactory, storage resources.StorageFactory, options ...cluster.ProviderOption)
+	NewProvider(log types.LoggerFactory, storage types.StorageFactory, options ...cluster.ProviderOption)
 	Create(name string, config cluster.CreateOption, image string, wait time.Duration, explictPath func() string) error
 	Delete(name string, explicitKubeconfigPath string) error
 }
 
 type LocalGoClient struct {
 	provider *cluster.Provider
-	log      resources.LoggerFactory
+	log      types.LoggerFactory
 }
 
 type LocalGoMockClient struct {
-	log   resources.LoggerFactory
-	store resources.StorageFactory
+	log   types.LoggerFactory
+	store types.StorageFactory
 }
 
 func ProvideMockClient() LocalGo {
@@ -30,7 +30,7 @@ func ProvideClient() LocalGo {
 	return &LocalGoClient{}
 }
 
-func (l *LocalGoClient) NewProvider(log resources.LoggerFactory, _ resources.StorageFactory, options ...cluster.ProviderOption) {
+func (l *LocalGoClient) NewProvider(log types.LoggerFactory, _ types.StorageFactory, options ...cluster.ProviderOption) {
 	logger := &CustomLogger{Logger: log}
 	options = append(options, cluster.ProviderWithLogger(logger))
 	l.log = log
@@ -53,7 +53,7 @@ func (l *LocalGoClient) Delete(name string, explicitKubeconfigPath string) error
 	return l.provider.Delete(name, explicitKubeconfigPath)
 }
 
-func (l *LocalGoMockClient) NewProvider(log resources.LoggerFactory, storage resources.StorageFactory, options ...cluster.ProviderOption) {
+func (l *LocalGoMockClient) NewProvider(log types.LoggerFactory, storage types.StorageFactory, options ...cluster.ProviderOption) {
 	log.Debug("NewProvider initialized", "options", options)
 	l.store = storage
 	l.log = log

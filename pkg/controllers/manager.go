@@ -2,12 +2,12 @@ package controllers
 
 import (
 	"context"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"strings"
 
-	"github.com/ksctl/ksctl/pkg/resources/controllers"
+	"github.com/ksctl/ksctl/pkg/types/controllers"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
@@ -19,8 +19,8 @@ import (
 	"github.com/ksctl/ksctl/pkg/controllers/cloud"
 	cloudController "github.com/ksctl/ksctl/pkg/controllers/cloud"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloudControllerResource "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloudControllerResource "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
@@ -28,8 +28,8 @@ var (
 )
 
 type KsctlControllerClient struct {
-	log    resources.LoggerFactory
-	client *resources.KsctlClient
+	log    types.LoggerFactory
+	client *types.KsctlClient
 }
 
 // TODO: add the log.Error for the source
@@ -42,8 +42,8 @@ type KsctlControllerClient struct {
 
 func GenKsctlController(
 	ctx context.Context,
-	log resources.LoggerFactory,
-	client *resources.KsctlClient,
+	log types.LoggerFactory,
+	client *types.KsctlClient,
 ) (controllers.Controller, error) {
 
 	controllerCtx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-manager")
@@ -70,7 +70,7 @@ func (manager *KsctlControllerClient) setupConfigurations() error {
 		return manager.log.NewError(controllerCtx, "field validation failed", "Reason", err)
 	}
 
-	if err := helpers.IsValidName(manager.client.Metadata.ClusterName); err != nil {
+	if err := helpers.IsValidName(controllerCtx, manager.log, manager.client.Metadata.ClusterName); err != nil {
 		return err
 	}
 	return nil
@@ -104,7 +104,7 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 		}
 	}()
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 
 	fakeClient := false
@@ -191,7 +191,7 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 		return log.NewError(controllerCtx, "invalid CNI plugin")
 	}
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
@@ -236,7 +236,7 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 	}()
 
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 
 	fakeClient := false
@@ -282,7 +282,7 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 		}
 	}()
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 
 	var err error
@@ -351,10 +351,28 @@ func (manager *KsctlControllerClient) GetCluster() error {
 
 	log.Note(controllerCtx, "Filter", "cloudProvider", string(client.Metadata.Provider))
 
+	var err error
+	switch client.Metadata.Provider {
+	case consts.CloudCivo:
+		client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
+	case consts.CloudAzure:
+		client.Cloud, err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
+	case consts.CloudAws:
+		client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
+	case consts.CloudLocal:
+		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+	default:
+		err = log.NewError(controllerCtx, "Currently not supported!")
+	}
+
+	if err != nil {
+		return err
+	}
+
 	var printerTable []cloudControllerResource.AllClusterData
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
-		data, err := civoPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
@@ -382,7 +400,7 @@ func (manager *KsctlControllerClient) GetCluster() error {
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAll:
-		data, err := civoPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
@@ -436,7 +454,7 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		}
 	}()
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 
 	fakeClient := false
@@ -469,7 +487,7 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
-	log.Note(controllerCtx, "only cloud resources are having replay!")
+	log.Note(controllerCtx, "only cloud storage are having replay!")
 
 	externalCNI, err := bootstrapController.ConfigureCluster(client)
 	if err != nil {
@@ -509,7 +527,7 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 		}
 	}()
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
@@ -596,7 +614,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		}
 	}()
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 
 	fakeClient := false
@@ -627,7 +645,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
-	log.Note(controllerCtx, "Only cloud resources are having replay!")
+	log.Note(controllerCtx, "Only cloud storage are having replay!")
 	err = bootstrapController.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
 	if err != nil {
 		return log.NewError(controllerCtx, err.Error())
@@ -669,7 +687,7 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 		}
 	}()
 	var (
-		stateDocument *types.StorageDocument = &types.StorageDocument{}
+		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {

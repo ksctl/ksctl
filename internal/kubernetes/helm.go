@@ -3,7 +3,7 @@ package kubernetes
 import (
 	localStore "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"os"
 	"time"
 
@@ -200,7 +200,7 @@ func (c *SimpleRESTClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig 
 ///////////////////////////////////////////////////////////////////////////////////
 
 type CustomLogger struct {
-	Logger resources.LoggerFactory
+	Logger types.LoggerFactory
 }
 
 func (l *CustomLogger) HelmDebugf(format string, v ...interface{}) {

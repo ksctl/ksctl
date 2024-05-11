@@ -1,24 +1,24 @@
 package k8sdistros
 
 import (
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
-	mainStateDocument *types.StorageDocument
-	log               resources.LoggerFactory
+	mainStateDocument *storageTypes.StorageDocument
+	log               types.LoggerFactory
 )
 
-func NewPreBootStrap(m resources.Metadata,
-	state *types.StorageDocument) resources.PreKubernetesBootstrap {
+func NewPreBootStrap(m types.Metadata,
+	state *storageTypes.StorageDocument) types.PreKubernetesBootstrap {
 
 	log = logger.NewStructuredLogger(m.LogVerbosity, m.LogWritter)
 	log.SetPackageName("bootstrap")
@@ -28,10 +28,10 @@ func NewPreBootStrap(m resources.Metadata,
 }
 
 func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState,
-	storage resources.StorageFactory, operation consts.KsctlOperation) error {
+	storage types.StorageFactory, operation consts.KsctlOperation) error {
 
 	if operation == consts.OperationCreate {
-		mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{}
+		mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
 		var err error
 		mainStateDocument.K8sBootstrap.B.CACert,
 			mainStateDocument.K8sBootstrap.B.EtcdCert,

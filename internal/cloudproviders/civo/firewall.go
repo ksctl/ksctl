@@ -4,11 +4,11 @@ import (
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelFirewall implements resources.CloudFactory.
-func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
+// DelFirewall implements types.CloudFactory.
+func (obj *CivoProvider) DelFirewall(storage types.StorageFactory) error {
 	role := <-obj.chRole
 
 	log.Debug(civoCtx, "Printing", "Role", role)
@@ -77,8 +77,8 @@ func (obj *CivoProvider) DelFirewall(storage resources.StorageFactory) error {
 	return storage.Write(mainStateDocument)
 }
 
-// NewFirewall implements resources.CloudFactory.
-func (obj *CivoProvider) NewFirewall(storage resources.StorageFactory) error {
+// NewFirewall implements types.CloudFactory.
+func (obj *CivoProvider) NewFirewall(storage types.StorageFactory) error {
 
 	name := <-obj.chResName
 	role := <-obj.chRole

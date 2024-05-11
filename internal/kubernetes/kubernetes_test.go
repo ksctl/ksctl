@@ -2,10 +2,10 @@ package kubernetes
 
 import (
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"testing"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"gotest.tools/v3/assert"
@@ -62,23 +62,23 @@ func TestGetApp(t *testing.T) {
 }
 
 func TestPresentOrNot(t *testing.T) {
-	dummyState := new(types.StorageDocument)
-	dummyState.Addons.Cni = types.Application{Name: "cilium", Version: "latest"}
+	dummyState := new(storageTypes.StorageDocument)
+	dummyState.Addons.Cni = storageTypes.Application{Name: "cilium", Version: "latest"}
 
-	dummyState.Addons.Apps = []types.Application{
+	dummyState.Addons.Apps = []storageTypes.Application{
 		{
 			Name:    "dummy1",
 			Version: "",
 		},
 	}
 	testCases := []struct {
-		App               types.Application
+		App               storageTypes.Application
 		TypeOfApp         EnumApplication
 		ExpectedIdx       int
 		ExpectedIsPresent bool
 	}{
 		{
-			App: types.Application{
+			App: storageTypes.Application{
 				Name:    "dummy1",
 				Version: "latest",
 			},
@@ -87,7 +87,7 @@ func TestPresentOrNot(t *testing.T) {
 			ExpectedIdx:       0,
 		},
 		{
-			App: types.Application{
+			App: storageTypes.Application{
 				Name:    "cilium",
 				Version: "latest",
 			},
@@ -96,7 +96,7 @@ func TestPresentOrNot(t *testing.T) {
 			ExpectedIdx:       -1,
 		},
 		{
-			App: types.Application{
+			App: storageTypes.Application{
 				Name:    "abcd",
 				Version: "latest",
 			},

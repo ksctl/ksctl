@@ -1,8 +1,8 @@
 package kubernetes
 
 import (
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
@@ -66,7 +66,7 @@ const (
 
 // NOTE: updatable means the app is present and we can upgrade or degrade the version as per users wish
 
-func PresentOrNot(app types.Application, typeOfApp EnumApplication, state *types.StorageDocument) (idx int, isPresent bool) {
+func PresentOrNot(app storageTypes.Application, typeOfApp EnumApplication, state *storageTypes.StorageDocument) (idx int, isPresent bool) {
 	idx = -1
 
 	installedApps := state.Addons
@@ -90,7 +90,7 @@ func PresentOrNot(app types.Application, typeOfApp EnumApplication, state *types
 	return
 }
 
-func (k *Kubernetes) InstallCNI(cni types.Application, state *types.StorageDocument, op consts.KsctlOperation) error {
+func (k *Kubernetes) InstallCNI(cni storageTypes.Application, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
 
 	switch op {
 	case consts.OperationCreate:
@@ -165,7 +165,7 @@ advisiable to use external storage solution
 // Applications Important the sequence of the apps in the list are important
 // it executes from left to right one at a time
 // if it fails at any point of time it stop further installations
-func (k *Kubernetes) Applications(apps []types.Application, state *types.StorageDocument, op consts.KsctlOperation) error {
+func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
 
 	switch op {
 	case consts.OperationCreate:
@@ -207,7 +207,7 @@ func (k *Kubernetes) Applications(apps []types.Application, state *types.Storage
 			if isUpdate {
 				state.Addons.Apps[_idx].Version = app.Version
 			} else {
-				state.Addons.Apps = append(state.Addons.Apps, types.Application{
+				state.Addons.Apps = append(state.Addons.Apps, storageTypes.Application{
 					Name:    app.Name,
 					Version: app.Version,
 				})
@@ -238,7 +238,7 @@ func (k *Kubernetes) Applications(apps []types.Application, state *types.Storage
 				return log.NewError("App uninstall failed", "app", app, "errorMsg", err)
 			}
 
-			_cpyApp := utilities.DeepCopySlice[types.Application](state.Addons.Apps)
+			_cpyApp := utilities.DeepCopySlice[storageTypes.Application](state.Addons.Apps)
 			for _i, _app := range state.Addons.Apps {
 				if _i != _idx {
 					_cpyApp = append(_cpyApp, _app)
@@ -256,7 +256,7 @@ func (k *Kubernetes) Applications(apps []types.Application, state *types.Storage
 	return nil
 }
 
-func installApplication(client *Kubernetes, app types.Application) error {
+func installApplication(client *Kubernetes, app storageTypes.Application) error {
 
 	if err := helpers.IsValidVersion(app.Version); err != nil {
 		return log.NewError(err.Error())
@@ -287,7 +287,7 @@ func installApplication(client *Kubernetes, app types.Application) error {
 	return nil
 }
 
-func deleteApplication(client *Kubernetes, app types.Application) error {
+func deleteApplication(client *Kubernetes, app storageTypes.Application) error {
 
 	if err := helpers.IsValidVersion(app.Version); err != nil {
 		return log.NewError(err.Error())

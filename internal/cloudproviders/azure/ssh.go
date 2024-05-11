@@ -4,11 +4,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// CreateUploadSSHKeyPair implements resources.CloudFactory.
-func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactory) error {
+// CreateUploadSSHKeyPair implements types.CloudFactory.
+func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
 	name := <-obj.chResName
 	log.Debug("Printing", "name", name)
 
@@ -50,8 +50,8 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage resources.StorageFactor
 	return nil
 }
 
-// DelSSHKeyPair implements resources.CloudFactory.
-func (obj *AzureProvider) DelSSHKeyPair(storage resources.StorageFactory) error {
+// DelSSHKeyPair implements types.CloudFactory.
+func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) == 0 {
 		log.Print("skipped ssh key already deleted", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)

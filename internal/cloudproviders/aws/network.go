@@ -6,10 +6,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/ksctl/ksctl/pkg/resources"
+	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AwsProvider) DelNetwork(storage resources.StorageFactory) error {
+func (obj *AwsProvider) DelNetwork(storage ksctlTypes.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Aws.SubnetID) == 0 {
 		log.Print("[skip] already deleted the vpc", mainStateDocument.CloudInfra.Aws.VpcName)
@@ -43,7 +43,7 @@ func (obj *AwsProvider) DelNetwork(storage resources.StorageFactory) error {
 	return nil
 }
 
-func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
+func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetName string) error {
 
 	err := obj.client.BeginDeleteSubNet(ctx, storage, subnetName)
 	if err != nil {
@@ -60,7 +60,7 @@ func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage resources.Stor
 	return nil
 }
 
-func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage resources.StorageFactory, resName string) error {
+func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory, resName string) error {
 
 	err := obj.client.BeginDeleteVpc(ctx, storage)
 	if err != nil {
@@ -76,7 +76,7 @@ func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage resources.Storage
 	return nil
 }
 
-func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
+func (obj *AwsProvider) NewNetwork(storage ksctlTypes.StorageFactory) error {
 	<-obj.chResName
 
 	if len(mainStateDocument.CloudInfra.Aws.VpcId) != 0 {
@@ -144,7 +144,7 @@ func (obj *AwsProvider) NewNetwork(storage resources.StorageFactory) error {
 	return nil
 }
 
-func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.StorageFactory, subnetName string) error {
+func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetName string) error {
 
 	zones, err := obj.client.GetAvailabilityZones()
 	if err != nil {
@@ -224,7 +224,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage resources.Stor
 	return nil
 }
 
-func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage resources.StorageFactory, resName string) error {
+func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage ksctlTypes.StorageFactory, resName string) error {
 
 	if len(mainStateDocument.CloudInfra.Aws.RouteTableID) != 0 {
 		log.Success("[skip] already created the route table ", "id", mainStateDocument.CloudInfra.Aws.RouteTableID)

@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -163,13 +163,13 @@ var (
 //		time.Sleep(10 * time.Second)
 //	}
 //
-//	time.Sleep(10 * time.Second) // to maintain a time gap for stable cluster and cloud resources
+//	time.Sleep(10 * time.Second) // to maintain a time gap for stable cluster and cloud storage
 //
 //	log.Success("Done configuring Cluster to Scale down the no of workerplane to 1")
 //	return nil
 //}
 
-func (k *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportImport, state *types.StorageDocument, isExternalStore bool) error {
+func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport, state *storageTypes.StorageDocument, isExternalStore bool) error {
 	log.Print("Started adding kubernetes ksctl specific controllers")
 	components := []string{"ksctl-application@latest"}
 
@@ -235,9 +235,9 @@ func (k *Kubernetes) DeployRequiredControllers(v *resources.StorageStateExportIm
 	return nil
 }
 
-func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEndpoint map[string][]byte, isExternalStore bool) error {
+func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoint map[string][]byte, isExternalStore bool) error {
 
-	log.Print("Started to configure Cluster to add Ksctl specific resources")
+	log.Print("Started to configure Cluster to add Ksctl specific storage")
 
 	log.Note("creating ksctl namespace")
 	if err := k.namespaceCreate(&corev1.Namespace{
@@ -454,7 +454,7 @@ func (k *Kubernetes) DeployAgent(client *resources.KsctlClient, externalStoreEnd
 		return log.NewError(err.Error())
 	}
 
-	log.Success("Done configuring Cluster to add Ksctl specific resources")
+	log.Success("Done configuring Cluster to add Ksctl specific storage")
 	return nil
 
 }

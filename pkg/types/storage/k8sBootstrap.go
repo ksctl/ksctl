@@ -1,6 +1,6 @@
-package types
+package storage
 
-import "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+import "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 
 type BaseK8sBootstrap struct {
 	KubernetesDistro string        `json:"k8s_distro" bson:"k8s_distro"`

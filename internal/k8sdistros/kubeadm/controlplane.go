@@ -7,10 +7,10 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
+func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
 
 	installKubeadmTools := scriptTransferEtcdCerts(
 		scriptInstallKubeadmAndOtherTools(kubeadm.KubeadmVer),
@@ -86,7 +86,7 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecut
 	return nil
 }
 
-func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
+func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) error {
 	p.mu.Lock()
 	idx := noOfCP
 	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
@@ -167,13 +167,13 @@ func generateExternalEtcdConfig(ips []string) string {
 	return ret.String()
 }
 
-func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) resources.ScriptCollection {
+func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) types.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
 
 	collection := helpers.NewScriptCollection()
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:       "store configuration for Controlplane0",
 		CanRetry:   true,
 		MaxRetries: 3,
@@ -228,7 +228,7 @@ EOF
 `, bootstrapToken, certificateKey, publicIPLb, privateIpLb, etcdConf, ver, publicIPLb),
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:       "kubeadm init",
 		CanRetry:   true,
 		MaxRetries: 3,
@@ -240,10 +240,10 @@ sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
 	return collection
 }
 
-func scriptGetKubeconfig() resources.ScriptCollection {
+func scriptGetKubeconfig() types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:     "fetch kubeconfig",
 		CanRetry: false,
 		ShellScript: `
@@ -253,9 +253,9 @@ sudo cat /etc/kubernetes/admin.conf
 	return collection
 }
 
-func scriptDiscoveryTokenCACertHash() resources.ScriptCollection {
+func scriptDiscoveryTokenCACertHash() types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:     "fetch discovery token ca cert hash",
 		CanRetry: false,
 		ShellScript: `
@@ -265,10 +265,10 @@ sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -p
 	return collection
 }
 
-func scriptGetCertificateKey() resources.ScriptCollection {
+func scriptGetCertificateKey() types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:     "fetch bootstrap certificate key",
 		CanRetry: false,
 		ShellScript: `
@@ -295,8 +295,8 @@ func generatebootstrapToken() (string, error) {
 	return prefix + "." + postfix, nil
 }
 
-func scriptTransferEtcdCerts(collection resources.ScriptCollection, ca, etcd, key string) resources.ScriptCollection {
-	collection.Append(resources.Script{
+func scriptTransferEtcdCerts(collection types.ScriptCollection, ca, etcd, key string) types.ScriptCollection {
+	collection.Append(types.Script{
 		Name:           "save etcd certificate",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -322,10 +322,10 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 	return collection
 }
 
-func scriptJoinControlplane(privateIPLb, token, cacertSHA, certKey string) resources.ScriptCollection {
+func scriptJoinControlplane(privateIPLb, token, cacertSHA, certKey string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Join Controlplane [1..N]",
 		CanRetry:       true,
 		MaxRetries:     3,

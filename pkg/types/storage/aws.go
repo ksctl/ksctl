@@ -1,4 +1,4 @@
-package types
+package storage
 
 type AWSStateVm struct {
 	Vpc                  string `json:"vpc" bson:"vpc"`

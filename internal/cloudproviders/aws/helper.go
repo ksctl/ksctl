@@ -1,9 +1,9 @@
 package aws
 
 import (
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 )
 
 func validationOfArguments(obj *AwsProvider) error {
@@ -48,12 +48,12 @@ func isValidVMSize(obj *AwsProvider, size string) error {
 	return log.NewError("INVALID VM SIZE\nValid options %v\n", validSize)
 }
 
-func loadStateHelper(storage resources.StorageFactory) error {
+func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
 		return log.NewError("Error reading state", "error", err)
 	}
-	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
+	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x
 	}(raw)
 	return nil

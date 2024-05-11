@@ -1,8 +1,8 @@
-package resources
+package types
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 // add context support for each

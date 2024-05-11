@@ -35,7 +35,7 @@ func getManifests(app Application) ([]string, error) {
 		return nil, err
 	}
 
-	// Split the manifest into individual resources
+	// Split the manifest into individual storage
 	resources := strings.Split(string(body), "---")
 	if err := apiextensionsv1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, err

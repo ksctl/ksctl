@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
+func GetReqPayload(l types.LoggerFactory) (Operation, types.Metadata) {
 	l.SetPackageName("e2e-tests")
 	arg1 := flag.String("op", "", "operation to perform")
 	arg2 := flag.String("file", "", "file name as payload")
@@ -29,7 +29,7 @@ func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
 		os.Exit(1)
 	}
 
-	var payload resources.Metadata
+	var payload types.Metadata
 	err = json.Unmarshal(raw, &payload)
 	if err != nil {
 		l.Error(err.Error())

@@ -2,21 +2,21 @@ package azure
 
 import (
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 func GenerateResourceGroupName(clusterName, clusterType string) string {
 	return fmt.Sprintf("ksctl-resgrp-%s-%s", clusterType, clusterName)
 }
 
-func loadStateHelper(storage resources.StorageFactory) error {
+func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
 		return log.NewError(err.Error())
 	}
-	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
+	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x
 	}(raw)
 	return nil

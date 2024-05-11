@@ -3,18 +3,18 @@ package k8sdistros
 import (
 	"context"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"testing"
 
 	testHelper "github.com/ksctl/ksctl/test/helpers"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"gotest.tools/v3/assert"
 )
 
@@ -26,7 +26,7 @@ func TestScriptsDataStore(t *testing.T) {
 
 	testHelper.HelperTestTemplate(
 		t,
-		[]resources.Script{
+		[]types.Script{
 			{
 				Name:           "fetch etcd binaries and cleanup",
 				ScriptExecutor: consts.LinuxBash,
@@ -139,7 +139,7 @@ sudo systemctl start etcd
 `,
 			},
 		},
-		func() resources.ScriptCollection { // Adjust the signature to match your needs
+		func() types.ScriptCollection { // Adjust the signature to match your needs
 			return scriptDB(ca, etcd, key, privIPs, currIdx)
 		},
 	)
@@ -150,7 +150,7 @@ func TestScriptsLoadbalancer(t *testing.T) {
 
 	testHelper.HelperTestTemplate(
 		t,
-		[]resources.Script{
+		[]types.Script{
 			{
 				Name:       "Install haproxy",
 				CanRetry:   true,
@@ -211,7 +211,7 @@ sudo systemctl restart haproxy
 `,
 			},
 		},
-		func() resources.ScriptCollection { // Adjust the signature to match your needs
+		func() types.ScriptCollection { // Adjust the signature to match your needs
 			return scriptConfigureLoadbalancer(array)
 		},
 	)
@@ -227,7 +227,7 @@ func TestGetEtcdMemberIPFieldForDatastore(t *testing.T) {
 }
 
 var (
-	storeHA resources.StorageFactory
+	storeHA types.StorageFactory
 
 	fakeClient         *PreBootstrap
 	dir                = fmt.Sprintf("%s ksctl-bootstrap-test", os.TempDir())
@@ -237,7 +237,7 @@ var (
 func TestMain(m *testing.M) {
 	log = logger.NewStructuredLogger(-1, os.Stdout)
 	log.SetPackageName("bootstrap")
-	mainState := &types.StorageDocument{}
+	mainState := &storageTypes.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
@@ -265,7 +265,7 @@ func TestMain(m *testing.M) {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(resources.Metadata{
+	fakeClient = NewClientHelper(types.Metadata{
 		ClusterName:  "fake",
 		Region:       "fake",
 		Provider:     consts.CloudAzure,
@@ -276,7 +276,7 @@ func TestMain(m *testing.M) {
 		NoDS:         5,
 		NoWP:         10,
 		K8sDistro:    consts.K8sKubeadm,
-	}, &types.StorageDocument{})
+	}, &storageTypes.StorageDocument{})
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
@@ -298,7 +298,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func NewClientHelper(m resources.Metadata, state *types.StorageDocument) *PreBootstrap {
+func NewClientHelper(m types.Metadata, state *storageTypes.StorageDocument) *PreBootstrap {
 	helper := NewPreBootStrap(m, state)
 	switch o := helper.(type) {
 	case *PreBootstrap:

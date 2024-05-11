@@ -11,14 +11,14 @@ import (
 
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func CallManager(log resources.LoggerFactory, in *pb.ReqScale) error {
+func CallManager(log types.LoggerFactory, in *pb.ReqScale) error {
 
 	// TODO: make the manager to not use kuberneteVer as a parameter instead it to be handled by the scaling thing
 	// Reason: we can update the ver without changing the env; by just changing the state along and it should be the single source of truth!
-	client := new(resources.KsctlClient)
+	client := new(types.KsctlClient)
 	controller := control_pkg.GenKsctlController()
 
 	client.Metadata.ClusterName = os.Getenv("KSCTL_CLUSTER_NAME")

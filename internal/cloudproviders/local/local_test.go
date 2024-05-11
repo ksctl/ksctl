@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"reflect"
 	"strconv"
@@ -11,20 +12,19 @@ import (
 	"testing"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
 )
 
 var (
 	fakeClientManaged *LocalProvider
-	storeManaged      resources.StorageFactory
+	storeManaged      types.StorageFactory
 
 	fakeClientVars *LocalProvider
-	//storeVars      resources.StorageFactory
+	//storeVars      storage.StorageFactory
 
 	dir = fmt.Sprintf("%s ksctl-local-test", os.TempDir())
 )
@@ -32,13 +32,13 @@ var (
 func TestMain(m *testing.M) {
 	func() {
 
-		fakeClientVars, _ = ReturnLocalStruct(resources.Metadata{
+		fakeClientVars, _ = ReturnLocalStruct(types.Metadata{
 			ClusterName:  "demo",
 			Region:       "LOCAL",
 			Provider:     consts.CloudLocal,
 			LogVerbosity: -1,
 			LogWritter:   os.Stdout,
-		}, &types.StorageDocument{}, ProvideMockClient)
+		}, &storageTypes.StorageDocument{}, ProvideMockClient)
 
 	}()
 
@@ -78,84 +78,84 @@ func TestGetHostNameAllWorkerNode(t *testing.T) {
 	}
 }
 
-// CreateUploadSSHKeyPair implements resources.CloudFactory.
+// CreateUploadSSHKeyPair implements types.CloudFactory.
 func TestCreateUploadSSHKeyPair(t *testing.T) {
 	if factory := fakeClientVars.CreateUploadSSHKeyPair(nil); factory != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// DelFirewall implements resources.CloudFactory.
+// DelFirewall implements types.CloudFactory.
 func TestDelFirewall(t *testing.T) {
 	if factory := fakeClientVars.DelFirewall(nil); factory != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// DelNetwork implements resources.CloudFactory.
+// DelNetwork implements types.CloudFactory.
 func TestDelNetwork(t *testing.T) {
 	if factory := fakeClientVars.DelNetwork(nil); factory != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// DelSSHKeyPair implements resources.CloudFactory.
+// DelSSHKeyPair implements types.CloudFactory.
 func TestDelSSHKeyPair(t *testing.T) {
 	if factory := fakeClientVars.DelSSHKeyPair(nil); factory != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// DelVM implements resources.CloudFactory.
+// DelVM implements types.CloudFactory.
 func TestDelVM(t *testing.T) {
 	if factory := fakeClientVars.DelVM(nil, 0); factory != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// GetStateForHACluster implements resources.CloudFactory.
+// GetStateForHACluster implements types.CloudFactory.
 func TestGetStateForHACluster(t *testing.T) {
 	if _, err := fakeClientVars.GetStateForHACluster(nil); err == nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// NewFirewall implements resources.CloudFactory.
+// NewFirewall implements types.CloudFactory.
 func TestNewFirewall(t *testing.T) {
 	if err := fakeClientVars.NewFirewall(nil); err != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// NewNetwork implements resources.CloudFactory.
+// NewNetwork implements types.CloudFactory.
 func TestNewNetwork(t *testing.T) {
 	if err := fakeClientVars.NewNetwork(nil); err != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// NewVM implements resources.CloudFactory.
+// NewVM implements types.CloudFactory.
 func TestNewVM(t *testing.T) {
 	if err := fakeClientVars.NewVM(nil, 0); err != nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// NoOfControlPlane implements resources.CloudFactory.
+// NoOfControlPlane implements types.CloudFactory.
 func TestNoOfControlPlane(t *testing.T) {
 	if _, err := fakeClientVars.NoOfControlPlane(-1, false); err == nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// NoOfDataStore implements resources.CloudFactory.
+// NoOfDataStore implements types.CloudFactory.
 func TestNoOfDataStore(t *testing.T) {
 	if _, err := fakeClientVars.NoOfDataStore(-1, false); err == nil {
 		t.Fatalf("it should not be implemented")
 	}
 }
 
-// NoOfWorkerPlane implements resources.CloudFactory.
+// NoOfWorkerPlane implements types.CloudFactory.
 func TestNoOfWorkerPlane(t *testing.T) {
 	if _, err := fakeClientVars.NoOfWorkerPlane(nil, 0, false); err == nil {
 		t.Fatalf("it should not be implemented")
@@ -217,15 +217,15 @@ networking:
 }
 
 func TestManagedCluster(t *testing.T) {
-	mainStateDocument = &types.StorageDocument{}
+	mainStateDocument = &storageTypes.StorageDocument{}
 	func() {
-		fakeClientManaged, _ = ReturnLocalStruct(resources.Metadata{
+		fakeClientManaged, _ = ReturnLocalStruct(types.Metadata{
 			ClusterName:  "demo-managed",
 			Region:       "LOCAL",
 			Provider:     consts.CloudLocal,
 			LogVerbosity: -1,
 			LogWritter:   os.Stdout,
-		}, &types.StorageDocument{}, ProvideMockClient)
+		}, &storageTypes.StorageDocument{}, ProvideMockClient)
 
 		storeManaged = localstate.InitStorage(-1, os.Stdout)
 		_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)

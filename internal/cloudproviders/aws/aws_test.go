@@ -6,10 +6,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/internal/storage/types"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"gotest.tools/v3/assert"
 	"os"
 	"strconv"
@@ -17,19 +18,19 @@ import (
 )
 
 var (
-	demoClient *resources.KsctlClient
+	demoClient *types.KsctlClient
 	fakeaws    *AwsProvider
 	dir        = fmt.Sprintf("%s/ksctl-aws-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
-	demoClient = &resources.KsctlClient{}
+	demoClient = &types.KsctlClient{}
 	demoClient.Metadata.ClusterName = "fake"
 	demoClient.Metadata.Region = "fake"
 	demoClient.Metadata.Provider = consts.CloudAws
 	demoClient.Metadata.LogVerbosity = -1
 	demoClient.Metadata.LogWritter = os.Stdout
-	state := new(types.StorageDocument)
+	state := new(storageTypes.StorageDocument)
 	demoClient.Cloud, _ = ReturnAwsStruct(demoClient.Metadata, state, ProvideMockClient)
 
 	fakeaws, _ = ReturnAwsStruct(demoClient.Metadata, state, ProvideMockClient)

@@ -7,11 +7,11 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelManagedCluster implements resources.CloudFactory.
-func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) error {
+// DelManagedCluster implements types.CloudFactory.
+func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) error {
 
 	cloud.client.NewProvider(log, storage, nil)
 	if len(cloud.Metadata.tempDirKubeconfig) == 0 {
@@ -41,8 +41,8 @@ func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) 
 	return nil
 }
 
-// NewManagedCluster implements resources.CloudFactory.
-func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
+// NewManagedCluster implements types.CloudFactory.
+func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 
 	cloud.client.NewProvider(log, storage, nil)
 

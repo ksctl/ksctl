@@ -3,24 +3,23 @@ package civo
 import (
 	"context"
 	"encoding/json"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"strings"
 	"sync"
 
 	"github.com/civo/civogo"
-	"github.com/ksctl/ksctl/internal/storage/types"
-
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloud_control_res "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloud_control_res "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
-	mainStateDocument *types.StorageDocument
+	mainStateDocument *storageTypes.StorageDocument
 	clusterType       consts.KsctlClusterType // it stores the ha or managed
 	civoCtx           context.Context
-	log               resources.LoggerFactory
+	log               types.LoggerFactory
 )
 
 type metadata struct {
@@ -54,7 +53,7 @@ type CivoProvider struct {
 	client CivoGo
 }
 
-func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
+func (*CivoProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
 		return "", log.NewError(civoCtx, "Unable to Marshal main_state_document", "Reason", err)
@@ -64,8 +63,8 @@ func (*CivoProvider) GetStateFile(resources.StorageFactory) (string, error) {
 	return string(cloudstate), nil
 }
 
-// GetStateForHACluster implements resources.CloudFactory.
-func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactory) (cloud_control_res.CloudResourceState, error) {
+// GetStateForHACluster implements types.CloudFactory.
+func (client *CivoProvider) GetStateForHACluster(storage types.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	payload := cloud_control_res.CloudResourceState{
 		SSHState: cloud_control_res.SSHInfo{
@@ -94,7 +93,7 @@ func (client *CivoProvider) GetStateForHACluster(storage resources.StorageFactor
 	return payload, nil
 }
 
-func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
+func (obj *CivoProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
 
 	if obj.haCluster {
 		clusterType = consts.ClusterTypeHa
@@ -125,8 +124,8 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 			mainStateDocument.InfraProvider = consts.CloudCivo
 			mainStateDocument.Region = obj.region
 			mainStateDocument.ClusterType = string(clusterType)
-			mainStateDocument.CloudInfra = &types.InfrastructureState{
-				Civo: &types.StateConfigurationCivo{},
+			mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{
+				Civo: &storageTypes.StateConfigurationCivo{},
 			}
 			mainStateDocument.CloudInfra.Civo.B.KubernetesVer = obj.k8sVersion
 			mainStateDocument.CloudInfra.Civo.B.KubernetesDistro = string(obj.k8sName)
@@ -137,7 +136,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 		if errLoadState != nil {
 			return log.NewError(civoCtx, "no cluster state found", "Reason", errLoadState)
 		}
-		log.Debug(civoCtx, "Get resources")
+		log.Debug(civoCtx, "Get storage")
 
 	case consts.OperationDelete:
 
@@ -160,7 +159,7 @@ func (obj *CivoProvider) InitState(storage resources.StorageFactory, operation c
 	return nil
 }
 
-func (cloud *CivoProvider) Credential(storage resources.StorageFactory) error {
+func (cloud *CivoProvider) Credential(storage types.StorageFactory) error {
 
 	log.Print(civoCtx, "Enter CIVO TOKEN")
 	token, err := helpers.UserInputCredentials(civoCtx, log)
@@ -179,9 +178,9 @@ func (cloud *CivoProvider) Credential(storage resources.StorageFactory) error {
 	log.Print(civoCtx, "Recieved accountId", "userId", id)
 
 	if err := storage.WriteCredentials(consts.CloudCivo,
-		&types.CredentialsDocument{
+		&storageTypes.CredentialsDocument{
 			InfraProvider: consts.CloudCivo,
-			Civo:          &types.CredentialsCivo{Token: token},
+			Civo:          &storageTypes.CredentialsCivo{Token: token},
 		}); err != nil {
 		return err
 	}
@@ -189,7 +188,7 @@ func (cloud *CivoProvider) Credential(storage resources.StorageFactory) error {
 	return nil
 }
 
-func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
+func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
 	log = parentLogger
 
 	civoCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudCivo))
@@ -211,7 +210,7 @@ func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger 
 }
 
 // it will contain the name of the resource to be created
-func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
+func (cloud *CivoProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(civoCtx, log, resName); err != nil {
 		log.Error(civoCtx, "cloud.Name()", "err", err)
@@ -222,7 +221,7 @@ func (cloud *CivoProvider) Name(resName string) resources.CloudFactory {
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *CivoProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
+func (cloud *CivoProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	switch resRole {
 	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
@@ -236,7 +235,7 @@ func (cloud *CivoProvider) Role(resRole consts.KsctlRole) resources.CloudFactory
 }
 
 // it will contain which vmType to create
-func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
+func (cloud *CivoProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(cloud, size); err != nil {
 		log.Error(civoCtx, "cloud.VMType()", "err", err)
@@ -248,7 +247,7 @@ func (cloud *CivoProvider) VMType(size string) resources.CloudFactory {
 }
 
 // whether to have the resource as public or private (i.e. VMs)
-func (cloud *CivoProvider) Visibility(toBePublic bool) resources.CloudFactory {
+func (cloud *CivoProvider) Visibility(toBePublic bool) types.CloudFactory {
 	cloud.metadata.public = toBePublic
 	log.Debug(civoCtx, "Printing", "willBePublic", toBePublic)
 	return cloud
@@ -304,8 +303,8 @@ func k8sVersion(obj *CivoProvider, ver string) (string, error) {
 	return ver, nil
 }
 
-// Version implements resources.CloudFactory.
-func (obj *CivoProvider) Version(ver string) resources.CloudFactory {
+// Version implements types.CloudFactory.
+func (obj *CivoProvider) Version(ver string) types.CloudFactory {
 	v, err := k8sVersion(obj, ver)
 	if err != nil {
 		log.Error(civoCtx, "cloud.Version()", "err", err)
@@ -321,7 +320,7 @@ func (*CivoProvider) GetHostNameAllWorkerNode() []string {
 	return hostnames
 }
 
-// NoOfControlPlane implements resources.CloudFactory.
+// NoOfControlPlane implements types.CloudFactory.
 func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	log.Debug(civoCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 
@@ -358,7 +357,7 @@ func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	return -1, log.NewError(civoCtx, "constrains for no of controlplane >= 3 and odd number")
 }
 
-// NoOfDataStore implements resources.CloudFactory.
+// NoOfDataStore implements types.CloudFactory.
 func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	log.Debug(civoCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 
@@ -399,9 +398,9 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	return -1, log.NewError(civoCtx, "constrains for no of Datastore>= 3 and odd number")
 }
 
-// NoOfWorkerPlane implements resources.CloudFactory.
+// NoOfWorkerPlane implements types.CloudFactory.
 // NOTE: make it better for wokerplane to save add stuff and remove stuff
-func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
+func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
 	log.Debug(civoCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 
 	if !setter {
@@ -465,7 +464,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage resources.StorageFactory, no in
 	return -1, log.NewError(civoCtx, "constrains for no of workerplane >= 0")
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
+func GetRAWClusterInfos(storage types.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
 
 	var data []cloud_control_res.AllClusterData
 
@@ -500,7 +499,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory) ([]cloud_control_res.A
 	return data, nil
 }
 
-func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) error {
+func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) error {
 	err := storage.AlreadyCreated(consts.CloudCivo, region, name, ksctlClusterType)
 	if err != nil {
 		return log.NewError(civoCtx, "Cluster not found", "ErrStorage", err)
@@ -508,7 +507,7 @@ func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlCl
 	return nil
 }
 
-func (obj *CivoProvider) IsPresent(storage resources.StorageFactory) error {
+func (obj *CivoProvider) IsPresent(storage types.StorageFactory) error {
 	if obj.haCluster {
 		return isPresent(storage, consts.ClusterTypeHa, obj.clusterName, obj.region)
 	}

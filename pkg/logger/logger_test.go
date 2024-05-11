@@ -1,19 +1,21 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
-	sL resources.LoggerFactory
-	gL resources.LoggerFactory
+	sL       types.LoggerFactory
+	gL       types.LoggerFactory
+	dummyCtx = context.TODO()
 )
 
 func TestMain(m *testing.M) {
@@ -40,36 +42,32 @@ func TestHelperToAddLineTerminationForLongStrings(t *testing.T) {
 
 func TestPrintersStructured(t *testing.T) {
 
-	t.Run("Package name set", func(t *testing.T) {
-		sL.SetPackageName("logger-test")
-	})
-
 	t.Run("Success", func(t *testing.T) {
-		sL.Success("FAKE", "type", "success")
+		sL.Success(dummyCtx, "FAKE", "type", "success")
 	})
 
 	t.Run("Warn", func(t *testing.T) {
-		sL.Warn("FAKE", "type", "warn")
+		sL.Warn(dummyCtx, "FAKE", "type", "warn")
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		sL.Error("FAKE", "type", "error")
+		sL.Error(dummyCtx, "FAKE", "type", "error")
 	})
 
 	t.Run("Debug", func(t *testing.T) {
-		sL.Debug("FAKE", "type", "debugging")
+		sL.Debug(dummyCtx, "FAKE", "type", "debugging")
 	})
 
 	t.Run("Note", func(t *testing.T) {
-		sL.Note("FAKE", "type", "note")
+		sL.Note(dummyCtx, "FAKE", "type", "note")
 	})
 
 	t.Run("Print", func(t *testing.T) {
-		sL.Print("FAKE", "type", "print")
+		sL.Print(dummyCtx, "FAKE", "type", "print")
 	})
 
 	t.Run("Table", func(t *testing.T) {
-		sL.Table(
+		sL.Table(dummyCtx,
 			[]cloud.AllClusterData{
 				{
 					Name:     "fake-demo",
@@ -78,53 +76,50 @@ func TestPrintersStructured(t *testing.T) {
 				},
 			})
 
-		sL.Table(nil)
+		sL.Table(dummyCtx, nil)
 	})
 
 	t.Run("Box", func(t *testing.T) {
-		sL.Box("Abcd", "1")
-		sL.Box("Abcddedefe", "1")
-		sL.Box("KUBECONFIG env var", "/jknc/csdc")
-		sL.Box("KUBECONFIG env var", "jknc")
+		sL.Box(dummyCtx, "Abcd", "1")
+		sL.Box(dummyCtx, "Abcddedefe", "1")
+		sL.Box(dummyCtx, "KUBECONFIG env var", "/jknc/csdc")
+		sL.Box(dummyCtx, "KUBECONFIG env var", "jknc")
 	})
 
 	t.Run("external", func(t *testing.T) {
-		sL.ExternalLogHandler(consts.LOG_SUCCESS, "cdcc")
-		sL.ExternalLogHandlerf(consts.LOG_SUCCESS, "cdcc: %v", nil)
+		sL.ExternalLogHandler(dummyCtx, consts.LOG_SUCCESS, "cdcc")
+		sL.ExternalLogHandlerf(dummyCtx, consts.LOG_SUCCESS, "cdcc: %v", nil)
 	})
 }
 
 func TestPrintersGeneral(t *testing.T) {
-	t.Run("Package name set", func(t *testing.T) {
-		gL.SetPackageName("logger-test")
-	})
 
 	t.Run("Success", func(t *testing.T) {
-		gL.Success("FAKE", "type", "success")
+		gL.Success(dummyCtx, "FAKE", "type", "success")
 	})
 
 	t.Run("Warn", func(t *testing.T) {
-		gL.Warn("FAKE", "type", "warn")
+		gL.Warn(dummyCtx, "FAKE", "type", "warn")
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		gL.Error("FAKE", "type", "error")
+		gL.Error(dummyCtx, "FAKE", "type", "error")
 	})
 
 	t.Run("Debug", func(t *testing.T) {
-		gL.Debug("FAKE", "type", "debugging")
+		gL.Debug(dummyCtx, "FAKE", "type", "debugging")
 	})
 
 	t.Run("Note", func(t *testing.T) {
-		gL.Note("FAKE", "type", "note")
+		gL.Note(dummyCtx, "FAKE", "type", "note")
 	})
 
 	t.Run("Print", func(t *testing.T) {
-		gL.Print("FAKE", "type", "print")
+		gL.Print(dummyCtx, "FAKE", "type", "print")
 	})
 
 	t.Run("Table", func(t *testing.T) {
-		gL.Table(
+		gL.Table(dummyCtx,
 			[]cloud.AllClusterData{
 				{
 					Name:     "fake-demo",
@@ -133,18 +128,18 @@ func TestPrintersGeneral(t *testing.T) {
 				},
 			})
 
-		gL.Table(nil)
+		gL.Table(dummyCtx, nil)
 	})
 
 	t.Run("Box", func(t *testing.T) {
-		gL.Box("Abcd", "1")
-		gL.Box("Abcddedefe", "1")
-		gL.Box("KUBECONFIG env var", "/jknc/csdc")
-		gL.Box("KUBECONFIG env var", "jknc")
+		gL.Box(dummyCtx, "Abcd", "1")
+		gL.Box(dummyCtx, "Abcddedefe", "1")
+		gL.Box(dummyCtx, "KUBECONFIG env var", "/jknc/csdc")
+		gL.Box(dummyCtx, "KUBECONFIG env var", "jknc")
 	})
 
 	t.Run("external", func(t *testing.T) {
-		gL.ExternalLogHandler(consts.LOG_SUCCESS, "cdcc")
-		gL.ExternalLogHandlerf(consts.LOG_SUCCESS, "cdcc", "Reason", fmt.Errorf("Error"))
+		gL.ExternalLogHandler(dummyCtx, consts.LOG_SUCCESS, "cdcc")
+		gL.ExternalLogHandlerf(dummyCtx, consts.LOG_SUCCESS, "cdcc", "Reason", fmt.Errorf("Error"))
 	})
 }

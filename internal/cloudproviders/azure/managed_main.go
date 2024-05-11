@@ -5,11 +5,11 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelManagedCluster implements resources.CloudFactory.
-func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) error {
+// DelManagedCluster implements types.CloudFactory.
+func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) == 0 {
 		log.Print("skipped already deleted AKS cluster")
 		return nil
@@ -36,8 +36,8 @@ func (obj *AzureProvider) DelManagedCluster(storage resources.StorageFactory) er
 	return nil
 }
 
-// NewManagedCluster implements resources.CloudFactory.
-func (obj *AzureProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
+// NewManagedCluster implements types.CloudFactory.
+func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 	name := <-obj.chResName
 	vmtype := <-obj.chVMType
 

@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// NewNetwork implements resources.CloudFactory.
-func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
+// NewNetwork implements types.CloudFactory.
+func (obj *CivoProvider) NewNetwork(storage types.StorageFactory) error {
 	name := <-obj.chResName
 
 	log.Debug(civoCtx, "Printing", "Name", name)
@@ -38,8 +38,8 @@ func (obj *CivoProvider) NewNetwork(storage resources.StorageFactory) error {
 	return storage.Write(mainStateDocument)
 }
 
-// DelNetwork implements resources.CloudFactory.
-func (obj *CivoProvider) DelNetwork(storage resources.StorageFactory) error {
+// DelNetwork implements types.CloudFactory.
+func (obj *CivoProvider) DelNetwork(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Civo.NetworkID) == 0 {
 		log.Print(civoCtx, "skipped network already deleted")

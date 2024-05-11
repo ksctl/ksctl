@@ -1,6 +1,6 @@
 'area/internal':
 - any: ['pkg/**', 'pkg/*']
-  all: ['!pkg/helpers/**','!pkg/controllers/**','!pkg/resources/**']
+  all: ['!pkg/helpers/**','!pkg/controllers/**','!pkg/types/**']
 
 'cloud/azure':
 - 'internal/cloudproviders/azure/*'
@@ -58,5 +58,5 @@
 - 'pkg/helpers/*'
 - 'pkg/controllers/*'
 - 'pkg/controllers/**/*'
-- 'pkg/resources/**'
+- 'pkg/types/**'
 

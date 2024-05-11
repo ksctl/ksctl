@@ -8,7 +8,7 @@ import (
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/helpers"
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 func toKsctlControllerCompatableForm(app []*pb.Application, appType pb.ApplicationType) (_apps []string) {
@@ -27,9 +27,9 @@ func toKsctlControllerCompatableForm(app []*pb.Application, appType pb.Applicati
 	return
 }
 
-func Handler(log resources.LoggerFactory, in *pb.ReqApplication) error {
+func Handler(log types.LoggerFactory, in *pb.ReqApplication) error {
 
-	client := new(resources.KsctlClient)
+	client := new(types.KsctlClient)
 	controller := control_pkg.GenKsctlController()
 
 	client.Metadata.ClusterName = os.Getenv("KSCTL_CLUSTER_NAME")

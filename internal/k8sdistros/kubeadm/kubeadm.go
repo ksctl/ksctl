@@ -2,14 +2,14 @@ package kubeadm
 
 import (
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"strings"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 type Kubeadm struct {
@@ -18,9 +18,9 @@ type Kubeadm struct {
 	mu         *sync.Mutex
 }
 
-func (p *Kubeadm) Setup(storage resources.StorageFactory, operation consts.KsctlOperation) error {
+func (p *Kubeadm) Setup(storage types.StorageFactory, operation consts.KsctlOperation) error {
 	if operation == consts.OperationCreate {
-		mainStateDocument.K8sBootstrap.Kubeadm = &types.StateConfigurationKubeadm{}
+		mainStateDocument.K8sBootstrap.Kubeadm = &storageTypes.StateConfigurationKubeadm{}
 		mainStateDocument.BootstrapProvider = consts.K8sKubeadm
 	}
 
@@ -30,7 +30,7 @@ func (p *Kubeadm) Setup(storage resources.StorageFactory, operation consts.Ksctl
 	return nil
 }
 
-func (p *Kubeadm) Version(ver string) resources.KubernetesBootstrap {
+func (p *Kubeadm) Version(ver string) types.KubernetesBootstrap {
 	if isValidKubeadmVersion(ver) {
 		// valid
 		p.KubeadmVer = ver
@@ -65,11 +65,11 @@ func isValidKubeadmVersion(ver string) bool {
 }
 
 var (
-	mainStateDocument *types.StorageDocument
-	log               resources.LoggerFactory
+	mainStateDocument *storageTypes.StorageDocument
+	log               types.LoggerFactory
 )
 
-func NewClient(m resources.Metadata, state *types.StorageDocument) resources.KubernetesBootstrap {
+func NewClient(m types.Metadata, state *storageTypes.StorageDocument) types.KubernetesBootstrap {
 	log = logger.NewStructuredLogger(m.LogVerbosity, m.LogWritter)
 	log.SetPackageName("kubeadm")
 
@@ -77,10 +77,10 @@ func NewClient(m resources.Metadata, state *types.StorageDocument) resources.Kub
 	return &Kubeadm{mu: &sync.Mutex{}}
 }
 
-func scriptInstallKubeadmAndOtherTools(ver string) resources.ScriptCollection {
+func scriptInstallKubeadmAndOtherTools(ver string) types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "disable swap and some kernel module adjustments",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -110,7 +110,7 @@ sudo sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tabl
 `,
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "install containerd",
 		CanRetry:       true,
 		MaxRetries:     3,
@@ -133,7 +133,7 @@ sudo apt-get install containerd.io -y
 `,
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "containerd config",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -144,7 +144,7 @@ sudo mv -v config.toml /etc/containerd/config.toml
 `,
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "restart containerd systemd",
 		CanRetry:       true,
 		MaxRetries:     3,
@@ -158,7 +158,7 @@ sudo systemctl restart containerd
 `,
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "install kubeadm, kubectl, kubelet",
 		CanRetry:       true,
 		MaxRetries:     9,
@@ -178,7 +178,7 @@ sudo systemctl enable kubelet
 `, ver, ver),
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "apt mark kubenetes tool as hold",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,

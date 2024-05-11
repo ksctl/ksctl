@@ -8,7 +8,7 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 type CivoGo interface {
@@ -28,7 +28,7 @@ type CivoGo interface {
 
 	GetDiskImageByName(name string) (*civogo.DiskImage, error)
 
-	InitClient(factory resources.StorageFactory, region string) error
+	InitClient(factory types.StorageFactory, region string) error
 
 	GetKubernetesCluster(id string) (*civogo.KubernetesCluster, error)
 	NewKubernetesClusters(kc *civogo.KubernetesClusterConfig) (*civogo.KubernetesCluster, error)
@@ -189,7 +189,7 @@ func (client *CivoGoClient) DeleteInstance(id string) (*civogo.SimpleResponse, e
 	return v, nil
 }
 
-func (client *CivoGoClient) InitClient(factory resources.StorageFactory, region string) (err error) {
+func (client *CivoGoClient) InitClient(factory types.StorageFactory, region string) (err error) {
 	client.client, err = civogo.NewClient(fetchAPIKey(factory), region)
 	if err != nil {
 		err = log.NewError(civoCtx, "Failed to Init civo client", "Reason", err)
@@ -410,7 +410,7 @@ func (client *CivoGoMockClient) DeleteInstance(id string) (*civogo.SimpleRespons
 	}, nil
 }
 
-func (client *CivoGoMockClient) InitClient(factory resources.StorageFactory, region string) (err error) {
+func (client *CivoGoMockClient) InitClient(factory types.StorageFactory, region string) (err error) {
 	client.client, err = civogo.NewFakeClient()
 	if err != nil {
 		return

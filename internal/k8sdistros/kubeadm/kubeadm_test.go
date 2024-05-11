@@ -3,6 +3,7 @@ package kubeadm
 import (
 	"context"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"regexp"
 	"sync"
@@ -12,28 +13,26 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/logger"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
-
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"gotest.tools/v3/assert"
 )
 
 var (
-	storeHA resources.StorageFactory
+	storeHA types.StorageFactory
 
 	fakeClient         *Kubeadm
 	dir                = fmt.Sprintf("%s ksctl-kubeadm-test", os.TempDir())
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 )
 
-func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.StorageFactory, m resources.Metadata, state *types.StorageDocument) *Kubeadm {
+func NewClientHelper(x cloudControlRes.CloudResourceState, storage types.StorageFactory, m types.Metadata, state *storageTypes.StorageDocument) *Kubeadm {
 
 	mainStateDocument = state
-	mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{}
+	mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
 	var err error
 	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(log, x.PrivateIPv4DataStores)
 	if err != nil {
@@ -58,7 +57,7 @@ func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.Sto
 func TestMain(m *testing.M) {
 	log = logger.NewStructuredLogger(-1, os.Stdout)
 	log.SetPackageName("kubeadm")
-	mainState := &types.StorageDocument{}
+	mainState := &storageTypes.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
@@ -86,7 +85,7 @@ func TestMain(m *testing.M) {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(fakeStateFromCloud, storeHA, resources.Metadata{
+	fakeClient = NewClientHelper(fakeStateFromCloud, storeHA, types.Metadata{
 		ClusterName:  "fake",
 		Region:       "fake",
 		Provider:     consts.CloudAzure,
@@ -97,7 +96,7 @@ func TestMain(m *testing.M) {
 		NoDS:         5,
 		NoWP:         10,
 		K8sDistro:    consts.K8sKubeadm,
-	}, &types.StorageDocument{})
+	}, &storageTypes.StorageDocument{})
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
@@ -153,7 +152,7 @@ func TestScriptInstallKubeadmAndOtherTools(t *testing.T) {
 
 	testHelper.HelperTestTemplate(
 		t,
-		[]resources.Script{
+		[]types.Script{
 			{
 				Name:           "disable swap and some kernel module adjustments",
 				CanRetry:       false,
@@ -257,7 +256,7 @@ sudo systemctl enable kubelet
 		`,
 			},
 		},
-		func() resources.ScriptCollection { // Adjust the signature to match your needs
+		func() types.ScriptCollection { // Adjust the signature to match your needs
 			return scriptInstallKubeadmAndOtherTools(ver)
 		},
 	)
@@ -268,7 +267,7 @@ func TestScriptsControlplane(t *testing.T) {
 	t.Run("scriptGetCertificateKey", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:     "fetch bootstrap certificate key",
 					CanRetry: false,
@@ -277,7 +276,7 @@ sudo kubeadm certs certificate-key
 `,
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptGetCertificateKey()
 			},
 		)
@@ -286,7 +285,7 @@ sudo kubeadm certs certificate-key
 	t.Run("scriptDiscoveryTokenCACertHash", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:     "fetch discovery token ca cert hash",
 					CanRetry: false,
@@ -295,7 +294,7 @@ sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -p
 `,
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptDiscoveryTokenCACertHash()
 			},
 		)
@@ -304,7 +303,7 @@ sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -p
 	t.Run("scriptGetKubeconfig", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:     "fetch kubeconfig",
 					CanRetry: false,
@@ -313,7 +312,7 @@ sudo cat /etc/kubernetes/admin.conf
 `,
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptGetKubeconfig()
 			},
 		)
@@ -330,7 +329,7 @@ sudo cat /etc/kubernetes/admin.conf
 
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:       "store configuration for Controlplane0",
 					CanRetry:   true,
@@ -394,7 +393,7 @@ sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
 `,
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptAddKubeadmControlplane0(ver, bootstrapToken, certificateKey, publicIPLb, privateIPLb, privateIPDs)
 			},
 		)
@@ -407,7 +406,7 @@ sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
 		crtKey := "xxyy"
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:           "Join Controlplane [1..N]",
 					CanRetry:       true,
@@ -418,7 +417,7 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --
 `, privateIPLb, token, cacertSHA, crtKey),
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptJoinControlplane(privateIPLb, token, cacertSHA, crtKey)
 			},
 		)
@@ -428,7 +427,7 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --
 		ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:           "save etcd certificate",
 					CanRetry:       false,
@@ -452,7 +451,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 `, ca, etcd, key),
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptTransferEtcdCerts(helpers.NewScriptCollection(), ca, etcd, key)
 			},
 		)
@@ -465,7 +464,7 @@ func TestSciprWorkerplane(t *testing.T) {
 	cacertSHA := "x2r23erd23"
 	testHelper.HelperTestTemplate(
 		t,
-		[]resources.Script{
+		[]types.Script{
 			{
 				Name:           "Join K3s workerplane",
 				CanRetry:       true,
@@ -476,7 +475,7 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>
 `, privateIPLb, token, cacertSHA),
 			},
 		},
-		func() resources.ScriptCollection { // Adjust the signature to match your needs
+		func() types.ScriptCollection { // Adjust the signature to match your needs
 			return scriptJoinWorkerplane(helpers.NewScriptCollection(), privateIPLb, token, cacertSHA)
 		},
 	)

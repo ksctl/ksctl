@@ -7,11 +7,11 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 var (
-	l   resources.LoggerFactory
+	l   types.LoggerFactory
 	ctx = context.WithValue(context.Background(), "USERID", "e2e")
 )
 
@@ -23,7 +23,7 @@ func main() {
 
 	l.Print(ctx, "Testing starting...")
 	ksctlClient, err := controllers.GenKsctlController(
-		ctx, l, &resources.KsctlClient{
+		ctx, l, &types.KsctlClient{
 			Metadata: meta,
 		})
 	if err != nil {

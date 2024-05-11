@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"io"
 	"net"
 	"os"
@@ -16,9 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -29,13 +29,13 @@ type SSHPayload struct {
 	Output     []string
 
 	flag     consts.KsctlUtilsConsts
-	script   resources.ScriptCollection
+	script   types.ScriptCollection
 	fastMode bool
 	ctx      context.Context
-	log      resources.LoggerFactory
+	log      types.LoggerFactory
 }
 
-func NewSSHExecutor(ctx context.Context, log resources.LoggerFactory, mainStateDocument *types.StorageDocument) SSHCollection {
+func NewSSHExecutor(ctx context.Context, log types.LoggerFactory, mainStateDocument *storageTypes.StorageDocument) SSHCollection {
 	var sshExecutor SSHCollection = &SSHPayload{
 		ctx: ctx,
 		log: log,
@@ -48,7 +48,7 @@ func NewSSHExecutor(ctx context.Context, log resources.LoggerFactory, mainStateD
 type SSHCollection interface {
 	SSHExecute() error
 	Flag(consts.KsctlUtilsConsts) SSHCollection
-	Script(resources.ScriptCollection) SSHCollection
+	Script(types.ScriptCollection) SSHCollection
 	FastMode(bool) SSHCollection
 	Username(string)
 	PrivateKey(string)
@@ -84,7 +84,7 @@ func (sshPayload *SSHPayload) Flag(execMethod consts.KsctlUtilsConsts) SSHCollec
 	return nil
 }
 
-func (sshPayload *SSHPayload) Script(s resources.ScriptCollection) SSHCollection {
+func (sshPayload *SSHPayload) Script(s types.ScriptCollection) SSHCollection {
 	sshPayload.script = s
 	return sshPayload
 }
@@ -268,7 +268,7 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 }
 
 // generatePrivateKey creates a RSA Private Key of specified byte size
-func generatePrivateKey(ctx context.Context, log resources.LoggerFactory, bitSize int) (*rsa.PrivateKey, error) {
+func generatePrivateKey(ctx context.Context, log types.LoggerFactory, bitSize int) (*rsa.PrivateKey, error) {
 	// Private Key generation
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
@@ -286,7 +286,7 @@ func generatePrivateKey(ctx context.Context, log resources.LoggerFactory, bitSiz
 }
 
 // encodePrivateKeyToPEM encodes Private Key from RSA to PEM format
-func encodePrivateKeyToPEM(log resources.LoggerFactory, privateKey *rsa.PrivateKey) []byte {
+func encodePrivateKeyToPEM(log types.LoggerFactory, privateKey *rsa.PrivateKey) []byte {
 	// Get ASN.1 DER format
 	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
 
@@ -305,7 +305,7 @@ func encodePrivateKeyToPEM(log resources.LoggerFactory, privateKey *rsa.PrivateK
 
 // generatePublicKey take a rsa.PublicKey and return bytes suitable for writing to .pub file
 // returns in the format "ssh-rsa ..."
-func generatePublicKey(ctx context.Context, log resources.LoggerFactory, privatekey *rsa.PublicKey) ([]byte, error) {
+func generatePublicKey(ctx context.Context, log types.LoggerFactory, privatekey *rsa.PublicKey) ([]byte, error) {
 	publicRsaKey, err := ssh.NewPublicKey(privatekey)
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func generatePublicKey(ctx context.Context, log resources.LoggerFactory, private
 	return pubKeyBytes, nil
 }
 
-func CreateSSHKeyPair(ctx context.Context, log resources.LoggerFactory, state *types.StorageDocument) error {
+func CreateSSHKeyPair(ctx context.Context, log types.LoggerFactory, state *storageTypes.StorageDocument) error {
 
 	bitSize := 4096
 

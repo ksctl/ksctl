@@ -5,24 +5,24 @@ import (
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 // Scripts is goroutine safe
 type Scripts struct {
-	data    []resources.Script
+	data    []types.Script
 	currIdx int
 	mu      *sync.Mutex
 }
 
-func NewScriptCollection() resources.ScriptCollection {
+func NewScriptCollection() types.ScriptCollection {
 	return &Scripts{
 		mu:      &sync.Mutex{},
 		currIdx: -1,
 	}
 }
 
-func (s *Scripts) TestAllScripts() []resources.Script {
+func (s *Scripts) TestAllScripts() []types.Script {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -36,7 +36,7 @@ func (s *Scripts) TestLen() int {
 	return s.currIdx
 }
 
-func (s *Scripts) NextScript() *resources.Script {
+func (s *Scripts) NextScript() *types.Script {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -70,7 +70,7 @@ func (s *Scripts) String() string {
 	return fmt.Sprintf("%#v", s.data)
 }
 
-func (s *Scripts) Append(script resources.Script) {
+func (s *Scripts) Append(script types.Script) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

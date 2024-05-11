@@ -6,10 +6,10 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage resources.StorageFactory) error {
+func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage types.StorageFactory) error {
 	p.mu.Lock()
 	idx := noOfWP
 	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
@@ -42,9 +42,9 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage resources.StorageFactory) 
 	return nil
 }
 
-func scriptJoinWorkerplane(collection resources.ScriptCollection, privateIPLb, token, cacertSHA string) resources.ScriptCollection {
+func scriptJoinWorkerplane(collection types.ScriptCollection, privateIPLb, token, cacertSHA string) types.ScriptCollection {
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Join K3s workerplane",
 		CanRetry:       true,
 		MaxRetries:     3,

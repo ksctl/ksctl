@@ -24,7 +24,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 
 	storagev1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/storage/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	log resources.LoggerFactory
+	log types.LoggerFactory
 
 	LogVerbosity = map[string]int{
 		"DEBUG": -1,

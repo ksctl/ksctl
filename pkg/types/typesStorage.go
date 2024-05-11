@@ -1,9 +1,9 @@
-package resources
+package types
 
 import (
 	"context"
+	"github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
@@ -17,19 +17,19 @@ type StorageFactory interface {
 
 	Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 
-	Write(*types.StorageDocument) error
+	Write(*storage.StorageDocument) error
 
-	WriteCredentials(consts.KsctlCloud, *types.CredentialsDocument) error
+	WriteCredentials(consts.KsctlCloud, *storage.CredentialsDocument) error
 
-	Read() (*types.StorageDocument, error)
+	Read() (*storage.StorageDocument, error)
 
-	ReadCredentials(consts.KsctlCloud) (*types.CredentialsDocument, error)
+	ReadCredentials(consts.KsctlCloud) (*storage.CredentialsDocument, error)
 
 	DeleteCluster() error
 
 	AlreadyCreated(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 
-	GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error)
+	GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*storage.StorageDocument, error)
 
 	// Export is not goroutine safe, but the child process it calls is!
 	Export(filters map[consts.KsctlSearchFilter]string) (*StorageStateExportImport, error)
@@ -39,6 +39,6 @@ type StorageFactory interface {
 }
 
 type StorageStateExportImport struct {
-	Clusters    []*types.StorageDocument
-	Credentials []*types.CredentialsDocument
+	Clusters    []*storage.StorageDocument
+	Credentials []*storage.CredentialsDocument
 }

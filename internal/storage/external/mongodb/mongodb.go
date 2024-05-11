@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	mongoOptions "go.mongodb.org/mongo-driver/mongo/options"
@@ -33,7 +33,7 @@ type Store struct {
 }
 
 var (
-	log      resources.LoggerFactory
+	log      types.LoggerFactory
 	storeCtx context.Context
 )
 
@@ -49,12 +49,12 @@ func copyStore(src *Store, dest *Store) {
 	dest.userid = src.userid
 }
 
-func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.StorageStateExportImport, error) {
+func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.StorageStateExportImport, error) {
 
 	var cpyS *Store = s
 	copyStore(s, cpyS) // for storing the state of the store before import was called!
 
-	dest := new(resources.StorageStateExportImport)
+	dest := new(types.StorageStateExportImport)
 
 	_cloud := filters[consts.Cloud]
 	_clusterType := filters[consts.ClusterType]
@@ -114,7 +114,7 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.
 	return dest, nil
 }
 
-func (s *Store) Import(src *resources.StorageStateExportImport) error {
+func (s *Store) Import(src *types.StorageStateExportImport) error {
 	creds := src.Credentials
 	states := src.Clusters
 
@@ -147,7 +147,7 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(parentCtx context.Context, _log resources.LoggerFactory) resources.StorageFactory {
+func InitStorage(parentCtx context.Context, _log types.LoggerFactory) types.StorageFactory {
 	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreExtMongo))
 	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
@@ -238,8 +238,8 @@ func (db *Store) Kill() error {
 	return db.disconnect()
 }
 
-// Read implements resources.StorageFactory.
-func (db *Store) Read() (*types.StorageDocument, error) {
+// Read implements types.StorageFactory.
+func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
@@ -253,7 +253,7 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 			return nil, ret.Err()
 		}
 
-		var result *types.StorageDocument
+		var result *storageTypes.StorageDocument
 		err := ret.Decode(&result)
 		if err != nil {
 			return nil, err
@@ -264,8 +264,8 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 	return nil, mongo.ErrNoDocuments
 }
 
-// ReadCredentials implements resources.StorageFactory.
-func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDocument, error) {
+// ReadCredentials implements types.StorageFactory.
+func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.CredentialsDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
@@ -277,7 +277,7 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDoc
 		if ret.Err() != nil {
 			return nil, ret.Err()
 		}
-		var result *types.CredentialsDocument
+		var result *storageTypes.CredentialsDocument
 		err := ret.Decode(&result)
 		if err != nil {
 			return nil, err
@@ -287,8 +287,8 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDoc
 	return nil, mongo.ErrNoDocuments
 }
 
-// Write implements resources.StorageFactory.
-func (db *Store) Write(data *types.StorageDocument) error {
+// Write implements types.StorageFactory.
+func (db *Store) Write(data *storageTypes.StorageDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
@@ -312,8 +312,8 @@ func (db *Store) Write(data *types.StorageDocument) error {
 	return err
 }
 
-// WriteCredentials implements resources.StorageFactory.
-func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.CredentialsDocument) error {
+// WriteCredentials implements types.StorageFactory.
+func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *storageTypes.CredentialsDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
@@ -391,7 +391,7 @@ func (db *Store) clusterPresent() error {
 	if c.Err() != nil {
 		return c.Err()
 	} else {
-		var x *types.StorageDocument
+		var x *storageTypes.StorageDocument
 		err := c.Decode(&x)
 		if err != nil {
 			return fmt.Errorf("unable to read data")
@@ -417,7 +417,7 @@ func (db *Store) AlreadyCreated(cloud consts.KsctlCloud, region, clusterName str
 	return db.clusterPresent()
 }
 
-func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
+func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*storageTypes.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
@@ -456,7 +456,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 	}
 	log.Debug(storeCtx, "storage.external.mongodb.GetOneOrMoreClusters", "filter", filters, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
 
-	clustersInfo := make(map[consts.KsctlClusterType][]*types.StorageDocument)
+	clustersInfo := make(map[consts.KsctlClusterType][]*storageTypes.StorageDocument)
 
 	for _, cloud := range filterCloudPath {
 		for _, clusterType := range filterClusterType {
@@ -469,9 +469,9 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 				return nil, err
 			}
 
-			var clusters []*types.StorageDocument
+			var clusters []*storageTypes.StorageDocument
 			for c.Next(context.Background()) {
-				var result *types.StorageDocument
+				var result *storageTypes.StorageDocument
 				if err := c.Decode(&result); err != nil {
 					c.Close(context.Background())
 					return nil, err

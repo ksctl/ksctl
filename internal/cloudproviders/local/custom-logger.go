@@ -2,13 +2,13 @@ package local
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	klog "sigs.k8s.io/kind/pkg/log"
 )
 
 type CustomLogger struct {
 	level  int32
-	Logger resources.LoggerFactory
+	Logger types.LoggerFactory
 }
 
 func (l *CustomLogger) Enabled() bool {

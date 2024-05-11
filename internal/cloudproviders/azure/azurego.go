@@ -13,14 +13,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
-	//"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	//"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 func ProvideClient() AzureGo {
@@ -32,7 +30,7 @@ func ProvideMockClient() AzureGo {
 }
 
 type AzureGo interface {
-	InitClient(storage resources.StorageFactory) error
+	InitClient(storage types.StorageFactory) error
 
 	SetRegion(string)
 
@@ -257,7 +255,7 @@ func (obj *AzureGoClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime
 	return poll.PollUntilDone(ctx, options)
 }
 
-func (obj *AzureGoClient) setRequiredENV_VAR(storage resources.StorageFactory, ctx context.Context) error {
+func (obj *AzureGoClient) setRequiredENV_VAR(storage types.StorageFactory, ctx context.Context) error {
 
 	envTenant := os.Getenv("AZURE_TENANT_ID")
 	envSub := os.Getenv("AZURE_SUBSCRIPTION_ID")
@@ -321,7 +319,7 @@ func (obj *AzureGoClient) setRequiredENV_VAR(storage resources.StorageFactory, c
 	return nil
 }
 
-func (azclient *AzureGoClient) InitClient(storage resources.StorageFactory) error {
+func (azclient *AzureGoClient) InitClient(storage types.StorageFactory) error {
 	err := azclient.setRequiredENV_VAR(storage, ctx)
 	if err != nil {
 		return err
@@ -568,7 +566,7 @@ type AzureGoMockClient struct {
 	ResourceGrp    string
 }
 
-func (mock *AzureGoMockClient) InitClient(storage resources.StorageFactory) error {
+func (mock *AzureGoMockClient) InitClient(storage types.StorageFactory) error {
 	mock.SubscriptionID = "XUZE"
 	mock.AzureTokenCred = nil
 	return nil

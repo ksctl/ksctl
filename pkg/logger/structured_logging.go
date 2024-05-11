@@ -9,8 +9,8 @@ import (
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"github.com/rodaine/table"
 
 	"time"
@@ -47,7 +47,7 @@ func newLogger(out io.Writer, ver slog.Level, debug bool) *slog.Logger {
 	}))
 }
 
-func NewStructuredLogger(verbose int, out io.Writer) resources.LoggerFactory {
+func NewStructuredLogger(verbose int, out io.Writer) types.LoggerFactory {
 	// LevelDebug Level = -4
 	// LevelInfo  Level = 0
 	// LevelWarn  Level = 4

@@ -9,7 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 // Sequence
@@ -19,8 +19,8 @@ import (
 // 3. Disk
 // 4. VM
 
-// DelVM implements resources.CloudFactory.
-func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) error {
+// DelVM implements types.CloudFactory.
+func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
 	role := <-obj.chRole
 	indexNo := index
 
@@ -107,8 +107,8 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 	return nil
 }
 
-// NewVM implements resources.CloudFactory.
-func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) error {
+// NewVM implements types.CloudFactory.
+func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 	name := <-obj.chResName
 	indexNo := index
 	role := <-obj.chRole
@@ -327,7 +327,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	return nil
 }
 
-func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
 	diskName := ""
 	// pass the role
 	switch role {
@@ -390,7 +390,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 	return nil
 }
 
-func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.StorageFactory, publicIPName string, index int, role consts.KsctlRole) error {
 
 	publicIP := ""
 	switch role {
@@ -495,7 +495,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	return nil
 }
 
-func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
 
 	publicIP := ""
 	switch role {
@@ -568,7 +568,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 	return nil
 }
 
-func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory,
+func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage types.StorageFactory,
 	nicName string, subnetID string, publicIPID string, networkSecurityGroupID string, index int, role consts.KsctlRole) error {
 
 	interfaceName := ""
@@ -690,7 +690,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	return nil
 }
 
-func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
 	interfaceName := ""
 	switch role {
 	case consts.RoleWp:

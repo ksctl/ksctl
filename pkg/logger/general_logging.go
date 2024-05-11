@@ -11,8 +11,8 @@ import (
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloudController "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"github.com/rodaine/table"
 
 	"time"
@@ -117,7 +117,7 @@ func getTime(level uint) string {
 	return fmt.Sprintf("%d:%d:%d ", t.Hour(), t.Minute(), t.Second())
 }
 
-func NewGeneralLogger(verbose int, out io.Writer) resources.LoggerFactory {
+func NewGeneralLogger(verbose int, out io.Writer) types.LoggerFactory {
 
 	var ve uint
 

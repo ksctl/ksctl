@@ -11,10 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
+func (obj *AwsProvider) NewFirewall(storage ksctlTypes.StorageFactory) error {
 
 	role := <-obj.chRole
 	name := <-obj.chResName
@@ -30,7 +30,7 @@ func (obj *AwsProvider) NewFirewall(storage resources.StorageFactory) error {
 	return nil
 }
 
-func (obj *AwsProvider) DelFirewall(storage resources.StorageFactory) error {
+func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
 
 	role := <-obj.chRole
 

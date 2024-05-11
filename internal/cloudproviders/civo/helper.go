@@ -1,15 +1,15 @@
 package civo
 
 import (
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 // fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey(storage resources.StorageFactory) string {
+func fetchAPIKey(storage types.StorageFactory) string {
 
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if civoToken != "" {
@@ -27,18 +27,18 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	return credentials.Civo.Token
 }
 
-func loadStateHelper(storage resources.StorageFactory) error {
+func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
 		return err
 	}
-	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
+	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x
 	}(raw)
 	return nil
 }
 
-// helper functions to get resources from civogo client
+// helper functions to get storage from civogo client
 // seperation so that we can test logic by assert
 func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
 	vers, err := obj.client.ListAvailableKubernetesVersions()

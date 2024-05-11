@@ -3,17 +3,16 @@ package azure
 import (
 	"context"
 	"encoding/json"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"sync"
-
-	"github.com/ksctl/ksctl/internal/storage/types"
 
 	"github.com/ksctl/ksctl/pkg/logger"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloudcontrolres "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloudcontrolres "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 type metadata struct {
@@ -47,13 +46,13 @@ type AzureProvider struct {
 }
 
 var (
-	mainStateDocument *types.StorageDocument
+	mainStateDocument *storageTypes.StorageDocument
 	clusterType       consts.KsctlClusterType // it stores the ha or managed
 	azureCtx          context.Context
-	log               resources.LoggerFactory
+	log               types.LoggerFactory
 )
 
-func (*AzureProvider) GetStateFile(resources.StorageFactory) (string, error) {
+func (*AzureProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
 		return "", err
@@ -68,8 +67,8 @@ func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 	return hostnames
 }
 
-// Version implements resources.CloudFactory.
-func (obj *AzureProvider) Version(ver string) resources.CloudFactory {
+// Version implements types.CloudFactory.
+func (obj *AzureProvider) Version(ver string) types.CloudFactory {
 	log.Debug("Printing", "K8sVersion", ver)
 	if err := isValidK8sVersion(obj, ver); err != nil {
 		log.Error(err.Error())
@@ -80,8 +79,8 @@ func (obj *AzureProvider) Version(ver string) resources.CloudFactory {
 	return obj
 }
 
-// GetStateForHACluster implements resources.CloudFactory.
-func (*AzureProvider) GetStateForHACluster(storage resources.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
+// GetStateForHACluster implements types.CloudFactory.
+func (*AzureProvider) GetStateForHACluster(storage types.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
 			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
@@ -110,8 +109,8 @@ func (*AzureProvider) GetStateForHACluster(storage resources.StorageFactory) (cl
 	return payload, nil
 }
 
-// InitState implements resources.CloudFactory.
-func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation consts.KsctlOperation) error {
+// InitState implements types.CloudFactory.
+func (obj *AzureProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
@@ -141,8 +140,8 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 			mainStateDocument.InfraProvider = consts.CloudAzure
 			mainStateDocument.ClusterType = string(clusterType)
 			mainStateDocument.Region = obj.region
-			mainStateDocument.CloudInfra = &types.InfrastructureState{
-				Azure: &types.StateConfigurationAzure{},
+			mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{
+				Azure: &storageTypes.StateConfigurationAzure{},
 			}
 			mainStateDocument.CloudInfra.Azure.B.KubernetesVer = obj.metadata.k8sVersion
 			mainStateDocument.CloudInfra.Azure.B.KubernetesDistro = string(obj.metadata.k8sName)
@@ -158,7 +157,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 		if errLoadState != nil {
 			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Debug("Get resources")
+		log.Debug("Get storage")
 	default:
 		return log.NewError("Invalid operation for init state")
 	}
@@ -182,7 +181,7 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 	return nil
 }
 
-func (cloud *AzureProvider) Credential(storage resources.StorageFactory) error {
+func (cloud *AzureProvider) Credential(storage types.StorageFactory) error {
 
 	log.Print(azureCtx, "Enter your SUBSCRIPTION ID")
 	skey, err := helpers.UserInputCredentials(azureCtx, log)
@@ -208,9 +207,9 @@ func (cloud *AzureProvider) Credential(storage resources.StorageFactory) error {
 		return err
 	}
 
-	apiStore := &types.CredentialsDocument{
+	apiStore := &storageTypes.CredentialsDocument{
 		InfraProvider: consts.CloudAzure,
-		Azure: &types.CredentialsAzure{
+		Azure: &storageTypes.CredentialsAzure{
 			SubscriptionID: skey,
 			TenantID:       tid,
 			ClientID:       cid,
@@ -243,7 +242,7 @@ func (cloud *AzureProvider) Credential(storage resources.StorageFactory) error {
 	return nil
 }
 
-func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() AzureGo) (*AzureProvider, error) {
+func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() AzureGo) (*AzureProvider, error) {
 
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
@@ -268,7 +267,7 @@ func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger 
 }
 
 // Name it will contain the name of the resource to be created
-func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
+func (cloud *AzureProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(resName); err != nil {
 		log.Error(err.Error())
@@ -280,7 +279,7 @@ func (cloud *AzureProvider) Name(resName string) resources.CloudFactory {
 }
 
 // Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
-func (cloud *AzureProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
+func (cloud *AzureProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	switch resRole {
 	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
@@ -294,7 +293,7 @@ func (cloud *AzureProvider) Role(resRole consts.KsctlRole) resources.CloudFactor
 }
 
 // VMType it will contain which vmType to create
-func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
+func (cloud *AzureProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(cloud, size); err != nil {
 		log.Error(err.Error())
@@ -306,7 +305,7 @@ func (cloud *AzureProvider) VMType(size string) resources.CloudFactory {
 }
 
 // Visibility whether to have the resource as public or private (i.e. VMs)
-func (cloud *AzureProvider) Visibility(toBePublic bool) resources.CloudFactory {
+func (cloud *AzureProvider) Visibility(toBePublic bool) types.CloudFactory {
 	cloud.metadata.public = toBePublic
 	return cloud
 }
@@ -333,7 +332,7 @@ func (cloud *AzureProvider) CNI(s string) (externalCNI bool) {
 	return false
 }
 
-// NoOfControlPlane implements resources.CloudFactory.
+// NoOfControlPlane implements types.CloudFactory.
 func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 
 	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
@@ -376,7 +375,7 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	return -1, log.NewError("constrains for no of controlplane >= 3 and odd number")
 }
 
-// NoOfDataStore implements resources.CloudFactory.
+// NoOfDataStore implements types.CloudFactory.
 func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
@@ -419,8 +418,8 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	return -1, log.NewError("constrains for no of Datastore>= 3 and odd number")
 }
 
-// NoOfWorkerPlane implements resources.CloudFactory.
-func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
+// NoOfWorkerPlane implements types.CloudFactory.
+func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
 	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		// delete operation
@@ -496,7 +495,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage resources.StorageFactory, no i
 	return -1, log.NewError("constrains for no of workplane >= 0")
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {
+func GetRAWClusterInfos(storage types.StorageFactory, meta types.Metadata) ([]cloudcontrolres.AllClusterData, error) {
 
 	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
 	log.SetPackageName(string(consts.CloudAzure))
@@ -535,12 +534,12 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 	return data, nil
 }
 
-func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
+func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
 	err := storage.AlreadyCreated(consts.CloudAzure, region, name, ksctlClusterType)
 	return err == nil
 }
 
-func (obj *AzureProvider) IsPresent(storage resources.StorageFactory) error {
+func (obj *AzureProvider) IsPresent(storage types.StorageFactory) error {
 
 	switch obj.haCluster {
 	case true:

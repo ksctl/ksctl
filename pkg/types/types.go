@@ -1,4 +1,4 @@
-package resources
+package types
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
