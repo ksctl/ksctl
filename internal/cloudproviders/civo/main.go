@@ -193,7 +193,7 @@ func (cloud *CivoProvider) Credential(storage resources.StorageFactory) error {
 func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
-	civoCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "civo")
+	civoCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudCivo))
 
 	mainStateDocument = state
 

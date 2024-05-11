@@ -10,12 +10,10 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"io"
 	"sync"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +30,10 @@ type Store struct {
 	clientSet ClientSet
 }
 
-var log resources.LoggerFactory
+var (
+	log      resources.LoggerFactory
+	storeCtx context.Context
+)
 
 var K8S_NAMESPACE string = "ksctl"
 
@@ -153,9 +154,9 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
-	log = logger.NewStructuredLogger(logVerbosity, logWriter)
-	log.SetPackageName(string(consts.StoreK8s))
+func InitStorage(parentCtx context.Context, _log resources.LoggerFactory) resources.StorageFactory {
+	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreK8s))
+	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 }
 

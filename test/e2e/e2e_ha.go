@@ -1,47 +1,47 @@
 package main
 
 import (
+	ksctlController "github.com/ksctl/ksctl/pkg/resources/controllers"
 	"os"
-
-	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func createHACluster(ksctlClient *resources.KsctlClient) {
-	l.Print("Started to Create Cluster...")
+func createHACluster(ksctlClient ksctlController.Controller) {
+	l.Print(ctx, "Started to Create Cluster...")
 
-	err := ksctlManager.CreateHACluster(ksctlClient)
+	err := ksctlClient.CreateHACluster()
+
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }
 
-func deleteHACluster(ksctlClient *resources.KsctlClient) {
-	l.Print("Started to Delete Cluster...")
+func deleteHACluster(ksctlClient ksctlController.Controller) {
+	l.Print(ctx, "Started to Delete Cluster...")
 
-	err := ksctlManager.DeleteHACluster(ksctlClient)
+	err := ksctlClient.DeleteHACluster()
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }
 
-func scaleupHACluster(ksctlClient *resources.KsctlClient) {
-	l.Print("Started to scaleup Cluster...")
+func scaleupHACluster(ksctlClient ksctlController.Controller) {
+	l.Print(ctx, "Started to scaleup Cluster...")
 
-	err := ksctlManager.AddWorkerPlaneNode(ksctlClient)
+	err := ksctlClient.AddWorkerPlaneNode()
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }
 
-func scaleDownHACluster(ksctlClient *resources.KsctlClient) {
-	l.Print("Started to Delete Cluster...")
+func scaleDownHACluster(ksctlClient ksctlController.Controller) {
+	l.Print(ctx, "Started to Delete Cluster...")
 
-	err := ksctlManager.DelWorkerPlaneNode(ksctlClient)
+	err := ksctlClient.DelWorkerPlaneNode()
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }

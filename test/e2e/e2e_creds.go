@@ -1,17 +1,16 @@
 package main
 
 import (
+	ksctlController "github.com/ksctl/ksctl/pkg/resources/controllers"
 	"os"
-
-	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func creds(ksctlClient *resources.KsctlClient) {
-	l.Print("Exec ksctl creds...")
+func creds(ksctlClient ksctlController.Controller) {
+	l.Print(ctx, "Exec ksctl creds...")
 
-	err := ksctlManager.Credentials(ksctlClient)
+	err := ksctlClient.Credentials()
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }

@@ -6,15 +6,13 @@ import (
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/controllers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/resources"
-	ksctlController "github.com/ksctl/ksctl/pkg/resources/controllers"
 )
 
 var (
-	l            resources.LoggerFactory
-	ksctlManager ksctlController.Controller = controllers.GenKsctlController()
+	l   resources.LoggerFactory
+	ctx = context.WithValue(context.Background(), "USERID", "e2e")
 )
 
 func main() {
@@ -23,42 +21,25 @@ func main() {
 
 	operation, meta := GetReqPayload(l)
 
-	loggerPrefix := ""
-	switch meta.Provider {
-	case consts.CloudAws:
-		loggerPrefix = "aws-e2e"
-	case consts.CloudCivo:
-		loggerPrefix = "civo-e2e"
-	case consts.CloudAzure:
-		loggerPrefix = "azure-e2e"
-	case consts.CloudLocal:
-		loggerPrefix = "local-e2e"
-	case consts.CloudAll:
-		loggerPrefix = "all-e2e"
-	}
-
-	l.SetPackageName(loggerPrefix)
-
-	l.Print("Testing starting...")
-	ksctlClient := new(resources.KsctlClient)
-
-	ksctlClient.Metadata = meta
-
-	err := controllers.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "e2e"), ksctlClient)
+	l.Print(ctx, "Testing starting...")
+	ksctlClient, err := controllers.GenKsctlController(
+		ctx, l, &resources.KsctlClient{
+			Metadata: meta,
+		})
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "unable to initialize the ksctl manager", "Reason", err)
 		os.Exit(1)
 	}
 
 	switch operation {
 	case OpCreate:
-		if ksctlClient.Metadata.IsHA {
+		if meta.IsHA {
 			createHACluster(ksctlClient)
 		} else {
 			createManagedCluster(ksctlClient)
 		}
 	case OpDelete:
-		if ksctlClient.Metadata.IsHA {
+		if meta.IsHA {
 			deleteHACluster(ksctlClient)
 		} else {
 			deleteManagedCluster(ksctlClient)
@@ -74,9 +55,9 @@ func main() {
 	case OpScaleDown:
 		scaleDownHACluster(ksctlClient)
 	default:
-		l.Error("This operation is not supported")
+		l.Error(ctx, "This operation is not supported")
 		os.Exit(1)
 	}
 
-	l.Print("Testing Completed", " ⏰ ", time.Since(timer).String())
+	l.Print(ctx, "Testing Completed", "TimeTaken", time.Since(timer).String())
 }

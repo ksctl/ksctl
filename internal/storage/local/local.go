@@ -4,12 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"sync"
-
-	"github.com/ksctl/ksctl/pkg/logger"
 
 	"github.com/goccy/go-json"
 
@@ -27,7 +24,10 @@ const (
 	subDirCreds    = "credentials"
 )
 
-var log resources.LoggerFactory
+var (
+	log      resources.LoggerFactory
+	storeCtx context.Context
+)
 
 type Store struct {
 	cloudProvider string
@@ -183,10 +183,9 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
-	log = logger.NewStructuredLogger(logVerbosity, logWriter)
-	log.SetPackageName(string(consts.StoreLocal))
-
+func InitStorage(parentCtx context.Context, _log resources.LoggerFactory) resources.StorageFactory {
+	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreLocal))
+	log = _log
 	return &Store{mu: &sync.RWMutex{}, wg: &sync.WaitGroup{}}
 }
 

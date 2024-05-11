@@ -185,25 +185,25 @@ func (obj *AzureProvider) InitState(storage resources.StorageFactory, operation 
 func (cloud *AzureProvider) Credential(storage resources.StorageFactory) error {
 
 	log.Print(azureCtx, "Enter your SUBSCRIPTION ID")
-	skey, err := helpers.UserInputCredentials(log)
+	skey, err := helpers.UserInputCredentials(azureCtx, log)
 	if err != nil {
 		return err
 	}
 
 	log.Print(azureCtx, "Enter your TENANT ID")
-	tid, err := helpers.UserInputCredentials(log)
+	tid, err := helpers.UserInputCredentials(azureCtx, log)
 	if err != nil {
 		return err
 	}
 
 	log.Print(azureCtx, "Enter your CLIENT ID")
-	cid, err := helpers.UserInputCredentials(log)
+	cid, err := helpers.UserInputCredentials(azureCtx, log)
 	if err != nil {
 		return err
 	}
 
 	log.Print(azureCtx, "Enter your CLIENT SECRET")
-	cs, err := helpers.UserInputCredentials(log)
+	cs, err := helpers.UserInputCredentials(azureCtx, log)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger 
 
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
-	azureCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "azure")
+	azureCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAzure))
 
 	mainStateDocument = state
 

@@ -111,7 +111,7 @@ func (cloud *AwsProvider) Credential(storage resources.StorageFactory) error {
 func NewClient(parentCtx context.Context, meta resources.Metadata, parentLogger resources.LoggerFactory, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
-	awsCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "aws")
+	awsCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAws))
 
 	mainStateDocument = state
 

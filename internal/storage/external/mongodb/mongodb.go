@@ -4,11 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"sync"
-
-	"github.com/ksctl/ksctl/pkg/logger"
 
 	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -35,7 +32,10 @@ type Store struct {
 	wg *sync.WaitGroup
 }
 
-var log resources.LoggerFactory
+var (
+	log      resources.LoggerFactory
+	storeCtx context.Context
+)
 
 const (
 	CredsCollection string = "credentials"
@@ -147,9 +147,9 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
-	log = logger.NewStructuredLogger(logVerbosity, logWriter)
-	log.SetPackageName(string(consts.StoreExtMongo))
+func InitStorage(parentCtx context.Context, _log resources.LoggerFactory) resources.StorageFactory {
+	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreExtMongo))
+	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 }
 

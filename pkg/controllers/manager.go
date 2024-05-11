@@ -37,28 +37,35 @@ type KsctlControllerClient struct {
 // and make sure that the log struct dont use the packageModule name
 // we want the module of source to be present only
 
+// TODO: we need to seperate the context For logging with actually using the context
+// we can use them but with better control
+
 func GenKsctlController(
 	ctx context.Context,
 	log resources.LoggerFactory,
 	client *resources.KsctlClient,
-) controllers.Controller {
+) (controllers.Controller, error) {
 
 	controllerCtx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-manager")
 
 	cloudController.InitLogger(controllerCtx, log)
 	bootstrapController.InitLogger(controllerCtx, log)
 
-	return &KsctlControllerClient{
+	manager := &KsctlControllerClient{
 		log:    log,
 		client: client,
 	}
+
+	err := manager.initStorage(controllerCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	return manager, nil
 }
 
 func (manager *KsctlControllerClient) setupConfigurations() error {
 
-	if manager.client.Storage == nil {
-		return manager.log.NewError(controllerCtx, "Initalize the storage driver")
-	}
 	if err := validationFields(manager.client.Metadata); err != nil {
 		return manager.log.NewError(controllerCtx, "field validation failed", "Reason", err)
 	}
@@ -328,9 +335,6 @@ func (manager *KsctlControllerClient) GetCluster() error {
 	client := manager.client
 	log := manager.log
 
-	if client.Storage == nil {
-		return log.NewError(controllerCtx, "Initalize the storage driver")
-	}
 	if err := validationFields(client.Metadata); err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}

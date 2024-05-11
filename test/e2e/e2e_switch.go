@@ -1,20 +1,17 @@
 package main
 
 import (
+	ksctlController "github.com/ksctl/ksctl/pkg/resources/controllers"
 	"os"
-
-	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func switchCluster(ksctlClient *resources.KsctlClient) {
+func switchCluster(ksctlClient ksctlController.Controller) {
 
-	l.Print("Exec ksctl switch...")
+	l.Print(ctx, "Exec ksctl switch...")
 
-	//ksctlClient.Metadata.Provider = consts.CloudAll
-
-	_, err := ksctlManager.SwitchCluster(ksctlClient)
+	_, err := ksctlClient.SwitchCluster()
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }

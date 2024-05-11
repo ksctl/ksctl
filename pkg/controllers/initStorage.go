@@ -7,32 +7,25 @@ import (
 	kubernetesstate "github.com/ksctl/ksctl/internal/storage/kubernetes"
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
 )
 
 // InitializeStorageFactory it initializes the storage class
-func InitializeStorageFactory(ctx context.Context, client *resources.KsctlClient) error {
+func (manager *KsctlControllerClient) initStorage(ctx context.Context) error {
 
-	if log == nil {
-		log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
-		log.SetPackageName("ksctl-manager")
-	}
-
-	switch client.Metadata.StateLocation {
+	switch manager.client.Metadata.StateLocation {
 	case consts.StoreLocal:
-		client.Storage = localstate.InitStorage(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		manager.client.Storage = localstate.InitStorage(ctx, manager.log)
 	case consts.StoreExtMongo:
-		client.Storage = externalmongostate.InitStorage(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		manager.client.Storage = externalmongostate.InitStorage(ctx, manager.log)
 	case consts.StoreK8s:
-		client.Storage = kubernetesstate.InitStorage(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
+		manager.client.Storage = kubernetesstate.InitStorage(ctx, manager.log)
 	default:
-		return log.NewError("invalid storage provider")
+		return manager.log.NewError(ctx, "invalid storage provider")
 	}
 
-	if err := client.Storage.Connect(ctx); err != nil {
+	if err := manager.client.Storage.Connect(ctx); err != nil {
 		return err
 	}
-	log.Debug("initialized storageFactory")
+	manager.log.Debug(ctx, "initialized storageFactory")
 	return nil
 }
