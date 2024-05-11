@@ -11,9 +11,9 @@ import (
 )
 
 func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
-	log.Print("configuring Loadbalancer")
+	log.Print(bootstrapCtx, "configuring Loadbalancer")
 	p.mu.Lock()
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
 	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes)
@@ -21,12 +21,12 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptConfigureLoadbalancer(controlPlaneIPs)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
-		FastMode(true).SSHExecute(log)
+		FastMode(true).SSHExecute()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("configured LoadBalancer")
+	log.Success(bootstrapCtx, "configured LoadBalancer")
 	return nil
 }
 

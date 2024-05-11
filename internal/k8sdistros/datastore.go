@@ -13,10 +13,10 @@ import (
 func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error {
 	p.mu.Lock()
 	idx := no
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print("configuring Datastore", "number", strconv.Itoa(idx))
+	log.Print(bootstrapCtx, "configuring Datastore", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(
@@ -26,12 +26,12 @@ func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error 
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
 			idx)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores[idx]).
-		FastMode(true).SSHExecute(log)
+		FastMode(true).SSHExecute()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("configured DataStore", "number", strconv.Itoa(idx))
+	log.Success(bootstrapCtx, "configured DataStore", "number", strconv.Itoa(idx))
 
 	return nil
 }

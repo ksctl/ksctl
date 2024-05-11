@@ -3,9 +3,10 @@ package k8sdistros
 import (
 	"context"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"testing"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	testHelper "github.com/ksctl/ksctl/test/helpers"
 
@@ -232,14 +233,15 @@ var (
 	fakeClient         *PreBootstrap
 	dir                = fmt.Sprintf("%s ksctl-bootstrap-test", os.TempDir())
 	fakeStateFromCloud cloudControlRes.CloudResourceState
+
+	parentCtx    context.Context     = context.TODO()
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
-	log = logger.NewStructuredLogger(-1, os.Stdout)
-	log.SetPackageName("bootstrap")
 	mainState := &storageTypes.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {
-		log.Error(err.Error())
+	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
+		log.Error(parentCtx, err.Error())
 		os.Exit(1)
 	}
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
@@ -265,23 +267,12 @@ func TestMain(m *testing.M) {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(types.Metadata{
-		ClusterName:  "fake",
-		Region:       "fake",
-		Provider:     consts.CloudAzure,
-		IsHA:         true,
-		LogVerbosity: -1,
-		LogWritter:   os.Stdout,
-		NoCP:         7,
-		NoDS:         5,
-		NoWP:         10,
-		K8sDistro:    consts.K8sKubeadm,
-	}, &storageTypes.StorageDocument{})
+	fakeClient = NewClientHelper(&storageTypes.StorageDocument{})
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
 
-	storeHA = localstate.InitStorage(-1, os.Stdout)
+	storeHA = localstate.InitStorage(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
 	_ = storeHA.Connect(context.TODO())
 
@@ -298,8 +289,8 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func NewClientHelper(m types.Metadata, state *storageTypes.StorageDocument) *PreBootstrap {
-	helper := NewPreBootStrap(m, state)
+func NewClientHelper(state *storageTypes.StorageDocument) *PreBootstrap {
+	helper := NewPreBootStrap(parentCtx, parentLogger, state)
 	switch o := helper.(type) {
 	case *PreBootstrap:
 		return o
