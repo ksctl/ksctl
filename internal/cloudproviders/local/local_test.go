@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/logger"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -25,6 +27,8 @@ var (
 
 	fakeClientVars *LocalProvider
 	//storeVars      storage.StorageFactory
+	parentCtx    context.Context     = context.TODO()
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = fmt.Sprintf("%s ksctl-local-test", os.TempDir())
 )
@@ -32,13 +36,11 @@ var (
 func TestMain(m *testing.M) {
 	func() {
 
-		fakeClientVars, _ = ReturnLocalStruct(types.Metadata{
-			ClusterName:  "demo",
-			Region:       "LOCAL",
-			Provider:     consts.CloudLocal,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-		}, &storageTypes.StorageDocument{}, ProvideMockClient)
+		fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo",
+			Region:      "LOCAL",
+			Provider:    consts.CloudLocal,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
 	}()
 
@@ -219,15 +221,13 @@ networking:
 func TestManagedCluster(t *testing.T) {
 	mainStateDocument = &storageTypes.StorageDocument{}
 	func() {
-		fakeClientManaged, _ = ReturnLocalStruct(types.Metadata{
-			ClusterName:  "demo-managed",
-			Region:       "LOCAL",
-			Provider:     consts.CloudLocal,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-		}, &storageTypes.StorageDocument{}, ProvideMockClient)
+		fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo-managed",
+			Region:      "LOCAL",
+			Provider:    consts.CloudLocal,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeManaged = localstate.InitStorage(-1, os.Stdout)
+		storeManaged = localstate.InitStorage(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)
 		_ = storeManaged.Connect(context.TODO())
 

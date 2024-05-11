@@ -2,8 +2,9 @@ package local
 
 import (
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -13,7 +14,7 @@ import (
 
 func generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
-		return nil, log.NewError("invalid config request control node cannot be 0")
+		return nil, log.NewError(localCtx, "invalid config request control node cannot be 0")
 	}
 	var config string
 	config += `---
@@ -45,7 +46,7 @@ nodes:
 func configOption(noOfNodes int, cni bool) (cluster.CreateOption, error) {
 
 	if noOfNodes < 1 {
-		return nil, log.NewError("invalid config request control node cannot be 0")
+		return nil, log.NewError(localCtx, "invalid config request control node cannot be 0")
 	}
 	if noOfNodes == 1 {
 		var config string
@@ -67,7 +68,7 @@ networking:
 		return nil, fmt.Errorf("ERR in node config generation")
 	}
 
-	log.Debug("Printing", "configCluster", string(raw))
+	log.Debug(localCtx, "Printing", "configCluster", string(raw))
 
 	return cluster.CreateWithRawConfig(raw), nil
 }
@@ -89,7 +90,7 @@ func createNecessaryConfigs(storeDir string) (string, error) {
 func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x

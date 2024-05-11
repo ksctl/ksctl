@@ -3,10 +3,8 @@ package local
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/ksctl/ksctl/pkg/logger"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -41,7 +39,7 @@ func (*LocalProvider) GetStateFile(types.StorageFactory) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Debug("Printing", "cloudState", cloudstate)
+	log.Debug(localCtx, "Printing", "cloudState", cloudstate)
 	return string(cloudstate), nil
 }
 
@@ -69,9 +67,9 @@ func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation co
 	switch operation {
 	case consts.OperationCreate:
 		if isPresent(storage, cloud.ClusterName) {
-			return log.NewError("already present")
+			return log.NewError(localCtx, "already present")
 		}
-		log.Debug("Fresh state!!")
+		log.Debug(localCtx, "Fresh state!!")
 
 		mainStateDocument.ClusterName = cloud.ClusterName
 		mainStateDocument.Region = cloud.Region
@@ -84,10 +82,10 @@ func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation co
 	case consts.OperationDelete, consts.OperationGet:
 		err := loadStateHelper(storage)
 		if err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 	}
-	log.Debug("initialized the state")
+	log.Debug(localCtx, "initialized the state")
 	return nil
 }
 
@@ -102,7 +100,7 @@ func (cloud *LocalProvider) Application(s []string) (externalApps bool) {
 }
 
 func (client *LocalProvider) CNI(s string) (externalCNI bool) {
-	log.Debug("Printing", "cni", s)
+	log.Debug(localCtx, "Printing", "cni", s)
 
 	switch consts.KsctlValidCNIPlugin(s) {
 	case consts.CNIKind, "":
@@ -118,14 +116,12 @@ func (client *LocalProvider) CNI(s string) (externalCNI bool) {
 // Version implements types.CloudFactory.
 func (cloud *LocalProvider) Version(ver string) types.CloudFactory {
 	// TODO: validation of version
-	log.Debug("Printing", "k8sVersion", ver)
+	log.Debug(localCtx, "Printing", "k8sVersion", ver)
 	cloud.Metadata.Version = ver
 	return cloud
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory, meta types.Metadata) ([]cloudControlRes.AllClusterData, error) {
-	log = logger.NewStructuredLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudLocal))
+func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
 
 	var data []cloudControlRes.AllClusterData
 	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
@@ -149,7 +145,7 @@ func GetRAWClusterInfos(storage types.StorageFactory, meta types.Metadata) ([]cl
 				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Local.B.KubernetesDistro),
 				K8sVersion: v.CloudInfra.Local.B.KubernetesVer,
 			})
-			log.Debug("Printing", "cloudClusterInfoFetched", data)
+			log.Debug(localCtx, "Printing", "cloudClusterInfoFetched", data)
 
 		}
 	}
@@ -163,12 +159,12 @@ func (obj *LocalProvider) IsPresent(storage types.StorageFactory) error {
 
 		return nil
 	}
-	return log.NewError("Cluster not found")
+	return log.NewError(localCtx, "Cluster not found")
 }
 
 // //// NOT IMPLEMENTED //////
 func (cloud *LocalProvider) Credential(_ types.StorageFactory) error {
-	panic("no support")
+	return log.NewError(localCtx, "no support")
 }
 
 // it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
@@ -218,7 +214,7 @@ func (*LocalProvider) DelVM(types.StorageFactory, int) error {
 
 // GetStateForHACluster implements types.CloudFactory.
 func (*LocalProvider) GetStateForHACluster(state types.StorageFactory) (cloud.CloudResourceState, error) {
-	return cloud.CloudResourceState{}, fmt.Errorf("[local] should not be implemented")
+	return cloud.CloudResourceState{}, log.NewError(localCtx, "should not be implemented")
 }
 
 // NewFirewall implements types.CloudFactory.
@@ -238,15 +234,15 @@ func (*LocalProvider) NewVM(types.StorageFactory, int) error {
 
 // NoOfControlPlane implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfControlPlane(int, bool) (int, error) {
-	return -1, fmt.Errorf("[local] unsupported operation")
+	return -1, log.NewError(localCtx, "unsupported operation")
 }
 
 // NoOfDataStore implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfDataStore(int, bool) (int, error) {
-	return -1, fmt.Errorf("[local] unsupported operation")
+	return -1, log.NewError(localCtx, "unsupported operation")
 }
 
 // NoOfWorkerPlane implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfWorkerPlane(types.StorageFactory, int, bool) (int, error) {
-	return -1, fmt.Errorf("[local] unsupported operation")
+	return -1, log.NewError(localCtx, "unsupported operation")
 }

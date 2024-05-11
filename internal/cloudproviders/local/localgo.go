@@ -1,9 +1,10 @@
 package local
 
 import (
+	"time"
+
 	"github.com/ksctl/ksctl/pkg/types"
 	"sigs.k8s.io/kind/pkg/cluster"
-	"time"
 )
 
 type LocalGo interface {
@@ -54,15 +55,15 @@ func (l *LocalGoClient) Delete(name string, explicitKubeconfigPath string) error
 }
 
 func (l *LocalGoMockClient) NewProvider(log types.LoggerFactory, storage types.StorageFactory, options ...cluster.ProviderOption) {
-	log.Debug("NewProvider initialized", "options", options)
+	log.Debug(localCtx, "NewProvider initialized", "options", options)
 	l.store = storage
 	l.log = log
 }
 
 func (l *LocalGoMockClient) Create(name string, config cluster.CreateOption, image string, wait time.Duration, explictPath func() string) error {
-	path, err := createNecessaryConfigs(name)
-	l.log.Debug("Printing", "path", path, "error", err)
-	l.log.Success("Created the cluster",
+	path, _ := createNecessaryConfigs(name)
+	l.log.Debug(localCtx, "Printing", "path", path)
+	l.log.Success(localCtx, "Created the cluster",
 		"name", name, "config", config,
 		"image", image, "wait", wait.String(),
 		"configPath", explictPath())
@@ -70,6 +71,6 @@ func (l *LocalGoMockClient) Create(name string, config cluster.CreateOption, ima
 }
 
 func (l *LocalGoMockClient) Delete(name string, explicitKubeconfigPath string) error {
-	l.log.Success("Deleted the cluster", "name", name, "kubeconfigPath", explicitKubeconfigPath)
+	l.log.Success(localCtx, "Deleted the cluster", "name", name, "kubeconfigPath", explicitKubeconfigPath)
 	return nil
 }
