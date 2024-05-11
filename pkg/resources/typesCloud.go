@@ -5,6 +5,11 @@ import (
 	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
 )
 
+// add context support for each
+// fo rthat we can add timeout and other context related things
+// so plan is it will use the already existing ${cloud}Ctx variable
+// and it will create a temporary context when it will be performing the task
+
 type CloudFactory interface {
 	// NewVM create VirtualMachine with index for storing its state
 	NewVM(StorageFactory, int) error
@@ -51,13 +56,13 @@ type CloudFactory interface {
 	DelManagedCluster(StorageFactory) error
 
 	// Name sets the name for the resource you want to operate
-	Name(string) CloudFactory
+	Name(string) CloudFactory // TODO: add the error passing!
 
 	// Role specify what is its role. Ex. Controlplane or WorkerPlane or DataStore...
-	Role(consts.KsctlRole) CloudFactory
+	Role(consts.KsctlRole) CloudFactory // TODO: add the error passing!
 
 	// VMType specifiy what is the VirtualMachine size to be used
-	VMType(string) CloudFactory
+	VMType(string) CloudFactory // TODO: add the error passing!
 
 	// Visibility whether to make the VM public or private
 	Visibility(bool) CloudFactory
@@ -69,7 +74,7 @@ type CloudFactory interface {
 	CNI(string) (willBeInstalled bool)
 
 	// Version for the Kubernetes Version (Managed cluster)
-	Version(string) CloudFactory
+	Version(string) CloudFactory // TODO: rename to ManagedK8sVersion and add error passing
 
 	// NoOfWorkerPlane if setter is enabled it writes the new no of workerplane to be used
 	// if getter is enabled it returns the current no of workerplane

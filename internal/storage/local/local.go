@@ -195,7 +195,7 @@ func (db *Store) disconnect() error {
 
 func (db *Store) Kill() error {
 	db.wg.Wait()
-	defer log.Success("Local Storage Got Killed")
+	defer log.Success(storeCtx, "Local Storage Got Killed")
 
 	return db.disconnect()
 }
@@ -203,7 +203,7 @@ func (db *Store) Kill() error {
 func (db *Store) Connect(ctx context.Context) error {
 	db.userid = ctx.Value("USERID")
 
-	log.Success("CONN to HostOS")
+	log.Success(storeCtx, "CONN to HostOS")
 	return nil
 }
 
@@ -224,7 +224,7 @@ func genOsClusterPath(creds bool, subDir ...string) string {
 	if !creds {
 		pathArr = append(pathArr, subDir...)
 	}
-	log.Debug("storage.local.genOsClusterPath", "userLoc", userLoc, "subKsctlLoc", subKsctlLoc, "pathArr", pathArr)
+	log.Debug(storeCtx, "storage.local.genOsClusterPath", "userLoc", userLoc, "subKsctlLoc", subKsctlLoc, "pathArr", pathArr)
 	return strings.Join(pathArr, helpers.PathSeparator)
 }
 
@@ -252,7 +252,7 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 		return nil, e
 	}
 	dirPath := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region, "state.json")
-	log.Debug("storage.local.Read", "dirPath", dirPath)
+	log.Debug(storeCtx, "storage.local.Read", "dirPath", dirPath)
 	return reader(dirPath)
 }
 
@@ -264,7 +264,7 @@ func (db *Store) Write(v *types.StorageDocument) error {
 
 	dirPath := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
 	FileLoc := ""
-	log.Debug("storage.local.Write", "dirPath", dirPath)
+	log.Debug(storeCtx, "storage.local.Write", "dirPath", dirPath)
 
 	if err := db.clusterPresent(func(err error) error {
 		if errors.Is(err, os.ErrNotExist) {
@@ -278,7 +278,7 @@ func (db *Store) Write(v *types.StorageDocument) error {
 	}
 
 	FileLoc = dirPath + helpers.PathSeparator + "state.json"
-	log.Debug("storage.local.Write", "FileLoc", FileLoc)
+	log.Debug(storeCtx, "storage.local.Write", "FileLoc", FileLoc)
 
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -338,7 +338,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *types.CredentialsD
 	FileLoc := ""
 
 	FileLoc = dirPath + helpers.PathSeparator + string(cloud) + ".json"
-	log.Debug("storage.local.WriteCredentials", "FileLoc", FileLoc)
+	log.Debug(storeCtx, "storage.local.WriteCredentials", "FileLoc", FileLoc)
 
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -384,7 +384,7 @@ func (db *Store) clusterPresent(f func(error) error) error {
 	dirPath := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
 	_, err := os.Stat(dirPath)
 	if err != nil {
-		log.Debug("storage.local.clusterPresent", "err", err)
+		log.Debug(storeCtx, "storage.local.clusterPresent", "err", err)
 		if f != nil {
 			return f(err)
 		}
@@ -463,7 +463,7 @@ func (db *Store) GetOneOrMoreClusters(filter map[consts.KsctlSearchFilter]string
 	case "":
 		filterClusterType = append(filterClusterType, string(consts.ClusterTypeMang), string(consts.ClusterTypeHa))
 	}
-	log.Debug("storage.local.GetOneOrMoreClusters", "filter", filter, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
+	log.Debug(storeCtx, "storage.local.GetOneOrMoreClusters", "filter", filter, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
 
 	clustersInfo := make(map[consts.KsctlClusterType][]*types.StorageDocument)
 
@@ -479,7 +479,7 @@ func (db *Store) GetOneOrMoreClusters(filter map[consts.KsctlSearchFilter]string
 			}
 
 			clustersInfo[consts.KsctlClusterType(clusterType)] = append(clustersInfo[consts.KsctlClusterType(clusterType)], v...)
-			log.Debug("storage.local.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
+			log.Debug(storeCtx, "storage.local.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
 		}
 	}
 
@@ -496,7 +496,7 @@ func getClustersInfo(locs []string) ([]*types.StorageDocument, error) {
 		}
 		data = append(data, v)
 	}
-	log.Debug("storage.local.getClustersInfo", "data", data)
+	log.Debug(storeCtx, "storage.local.getClustersInfo", "data", data)
 
 	return data, nil
 }
@@ -509,7 +509,7 @@ func fetchFilePaths(cloud string, clusterType string) ([]string, error) {
 		return nil, err
 	}
 
-	log.Debug("storage.local.fetchFilePaths", "folders", folders)
+	log.Debug(storeCtx, "storage.local.fetchFilePaths", "folders", folders)
 	var info []string
 	for _, file := range folders {
 		if file.IsDir() {

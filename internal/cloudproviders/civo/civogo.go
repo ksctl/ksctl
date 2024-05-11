@@ -54,76 +54,145 @@ func ProvideClient() CivoGo {
 }
 
 func (client *CivoGoClient) ListAvailableKubernetesVersions() ([]civogo.KubernetesVersion, error) {
-	return client.client.ListAvailableKubernetesVersions()
+	v, err := client.client.ListAvailableKubernetesVersions()
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) ListRegions() ([]civogo.Region, error) {
-	return client.client.ListRegions()
+	v, err := client.client.ListRegions()
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) ListInstanceSizes() ([]civogo.InstanceSize, error) {
-	return client.client.ListInstanceSizes()
+	v, err := client.client.ListInstanceSizes()
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) GetNetwork(id string) (*civogo.Network, error) {
-	return client.client.GetNetwork(id)
+	v, err := client.client.GetNetwork(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) GetKubernetesCluster(id string) (*civogo.KubernetesCluster, error) {
-	return client.client.GetKubernetesCluster(id)
+	v, err := client.client.GetKubernetesCluster(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) NewKubernetesClusters(kc *civogo.KubernetesClusterConfig) (*civogo.KubernetesCluster, error) {
-	return client.client.NewKubernetesClusters(kc)
+	v, err := client.client.NewKubernetesClusters(kc)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) DeleteKubernetesCluster(id string) (*civogo.SimpleResponse, error) {
-	return client.client.DeleteKubernetesCluster(id)
+	v, err := client.client.DeleteKubernetesCluster(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) GetDiskImageByName(name string) (*civogo.DiskImage, error) {
-	return client.client.GetDiskImageByName(name)
+	v, err := client.client.GetDiskImageByName(name)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) CreateNetwork(label string) (*civogo.NetworkResult, error) {
-	return client.client.NewNetwork(label)
+	v, err := client.client.NewNetwork(label)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) DeleteNetwork(id string) (*civogo.SimpleResponse, error) {
-	return client.client.DeleteNetwork(id)
+	v, err := client.client.DeleteNetwork(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) NewFirewall(config *civogo.FirewallConfig) (*civogo.FirewallResult, error) {
-	return client.client.NewFirewall(config)
+	v, err := client.client.NewFirewall(config)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) DeleteFirewall(id string) (*civogo.SimpleResponse, error) {
-	return client.client.DeleteFirewall(id)
+	v, err := client.client.DeleteFirewall(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) NewSSHKey(name string, publicKey string) (*civogo.SimpleResponse, error) {
-	return client.client.NewSSHKey(strings.ToLower(name), publicKey)
+	v, err := client.client.NewSSHKey(strings.ToLower(name), publicKey)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) DeleteSSHKey(id string) (*civogo.SimpleResponse, error) {
-	return client.client.DeleteSSHKey(id)
+	v, err := client.client.DeleteSSHKey(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) CreateInstance(config *civogo.InstanceConfig) (*civogo.Instance, error) {
-	return client.client.CreateInstance(config)
+	v, err := client.client.CreateInstance(config)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) GetInstance(id string) (*civogo.Instance, error) {
-	return client.client.GetInstance(id)
+	v, err := client.client.GetInstance(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) DeleteInstance(id string) (*civogo.SimpleResponse, error) {
-	return client.client.DeleteInstance(id)
+	v, err := client.client.DeleteInstance(id)
+	if err != nil {
+		return nil, log.NewError(civoCtx, "civo client failed", "Reason", err)
+	}
+	return v, nil
 }
 
 func (client *CivoGoClient) InitClient(factory resources.StorageFactory, region string) (err error) {
 	client.client, err = civogo.NewClient(fetchAPIKey(factory), region)
 	if err != nil {
+		err = log.NewError(civoCtx, "Failed to Init civo client", "Reason", err)
 		return
 	}
 	client.region = region

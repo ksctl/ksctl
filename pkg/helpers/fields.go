@@ -82,20 +82,20 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 }
 
-func IsValidName(clusterName string) error {
+func IsValidName(ctx context.Context, log resources.LoggerFactory, clusterName string) error {
 	if len(clusterName) > 50 {
-		return fmt.Errorf("name is too long\tname: %s", clusterName)
+		return log.NewError(ctx, "name is too long", "name", clusterName)
 	}
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
 
 	if !matched || err != nil {
-		return fmt.Errorf("CLUSTER NAME INVALID")
+		return log.NewError(ctx, "invalid cluster-name")
 	}
 
 	return nil
 }
 
-func IsValidVersion(ver string) error {
+func IsValidVersion(ctx context.Context, log resources.LoggerFactory, ver string) error {
 	if ver == "latest" || ver == "stable" {
 		return nil
 	}
@@ -104,15 +104,15 @@ func IsValidVersion(ver string) error {
 	patternWithVPrefix := `^v\d+(\.\d{1,2}){0,2}$`
 	matchStringWithoutVPrefix, err := regexp.MatchString(patternWithoutVPrefix, ver)
 	if err != nil {
-		return fmt.Errorf("failed to compile argo-rollouts regex. %v", err)
+		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
 	}
 	matchStringWithVPrefix, err := regexp.MatchString(patternWithVPrefix, ver)
 	if err != nil {
-		return fmt.Errorf("failed to compile argo-rollouts regex. %v", err)
+		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
 	}
 
 	if !matchStringWithoutVPrefix && !matchStringWithVPrefix {
-		return fmt.Errorf("version `%s` is not valid", ver)
+		return log.NewError(ctx, "invalid version", "version", ver)
 	}
 	return nil
 }

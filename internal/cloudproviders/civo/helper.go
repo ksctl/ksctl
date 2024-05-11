@@ -15,7 +15,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 	if civoToken != "" {
 		return civoToken
 	}
-	log.Warn("environment vars not set: `CIVO_TOKEN`")
+	log.Warn(civoCtx, "environment vars not set: `CIVO_TOKEN`")
 
 	credentials, err := storage.ReadCredentials(consts.CloudCivo)
 	if err != nil {
@@ -30,7 +30,7 @@ func fetchAPIKey(storage resources.StorageFactory) string {
 func loadStateHelper(storage resources.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
 		return *x
@@ -40,48 +40,45 @@ func loadStateHelper(storage resources.StorageFactory) error {
 
 // helper functions to get resources from civogo client
 // seperation so that we can test logic by assert
-func getValidK8sVersionClient(obj *CivoProvider) []string {
+func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
 	vers, err := obj.client.ListAvailableKubernetesVersions()
 	if err != nil {
-		log.Error("unable to get available k8s versions", "err", err)
-		return nil
+		return nil, err
 	}
-	log.Debug("Printing", "ListAvailableKubernetesVersions", vers)
+	log.Debug(civoCtx, "Printing", "ListAvailableKubernetesVersions", vers)
 	var val []string
 	for _, ver := range vers {
 		if ver.ClusterType == string(consts.K8sK3s) {
 			val = append(val, ver.Label)
 		}
 	}
-	return val
+	return val, nil
 }
 
-func getValidRegionsClient(obj *CivoProvider) []string {
+func getValidRegionsClient(obj *CivoProvider) ([]string, error) {
 	regions, err := obj.client.ListRegions()
 	if err != nil {
-		log.Error("unable to get available regions", "err", err)
-		return nil
+		return nil, err
 	}
-	log.Debug("Printing", "ListRegions", regions)
+	log.Debug(civoCtx, "Printing", "ListRegions", regions)
 	var val []string
 	for _, region := range regions {
 		val = append(val, region.Code)
 	}
-	return val
+	return val, nil
 }
 
-func getValidVMSizesClient(obj *CivoProvider) []string {
+func getValidVMSizesClient(obj *CivoProvider) ([]string, error) {
 	nodeSizes, err := obj.client.ListInstanceSizes()
 	if err != nil {
-		log.Error("unable to fetch list of valid instance sizes", "err", err)
-		return nil
+		return nil, err
 	}
-	log.Debug("Printing", "ListInstanceSizes", nodeSizes)
+	log.Debug(civoCtx, "Printing", "ListInstanceSizes", nodeSizes)
 	var val []string
 	for _, region := range nodeSizes {
 		val = append(val, region.Name)
 	}
-	return val
+	return val, nil
 }
 
 func validationOfArguments(obj *CivoProvider) error {
@@ -94,32 +91,41 @@ func validationOfArguments(obj *CivoProvider) error {
 }
 
 func isValidK8sVersion(obj *CivoProvider, ver string) error {
-	var valver []string = getValidK8sVersionClient(obj)
+	valver, err := getValidK8sVersionClient(obj)
+	if err != nil {
+		return err
+	}
 	for _, vver := range valver {
 		if vver == ver {
 			return nil
 		}
 	}
-	return log.NewError("Invalid k8s version\nValid options: %v\n", valver)
+	return log.NewError(civoCtx, "invalid k8s version", "Valid options", valver)
 }
 
 // IsValidRegionCIVO validates the region code for CIVO
 func isValidRegion(obj *CivoProvider, reg string) error {
-	var validFromClient []string = getValidRegionsClient(obj)
+	validFromClient, err := getValidRegionsClient(obj)
+	if err != nil {
+		return err
+	}
 	for _, region := range validFromClient {
 		if region == reg {
 			return nil
 		}
 	}
-	return log.NewError("INVALID REGION\nValid options: %v\n", validFromClient)
+	return log.NewError(civoCtx, "invalid region", "Valid options", validFromClient)
 }
 
 func isValidVMSize(obj *CivoProvider, size string) error {
-	var validFromClient []string = getValidVMSizesClient(obj)
+	validFromClient, err := getValidVMSizesClient(obj)
+	if err != nil {
+		return err
+	}
 	for _, nodeSize := range validFromClient {
 		if size == nodeSize {
 			return nil
 		}
 	}
-	return log.NewError("INVALID VM SIZE\nValid options: %v\n", validFromClient)
+	return log.NewError(civoCtx, "invalid VM size", "Valid options", validFromClient)
 }
