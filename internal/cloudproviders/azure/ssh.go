@@ -10,19 +10,19 @@ import (
 // CreateUploadSSHKeyPair implements types.CloudFactory.
 func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
 	name := <-obj.chResName
-	log.Debug("Printing", "name", name)
+	log.Debug(azureCtx, "Printing", "name", name)
 
 	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) != 0 {
-		log.Print("skipped ssh key already created", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
+		log.Print(azureCtx, "skipped ssh key already created", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
 		return nil
 	}
 
-	err := helpers.CreateSSHKeyPair(log, mainStateDocument)
+	err := helpers.CreateSSHKeyPair(azureCtx, log, mainStateDocument)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	parameters := armcompute.SSHPublicKeyResource{
@@ -32,20 +32,20 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 		},
 	}
 
-	log.Debug("Printing", "sshConfig", parameters)
+	log.Debug(azureCtx, "Printing", "sshConfig", parameters)
 
 	_, err = obj.client.CreateSSHKey(name, parameters, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	mainStateDocument.CloudInfra.Azure.B.SSHKeyName = name
 	mainStateDocument.CloudInfra.Azure.B.SSHUser = "azureuser"
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
-	log.Success("created the ssh key pair", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
+	log.Success(azureCtx, "created the ssh key pair", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
 
 	return nil
 }
@@ -54,12 +54,12 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) == 0 {
-		log.Print("skipped ssh key already deleted", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
+		log.Print(azureCtx, "skipped ssh key already deleted", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
 		return nil
 	}
 
 	if _, err := obj.client.DeleteSSHKey(mainStateDocument.CloudInfra.Azure.B.SSHKeyName, nil); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	sshName := mainStateDocument.CloudInfra.Azure.B.SSHKeyName
@@ -68,9 +68,9 @@ func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 	mainStateDocument.CloudInfra.Azure.B.SSHUser = ""
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("deleted the ssh key pair", "name", sshName)
+	log.Success(azureCtx, "deleted the ssh key pair", "name", sshName)
 	return nil
 }

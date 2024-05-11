@@ -11,29 +11,25 @@ import (
 // DelManagedCluster implements types.CloudFactory.
 func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) == 0 {
-		log.Print("skipped already deleted AKS cluster")
+		log.Print(azureCtx, "skipped already deleted AKS cluster")
 		return nil
 	}
 
 	pollerResp, err := obj.client.BeginDeleteAKS(mainStateDocument.CloudInfra.Azure.ManagedClusterName, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
-	log.Print("Deleting AKS cluster...", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
+	log.Print(azureCtx, "Deleting AKS cluster...", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
 
-	_, err = obj.client.PollUntilDoneDelAKS(ctx, pollerResp, nil)
+	_, err = obj.client.PollUntilDoneDelAKS(azureCtx, pollerResp, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("Deleted the AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
+	log.Success(azureCtx, "Deleted the AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
 
 	mainStateDocument.CloudInfra.Azure.ManagedClusterName = ""
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
-	}
-
-	return nil
+	return storage.Write(mainStateDocument)
 }
 
 // NewManagedCluster implements types.CloudFactory.
@@ -41,10 +37,10 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 	name := <-obj.chResName
 	vmtype := <-obj.chVMType
 
-	log.Debug("Printing", "name", name, "vmtype", vmtype)
+	log.Debug(azureCtx, "Printing", "name", name, "vmtype", vmtype)
 
 	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) != 0 {
-		log.Print("skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
+		log.Print(azureCtx, "skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
 		return nil
 	}
 
@@ -84,39 +80,39 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 		},
 	}
 
-	log.Debug("Printing", "AKSConfig", parameter)
+	log.Debug(azureCtx, "Printing", "AKSConfig", parameter)
 
 	pollerResp, err := obj.client.BeginCreateAKS(name, parameter, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	mainStateDocument.CloudInfra.Azure.ManagedClusterName = name
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Print("Creating AKS cluster...")
+	log.Print(azureCtx, "Creating AKS cluster...")
 
-	resp, err := obj.client.PollUntilDoneCreateAKS(ctx, pollerResp, nil)
+	resp, err := obj.client.PollUntilDoneCreateAKS(azureCtx, pollerResp, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	mainStateDocument.CloudInfra.Azure.B.IsCompleted = true
 
 	kubeconfig, err := obj.client.ListClusterAdminCredentials(name, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	kubeconfigStr := string(kubeconfig.Kubeconfigs[0].Value)
 
 	mainStateDocument.ClusterKubeConfig = kubeconfigStr
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("created AKS", "name", *resp.Name)
+	log.Success(azureCtx, "created AKS", "name", *resp.Name)
 	return nil
 }

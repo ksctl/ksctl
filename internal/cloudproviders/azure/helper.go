@@ -2,6 +2,7 @@ package azure
 
 import (
 	"fmt"
+
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/types"
@@ -14,7 +15,7 @@ func GenerateResourceGroupName(clusterName, clusterType string) string {
 func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x
@@ -34,10 +35,10 @@ func validationOfArguments(obj *AzureProvider) error {
 func isValidK8sVersion(obj *AzureProvider, ver string) error {
 	res, err := obj.client.ListKubernetesVersions()
 	if err != nil {
-		return log.NewError("failed to finish the request: %v", err)
+		return err
 	}
 
-	log.Debug("Printing", "ListKubernetesVersions", res)
+	log.Debug(azureCtx, "Printing", "ListKubernetesVersions", res)
 
 	var vers []string
 	for _, version := range res.Values {
@@ -48,7 +49,7 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 			return nil
 		}
 	}
-	return log.NewError("Invalid k8s version\nValid options: %v\n", vers)
+	return log.NewError(azureCtx, "Invalid k8s version", "Valid options", vers)
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {
@@ -56,14 +57,14 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("Printing", "ListLocation", validReg)
+	log.Debug(azureCtx, "Printing", "ListLocation", validReg)
 
 	for _, valid := range validReg {
 		if valid == reg {
 			return nil
 		}
 	}
-	return log.NewError("INVALID REGION\nValid options: %v\n", validReg)
+	return log.NewError(azureCtx, "Invalid region", "Valid options", validReg)
 }
 
 func isValidVMSize(obj *AzureProvider, size string) error {
@@ -72,7 +73,7 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("Printing", "ListVMType", validSize)
+	log.Debug(azureCtx, "Printing", "ListVMType", validSize)
 
 	for _, valid := range validSize {
 		if valid == size {
@@ -80,5 +81,5 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 		}
 	}
 
-	return log.NewError("INVALID VM SIZE\nValid options %v\n", validSize)
+	return log.NewError(azureCtx, "Invalid vm size", "Valid options", validSize)
 }
