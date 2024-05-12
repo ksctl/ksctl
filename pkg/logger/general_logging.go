@@ -76,11 +76,13 @@ func isLogEnabled(level uint, msgType consts.CustomExternalLogLevel) bool {
 	return true
 }
 
-func (l *GeneralLog) logErrorf(disableContext bool, ctx context.Context, msg string, args ...any) error {
+func (l *GeneralLog) logErrorf(disableContext bool, disablePrefix bool, ctx context.Context, msg string, args ...any) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), consts.LOG_ERROR)
-	msg = prefix + msg
+	if !disablePrefix {
+		prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), consts.LOG_ERROR)
+		msg = prefix + msg
+	}
 	format, _args := formGroups(disableContext, ctx, args...)
 
 	var errMsg error
@@ -162,7 +164,7 @@ func (l *GeneralLog) Error(ctx context.Context, msg string, args ...any) {
 }
 
 func (l *GeneralLog) NewError(ctx context.Context, msg string, args ...any) error {
-	return l.logErrorf(false, ctx, msg, args...)
+	return l.logErrorf(false, true, ctx, msg, args...)
 }
 
 func (l *GeneralLog) Warn(ctx context.Context, msg string, args ...any) {
