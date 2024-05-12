@@ -13,8 +13,6 @@ import (
 	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"github.com/rodaine/table"
 
-	"time"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
@@ -26,27 +24,44 @@ const (
 	LimitCol = 80
 )
 
-// FIXME: Missing a mutex
-
 func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
-	fmt.Printf("%s (package: %s) [%s] %v\n", time.Now().Format(time.ANSIC), ctx.Value(consts.ContextModuleNameKey), msgType, message)
+	_m := ""
+	switch msgType {
+	case consts.LOG_DEBUG:
+		_m = "DEBUG"
+	case consts.LOG_ERROR:
+		_m = "ERROR"
+	case consts.LOG_SUCCESS:
+		_m = "SUCCESS"
+	case consts.LOG_WARNING:
+		_m = "WARN"
+	default:
+		_m = "INFO"
+	}
+	l.logger.Info(message, "component", ctx.Value(consts.ContextModuleNameKey), "msgType", _m)
 }
 
 func (l *StructuredLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
-	prefix := fmt.Sprintf("%s (package: %s) [%s] ", time.Now().Format(time.ANSIC), ctx.Value(consts.ContextModuleNameKey), msgType)
-	format = prefix + format
-	fmt.Printf(format, args...)
+	_m := ""
+	switch msgType {
+	case consts.LOG_DEBUG:
+		_m = "DEBUG"
+	case consts.LOG_ERROR:
+		_m = "ERROR"
+	case consts.LOG_SUCCESS:
+		_m = "SUCCESS"
+	case consts.LOG_WARNING:
+		_m = "WARN"
+	default:
+		_m = "INFO"
+	}
+	l.logger.Info(fmt.Sprintf(format, args...), "component", ctx.Value(consts.ContextModuleNameKey), "msgType", _m)
 }
 
-func newLogger(out io.Writer, ver slog.Level, _ bool) *slog.Logger {
-	// if debug {
+func newLogger(out io.Writer, ver slog.Level) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(out, &slog.HandlerOptions{
 		Level: ver,
 	}))
-	// }
-	// return slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{
-	// 	Level: ver,
-	// }))
 }
 
 func NewStructuredLogger(verbose int, out io.Writer) types.LoggerFactory {
@@ -59,9 +74,6 @@ func NewStructuredLogger(verbose int, out io.Writer) types.LoggerFactory {
 
 	if verbose < 0 {
 		ve = slog.LevelDebug
-
-		return &StructuredLog{logger: newLogger(out, ve, true)}
-
 	} else if verbose < 4 {
 		ve = slog.LevelInfo
 	} else if verbose < 8 {
@@ -70,7 +82,7 @@ func NewStructuredLogger(verbose int, out io.Writer) types.LoggerFactory {
 		ve = slog.LevelError
 	}
 
-	return &StructuredLog{logger: newLogger(out, ve, false)}
+	return &StructuredLog{logger: newLogger(out, ve)}
 }
 
 func (l *StructuredLog) Print(ctx context.Context, msg string, args ...any) {
@@ -88,34 +100,32 @@ func (l *StructuredLog) Success(ctx context.Context, msg string, args ...any) {
 func (l *StructuredLog) Note(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgBlue, color.Bold)
 	defer color.Unset()
-	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey), "msgType", "NOTE"}, args...)
+	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey), "msgType", "NOTE"}, args...)
 	l.logger.Info(msg, args...)
 }
 
 func (l *StructuredLog) Debug(ctx context.Context, msg string, args ...any) {
 	defer color.Unset()
-	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey)}, args...)
+	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey)}, args...)
 	l.logger.Debug(msg, args...)
 }
 
 func (l *StructuredLog) Error(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgHiRed, color.Bold)
 	defer color.Unset()
-	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey)}, args...)
 
-	msgStrErr := fmt.Sprintf("%v", args)
-	l.logger.Error(msg, "Reason", msgStrErr)
+	l.logger.Error(msg, args...)
 }
 
 func (l *StructuredLog) NewError(ctx context.Context, format string, args ...any) error {
-	args = append([]any{"err_package", ctx.Value(consts.ContextModuleNameKey)}, args...)
+	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey)}, args...)
 	return fmt.Errorf(format, args...)
 }
 
 func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgYellow, color.Bold)
 	defer color.Unset()
-	args = append([]any{"package", ctx.Value(consts.ContextModuleNameKey), "msgType", "WARN"}, args...)
+	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey), "msgType", "WARN"}, args...)
 	l.logger.Warn(msg, args...)
 }
 

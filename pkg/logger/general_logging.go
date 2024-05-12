@@ -91,8 +91,6 @@ func (l *GeneralLog) logErrorf(disableContext bool, disablePrefix bool, ctx cont
 	} else {
 		errMsg = fmt.Errorf(msg+" "+format, _args...)
 	}
-	// TODO: need to add some way for the writer to the file!
-	// fmt.Fprintln(l.writter, errMsg)
 
 	return errMsg
 }
