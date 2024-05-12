@@ -22,10 +22,10 @@ func (k *Kubernetes) jobApply(o *batchv1.Job) error {
 				Jobs(ns).
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "job apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "job apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -38,7 +38,7 @@ func (k *Kubernetes) jobDelete(o *batchv1.Job) error {
 		Jobs(ns).
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "job delete failed", "Reason", err)
 	}
 	return nil
 }

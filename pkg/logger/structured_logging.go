@@ -36,15 +36,15 @@ func (l *StructuredLog) ExternalLogHandlerf(ctx context.Context, msgType consts.
 	fmt.Printf(format, args...)
 }
 
-func newLogger(out io.Writer, ver slog.Level, debug bool) *slog.Logger {
-	if debug {
-		return slog.New(slog.NewJSONHandler(out, &slog.HandlerOptions{
-			Level: ver,
-		}))
-	}
-	return slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{
+func newLogger(out io.Writer, ver slog.Level, _ bool) *slog.Logger {
+	// if debug {
+	return slog.New(slog.NewJSONHandler(out, &slog.HandlerOptions{
 		Level: ver,
 	}))
+	// }
+	// return slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{
+	// 	Level: ver,
+	// }))
 }
 
 func NewStructuredLogger(verbose int, out io.Writer) types.LoggerFactory {

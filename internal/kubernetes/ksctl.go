@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -97,7 +98,7 @@ var (
 //	provider := k.Metadata.Provider
 //	distro := k.Metadata.K8sDistro
 //
-//	log.Debug("Printing", "clustername", clusterName, "region", region, "provider", provider, "distro", distro)
+//	log.Debug(kubernetesCtx,"Printing", "clustername", clusterName, "region", region, "provider", provider, "distro", distro)
 //
 //	var destroyer *corev1.Pod = &corev1.Pod{
 //		TypeMeta: metav1.TypeMeta{
@@ -138,7 +139,7 @@ var (
 //		},
 //	}
 //
-//	log.Debug("Printing", "destroyerPodManifest", destroyer)
+//	log.Debug(kubernetesCtx,"Printing", "destroyerPodManifest", destroyer)
 //
 //	if err := k.PodApply(destroyer, KSCTL_SYS_NAMESPACE); err != nil {
 //		return log.NewError(err.Error())
@@ -159,7 +160,7 @@ var (
 //		if count == consts.CounterMaxRetryCount*2 {
 //			return log.NewError("max retry reached")
 //		}
-//		log.Debug(fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
+//		log.Debug(kubernetesCtx,fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
 //		time.Sleep(10 * time.Second)
 //	}
 //
@@ -170,7 +171,7 @@ var (
 //}
 
 func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport, state *storageTypes.StorageDocument, isExternalStore bool) error {
-	log.Print("Started adding kubernetes ksctl specific controllers")
+	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
 	components := []string{"ksctl-application@latest"}
 
 	if !isExternalStore {
@@ -179,7 +180,7 @@ func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport
 
 	_apps, err := helpers.ToApplicationTempl(components)
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "toApplication Template failed", "Reason", err)
 	}
 	err = k.Applications(_apps, state, consts.OperationCreate)
 	if err != nil {
@@ -189,23 +190,21 @@ func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport
 	if !isExternalStore {
 		raw, _err := json.Marshal(v)
 		if _err != nil {
-			return _err
+			return log.NewError(kubernetesCtx, "failed to marshal stateDocument", "Reason", _err)
 		}
 
-		log.Debug("Invoked dynamic client")
+		log.Debug(kubernetesCtx, "Invoked dynamic client")
 		dynamicClient, __err := dynamic.NewForConfig(k.config)
 		if __err != nil {
-			panic(__err.Error())
+			return log.NewError(kubernetesCtx, "failed to initialize dynamic k8s-client", "Reason", __err)
 		}
 
-		// Define GVR (GroupVersionResource)
 		gvr := schema.GroupVersionResource{
 			Group:    "storage.ksctl.com",
 			Version:  "v1alpha1",
 			Resource: "importstates",
 		}
 
-		// Create an unstructured object
 		importState := &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "storage.ksctl.com/v1alpha1",
@@ -222,28 +221,28 @@ func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport
 			},
 		}
 
-		log.Note("deploying a resource of crd")
+		log.Note(kubernetesCtx, "deploying a resource of crd")
 
 		if _, err := dynamicClient.Resource(gvr).
 			Namespace(KSCTL_SYS_NAMESPACE).
 			Create(context.TODO(), importState, metav1.CreateOptions{}); err != nil {
-			panic(err.Error())
+			return log.NewError(kubernetesCtx, "failed to create a resource of type importstate.storage.ksctl.com", "Reason", err)
 		}
 	}
 
-	log.Success("Done adding kubernetes ksctl specific controllers")
+	log.Success(kubernetesCtx, "Done adding kubernetes ksctl specific controllers")
 	return nil
 }
 
 func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoint map[string][]byte, isExternalStore bool) error {
 
-	log.Print("Started to configure Cluster to add Ksctl specific storage")
+	log.Print(kubernetesCtx, "Started to configure Cluster to add Ksctl specific storage")
 
-	log.Note("creating ksctl namespace")
+	log.Print(kubernetesCtx, "creating ksctl namespace", "name", KSCTL_SYS_NAMESPACE)
 	if err := k.namespaceCreate(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: KSCTL_SYS_NAMESPACE},
 	}); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	serviceAccConfig := &corev1.ServiceAccount{
@@ -253,9 +252,9 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 			Labels:    labelsForKsctl,
 		},
 	}
-	log.Note("creating service account for ksctl agent")
+	log.Print(kubernetesCtx, "creating service account for ksctl agent", "name", serviceAccConfig.Name)
 	if err := k.serviceAccountApply(serviceAccConfig); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	clusterRole := &rbacv1.ClusterRole{
@@ -272,9 +271,9 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 		},
 	}
 
-	log.Note("creating clusterrole")
+	log.Print(kubernetesCtx, "creating clusterrole", "name", clusterRole.Name)
 	if err := k.clusterRoleApply(clusterRole); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	clusterRoleBind := &rbacv1.ClusterRoleBinding{
@@ -296,9 +295,9 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 		},
 	}
 
-	log.Note("creating clusterrolebinding")
+	log.Print(kubernetesCtx, "creating clusterrolebinding", "name", clusterRoleBind.Name)
 	if err := k.clusterRoleBindingApply(clusterRoleBind); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	replicas := int32(1)
@@ -400,8 +399,10 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 			Data: externalStoreEndpoint,
 		}
 
+		log.Print(kubernetesCtx, "creating external store secrets for ksctl agent", "name", secretExt.Name)
+
 		if err := k.secretApply(secretExt); err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 
 		for k, _ := range externalStoreEndpoint {
@@ -419,9 +420,9 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 
 	}
 
-	log.Note("creating ksctl agent deployment")
+	log.Print(kubernetesCtx, "creating ksctl agent deployment", "name", ksctlServer.Name)
 	if err := k.deploymentApply(ksctlServer); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	var serverService *corev1.Service = &corev1.Service{
@@ -445,16 +446,16 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 		},
 	}
 
-	log.Note("creating ksctl agent service")
+	log.Print(kubernetesCtx, "creating ksctl agent service", "name", serverService.Name)
 	if err := k.serviceApply(serverService); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	if err := k.deploymentReadyWait(ksctlServer.Name, ksctlServer.Namespace); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("Done configuring Cluster to add Ksctl specific storage")
+	log.Success(kubernetesCtx, "Done configuring Cluster to add Ksctl specific storage")
 	return nil
 
 }

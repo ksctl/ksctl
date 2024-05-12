@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"context"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"strings"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/types/controllers"
 
@@ -203,7 +204,11 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 		return log.NewError(controllerCtx, cloudResErr.Error())
 	}
 
-	if err := bootstrapController.InstallAdditionalTools(externalCNI, externalApp, client, stateDocument); err != nil {
+	if err := bootstrapController.InstallAdditionalTools(
+		externalCNI,
+		externalApp,
+		client,
+		stateDocument); err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
@@ -379,21 +384,21 @@ func (manager *KsctlControllerClient) GetCluster() error {
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudLocal:
-		data, err := localPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err := localPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAws:
-		data, err := awsPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err := awsPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAzure:
-		data, err := azurePkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err := azurePkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
@@ -406,19 +411,19 @@ func (manager *KsctlControllerClient) GetCluster() error {
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = localPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err = localPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = azurePkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err = azurePkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = awsPkg.GetRAWClusterInfos(client.Storage, client.Metadata)
+		data, err = awsPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
@@ -494,7 +499,11 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
-	if err := bootstrapController.InstallAdditionalTools(externalCNI, true, client, stateDocument); err != nil {
+	if err := bootstrapController.InstallAdditionalTools(
+		externalCNI,
+		true,
+		client,
+		stateDocument); err != nil {
 		return log.NewError(controllerCtx, err.Error())
 	}
 
@@ -708,18 +717,20 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 	}
 
 	log.Debug(controllerCtx, "K8s nodes to be deleted", "hostnames", strings.Join(hostnames, ";"))
+
 	if !fakeClient {
 		var payload cloudControllerResource.CloudResourceState
 		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
-		// transfer the state
 
 		err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationGet)
 		if err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
 
-		// move it to kubernetes controller
-		if err := bootstrapController.DelWorkerPlanes(client, stateDocument.ClusterKubeConfig, hostnames); err != nil {
+		if err := bootstrapController.DelWorkerPlanes(
+			client,
+			stateDocument.ClusterKubeConfig,
+			hostnames); err != nil {
 			return log.NewError(controllerCtx, err.Error())
 		}
 	}

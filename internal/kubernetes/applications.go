@@ -46,13 +46,13 @@ func initApps() {
 
 func GetApps(name string, ver string) (Application, error) {
 	if apps == nil {
-		return Application{}, log.NewError("app variable not initalized")
+		return Application{}, log.NewError(kubernetesCtx, "app variable not initalized")
 	}
 
 	val, present := apps[name]
 
 	if !present {
-		return Application{}, log.NewError("app not found %s", name)
+		return Application{}, log.NewError(kubernetesCtx, "app not found", "name", name)
 	}
 	return val(ver), nil
 }
@@ -97,13 +97,13 @@ func (k *Kubernetes) InstallCNI(cni storageTypes.Application, state *storageType
 		_, ok := PresentOrNot(cni, Cni, state)
 		if ok {
 			if cni.Version == state.Addons.Cni.Version {
-				log.Success("Already Installed cni", "name", cni.Name, "version", cni.Version)
+				log.Success(kubernetesCtx, "Already Installed cni", "name", cni.Name, "version", cni.Version)
 				return nil
 			} else {
-				if k.InCluster {
-					return log.NewError("We cannot install CNI due to Operation inside the cluster", "name", cni.Name, "version", cni.Version)
+				if k.inCluster {
+					return log.NewError(kubernetesCtx, "We cannot install CNI due to Operation inside the cluster", "name", cni.Name, "version", cni.Version)
 				} else {
-					log.Box("Current Impl. doesn't support k", `
+					log.Box(kubernetesCtx, "Current Impl. doesn't support cni upgrade", `
 Upgrade of CNI is not Possible as of now!
 Reason: if the cni is uninstalled it will lead to all pod in Pending mode
 thus we can't install cni without the help of state.
@@ -126,37 +126,37 @@ advisiable to use external storage solution
 		}
 
 		if err := installApplication(k, cni); err != nil {
-			return log.NewError("Cni install failed", "name", cni, "errorMsg", err)
+			return log.NewError(kubernetesCtx, "Cni install failed", "name", cni, "Reason", err)
 		}
 		state.Addons.Cni.Name = cni.Name
 		state.Addons.Cni.Version = cni.Version
 
-		if err := k.StorageDriver.Write(state); err != nil {
+		if err := k.storageDriver.Write(state); err != nil {
 			return err
 		}
 
-		log.Success("Installed Cni")
+		log.Success(kubernetesCtx, "Installed Cni", "name", cni.Name, "version", cni.Version)
 
 	case consts.OperationDelete:
 
 		_, ok := PresentOrNot(cni, App, state)
 		if !ok {
-			log.Success("Cni is not present", "name", cni.Name, "version", cni.Version)
+			log.Success(kubernetesCtx, "Cni is not present", "name", cni.Name, "version", cni.Version)
 			return nil
 		}
 
 		if err := deleteApplication(k, cni); err != nil {
-			return log.NewError("Cni uninstall failed", "name", cni, "errorMsg", err)
+			return log.NewError(kubernetesCtx, "Cni uninstall failed", "name", cni, "Reason", err)
 		}
 
 		state.Addons.Cni.Name = ""
 		state.Addons.Cni.Version = ""
 
-		if err := k.StorageDriver.Write(state); err != nil {
+		if err := k.storageDriver.Write(state); err != nil {
 			return err
 		}
 
-		log.Success("Uninstalled Cni")
+		log.Success(kubernetesCtx, "Uninstalled Cni", "name", cni.Name, "version", cni.Version)
 	}
 
 	return nil
@@ -176,14 +176,14 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 
 			if ok {
 				if app.Version == state.Addons.Apps[_idx].Version {
-					log.Success("Already Installed app", "name", app.Name, "version", app.Version)
+					log.Success(kubernetesCtx, "Already Installed app", "name", app.Name, "version", app.Version)
 					continue
 				} else {
 					// Delete the App
 					isUpdate = true
 					prevVersion = state.Addons.Apps[_idx].Version
 					if err := deleteApplication(k, state.Addons.Apps[_idx]); err != nil {
-						return log.NewError("Update of the App failed Step Uninstall",
+						return log.NewError(kubernetesCtx, "Update of the App failed Step Uninstall",
 							"app", app.Name,
 							"FromVer", prevVersion,
 							"ToVer", app.Version,
@@ -196,13 +196,13 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 
 			if err := installApplication(k, app); err != nil {
 				if isUpdate {
-					return log.NewError("Update of the App failed Step Install",
+					return log.NewError(kubernetesCtx, "Update of the App failed Step Install",
 						"app", app.Name,
 						"FromVer", prevVersion,
 						"ToVer", app.Version,
 						"errorMsg", err)
 				}
-				return log.NewError("App install failed", "app", app, "errorMsg", err)
+				return log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err)
 			}
 			if isUpdate {
 				state.Addons.Apps[_idx].Version = app.Version
@@ -212,17 +212,17 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 					Version: app.Version,
 				})
 			}
-			if err := k.StorageDriver.Write(state); err != nil {
+			if err := k.storageDriver.Write(state); err != nil {
 				return err
 			}
 
 			if isUpdate {
-				log.Success("Updated the App",
+				log.Success(kubernetesCtx, "Updated the App",
 					"app", app.Name,
 					"FromVer", prevVersion,
 					"ToVer", app.Version)
 			}
-			log.Success("Installed Application", "Success", idx+1, "Total", len(apps))
+			log.Success(kubernetesCtx, "Installed Application", "name", app.Name, "version", app.Version, "Success", idx+1, "Total", len(apps))
 		}
 
 	case consts.OperationDelete:
@@ -230,12 +230,12 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 
 			_idx, ok := PresentOrNot(app, App, state)
 			if !ok {
-				log.Success("App is not present", "name", app.Name, "version", app.Version)
+				log.Success(kubernetesCtx, "App is not present", "name", app.Name, "version", app.Version)
 				continue
 			}
 
 			if err := deleteApplication(k, app); err != nil {
-				return log.NewError("App uninstall failed", "app", app, "errorMsg", err)
+				return log.NewError(kubernetesCtx, "App uninstall failed", "app", app, "errorMsg", err)
 			}
 
 			_cpyApp := utilities.DeepCopySlice[storageTypes.Application](state.Addons.Apps)
@@ -245,11 +245,11 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 				}
 			}
 			state.Addons.Apps = _cpyApp
-			if err := k.StorageDriver.Write(state); err != nil {
+			if err := k.storageDriver.Write(state); err != nil {
 				return err
 			}
 
-			log.Success("Uninstalled Application", "Success", idx+1, "Total", len(apps))
+			log.Success(kubernetesCtx, "Uninstalled Application", app.Name, "name", "version", app.Version, "Success", idx+1, "Total", len(apps))
 		}
 	}
 
@@ -258,59 +258,59 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 
 func installApplication(client *Kubernetes, app storageTypes.Application) error {
 
-	if err := helpers.IsValidVersion(app.Version); err != nil {
-		return log.NewError(err.Error())
+	if err := helpers.IsValidVersion(kubernetesCtx, log, app.Version); err != nil {
+		return err
 	}
 
 	appStruct, err := GetApps(app.Name, app.Version)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	switch appStruct.InstallType {
 
 	case InstallHelm:
 		if err := installHelm(client, appStruct); err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 
 	case InstallKubectl:
 		if err := installKubectl(client, appStruct); err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 
 	}
 
-	log.Box("App Details", appStruct.Metadata+"\n"+appStruct.PostInstall)
+	log.Box(kubernetesCtx, "App Details", appStruct.Metadata+"\n"+appStruct.PostInstall)
 
-	log.Success("Installed Resource")
+	log.Success(kubernetesCtx, "Installed Resource")
 	return nil
 }
 
 func deleteApplication(client *Kubernetes, app storageTypes.Application) error {
 
-	if err := helpers.IsValidVersion(app.Version); err != nil {
-		return log.NewError(err.Error())
+	if err := helpers.IsValidVersion(kubernetesCtx, log, app.Version); err != nil {
+		return err
 	}
 	appStruct, err := GetApps(app.Name, app.Version)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	switch appStruct.InstallType {
 
 	case InstallHelm:
 		if err := deleteHelm(client, appStruct); err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 
 	case InstallKubectl:
 		if err := deleteKubectl(client, appStruct); err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 
 	}
 
-	log.Success("Uninstalled Resource")
+	log.Success(kubernetesCtx, "Uninstalled Resource")
 	return nil
 }

@@ -1,11 +1,12 @@
 package kubernetes
 
 import (
+	"context"
 	"strings"
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -14,17 +15,17 @@ import (
 )
 
 type Kubernetes struct {
-	Metadata            types.Metadata
-	StorageDriver       types.StorageFactory
+	storageDriver       types.StorageFactory
 	config              *rest.Config
 	clientset           *kubernetes.Clientset
 	apiextensionsClient *clientset.Clientset
 	helmClient          *HelmClient
-	InCluster           bool
+	inCluster           bool
 }
 
 var (
-	log types.LoggerFactory
+	log           types.LoggerFactory
+	kubernetesCtx context.Context
 )
 
 func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
@@ -54,9 +55,13 @@ func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	return nil
 }
 
-func (k *Kubernetes) NewInClusterClient() (err error) {
-	log = logger.NewStructuredLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
-	log.SetPackageName("kubernetes-client")
+func NewInClusterClient(parentCtx context.Context, parentLog types.LoggerFactory, storage types.StorageFactory) (k *Kubernetes, err error) {
+	kubernetesCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "kubernetes-client")
+	log = parentLog
+
+	k = &Kubernetes{
+		storageDriver: storage,
+	}
 
 	k.config, err = rest.InClusterConfig()
 	if err != nil {
@@ -77,16 +82,20 @@ func (k *Kubernetes) NewInClusterClient() (err error) {
 	if err = k.helmClient.NewInClusterHelmClient(); err != nil {
 		return
 	}
-	k.InCluster = true // it helps us to identify if we are inside the cluster or not
+	k.inCluster = true // it helps us to identify if we are inside the cluster or not
 
 	initApps()
 
-	return nil
+	return k, nil
 }
 
-func (k *Kubernetes) NewKubeconfigClient(kubeconfig string) (err error) {
-	log = logger.NewStructuredLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
-	log.SetPackageName("kubernetes-client")
+func NewKubeconfigClient(parentCtx context.Context, parentLog types.LoggerFactory, storage types.StorageFactory, kubeconfig string) (k *Kubernetes, err error) {
+	kubernetesCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "kubernetes-client")
+	log = parentLog
+
+	k = &Kubernetes{
+		storageDriver: storage,
+	}
 
 	rawKubeconfig := []byte(kubeconfig)
 
@@ -114,5 +123,5 @@ func (k *Kubernetes) NewKubeconfigClient(kubeconfig string) (err error) {
 
 	initApps()
 
-	return nil
+	return k, nil
 }

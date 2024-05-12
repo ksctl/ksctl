@@ -9,7 +9,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 
-	"github.com/ksctl/ksctl/internal/kubernetes"
+	ksctlKubernetes "github.com/ksctl/ksctl/internal/kubernetes"
 
 	"github.com/ksctl/ksctl/internal/k8sdistros"
 	k3sPkg "github.com/ksctl/ksctl/internal/k8sdistros/k3s"
@@ -31,13 +31,13 @@ func InitLogger(ctx context.Context, _log types.LoggerFactory) {
 
 func Setup(client *types.KsctlClient, state *storageTypes.StorageDocument) error {
 
-	client.PreBootstrap = k8sdistros.NewPreBootStrap(client.Metadata, state) // NOTE: it needs the
+	client.PreBootstrap = k8sdistros.NewPreBootStrap(controllerCtx, log, state)
 
 	switch client.Metadata.K8sDistro {
 	case consts.K8sK3s:
-		client.Bootstrap = k3sPkg.NewClient(client.Metadata, state)
+		client.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
 	case consts.K8sKubeadm:
-		client.Bootstrap = kubeadmPkg.NewClient(client.Metadata, state)
+		client.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
 	default:
 		return log.NewError(controllerCtx, "Invalid k8s provider")
 	}
@@ -184,39 +184,25 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 
 func DelWorkerPlanes(client *types.KsctlClient, kubeconfig string, hostnames []string) error {
 
-	kubernetesClient := kubernetes.Kubernetes{
-		Metadata:      client.Metadata,
-		StorageDriver: client.Storage,
-	}
-	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig)
+	if err != nil {
 		return err
 	}
 
 	for _, hostname := range hostnames {
-		if err := kubernetesClient.DeleteWorkerNodes(hostname); err != nil {
+		if err := k.DeleteWorkerNodes(hostname); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func ApplicationsInCluster(client *types.KsctlClient, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
+func ApplicationsInCluster(
+	client *types.KsctlClient,
+	state *storageTypes.StorageDocument,
+	op consts.KsctlOperation) error {
 
-	// if log == nil {
-	// 	log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
-	// 	log.SetPackageName("ksctl-distro")
-	// }
-
-	kubernetesClient := kubernetes.Kubernetes{
-		Metadata:      client.Metadata,
-		StorageDriver: client.Storage,
-	}
-
-	if err := kubernetesClient.NewInClusterClient(); err != nil {
-		return err
-	}
-
-	_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage)
 	if err != nil {
 		return err
 	}
@@ -224,36 +210,37 @@ func ApplicationsInCluster(client *types.KsctlClient, state *storageTypes.Storag
 	if len(client.Metadata.CNIPlugin) != 0 {
 		_cni, err := helpers.ToApplicationTempl([]string{client.Metadata.CNIPlugin})
 		if err != nil {
-			return err
+			return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
 		}
 
-		if err := kubernetesClient.InstallCNI(_cni[0], state, op); err != nil {
+		if err := k.InstallCNI(_cni[0], state, op); err != nil {
 			return err
 		}
 	}
+
+	_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+	if err != nil {
+		return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
+	}
+
 	if len(client.Metadata.Applications) != 0 {
-		return kubernetesClient.Applications(_apps, state, op)
+		return k.Applications(_apps, state, op)
 	}
 	return nil
 }
 
-func InstallAdditionalTools(externalCNI, externalApp bool, client *types.KsctlClient, state *storageTypes.StorageDocument) error {
+func InstallAdditionalTools(
+	externalCNI, externalApp bool,
+	client *types.KsctlClient,
+	state *storageTypes.StorageDocument) error {
 
 	if os.Getenv(string(consts.KsctlFakeFlag)) == "1" {
 		return nil
 	}
 
-	// if log == nil {
-	// 	log = logger.NewStructuredLogger(client.Metadata.LogVerbosity, client.Metadata.LogWritter)
-	// 	log.SetPackageName("ksctl-distro")
-	// }
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig)
 
-	kubernetesClient := kubernetes.Kubernetes{
-		Metadata:      client.Metadata,
-		StorageDriver: client.Storage,
-	}
-
-	if err := kubernetesClient.NewKubeconfigClient(state.ClusterKubeConfig); err != nil {
+	if err != nil {
 		return err
 	}
 
@@ -267,26 +254,26 @@ func InstallAdditionalTools(externalCNI, externalApp bool, client *types.KsctlCl
 
 		_cni, err := helpers.ToApplicationTempl([]string{cni})
 		if err != nil {
-			return err
+			return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
 		}
 
-		if err := kubernetesClient.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
+		if err := k.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
 			return err
 		}
 
 		log.Success(controllerCtx, "Done with installing k8s cni")
 	}
 
-	if err := installKsctlSpecificApps(client, kubernetesClient, state); err != nil {
+	if err := installKsctlSpecificApps(client, k, state); err != nil {
 		return err
 	}
 
 	if len(client.Metadata.Applications) != 0 && externalApp {
 		_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
 		if err != nil {
-			return err
+			return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
 		}
-		if err := kubernetesClient.Applications(_apps, state, consts.OperationCreate); err != nil {
+		if err := k.Applications(_apps, state, consts.OperationCreate); err != nil {
 			return err
 		}
 
@@ -297,7 +284,7 @@ func InstallAdditionalTools(externalCNI, externalApp bool, client *types.KsctlCl
 	return nil
 }
 
-func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient kubernetes.Kubernetes, state *storageTypes.StorageDocument) error {
+func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctlKubernetes.Kubernetes, state *storageTypes.StorageDocument) error {
 
 	var (
 		exportedData         *types.StorageStateExportImport

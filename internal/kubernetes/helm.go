@@ -1,11 +1,12 @@
 package kubernetes
 
 import (
+	"os"
+	"time"
+
 	localStore "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
-	"os"
-	"time"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -45,16 +46,16 @@ func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 
 	r, err := repo.NewChartRepository(&repoEntry, getter.All(c.settings))
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "constructs ChartRepository", "Reason", err)
 	}
 	_, err = r.DownloadIndexFile()
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "failed to download the chart", "Reason", err)
 	}
-	// Read the existing repository file
+
 	existingRepositoryFile, err := repo.LoadFile(c.settings.RepositoryConfig)
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "failed to load the chart", "Reason", err)
 	}
 
 	if !existingRepositoryFile.Has(repoEntry.Name) {
@@ -62,7 +63,7 @@ func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 
 		err = existingRepositoryFile.WriteFile(c.settings.RepositoryConfig, 0644)
 		if err != nil {
-			return err
+			return log.NewError(kubernetesCtx, "failed to write the chart", "Reason", err)
 		}
 	}
 
@@ -78,7 +79,7 @@ func (c *HelmClient) UninstallChart(namespace, releaseName string) error {
 
 	_, err := clientUninstall.Run(releaseName)
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "failed uninstall the chart", "Reason", err)
 	}
 	return nil
 }
@@ -104,17 +105,17 @@ func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName st
 	chartPath, err := clientInstall.ChartPathOptions.
 		LocateChart(chartName, c.settings)
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "failed to locate chart", "Reason", err)
 	}
 
 	chartRequested, err := loader.Load(chartPath)
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "failed to load a chart", "Reason", err)
 	}
 
 	_, err = clientInstall.Run(chartRequested, arguments)
 	if err != nil {
-		return err
+		return log.NewError(kubernetesCtx, "failed to install a chart", "Reason", err)
 	}
 	return nil
 }
@@ -129,9 +130,9 @@ func (c *HelmClient) ListInstalledCharts() error {
 		return err
 	}
 
-	log.Print("Lists installed Charts")
+	log.Print(kubernetesCtx, "Lists installed Charts")
 	for _, rel := range results {
-		log.Print(rel.Chart.Name(), rel.Namespace, rel.Info.Description)
+		log.Print(kubernetesCtx, "chart data", "name", rel.Chart.Name(), "namespace", rel.Namespace, "description", rel.Info.Description)
 	}
 	return nil
 }
@@ -204,7 +205,7 @@ type CustomLogger struct {
 }
 
 func (l *CustomLogger) HelmDebugf(format string, v ...interface{}) {
-	l.Logger.ExternalLogHandlerf(consts.LOG_DEBUG, format+"\n", v...)
+	l.Logger.ExternalLogHandlerf(kubernetesCtx, consts.LOG_INFO, format+"\n", v...)
 }
 
 func patchHelmDirectories(client *HelmClient) error {
@@ -213,7 +214,7 @@ func patchHelmDirectories(client *HelmClient) error {
 		return err
 	}
 
-	store := localStore.InitStorage(0, os.Stdout).(*localStore.Store)
+	store := localStore.InitStorage(kubernetesCtx, log).(*localStore.Store)
 
 	pathConfig := []string{usr, ".config", "helm"}
 	_, okConfig := store.PresentDirectory(pathConfig)
@@ -261,7 +262,7 @@ func patchHelmDirectories(client *HelmClient) error {
 	client.settings.RepositoryConfig = configPath
 	client.settings.RepositoryCache = cachePath
 	client.settings.RegistryConfig = registryPath
-	log.Print("Updated the Helm configuration settings")
+	log.Print(kubernetesCtx, "Updated the Helm configuration settings")
 
 	return nil
 }
@@ -279,12 +280,12 @@ func (client *HelmClient) NewKubeconfigHelmClient(kubeconfig string) error {
 	_log := &CustomLogger{Logger: log}
 
 	if err := client.actionConfig.Init(NewRESTClientGetter(client.settings.Namespace(), kubeconfig), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), _log.HelmDebugf); err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "failed to init kubeconfig based helm client", "Reason", err)
 	}
 	return nil
 }
 
-func (client *HelmClient) NewInClusterHelmClient() (err error) {
+func (client *HelmClient) NewInClusterHelmClient() error {
 
 	client.settings = cli.New()
 	client.settings.Debug = true
@@ -294,8 +295,8 @@ func (client *HelmClient) NewInClusterHelmClient() (err error) {
 	client.actionConfig = new(action.Configuration)
 
 	_log := &CustomLogger{Logger: log}
-	if err = client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), _log.HelmDebugf); err != nil {
-		return
+	if err := client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), _log.HelmDebugf); err != nil {
+		return log.NewError(kubernetesCtx, "failed to init in-cluster helm client", "Reason", err)
 	}
 	return nil
 }
@@ -306,18 +307,18 @@ func installHelm(client *Kubernetes, appStruct Application) error {
 
 	if err := client.helmClient.
 		RepoAdd(repoName, repoUrl); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	for _, chart := range charts {
 		if err := client.helmClient.
 			InstallChart(chart.chartVer, chart.chartName, chart.namespace, chart.releaseName, chart.createNamespace, chart.args); err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 	}
 
 	if err := client.helmClient.ListInstalledCharts(); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	return nil
 }
@@ -329,7 +330,7 @@ func deleteHelm(client *Kubernetes, appStruct Application) error {
 	for _, chart := range charts {
 		if err := client.helmClient.
 			UninstallChart(chart.namespace, chart.releaseName); err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 	}
 
