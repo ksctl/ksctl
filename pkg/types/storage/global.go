@@ -1,4 +1,4 @@
-package types
+package storage
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"

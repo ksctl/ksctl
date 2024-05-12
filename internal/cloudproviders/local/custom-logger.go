@@ -2,13 +2,13 @@ package local
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	klog "sigs.k8s.io/kind/pkg/log"
 )
 
 type CustomLogger struct {
 	level  int32
-	Logger resources.LoggerFactory
+	Logger types.LoggerFactory
 }
 
 func (l *CustomLogger) Enabled() bool {
@@ -16,27 +16,27 @@ func (l *CustomLogger) Enabled() bool {
 }
 
 func (l *CustomLogger) Info(message string) {
-	l.Logger.ExternalLogHandler(consts.LOG_INFO, message)
+	l.Logger.ExternalLogHandler(localCtx, consts.LOG_INFO, message)
 }
 
 func (l *CustomLogger) Infof(format string, args ...any) {
-	l.Logger.ExternalLogHandlerf(consts.LOG_INFO, format, args...)
+	l.Logger.ExternalLogHandlerf(localCtx, consts.LOG_INFO, format, args...)
 }
 
 func (l *CustomLogger) Warn(message string) {
-	l.Logger.ExternalLogHandler(consts.LOG_WARNING, message)
+	l.Logger.ExternalLogHandler(localCtx, consts.LOG_WARNING, message)
 }
 
 func (l *CustomLogger) Warnf(format string, args ...interface{}) {
-	l.Logger.ExternalLogHandlerf(consts.LOG_WARNING, format, args...)
+	l.Logger.ExternalLogHandlerf(localCtx, consts.LOG_WARNING, format, args...)
 }
 
 func (l *CustomLogger) Error(message string) {
-	l.Logger.ExternalLogHandler(consts.LOG_ERROR, message)
+	l.Logger.ExternalLogHandler(localCtx, consts.LOG_ERROR, message)
 }
 
 func (l *CustomLogger) Errorf(format string, args ...interface{}) {
-	l.Logger.ExternalLogHandlerf(consts.LOG_ERROR, format, args...)
+	l.Logger.ExternalLogHandlerf(localCtx, consts.LOG_ERROR, format, args...)
 }
 
 func (l *CustomLogger) Enable(flag bool) {}

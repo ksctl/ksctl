@@ -1,8 +1,8 @@
-package resources
+package types
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 type KubernetesBootstrap interface {
@@ -12,7 +12,7 @@ type KubernetesBootstrap interface {
 
 	JoinWorkerplane(int, StorageFactory) error
 
-	Version(string) KubernetesBootstrap
+	Version(string) KubernetesBootstrap // TODO: make it return error
 
 	CNI(string) (externalCNI bool)
 }

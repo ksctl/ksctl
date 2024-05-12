@@ -1,4 +1,4 @@
-package types
+package storage
 
 type StateConfigurationLocal struct {
 	B     BaseInfra `json:"b" bson:"b"`

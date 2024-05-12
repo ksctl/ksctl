@@ -1,4 +1,4 @@
-package types
+package storage
 
 type BaseInfra struct {
 	IsCompleted bool `json:"status" bson:"status"`

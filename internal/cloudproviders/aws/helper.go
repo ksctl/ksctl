@@ -1,43 +1,10 @@
 package aws
 
 import (
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 )
-
-func GetInputCredential(storage resources.StorageFactory, meta resources.Metadata) error {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudAws))
-
-	log.Print("Enter your AWS ACCESS KEY")
-	acesskey, err := helpers.UserInputCredentials(log)
-	if err != nil {
-		return err
-	}
-
-	log.Print("Enter your AWS SECRET KEY")
-	acesskeysecret, err := helpers.UserInputCredentials(log)
-	if err != nil {
-		return err
-	}
-
-	apiStore := &types.CredentialsDocument{
-		InfraProvider: consts.CloudAws,
-		Aws: &types.CredentialsAws{
-			AccessKeyId:     acesskey,
-			SecretAccessKey: acesskeysecret,
-		},
-	}
-
-	if err := storage.WriteCredentials(consts.CloudAws, apiStore); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func validationOfArguments(obj *AwsProvider) error {
 
@@ -45,7 +12,7 @@ func validationOfArguments(obj *AwsProvider) error {
 		return err
 	}
 
-	if err := helpers.IsValidName(obj.clusterName); err != nil {
+	if err := helpers.IsValidName(awsCtx, log, obj.clusterName); err != nil {
 		return err
 	}
 
@@ -58,8 +25,9 @@ func isValidRegion(obj *AwsProvider) error {
 	if err != nil {
 		return err
 	}
-	if validReg == nil {
-		return log.NewError("no region found")
+
+	if validReg == nil { // FIXME: do we actually need this?
+		return log.NewError(awsCtx, "no region found")
 	}
 
 	return nil
@@ -78,15 +46,15 @@ func isValidVMSize(obj *AwsProvider, size string) error {
 		}
 	}
 
-	return log.NewError("INVALID VM SIZE\nValid options %v\n", validSize)
+	return log.NewError(awsCtx, "invalid vm size", "Valid options", validSize)
 }
 
-func loadStateHelper(storage resources.StorageFactory) error {
+func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
-		return log.NewError("Error reading state", "error", err)
+		return err
 	}
-	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
+	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x
 	}(raw)
 	return nil

@@ -7,13 +7,13 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// configureCP_1 is not meant for concurrency
-func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
+// NOTE: configureCP_1 is not meant for concurrency
+func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
 
-	var script resources.ScriptCollection
+	var script types.ScriptCollection
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(
@@ -37,48 +37,48 @@ func configureCP_1(storage resources.StorageFactory, k3s *K3s, sshExecutor helpe
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
-		FastMode(true).SSHExecute(log)
+		FastMode(true).SSHExecute()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	// K3stoken
 	err = sshExecutor.Flag(consts.UtilExecWithOutput).Script(scriptForK3sToken()).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
-		SSHExecute(log)
+		SSHExecute()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Debug("fetching k3s token")
+	log.Debug(k3sCtx, "fetching k3s token")
 
 	mainStateDocument.K8sBootstrap.K3s.K3sToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	log.Debug("Printing", "k3sToken", mainStateDocument.K8sBootstrap.K3s.K3sToken)
+	log.Debug(k3sCtx, "Printing", "k3sToken", mainStateDocument.K8sBootstrap.K3s.K3sToken)
 
 	err = storage.Write(mainStateDocument)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	return nil
 }
 
-// ConfigureControlPlane implements resources.DistroFactory.
-func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
+// ConfigureControlPlane implements storage.DistroFactory.
+func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) error {
 	k3s.mu.Lock()
 	idx := noOfCP
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(k3sCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	k3s.mu.Unlock()
 
-	log.Print("configuring ControlPlane", "number", strconv.Itoa(idx))
+	log.Print(k3sCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
 		err := configureCP_1(storage, k3s, sshExecutor)
 		if err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 	} else {
 
-		var script resources.ScriptCollection
+		var script types.ScriptCollection
 
 		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 			script = scriptCP_NWithoutCNI(
@@ -104,9 +104,9 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 
 		err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
 			IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
-			FastMode(true).SSHExecute(log)
+			FastMode(true).SSHExecute()
 		if err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 
 		// err = storage.Write(mainStateDocument)
@@ -116,12 +116,12 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 
 		if idx+1 == len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes) {
 
-			log.Debug("fetching kubeconfig")
+			log.Debug(k3sCtx, "fetching kubeconfig")
 			err = sshExecutor.Flag(consts.UtilExecWithOutput).Script(scriptKUBECONFIG()).
 				IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
-				FastMode(true).SSHExecute(log)
+				FastMode(true).SSHExecute()
 			if err != nil {
-				return log.NewError(err.Error())
+				return err
 			}
 			// as only a single case where it is getting invoked we actually don't need locks
 
@@ -130,22 +130,22 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage resources.StorageFacto
 			kubeconfig = strings.Replace(kubeconfig, "default", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
 
 			mainStateDocument.ClusterKubeConfig = kubeconfig
-			log.Debug("Printing", "kubeconfig", kubeconfig)
+			log.Debug(k3sCtx, "Printing", "kubeconfig", kubeconfig)
 			// modify
 			err = storage.Write(mainStateDocument)
 			if err != nil {
-				return log.NewError(err.Error())
+				return err
 			}
 		}
 
 	}
-	log.Success("configured ControlPlane", "number", strconv.Itoa(idx))
+	log.Success(k3sCtx, "configured ControlPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }
 
-func getScriptForEtcdCerts(ca, etcd, key string) resources.Script {
-	return resources.Script{
+func getScriptForEtcdCerts(ca, etcd, key string) types.Script {
+	return types.Script{
 		Name:           "store etcd certificates",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -170,7 +170,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 }
 
 func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIPlb, privIplb string) resources.ScriptCollection {
+	pubIPlb, privIplb string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -178,7 +178,7 @@ func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[0] without CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -210,7 +210,7 @@ sudo ./control-setup.sh &>> ksctl.log
 }
 
 func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
-	privateIPLb string) resources.ScriptCollection {
+	privateIPLb string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -218,7 +218,7 @@ func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[0] with CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -245,10 +245,10 @@ sudo ./control-setup.sh &>> ksctl.log
 	return collection
 }
 
-func scriptForK3sToken() resources.ScriptCollection {
+func scriptForK3sToken() types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Get k3s server token",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -261,7 +261,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 }
 
 func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) resources.ScriptCollection {
+	pubIplb, privateIPlb, token string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -269,7 +269,7 @@ func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[1..N] with CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -299,7 +299,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 }
 
 func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) resources.ScriptCollection {
+	pubIplb, privateIPlb, token string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
@@ -307,7 +307,7 @@ func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Start K3s Controlplane-[1..N] without CNI",
 		MaxRetries:     9,
 		CanRetry:       true,

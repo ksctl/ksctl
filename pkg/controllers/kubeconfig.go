@@ -3,9 +3,11 @@ package controllers
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func printKubeConfig(path string) {
+func printKubeConfig(log types.LoggerFactory, path string) {
 	key := ""
 	box := ""
 	switch runtime.GOOS {
@@ -16,5 +18,5 @@ func printKubeConfig(path string) {
 	}
 
 	box = key + "=" + fmt.Sprintf("\"%s\"", path)
-	log.Box("KUBECONFIG env var", box)
+	log.Box(controllerCtx, "KUBECONFIG env var", box)
 }

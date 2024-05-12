@@ -4,13 +4,10 @@ import (
 	"errors"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func validationFields(meta resources.Metadata) error {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName("ksctl-manager")
+func validationFields(meta types.Metadata) error {
 
 	if !helpers.ValidateCloud(meta.Provider) {
 		return errors.New("invalid cloud provider")
@@ -21,6 +18,5 @@ func validationFields(meta resources.Metadata) error {
 	if !helpers.ValidateStorage(meta.StateLocation) {
 		return errors.New("invalid storage driver")
 	}
-	log.Debug("Valid fields from user")
 	return nil
 }

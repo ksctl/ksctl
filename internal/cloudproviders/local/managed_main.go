@@ -7,11 +7,11 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelManagedCluster implements resources.CloudFactory.
-func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) error {
+// DelManagedCluster implements types.CloudFactory.
+func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) error {
 
 	cloud.client.NewProvider(log, storage, nil)
 	if len(cloud.Metadata.tempDirKubeconfig) == 0 {
@@ -31,18 +31,18 @@ func (cloud *LocalProvider) DelManagedCluster(storage resources.StorageFactory) 
 
 	if err := cloud.client.Delete(cloud.ClusterName,
 		cloud.Metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig"); err != nil {
-		return log.NewError("failed to delete cluster %v", err)
+		return log.NewError(localCtx, "failed to delete cluster", "Reason", err)
 	}
 
 	if err := storage.DeleteCluster(); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	return nil
 }
 
-// NewManagedCluster implements resources.CloudFactory.
-func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, noOfNodes int) error {
+// NewManagedCluster implements types.CloudFactory.
+func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 
 	cloud.client.NewProvider(log, storage, nil)
 
@@ -53,7 +53,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 
 	withConfig, err := configOption(noOfNodes, cni)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.Metadata.Version
@@ -69,10 +69,10 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 	ConfigHandler := func() string {
 		path, err := createNecessaryConfigs(cloud.tempDirKubeconfig)
 		if err != nil {
-			log.Error("rollback Cannot continue 😢")
+			log.Error(localCtx, "rollback Cannot continue 😢")
 			err = cloud.DelManagedCluster(storage)
 			if err != nil {
-				log.Error(err.Error())
+				log.Error(localCtx, "failed to perform cleanup", "Reason", err)
 				return "" // asumming it never comes here
 			}
 		}
@@ -81,7 +81,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 	Image := "kindest/node:v" + mainStateDocument.CloudInfra.Local.B.KubernetesVer
 
 	if err := cloud.client.Create(cloud.ClusterName, withConfig, Image, Wait, ConfigHandler); err != nil {
-		return log.NewError("failed to create cluster", "err", err)
+		return log.NewError(localCtx, "failed to create cluster", "err", err)
 	}
 
 	path := cloud.tempDirKubeconfig + helpers.PathSeparator + "kubeconfig"
@@ -94,7 +94,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage resources.StorageFactory, 
 		return err
 	}
 
-	log.Debug("kubeconfig", "kubeconfigTempPath", path)
+	log.Debug(localCtx, "kubeconfig", "kubeconfigTempPath", path)
 
 	mainStateDocument.ClusterKubeConfig = string(data)
 	mainStateDocument.CloudInfra.Local.B.IsCompleted = true

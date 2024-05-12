@@ -2,12 +2,12 @@ package helpers
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
 	"testing"
 )
 
-func HelperTestTemplate(t *testing.T, testData []resources.Script, f func() resources.ScriptCollection) {
+func HelperTestTemplate(t *testing.T, testData []types.Script, f func() types.ScriptCollection) {
 
 	var expectedScripts *helpers.Scripts = func() *helpers.Scripts {
 		o := helpers.NewScriptCollection()

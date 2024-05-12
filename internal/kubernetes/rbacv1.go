@@ -21,10 +21,10 @@ func (k *Kubernetes) clusterRoleApply(o *rbacv1.ClusterRole) error {
 				ClusterRoles().
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "clusterrole apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "clusterrole apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -37,7 +37,7 @@ func (k *Kubernetes) clusterRoleDelete(o *rbacv1.ClusterRole) error {
 		ClusterRoles().
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "clusterrole delete failed", "Reason", err)
 	}
 	return nil
 }
@@ -49,7 +49,7 @@ func (k *Kubernetes) clusterRoleBindingDelete(o *rbacv1.ClusterRoleBinding) erro
 		ClusterRoleBindings().
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "clusterrolebinding delete failed", "Reason", err)
 	}
 	return nil
 }
@@ -67,10 +67,10 @@ func (k *Kubernetes) clusterRoleBindingApply(o *rbacv1.ClusterRoleBinding) error
 				ClusterRoleBindings().
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "clusterrolebinding apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "clusterrolebinding apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -83,7 +83,7 @@ func (k *Kubernetes) roleDelete(o *rbacv1.Role) error {
 		Roles(o.Namespace).
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "role delete failed", "Reason", err)
 	}
 	return nil
 }
@@ -102,10 +102,10 @@ func (k *Kubernetes) roleApply(o *rbacv1.Role) error {
 				Roles(ns).
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "role apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "role apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -125,10 +125,10 @@ func (k *Kubernetes) roleBindingApply(o *rbacv1.RoleBinding) error {
 				RoleBindings(ns).
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "rolebinding apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "rolebinding apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -142,7 +142,7 @@ func (k *Kubernetes) roleBindingDelete(o *rbacv1.RoleBinding) error {
 		RoleBindings(ns).
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "rolebinding delete failed", "Reason", err)
 	}
 	return nil
 }

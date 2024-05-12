@@ -1,31 +1,30 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"golang.org/x/term"
 )
 
-func UserInputCredentials(logging resources.LoggerFactory) (string, error) {
+func UserInputCredentials(ctx context.Context, logging types.LoggerFactory) (string, error) {
 
-	logging.Print("Enter Secret-> ")
+	logging.Print(ctx, "Enter Secret")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
 	if len(bytePassword) == 0 {
-		logging.Error("Empty secret passed!")
-		return UserInputCredentials(logging)
+		logging.Error(ctx, "Empty secret passed!")
+		return UserInputCredentials(ctx, logging)
 	}
-	logging.Print("\n")
 	return strings.TrimSpace(string(bytePassword)), nil
 }
 
@@ -82,20 +81,20 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 }
 
-func IsValidName(clusterName string) error {
+func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName string) error {
 	if len(clusterName) > 50 {
-		return fmt.Errorf("name is too long\tname: %s", clusterName)
+		return log.NewError(ctx, "name is too long", "name", clusterName)
 	}
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
 
 	if !matched || err != nil {
-		return fmt.Errorf("CLUSTER NAME INVALID")
+		return log.NewError(ctx, "invalid cluster-name")
 	}
 
 	return nil
 }
 
-func IsValidVersion(ver string) error {
+func IsValidVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
 	if ver == "latest" || ver == "stable" {
 		return nil
 	}
@@ -104,22 +103,22 @@ func IsValidVersion(ver string) error {
 	patternWithVPrefix := `^v\d+(\.\d{1,2}){0,2}$`
 	matchStringWithoutVPrefix, err := regexp.MatchString(patternWithoutVPrefix, ver)
 	if err != nil {
-		return fmt.Errorf("failed to compile argo-rollouts regex. %v", err)
+		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
 	}
 	matchStringWithVPrefix, err := regexp.MatchString(patternWithVPrefix, ver)
 	if err != nil {
-		return fmt.Errorf("failed to compile argo-rollouts regex. %v", err)
+		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
 	}
 
 	if !matchStringWithoutVPrefix && !matchStringWithVPrefix {
-		return fmt.Errorf("version `%s` is not valid", ver)
+		return log.NewError(ctx, "invalid version", "version", ver)
 	}
 	return nil
 }
 
-func ToApplicationTempl(apps []string) ([]types.Application, error) {
+func ToApplicationTempl(apps []string) ([]storageTypes.Application, error) {
 
-	_apps := make([]types.Application, 0)
+	_apps := make([]storageTypes.Application, 0)
 	for _, app := range apps {
 
 		temp := strings.Split(app, "@")
@@ -129,12 +128,12 @@ func ToApplicationTempl(apps []string) ([]types.Application, error) {
 		}
 		if len(temp) == 1 {
 			// version was not specified
-			_apps = append(_apps, types.Application{
+			_apps = append(_apps, storageTypes.Application{
 				Name:    temp[0],
 				Version: "latest",
 			})
 		} else {
-			_apps = append(_apps, types.Application{
+			_apps = append(_apps, storageTypes.Application{
 				Name:    temp[0],
 				Version: temp[1],
 			})

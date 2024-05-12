@@ -1,12 +1,13 @@
 package kubernetes
 
 import (
+	"context"
 	"strings"
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -14,29 +15,29 @@ import (
 )
 
 type Kubernetes struct {
-	Metadata            resources.Metadata
-	StorageDriver       resources.StorageFactory
+	storageDriver       types.StorageFactory
 	config              *rest.Config
 	clientset           *kubernetes.Clientset
 	apiextensionsClient *clientset.Clientset
 	helmClient          *HelmClient
-	InCluster           bool
+	inCluster           bool
 }
 
 var (
-	log resources.LoggerFactory
+	log           types.LoggerFactory
+	kubernetesCtx context.Context
 )
 
 func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
 	nodes, err := k.nodesList()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	kNodeName := ""
 	for _, node := range nodes.Items {
-		log.Debug("string compariazion", "nodeToDelete", nodeName, "kubernetesNodeName", node.Name)
+		log.Debug(kubernetesCtx, "string compariazion", "nodeToDelete", nodeName, "kubernetesNodeName", node.Name)
 		if strings.HasPrefix(node.Name, nodeName) {
 			kNodeName = node.Name
 			break
@@ -44,19 +45,23 @@ func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	}
 
 	if len(kNodeName) == 0 {
-		return log.NewError("Not found!")
+		return log.NewError(kubernetesCtx, "node not found!")
 	}
 	err = k.nodeDelete(kNodeName)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
-	log.Success("Deleted Node", "name", kNodeName)
+	log.Success(kubernetesCtx, "Deleted Node", "name", kNodeName)
 	return nil
 }
 
-func (k *Kubernetes) NewInClusterClient() (err error) {
-	log = logger.NewDefaultLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
-	log.SetPackageName("kubernetes-client")
+func NewInClusterClient(parentCtx context.Context, parentLog types.LoggerFactory, storage types.StorageFactory) (k *Kubernetes, err error) {
+	kubernetesCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "kubernetes-client")
+	log = parentLog
+
+	k = &Kubernetes{
+		storageDriver: storage,
+	}
 
 	k.config, err = rest.InClusterConfig()
 	if err != nil {
@@ -77,16 +82,20 @@ func (k *Kubernetes) NewInClusterClient() (err error) {
 	if err = k.helmClient.NewInClusterHelmClient(); err != nil {
 		return
 	}
-	k.InCluster = true // it helps us to identify if we are inside the cluster or not
+	k.inCluster = true // it helps us to identify if we are inside the cluster or not
 
 	initApps()
 
-	return nil
+	return k, nil
 }
 
-func (k *Kubernetes) NewKubeconfigClient(kubeconfig string) (err error) {
-	log = logger.NewDefaultLogger(k.Metadata.LogVerbosity, k.Metadata.LogWritter)
-	log.SetPackageName("kubernetes-client")
+func NewKubeconfigClient(parentCtx context.Context, parentLog types.LoggerFactory, storage types.StorageFactory, kubeconfig string) (k *Kubernetes, err error) {
+	kubernetesCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "kubernetes-client")
+	log = parentLog
+
+	k = &Kubernetes{
+		storageDriver: storage,
+	}
 
 	rawKubeconfig := []byte(kubeconfig)
 
@@ -114,5 +123,5 @@ func (k *Kubernetes) NewKubeconfigClient(kubeconfig string) (err error) {
 
 	initApps()
 
-	return nil
+	return k, nil
 }

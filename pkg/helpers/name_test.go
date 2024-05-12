@@ -1,6 +1,9 @@
 package helpers
 
 import (
+	"context"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"os"
 	"regexp"
 	"testing"
 )
@@ -13,7 +16,7 @@ func FuzzName(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, name string) {
-		outErr := IsValidName(name)
+		outErr := IsValidName(context.TODO(), logger.NewStructuredLogger(-1, os.Stdout), name)
 		t.Logf("name: %s and err: %v", name, outErr)
 		matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, name)
 

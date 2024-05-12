@@ -6,36 +6,36 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// JoinWorkerplane implements resources.DistroFactory.
-func (k3s *K3s) JoinWorkerplane(no int, _ resources.StorageFactory) error {
+// JoinWorkerplane implements storage.DistroFactory.
+func (k3s *K3s) JoinWorkerplane(no int, _ types.StorageFactory) error {
 	k3s.mu.Lock()
 	idx := no
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(k3sCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	k3s.mu.Unlock()
 
-	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
+	log.Print(k3sCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
-		FastMode(true).SSHExecute(log)
+		FastMode(true).SSHExecute()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("configured WorkerPlane", "number", strconv.Itoa(idx))
+	log.Success(k3sCtx, "configured WorkerPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }
 
-func scriptWP(ver string, privateIPlb, token string) resources.ScriptCollection {
+func scriptWP(ver string, privateIPlb, token string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Join the workerplane-[0..M]",
 		CanRetry:       true,
 		MaxRetries:     3,

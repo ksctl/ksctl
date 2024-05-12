@@ -1,4 +1,4 @@
-package types
+package storage
 
 type AzureStateVMs struct {
 	Names                    []string `json:"names" bson:"names"`

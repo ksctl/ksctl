@@ -9,22 +9,17 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// Sequence
-// creation
-// 1. PublicIP
-// 2. Network Interface
-// 3. Disk
-// 4. VM
+// NOTE: here we might need to define another ctx var for each function
+// make sure that is passed instead of azureCtx
 
-// DelVM implements resources.CloudFactory.
-func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) error {
+func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
 	role := <-obj.chRole
 	indexNo := index
 
-	log.Debug("Printing", "role", role, "indexNo", indexNo)
+	log.Debug(azureCtx, "Printing", "role", role, "indexNo", indexNo)
 
 	vmName := ""
 	switch role {
@@ -39,7 +34,7 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 	}
 
 	if len(vmName) == 0 {
-		log.Print("skipped vm already deleted")
+		log.Print(azureCtx, "skipped vm already deleted")
 	} else {
 
 		var errDel error //just to make sure its nil
@@ -51,9 +46,9 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 				errDel = err
 				return
 			}
-			log.Print("deleting vm...", "name", vmName)
+			log.Print(azureCtx, "deleting vm...", "name", vmName)
 
-			_, err = obj.client.PollUntilDoneDelVM(ctx, pollerResponse, nil)
+			_, err = obj.client.PollUntilDoneDelVM(azureCtx, pollerResponse, nil)
 			if err != nil {
 				errDel = err
 				return
@@ -84,45 +79,45 @@ func (obj *AzureProvider) DelVM(storage resources.StorageFactory, index int) err
 		}()
 		<-donePoll
 		if errDel != nil {
-			return log.NewError(errDel.Error())
+			return errDel
 		}
-		log.Success("Deleted the vm", "name", vmName)
+		log.Success(azureCtx, "Deleted the vm", "name", vmName)
 
 	}
 
-	if err := obj.DeleteDisk(ctx, storage, indexNo, role); err != nil {
-		return log.NewError(err.Error())
+	if err := obj.DeleteDisk(azureCtx, storage, indexNo, role); err != nil {
+		return err
 	}
 
-	if err := obj.DeleteNetworkInterface(ctx, storage, indexNo, role); err != nil {
-		return log.NewError(err.Error())
+	if err := obj.DeleteNetworkInterface(azureCtx, storage, indexNo, role); err != nil {
+		return err
 	}
 
-	if err := obj.DeletePublicIP(ctx, storage, indexNo, role); err != nil {
-		return log.NewError(err.Error())
+	if err := obj.DeletePublicIP(azureCtx, storage, indexNo, role); err != nil {
+		return err
 	}
 
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
+	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 
 	return nil
 }
 
-// NewVM implements resources.CloudFactory.
-func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) error {
+// NewVM implements types.CloudFactory.
+func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 	name := <-obj.chResName
 	indexNo := index
 	role := <-obj.chRole
 	vmtype := <-obj.chVMType
 
-	log.Debug("Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
+	log.Debug(azureCtx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
 	pubIPName := name + "-pub"
 	nicName := name + "-nic"
 	diskName := name + "-disk"
-	log.Debug("Printing", "pubIPName", pubIPName, "NICName", nicName, "diskName", diskName)
+	log.Debug(azureCtx, "Printing", "pubIPName", pubIPName, "NICName", nicName, "diskName", diskName)
 
-	if err := obj.CreatePublicIP(ctx, storage, pubIPName, indexNo, role); err != nil {
-		return log.NewError(err.Error())
+	if err := obj.CreatePublicIP(azureCtx, storage, pubIPName, indexNo, role); err != nil {
+		return err
 	}
 
 	pubIPID := ""
@@ -143,13 +138,12 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		pubIPID = mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPIDs[indexNo]
 	}
 
-	log.Debug("Printing", "PubIP_id", pubIPID, "NsgID", nsgID)
+	log.Debug(azureCtx, "Printing", "PubIP_id", pubIPID, "NsgID", nsgID)
 
-	if err := obj.CreateNetworkInterface(ctx, storage, nicName, mainStateDocument.CloudInfra.Azure.SubnetID, pubIPID, nsgID, indexNo, role); err != nil {
-		return log.NewError(err.Error())
+	if err := obj.CreateNetworkInterface(azureCtx, storage, nicName, mainStateDocument.CloudInfra.Azure.SubnetID, pubIPID, nsgID, indexNo, role); err != nil {
+		return err
 	}
 
-	// NOTE: check if the VM is already created
 	vmName := ""
 	switch role {
 	case consts.RoleCp:
@@ -162,7 +156,7 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 		vmName = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names[indexNo]
 	}
 	if len(vmName) != 0 {
-		log.Print("skipped vm already created", "name", vmName)
+		log.Print(azureCtx, "skipped vm already created", "name", vmName)
 		return nil
 	}
 
@@ -177,14 +171,14 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	case consts.RoleDs:
 		netInterfaceID = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceIDs[indexNo]
 	}
-	log.Debug("Printing", "netInterfaceID", netInterfaceID)
+	log.Debug(azureCtx, "Printing", "netInterfaceID", netInterfaceID)
 
 	initScript, err := helpers.GenerateInitScriptForVM(name)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Debug("initscript", "script", initScript)
+	log.Debug(azureCtx, "initscript", "script", initScript)
 
 	parameters := armcompute.VirtualMachine{
 		Location: to.Ptr(obj.region),
@@ -237,13 +231,12 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 			},
 		},
 	}
-	log.Debug("Printing", "VMConfig", parameters)
+	log.Debug(azureCtx, "Printing", "VMConfig", parameters)
 
 	pollerResponse, err := obj.client.BeginCreateVM(name, parameters, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
-	// NOTE: Add the entry for name before polling starts so that state is present
 	done := make(chan struct{})
 	var errCreateVM error
 	go func() {
@@ -270,16 +263,16 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 
 	<-done
 	if errCreateVM != nil {
-		return log.NewError(errCreateVM.Error())
+		return errCreateVM
 	}
-	log.Print("creating vm...", "name", name)
+	log.Print(azureCtx, "creating vm...", "name", name)
 
 	errCreateVM = nil //just to make sure its nil
 	donePoll := make(chan struct{})
 	go func() {
 		defer close(donePoll)
 
-		resp, err := obj.client.PollUntilDoneCreateVM(ctx, pollerResponse, nil)
+		resp, err := obj.client.PollUntilDoneCreateVM(azureCtx, pollerResponse, nil)
 		if err != nil {
 			errCreateVM = err
 			return
@@ -319,15 +312,15 @@ func (obj *AzureProvider) NewVM(storage resources.StorageFactory, index int) err
 	}()
 	<-donePoll
 	if errCreateVM != nil {
-		return log.NewError(errCreateVM.Error())
+		return errCreateVM
 	}
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
+	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 
-	log.Success("Created virtual machine", "name", name)
+	log.Success(azureCtx, "Created virtual machine", "name", name)
 	return nil
 }
 
-func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
 	diskName := ""
 	// pass the role
 	switch role {
@@ -341,7 +334,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		diskName = mainStateDocument.CloudInfra.Azure.InfoDatabase.DiskNames[index]
 	}
 	if len(diskName) == 0 {
-		log.Print("skipped disk already deleted")
+		log.Print(azureCtx, "skipped disk already deleted")
 		return nil
 	}
 
@@ -349,7 +342,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 	if err != nil {
 		return err
 	}
-	log.Print("Deleting the disk..", "name", diskName)
+	log.Print(azureCtx, "Deleting the disk..", "name", diskName)
 
 	// NOTE: Add the entry for name before polling starts so that state is present
 
@@ -385,12 +378,12 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage resources.Stor
 		return errDelete
 	}
 
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
-	log.Success("Deleted disk", "name", diskName)
+	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
+	log.Success(azureCtx, "Deleted disk", "name", diskName)
 	return nil
 }
 
-func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.StorageFactory, publicIPName string, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.StorageFactory, publicIPName string, index int, role consts.KsctlRole) error {
 
 	publicIP := ""
 	switch role {
@@ -405,7 +398,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	}
 
 	if len(publicIP) != 0 {
-		log.Print("skipped pub ip already created", "name", publicIP)
+		log.Print(azureCtx, "skipped pub ip already created", "name", publicIP)
 		return nil
 	}
 
@@ -416,7 +409,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		},
 	}
 
-	log.Debug("Printing", "PublicIPConfig", parameters)
+	log.Debug(azureCtx, "Printing", "PublicIPConfig", parameters)
 
 	pollerResponse, err := obj.client.BeginCreatePubIP(publicIPName, parameters, nil)
 	if err != nil {
@@ -450,7 +443,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 	if errCreate != nil {
 		return errCreate
 	}
-	log.Print("creating the pubip..", "name", publicIPName)
+	log.Print(azureCtx, "creating the pubip..", "name", publicIPName)
 
 	var errCreatePub error //just to make sure its nil
 	donePoll := make(chan struct{})
@@ -490,12 +483,12 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage resources.
 		return errCreatePub
 	}
 
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
-	log.Success("Created public IP address", "name", publicIPName)
+	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
+	log.Success(azureCtx, "Created public IP address", "name", publicIPName)
 	return nil
 }
 
-func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
 
 	publicIP := ""
 	switch role {
@@ -510,7 +503,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 	}
 
 	if len(publicIP) == 0 {
-		log.Print("skipped pub ip already deleted")
+		log.Print(azureCtx, "skipped pub ip already deleted")
 		return nil
 	}
 
@@ -518,7 +511,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 	if err != nil {
 		return err
 	}
-	log.Print("Deleting the pubip..", "name", publicIP)
+	log.Print(azureCtx, "Deleting the pubip..", "name", publicIP)
 
 	// NOTE: Add the entry for name before polling starts so that state is present
 
@@ -563,12 +556,12 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage resources.
 		return errDelPub
 	}
 
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
-	log.Success("Deleted the pub IP", "name", publicIP)
+	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
+	log.Success(azureCtx, "Deleted the pub IP", "name", publicIP)
 	return nil
 }
 
-func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage resources.StorageFactory,
+func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage types.StorageFactory,
 	nicName string, subnetID string, publicIPID string, networkSecurityGroupID string, index int, role consts.KsctlRole) error {
 
 	interfaceName := ""
@@ -583,7 +576,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		interfaceName = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[index]
 	}
 	if len(interfaceName) != 0 {
-		log.Print("skipped network interface already created", "name", interfaceName)
+		log.Print(azureCtx, "skipped network interface already created", "name", interfaceName)
 		return nil
 	}
 
@@ -610,7 +603,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 		},
 	}
 
-	log.Debug("Printing", "netInterfaceConfig", parameters)
+	log.Debug(azureCtx, "Printing", "netInterfaceConfig", parameters)
 
 	pollerResponse, err := obj.client.BeginCreateNIC(nicName, parameters, nil)
 	if err != nil {
@@ -644,7 +637,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	if errCreate != nil {
 		return errCreate
 	}
-	log.Print("Creating the network interface...", "name", nicName)
+	log.Print(azureCtx, "Creating the network interface...", "name", nicName)
 
 	var errCreatenic error //just to make sure its nil
 	donePoll := make(chan struct{})
@@ -684,13 +677,13 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage re
 	if errCreatenic != nil {
 		return errCreatenic
 	}
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
+	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 
-	log.Success("Created network interface", "name", nicName)
+	log.Success(azureCtx, "Created network interface", "name", nicName)
 	return nil
 }
 
-func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage resources.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
 	interfaceName := ""
 	switch role {
 	case consts.RoleWp:
@@ -703,7 +696,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 		interfaceName = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[index]
 	}
 	if len(interfaceName) == 0 {
-		log.Print("skipped network interface already deleted")
+		log.Print(azureCtx, "skipped network interface already deleted")
 		return nil
 	}
 
@@ -711,7 +704,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 	if err != nil {
 		return err
 	}
-	log.Print("Deleting the network interface...", "name", interfaceName)
+	log.Print(azureCtx, "Deleting the network interface...", "name", interfaceName)
 
 	// NOTE: Add the entry for name before polling starts so that state is present
 
@@ -755,9 +748,9 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage re
 	if errDelnic != nil {
 		return errDelnic
 	}
-	log.Debug("Printing", "mainStateDocument", mainStateDocument)
+	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 
-	log.Success("Deleted the network interface", "name", interfaceName)
+	log.Success(azureCtx, "Deleted the network interface", "name", interfaceName)
 
 	return nil
 }

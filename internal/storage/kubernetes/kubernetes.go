@@ -5,18 +5,16 @@ import (
 	"encoding/json"
 	defaultError "errors"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
 
-	"io"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,7 +30,10 @@ type Store struct {
 	clientSet ClientSet
 }
 
-var log resources.LoggerFactory
+var (
+	log      types.LoggerFactory
+	storeCtx context.Context
+)
 
 var K8S_NAMESPACE string = "ksctl"
 
@@ -48,13 +49,13 @@ func copyStore(src *Store, dest *Store) {
 	dest.region = src.region
 }
 
-func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.StorageStateExportImport, error) {
+func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.StorageStateExportImport, error) {
 
 	var cpyS *Store = s
 	copyStore(s, cpyS)       // for storing the state of the store before import was called!
 	defer copyStore(cpyS, s) // for restoring the state of the store before import was called!
 
-	dest := new(resources.StorageStateExportImport)
+	dest := new(types.StorageStateExportImport)
 
 	_cloud := filters[consts.Cloud]
 	_clusterType := filters[consts.ClusterType]
@@ -113,7 +114,7 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*resources.
 	return dest, nil
 }
 
-func (s *Store) Import(src *resources.StorageStateExportImport) error {
+func (s *Store) Import(src *types.StorageStateExportImport) error {
 	creds := src.Credentials
 	states := src.Clusters
 
@@ -127,7 +128,7 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 		clusterName := state.ClusterName
 		clusterType := consts.KsctlClusterType(state.ClusterType)
 
-		log.Debug("key fields of state", "cloud", cloud, "region", region, "clusterName", clusterName, "clusterType", clusterType)
+		log.Debug(storeCtx, "key fields of state", "cloud", cloud, "region", region, "clusterName", clusterName, "clusterType", clusterType)
 
 		if err := s.Setup(cloud, region, clusterName, clusterType); err != nil {
 			return err
@@ -144,7 +145,7 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 		}
 		cloud := cred.InfraProvider
 
-		log.Debug("key fields of cred", "cloud", cloud)
+		log.Debug(storeCtx, "key fields of cred", "cloud", cloud)
 		if err := s.WriteCredentials(cloud, cred); err != nil {
 			return err
 		}
@@ -153,9 +154,9 @@ func (s *Store) Import(src *resources.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(logVerbosity int, logWriter io.Writer) resources.StorageFactory {
-	log = logger.NewDefaultLogger(logVerbosity, logWriter)
-	log.SetPackageName(string(consts.StoreK8s))
+func InitStorage(parentCtx context.Context, _log types.LoggerFactory) types.StorageFactory {
+	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreK8s))
+	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 }
 
@@ -176,7 +177,7 @@ func (db *Store) Connect(ctx context.Context) error {
 		return err
 	}
 
-	log.Success("CONN to k8s configmap")
+	log.Success(storeCtx, "CONN to k8s configmap")
 
 	return nil
 }
@@ -187,21 +188,21 @@ func (db *Store) disconnect() error {
 
 func (db *Store) Kill() error {
 	db.wg.Wait()
-	defer log.Success("K8s Storage Got Killed")
+	defer log.Success(storeCtx, "K8s Storage Got Killed")
 
 	return db.disconnect()
 }
 
-func (db *Store) Read() (*types.StorageDocument, error) {
+func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.kubernetes.Read", "Store", db)
+	log.Debug(storeCtx, "storage.kubernetes.Read", "Store", db)
 
 	if c, ok := db.isPresent(); ok {
-		var result *types.StorageDocument
+		var result *storageTypes.StorageDocument
 		raw := c.BinaryData[helperGenerateKeyForState(db)]
 
 		if err := json.Unmarshal(raw, &result); err != nil {
@@ -210,19 +211,19 @@ func (db *Store) Read() (*types.StorageDocument, error) {
 
 		return result, nil
 	}
-	return nil, log.NewError("cluster not present")
+	return nil, log.NewError(storeCtx, "cluster not present")
 }
 
-func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*types.CredentialsDocument, error) {
+func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.CredentialsDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.kubernetes.ReadCreds", "Store", db)
+	log.Debug(storeCtx, "storage.kubernetes.ReadCreds", "Store", db)
 
 	if c, err := db.isPresentCreds(string(cloud)); err == nil {
-		var result *types.CredentialsDocument
+		var result *storageTypes.CredentialsDocument
 		raw := c.Data[string(cloud)]
 
 		if _err := json.Unmarshal(raw, &result); _err != nil {
@@ -263,13 +264,13 @@ func generateConfigMap(name string, namespace string) *v1.ConfigMap {
 	}
 }
 
-func (db *Store) Write(data *types.StorageDocument) error {
+func (db *Store) Write(data *storageTypes.StorageDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.kubernetes.Write", "Store", db)
+	log.Debug(storeCtx, "storage.kubernetes.Write", "Store", db)
 
 	raw, err := json.Marshal(data)
 	if err != nil {
@@ -277,7 +278,7 @@ func (db *Store) Write(data *types.StorageDocument) error {
 	}
 
 	if c, ok := db.isPresent(); ok {
-		log.Debug("configmap for write was found")
+		log.Debug(storeCtx, "configmap for write was found")
 		if c.BinaryData == nil {
 			c.BinaryData = make(map[string][]byte)
 		}
@@ -288,7 +289,7 @@ func (db *Store) Write(data *types.StorageDocument) error {
 		}
 		return nil
 	}
-	log.Debug("configmap for write was not found")
+	log.Debug(storeCtx, "configmap for write was not found")
 	c := generateConfigMap(K8S_STATE_NAME, K8S_NAMESPACE)
 	c.BinaryData[helperGenerateKeyForState(db)] = raw
 
@@ -298,13 +299,13 @@ func (db *Store) Write(data *types.StorageDocument) error {
 	return nil
 }
 
-func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.CredentialsDocument) error {
+func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *storageTypes.CredentialsDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.kubernetes.WriteCreds", "Store", db)
+	log.Debug(storeCtx, "storage.kubernetes.WriteCreds", "Store", db)
 
 	raw, err := json.Marshal(data)
 	if err != nil {
@@ -313,7 +314,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.Credentia
 
 	if c, err := db.isPresentCreds(string(cloud)); err == nil {
 
-		log.Debug("secret for write was found")
+		log.Debug(storeCtx, "secret for write was found")
 		if c.Data == nil {
 			c.Data = make(map[string][]byte)
 		}
@@ -329,7 +330,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *types.Credentia
 		}
 	}
 
-	log.Debug("secret for write was not found")
+	log.Debug(storeCtx, "secret for write was not found")
 	c := generateSecret(K8S_CREDENTIAL_NAME, K8S_NAMESPACE)
 
 	c.Data[string(cloud)] = raw
@@ -345,17 +346,17 @@ func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clus
 	case consts.CloudAws, consts.CloudAzure, consts.CloudCivo, consts.CloudLocal:
 		db.cloudProvider = string(cloud)
 	default:
-		return log.NewError("invalid cloud")
+		return log.NewError(storeCtx, "invalid cloud")
 	}
 	if clusterType != consts.ClusterTypeHa && clusterType != consts.ClusterTypeMang {
-		return log.NewError("invalid cluster type")
+		return log.NewError(storeCtx, "invalid cluster type")
 	}
 
 	db.clusterName = clusterName
 	db.region = region
 	db.clusterType = string(clusterType)
 
-	log.Debug("storage.kubernetes.Setup", "Store", db)
+	log.Debug(storeCtx, "storage.kubernetes.Setup", "Store", db)
 	return nil
 }
 
@@ -365,10 +366,10 @@ func (db *Store) DeleteCluster() error {
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	log.Debug("storage.kubernetes.Delete", "Store", db)
+	log.Debug(storeCtx, "storage.kubernetes.Delete", "Store", db)
 
 	if c, ok := db.isPresent(); !ok {
-		return log.NewError("cluster doesn't exist")
+		return log.NewError(storeCtx, "cluster doesn't exist")
 	} else {
 		delete(c.BinaryData, helperGenerateKeyForState(db))
 		_, err := db.clientSet.WriteConfigMap(K8S_NAMESPACE, c, metav1.UpdateOptions{})
@@ -386,7 +387,7 @@ func helperGenerateKeyForState(db *Store) string {
 func (db *Store) isPresent() (*v1.ConfigMap, bool) {
 	c, err := db.clientSet.ReadConfigMap(K8S_NAMESPACE, K8S_STATE_NAME, metav1.GetOptions{})
 	if err != nil {
-		log.Error("storage.kubernetes.isPresent", "err", err)
+		log.Debug(storeCtx, "storage.kubernetes.isPresent", "err", err)
 		//if errors.IsNotFound(err) {
 		//	return nil, false
 		//}
@@ -408,7 +409,7 @@ func (db *Store) isPresentCreds(cloud string) (*v1.Secret, error) {
 
 func (db *Store) clusterPresent() error {
 	if _, ok := db.isPresent(); !ok {
-		return log.NewError("cluster not present")
+		return log.NewError(storeCtx, "cluster not present")
 	}
 	return nil
 }
@@ -427,7 +428,7 @@ func (db *Store) AlreadyCreated(cloud consts.KsctlCloud, region, clusterName str
 	return db.clusterPresent()
 }
 
-func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*types.StorageDocument, error) {
+func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*storageTypes.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.wg.Add(1)
@@ -464,9 +465,9 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 	case "":
 		filterClusterType = append(filterClusterType, string(consts.ClusterTypeMang), string(consts.ClusterTypeHa))
 	}
-	log.Debug("storage.kubernetes.GetOneOrMoreClusters", "filter", filters, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
+	log.Debug(storeCtx, "storage.kubernetes.GetOneOrMoreClusters", "filter", filters, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
 
-	clustersInfo := make(map[consts.KsctlClusterType][]*types.StorageDocument)
+	clustersInfo := make(map[consts.KsctlClusterType][]*storageTypes.StorageDocument)
 
 	c, err := db.clientSet.ReadConfigMap(K8S_NAMESPACE, K8S_STATE_NAME, metav1.GetOptions{})
 	if err != nil {
@@ -475,13 +476,13 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 
 	data := c.BinaryData
 	// storageIdx will index all the required cloud providers and
-	storageIdx := make(map[string][]*types.StorageDocument)
+	storageIdx := make(map[string][]*storageTypes.StorageDocument)
 	for k, v := range data {
 		_data := strings.Split(k, ".")
 		_cloud := _data[0]
 		_type := _data[1]
 
-		var result *types.StorageDocument
+		var result *storageTypes.StorageDocument
 		err := json.Unmarshal(v, &result)
 		if err != nil {
 			return nil, err
@@ -495,7 +496,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 			clusters := storageIdx[cloud+" "+clusterType]
 
 			clustersInfo[consts.KsctlClusterType(clusterType)] = append(clustersInfo[consts.KsctlClusterType(clusterType)], clusters...)
-			log.Debug("storage.kubernetes.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
+			log.Debug(storeCtx, "storage.kubernetes.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
 		}
 	}
 

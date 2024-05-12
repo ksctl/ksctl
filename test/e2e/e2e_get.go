@@ -1,17 +1,16 @@
 package main
 
 import (
+	ksctlController "github.com/ksctl/ksctl/pkg/types/controllers"
 	"os"
-
-	"github.com/ksctl/ksctl/pkg/resources"
 )
 
-func getClusters(ksctlClient *resources.KsctlClient) {
-	l.Print("Exec ksctl get...")
+func getClusters(ksctlClient ksctlController.Controller) {
+	l.Print(ctx, "Exec ksctl get...")
 
-	err := ksctlManager.GetCluster(ksctlClient)
+	err := ksctlClient.GetCluster()
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }

@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
-	l.SetPackageName("e2e-tests")
+func GetReqPayload(l types.LoggerFactory) (Operation, types.Metadata) {
 	arg1 := flag.String("op", "", "operation to perform")
 	arg2 := flag.String("file", "", "file name as payload")
 
@@ -25,24 +24,16 @@ func GetReqPayload(l resources.LoggerFactory) (Operation, resources.Metadata) {
 
 	raw, err := os.ReadFile(*arg2)
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, err.Error())
 		os.Exit(1)
 	}
 
-	var payload resources.Metadata
+	var payload types.Metadata
 	err = json.Unmarshal(raw, &payload)
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, err.Error())
 		os.Exit(1)
 	}
-
-	verbosityLevel := 0
-	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
-		verbosityLevel = -1
-	}
-
-	payload.LogVerbosity = verbosityLevel
-	payload.LogWritter = os.Stdout
 
 	return Operation(*arg1), payload
 }

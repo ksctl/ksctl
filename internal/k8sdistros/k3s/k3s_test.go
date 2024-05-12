@@ -7,34 +7,40 @@ import (
 	"sync"
 	"testing"
 
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
 	testHelper "github.com/ksctl/ksctl/test/helpers"
 
 	"github.com/ksctl/ksctl/pkg/logger"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
-
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"gotest.tools/v3/assert"
 )
 
 var (
-	storeHA resources.StorageFactory
+	storeHA types.StorageFactory
 
 	fakeClient         *K3s
 	dir                = fmt.Sprintf("%s ksctl-k3s-test", os.TempDir())
 	fakeStateFromCloud cloudControlRes.CloudResourceState
+
+	parentCtx    context.Context     = context.TODO()
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
-func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.StorageFactory, m resources.Metadata, state *types.StorageDocument) *K3s {
+func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.StorageDocument) *K3s {
+
+	k3sCtx = parentCtx
+	log = parentLogger
 
 	mainStateDocument = state
-	mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{}
+	mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
 	var err error
-	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(log, x.PrivateIPv4DataStores)
+	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(parentCtx, parentLogger, x.PrivateIPv4DataStores)
 	if err != nil {
 		return nil
 	}
@@ -55,11 +61,9 @@ func NewClientHelper(x cloudControlRes.CloudResourceState, storage resources.Sto
 }
 
 func TestMain(m *testing.M) {
-	log = logger.NewDefaultLogger(-1, os.Stdout)
-	log.SetPackageName("k3s")
-	mainState := &types.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {
-		log.Error(err.Error())
+	mainState := &storageTypes.StorageDocument{}
+	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
+		log.Error(parentCtx, err.Error())
 		os.Exit(1)
 	}
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
@@ -85,23 +89,12 @@ func TestMain(m *testing.M) {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(fakeStateFromCloud, storeHA, resources.Metadata{
-		ClusterName:  "fake",
-		Region:       "fake",
-		Provider:     consts.CloudAzure,
-		IsHA:         true,
-		LogVerbosity: -1,
-		LogWritter:   os.Stdout,
-		NoCP:         7,
-		NoDS:         5,
-		NoWP:         10,
-		K8sDistro:    consts.K8sK3s,
-	}, &types.StorageDocument{})
+	fakeClient = NewClientHelper(fakeStateFromCloud, &storageTypes.StorageDocument{})
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
 
-	storeHA = localstate.InitStorage(-1, os.Stdout)
+	storeHA = localstate.InitStorage(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
 	_ = storeHA.Connect(context.TODO())
 
@@ -127,8 +120,11 @@ func TestK3sDistro_Version(t *testing.T) {
 		"1.27.0":  false,
 	}
 	for ver, expected := range forTesting {
-		if ok := isValidK3sVersion(ver); ok != expected {
-			t.Fatalf("Expected for %s as %v but got %v", ver, expected, ok)
+		err := isValidK3sVersion(ver)
+		got := err == nil
+
+		if got != expected {
+			t.Fatalf("Expected for %s as %v but got %v", ver, expected, got)
 		}
 	}
 }
@@ -152,7 +148,7 @@ func TestScriptsControlplane(t *testing.T) {
 
 				testHelper.HelperTestTemplate(
 					t,
-					[]resources.Script{
+					[]types.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[0] without CNI",
@@ -182,7 +178,7 @@ sudo ./control-setup.sh &>> ksctl.log
 `, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() resources.ScriptCollection { // Adjust the signature to match your needs
+					func() types.ScriptCollection { // Adjust the signature to match your needs
 						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
 					},
 				)
@@ -194,7 +190,7 @@ sudo ./control-setup.sh &>> ksctl.log
 			for i := 0; i < len(ver); i++ {
 				testHelper.HelperTestTemplate(
 					t,
-					[]resources.Script{
+					[]types.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[0] with CNI",
@@ -220,7 +216,7 @@ sudo ./control-setup.sh &>> ksctl.log
 `, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() resources.ScriptCollection { // Adjust the signature to match your needs
+					func() types.ScriptCollection { // Adjust the signature to match your needs
 						return scriptCP_1(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
 					},
 				)
@@ -236,7 +232,7 @@ sudo ./control-setup.sh &>> ksctl.log
 
 				testHelper.HelperTestTemplate(
 					t,
-					[]resources.Script{
+					[]types.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[1..N] without CNI",
@@ -266,7 +262,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 `, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() resources.ScriptCollection { // Adjust the signature to match your needs
+					func() types.ScriptCollection { // Adjust the signature to match your needs
 						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
 					},
 				)
@@ -278,7 +274,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 
 				testHelper.HelperTestTemplate(
 					t,
-					[]resources.Script{
+					[]types.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[1..N] with CNI",
@@ -306,7 +302,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 `, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() resources.ScriptCollection { // Adjust the signature to match your needs
+					func() types.ScriptCollection { // Adjust the signature to match your needs
 						return scriptCP_N(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
 					},
 				)
@@ -317,7 +313,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 	t.Run("get k3s token", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:           "Get k3s server token",
 					CanRetry:       false,
@@ -327,7 +323,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 `,
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptForK3sToken()
 			},
 		)
@@ -336,7 +332,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 	t.Run("get kubeconfig", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:           "k3s kubeconfig",
 					CanRetry:       false,
@@ -346,7 +342,7 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 `,
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptKUBECONFIG()
 			},
 		)
@@ -362,7 +358,7 @@ func TestSciprWorkerplane(t *testing.T) {
 	t.Run("get kubeconfig", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]resources.Script{
+			[]types.Script{
 				{
 					Name:           "Join the workerplane-[0..M]",
 					CanRetry:       true,
@@ -381,7 +377,7 @@ sudo ./worker-setup.sh &>> ksctl.log
 `, ver, token, private),
 				},
 			},
-			func() resources.ScriptCollection { // Adjust the signature to match your needs
+			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptWP(ver, private, token)
 			},
 		)

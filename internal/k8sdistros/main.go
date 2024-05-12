@@ -1,42 +1,44 @@
 package k8sdistros
 
 import (
+	"context"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
-	mainStateDocument *types.StorageDocument
-	log               resources.LoggerFactory
+	mainStateDocument *storageTypes.StorageDocument
+	log               types.LoggerFactory
+	bootstrapCtx      context.Context
 )
 
-func NewPreBootStrap(m resources.Metadata,
-	state *types.StorageDocument) resources.PreKubernetesBootstrap {
+func NewPreBootStrap(parentCtx context.Context, parentLog types.LoggerFactory,
+	state *storageTypes.StorageDocument) types.PreKubernetesBootstrap {
 
-	log = logger.NewDefaultLogger(m.LogVerbosity, m.LogWritter)
-	log.SetPackageName("bootstrap")
+	bootstrapCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "bootstrap")
+	log = parentLog
 
 	mainStateDocument = state
 	return &PreBootstrap{mu: &sync.Mutex{}}
 }
 
 func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState,
-	storage resources.StorageFactory, operation consts.KsctlOperation) error {
+	storage types.StorageFactory, operation consts.KsctlOperation) error {
 
 	if operation == consts.OperationCreate {
-		mainStateDocument.K8sBootstrap = &types.KubernetesBootstrapState{}
+		mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
 		var err error
 		mainStateDocument.K8sBootstrap.B.CACert,
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
 			mainStateDocument.K8sBootstrap.B.EtcdKey,
-			err = helpers.GenerateCerts(log, cloudState.PrivateIPv4DataStores)
+			err = helpers.GenerateCerts(bootstrapCtx, log, cloudState.PrivateIPv4DataStores)
 		if err != nil {
 			return err
 		}
@@ -65,11 +67,11 @@ func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState,
 	mainStateDocument.K8sBootstrap.B.SSHInfo = cloudState.SSHState
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError("failed to Initialized state from Cloud reason: %v", err)
+		return err
 	}
 
-	log.Debug("Printing", "k3sState", mainStateDocument)
+	log.Debug(bootstrapCtx, "Printing", "k3sState", mainStateDocument)
 
-	log.Print("Initialized state from Cloud")
+	log.Success(bootstrapCtx, "Initialized state from Cloud")
 	return nil
 }

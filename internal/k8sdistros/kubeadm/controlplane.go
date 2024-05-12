@@ -7,10 +7,10 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
+func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
 
 	installKubeadmTools := scriptTransferEtcdCerts(
 		scriptInstallKubeadmAndOtherTools(kubeadm.KubeadmVer),
@@ -18,38 +18,38 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecut
 		mainStateDocument.K8sBootstrap.B.EtcdCert,
 		mainStateDocument.K8sBootstrap.B.EtcdKey)
 
-	log.Print("Installing Kubeadm and copying etcd certificates")
+	log.Print(kubeadmCtx, "Installing Kubeadm and copying etcd certificates")
 	if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 		Script(installKubeadmTools).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		FastMode(true).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
-	log.Print("Fetching Kubeadm Bootstrap Certificate Key")
+	log.Print(kubeadmCtx, "Fetching Kubeadm Bootstrap Certificate Key")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 		Script(scriptGetCertificateKey()).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
 	mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	log.Debug("Printing", "CertificateKey", mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey)
+	log.Debug(kubeadmCtx, "Printing", "CertificateKey", mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey)
 
-	log.Print("Generating Kubeadm Bootstrap Token")
+	log.Print(kubeadmCtx, "Generating Kubeadm Bootstrap Token")
 
 	if v, err := generatebootstrapToken(); err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubeadmCtx, "failed to gen bootstrap token", "Reason", err)
 	} else {
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = v
-		log.Debug("Printing", "BootstrapToken", mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken)
+		log.Debug(kubeadmCtx, "Printing", "BootstrapToken", mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken)
 	}
 
-	log.Print("Configuring K8s cluster")
+	log.Print(kubeadmCtx, "Configuring K8s cluster")
 
 	configureControlPlane0 := scriptAddKubeadmControlplane0(
 		kubeadm.KubeadmVer,
@@ -63,40 +63,40 @@ func configureCP_1(storage resources.StorageFactory, kubeadm *Kubeadm, sshExecut
 		Script(configureControlPlane0).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		FastMode(true).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
-	log.Print("Fetching Discovery Token CA Cert Hash")
+	log.Print(kubeadmCtx, "Fetching Discovery Token CA Cert Hash")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 		Script(scriptDiscoveryTokenCACertHash()).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
 	mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	log.Debug("Printing", "DiscoveryTokenCACertHash", mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash)
+	log.Debug(kubeadmCtx, "Printing", "DiscoveryTokenCACertHash", mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash)
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	return nil
 }
 
-func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFactory) error {
+func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) error {
 	p.mu.Lock()
 	idx := noOfCP
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(kubeadmCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print("configuring ControlPlane", "number", strconv.Itoa(idx))
+	log.Print(kubeadmCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
 		err := configureCP_1(storage, p, sshExecutor)
 		if err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 	} else {
 
@@ -106,17 +106,17 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
 			mainStateDocument.K8sBootstrap.B.EtcdKey)
 
-		log.Print("Installing Kubeadm and copying etcd certificates")
+		log.Print(kubeadmCtx, "Installing Kubeadm and copying etcd certificates")
 
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(installKubeadmTools).
 			IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
 			FastMode(true).
-			SSHExecute(log); err != nil {
-			return log.NewError(err.Error())
+			SSHExecute(); err != nil {
+			return err
 		}
 
-		log.Print("Joining controlplane to existing cluster")
+		log.Print(kubeadmCtx, "Joining controlplane to existing cluster")
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(scriptJoinControlplane(
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
@@ -126,35 +126,35 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage resources.StorageFac
 			)).
 			IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
 			FastMode(true).
-			SSHExecute(log); err != nil {
-			return log.NewError(err.Error())
+			SSHExecute(); err != nil {
+			return err
 		}
 
 		if idx+1 == len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes) {
 
-			log.Print("Fetching Kubeconfig")
+			log.Print(kubeadmCtx, "Fetching Kubeconfig")
 
 			if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 				Script(scriptGetKubeconfig()).
 				IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 				FastMode(true).
-				SSHExecute(log); err != nil {
-				return log.NewError(err.Error())
+				SSHExecute(); err != nil {
+				return err
 			}
 
 			kubeconfig := sshExecutor.GetOutput()[0]
 			kubeconfig = strings.Replace(kubeconfig, "kubernetes-admin@kubernetes", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
 			kubeconfig = strings.Replace(kubeconfig, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			mainStateDocument.ClusterKubeConfig = kubeconfig
-			log.Debug("Printing", "kubeconfig", kubeconfig)
+			log.Debug(kubeadmCtx, "Printing", "kubeconfig", kubeconfig)
 
 			if err := storage.Write(mainStateDocument); err != nil {
-				return log.NewError(err.Error())
+				return err
 			}
 		}
 
 	}
-	log.Success("configured ControlPlane", "number", strconv.Itoa(idx))
+	log.Success(kubeadmCtx, "configured ControlPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }
@@ -167,13 +167,13 @@ func generateExternalEtcdConfig(ips []string) string {
 	return ret.String()
 }
 
-func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) resources.ScriptCollection {
+func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) types.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
 
 	collection := helpers.NewScriptCollection()
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:       "store configuration for Controlplane0",
 		CanRetry:   true,
 		MaxRetries: 3,
@@ -228,7 +228,7 @@ EOF
 `, bootstrapToken, certificateKey, publicIPLb, privateIpLb, etcdConf, ver, publicIPLb),
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:       "kubeadm init",
 		CanRetry:   true,
 		MaxRetries: 3,
@@ -240,10 +240,10 @@ sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
 	return collection
 }
 
-func scriptGetKubeconfig() resources.ScriptCollection {
+func scriptGetKubeconfig() types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:     "fetch kubeconfig",
 		CanRetry: false,
 		ShellScript: `
@@ -253,9 +253,9 @@ sudo cat /etc/kubernetes/admin.conf
 	return collection
 }
 
-func scriptDiscoveryTokenCACertHash() resources.ScriptCollection {
+func scriptDiscoveryTokenCACertHash() types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:     "fetch discovery token ca cert hash",
 		CanRetry: false,
 		ShellScript: `
@@ -265,10 +265,10 @@ sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -p
 	return collection
 }
 
-func scriptGetCertificateKey() resources.ScriptCollection {
+func scriptGetCertificateKey() types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:     "fetch bootstrap certificate key",
 		CanRetry: false,
 		ShellScript: `
@@ -295,8 +295,8 @@ func generatebootstrapToken() (string, error) {
 	return prefix + "." + postfix, nil
 }
 
-func scriptTransferEtcdCerts(collection resources.ScriptCollection, ca, etcd, key string) resources.ScriptCollection {
-	collection.Append(resources.Script{
+func scriptTransferEtcdCerts(collection types.ScriptCollection, ca, etcd, key string) types.ScriptCollection {
+	collection.Append(types.Script{
 		Name:           "save etcd certificate",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -322,10 +322,10 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 	return collection
 }
 
-func scriptJoinControlplane(privateIPLb, token, cacertSHA, certKey string) resources.ScriptCollection {
+func scriptJoinControlplane(privateIPLb, token, cacertSHA, certKey string) types.ScriptCollection {
 
 	collection := helpers.NewScriptCollection()
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "Join Controlplane [1..N]",
 		CanRetry:       true,
 		MaxRetries:     3,

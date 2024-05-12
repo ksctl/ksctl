@@ -2,12 +2,14 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"io"
 	"net"
 	"os"
@@ -15,9 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -28,21 +29,26 @@ type SSHPayload struct {
 	Output     []string
 
 	flag     consts.KsctlUtilsConsts
-	script   resources.ScriptCollection
+	script   types.ScriptCollection
 	fastMode bool
+	ctx      context.Context
+	log      types.LoggerFactory
 }
 
-func NewSSHExecutor(mainStateDocument *types.StorageDocument) SSHCollection {
-	var sshExecutor SSHCollection = &SSHPayload{}
+func NewSSHExecutor(ctx context.Context, log types.LoggerFactory, mainStateDocument *storageTypes.StorageDocument) SSHCollection {
+	var sshExecutor SSHCollection = &SSHPayload{
+		ctx: ctx,
+		log: log,
+	}
 	sshExecutor.PrivateKey(mainStateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
 	sshExecutor.Username(mainStateDocument.K8sBootstrap.B.SSHInfo.UserName)
 	return sshExecutor
 }
 
 type SSHCollection interface {
-	SSHExecute(resources.LoggerFactory) error
+	SSHExecute() error
 	Flag(consts.KsctlUtilsConsts) SSHCollection
-	Script(resources.ScriptCollection) SSHCollection
+	Script(types.ScriptCollection) SSHCollection
 	FastMode(bool) SSHCollection
 	Username(string)
 	PrivateKey(string)
@@ -78,7 +84,7 @@ func (sshPayload *SSHPayload) Flag(execMethod consts.KsctlUtilsConsts) SSHCollec
 	return nil
 }
 
-func (sshPayload *SSHPayload) Script(s resources.ScriptCollection) SSHCollection {
+func (sshPayload *SSHPayload) Script(s types.ScriptCollection) SSHCollection {
 	sshPayload.script = s
 	return sshPayload
 }
@@ -88,7 +94,7 @@ func (sshPayload *SSHPayload) FastMode(mode bool) SSHCollection {
 	return sshPayload
 }
 
-func ExecuteScript(log resources.LoggerFactory, conn *ssh.Client, script string) (stdout string, stderr string, err error) {
+func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdout string, stderr string, err error) {
 
 	netRetry := 0
 	for netRetry < int(consts.CounterMaxNetworkSessionRetry) {
@@ -124,7 +130,7 @@ func ExecuteScript(log resources.LoggerFactory, conn *ssh.Client, script string)
 
 		switch err.Error() {
 		case missingStatusErr.Error():
-			log.Warn("Missing error code but exited. Reason can be session comm failure. Retrying!")
+			sshExec.log.Warn(sshExec.ctx, "Retrying! Missing error code but exited", "Reason", "session conn failure.")
 			netRetry++
 		default:
 			return // if any error which is not same as ExitMissingError
@@ -132,12 +138,12 @@ func ExecuteScript(log resources.LoggerFactory, conn *ssh.Client, script string)
 	}
 
 	if netRetry == int(consts.CounterMaxNetworkSessionRetry) {
-		err = log.NewError("Retry failed with network problems: %v", err)
+		err = sshExec.log.NewError(sshExec.ctx, "Retry failed with network problems", "Reason", err)
 	}
 	return
 }
 
-func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
+func (sshPayload *SSHPayload) SSHExecute() error {
 
 	privateKeyBytes := []byte(sshPayload.Privatekey)
 
@@ -146,10 +152,10 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+	sshPayload.log.Debug(sshPayload.ctx, "SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
 	if fake := os.Getenv(string(consts.KsctlFakeFlag)); len(fake) != 0 {
-		log.Debug("Exec Scripts for fake flag")
+		sshPayload.log.Debug(sshPayload.ctx, "Exec Scripts for fake flag")
 		sshPayload.Output = []string{}
 
 		if sshPayload.flag == consts.UtilExecWithOutput {
@@ -179,11 +185,11 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 						return err
 					}
 					if recvFingerprint != gotFingerprint {
-						return log.NewError("mismatch of SSH fingerprint")
+						return sshPayload.log.NewError(sshPayload.ctx, "mismatch of SSH fingerprint")
 					}
 					return nil
 				}
-				return log.NewError("unsupported key type: %s", keyType)
+				return sshPayload.log.NewError(sshPayload.ctx, "unsupported key type", "keyType", keyType)
 			})}
 
 	if !sshPayload.fastMode {
@@ -198,17 +204,17 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 		if err == nil {
 			break
 		} else {
-			log.Warn("RETRYING", "reason", err)
+			sshPayload.log.Warn(sshPayload.ctx, "RETRYING", "reason", err)
 		}
 		time.Sleep(10 * time.Second) // waiting for ssh to get started
 		currRetryCounter++
 	}
 	if currRetryCounter == consts.CounterMaxRetryCount {
-		return log.NewError("maximum retry count reached for ssh conn %v", err)
+		return sshPayload.log.NewError(sshPayload.ctx, "maximum retry count reached for ssh conn", "Reason", err)
 	}
 
-	log.Debug("Printing", "bashScript", sshPayload.script)
-	log.Print("Exec Scripts")
+	sshPayload.log.Debug(sshPayload.ctx, "Printing", "bashScript", sshPayload.script)
+	sshPayload.log.Print(sshPayload.ctx, "Exec Scripts")
 	defer conn.Close()
 
 	scripts := sshPayload.script
@@ -216,7 +222,7 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 	for !scripts.IsCompleted() {
 		script := scripts.NextScript()
 
-		log.Print("Executing Sub-Script", "name", script.Name)
+		sshPayload.log.Print(sshPayload.ctx, "Executing Sub-Script", "name", script.Name)
 		success := false
 		var scriptFailureReason error
 		var stdout, stderr string
@@ -226,12 +232,12 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 			retries := uint8(0)
 
 			for retries < script.MaxRetries {
-				stdout, stderr, err = ExecuteScript(log, conn, script.ShellScript)
+				stdout, stderr, err = sshPayload.ExecuteScript(conn, script.ShellScript)
 				if err != nil {
-					log.Warn("Failure in executing script", "retryCount", retries)
-					scriptFailureReason = log.NewError("Execute Failure", "stderr", stderr)
+					sshPayload.log.Warn(sshPayload.ctx, "Failure in executing script", "retryCount", retries)
+					scriptFailureReason = sshPayload.log.NewError(sshPayload.ctx, "Execute Failure", "stderr", stderr)
 				} else {
-					log.Debug("ssh outputs", "stdout", stdout)
+					sshPayload.log.Debug(sshPayload.ctx, "ssh outputs", "stdout", stdout)
 					success = true
 					break
 				}
@@ -239,13 +245,12 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 			}
 
 		} else {
-			stdout, stderr, err = ExecuteScript(log, conn, script.ShellScript)
+			stdout, stderr, err = sshPayload.ExecuteScript(conn, script.ShellScript)
 			if err != nil {
-				log.Error("Failure in executing script", "Reason", err)
-				scriptFailureReason = log.NewError("Execute Failure", "stderr", stderr)
+				scriptFailureReason = sshPayload.log.NewError(sshPayload.ctx, "Failure in executing script", "Reason", err, "stderr", stderr)
 			} else {
 				success = true
-				log.Debug("ssh outputs", "stdout", stdout)
+				sshPayload.log.Debug(sshPayload.ctx, "ssh outputs", "stdout", stdout)
 			}
 		}
 
@@ -257,13 +262,13 @@ func (sshPayload *SSHPayload) SSHExecute(log resources.LoggerFactory) error {
 		}
 	}
 
-	log.Success("Successful in executing the script")
+	sshPayload.log.Success(sshPayload.ctx, "Successful in executing the script")
 
 	return nil
 }
 
 // generatePrivateKey creates a RSA Private Key of specified byte size
-func generatePrivateKey(log resources.LoggerFactory, bitSize int) (*rsa.PrivateKey, error) {
+func generatePrivateKey(ctx context.Context, log types.LoggerFactory, bitSize int) (*rsa.PrivateKey, error) {
 	// Private Key generation
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
@@ -276,12 +281,12 @@ func generatePrivateKey(log resources.LoggerFactory, bitSize int) (*rsa.PrivateK
 		return nil, err
 	}
 
-	log.Print("Private Key helper-gen")
+	log.Print(ctx, "Private Key helper-gen")
 	return privateKey, nil
 }
 
 // encodePrivateKeyToPEM encodes Private Key from RSA to PEM format
-func encodePrivateKeyToPEM(log resources.LoggerFactory, privateKey *rsa.PrivateKey) []byte {
+func encodePrivateKeyToPEM(log types.LoggerFactory, privateKey *rsa.PrivateKey) []byte {
 	// Get ASN.1 DER format
 	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
 
@@ -300,7 +305,7 @@ func encodePrivateKeyToPEM(log resources.LoggerFactory, privateKey *rsa.PrivateK
 
 // generatePublicKey take a rsa.PublicKey and return bytes suitable for writing to .pub file
 // returns in the format "ssh-rsa ..."
-func generatePublicKey(log resources.LoggerFactory, privatekey *rsa.PublicKey) ([]byte, error) {
+func generatePublicKey(ctx context.Context, log types.LoggerFactory, privatekey *rsa.PublicKey) ([]byte, error) {
 	publicRsaKey, err := ssh.NewPublicKey(privatekey)
 	if err != nil {
 		return nil, err
@@ -308,27 +313,28 @@ func generatePublicKey(log resources.LoggerFactory, privatekey *rsa.PublicKey) (
 
 	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
 
-	log.Print("Public key helper-gen")
+	log.Print(ctx, "Public key helper-gen")
 	return pubKeyBytes, nil
 }
-func CreateSSHKeyPair(log resources.LoggerFactory, state *types.StorageDocument) error {
+
+func CreateSSHKeyPair(ctx context.Context, log types.LoggerFactory, state *storageTypes.StorageDocument) error {
 
 	bitSize := 4096
 
-	privateKey, err := generatePrivateKey(log, bitSize)
+	privateKey, err := generatePrivateKey(ctx, log, bitSize)
 	if err != nil {
 		return err
 	}
 
-	publicKeyBytes, err := generatePublicKey(log, &privateKey.PublicKey)
+	publicKeyBytes, err := generatePublicKey(ctx, log, &privateKey.PublicKey)
 	if err != nil {
 		return err
 	}
 
 	privateKeyBytes := encodePrivateKeyToPEM(log, privateKey)
 
-	log.Debug("Printing", "ssh pub key", string(publicKeyBytes))
-	log.Debug("Printing", "ssh private key", string(privateKeyBytes))
+	log.Debug(ctx, "Printing", "ssh pub key", string(publicKeyBytes))
+	log.Debug(ctx, "Printing", "ssh private key", string(privateKeyBytes))
 
 	state.SSHKeyPair.PrivateKey = string(privateKeyBytes)
 	state.SSHKeyPair.PublicKey = string(publicKeyBytes)

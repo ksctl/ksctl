@@ -6,59 +6,50 @@ import (
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/controllers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
-	ksctlController "github.com/ksctl/ksctl/pkg/resources/controllers"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
 var (
-	l            resources.LoggerFactory
-	ksctlManager ksctlController.Controller = controllers.GenKsctlController()
+	l   types.LoggerFactory
+	ctx = context.WithValue(context.Background(), "USERID", "e2e")
 )
 
 func main() {
 	timer := time.Now()
-	l = logger.NewDefaultLogger(-1, os.Stdout)
+
+	verbosityLevel := 0
+	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
+		verbosityLevel = -1
+	}
+
+	if os.Getenv("NEW_LOGGING") == "true" {
+		l = logger.NewGeneralLogger(verbosityLevel, os.Stdout)
+	} else {
+		l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
+	}
 
 	operation, meta := GetReqPayload(l)
 
-	loggerPrefix := ""
-	switch meta.Provider {
-	case consts.CloudAws:
-		loggerPrefix = "aws-e2e"
-	case consts.CloudCivo:
-		loggerPrefix = "civo-e2e"
-	case consts.CloudAzure:
-		loggerPrefix = "azure-e2e"
-	case consts.CloudLocal:
-		loggerPrefix = "local-e2e"
-	case consts.CloudAll:
-		loggerPrefix = "all-e2e"
-	}
-
-	l.SetPackageName(loggerPrefix)
-
-	l.Print("Testing starting...")
-	ksctlClient := new(resources.KsctlClient)
-
-	ksctlClient.Metadata = meta
-
-	err := controllers.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "e2e"), ksctlClient)
+	l.Print(ctx, "Testing starting...")
+	ksctlClient, err := controllers.GenKsctlController(
+		ctx, l, &types.KsctlClient{
+			Metadata: meta,
+		})
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, "unable to initialize the ksctl manager", "Reason", err)
 		os.Exit(1)
 	}
 
 	switch operation {
 	case OpCreate:
-		if ksctlClient.Metadata.IsHA {
+		if meta.IsHA {
 			createHACluster(ksctlClient)
 		} else {
 			createManagedCluster(ksctlClient)
 		}
 	case OpDelete:
-		if ksctlClient.Metadata.IsHA {
+		if meta.IsHA {
 			deleteHACluster(ksctlClient)
 		} else {
 			deleteManagedCluster(ksctlClient)
@@ -74,9 +65,9 @@ func main() {
 	case OpScaleDown:
 		scaleDownHACluster(ksctlClient)
 	default:
-		l.Error("This operation is not supported")
+		l.Error(ctx, "This operation is not supported")
 		os.Exit(1)
 	}
 
-	l.Print("Testing Completed", " ⏰ ", time.Since(timer).String())
+	l.Print(ctx, "Testing Completed", "TimeTaken", time.Since(timer).String())
 }

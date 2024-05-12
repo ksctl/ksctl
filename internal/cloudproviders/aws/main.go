@@ -1,25 +1,26 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
-	"github.com/ksctl/ksctl/pkg/logger"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 
-	cloudcontrolres "github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	cloudcontrolres "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
-	mainStateDocument *types.StorageDocument
+	mainStateDocument *storageTypes.StorageDocument
 	clusterType       consts.KsctlClusterType
-	log               resources.LoggerFactory
+	log               types.LoggerFactory
+	awsCtx            context.Context
 )
 
 type metadata struct {
@@ -51,36 +52,60 @@ type AwsProvider struct {
 	client AwsGo
 }
 
-func isPresent(storage resources.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) bool {
+func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) error {
+
 	err := storage.AlreadyCreated(consts.CloudAws, region, name, ksctlClusterType)
-	return err == nil
-}
-
-func (obj *AwsProvider) IsPresent(storage resources.StorageFactory) error {
-
-	switch obj.haCluster {
-	case true:
-		clusterType = consts.ClusterTypeHa
-		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
-			return nil
-		}
-	case false:
-		clusterType = consts.ClusterTypeMang
-		if isPresent(storage, clusterType, obj.clusterName, obj.region) {
-			return nil
-		}
+	if err != nil {
+		return log.NewError(awsCtx, "Cluster not found", "ErrStorage", err)
 	}
-	return log.NewError("Cluster not found")
+	return nil
 }
 
-func (obj *AwsProvider) Version(ver string) resources.CloudFactory {
+func (obj *AwsProvider) IsPresent(storage types.StorageFactory) error {
+
+	if obj.haCluster {
+		return isPresent(storage, consts.ClusterTypeHa, obj.clusterName, obj.region)
+	}
+	return isPresent(storage, consts.ClusterTypeMang, obj.clusterName, obj.region)
+}
+
+func (obj *AwsProvider) Version(ver string) types.CloudFactory {
 	// TODO for ManagedCluster EKS
 	return obj
 }
 
-func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudAws))
+func (cloud *AwsProvider) Credential(storage types.StorageFactory) error {
+	log.Print(awsCtx, "Enter your AWS ACCESS KEY")
+	acesskey, err := helpers.UserInputCredentials(awsCtx, log)
+	if err != nil {
+		return err
+	}
+
+	log.Print(awsCtx, "Enter your AWS SECRET KEY")
+	acesskeysecret, err := helpers.UserInputCredentials(awsCtx, log)
+	if err != nil {
+		return err
+	}
+
+	apiStore := &storageTypes.CredentialsDocument{
+		InfraProvider: consts.CloudAws,
+		Aws: &storageTypes.CredentialsAws{
+			AccessKeyId:     acesskey,
+			SecretAccessKey: acesskeysecret,
+		},
+	}
+
+	if err := storage.WriteCredentials(consts.CloudAws, apiStore); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
+	log = parentLogger // intentional shallow copy so that we can use the same
+	// logger to be used multiple places
+	awsCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAws))
 
 	mainStateDocument = state
 
@@ -97,22 +122,22 @@ func ReturnAwsStruct(meta resources.Metadata, state *types.StorageDocument, Clie
 	}
 
 	obj.client.SetRegion(obj.region)
-	log.Debug("Printing", "AwsProvider", obj)
+	log.Debug(awsCtx, "Printing", "AwsProvider", obj)
 
 	return obj, nil
 }
 
-func (obj *AwsProvider) Name(resName string) resources.CloudFactory {
+func (obj *AwsProvider) Name(resName string) types.CloudFactory {
 
-	if err := helpers.IsValidName(resName); err != nil {
-		log.Error(err.Error())
+	if err := helpers.IsValidName(awsCtx, log, resName); err != nil {
+		log.Error(awsCtx, err.Error())
 		return nil
 	}
 	obj.chResName <- resName
 	return obj
 }
 
-func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration consts.KsctlOperation) error {
+func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
@@ -132,19 +157,19 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 	switch opration {
 	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Aws.IsCompleted {
-			return log.NewError("cluster %s already exists", obj.clusterName)
+			return log.NewError(awsCtx, "cluster %s already exists", obj.clusterName)
 		}
 		if errLoadState == nil && !mainStateDocument.CloudInfra.Aws.IsCompleted {
-			log.Note("Cluster state found but not completed, resuming operation")
+			log.Note(awsCtx, "Cluster state found but not completed, resuming operation")
 		} else {
-			log.Debug("Fresh state!!")
+			log.Debug(awsCtx, "Fresh state!!")
 
 			mainStateDocument.ClusterName = obj.clusterName
 			mainStateDocument.InfraProvider = consts.CloudAws
 			mainStateDocument.ClusterType = string(clusterType)
 			mainStateDocument.Region = obj.region
-			mainStateDocument.CloudInfra = &types.InfrastructureState{
-				Aws: &types.StateConfigurationAws{},
+			mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{
+				Aws: &storageTypes.StateConfigurationAws{},
 			}
 			mainStateDocument.CloudInfra.Aws.B.KubernetesVer = obj.metadata.k8sVersion
 			mainStateDocument.CloudInfra.Aws.B.KubernetesDistro = string(obj.metadata.k8sName)
@@ -152,17 +177,17 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 
 	case consts.OperationDelete:
 		if errLoadState != nil {
-			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
+			return log.NewError(awsCtx, "no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Debug("Delete resource(s)")
+		log.Debug(awsCtx, "Delete resource(s)")
 
 	case consts.OperationGet:
 		if errLoadState != nil {
-			return log.NewError("no cluster state found reason:%s\n", errLoadState.Error())
+			return log.NewError(awsCtx, "no cluster state found reason:%s\n", errLoadState.Error())
 		}
-		log.Debug("Get resources")
+		log.Debug(awsCtx, "Get storage")
 	default:
-		return log.NewError("Invalid operation for init state")
+		return log.NewError(awsCtx, "Invalid operation for init state")
 	}
 
 	if err := obj.client.InitClient(storage); err != nil {
@@ -173,12 +198,12 @@ func (obj *AwsProvider) InitState(storage resources.StorageFactory, opration con
 		return err
 	}
 
-	log.Debug("init cloud state")
+	log.Debug(awsCtx, "init cloud state")
 
 	return nil
 }
 
-func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
+func (obj *AwsProvider) GetStateForHACluster(storage types.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
 
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
@@ -201,43 +226,37 @@ func (obj *AwsProvider) GetStateForHACluster(storage resources.StorageFactory) (
 		PrivateIPv4LoadBalancer:  mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
 	}
 
-	log.Debug("Printing", "awsStateTransferPayload", payload)
+	log.Debug(awsCtx, "Printing", "awsStateTransferPayload", payload)
 
-	log.Success("Transferred Data, it's ready to be shipped!")
+	log.Success(awsCtx, "Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
 
-func (obj *AwsProvider) NewManagedCluster(factory resources.StorageFactory, i int) error {
-	//TODO implement me
-	fmt.Println("AWS New Managed Cluster")
-	return nil
+func (obj *AwsProvider) NewManagedCluster(factory types.StorageFactory, i int) error {
+	return log.NewError(awsCtx, "not implemented")
 
 }
 
-func (obj *AwsProvider) DelManagedCluster(factory resources.StorageFactory) error {
-	//TODO implement me
-	fmt.Println("AWS Del Managed Cluster")
-	return nil
-
+func (obj *AwsProvider) DelManagedCluster(factory types.StorageFactory) error {
+	return log.NewError(awsCtx, "not implemented")
 }
 
-func (obj *AwsProvider) Role(resRole consts.KsctlRole) resources.CloudFactory {
+func (obj *AwsProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	switch resRole {
 	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
 		obj.chRole <- resRole
 		return obj
 	default:
-		log.Error("invalid role assumed")
-
+		log.Error(awsCtx, "invalid role assumed")
 		return nil
 	}
 }
 
-func (obj *AwsProvider) VMType(size string) resources.CloudFactory {
+func (obj *AwsProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(obj, size); err != nil {
-		log.Error(err.Error())
+		log.Error(awsCtx, err.Error())
 		return nil
 	}
 	obj.chVMType <- size
@@ -245,14 +264,12 @@ func (obj *AwsProvider) VMType(size string) resources.CloudFactory {
 	return obj
 }
 
-func (obj *AwsProvider) Visibility(toBePublic bool) resources.CloudFactory {
+func (obj *AwsProvider) Visibility(toBePublic bool) types.CloudFactory {
 	obj.metadata.public = toBePublic
 	return obj
 }
 
 func (obj *AwsProvider) SupportForApplications() bool {
-	//TODO implement me
-	fmt.Println("AWS Support for Applications")
 	return false
 
 }
@@ -263,7 +280,7 @@ func (obj *AwsProvider) Application(s []string) bool {
 
 func (obj *AwsProvider) CNI(s string) (externalCNI bool) {
 
-	log.Debug("Printing", "cni", s)
+	log.Debug(awsCtx, "Printing", "cni", s)
 	switch consts.KsctlValidCNIPlugin(s) {
 	case consts.CNICilium, consts.CNIFlannel:
 		obj.metadata.cni = s
@@ -277,11 +294,11 @@ func (obj *AwsProvider) CNI(s string) (externalCNI bool) {
 	}
 }
 
-func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int, setter bool) (int, error) {
-	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
+func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
+	log.Debug(awsCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		if mainStateDocument == nil {
-			return -1, log.NewError("state init not called")
+			return -1, log.NewError(awsCtx, "state init not called")
 		}
 		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames == nil {
 			return -1, nil
@@ -291,7 +308,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 	if no >= 0 {
 		obj.metadata.noWP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError("state init not called")
+			return -1, log.NewError(awsCtx, "state init not called")
 		}
 		currLen := len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 
@@ -332,26 +349,26 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage resources.StorageFactory, no int
 
 		return -1, nil
 	}
-	return -1, log.NewError("constrains for no of workplane >= 0")
+	return -1, log.NewError(awsCtx, "constrains for no of workplane >= 0")
 
 }
 
 func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	if !setter {
 		if mainStateDocument == nil {
-			return -1, log.NewError("state init not called")
+			return -1, log.NewError(awsCtx, "state init not called")
 		}
 		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames == nil {
 			return -1, nil
 		}
 
-		log.Debug("Printing", "mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames)
+		log.Debug(awsCtx, "Printing", "mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames)
 		return len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noCP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError("state init not called")
+			return -1, log.NewError(awsCtx, "state init not called")
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames)
@@ -364,31 +381,31 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs = make([]string, no)
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoControlplanes", mainStateDocument.CloudInfra.Aws.InfoControlPlanes)
+		log.Debug(awsCtx, "Printing", "awsCloudState.InfoControlplanes", mainStateDocument.CloudInfra.Aws.InfoControlPlanes)
 		return -1, nil
 	}
-	return -1, log.NewError("constrains for no of controlplane >= 3 and odd number")
+	return -1, log.NewError(awsCtx, "constrains for no of controlplane >= 3 and odd number")
 
 }
 
 func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
-	log.Debug("Printing", "desiredNumber", no, "setterOrNot", setter)
+	log.Debug(awsCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		if mainStateDocument == nil {
-			return -1, log.NewError("state init not called")
+			return -1, log.NewError(awsCtx, "state init not called")
 		}
 		if mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames == nil {
 			return -1, nil
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
+		log.Debug(awsCtx, "Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
 		return len(mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {
-			return -1, log.NewError("state init not called")
+			return -1, log.NewError(awsCtx, "state init not called")
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
@@ -401,32 +418,29 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs = make([]string, no)
 		}
 
-		log.Debug("Printing", "awsCloudState.InfoDatabase", mainStateDocument.CloudInfra.Aws.InfoDatabase)
+		log.Debug(awsCtx, "Printing", "awsCloudState.InfoDatabase", mainStateDocument.CloudInfra.Aws.InfoDatabase)
 		return -1, nil
 	}
-	return -1, log.NewError("constrains for no of Datastore>= 3 and odd number")
+	return -1, log.NewError(awsCtx, "constrains for no of Datastore>= 3 and odd number")
 }
 
 func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
 	hostnames := utilities.DeepCopySlice[string](mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
-	log.Debug("Printing", "hostnameWorkerPlanes", hostnames)
+	log.Debug(awsCtx, "Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }
 
-func (obj *AwsProvider) GetStateFile(factory resources.StorageFactory) (string, error) {
+func (obj *AwsProvider) GetStateFile(factory types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
-		return "", log.NewError("Error marshalling state", "error", err)
+		return "", log.NewError(awsCtx, "Error marshalling state", "error", err)
 	}
-	log.Debug("Printing", "cloudstate", cloudstate)
+	log.Debug(awsCtx, "Printing", "cloudstate", cloudstate)
 	return string(cloudstate), nil
 
 }
 
-func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadata) ([]cloudcontrolres.AllClusterData, error) {
-
-	log = logger.NewDefaultLogger(meta.LogVerbosity, meta.LogWritter)
-	log.SetPackageName(string(consts.CloudAws))
+func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
 
 	var data []cloudcontrolres.AllClusterData
 
@@ -435,7 +449,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 		consts.ClusterType: "",
 	})
 	if err != nil {
-		return nil, log.NewError("Error fetching cluster info", "error", err)
+		return nil, log.NewError(awsCtx, "Error fetching cluster info", "error", err)
 	}
 
 	for K, Vs := range clusters {
@@ -454,7 +468,7 @@ func GetRAWClusterInfos(storage resources.StorageFactory, meta resources.Metadat
 				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Aws.B.KubernetesDistro),
 				K8sVersion: v.CloudInfra.Aws.B.KubernetesVer,
 			})
-			log.Debug("Printing", "cloudClusterInfoFetched", data)
+			log.Debug(awsCtx, "Printing", "cloudClusterInfoFetched", data)
 
 		}
 	}

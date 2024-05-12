@@ -8,27 +8,32 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ksctl/ksctl/pkg/logger"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/ksctl/ksctl/internal/storage/types"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
 )
 
 var (
 	fakeClientHA *AzureProvider
-	storeHA      resources.StorageFactory
+	storeHA      types.StorageFactory
 
 	fakeClientManaged *AzureProvider
-	storeManaged      resources.StorageFactory
+	storeManaged      types.StorageFactory
 
 	fakeClientVars *AzureProvider
-	storeVars      resources.StorageFactory
+	storeVars      types.StorageFactory
+	parentCtx      context.Context     = context.TODO()
+	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = fmt.Sprintf("%s ksctl-azure-test", os.TempDir())
 )
@@ -37,16 +42,14 @@ func TestMain(m *testing.M) {
 
 	func() {
 
-		fakeClientVars, _ = ReturnAzureStruct(resources.Metadata{
-			ClusterName:  "demo",
-			Region:       "fake",
-			Provider:     consts.CloudAzure,
-			IsHA:         true,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-		}, &types.StorageDocument{}, ProvideMockClient)
+		fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo",
+			Region:      "fake",
+			Provider:    consts.CloudAzure,
+			IsHA:        true,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeVars = localstate.InitStorage(-1, os.Stdout)
+		storeVars = localstate.InitStorage(parentCtx, parentLogger)
 		_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
 		_ = storeVars.Connect(context.TODO())
 	}()
@@ -418,15 +421,13 @@ func checkCurrentStateFileHA(t *testing.T) {
 
 func TestManagedCluster(t *testing.T) {
 	func() {
-		fakeClientManaged, _ = ReturnAzureStruct(resources.Metadata{
-			ClusterName:  "demo-managed",
-			Region:       "fake",
-			Provider:     consts.CloudAzure,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-		}, &types.StorageDocument{}, ProvideMockClient)
+		fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo-managed",
+			Region:      "fake",
+			Provider:    consts.CloudAzure,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeManaged = localstate.InitStorage(-1, os.Stdout)
+		storeManaged = localstate.InitStorage(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudAzure, "fake", "demo-managed", consts.ClusterTypeMang)
 		_ = storeManaged.Connect(context.TODO())
 
@@ -483,7 +484,7 @@ func TestManagedCluster(t *testing.T) {
 				K8sVersion: mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(storeManaged, resources.Metadata{LogWritter: os.Stdout, LogVerbosity: -1})
+		got, err := GetRAWClusterInfos(storeManaged)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
@@ -510,20 +511,18 @@ func TestManagedCluster(t *testing.T) {
 
 func TestHACluster(t *testing.T) {
 	func() {
-		fakeClientHA, _ = ReturnAzureStruct(resources.Metadata{
-			ClusterName:  "demo-ha",
-			Region:       "fake",
-			Provider:     consts.CloudAzure,
-			IsHA:         true,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-			NoCP:         7,
-			NoDS:         5,
-			NoWP:         10,
-			K8sDistro:    consts.K8sK3s,
-		}, &types.StorageDocument{}, ProvideMockClient)
+		fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo-ha",
+			Region:      "fake",
+			Provider:    consts.CloudAzure,
+			IsHA:        true,
+			NoCP:        7,
+			NoDS:        5,
+			NoWP:        10,
+			K8sDistro:   consts.K8sK3s,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeHA = localstate.InitStorage(-1, os.Stdout)
+		storeHA = localstate.InitStorage(parentCtx, parentLogger)
 		_ = storeHA.Setup(consts.CloudAzure, "fake", "demo-ha", consts.ClusterTypeHa)
 		_ = storeHA.Connect(context.TODO())
 
@@ -770,13 +769,13 @@ func TestHACluster(t *testing.T) {
 				K8sVersion: mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(storeHA, resources.Metadata{LogWritter: os.Stdout, LogVerbosity: -1})
+		got, err := GetRAWClusterInfos(storeHA)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
 
 	// explicit clean
-	mainStateDocument = &types.StorageDocument{}
+	mainStateDocument = &storageTypes.StorageDocument{}
 
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {

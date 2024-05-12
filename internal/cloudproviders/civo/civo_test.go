@@ -5,49 +5,49 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/civo/civogo"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
-
-	"github.com/ksctl/ksctl/internal/storage/types"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
 )
 
 var (
 	fakeClientHA *CivoProvider
-	storeHA      resources.StorageFactory
+	storeHA      types.StorageFactory
 
 	fakeClientManaged *CivoProvider
-	storeManaged      resources.StorageFactory
+	storeManaged      types.StorageFactory
 
 	fakeClientVars *CivoProvider
-	storeVars      resources.StorageFactory
+	storeVars      types.StorageFactory
 
-	dir = fmt.Sprintf("%s ksctl-civo-test", os.TempDir())
+	dir                              = fmt.Sprintf("%s ksctl-civo-test", os.TempDir())
+	parentCtx    context.Context     = context.TODO()
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
 
 	func() {
 
-		fakeClientVars, _ = ReturnCivoStruct(resources.Metadata{
-			ClusterName:  "demo",
-			Region:       "LON1",
-			Provider:     consts.CloudCivo,
-			IsHA:         true,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-		}, &types.StorageDocument{}, ProvideMockCivoClient)
+		fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo",
+			Region:      "LON1",
+			Provider:    consts.CloudCivo,
+			IsHA:        true,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockCivoClient)
 
-		storeVars = localstate.InitStorage(-1, os.Stdout)
+		storeVars = localstate.InitStorage(parentCtx, parentLogger)
 		_ = storeVars.Setup(consts.CloudCivo, "LON1", "demo", consts.ClusterTypeHa)
 		_ = storeVars.Connect(context.TODO())
 	}()
@@ -443,18 +443,15 @@ func checkCurrentStateFileHA(t *testing.T) {
 func TestManagedCluster(t *testing.T) {
 
 	func() {
-		fakeClientManaged, _ = ReturnCivoStruct(resources.Metadata{
-			ClusterName:  "demo-managed",
-			Region:       "LON1",
-			Provider:     consts.CloudCivo,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-		}, &types.StorageDocument{}, ProvideMockCivoClient)
+		fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo-managed",
+			Region:      "LON1",
+			Provider:    consts.CloudCivo,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockCivoClient)
 
-		storeManaged = localstate.InitStorage(-1, os.Stdout)
+		storeManaged = localstate.InitStorage(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudCivo, "LON1", "demo-managed", consts.ClusterTypeMang)
 		_ = storeManaged.Connect(context.TODO())
-
 	}()
 
 	t.Run("init state", func(t *testing.T) {
@@ -514,7 +511,7 @@ func TestManagedCluster(t *testing.T) {
 				K8sVersion: mainStateDocument.CloudInfra.Civo.B.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(storeManaged, resources.Metadata{LogWritter: os.Stdout, LogVerbosity: -1})
+		got, err := GetRAWClusterInfos(storeManaged)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
@@ -542,20 +539,18 @@ func TestManagedCluster(t *testing.T) {
 
 func TestHACluster(t *testing.T) {
 	func() {
-		fakeClientHA, _ = ReturnCivoStruct(resources.Metadata{
-			ClusterName:  "demo-ha",
-			Region:       "LON1",
-			Provider:     consts.CloudCivo,
-			IsHA:         true,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-			NoCP:         7,
-			NoDS:         5,
-			NoWP:         10,
-			K8sDistro:    consts.K8sK3s,
-		}, &types.StorageDocument{}, ProvideMockCivoClient)
+		fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
+			ClusterName: "demo-ha",
+			Region:      "LON1",
+			Provider:    consts.CloudCivo,
+			IsHA:        true,
+			NoCP:        7,
+			NoDS:        5,
+			NoWP:        10,
+			K8sDistro:   consts.K8sK3s,
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockCivoClient)
 
-		storeHA = localstate.InitStorage(-1, os.Stdout)
+		storeHA = localstate.InitStorage(parentCtx, parentLogger)
 		_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)
 		_ = storeHA.Connect(context.TODO())
 
@@ -755,13 +750,13 @@ func TestHACluster(t *testing.T) {
 				K8sVersion: mainStateDocument.CloudInfra.Civo.B.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(storeHA, resources.Metadata{LogWritter: os.Stdout, LogVerbosity: -1})
+		got, err := GetRAWClusterInfos(storeHA)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
 
 	// explicit clean
-	mainStateDocument = &types.StorageDocument{}
+	mainStateDocument = &storageTypes.StorageDocument{}
 
 	// use init state firest
 	t.Run("init state deletion", func(t *testing.T) {

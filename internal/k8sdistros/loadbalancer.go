@@ -7,13 +7,13 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
-	log.Print("configuring Loadbalancer")
+func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
+	log.Print(bootstrapCtx, "configuring Loadbalancer")
 	p.mu.Lock()
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
 	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes)
@@ -21,19 +21,19 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ resources.StorageFactory) error {
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptConfigureLoadbalancer(controlPlaneIPs)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
-		FastMode(true).SSHExecute(log)
+		FastMode(true).SSHExecute()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("configured LoadBalancer")
+	log.Success(bootstrapCtx, "configured LoadBalancer")
 	return nil
 }
 
-func scriptConfigureLoadbalancer(controlPlaneIPs []string) resources.ScriptCollection {
+func scriptConfigureLoadbalancer(controlPlaneIPs []string) types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
 	// HA proxy repo https://haproxy.debian.net/
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:       "Install haproxy",
 		CanRetry:   true,
 		MaxRetries: 9,
@@ -46,7 +46,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install haproxy=2.8.\* -y
 		ScriptExecutor: consts.LinuxBash,
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "enable and start systemd service for haproxy",
 		CanRetry:       true,
 		MaxRetries:     3,
@@ -63,7 +63,7 @@ sudo systemctl enable haproxy
 `, index+1, controlPlaneIP, 6443)
 	}
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "create haproxy configuration",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -89,7 +89,7 @@ sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
 `, serverScript),
 	})
 
-	collection.Append(resources.Script{
+	collection.Append(types.Script{
 		Name:           "restarting haproxy",
 		CanRetry:       true,
 		MaxRetries:     3,

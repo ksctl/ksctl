@@ -1,20 +1,24 @@
 package kubernetes
 
 import (
+	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/internal/storage/types"
+	"os"
+	"testing"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"gotest.tools/v3/assert"
-	"os"
-	"testing"
 )
 
 // Here we are going to test the helper functions
 
 func TestMain(m *testing.M) {
 
-	log = logger.NewDefaultLogger(-1, os.Stdout)
+	log = logger.NewStructuredLogger(-1, os.Stdout)
+	kubernetesCtx = context.TODO()
 	initApps()
 	m.Run()
 }
@@ -61,23 +65,23 @@ func TestGetApp(t *testing.T) {
 }
 
 func TestPresentOrNot(t *testing.T) {
-	dummyState := new(types.StorageDocument)
-	dummyState.Addons.Cni = types.Application{Name: "cilium", Version: "latest"}
+	dummyState := new(storageTypes.StorageDocument)
+	dummyState.Addons.Cni = storageTypes.Application{Name: "cilium", Version: "latest"}
 
-	dummyState.Addons.Apps = []types.Application{
+	dummyState.Addons.Apps = []storageTypes.Application{
 		{
 			Name:    "dummy1",
 			Version: "",
 		},
 	}
 	testCases := []struct {
-		App               types.Application
+		App               storageTypes.Application
 		TypeOfApp         EnumApplication
 		ExpectedIdx       int
 		ExpectedIsPresent bool
 	}{
 		{
-			App: types.Application{
+			App: storageTypes.Application{
 				Name:    "dummy1",
 				Version: "latest",
 			},
@@ -86,7 +90,7 @@ func TestPresentOrNot(t *testing.T) {
 			ExpectedIdx:       0,
 		},
 		{
-			App: types.Application{
+			App: storageTypes.Application{
 				Name:    "cilium",
 				Version: "latest",
 			},
@@ -95,7 +99,7 @@ func TestPresentOrNot(t *testing.T) {
 			ExpectedIdx:       -1,
 		},
 		{
-			App: types.Application{
+			App: storageTypes.Application{
 				Name:    "abcd",
 				Version: "latest",
 			},

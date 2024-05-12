@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 func generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
-		return nil, log.NewError("invalid config request control node cannot be 0")
+		return nil, log.NewError(localCtx, "invalid config request control node cannot be 0")
 	}
 	var config string
 	config += `---
@@ -45,7 +46,7 @@ nodes:
 func configOption(noOfNodes int, cni bool) (cluster.CreateOption, error) {
 
 	if noOfNodes < 1 {
-		return nil, log.NewError("invalid config request control node cannot be 0")
+		return nil, log.NewError(localCtx, "invalid config request control node cannot be 0")
 	}
 	if noOfNodes == 1 {
 		var config string
@@ -67,12 +68,12 @@ networking:
 		return nil, fmt.Errorf("ERR in node config generation")
 	}
 
-	log.Debug("Printing", "configCluster", string(raw))
+	log.Debug(localCtx, "Printing", "configCluster", string(raw))
 
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
-func isPresent(storage resources.StorageFactory, clusterName string) bool {
+func isPresent(storage types.StorageFactory, clusterName string) bool {
 	err := storage.AlreadyCreated(consts.CloudLocal, "LOCAL", clusterName, consts.ClusterTypeMang)
 	return err == nil
 }
@@ -86,12 +87,12 @@ func createNecessaryConfigs(storeDir string) (string, error) {
 	return storeDir + helpers.PathSeparator + "kubeconfig", nil
 }
 
-func loadStateHelper(storage resources.StorageFactory) error {
+func loadStateHelper(storage types.StorageFactory) error {
 	raw, err := storage.Read()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
-	*mainStateDocument = func(x *types.StorageDocument) types.StorageDocument {
+	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
 		return *x
 	}(raw)
 	return nil

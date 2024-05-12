@@ -1,29 +1,31 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
 	"testing"
 
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
 	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 
 	"gotest.tools/v3/assert"
 )
 
 var (
-	dir                         = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
-	log resources.LoggerFactory = func() resources.LoggerFactory {
-		var l resources.LoggerFactory = logger.NewDefaultLogger(-1, os.Stdout)
-		l.SetPackageName("utils")
+	dir                     = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
+	log types.LoggerFactory = func() types.LoggerFactory {
+		var l types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 		return l
 	}()
-	mainStateDoc = &types.StorageDocument{}
+	mainStateDoc = &storageTypes.StorageDocument{}
+	dummyCtx     = context.TODO()
 )
 
 func TestConsts(t *testing.T) {
@@ -69,11 +71,13 @@ func TestConsts(t *testing.T) {
 }
 
 func TestGenerateCerts(t *testing.T) {
-	if ca, etcd, key, err := GenerateCerts(log, []string{"192.168.1.1"}); err != nil {
+	if ca, etcd, key, err := GenerateCerts(
+		context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"), log, []string{"192.168.1.1"}); err != nil {
 		t.Fatalf("it shouldn't fail, ca: %v, etcd: %v, key: %v, err: %v\n", ca, etcd, key, err)
 	}
 
-	if ca, etcd, key, err := GenerateCerts(log, []string{"192,168.1.1"}); err == nil ||
+	if ca, etcd, key, err := GenerateCerts(
+		context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"), log, []string{"192,168.1.1"}); err == nil ||
 		len(ca) != 0 ||
 		len(etcd) != 0 ||
 		len(key) != 0 {
@@ -105,7 +109,7 @@ func TestCNIValidation(t *testing.T) {
 }
 
 func TestCreateSSHKeyPair(t *testing.T) {
-	err := CreateSSHKeyPair(log, mainStateDoc)
+	err := CreateSSHKeyPair(dummyCtx, log, mainStateDoc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,25 +117,27 @@ func TestCreateSSHKeyPair(t *testing.T) {
 }
 
 func TestIsValidClusterName(T *testing.T) {
-	errorStr := fmt.Errorf("CLUSTER NAME INVALID")
-	assert.Equal(T, nil, IsValidName("demo"), "Returns false for valid cluster name")
-	assert.Equal(T, errorStr.Error(), IsValidName("Dem-o234").Error(), "Returns True for invalid cluster name")
-	assert.Equal(T, nil, IsValidName("d-234"), "Returns false for valid cluster name")
-	assert.Equal(T, errorStr.Error(), IsValidName("234").Error(), "Returns true for invalid cluster name")
-	assert.Equal(T, errorStr.Error(), IsValidName("-2342").Error(), "Returns True for invalid cluster name")
-	assert.Equal(T, errorStr.Error(), IsValidName("demo-").Error(), "Returns True for invalid cluster name")
-	assert.Equal(T, errorStr.Error(), IsValidName("dscdscsd-#$#$#").Error(), "Returns True for invalid cluster name")
-	assert.Equal(T, errorStr.Error(), IsValidName("ds@#$#$#").Error(), "Returns True for invalid cluster name")
+	assert.Check(T, nil == IsValidName(dummyCtx, log, "demo"), "Returns false for valid cluster name")
+	assert.Check(T, nil != IsValidName(dummyCtx, log, "Dem-o234"), "Returns True for invalid cluster name")
+	assert.Check(T, nil == IsValidName(dummyCtx, log, "d-234"), "Returns false for valid cluster name")
+	assert.Check(T, nil != IsValidName(dummyCtx, log, "234"), "Returns true for invalid cluster name")
+	assert.Check(T, nil != IsValidName(dummyCtx, log, "-2342"), "Returns True for invalid cluster name")
+	assert.Check(T, nil != IsValidName(dummyCtx, log, "demo-"), "Returns True for invalid cluster name")
+	assert.Check(T, nil != IsValidName(dummyCtx, log, "dscdscsd-#$#$#"), "Returns True for invalid cluster name")
+	assert.Check(T, nil != IsValidName(dummyCtx, log, "ds@#$#$#"), "Returns True for invalid cluster name")
 }
 
 func TestSSHExecute(t *testing.T) {
 
-	var sshTest SSHCollection = &SSHPayload{}
+	var sshTest SSHCollection = &SSHPayload{
+		ctx: dummyCtx,
+		log: log,
+	}
 	sshTest.Username("fake")
 	sshTest.PrivateKey(mainStateDoc.SSHKeyPair.PrivateKey)
 	assert.Assert(t, sshTest.Flag(consts.UtilExecWithoutOutput).Script(NewScriptCollection()).
 		IPv4("A.A.A.A").
-		FastMode(true).SSHExecute(log) != nil, "ssh should fail")
+		FastMode(true).SSHExecute() != nil, "ssh should fail")
 
 	fmt.Println("Cleanup..")
 	if err := os.RemoveAll(dir); err != nil {
@@ -154,7 +160,7 @@ func TestIsValidVersion(t *testing.T) {
 	}
 
 	for ver, expected := range testCases {
-		err := IsValidVersion(ver)
+		err := IsValidVersion(dummyCtx, log, ver)
 		var got bool = err == nil
 		assert.Equal(t, got, expected, fmt.Sprintf("Ver: %s, got: %v, expected: %v", ver, got, expected))
 	}
@@ -163,20 +169,20 @@ func TestIsValidVersion(t *testing.T) {
 func TestToApplicationTempl(t *testing.T) {
 	testCases := []struct {
 		inp               string
-		Expected          types.Application
+		Expected          storageTypes.Application
 		ExpectedIsInvalid bool
 	}{
 		{
 			inp:      "abcd@latest",
-			Expected: types.Application{Name: "abcd", Version: "latest"},
+			Expected: storageTypes.Application{Name: "abcd", Version: "latest"},
 		},
 		{
 			inp:      "abcd@123",
-			Expected: types.Application{Name: "abcd", Version: "123"},
+			Expected: storageTypes.Application{Name: "abcd", Version: "123"},
 		},
 		{
 			inp:      "abcd",
-			Expected: types.Application{Name: "abcd", Version: "latest"},
+			Expected: storageTypes.Application{Name: "abcd", Version: "latest"},
 		},
 		{
 			inp:               "",
@@ -221,7 +227,7 @@ func TestScriptCollection(t *testing.T) {
 	})
 
 	t.Run("append scripts", func(t *testing.T) {
-		datas := []resources.Script{
+		datas := []types.Script{
 			{
 				ScriptExecutor: consts.LinuxBash,
 				CanRetry:       false,
@@ -251,7 +257,7 @@ func TestScriptCollection(t *testing.T) {
 	t.Run("get script", func(t *testing.T) {
 		v := scripts.NextScript()
 
-		expected := &resources.Script{
+		expected := &types.Script{
 			ScriptExecutor: consts.LinuxBash,
 			CanRetry:       false,
 			Name:           "test",

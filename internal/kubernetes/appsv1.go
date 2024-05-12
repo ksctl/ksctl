@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -26,10 +25,10 @@ func (k *Kubernetes) daemonsetApply(o *appsv1.DaemonSet) error {
 				DaemonSets(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "daemonset apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "daemonset apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -49,10 +48,10 @@ func (k *Kubernetes) deploymentApply(o *appsv1.Deployment) error {
 				Deployments(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "deployment apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "deployment apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -68,17 +67,17 @@ func (k *Kubernetes) deploymentReadyWait(name, namespace string) error {
 			Deployments(namespace).
 			Get(context.Background(), name, metav1.GetOptions{})
 		if err != nil {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "daemonset get failed", "Reason", err)
 		}
 		if status.Status.ReadyReplicas > 0 {
-			log.Success(fmt.Sprintf("~~> Few of the replica are ready [%v]", status.Status.ReadyReplicas))
+			log.Success(kubernetesCtx, "Few of the replica are ready", "readyReplicas", status.Status.ReadyReplicas)
 			break
 		}
 		count++
 		if count == consts.CounterMaxRetryCount*2 {
-			return log.NewError("max retry reached")
+			return log.NewError(kubernetesCtx, "max retry reached", "retries", consts.CounterMaxRetryCount*2)
 		}
-		log.Warn(fmt.Sprintf("retrying current no of success [readyReplicas: %v]", status.Status.ReadyReplicas))
+		log.Warn(kubernetesCtx, "retrying current no of success", "readyReplicas", status.Status.ReadyReplicas)
 		time.Sleep(10 * time.Second)
 	}
 	return nil
@@ -92,7 +91,7 @@ func (k *Kubernetes) daemonsetDelete(o *appsv1.DaemonSet) error {
 		DaemonSets(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "daemonset delete failed", "Reason", err)
 	}
 	return nil
 }
@@ -104,7 +103,7 @@ func (k *Kubernetes) deploymentDelete(o *appsv1.Deployment) error {
 		Deployments(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "deployment delete failed", "Reason", err)
 	}
 	return nil
 }
@@ -123,10 +122,10 @@ func (k *Kubernetes) statefulSetApply(o *appsv1.StatefulSet) error {
 				StatefulSets(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(err.Error())
+				return log.NewError(kubernetesCtx, "statefulset apply failed", "Reason", err)
 			}
 		} else {
-			return log.NewError(err.Error())
+			return log.NewError(kubernetesCtx, "statefulset apply failed", "Reason", err)
 		}
 	}
 	return nil
@@ -140,7 +139,7 @@ func (k *Kubernetes) statefulSetDelete(o *appsv1.StatefulSet) error {
 		StatefulSets(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubernetesCtx, "statefulset delete failed", "Reason", err)
 	}
 	return nil
 }

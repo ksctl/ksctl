@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
@@ -28,12 +29,12 @@ func NewK8sClient(ctx context.Context) (ClientSet, error) {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, log.NewError("Error loading in-cluster config: %v\n", err)
+		return nil, log.NewError(storeCtx, "Error loading in-cluster config", "Reason", err)
 	}
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, log.NewError("Error creating Kubernetes client: %v\n", err)
+		return nil, log.NewError(storeCtx, "Error creating Kubernetes client", "Reason", err)
 	}
 
 	return &Client{

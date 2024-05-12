@@ -8,14 +8,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelFirewall implements resources.CloudFactory.
-func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
+// DelFirewall implements types.CloudFactory.
+func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 	role := <-obj.chRole
 
-	log.Debug("Printing", "role", role)
+	log.Debug(azureCtx, "Printing", "role", role)
 
 	nsg := ""
 	switch role {
@@ -32,19 +32,19 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	}
 
 	if len(nsg) == 0 {
-		log.Print("skipped firewall already deleted")
+		log.Print(azureCtx, "skipped firewall already deleted")
 		return nil
 	}
 
 	pollerResponse, err := obj.client.BeginDeleteSecurityGrp(nsg, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
-	log.Print("firewall deleting...", "name", nsg)
+	log.Print(azureCtx, "firewall deleting...", "name", nsg)
 
-	_, err = obj.client.PollUntilDoneDelNSG(ctx, pollerResponse, nil)
+	_, err = obj.client.PollUntilDoneDelNSG(azureCtx, pollerResponse, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	switch role {
 	case consts.RoleCp:
@@ -62,20 +62,20 @@ func (obj *AzureProvider) DelFirewall(storage resources.StorageFactory) error {
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("Deleted network security group", "name", nsg)
+	log.Success(azureCtx, "Deleted network security group", "name", nsg)
 
 	return nil
 }
 
-// NewFirewall implements resources.CloudFactory.
-func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
+// NewFirewall implements types.CloudFactory.
+func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 	name := <-obj.chResName
 	role := <-obj.chRole
 
-	log.Debug("Printing", "name", name, "role", role)
+	log.Debug(azureCtx, "Printing", "name", name, "role", role)
 
 	nsg := ""
 	switch role {
@@ -88,10 +88,10 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
 	default:
-		return log.NewError("invalid role")
+		return log.NewError(azureCtx, "invalid role")
 	}
 	if len(nsg) != 0 {
-		log.Success("skipped firewall already created", "name", nsg)
+		log.Success(azureCtx, "skipped firewall already created", "name", nsg)
 		return nil
 	}
 	netCidr := mainStateDocument.CloudInfra.Azure.NetCidr
@@ -108,10 +108,10 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	case consts.RoleDs:
 		securityRules = firewallRuleDataStore(netCidr)
 	default:
-		return log.NewError("invalid role")
+		return log.NewError(azureCtx, "invalid role")
 	}
 
-	log.Debug("Printing", "firewallrule", securityRules)
+	log.Debug(azureCtx, "Printing", "firewallrule", securityRules)
 
 	parameters := armnetwork.SecurityGroup{
 		Location: to.Ptr(obj.region),
@@ -121,10 +121,10 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 
 	pollerResponse, err := obj.client.BeginCreateSecurityGrp(name, parameters, nil)
-
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
+
 	switch role {
 	case consts.RoleCp:
 		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName = name
@@ -137,14 +137,14 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Print("creating firewall...", "name", name)
+	log.Print(azureCtx, "creating firewall...", "name", name)
 
-	resp, err := obj.client.PollUntilDoneCreateNSG(ctx, pollerResponse, nil)
+	resp, err := obj.client.PollUntilDoneCreateNSG(azureCtx, pollerResponse, nil)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	switch role {
 	case consts.RoleCp:
@@ -158,10 +158,10 @@ func (obj *AzureProvider) NewFirewall(storage resources.StorageFactory) error {
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
-	log.Success("Created network security group", "name", *resp.Name)
+	log.Success(azureCtx, "Created network security group", "name", *resp.Name)
 
 	return nil
 }

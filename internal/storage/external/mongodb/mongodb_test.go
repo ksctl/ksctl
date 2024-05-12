@@ -3,11 +3,13 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/image"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"io"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/docker/docker/api/types/image"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -15,14 +17,16 @@ import (
 	"gotest.tools/v3/assert"
 
 	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
-	db resources.StorageFactory
+	db           types.StorageFactory
+	parentCtx    context.Context     = context.TODO()
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
@@ -77,7 +81,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitStorage(t *testing.T) {
-	db = InitStorage(-1, os.Stdout)
+	db = InitStorage(parentCtx, parentLogger)
 	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +103,7 @@ func TestStore_RWD(t *testing.T) {
 		t.Fatalf("Error should happen on checking for presence of the cluster")
 	}
 
-	fakeData := &types.StorageDocument{
+	fakeData := &storageTypes.StorageDocument{
 		Region:        "region",
 		ClusterName:   "name",
 		ClusterType:   "ha",
@@ -138,9 +142,9 @@ func TestStore_RWDCredentials(t *testing.T) {
 		t.Fatalf("Error should occur as there is no folder created, %v", err)
 	}
 
-	fakeData := &types.CredentialsDocument{
+	fakeData := &storageTypes.CredentialsDocument{
 		InfraProvider: consts.CloudAzure,
-		Azure: &types.CredentialsAzure{
+		Azure: &storageTypes.CredentialsAzure{
 			ClientID: "client_id",
 		},
 	}
@@ -171,12 +175,12 @@ func TestGetClusterInfo(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			fakeData := &types.StorageDocument{
+			fakeData := &storageTypes.StorageDocument{
 				Region:        "regionAzure",
 				ClusterName:   "name_managed",
 				InfraProvider: consts.CloudAzure,
 				ClusterType:   "managed",
-				CloudInfra:    &types.InfrastructureState{Azure: &types.StateConfigurationAzure{}},
+				CloudInfra:    &storageTypes.InfrastructureState{Azure: &storageTypes.StateConfigurationAzure{}},
 			}
 
 			err := db.Write(fakeData)
@@ -192,12 +196,12 @@ func TestGetClusterInfo(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			fakeData := &types.StorageDocument{
+			fakeData := &storageTypes.StorageDocument{
 				Region:        "regionCivo",
 				ClusterName:   "name_managed",
 				InfraProvider: consts.CloudCivo,
 				ClusterType:   "managed",
-				CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
+				CloudInfra:    &storageTypes.InfrastructureState{Civo: &storageTypes.StateConfigurationCivo{}},
 			}
 
 			err := db.Write(fakeData)
@@ -217,13 +221,13 @@ func TestGetClusterInfo(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			fakeData := &types.StorageDocument{
+			fakeData := &storageTypes.StorageDocument{
 				Region:        "regionCivo",
 				ClusterName:   "name_ha",
 				InfraProvider: consts.CloudCivo,
 				ClusterType:   "ha",
-				CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
-				K8sBootstrap:  &types.KubernetesBootstrapState{K3s: &types.StateConfigurationK3s{}},
+				CloudInfra:    &storageTypes.InfrastructureState{Civo: &storageTypes.StateConfigurationCivo{}},
+				K8sBootstrap:  &storageTypes.KubernetesBootstrapState{K3s: &storageTypes.StateConfigurationK3s{}},
 			}
 
 			err := db.Write(fakeData)
@@ -273,41 +277,41 @@ func TestGetClusterInfo(t *testing.T) {
 
 func TestExportImport(t *testing.T) {
 
-	var bkpData *resources.StorageStateExportImport
+	var bkpData *types.StorageStateExportImport
 
 	t.Run("Export all", func(t *testing.T) {
-		var _expect resources.StorageStateExportImport = resources.StorageStateExportImport{
-			Credentials: []*types.CredentialsDocument{
-				&types.CredentialsDocument{
-					Azure: &types.CredentialsAzure{
+		var _expect types.StorageStateExportImport = types.StorageStateExportImport{
+			Credentials: []*storageTypes.CredentialsDocument{
+				&storageTypes.CredentialsDocument{
+					Azure: &storageTypes.CredentialsAzure{
 						ClientID: "client_id",
 					},
 					InfraProvider: consts.CloudAzure,
 				},
 			},
-			Clusters: []*types.StorageDocument{
-				&types.StorageDocument{
+			Clusters: []*storageTypes.StorageDocument{
+				&storageTypes.StorageDocument{
 					Region:        "regionCivo",
 					ClusterName:   "name_ha",
 					ClusterType:   "ha",
 					InfraProvider: consts.CloudCivo,
-					CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
-					K8sBootstrap:  &types.KubernetesBootstrapState{K3s: &types.StateConfigurationK3s{}},
+					CloudInfra:    &storageTypes.InfrastructureState{Civo: &storageTypes.StateConfigurationCivo{}},
+					K8sBootstrap:  &storageTypes.KubernetesBootstrapState{K3s: &storageTypes.StateConfigurationK3s{}},
 				},
-				&types.StorageDocument{
+				&storageTypes.StorageDocument{
 					Region:        "regionCivo",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
 					InfraProvider: consts.CloudCivo,
-					CloudInfra:    &types.InfrastructureState{Civo: &types.StateConfigurationCivo{}},
+					CloudInfra:    &storageTypes.InfrastructureState{Civo: &storageTypes.StateConfigurationCivo{}},
 				},
 
-				&types.StorageDocument{
+				&storageTypes.StorageDocument{
 					Region:        "regionAzure",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
 					InfraProvider: consts.CloudAzure,
-					CloudInfra:    &types.InfrastructureState{Azure: &types.StateConfigurationAzure{}},
+					CloudInfra:    &storageTypes.InfrastructureState{Azure: &storageTypes.StateConfigurationAzure{}},
 				},
 			},
 		}
@@ -348,7 +352,7 @@ func TestExportImport(t *testing.T) {
 		}
 	})
 
-	t.Run("delete all resources", func(t *testing.T) {
+	t.Run("delete all storage", func(t *testing.T) {
 
 		func(t *testing.T) {
 			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
@@ -359,7 +363,7 @@ func TestExportImport(t *testing.T) {
 			dump.Println(m)
 		}(t)
 
-		f := func(factory resources.StorageFactory) *Store {
+		f := func(factory types.StorageFactory) *Store {
 			switch o := factory.(type) {
 			case *Store:
 				return o
@@ -395,22 +399,22 @@ func TestExportImport(t *testing.T) {
 
 	t.Run("Export specific cluster", func(t *testing.T) {
 
-		var _expect resources.StorageStateExportImport = resources.StorageStateExportImport{
-			Credentials: []*types.CredentialsDocument{
-				&types.CredentialsDocument{
-					Azure: &types.CredentialsAzure{
+		var _expect types.StorageStateExportImport = types.StorageStateExportImport{
+			Credentials: []*storageTypes.CredentialsDocument{
+				&storageTypes.CredentialsDocument{
+					Azure: &storageTypes.CredentialsAzure{
 						ClientID: "client_id",
 					},
 					InfraProvider: consts.CloudAzure,
 				},
 			},
-			Clusters: []*types.StorageDocument{
-				&types.StorageDocument{
+			Clusters: []*storageTypes.StorageDocument{
+				&storageTypes.StorageDocument{
 					Region:        "regionAzure",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
 					InfraProvider: consts.CloudAzure,
-					CloudInfra:    &types.InfrastructureState{Azure: &types.StateConfigurationAzure{}},
+					CloudInfra:    &storageTypes.InfrastructureState{Azure: &storageTypes.StateConfigurationAzure{}},
 				},
 			},
 		}

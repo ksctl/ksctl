@@ -1,8 +1,6 @@
-package resources
+package types
 
 import (
-	"io"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
@@ -43,7 +41,4 @@ type Metadata struct {
 
 	Applications []string `json:"preinstalled_apps"`
 	CNIPlugin    string   `json:"cni_plugin"`
-
-	LogVerbosity int       `json:"log_verbosity"`
-	LogWritter   io.Writer `json:"log_writter"`
 }
