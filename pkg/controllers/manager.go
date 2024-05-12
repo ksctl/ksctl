@@ -92,22 +92,27 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 	if client.Metadata.Provider == consts.CloudLocal {
 		client.Metadata.Region = "LOCAL"
 	}
+
 	clusterType := consts.ClusterTypeMang
 	if client.Metadata.IsHA {
 		clusterType = consts.ClusterTypeHa
 	}
+
 	if err := client.Storage.Setup(
 		client.Metadata.Provider,
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		clusterType); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
+
 	var (
 		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
@@ -118,14 +123,22 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 	}
 
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
 	if op != consts.OperationCreate && op != consts.OperationDelete {
-		return log.NewError(controllerCtx, "Invalid operation")
+
+		err := log.NewError(controllerCtx, "Invalid operation")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
-	return bootstrapController.ApplicationsInCluster(client, stateDocument, op)
+	if err := bootstrapController.ApplicationsInCluster(client, stateDocument, op); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
+	}
+	return nil
 }
 
 func (manager *KsctlControllerClient) Credentials() error {
@@ -133,9 +146,6 @@ func (manager *KsctlControllerClient) Credentials() error {
 	client := manager.client
 
 	defer panicCatcher(log)
-	if client.Storage == nil {
-		return log.NewError(controllerCtx, "Initalize the storage driver")
-	}
 
 	var err error
 	switch client.Metadata.Provider {
@@ -153,11 +163,13 @@ func (manager *KsctlControllerClient) Credentials() error {
 	}
 
 	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
 	err = client.Cloud.Credential(client.Storage)
 	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 	log.Success(controllerCtx, "Successfully Credential Added")
@@ -171,19 +183,24 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		client.Metadata.Region = "LOCAL"
 	}
+
 	if err := client.Storage.Setup(
 		client.Metadata.Provider,
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		consts.ClusterTypeMang); err != nil {
+
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
@@ -196,19 +213,25 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 	}
 
 	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
-		return log.NewError(controllerCtx, "invalid CNI plugin")
+		err := log.NewError(controllerCtx, "invalid CNI plugin")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
+
 	var (
 		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
 
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
+
 	// it gets supportForApps, supportForCNI, error
 	externalApp, externalCNI, cloudResErr := cloud.CreateManagedCluster(client)
 	if cloudResErr != nil {
-		return log.NewError(controllerCtx, cloudResErr.Error())
+		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
+		return cloudResErr
 	}
 
 	if err := bootstrapController.InstallAdditionalTools(
@@ -216,7 +239,9 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 		externalApp,
 		client,
 		stateDocument); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	log.Success(controllerCtx, "successfully created managed cluster")
@@ -230,19 +255,24 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 
 	defer panicCatcher(log)
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		client.Metadata.Region = "LOCAL"
 	}
+
 	if err := client.Storage.Setup(
 		client.Metadata.Provider,
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		consts.ClusterTypeMang); err != nil {
+
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
@@ -257,14 +287,18 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
+
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	cloudResErr := cloud.DeleteManagedCluster(client)
 	if cloudResErr != nil {
-		return log.NewError(controllerCtx, cloudResErr.Error())
+		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
+		return cloudResErr
 	}
+
 	log.Success(controllerCtx, "successfully deleted managed cluster")
 	return nil
 }
@@ -275,28 +309,35 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return nil, err
 	}
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		client.Metadata.Region = "LOCAL"
 	}
+
 	clusterType := consts.ClusterTypeMang
 	if client.Metadata.IsHA {
 		clusterType = consts.ClusterTypeHa
 	}
+
 	if err := client.Storage.Setup(
 		client.Metadata.Provider,
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		clusterType); err != nil {
+
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return nil, err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
+
 	var (
 		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
@@ -320,15 +361,18 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 	}
 
 	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return nil, err
 	}
 
 	if err := client.Cloud.IsPresent(client.Storage); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return nil, err
 	}
 
 	read, err := client.Storage.Read()
 	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return nil, err
 	}
 	log.Debug(controllerCtx, "data", "read", read)
@@ -338,7 +382,9 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 
 	path, err := helpers.WriteKubeConfig(kubeconfig)
 	log.Debug(controllerCtx, "data", "kubeconfigPath", path)
+
 	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return nil, err
 	}
 
@@ -353,7 +399,8 @@ func (manager *KsctlControllerClient) GetCluster() error {
 	defer panicCatcher(log)
 
 	if err := validationFields(client.Metadata); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	if client.Metadata.Provider == consts.CloudLocal {
@@ -372,17 +419,22 @@ func (manager *KsctlControllerClient) GetCluster() error {
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
 		client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
+
 	case consts.CloudAzure:
 		client.Cloud, err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
+
 	case consts.CloudAws:
 		client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
+
 	case consts.CloudLocal:
 		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+
 	default:
 		err = log.NewError(controllerCtx, "Currently not supported!")
 	}
 
 	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
@@ -391,53 +443,61 @@ func (manager *KsctlControllerClient) GetCluster() error {
 	case consts.CloudCivo:
 		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudLocal:
 		data, err := localPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAws:
 		data, err := awsPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAzure:
 		data, err := azurePkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAll:
 		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 
 		data, err = localPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 
 		data, err = azurePkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 
 		data, err = awsPkg.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 		printerTable = append(printerTable, data...)
 	}
@@ -454,9 +514,12 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 	defer panicCatcher(log)
 
 	if client.Metadata.Provider == consts.CloudLocal {
-		return log.NewError(controllerCtx, "ha not supported")
+		err := log.NewError(controllerCtx, "ha not supported")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
@@ -465,13 +528,17 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		consts.ClusterTypeHa); err != nil {
+
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
+
 	var (
 		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
@@ -482,35 +549,47 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 	}
 
 	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
-		return log.NewError(controllerCtx, "invalid CNI plugin")
+		err := log.NewError(controllerCtx, "invalid CNI plugin")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
+
 	err := bootstrapController.Setup(client, stateDocument)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	cloudResErr := cloud.CreateHACluster(client)
 	if cloudResErr != nil {
-		return log.NewError(controllerCtx, cloudResErr.Error())
+		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
+		return cloudResErr
 	}
-	// Cloud done
+
 	var payload cloudControllerResource.CloudResourceState
-	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+	payload, err = client.Cloud.GetStateForHACluster(client.Storage)
+	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
+	}
 
 	err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationCreate)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	log.Note(controllerCtx, "only cloud storage are having replay!")
 
 	externalCNI, err := bootstrapController.ConfigureCluster(client)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	if err := bootstrapController.InstallAdditionalTools(
@@ -518,7 +597,8 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		true,
 		client,
 		stateDocument); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	log.Success(controllerCtx, "successfully created ha cluster")
@@ -533,9 +613,13 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 	defer panicCatcher(log)
 
 	if client.Metadata.Provider == consts.CloudLocal {
-		return log.NewError(controllerCtx, "ha not supported")
+		err := log.NewError(controllerCtx, "ha not supported")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
+
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
@@ -544,22 +628,29 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		consts.ClusterTypeHa); err != nil {
+
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
+
 	var (
 		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
+
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
+
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	//if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
@@ -600,7 +691,8 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 
 	cloudResErr := cloud.DeleteHACluster(client)
 	if cloudResErr != nil {
-		return log.NewError(controllerCtx, cloudResErr.Error())
+		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
+		return cloudResErr
 	}
 
 	log.Success(controllerCtx, "successfully deleted HA cluster")
@@ -614,6 +706,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
@@ -621,11 +714,17 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 	//	// disable add AddWorkerPlaneNode when this feature is being used
 	//	return log.NewError(controllerCtx,"This Functionality is diabled for {HA type clusters}", "FEATURE_FLAG", consts.KsctlFeatureFlagHaAutoscale)
 	//}
+
 	if client.Metadata.Provider == consts.CloudLocal {
-		return log.NewError(controllerCtx, "ha not supported")
+		err := log.NewError(controllerCtx, "ha not supported")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
+
 	if !client.Metadata.IsHA {
-		return log.NewError(controllerCtx, "this feature is only for ha clusters (for now)")
+		err := log.NewError(controllerCtx, "this feature is only for ha clusters")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	if err := client.Storage.Setup(
@@ -633,13 +732,17 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		consts.ClusterTypeHa); err != nil {
+
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
+
 	var (
 		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
@@ -648,34 +751,42 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
+
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	err := bootstrapController.Setup(client, stateDocument)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	currWP, cloudResErr := cloud.AddWorkerNodes(client)
 	if cloudResErr != nil {
-		return log.NewError(controllerCtx, cloudResErr.Error())
+		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
+		return cloudResErr
 	}
 
-	// Cloud done
 	var payload cloudControllerResource.CloudResourceState
-	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
-	// transfer the state
+	payload, err = client.Cloud.GetStateForHACluster(client.Storage)
+	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
+	}
 
 	err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationGet)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	log.Note(controllerCtx, "Only cloud storage are having replay!")
 	err = bootstrapController.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	log.Success(controllerCtx, "successfully added workernodes")
@@ -689,6 +800,7 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
@@ -697,10 +809,15 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 	//}
 
 	if client.Metadata.Provider == consts.CloudLocal {
-		return log.NewError(controllerCtx, "ha not supported")
+		err := log.NewError(controllerCtx, "ha not supported for local")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
+
 	if !client.Metadata.IsHA {
-		return log.NewError(controllerCtx, "this feature is only for ha clusters (for now)")
+		err := log.NewError(controllerCtx, "this feature is only for ha clusters")
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	if err := client.Storage.Setup(
@@ -708,50 +825,67 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		consts.ClusterTypeHa); err != nil {
+
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
+
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
+			log.Error(controllerCtx, "handled error", "catch", err)
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
+
 	var (
 		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
 	)
+
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
+
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	err := bootstrapController.Setup(client, stateDocument)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	hostnames, err := cloud.DelWorkerNodes(client)
 	if err != nil {
-		return log.NewError(controllerCtx, err.Error())
+		log.Error(controllerCtx, "handled error", "catch", err)
+		return err
 	}
 
 	log.Debug(controllerCtx, "K8s nodes to be deleted", "hostnames", strings.Join(hostnames, ";"))
 
 	if !fakeClient {
 		var payload cloudControllerResource.CloudResourceState
-		payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
+		payload, err = client.Cloud.GetStateForHACluster(client.Storage)
+		if err != nil {
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
+		}
 
 		err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationGet)
 		if err != nil {
-			return log.NewError(controllerCtx, err.Error())
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 
 		if err := bootstrapController.DelWorkerPlanes(
 			client,
 			stateDocument.ClusterKubeConfig,
 			hostnames); err != nil {
-			return log.NewError(controllerCtx, err.Error())
+
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
 		}
 	}
 	log.Success(controllerCtx, "Successfully deleted workerNodes")

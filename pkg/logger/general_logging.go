@@ -27,14 +27,14 @@ type GeneralLog struct {
 }
 
 func (l *GeneralLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
-	l.log(false, ctx, msgType, message)
+	l.log(false, false, ctx, msgType, message)
 }
 
 func (l *GeneralLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
-	l.log(false, ctx, msgType, format, args...)
+	l.log(false, false, ctx, msgType, format, args...)
 }
 
-func formGroups(ctx context.Context, v ...any) (format string, vals []any) {
+func formGroups(disableContext bool, ctx context.Context, v ...any) (format string, vals []any) {
 	if len(v) == 0 {
 		return "\n", nil
 	}
@@ -43,8 +43,10 @@ func formGroups(ctx context.Context, v ...any) (format string, vals []any) {
 	defer func() {
 		format = _format.String()
 	}()
-	_format.WriteString("component=%s ")
-	vals = append(vals, color.MagentaString(getPackageName(ctx)))
+	if !disableContext {
+		_format.WriteString("component=%s ")
+		vals = append(vals, color.MagentaString(getPackageName(ctx)))
+	}
 	i := 0
 	for ; i+1 < len(v); i += 2 {
 		if !reflect.TypeOf(v[i+1]).Implements(reflect.TypeOf((*error)(nil)).Elem()) &&
@@ -74,12 +76,12 @@ func isLogEnabled(level uint, msgType consts.CustomExternalLogLevel) bool {
 	return true
 }
 
-func (l *GeneralLog) logErrorf(ctx context.Context, msg string, args ...any) error {
+func (l *GeneralLog) logErrorf(disableContext bool, ctx context.Context, msg string, args ...any) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), consts.LOG_ERROR)
 	msg = prefix + msg
-	format, _args := formGroups(ctx, args...)
+	format, _args := formGroups(disableContext, ctx, args...)
 
 	var errMsg error
 	if _args == nil {
@@ -87,12 +89,13 @@ func (l *GeneralLog) logErrorf(ctx context.Context, msg string, args ...any) err
 	} else {
 		errMsg = fmt.Errorf(msg+" "+format, _args...)
 	}
+	// TODO: need to add some way for the writer to the file!
 	// fmt.Fprintln(l.writter, errMsg)
 
 	return errMsg
 }
 
-func (l *GeneralLog) log(useGroupFormer bool, ctx context.Context, msgType consts.CustomExternalLogLevel, msg string, args ...any) {
+func (l *GeneralLog) log(disableContext bool, useGroupFormer bool, ctx context.Context, msgType consts.CustomExternalLogLevel, msg string, args ...any) {
 	if !isLogEnabled(l.level, msgType) {
 		return
 	}
@@ -102,7 +105,7 @@ func (l *GeneralLog) log(useGroupFormer bool, ctx context.Context, msgType const
 
 	if useGroupFormer {
 		msg = prefix + msg
-		format, _args := formGroups(ctx, args...)
+		format, _args := formGroups(disableContext, ctx, args...)
 		if _args == nil {
 			fmt.Fprint(l.writter, msg+" "+format)
 		} else {
@@ -138,31 +141,32 @@ func NewGeneralLogger(verbose int, out io.Writer) types.LoggerFactory {
 }
 
 func (l *GeneralLog) Print(ctx context.Context, msg string, args ...any) {
-	l.log(true, ctx, consts.LOG_INFO, msg, args...)
+	l.log(false, true, ctx, consts.LOG_INFO, msg, args...)
 }
 
 func (l *GeneralLog) Success(ctx context.Context, msg string, args ...any) {
-	l.log(true, ctx, consts.LOG_SUCCESS, msg, args...)
+	l.log(false, true, ctx, consts.LOG_SUCCESS, msg, args...)
 }
 
 func (l *GeneralLog) Note(ctx context.Context, msg string, args ...any) {
-	l.log(true, ctx, consts.LOG_NOTE, msg, args...)
+	l.log(false, true, ctx, consts.LOG_NOTE, msg, args...)
 }
 
 func (l *GeneralLog) Debug(ctx context.Context, msg string, args ...any) {
-	l.log(true, ctx, consts.LOG_DEBUG, msg, args...)
+	l.log(false, true, ctx, consts.LOG_DEBUG, msg, args...)
 }
 
+// TODO: Depricate the context for Error() method
 func (l *GeneralLog) Error(ctx context.Context, msg string, args ...any) {
-	l.log(true, ctx, consts.LOG_ERROR, msg, args...)
+	l.log(true, true, ctx, consts.LOG_ERROR, msg, args...)
 }
 
 func (l *GeneralLog) NewError(ctx context.Context, msg string, args ...any) error {
-	return l.logErrorf(ctx, msg, args...)
+	return l.logErrorf(false, ctx, msg, args...)
 }
 
 func (l *GeneralLog) Warn(ctx context.Context, msg string, args ...any) {
-	l.log(true, ctx, consts.LOG_WARNING, msg, args...)
+	l.log(false, true, ctx, consts.LOG_WARNING, msg, args...)
 }
 
 func (l *GeneralLog) Table(ctx context.Context, data []cloudController.AllClusterData) {

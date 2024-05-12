@@ -22,7 +22,12 @@ func main() {
 	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
 		verbosityLevel = -1
 	}
-	l = logger.NewGeneralLogger(verbosityLevel, os.Stdout)
+
+	if os.Getenv("NEW_LOGGING") == "true" {
+		l = logger.NewGeneralLogger(verbosityLevel, os.Stdout)
+	} else {
+		l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
+	}
 
 	operation, meta := GetReqPayload(l)
 
