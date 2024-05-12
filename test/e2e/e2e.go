@@ -17,7 +17,12 @@ var (
 
 func main() {
 	timer := time.Now()
-	l = logger.NewStructuredLogger(-1, os.Stdout)
+
+	verbosityLevel := 0
+	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
+		verbosityLevel = -1
+	}
+	l = logger.NewGeneralLogger(verbosityLevel, os.Stdout)
 
 	operation, meta := GetReqPayload(l)
 

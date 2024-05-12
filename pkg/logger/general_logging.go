@@ -21,18 +21,17 @@ import (
 )
 
 type GeneralLog struct {
-	mu         *sync.Mutex
-	writter    io.Writer
-	moduleName string
-	level      uint
+	mu      *sync.Mutex
+	writter io.Writer
+	level   uint
 }
 
 func (l *GeneralLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
-	l.log(ctx, msgType, message)
+	l.log(false, ctx, msgType, message)
 }
 
 func (l *GeneralLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
-	l.log(ctx, msgType, format, args...)
+	l.log(false, ctx, msgType, format, args...)
 }
 
 func formGroups(ctx context.Context, v ...any) (format string, vals []any) {
@@ -93,19 +92,25 @@ func (l *GeneralLog) logErrorf(ctx context.Context, msg string, args ...any) err
 	return errMsg
 }
 
-func (l *GeneralLog) log(ctx context.Context, msgType consts.CustomExternalLogLevel, msg string, args ...any) {
+func (l *GeneralLog) log(useGroupFormer bool, ctx context.Context, msgType consts.CustomExternalLogLevel, msg string, args ...any) {
 	if !isLogEnabled(l.level, msgType) {
 		return
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), msgType)
-	msg = prefix + msg
-	format, _args := formGroups(ctx, args...)
-	if _args == nil {
-		fmt.Fprint(l.writter, msg+" "+format)
+
+	if useGroupFormer {
+		msg = prefix + msg
+		format, _args := formGroups(ctx, args...)
+		if _args == nil {
+			fmt.Fprint(l.writter, msg+" "+format)
+		} else {
+			fmt.Fprintf(l.writter, msg+" "+format, _args...)
+		}
 	} else {
-		fmt.Fprintf(l.writter, msg+" "+format, _args...)
+		args = append([]any{color.MagentaString(getPackageName(ctx))}, args...)
+		fmt.Fprintf(l.writter, prefix+"component=%s "+msg+"\n", args...)
 	}
 }
 
@@ -133,23 +138,23 @@ func NewGeneralLogger(verbose int, out io.Writer) types.LoggerFactory {
 }
 
 func (l *GeneralLog) Print(ctx context.Context, msg string, args ...any) {
-	l.log(ctx, consts.LOG_INFO, msg, args...)
+	l.log(true, ctx, consts.LOG_INFO, msg, args...)
 }
 
 func (l *GeneralLog) Success(ctx context.Context, msg string, args ...any) {
-	l.log(ctx, consts.LOG_SUCCESS, msg, args...)
+	l.log(true, ctx, consts.LOG_SUCCESS, msg, args...)
 }
 
 func (l *GeneralLog) Note(ctx context.Context, msg string, args ...any) {
-	l.log(ctx, consts.LOG_NOTE, msg, args...)
+	l.log(true, ctx, consts.LOG_NOTE, msg, args...)
 }
 
 func (l *GeneralLog) Debug(ctx context.Context, msg string, args ...any) {
-	l.log(ctx, consts.LOG_DEBUG, msg, args...)
+	l.log(true, ctx, consts.LOG_DEBUG, msg, args...)
 }
 
 func (l *GeneralLog) Error(ctx context.Context, msg string, args ...any) {
-	l.log(ctx, consts.LOG_ERROR, msg, args...)
+	l.log(true, ctx, consts.LOG_ERROR, msg, args...)
 }
 
 func (l *GeneralLog) NewError(ctx context.Context, msg string, args ...any) error {
@@ -157,7 +162,7 @@ func (l *GeneralLog) NewError(ctx context.Context, msg string, args ...any) erro
 }
 
 func (l *GeneralLog) Warn(ctx context.Context, msg string, args ...any) {
-	l.log(ctx, consts.LOG_WARNING, msg, args...)
+	l.log(true, ctx, consts.LOG_WARNING, msg, args...)
 }
 
 func (l *GeneralLog) Table(ctx context.Context, data []cloudController.AllClusterData) {

@@ -10,7 +10,6 @@ import (
 )
 
 func GetReqPayload(l types.LoggerFactory) (Operation, types.Metadata) {
-	l.SetPackageName("e2e-tests")
 	arg1 := flag.String("op", "", "operation to perform")
 	arg2 := flag.String("file", "", "file name as payload")
 
@@ -25,24 +24,16 @@ func GetReqPayload(l types.LoggerFactory) (Operation, types.Metadata) {
 
 	raw, err := os.ReadFile(*arg2)
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, err.Error())
 		os.Exit(1)
 	}
 
 	var payload types.Metadata
 	err = json.Unmarshal(raw, &payload)
 	if err != nil {
-		l.Error(err.Error())
+		l.Error(ctx, err.Error())
 		os.Exit(1)
 	}
-
-	verbosityLevel := 0
-	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
-		verbosityLevel = -1
-	}
-
-	payload.LogVerbosity = verbosityLevel
-	payload.LogWritter = os.Stdout
 
 	return Operation(*arg1), payload
 }

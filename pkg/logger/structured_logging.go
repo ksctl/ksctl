@@ -26,6 +26,8 @@ const (
 	LimitCol = 80
 )
 
+// FIXME: Missing a mutex
+
 func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
 	fmt.Printf("%s (package: %s) [%s] %v\n", time.Now().Format(time.ANSIC), ctx.Value(consts.ContextModuleNameKey), msgType, message)
 }
