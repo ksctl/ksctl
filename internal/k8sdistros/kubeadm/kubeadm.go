@@ -1,15 +1,22 @@
 package kubeadm
 
 import (
+	"context"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"strings"
 	"sync"
 
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
+)
+
+var (
+	mainStateDocument *storageTypes.StorageDocument
+	log               types.LoggerFactory
+	kubeadmCtx        context.Context
 )
 
 type Kubeadm struct {
@@ -25,53 +32,48 @@ func (p *Kubeadm) Setup(storage types.StorageFactory, operation consts.KsctlOper
 	}
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	return nil
 }
 
 func (p *Kubeadm) Version(ver string) types.KubernetesBootstrap {
-	if isValidKubeadmVersion(ver) {
+	if err := isValidKubeadmVersion(ver); err == nil {
 		// valid
 		p.KubeadmVer = ver
-		log.Debug("Printing", "kubeadm.KubeadmVersion", p.KubeadmVer)
+		log.Debug(kubeadmCtx, "Printing", "kubeadm.KubeadmVersion", p.KubeadmVer)
 		return p
+	} else {
+		log.Error(kubeadmCtx, err.Error())
+		return nil
 	}
-	return nil
 }
 
 func (p *Kubeadm) CNI(cni string) (externalCNI bool) {
-	log.Debug("Printing", "cni", cni)
+	log.Debug(kubeadmCtx, "Printing", "cni", cni)
 	switch consts.KsctlValidCNIPlugin(cni) {
 	case "":
 		p.Cni = ""
 	default:
-		// this tells us that CNI should be installed via the k8s client
 		p.Cni = string(consts.CNINone)
 	}
-	return true
+	return true // if its empty string we will install the default cni as flannel
 }
 
-func isValidKubeadmVersion(ver string) bool {
+func isValidKubeadmVersion(ver string) error {
 	validVersion := []string{"1.28", "1.29", "1.30"}
 
 	for _, vver := range validVersion {
 		if vver == ver {
-			return true
+			return nil
 		}
 	}
-	log.Error(strings.Join(validVersion, " "))
-	return false
+	return log.NewError(kubeadmCtx, "invalid kubeadm version", "valid versions", strings.Join(validVersion, " "))
 }
 
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	log               types.LoggerFactory
-)
-
-func NewClient(m types.Metadata, state *storageTypes.StorageDocument) types.KubernetesBootstrap {
-	log = logger.NewStructuredLogger(m.LogVerbosity, m.LogWritter)
-	log.SetPackageName("kubeadm")
+func NewClient(parentCtx context.Context, parentLog types.LoggerFactory, state *storageTypes.StorageDocument) types.KubernetesBootstrap {
+	kubeadmCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.K8sK3s))
+	log = parentLog
 
 	mainStateDocument = state
 	return &Kubeadm{mu: &sync.Mutex{}}

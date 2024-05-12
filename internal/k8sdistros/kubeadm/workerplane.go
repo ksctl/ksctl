@@ -12,13 +12,13 @@ import (
 func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage types.StorageFactory) error {
 	p.mu.Lock()
 	idx := noOfWP
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(kubeadmCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print("configuring Workerplane", "number", strconv.Itoa(idx))
+	log.Print(kubeadmCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	script := scriptJoinWorkerplane(
@@ -27,17 +27,17 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage types.StorageFactory) erro
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 		mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
 	)
-	log.Print("Installing Kubeadm and Joining WorkerNode to existing cluster")
+	log.Print(kubeadmCtx, "Installing Kubeadm and Joining WorkerNode to existing cluster")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 		Script(script).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
-	log.Success("configured WorkerPlane", "number", strconv.Itoa(idx))
+	log.Success(kubeadmCtx, "configured WorkerPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }

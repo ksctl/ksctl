@@ -18,38 +18,38 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 		mainStateDocument.K8sBootstrap.B.EtcdCert,
 		mainStateDocument.K8sBootstrap.B.EtcdKey)
 
-	log.Print("Installing Kubeadm and copying etcd certificates")
+	log.Print(kubeadmCtx, "Installing Kubeadm and copying etcd certificates")
 	if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 		Script(installKubeadmTools).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		FastMode(true).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
-	log.Print("Fetching Kubeadm Bootstrap Certificate Key")
+	log.Print(kubeadmCtx, "Fetching Kubeadm Bootstrap Certificate Key")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 		Script(scriptGetCertificateKey()).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
 	mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	log.Debug("Printing", "CertificateKey", mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey)
+	log.Debug(kubeadmCtx, "Printing", "CertificateKey", mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey)
 
-	log.Print("Generating Kubeadm Bootstrap Token")
+	log.Print(kubeadmCtx, "Generating Kubeadm Bootstrap Token")
 
 	if v, err := generatebootstrapToken(); err != nil {
-		return log.NewError(err.Error())
+		return log.NewError(kubeadmCtx, "failed to gen bootstrap token", "Reason", err)
 	} else {
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = v
-		log.Debug("Printing", "BootstrapToken", mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken)
+		log.Debug(kubeadmCtx, "Printing", "BootstrapToken", mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken)
 	}
 
-	log.Print("Configuring K8s cluster")
+	log.Print(kubeadmCtx, "Configuring K8s cluster")
 
 	configureControlPlane0 := scriptAddKubeadmControlplane0(
 		kubeadm.KubeadmVer,
@@ -63,25 +63,25 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 		Script(configureControlPlane0).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		FastMode(true).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
-	log.Print("Fetching Discovery Token CA Cert Hash")
+	log.Print(kubeadmCtx, "Fetching Discovery Token CA Cert Hash")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 		Script(scriptDiscoveryTokenCACertHash()).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
-		SSHExecute(log); err != nil {
-		return log.NewError(err.Error())
+		SSHExecute(); err != nil {
+		return err
 	}
 
 	mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	log.Debug("Printing", "DiscoveryTokenCACertHash", mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash)
+	log.Debug(kubeadmCtx, "Printing", "DiscoveryTokenCACertHash", mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash)
 
 	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 	return nil
 }
@@ -89,14 +89,14 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) error {
 	p.mu.Lock()
 	idx := noOfCP
-	sshExecutor := helpers.NewSSHExecutor(mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := helpers.NewSSHExecutor(kubeadmCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print("configuring ControlPlane", "number", strconv.Itoa(idx))
+	log.Print(kubeadmCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
 		err := configureCP_1(storage, p, sshExecutor)
 		if err != nil {
-			return log.NewError(err.Error())
+			return err
 		}
 	} else {
 
@@ -106,17 +106,17 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
 			mainStateDocument.K8sBootstrap.B.EtcdKey)
 
-		log.Print("Installing Kubeadm and copying etcd certificates")
+		log.Print(kubeadmCtx, "Installing Kubeadm and copying etcd certificates")
 
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(installKubeadmTools).
 			IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
 			FastMode(true).
-			SSHExecute(log); err != nil {
-			return log.NewError(err.Error())
+			SSHExecute(); err != nil {
+			return err
 		}
 
-		log.Print("Joining controlplane to existing cluster")
+		log.Print(kubeadmCtx, "Joining controlplane to existing cluster")
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(scriptJoinControlplane(
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
@@ -126,35 +126,35 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 			)).
 			IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
 			FastMode(true).
-			SSHExecute(log); err != nil {
-			return log.NewError(err.Error())
+			SSHExecute(); err != nil {
+			return err
 		}
 
 		if idx+1 == len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes) {
 
-			log.Print("Fetching Kubeconfig")
+			log.Print(kubeadmCtx, "Fetching Kubeconfig")
 
 			if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 				Script(scriptGetKubeconfig()).
 				IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 				FastMode(true).
-				SSHExecute(log); err != nil {
-				return log.NewError(err.Error())
+				SSHExecute(); err != nil {
+				return err
 			}
 
 			kubeconfig := sshExecutor.GetOutput()[0]
 			kubeconfig = strings.Replace(kubeconfig, "kubernetes-admin@kubernetes", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
 			kubeconfig = strings.Replace(kubeconfig, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			mainStateDocument.ClusterKubeConfig = kubeconfig
-			log.Debug("Printing", "kubeconfig", kubeconfig)
+			log.Debug(kubeadmCtx, "Printing", "kubeconfig", kubeconfig)
 
 			if err := storage.Write(mainStateDocument); err != nil {
-				return log.NewError(err.Error())
+				return err
 			}
 		}
 
 	}
-	log.Success("configured ControlPlane", "number", strconv.Itoa(idx))
+	log.Success(kubeadmCtx, "configured ControlPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }

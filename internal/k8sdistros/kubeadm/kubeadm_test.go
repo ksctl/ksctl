@@ -3,11 +3,12 @@ package kubeadm
 import (
 	"context"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"regexp"
 	"sync"
 	"testing"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	testHelper "github.com/ksctl/ksctl/test/helpers"
 
@@ -27,14 +28,18 @@ var (
 	fakeClient         *Kubeadm
 	dir                = fmt.Sprintf("%s ksctl-kubeadm-test", os.TempDir())
 	fakeStateFromCloud cloudControlRes.CloudResourceState
+	parentCtx          context.Context     = context.TODO()
+	parentLogger       types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
-func NewClientHelper(x cloudControlRes.CloudResourceState, storage types.StorageFactory, m types.Metadata, state *storageTypes.StorageDocument) *Kubeadm {
+func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.StorageDocument) *Kubeadm {
+	kubeadmCtx = parentCtx
+	log = parentLogger
 
 	mainStateDocument = state
 	mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
 	var err error
-	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(log, x.PrivateIPv4DataStores)
+	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(parentCtx, parentLogger, x.PrivateIPv4DataStores)
 	if err != nil {
 		return nil
 	}
@@ -55,11 +60,9 @@ func NewClientHelper(x cloudControlRes.CloudResourceState, storage types.Storage
 }
 
 func TestMain(m *testing.M) {
-	log = logger.NewStructuredLogger(-1, os.Stdout)
-	log.SetPackageName("kubeadm")
 	mainState := &storageTypes.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(log, mainState); err != nil {
-		log.Error(err.Error())
+	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
+		log.Error(parentCtx, err.Error())
 		os.Exit(1)
 	}
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
@@ -85,23 +88,12 @@ func TestMain(m *testing.M) {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(fakeStateFromCloud, storeHA, types.Metadata{
-		ClusterName:  "fake",
-		Region:       "fake",
-		Provider:     consts.CloudAzure,
-		IsHA:         true,
-		LogVerbosity: -1,
-		LogWritter:   os.Stdout,
-		NoCP:         7,
-		NoDS:         5,
-		NoWP:         10,
-		K8sDistro:    consts.K8sKubeadm,
-	}, &storageTypes.StorageDocument{})
+	fakeClient = NewClientHelper(fakeStateFromCloud, &storageTypes.StorageDocument{})
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
 
-	storeHA = localstate.InitStorage(-1, os.Stdout)
+	storeHA = localstate.InitStorage(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
 	_ = storeHA.Connect(context.TODO())
 
@@ -122,10 +114,15 @@ func TestK3sDistro_Version(t *testing.T) {
 	forTesting := map[string]bool{
 		"1.26.7": false,
 		"1.28":   true,
+		"1.29":   true,
+		"1.30":   true,
 	}
 	for ver, expected := range forTesting {
-		if ok := isValidKubeadmVersion(ver); ok != expected {
-			t.Fatalf("Expected for %s as %v but got %v", ver, expected, ok)
+		err := isValidKubeadmVersion(ver)
+		got := err == nil
+
+		if got != expected {
+			t.Fatalf("Expected for %s as %v but got %v", ver, expected, got)
 		}
 	}
 }
