@@ -87,7 +87,7 @@ func (l *GeneralLog) logErrorf(ctx context.Context, msg string, args ...any) err
 	} else {
 		errMsg = fmt.Errorf(msg+" "+format, _args...)
 	}
-	fmt.Fprintln(l.writter, errMsg)
+	// fmt.Fprintln(l.writter, errMsg)
 
 	return errMsg
 }
