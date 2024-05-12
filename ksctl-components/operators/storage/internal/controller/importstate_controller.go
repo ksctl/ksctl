@@ -65,7 +65,8 @@ type ImportStateReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
 func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	log.Debug("Triggered Reconciliation")
+	ctx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-storage-import-controller")
+	log.Debug(ctx, "Triggered Reconciliation")
 
 	exportedData := new(storagev1alpha1.ImportState)
 
@@ -74,12 +75,12 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if exportedData.Spec.Handled {
-		log.Success("skipped!, already handled")
+		log.Success(ctx, "skipped!, already handled")
 		return ctrl.Result{}, nil
 	}
 
-	log.Debug("Debugging", "name", exportedData.Name, "namespace", exportedData.Namespace)
-	log.Debug("exported Spec", "status", exportedData.Status, "rawData", len(exportedData.Spec.RawExportedData))
+	log.Debug(ctx, "Debugging", "name", exportedData.Name, "namespace", exportedData.Namespace)
+	log.Debug(ctx, "exported Spec", "status", exportedData.Status, "rawData", len(exportedData.Spec.RawExportedData))
 
 	exportedData.Spec.Handled = true
 
@@ -91,30 +92,30 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if os.Getenv(string(consts.KsctlFakeFlag)) != ControllerTestSkip { // to ecape test
 		defer func() {
 			if err := conn.Close(); err != nil {
-				log.Error("Connection failed to close", "Reason", err)
+				log.Error(ctx, "Connection failed to close", "Reason", err)
 			}
 		}()
 	}
 
 	if err != nil {
-		log.Error("New RPC Client", "Reason", err)
+		log.Error(ctx, "New RPC Client", "Reason", err)
 		exportedData.Spec.Success = false
 		exportedData.Spec.ReasonOfFailure = err.Error()
 
 		if _err := r.Update(context.Background(), exportedData); _err != nil {
-			log.Error("update failed", "Reason", _err)
+			log.Error(ctx, "update failed", "Reason", _err)
 			return ctrl.Result{}, _err
 		}
 		return ctrl.Result{}, err
 	}
 
 	if _err := ImportData(ctx, rpcClient, exportedData.Spec.RawExportedData); _err != nil {
-		log.Error("ImportData", "Reason", _err)
+		log.Error(ctx, "ImportData", "Reason", _err)
 		exportedData.Spec.Success = false
 		exportedData.Spec.ReasonOfFailure = _err.Error()
 
 		if __err := r.Update(context.Background(), exportedData); __err != nil {
-			log.Error("update failed", "Reason", _err)
+			log.Error(ctx, "update failed", "Reason", _err)
 			return ctrl.Result{}, __err
 		}
 		return ctrl.Result{}, _err
@@ -123,11 +124,11 @@ func (r *ImportStateReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	exportedData.Spec.Success = true
 
 	if _err := r.Update(context.Background(), exportedData); _err != nil {
-		log.Error("update failed", "Reason", _err)
+		log.Error(ctx, "update failed", "Reason", _err)
 		return ctrl.Result{}, _err
 	}
 
-	log.Success("Import was successful")
+	log.Success(ctx, "Import was successful")
 	return ctrl.Result{}, nil
 }
 
@@ -136,7 +137,6 @@ func (r *ImportStateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	log = logger.NewStructuredLogger(
 		LogVerbosity[os.Getenv("LOG_LEVEL")],
 		LogWriter)
-	log.SetPackageName("ksctl-storage-importer")
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&storagev1alpha1.ImportState{}).

@@ -65,7 +65,9 @@ type StackReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
 func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	log.Debug("Triggered Reconciliation")
+	ctx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-app-stack-controller")
+
+	log.Debug(ctx, "Triggered Reconciliation")
 
 	stack := new(applicationv1alpha1.Stack)
 
@@ -73,13 +75,13 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	log.Debug("Debugging", "name", stack.Name, "namespace", stack.Namespace)
-	log.Debug("stack Spec", "spec", stack.Spec)
+	log.Debug(ctx, "Debugging", "name", stack.Name, "namespace", stack.Namespace)
+	log.Debug(ctx, "stack Spec", "spec", stack.Spec)
 
 	if stack.DeletionTimestamp.IsZero() {
 		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
 
-			log.Debug("adding finalizer", "finalizer", stackFinalizer)
+			log.Debug(ctx, "adding finalizer", "finalizer", stackFinalizer)
 
 			stack.ObjectMeta.Finalizers = append(stack.ObjectMeta.Finalizers, stackFinalizer)
 
@@ -95,17 +97,17 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			if os.Getenv(string(consts.KsctlFakeFlag)) != ControllerTestSkip { // to ecape test
 				defer func() {
 					if err := conn.Close(); err != nil {
-						log.Error("Connection failed to close", "Reason", err)
+						log.Error(ctx, "Connection failed to close", "Reason", err)
 					}
 				}()
 			}
 
 			if err != nil {
-				log.Error("New RPC Client", "Reason", err)
+				log.Error(ctx, "New RPC Client", "Reason", err)
 				stack.Status.ReasonOfFailure = err.Error()
 
 				if _err := r.Update(context.Background(), stack); _err != nil {
-					log.Error("update failed", "Reason", _err)
+					log.Error(ctx, "update failed", "Reason", _err)
 					return ctrl.Result{}, _err
 				}
 				return ctrl.Result{
@@ -115,12 +117,12 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}
 
 			if _err := InstallApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
-				log.Error("InstallApp", "Reason", _err)
+				log.Error(ctx, "InstallApp", "Reason", _err)
 				stack.Status.Success = false
 				stack.Status.ReasonOfFailure = _err.Error()
 
 				if __err := r.Update(context.Background(), stack); __err != nil {
-					log.Error("update failed", "Reason", _err)
+					log.Error(ctx, "update failed", "Reason", _err)
 					return ctrl.Result{}, __err
 				}
 				return ctrl.Result{}, _err
@@ -129,11 +131,11 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			stack.Status.Success = true
 
 			if _err := r.Update(context.Background(), stack); _err != nil {
-				log.Error("update failed", "Reason", _err)
+				log.Error(ctx, "update failed", "Reason", _err)
 				return ctrl.Result{}, _err
 			}
 
-			log.Success("Install Application was successful")
+			log.Success(ctx, "Install Application was successful")
 		}
 
 	} else {
@@ -145,13 +147,13 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			if os.Getenv(string(consts.KsctlFakeFlag)) != ControllerTestSkip { // to ecape test
 				defer func() {
 					if err := conn.Close(); err != nil {
-						log.Error("Connection failed to close", "Reason", err)
+						log.Error(ctx, "Connection failed to close", "Reason", err)
 					}
 				}()
 			}
 
 			if err != nil {
-				log.Error("New RPC Client", "Reason", err)
+				log.Error(ctx, "New RPC Client", "Reason", err)
 				return ctrl.Result{
 					RequeueAfter: 30 * time.Second,
 					Requeue:      true,
@@ -159,11 +161,11 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}
 
 			if _err := DeleteApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
-				log.Error("UninstallApp", "Reason", _err)
+				log.Error(ctx, "UninstallApp", "Reason", _err)
 				return ctrl.Result{}, _err
 			}
 
-			log.Success("Uninstall Application was successful")
+			log.Success(ctx, "Uninstall Application was successful")
 
 			stack.ObjectMeta.Finalizers = removeString(stack.ObjectMeta.Finalizers, stackFinalizer)
 			if err := r.Update(context.Background(), stack); err != nil {
@@ -200,7 +202,6 @@ func (r *StackReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		LogVerbosity[os.Getenv("LOG_LEVEL")],
 		LogWriter)
 
-	log.SetPackageName("ksctl-application")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&applicationv1alpha1.Stack{}).
 		Complete(r)

@@ -48,7 +48,6 @@ var _ = Describe("ImportState Controller", func() {
 		log = logger.NewStructuredLogger(
 			LogVerbosity["DEBUG"],
 			LogWriter)
-		log.SetPackageName("ksctl-storage-importer")
 		_ = os.Setenv(string(consts.KsctlFakeFlag), ControllerTestSkip)
 
 		BeforeEach(func() {

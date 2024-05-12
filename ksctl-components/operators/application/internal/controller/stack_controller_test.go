@@ -47,7 +47,6 @@ var _ = Describe("Stack Controller", func() {
 		log = logger.NewStructuredLogger(
 			LogVerbosity["DEBUG"],
 			LogWriter)
-		log.SetPackageName("ksctl-storage-importer")
 		_ = os.Setenv(string(consts.KsctlFakeFlag), ControllerTestSkip)
 
 		BeforeEach(func() {
