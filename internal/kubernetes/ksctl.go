@@ -1,15 +1,9 @@
 package kubernetes
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 
 	"github.com/ksctl/ksctl/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
@@ -174,9 +168,9 @@ func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
 	components := []string{"ksctl-application@latest"}
 
-	if !isExternalStore {
-		components = append(components, "ksctl-storage@latest")
-	}
+	// if !isExternalStore {
+	// 	components = append(components, "ksctl-storage@latest")
+	// }
 
 	_apps, err := helpers.ToApplicationTempl(components)
 	if err != nil {
@@ -187,48 +181,48 @@ func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport
 		return err
 	}
 
-	if !isExternalStore {
-		raw, _err := json.Marshal(v)
-		if _err != nil {
-			return log.NewError(kubernetesCtx, "failed to marshal stateDocument", "Reason", _err)
-		}
-
-		log.Debug(kubernetesCtx, "Invoked dynamic client")
-		dynamicClient, __err := dynamic.NewForConfig(k.config)
-		if __err != nil {
-			return log.NewError(kubernetesCtx, "failed to initialize dynamic k8s-client", "Reason", __err)
-		}
-
-		gvr := schema.GroupVersionResource{
-			Group:    "storage.ksctl.com",
-			Version:  "v1alpha1",
-			Resource: "importstates",
-		}
-
-		importState := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"apiVersion": "storage.ksctl.com/v1alpha1",
-				"kind":       "ImportState",
-				"metadata": map[string]interface{}{
-					"name":   "transfer-data-local-to-k8s",
-					"labels": labelsForKsctl,
-				},
-				"spec": map[string]interface{}{
-					"handled":         false,
-					"success":         true,
-					"rawExportedData": raw,
-				},
-			},
-		}
-
-		log.Note(kubernetesCtx, "deploying a resource of crd")
-
-		if _, err := dynamicClient.Resource(gvr).
-			Namespace(KSCTL_SYS_NAMESPACE).
-			Create(context.TODO(), importState, metav1.CreateOptions{}); err != nil {
-			return log.NewError(kubernetesCtx, "failed to create a resource of type importstate.storage.ksctl.com", "Reason", err)
-		}
-	}
+	// if !isExternalStore {
+	// 	raw, _err := json.Marshal(v)
+	// 	if _err != nil {
+	// 		return log.NewError(kubernetesCtx, "failed to marshal stateDocument", "Reason", _err)
+	// 	}
+	//
+	// 	log.Debug(kubernetesCtx, "Invoked dynamic client")
+	// 	dynamicClient, __err := dynamic.NewForConfig(k.config)
+	// 	if __err != nil {
+	// 		return log.NewError(kubernetesCtx, "failed to initialize dynamic k8s-client", "Reason", __err)
+	// 	}
+	//
+	// 	gvr := schema.GroupVersionResource{
+	// 		Group:    "storage.ksctl.com",
+	// 		Version:  "v1alpha1",
+	// 		Resource: "importstates",
+	// 	}
+	//
+	// 	importState := &unstructured.Unstructured{
+	// 		Object: map[string]interface{}{
+	// 			"apiVersion": "storage.ksctl.com/v1alpha1",
+	// 			"kind":       "ImportState",
+	// 			"metadata": map[string]interface{}{
+	// 				"name":   "transfer-data-local-to-k8s",
+	// 				"labels": labelsForKsctl,
+	// 			},
+	// 			"spec": map[string]interface{}{
+	// 				"handled":         false,
+	// 				"success":         true,
+	// 				"rawExportedData": raw,
+	// 			},
+	// 		},
+	// 	}
+	//
+	// 	log.Note(kubernetesCtx, "deploying a resource of crd")
+	//
+	// 	if _, err := dynamicClient.Resource(gvr).
+	// 		Namespace(KSCTL_SYS_NAMESPACE).
+	// 		Create(context.TODO(), importState, metav1.CreateOptions{}); err != nil {
+	// 		return log.NewError(kubernetesCtx, "failed to create a resource of type importstate.storage.ksctl.com", "Reason", err)
+	// 	}
+	// }
 
 	log.Success(kubernetesCtx, "Done adding kubernetes ksctl specific controllers")
 	return nil
