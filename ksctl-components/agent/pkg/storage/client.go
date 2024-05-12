@@ -8,7 +8,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func NewStorageClient(ctx context.Context, log types.LoggerFactory, data *types.StorageStateExportImport, client *types.KsctlClient) error {
+func HandleStorageImport(ctx context.Context, log types.LoggerFactory, data *types.StorageStateExportImport, client *types.KsctlClient) error {
 	client.Metadata.StateLocation = consts.StoreK8s
 	log.Debug(ctx, "Metadata for Storage", "client.Metadata", client.Metadata)
 

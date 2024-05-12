@@ -331,7 +331,7 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 		return nil, err
 	}
 
-	printKubeConfig(path)
+	printKubeConfig(manager.log, path)
 
 	return &kubeconfig, nil
 }

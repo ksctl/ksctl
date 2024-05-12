@@ -36,7 +36,7 @@ var (
 func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, error) {
 	log.Debug(agentCtx, "Request", "ReqScale", in)
 
-	if err := scale.CallManager(log, in); err != nil {
+	if err := scale.CallManager(agentCtx, log, in); err != nil {
 		log.Error(agentCtx, "CallManager", "Reason", err)
 		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason:"+err.Error())
 	}
@@ -81,7 +81,7 @@ func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, err
 func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.ResApplication, error) {
 	log.Debug(agentCtx, "Request", "ReqApplication", in)
 
-	if err := application.Handler(log, in); err != nil {
+	if err := application.Handler(agentCtx, log, in); err != nil {
 		log.Error(agentCtx, "Handler", "Reason", err)
 		return &pb.ResApplication{FailedApps: []string{err.Error()}}, nil
 	}

@@ -32,12 +32,12 @@ func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 
 	nodes, err := k.nodesList()
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
 
 	kNodeName := ""
 	for _, node := range nodes.Items {
-		log.Debug("string compariazion", "nodeToDelete", nodeName, "kubernetesNodeName", node.Name)
+		log.Debug(kubernetesCtx, "string compariazion", "nodeToDelete", nodeName, "kubernetesNodeName", node.Name)
 		if strings.HasPrefix(node.Name, nodeName) {
 			kNodeName = node.Name
 			break
@@ -45,13 +45,13 @@ func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	}
 
 	if len(kNodeName) == 0 {
-		return log.NewError("Not found!")
+		return log.NewError(kubernetesCtx, "node not found!")
 	}
 	err = k.nodeDelete(kNodeName)
 	if err != nil {
-		return log.NewError(err.Error())
+		return err
 	}
-	log.Success("Deleted Node", "name", kNodeName)
+	log.Success(kubernetesCtx, "Deleted Node", "name", kNodeName)
 	return nil
 }
 
