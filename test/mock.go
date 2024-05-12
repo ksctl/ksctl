@@ -7,6 +7,7 @@ import (
 
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
 	"github.com/ksctl/ksctl/pkg/types/controllers"
 )
@@ -17,36 +18,38 @@ var (
 	dir        = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
 )
 
-func StartCloud() {
+func InitCore() (err error) {
 	cli = new(types.KsctlClient)
-	controller = control_pkg.GenKsctlController()
 
 	cli.Metadata.ClusterName = "fake"
 	cli.Metadata.StateLocation = consts.StoreLocal
 	cli.Metadata.K8sDistro = consts.K8sK3s
-	cli.Metadata.LogVerbosity = -1
-	cli.Metadata.LogWritter = os.Stdout
+	ctx := context.WithValue(context.Background(), "USERID", "demo")
+	log := logger.NewGeneralLogger(-1, os.Stdout)
 
-	if err := control_pkg.InitializeStorageFactory(context.WithValue(context.Background(), "USERID", "demo"), cli); err != nil {
-		panic(err)
-	}
+	controller, err = control_pkg.GenKsctlController(
+		ctx,
+		log,
+		cli,
+	)
+	return
 }
 
 func ExecuteManagedRun() error {
 
-	if err := controller.CreateManagedCluster(cli); err != nil {
+	if err := controller.CreateManagedCluster(); err != nil {
 		return err
 	}
 
-	if _, err := controller.SwitchCluster(cli); err != nil {
+	if _, err := controller.SwitchCluster(); err != nil {
 		return err
 	}
 
-	if err := controller.GetCluster(cli); err != nil {
+	if err := controller.GetCluster(); err != nil {
 		return err
 	}
 
-	if err := controller.DeleteManagedCluster(cli); err != nil {
+	if err := controller.DeleteManagedCluster(); err != nil {
 		return err
 	}
 	return nil
@@ -86,37 +89,37 @@ func LocalTestingManaged() error {
 
 func ExecuteHARun() error {
 
-	if err := controller.CreateHACluster(cli); err != nil {
+	if err := controller.CreateHACluster(); err != nil {
 		return err
 	}
 
-	if _, err := controller.SwitchCluster(cli); err != nil {
+	if _, err := controller.SwitchCluster(); err != nil {
 		return err
 	}
 
-	if err := controller.GetCluster(cli); err != nil {
+	if err := controller.GetCluster(); err != nil {
 		return err
 	}
 
 	cli.Metadata.NoWP = 0
-	if err := controller.DelWorkerPlaneNode(cli); err != nil {
+	if err := controller.DelWorkerPlaneNode(); err != nil {
 		return err
 	}
 
-	if err := controller.GetCluster(cli); err != nil {
+	if err := controller.GetCluster(); err != nil {
 		return err
 	}
 
 	cli.Metadata.NoWP = 1
-	if err := controller.AddWorkerPlaneNode(cli); err != nil {
+	if err := controller.AddWorkerPlaneNode(); err != nil {
 		return err
 	}
 
-	if err := controller.GetCluster(cli); err != nil {
+	if err := controller.GetCluster(); err != nil {
 		return err
 	}
 
-	if err := controller.DeleteHACluster(cli); err != nil {
+	if err := controller.DeleteHACluster(); err != nil {
 		return err
 	}
 	return nil
