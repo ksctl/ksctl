@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -17,6 +18,7 @@ import (
 func TestMain(m *testing.M) {
 
 	log = logger.NewStructuredLogger(-1, os.Stdout)
+	kubernetesCtx = context.TODO()
 	initApps()
 	m.Run()
 }
