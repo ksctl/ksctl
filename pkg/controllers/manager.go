@@ -33,19 +33,13 @@ type KsctlControllerClient struct {
 	client *types.KsctlClient
 }
 
-// TODO: add the log.Error for the source
-// let the manager.go do the log.Error
-// and make sure that the log struct dont use the packageModule name
-// we want the module of source to be present only
-
-// TODO: we need to seperate the context For logging with actually using the context
-// we can use them but with better control
-
 func GenKsctlController(
 	ctx context.Context,
 	log types.LoggerFactory,
 	client *types.KsctlClient,
 ) (controllers.Controller, error) {
+
+	defer panicCatcher(log)
 
 	controllerCtx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-manager")
 
@@ -59,10 +53,17 @@ func GenKsctlController(
 
 	err := manager.initStorage(controllerCtx)
 	if err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return nil, err
 	}
 
 	return manager, nil
+}
+
+func panicCatcher(log types.LoggerFactory) {
+	if r := recover(); r != nil {
+		log.Error(controllerCtx, "Recovered", "condition", r)
+	}
 }
 
 func (manager *KsctlControllerClient) setupConfigurations() error {
@@ -81,7 +82,10 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
+
 	if err := manager.setupConfigurations(); err != nil {
+		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
@@ -128,6 +132,7 @@ func (manager *KsctlControllerClient) Credentials() error {
 	log := manager.log
 	client := manager.client
 
+	defer panicCatcher(log)
 	if client.Storage == nil {
 		return log.NewError(controllerCtx, "Initalize the storage driver")
 	}
@@ -163,6 +168,8 @@ func (manager *KsctlControllerClient) Credentials() error {
 func (manager *KsctlControllerClient) CreateManagedCluster() error {
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
+
 	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
@@ -220,6 +227,8 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 
 	client := manager.client
 	log := manager.log
+
+	defer panicCatcher(log)
 	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
@@ -263,6 +272,8 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
+
 	if err := manager.setupConfigurations(); err != nil {
 		return nil, err
 	}
@@ -339,6 +350,7 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 func (manager *KsctlControllerClient) GetCluster() error {
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
 
 	if err := validationFields(client.Metadata); err != nil {
 		return log.NewError(controllerCtx, err.Error())
@@ -439,6 +451,8 @@ func (manager *KsctlControllerClient) GetCluster() error {
 func (manager *KsctlControllerClient) CreateHACluster() error {
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
+
 	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError(controllerCtx, "ha not supported")
 	}
@@ -516,6 +530,8 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
+
 	if client.Metadata.Provider == consts.CloudLocal {
 		return log.NewError(controllerCtx, "ha not supported")
 	}
@@ -595,6 +611,8 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
+
 	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
@@ -668,6 +686,8 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 
 	client := manager.client
 	log := manager.log
+	defer panicCatcher(log)
+
 	if err := manager.setupConfigurations(); err != nil {
 		return err
 	}
