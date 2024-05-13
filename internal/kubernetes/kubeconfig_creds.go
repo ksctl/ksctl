@@ -2,17 +2,15 @@ package kubernetes
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/ksctl/ksctl/api/gen/agent/pb"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -56,7 +54,12 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 	return kubeapiURL, tlsConf, nil
 }
 
-func transferData(kubeconfig, clusterContextName string, v *types.StorageStateExportImport) error {
+func transferData(kubeconfig,
+	clusterContextName,
+	podName,
+	podNs string,
+	podPort int,
+	v *types.StorageStateExportImport) error {
 
 	url, tlsConf, err := ExtractURLAndTLSCerts(kubeconfig, clusterContextName)
 	if err != nil {
@@ -68,12 +71,13 @@ func transferData(kubeconfig, clusterContextName string, v *types.StorageStateEx
 		return log.NewError(kubernetesCtx, "failed to marshal the exported stateDocuments", "Reason", err)
 	}
 
-	url = fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:%d/proxy/", url, KSCTL_SYS_NAMESPACE, "ksctl-storeimporter", 80)
+	url = fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s:%d/proxy/import", url, podNs, podName, podPort)
 
-	req, err := http.NewRequest(http.MethodGet, url, bytes.NewBuffer(out))
+	log.Debug(kubernetesCtx, "full url for state transfer", "url", url)
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
 	if err != nil {
-		fmt.Printf("client: could not create request: %s\n", err)
-		os.Exit(1)
+		return log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err)
 	}
 
 	tr := &http.Transport{
@@ -82,26 +86,34 @@ func transferData(kubeconfig, clusterContextName string, v *types.StorageStateEx
 
 	client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
 
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Printf("client: error making http request: %s\n", err)
-		os.Exit(1)
+	for counter := 0; counter <= int(consts.CounterMaxRetryCount); counter++ {
+
+		res, err := client.Do(req)
+		if err != nil {
+			return log.NewError(kubernetesCtx, "failed, client error making http request", "Reason", err)
+		}
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return log.NewError(kubernetesCtx, "failed, to read response", "Reason", err)
+		}
+
+		if res.StatusCode < 300 {
+			log.Success(kubernetesCtx, "Response of successful state transfer", "StatusCode", res.StatusCode, "Response", string(body))
+			break
+		}
+		if counter == int(consts.CounterMaxRetryCount) {
+			return log.NewError(kubernetesCtx, "failed, to send data", "Headers", res.Header, "StatusCode", res.StatusCode, "Response", string(body))
+		}
+
+		log.Warn(kubernetesCtx, "Error from state transfer",
+			"failed", counter,
+			"maxRetries", int(consts.CounterMaxRetryCount),
+			"StatusCode", res.StatusCode,
+			"Response", string(body))
+
+		time.Sleep(10 * time.Second)
 	}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Response:", string(body))
-
-	return nil
-}
-
-func ImportData(ctx context.Context, client pb.KsctlAgentClient, data []byte) error {
-	_, err := client.Storage(ctx, &pb.ReqStore{Operation: pb.StorageOperation_IMPORT, Data: data})
-	if err != nil {
-		return err
-	}
 	return nil
 }

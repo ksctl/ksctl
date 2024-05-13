@@ -322,11 +322,16 @@ func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctl
 		// to a new cluster aka (k8s -> k8s)
 	}
 
-	if err := kubernetesClient.DeployAgent(client, externalCredEndpoint, isExternalStore); err != nil {
+	if err := kubernetesClient.DeployAgent(
+		client,
+		state,
+		externalCredEndpoint,
+		exportedData,
+		isExternalStore); err != nil {
 		return err
 	}
 
-	if err := kubernetesClient.DeployRequiredControllers(exportedData, state, isExternalStore); err != nil {
+	if err := kubernetesClient.DeployRequiredControllers(state, isExternalStore); err != nil {
 		return err
 	}
 

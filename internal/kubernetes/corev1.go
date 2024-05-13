@@ -184,6 +184,32 @@ func (k *Kubernetes) secretApply(o *corev1.Secret) error {
 	return nil
 }
 
+func (k *Kubernetes) podReadyWait(name, namespace string) error {
+
+	count := consts.KsctlCounterConsts(0)
+	for {
+
+		status, err := k.clientset.
+			CoreV1().
+			Pods(namespace).
+			Get(context.Background(), name, metav1.GetOptions{})
+		if err != nil {
+			return log.NewError(kubernetesCtx, "pod get failed", "Reason", err)
+		}
+		if status.Status.Phase == corev1.PodRunning {
+			log.Success(kubernetesCtx, "pod is running", "name", name)
+			break
+		}
+		count++
+		if count == consts.CounterMaxRetryCount*2 {
+			return log.NewError(kubernetesCtx, "max retry reached", "retries", consts.CounterMaxRetryCount*2)
+		}
+		log.Warn(kubernetesCtx, "retrying current no of success", "status.Phase", string(status.Status.Phase), "status.Reason", status.Status.Reason)
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
+
 func (k *Kubernetes) PodApply(o *corev1.Pod) error {
 	ns := o.Namespace
 

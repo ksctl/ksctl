@@ -9,7 +9,12 @@ WORKDIR /app
 
 LABEL MAINTAINER="dipankar das"
 
-COPY . .
+COPY go.mod go.mod
+COPY go.sum go.sum
+
+COPY pkg/ /app/pkg/
+COPY internal/ /app/internal/
+COPY ksctl-components/stateimport/ /app/ksctl-components/stateimport/
 
 RUN go mod download
 
@@ -28,8 +33,9 @@ USER ksctl
 
 WORKDIR /app
 
-COPY --from=builder /app/ksctlagent /app/ksctlagent
 
-ENTRYPOINT [ "/app/ksctlagent" ]
+COPY --from=builder /app/ksctlstateimport /app/ksctlstateimport
 
-EXPOSE 8080
+ENTRYPOINT [ "/app/ksctlstateimport" ]
+
+EXPOSE 80

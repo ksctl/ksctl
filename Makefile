@@ -6,6 +6,7 @@ include Makefile.components
 
 KSCTL_AGENT_IMG ?= ghcr.io/ksctl/ksctl-agent:latest
 
+KSCTL_STATE_IMPORTER_IMG ?= ghcr.io/ksctl/ksctl-stateimport:latest
 
 .PHONY: help
 help: ## Display this help.
@@ -18,6 +19,9 @@ gen-proto-agent: ## generate protobuf for ksctl agent
 	@echo "generating new helpers"
 	protoc --proto_path=api/agent/proto api/agent/proto/*.proto --go_out=api/gen/agent --go-grpc_out=api/gen/agent
 
+.PHONY: docker-push-state-import
+docker-push-state-import: ## Push docker image for ksctl state-import
+	$(CONTAINER_TOOL) push ${KSCTL_STATE_IMPORTER_IMG}
 
 .PHONY: docker-push-agent
 docker-push-agent: ## Push docker image for ksctl agent
@@ -29,17 +33,33 @@ docker-buildx-agent: ## docker build agent
 		sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/agent/Dockerfile > build/agent/Dockerfile.cross
 		- $(CONTAINER_TOOL) buildx create --name project-v3-builder
 		$(CONTAINER_TOOL) buildx use project-v3-builder
-		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.21" --tag ${KSCTL_AGENT_IMG} -f build/agent/Dockerfile.cross .
+		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_AGENT_IMG} -f build/agent/Dockerfile.cross .
 		 - $(CONTAINER_TOOL) buildx rm project-v3-builder
 		 rm build/agent/Dockerfile.cross
+
+PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
+.PHONY: docker-buildx-stateimport
+docker-buildx-stateimport: ## docker build stateimport
+		sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/stateimport/Dockerfile > build/stateimport/Dockerfile.cross
+		- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+		$(CONTAINER_TOOL) buildx use project-v3-builder
+		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_STATE_IMPORTER_IMG} -f build/stateimport/Dockerfile.cross .
+		 - $(CONTAINER_TOOL) buildx rm project-v3-builder
+		 rm build/stateimport/Dockerfile.cross
 
 .PHONY: docker-build-agent
 docker-build-agent: ## docker build agent
 	docker build \
 		--file build/agent/Dockerfile \
-		--build-arg="GO_VERSION=1.21" \
+		--build-arg="GO_VERSION=1.22" \
 		--tag ${KSCTL_AGENT_IMG} .
 
+.PHONY: docker-build-state-import
+docker-build-state-import: ## docker build state importer
+	docker build \
+		--file build/stateimport/Dockerfile \
+		--build-arg="GO_VERSION=1.22" \
+		--tag ${KSCTL_STATE_IMPORTER_IMG} .
 
 ##@ Unit Tests (Core)
 
@@ -183,8 +203,6 @@ lint: golangci-lint ## Run golangci-lint linter & yamllint
 	@echo -e "\n\033[36mRunning for Ksctl (Agent)\033[0m" && \
 		cd ksctl-components/agent && \
 		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
-	@echo -e "\n\033[36mRunning for Ksctl Controllers (Storage)\033[0m" && \
-		make lint-controller CONTROLLER=storage && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
 	@echo -e "\n\033[36mRunning for Ksctl Controllers (Application)\033[0m" && \
 		make lint-controller CONTROLLER=application && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
 
@@ -192,6 +210,5 @@ lint: golangci-lint ## Run golangci-lint linter & yamllint
 test: lint
 	make test-core
 	@echo -e "\n\033[36mTesting in ksctl-components\033[0m\n"
-	make test-controller CONTROLLER=storage
 	make test-controller CONTROLLER=application
 

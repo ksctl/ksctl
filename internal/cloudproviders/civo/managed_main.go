@@ -36,6 +36,7 @@ func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id str
 			log.Print(civoCtx, "cluster ready", "name", name)
 			mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
 			mainStateDocument.ClusterKubeConfig = clusterDS.KubeConfig
+			mainStateDocument.ClusterKubeConfigContext = name
 			err := storage.Write(mainStateDocument)
 			if err != nil {
 				return err

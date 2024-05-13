@@ -97,6 +97,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 	log.Debug(localCtx, "kubeconfig", "kubeconfigTempPath", path)
 
 	mainStateDocument.ClusterKubeConfig = string(data)
+	mainStateDocument.ClusterKubeConfigContext = "kind-" + cloud.ClusterName
 	mainStateDocument.CloudInfra.Local.B.IsCompleted = true
 
 	if err := storage.Write(mainStateDocument); err != nil {

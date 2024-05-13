@@ -108,6 +108,7 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 	kubeconfigStr := string(kubeconfig.Kubeconfigs[0].Value)
 
 	mainStateDocument.ClusterKubeConfig = kubeconfigStr
+	mainStateDocument.ClusterKubeConfigContext = *resp.Name
 
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err

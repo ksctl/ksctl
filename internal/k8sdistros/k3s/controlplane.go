@@ -125,11 +125,14 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) 
 			}
 			// as only a single case where it is getting invoked we actually don't need locks
 
+			contextName := mainStateDocument.ClusterName + "-" + mainStateDocument.Region + "-" + string(mainStateDocument.ClusterType) + "-" + string(mainStateDocument.InfraProvider) + "-ksctl"
 			kubeconfig := sshExecutor.GetOutput()[0]
 			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
-			kubeconfig = strings.Replace(kubeconfig, "default", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
+			kubeconfig = strings.Replace(kubeconfig, "default", contextName, -1)
 
 			mainStateDocument.ClusterKubeConfig = kubeconfig
+			mainStateDocument.ClusterKubeConfigContext = contextName
+
 			log.Debug(k3sCtx, "Printing", "kubeconfig", kubeconfig)
 			// modify
 			err = storage.Write(mainStateDocument)
