@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"os"
+
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
-	"net/http"
-	"os"
 )
 
 var (
@@ -61,7 +62,7 @@ func main() {
 			}
 			return
 		}
-		log.Debug(ctx, "testing", "rawData", rawData)
+
 		log.Success(ctx, "Handled the request")
 	})
 

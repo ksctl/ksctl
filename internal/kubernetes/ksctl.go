@@ -294,6 +294,13 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 		return err
 	}
 
+	if !isExternalStore {
+		// Create a pod which can be destroyed once we got a response back
+		func() {
+			println("TODO: deploy the stateImporter if the requirement is")
+		}()
+	}
+
 	replicas := int32(1)
 
 	agentSelector := utilities.DeepCopyMap[string, string](labelsForKsctl)
