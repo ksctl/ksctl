@@ -43,10 +43,10 @@ jobs:
         with:
           go-version: 1.21.0
 
-      - name: Testing storage controller
-        if: always()
-        run: |
-          make test-controller CONTROLLER=storage
+      # - name: Testing storage controller
+      #   if: always()
+      #   run: |
+      #     make test-controller CONTROLLER=storage
 
       - name: Testing application controller
         if: always()

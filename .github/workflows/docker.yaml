@@ -45,11 +45,11 @@ jobs:
         run: |
           make docker-buildx-agent
           
+      - name: build and push ksctl stateimporter
+        run: |
+          make docker-buildx-stateimport
       
       - name: build and push ksctl controller application
         run: |
           make docker-buildx-controller CONTROLLER=application
 
-      - name: build and push ksctl controller storage
-        run: |
-          make docker-buildx-controller CONTROLLER=storage

@@ -143,9 +143,14 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 			}
 
 			kubeconfig := sshExecutor.GetOutput()[0]
-			kubeconfig = strings.Replace(kubeconfig, "kubernetes-admin@kubernetes", mainStateDocument.ClusterName+"-"+mainStateDocument.Region+"-"+string(mainStateDocument.ClusterType)+"-"+string(mainStateDocument.InfraProvider)+"-ksctl", -1)
+			contextName := mainStateDocument.ClusterName + "-" + mainStateDocument.Region + "-" + string(mainStateDocument.ClusterType) + "-" + string(mainStateDocument.InfraProvider) + "-ksctl"
+
+			kubeconfig = strings.Replace(kubeconfig, "kubernetes-admin@kubernetes", contextName, -1)
+
 			kubeconfig = strings.Replace(kubeconfig, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
+
 			mainStateDocument.ClusterKubeConfig = kubeconfig
+			mainStateDocument.ClusterKubeConfigContext = contextName
 			log.Debug(kubeadmCtx, "Printing", "kubeconfig", kubeconfig)
 
 			if err := storage.Write(mainStateDocument); err != nil {

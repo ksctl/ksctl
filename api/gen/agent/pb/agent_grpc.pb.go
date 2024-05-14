@@ -23,7 +23,6 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KsctlAgentClient interface {
 	Scale(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*ResScale, error)
-	Storage(ctx context.Context, in *ReqStore, opts ...grpc.CallOption) (*ResStore, error)
 	LoadBalancer(ctx context.Context, in *ReqLB, opts ...grpc.CallOption) (*ResLB, error)
 	Application(ctx context.Context, in *ReqApplication, opts ...grpc.CallOption) (*ResApplication, error)
 }
@@ -39,15 +38,6 @@ func NewKsctlAgentClient(cc grpc.ClientConnInterface) KsctlAgentClient {
 func (c *ksctlAgentClient) Scale(ctx context.Context, in *ReqScale, opts ...grpc.CallOption) (*ResScale, error) {
 	out := new(ResScale)
 	err := c.cc.Invoke(ctx, "/ksctlAgent.KsctlAgent/Scale", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *ksctlAgentClient) Storage(ctx context.Context, in *ReqStore, opts ...grpc.CallOption) (*ResStore, error) {
-	out := new(ResStore)
-	err := c.cc.Invoke(ctx, "/ksctlAgent.KsctlAgent/Storage", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +67,6 @@ func (c *ksctlAgentClient) Application(ctx context.Context, in *ReqApplication, 
 // for forward compatibility
 type KsctlAgentServer interface {
 	Scale(context.Context, *ReqScale) (*ResScale, error)
-	Storage(context.Context, *ReqStore) (*ResStore, error)
 	LoadBalancer(context.Context, *ReqLB) (*ResLB, error)
 	Application(context.Context, *ReqApplication) (*ResApplication, error)
 	mustEmbedUnimplementedKsctlAgentServer()
@@ -89,9 +78,6 @@ type UnimplementedKsctlAgentServer struct {
 
 func (UnimplementedKsctlAgentServer) Scale(context.Context, *ReqScale) (*ResScale, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Scale not implemented")
-}
-func (UnimplementedKsctlAgentServer) Storage(context.Context, *ReqStore) (*ResStore, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Storage not implemented")
 }
 func (UnimplementedKsctlAgentServer) LoadBalancer(context.Context, *ReqLB) (*ResLB, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoadBalancer not implemented")
@@ -126,24 +112,6 @@ func _KsctlAgent_Scale_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KsctlAgentServer).Scale(ctx, req.(*ReqScale))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _KsctlAgent_Storage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqStore)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(KsctlAgentServer).Storage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ksctlAgent.KsctlAgent/Storage",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KsctlAgentServer).Storage(ctx, req.(*ReqStore))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -194,10 +162,6 @@ var KsctlAgent_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Scale",
 			Handler:    _KsctlAgent_Scale_Handler,
-		},
-		{
-			MethodName: "Storage",
-			Handler:    _KsctlAgent_Storage_Handler,
 		},
 		{
 			MethodName: "LoadBalancer",

@@ -151,10 +151,7 @@ func FirewallForControlplane_BASE(cidr string, distro consts.KsctlKubernetes) []
 		firewallRuleSSH(),
 		firewallRuleOutBoundAllUDP(),
 		firewallRuleOutBoundAllTCP(),
-	}
-
-	if distro == consts.K8sK3s {
-		rules = append(rules, firewallRuleFlannel_VXLAN(cidr))
+		firewallRuleFlannel_VXLAN(cidr),
 	}
 
 	return rules
@@ -168,12 +165,10 @@ func FirewallForWorkerplane_BASE(cidr string, distro consts.KsctlKubernetes) []F
 		firewallRuleNodePort(),
 		firewallRuleOutBoundAllUDP(),
 		firewallRuleOutBoundAllTCP(),
+		firewallRuleFlannel_VXLAN(cidr),
 	}
 
-	switch distro {
-	case consts.K8sK3s:
-		rules = append(rules, firewallRuleFlannel_VXLAN(cidr))
-	case consts.K8sKubeadm:
+	if distro == consts.K8sKubeadm {
 		rules = append(rules,
 			firewallRuleKubeProxy(cidr),
 		)

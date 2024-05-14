@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -62,7 +63,8 @@ func GenKsctlController(
 
 func panicCatcher(log types.LoggerFactory) {
 	if r := recover(); r != nil {
-		log.Error(controllerCtx, "Recovered", "condition", r)
+		log.Error(controllerCtx, "Failed to recover stack trace", "error", r)
+		debug.PrintStack()
 	}
 }
 

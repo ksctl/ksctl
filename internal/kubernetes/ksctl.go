@@ -1,15 +1,9 @@
 package kubernetes
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 
 	"github.com/ksctl/ksctl/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
@@ -25,13 +19,14 @@ import (
 )
 
 const (
-	KSCTL_SYS_NAMESPACE      = "ksctl"
-	KSCTL_SERVICE_ACC        = "ksctl-sa"
-	KSCTL_AGENT_CLUSTER_ROLE = "ksctl-agent-crole"
-	KSCTL_AGENT_CRBINDING    = "ksctl-agent-croleb"
-	KSCTL_AGENT_NAME         = "ksctl-agent"
-	KSCTL_AGENT_SERVICE      = "agent"
-	KSCTL_EXT_STORE_SECRET   = "ksctl-ext-store"
+	KSCTL_SYS_NAMESPACE       = "ksctl"
+	KSCTL_SERVICE_ACC         = "ksctl-sa"
+	KSCTL_AGENT_CLUSTER_ROLE  = "ksctl-agent-crole"
+	KSCTL_AGENT_CRBINDING     = "ksctl-agent-croleb"
+	KSCTL_AGENT_NAME          = "ksctl-agent"
+	KSCTL_AGENT_SERVICE       = "agent"
+	KSCTL_STATE_IMPORTER_NAME = "ksctl-state-importer"
+	KSCTL_EXT_STORE_SECRET    = "ksctl-ext-store"
 )
 
 var (
@@ -170,13 +165,9 @@ var (
 //	return nil
 //}
 
-func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport, state *storageTypes.StorageDocument, isExternalStore bool) error {
+func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
 	components := []string{"ksctl-application@latest"}
-
-	if !isExternalStore {
-		components = append(components, "ksctl-storage@latest")
-	}
 
 	_apps, err := helpers.ToApplicationTempl(components)
 	if err != nil {
@@ -187,54 +178,15 @@ func (k *Kubernetes) DeployRequiredControllers(v *types.StorageStateExportImport
 		return err
 	}
 
-	if !isExternalStore {
-		raw, _err := json.Marshal(v)
-		if _err != nil {
-			return log.NewError(kubernetesCtx, "failed to marshal stateDocument", "Reason", _err)
-		}
-
-		log.Debug(kubernetesCtx, "Invoked dynamic client")
-		dynamicClient, __err := dynamic.NewForConfig(k.config)
-		if __err != nil {
-			return log.NewError(kubernetesCtx, "failed to initialize dynamic k8s-client", "Reason", __err)
-		}
-
-		gvr := schema.GroupVersionResource{
-			Group:    "storage.ksctl.com",
-			Version:  "v1alpha1",
-			Resource: "importstates",
-		}
-
-		importState := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"apiVersion": "storage.ksctl.com/v1alpha1",
-				"kind":       "ImportState",
-				"metadata": map[string]interface{}{
-					"name":   "transfer-data-local-to-k8s",
-					"labels": labelsForKsctl,
-				},
-				"spec": map[string]interface{}{
-					"handled":         false,
-					"success":         true,
-					"rawExportedData": raw,
-				},
-			},
-		}
-
-		log.Note(kubernetesCtx, "deploying a resource of crd")
-
-		if _, err := dynamicClient.Resource(gvr).
-			Namespace(KSCTL_SYS_NAMESPACE).
-			Create(context.TODO(), importState, metav1.CreateOptions{}); err != nil {
-			return log.NewError(kubernetesCtx, "failed to create a resource of type importstate.storage.ksctl.com", "Reason", err)
-		}
-	}
-
 	log.Success(kubernetesCtx, "Done adding kubernetes ksctl specific controllers")
 	return nil
 }
 
-func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoint map[string][]byte, isExternalStore bool) error {
+func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
+	state *storageTypes.StorageDocument,
+	externalStoreEndpoint map[string][]byte,
+	v *types.StorageStateExportImport,
+	isExternalStore bool) error {
 
 	log.Print(kubernetesCtx, "Started to configure Cluster to add Ksctl specific storage")
 
@@ -298,6 +250,87 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient, externalStoreEndpoin
 	log.Print(kubernetesCtx, "creating clusterrolebinding", "name", clusterRoleBind.Name)
 	if err := k.clusterRoleBindingApply(clusterRoleBind); err != nil {
 		return err
+	}
+
+	if !isExternalStore {
+
+		var ksctlStateImporter *corev1.Pod = &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      KSCTL_STATE_IMPORTER_NAME,
+				Namespace: KSCTL_SYS_NAMESPACE,
+			},
+			Spec: corev1.PodSpec{
+				RestartPolicy:      corev1.RestartPolicyAlways,
+				ServiceAccountName: serviceAccConfig.ObjectMeta.Name,
+				Containers: []corev1.Container{
+					{
+						Name:            "ksctl-stateimport",
+						Image:           "ghcr.io/ksctl/ksctl-stateimport:latest",
+						ImagePullPolicy: corev1.PullAlways,
+						Ports: []corev1.ContainerPort{
+							{
+								Name:          "service",
+								ContainerPort: 80,
+							},
+						},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "LOG_LEVEL",
+								Value: "DEBUG",
+							},
+						},
+						LivenessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path: "/healthz",
+									Port: intstr.FromInt(8080),
+								},
+							},
+							InitialDelaySeconds: 5,
+						},
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("250m"),
+								corev1.ResourceMemory: resource.MustParse("250Mi"),
+							},
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("50m"),
+								corev1.ResourceMemory: resource.MustParse("50Mi"),
+							},
+						},
+					},
+				},
+			},
+		}
+
+		log.Print(kubernetesCtx, "creating ksctl state transfer pod", "name", ksctlStateImporter.Name)
+		if err := k.PodApply(ksctlStateImporter); err != nil {
+			return err
+		}
+
+		if err := k.podReadyWait(ksctlStateImporter.Name, ksctlStateImporter.Namespace); err != nil {
+			return err
+		}
+
+		log.Print(kubernetesCtx, "transfer data by making http call")
+
+		kubeconfig := state.ClusterKubeConfig
+		kubeconfigContext := state.ClusterKubeConfigContext
+		if err := transferData(
+			kubeconfig,
+			kubeconfigContext,
+			ksctlStateImporter.Name,
+			ksctlStateImporter.Namespace,
+			8080,
+			v,
+		); err != nil {
+			return err
+		}
+
+		log.Print(kubernetesCtx, "destroying the state importer", "name", ksctlStateImporter.Name)
+		if err := k.PodDelete(ksctlStateImporter); err != nil {
+			return err
+		}
 	}
 
 	replicas := int32(1)

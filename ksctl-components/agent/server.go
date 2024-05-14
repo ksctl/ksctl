@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"net"
 	"os"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/application"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/helpers"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/scale"
-	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -43,32 +41,6 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 
 	log.Success(agentCtx, "Handled Scale")
 	return &pb.ResScale{IsUpdated: true}, nil
-}
-
-func (s *server) Storage(ctx context.Context, in *pb.ReqStore) (*pb.ResStore, error) {
-
-	// validate the request
-	if in.Operation == pb.StorageOperation_EXPORT {
-		log.Error(agentCtx, "Operation is export")
-		return nil, status.Error(codes.Unimplemented, "operation is not supported")
-	}
-
-	v := in.Data
-	exportedData := new(types.StorageStateExportImport)
-	if err := json.Unmarshal(v, &exportedData); err != nil {
-		log.Error(agentCtx, "Unable to Unmarshal exported data", "Reason", err)
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	client := new(types.KsctlClient)
-
-	if _err := storage.HandleStorageImport(ctx, log, exportedData, client); _err != nil {
-		log.Error(agentCtx, "HandleStorageImport", "Reason", _err)
-		return nil, status.Error(codes.FailedPrecondition, _err.Error())
-	}
-
-	log.Success(agentCtx, "all imports are done")
-	return new(pb.ResStore), nil
 }
 
 func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, error) {

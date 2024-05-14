@@ -25,9 +25,10 @@ type StorageDocument struct {
 	InfraProvider     consts.KsctlCloud      `json:"cloud_provider" bson:"cloud_provider"`
 	BootstrapProvider consts.KsctlKubernetes `json:"bootstrap_provider" bson:"bootstrap_provider"`
 
-	CloudInfra        *InfrastructureState      `json:"cloud_infrastructure_state" bson:"cloud_infrastructure_state,omitempty"`
-	K8sBootstrap      *KubernetesBootstrapState `json:"kubernetes_bootstrap_state" bson:"kubernetes_bootstrap_state,omitempty"`
-	ClusterKubeConfig string                    `json:"cluster_kubeconfig" bson:"cluster_kubeconfig"`
+	CloudInfra               *InfrastructureState      `json:"cloud_infrastructure_state" bson:"cloud_infrastructure_state,omitempty"`
+	K8sBootstrap             *KubernetesBootstrapState `json:"kubernetes_bootstrap_state" bson:"kubernetes_bootstrap_state,omitempty"`
+	ClusterKubeConfig        string                    `json:"cluster_kubeconfig" bson:"cluster_kubeconfig"`
+	ClusterKubeConfigContext string                    `json:"cluster_kubeconfig_context" bson:"cluster_kubeconfig_context"`
 
 	SSHKeyPair SSHKeyPairState `json:"ssh_key_pair" bson:"ssh_key_pair"`
 
