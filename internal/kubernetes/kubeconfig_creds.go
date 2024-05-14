@@ -39,8 +39,35 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 		return "", nil, log.NewError(kubernetesCtx, "failed deserializes the contents into Config object", "Reason", err)
 	}
 
-	cluster := config.Clusters[clusterContextName]
-	usr := config.AuthInfos[clusterContextName]
+	clusterContext := ""
+	authContext := ""
+	isPresent := false
+	log.Print(kubernetesCtx, "searching for current-context", "contextName", clusterContextName)
+	if config.CurrentContext != clusterContextName {
+		log.Warn(kubernetesCtx, "failed context looking for is not the current one", "expected", clusterContextName, "got", config.CurrentContext)
+		log.Print(kubernetesCtx, "using the context which is present in the state for configuration", "stateContext", clusterContextName)
+	}
+
+	for ctxK8s, info := range config.Contexts {
+
+		if ctxK8s == clusterContextName {
+			isPresent = true
+			clusterContext = info.Cluster
+			authContext = info.AuthInfo
+			log.Print(kubernetesCtx, "Found cluster in kubeconfig",
+				"current-context", config.CurrentContext,
+				"contexts[...].context.cluster", clusterContext,
+				"contexts[...].context.authinfo", authContext,
+			)
+		}
+	}
+
+	if !isPresent {
+		return "", nil, log.NewError(kubernetesCtx, "failed to find the context", "contextName", clusterContextName)
+	}
+
+	cluster := config.Clusters[clusterContext]
+	usr := config.AuthInfos[authContext]
 
 	kubeapiURL := cluster.Server
 	caCert := cluster.CertificateAuthorityData
@@ -90,18 +117,44 @@ func transferData(kubeconfig,
 
 		res, err := client.Do(req)
 		if err != nil {
-			return log.NewError(kubernetesCtx, "failed, client error making http request", "Reason", err)
+
+			if counter == int(consts.CounterMaxRetryCount) {
+				return log.NewError(kubernetesCtx,
+					"failed, client error making http request",
+					"Reason", err,
+				)
+			}
+			log.Warn(kubernetesCtx, "failed, client error making http request",
+				"failed", counter,
+				"maxRetries", int(consts.CounterMaxRetryCount),
+				"Reason", err,
+			)
+			continue
 		}
 
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			return log.NewError(kubernetesCtx, "failed, to read response", "Reason", err)
+
+			if counter == int(consts.CounterMaxRetryCount) {
+				return log.NewError(kubernetesCtx,
+					"failed, to read response",
+					"Reason", err,
+				)
+			}
+
+			log.Warn(kubernetesCtx, "failed, to read response",
+				"failed", counter,
+				"maxRetries", int(consts.CounterMaxRetryCount),
+				"Reason", err,
+			)
+			continue
 		}
 
 		if res.StatusCode < 300 {
 			log.Success(kubernetesCtx, "Response of successful state transfer", "StatusCode", res.StatusCode, "Response", string(body))
 			break
 		}
+
 		if counter == int(consts.CounterMaxRetryCount) {
 			return log.NewError(kubernetesCtx, "failed, to send data", "Headers", res.Header, "StatusCode", res.StatusCode, "Response", string(body))
 		}
