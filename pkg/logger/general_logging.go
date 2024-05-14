@@ -204,7 +204,7 @@ func (l *GeneralLog) Box(ctx context.Context, title string, lines string) {
 		Py:       2,
 		Type:     "Bold",
 		TitlePos: "Top",
-		Color:    "Cyan"})
+		Color:    "Yellow"})
 
 	Box.Println(title, addLineTerminationForLongStrings(lines))
 }

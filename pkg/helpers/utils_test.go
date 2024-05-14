@@ -440,6 +440,7 @@ func TestFirewallRules(t *testing.T) {
 				expectedSSH,
 				expectedUdp,
 				expectedTcp,
+				expectedFlannelVXLan,
 			})
 	})
 
@@ -464,6 +465,7 @@ func TestFirewallRules(t *testing.T) {
 				expectedNodePort,
 				expectedUdp,
 				expectedTcp,
+				expectedFlannelVXLan,
 				expectedKubeProxy,
 			})
 	})

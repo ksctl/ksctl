@@ -303,7 +303,7 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 			},
 		}
 
-		log.Print(kubernetesCtx, "creating ksctl state transfer pod", "name", clusterRoleBind.Name)
+		log.Print(kubernetesCtx, "creating ksctl state transfer pod", "name", ksctlStateImporter.Name)
 		if err := k.PodApply(ksctlStateImporter); err != nil {
 			return err
 		}
@@ -327,7 +327,7 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 			return err
 		}
 
-		log.Print(kubernetesCtx, "destroying the state importer")
+		log.Print(kubernetesCtx, "destroying the state importer", "name", ksctlStateImporter.Name)
 		if err := k.PodDelete(ksctlStateImporter); err != nil {
 			return err
 		}

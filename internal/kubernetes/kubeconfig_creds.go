@@ -102,20 +102,22 @@ func transferData(kubeconfig,
 
 	log.Debug(kubernetesCtx, "full url for state transfer", "url", url)
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
-	if err != nil {
-		return log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err)
-	}
-
 	tr := &http.Transport{
 		TLSClientConfig: tlsConf,
 	}
 
-	client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
-
 	for counter := 0; counter <= int(consts.CounterMaxRetryCount); counter++ {
 
+		time.Sleep(10 * time.Second)
+
+		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
+		if err != nil {
+			return log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err)
+		}
+		client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
+
 		res, err := client.Do(req)
+
 		if err != nil {
 
 			if counter == int(consts.CounterMaxRetryCount) {
@@ -165,7 +167,6 @@ func transferData(kubeconfig,
 			"StatusCode", res.StatusCode,
 			"Response", string(body))
 
-		time.Sleep(10 * time.Second)
 	}
 
 	return nil

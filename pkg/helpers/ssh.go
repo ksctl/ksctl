@@ -9,13 +9,14 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"io"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -126,14 +127,17 @@ func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdou
 			return
 		}
 
-		missingStatusErr := ssh.ExitMissingError{}
+		missingStatusErr := &ssh.ExitMissingError{}
+		channelErr := &ssh.OpenChannelError{}
 
-		switch err.Error() {
-		case missingStatusErr.Error():
-			sshExec.log.Warn(sshExec.ctx, "Retrying! Missing error code but exited", "Reason", "session conn failure.")
+		if errors.As(err, &missingStatusErr) {
+			sshExec.log.Warn(sshExec.ctx, "Retrying! Missing error code but exited", "Reason", err)
 			netRetry++
-		default:
-			return // if any error which is not same as ExitMissingError
+		} else if errors.As(err, &channelErr) {
+			sshExec.log.Warn(sshExec.ctx, "Retrying! Facing some channel open issues", "Reason", err)
+			netRetry++
+		} else {
+			return
 		}
 	}
 
