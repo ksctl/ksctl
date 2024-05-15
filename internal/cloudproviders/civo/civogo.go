@@ -45,7 +45,7 @@ type CivoGoClient struct {
 	region string
 }
 
-func ProvideMockCivoClient() CivoGo {
+func ProvideMockClient() CivoGo {
 	return &CivoGoMockClient{}
 }
 
@@ -269,7 +269,7 @@ func (client *CivoGoMockClient) GetNetwork(id string) (*civogo.Network, error) {
 	return &civogo.Network{
 		ID:      id,
 		Default: false,
-		Status:  "ACTIVE",
+		Status:  "Active",
 	}, nil
 }
 

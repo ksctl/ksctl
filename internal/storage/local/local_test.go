@@ -3,11 +3,12 @@ package local
 import (
 	"context"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"gotest.tools/v3/assert"
 
@@ -36,7 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitStorage(t *testing.T) {
-	db = InitStorage(parentCtx, parentLogger)
+	db = NewClient(parentCtx, parentLogger)
 	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
 	if err != nil {
 		t.Fatal(err)

@@ -19,9 +19,7 @@ type Application struct {
 	Name          string
 	Url           string
 	Version       string
-	Metadata      string
 	Maintainer    string
-	PostInstall   string
 	HelmConfig    []HelmOptions
 	KubectlConfig KubectlOptions
 	InstallType
@@ -38,7 +36,6 @@ func initApps() {
 		"istio":             istioData,
 		"cilium":            ciliumData,
 		"prometheus-stack":  prometheusStackData,
-		"ksctl-storage":     storageImportData,
 		"ksctl-application": applicationStackData,
 		"flannel":           flannelData,
 	}
@@ -279,9 +276,8 @@ func installApplication(client *Kubernetes, app storageTypes.Application) error 
 			return err
 		}
 
+		log.Box(kubernetesCtx, "App Details via kubectl", appStruct.KubectlConfig.metadata+"\n"+appStruct.KubectlConfig.postInstall)
 	}
-
-	log.Box(kubernetesCtx, "App Details", appStruct.Metadata+"\n"+appStruct.PostInstall)
 
 	log.Success(kubernetesCtx, "Installed Resource")
 	return nil

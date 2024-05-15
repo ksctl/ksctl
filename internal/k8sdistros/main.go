@@ -20,7 +20,7 @@ var (
 )
 
 func NewPreBootStrap(parentCtx context.Context, parentLog types.LoggerFactory,
-	state *storageTypes.StorageDocument) types.PreKubernetesBootstrap {
+	state *storageTypes.StorageDocument) *PreBootstrap {
 
 	bootstrapCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "bootstrap")
 	log = parentLog

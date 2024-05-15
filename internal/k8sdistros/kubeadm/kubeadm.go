@@ -71,7 +71,9 @@ func isValidKubeadmVersion(ver string) error {
 	return log.NewError(kubeadmCtx, "invalid kubeadm version", "valid versions", strings.Join(validVersion, " "))
 }
 
-func NewClient(parentCtx context.Context, parentLog types.LoggerFactory, state *storageTypes.StorageDocument) types.KubernetesBootstrap {
+func NewClient(parentCtx context.Context,
+	parentLog types.LoggerFactory,
+	state *storageTypes.StorageDocument) *Kubeadm {
 	kubeadmCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.K8sKubeadm))
 	log = parentLog
 

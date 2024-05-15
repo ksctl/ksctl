@@ -9,6 +9,7 @@ jobs:
     environment: e2e
     runs-on: e2e
     env:
+      E2E_FLAGS: debug
       KUBECONFIG: ${{ vars.KUBECONFIG_KSCTL_LOC }}
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
       CIVO_TOKEN: ${{ secrets.CIVO_TOKEN }}

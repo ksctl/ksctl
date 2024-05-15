@@ -227,7 +227,7 @@ func TestManagedCluster(t *testing.T) {
 			Provider:    consts.CloudLocal,
 		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeManaged = localstate.InitStorage(parentCtx, parentLogger)
+		storeManaged = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)
 		_ = storeManaged.Connect(context.TODO())
 

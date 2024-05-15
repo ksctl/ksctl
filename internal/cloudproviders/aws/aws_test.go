@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 
 	fakeaws, _ = NewClient(parentCtx, demoClient.Metadata, parentLogger, state, ProvideMockClient)
 
-	demoClient.Storage = localstate.InitStorage(parentCtx, parentLogger)
+	demoClient.Storage = localstate.NewClient(parentCtx, parentLogger)
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
 	exitVal := m.Run()

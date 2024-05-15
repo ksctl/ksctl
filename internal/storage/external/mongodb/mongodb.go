@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"sync"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -147,7 +148,7 @@ func (s *Store) Import(src *types.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(parentCtx context.Context, _log types.LoggerFactory) types.StorageFactory {
+func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
 	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreExtMongo))
 	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}

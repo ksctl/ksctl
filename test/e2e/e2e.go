@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/controllers"
@@ -18,12 +20,16 @@ var (
 func main() {
 	timer := time.Now()
 
+	flags := os.Getenv("E2E_FLAGS")
+	rFlags := strings.Split(flags, ",")
+
 	verbosityLevel := 0
-	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
+
+	if slices.Contains[[]string, string](rFlags, "debug") {
 		verbosityLevel = -1
 	}
 
-	if os.Getenv("NEW_LOGGING") == "true" {
+	if slices.Contains[[]string, string](rFlags, "new_logging") {
 		l = logger.NewGeneralLogger(verbosityLevel, os.Stdout)
 	} else {
 		l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)

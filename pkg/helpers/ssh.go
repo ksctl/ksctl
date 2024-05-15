@@ -36,8 +36,8 @@ type SSHPayload struct {
 	log      types.LoggerFactory
 }
 
-func NewSSHExecutor(ctx context.Context, log types.LoggerFactory, mainStateDocument *storageTypes.StorageDocument) SSHCollection {
-	var sshExecutor SSHCollection = &SSHPayload{
+func NewSSHExecutor(ctx context.Context, log types.LoggerFactory, mainStateDocument *storageTypes.StorageDocument) *SSHPayload {
+	sshExecutor := &SSHPayload{
 		ctx: ctx,
 		log: log,
 	}
@@ -227,6 +227,7 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		script := scripts.NextScript()
 
 		sshPayload.log.Print(sshPayload.ctx, "Executing Sub-Script", "name", script.Name)
+		sshPayload.log.Debug(sshPayload.ctx, "Script To Exec", script.ShellScript)
 		success := false
 		var scriptFailureReason error
 		var stdout, stderr string

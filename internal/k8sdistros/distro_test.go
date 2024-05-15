@@ -267,12 +267,12 @@ func TestMain(m *testing.M) {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(&storageTypes.StorageDocument{})
+	fakeClient = NewPreBootStrap(parentCtx, parentLogger, &storageTypes.StorageDocument{})
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
 
-	storeHA = localstate.InitStorage(parentCtx, parentLogger)
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
 	_ = storeHA.Connect(context.TODO())
 
@@ -287,16 +287,6 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(exitVal)
-}
-
-func NewClientHelper(state *storageTypes.StorageDocument) *PreBootstrap {
-	helper := NewPreBootStrap(parentCtx, parentLogger, state)
-	switch o := helper.(type) {
-	case *PreBootstrap:
-		return o
-	default:
-		return nil
-	}
 }
 
 func TestOverallScriptsCreation(t *testing.T) {

@@ -9,6 +9,7 @@ jobs:
   execute:
     environment: e2e
     env:
+      E2E_FLAGS: debug
       KUBECONFIG: ${{ vars.KUBECONFIG_KSCTL_LOC }}
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -73,7 +74,7 @@ jobs:
           # jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ XXYYZZ/state.json
           # sleep 5s
           # kubectl get nodes -owide
-          
+
           echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
           go run . -op switch -file aws/switch-ha.json
           tree ~/.ksctl/state

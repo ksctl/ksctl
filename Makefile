@@ -203,6 +203,9 @@ lint: golangci-lint ## Run golangci-lint linter & yamllint
 	@echo -e "\n\033[36mRunning for Ksctl (Agent)\033[0m" && \
 		cd ksctl-components/agent && \
 		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
+	@echo -e "\n\033[36mRunning for Ksctl (StateImport)\033[0m" && \
+		cd ksctl-components/stateimport && \
+		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
 	@echo -e "\n\033[36mRunning for Ksctl Controllers (Application)\033[0m" && \
 		make lint-controller CONTROLLER=application && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
 
@@ -211,4 +214,3 @@ test: lint
 	make test-core
 	@echo -e "\n\033[36mTesting in ksctl-components\033[0m\n"
 	make test-controller CONTROLLER=application
-

@@ -11,7 +11,6 @@ import (
 
 	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/types"
 	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"github.com/rodaine/table"
 
@@ -125,7 +124,7 @@ func getTime(level uint) string {
 	return fmt.Sprintf("%d:%d:%d ", t.Hour(), t.Minute(), t.Second())
 }
 
-func NewGeneralLogger(verbose int, out io.Writer) types.LoggerFactory {
+func NewGeneralLogger(verbose int, out io.Writer) *GeneralLog {
 
 	var ve uint
 
@@ -202,7 +201,7 @@ func (l *GeneralLog) Box(ctx context.Context, title string, lines string) {
 	Box := box.New(box.Config{
 		Px:       px,
 		Py:       2,
-		Type:     "Bold",
+		Type:     "Round",
 		TitlePos: "Top",
 		Color:    "Yellow"})
 

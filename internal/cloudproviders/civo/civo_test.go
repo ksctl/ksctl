@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"strings"
 	"testing"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -45,9 +46,9 @@ func TestMain(m *testing.M) {
 			Region:      "LON1",
 			Provider:    consts.CloudCivo,
 			IsHA:        true,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockCivoClient)
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeVars = localstate.InitStorage(parentCtx, parentLogger)
+		storeVars = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeVars.Setup(consts.CloudCivo, "LON1", "demo", consts.ClusterTypeHa)
 		_ = storeVars.Connect(context.TODO())
 	}()
@@ -447,9 +448,9 @@ func TestManagedCluster(t *testing.T) {
 			ClusterName: "demo-managed",
 			Region:      "LON1",
 			Provider:    consts.CloudCivo,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockCivoClient)
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeManaged = localstate.InitStorage(parentCtx, parentLogger)
+		storeManaged = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudCivo, "LON1", "demo-managed", consts.ClusterTypeMang)
 		_ = storeManaged.Connect(context.TODO())
 	}()
@@ -548,9 +549,9 @@ func TestHACluster(t *testing.T) {
 			NoDS:        5,
 			NoWP:        10,
 			K8sDistro:   consts.K8sK3s,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockCivoClient)
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeHA = localstate.InitStorage(parentCtx, parentLogger)
+		storeHA = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)
 		_ = storeHA.Connect(context.TODO())
 

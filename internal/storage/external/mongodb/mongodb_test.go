@@ -3,11 +3,12 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"io"
 	"os"
 	"reflect"
 	"testing"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/docker/docker/api/types/image"
 
@@ -81,7 +82,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitStorage(t *testing.T) {
-	db = InitStorage(parentCtx, parentLogger)
+	db = NewClient(parentCtx, parentLogger)
 	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
 	if err != nil {
 		t.Fatal(err)

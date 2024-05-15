@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 
-	box "github.com/Delta456/box-cli-maker/v2"
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/types"
 	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"github.com/rodaine/table"
 
@@ -64,7 +61,7 @@ func newLogger(out io.Writer, ver slog.Level) *slog.Logger {
 	}))
 }
 
-func NewStructuredLogger(verbose int, out io.Writer) types.LoggerFactory {
+func NewStructuredLogger(verbose int, out io.Writer) *StructuredLog {
 	// LevelDebug Level = -4
 	// LevelInfo  Level = 0
 	// LevelWarn  Level = 4
@@ -150,21 +147,6 @@ func (l *StructuredLog) Table(ctx context.Context, data []cloudController.AllClu
 }
 
 func (l *StructuredLog) Box(ctx context.Context, title string, lines string) {
-	px := 4
 
-	if len(title) >= 2*px+len(lines) {
-		// some maths
-		px = int(math.Ceil(float64(len(title)-len(lines))/2)) + 1
-	}
-
-	l.Debug(ctx, "PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
-
-	Box := box.New(box.Config{
-		Px:       px,
-		Py:       2,
-		Type:     "Bold",
-		TitlePos: "Top",
-		Color:    "Cyan"})
-
-	Box.Println(title, addLineTerminationForLongStrings(lines))
+	l.Print(ctx, title, "details", addLineTerminationForLongStrings(lines))
 }

@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	defaultError "errors"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"strings"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -154,7 +155,7 @@ func (s *Store) Import(src *types.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(parentCtx context.Context, _log types.LoggerFactory) types.StorageFactory {
+func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
 	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreK8s))
 	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}

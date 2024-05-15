@@ -237,7 +237,12 @@ func (cloud *AzureProvider) Credential(storage types.StorageFactory) error {
 	return nil
 }
 
-func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() AzureGo) (*AzureProvider, error) {
+func NewClient(
+	parentCtx context.Context,
+	meta types.Metadata,
+	parentLogger types.LoggerFactory,
+	state *storageTypes.StorageDocument,
+	ClientOption func() AzureGo) (*AzureProvider, error) {
 
 	log = parentLogger
 	azureCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAzure))

@@ -8,8 +8,6 @@ import (
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/ksctl/ksctl/pkg/types/controllers"
-
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
@@ -38,7 +36,7 @@ func GenKsctlController(
 	ctx context.Context,
 	log types.LoggerFactory,
 	client *types.KsctlClient,
-) (controllers.Controller, error) {
+) (*KsctlControllerClient, error) {
 
 	defer panicCatcher(log)
 

@@ -26,7 +26,6 @@ var (
 type metadata struct {
 	public bool
 	cni    string
-	// version string
 
 	noCP int
 	noWP int
@@ -102,7 +101,11 @@ func (cloud *AwsProvider) Credential(storage types.StorageFactory) error {
 	return nil
 }
 
-func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() AwsGo) (*AwsProvider, error) {
+func NewClient(parentCtx context.Context,
+	meta types.Metadata,
+	parentLogger types.LoggerFactory,
+	state *storageTypes.StorageDocument,
+	ClientOption func() AwsGo) (*AwsProvider, error) {
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
 	awsCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAws))

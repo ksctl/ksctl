@@ -93,7 +93,7 @@ func TestMain(m *testing.M) {
 		panic("unable to initialize")
 	}
 
-	storeHA = localstate.InitStorage(parentCtx, parentLogger)
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
 	_ = storeHA.Connect(context.TODO())
 
