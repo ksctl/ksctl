@@ -73,6 +73,7 @@ func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNod
 		Region:            obj.region,
 		NumTargetNodes:    noOfNodes,
 		TargetNodesSize:   vmtype,
+		FirewallRule:      "80,443,6443",
 		NetworkID:         mainStateDocument.CloudInfra.Civo.NetworkID,
 		Applications:      obj.metadata.apps, // make the use of application and cni via some method
 		CNIPlugin:         obj.metadata.cni,  // make it use install application in the civo
