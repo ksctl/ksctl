@@ -18,7 +18,7 @@ require (
 	github.com/civo/civogo v0.3.69
 	github.com/docker/docker v26.1.1+incompatible
 	github.com/docker/go-connections v0.5.0
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.17.0
 	github.com/goccy/go-json v0.10.2
 	github.com/gookit/goutil v0.6.15
 	github.com/onsi/ginkgo/v2 v2.17.3
