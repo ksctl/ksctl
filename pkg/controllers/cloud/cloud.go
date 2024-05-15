@@ -480,7 +480,7 @@ func CreateManagedCluster(client *types.KsctlClient) (bool, bool, error) {
 
 	externalCNI := managedClient.CNI(client.Metadata.CNIPlugin)
 
-	managedClient = managedClient.Version(client.Metadata.K8sVersion)
+	managedClient = managedClient.ManagedK8sVersion(client.Metadata.K8sVersion)
 
 	if managedClient == nil {
 		return externalApps, externalCNI, log.NewError(controllerCtx, "invalid k8s version")

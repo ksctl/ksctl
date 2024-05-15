@@ -61,7 +61,7 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 	return collection
 }
 
-func (k3s *K3s) Version(ver string) types.KubernetesBootstrap {
+func (k3s *K3s) K8sVersion(ver string) types.KubernetesBootstrap {
 	if err := isValidK3sVersion(ver); err == nil {
 		// valid
 		k3s.K3sVer = fmt.Sprintf("v%s+k3s1", ver)

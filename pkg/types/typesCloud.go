@@ -73,8 +73,8 @@ type CloudFactory interface {
 	// CNI for the CNI name (Managed cluster)
 	CNI(string) (willBeInstalled bool)
 
-	// Version for the Kubernetes Version (Managed cluster)
-	Version(string) CloudFactory // TODO: rename to ManagedK8sVersion and add error passing
+	// ManagedK8sVersion for the Kubernetes ManagedK8sVersion (Managed cluster)
+	ManagedK8sVersion(string) CloudFactory // TODO: rename to ManagedK8sVersion and add error passing
 
 	// NoOfWorkerPlane if setter is enabled it writes the new no of workerplane to be used
 	// if getter is enabled it returns the current no of workerplane

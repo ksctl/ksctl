@@ -234,7 +234,7 @@ func TestManagedCluster(t *testing.T) {
 	}()
 
 	assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationCreate), nil, "Init must work before")
-	fakeClientManaged.Version("1.27.1")
+	fakeClientManaged.ManagedK8sVersion("1.27.1")
 	fakeClientManaged.Name("fake")
 	assert.Equal(t, fakeClientManaged.NewManagedCluster(storeManaged, 2), nil, "managed cluster should be created")
 	assert.Equal(t, mainStateDocument.CloudInfra.Local.Nodes, 2, "missmatch of no of nodes")

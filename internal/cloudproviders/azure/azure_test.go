@@ -291,14 +291,14 @@ func TestK8sVersion(t *testing.T) {
 	for i := 0; i < len(forTesting); i++ {
 		var ver string = forTesting[i]
 		if i < 2 {
-			if ret := fakeClientVars.Version(ver); ret == nil {
+			if ret := fakeClientVars.ManagedK8sVersion(ver); ret == nil {
 				t.Fatalf("returned nil for valid version")
 			}
 			if ver != fakeClientVars.metadata.k8sVersion {
 				t.Fatalf("set value is not equal to input value")
 			}
 		} else {
-			if ret := fakeClientVars.Version(ver); ret != nil {
+			if ret := fakeClientVars.ManagedK8sVersion(ver); ret != nil {
 				t.Fatalf("returned interface for invalid version")
 			}
 		}
@@ -430,7 +430,7 @@ func TestManagedCluster(t *testing.T) {
 
 	}()
 
-	fakeClientManaged.Version("1.27")
+	fakeClientManaged.ManagedK8sVersion("1.27")
 	t.Run("init state", func(t *testing.T) {
 
 		if err := fakeClientManaged.InitState(storeManaged, consts.OperationCreate); err != nil {

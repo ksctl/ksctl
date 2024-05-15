@@ -66,7 +66,7 @@ func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 	return hostnames
 }
 
-func (obj *AzureProvider) Version(ver string) types.CloudFactory {
+func (obj *AzureProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	log.Debug(azureCtx, "Printing", "K8sVersion", ver)
 	if err := isValidK8sVersion(obj, ver); err != nil {
 		log.Error(azureCtx, "azure.Version()", "err", err.Error())

@@ -37,7 +37,7 @@ func (p *Kubeadm) Setup(storage types.StorageFactory, operation consts.KsctlOper
 	return nil
 }
 
-func (p *Kubeadm) Version(ver string) types.KubernetesBootstrap {
+func (p *Kubeadm) K8sVersion(ver string) types.KubernetesBootstrap {
 	if err := isValidKubeadmVersion(ver); err == nil {
 		// valid
 		p.KubeadmVer = ver

@@ -489,7 +489,7 @@ func checkCurrentStateFile(t *testing.T) {
 
 func TestOverallScriptsCreation(t *testing.T) {
 	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
-	fakeClient.Version("1.27.1")
+	fakeClient.K8sVersion("1.27.1")
 	checkCurrentStateFile(t)
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)

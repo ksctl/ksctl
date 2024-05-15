@@ -113,8 +113,8 @@ func (client *LocalProvider) CNI(s string) (externalCNI bool) {
 	return false
 }
 
-// Version implements types.CloudFactory.
-func (cloud *LocalProvider) Version(ver string) types.CloudFactory {
+// ManagedK8sVersion implements types.CloudFactory.
+func (cloud *LocalProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	// TODO: validation of version
 	log.Debug(localCtx, "Printing", "k8sVersion", ver)
 	cloud.Metadata.Version = ver
