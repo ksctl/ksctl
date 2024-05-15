@@ -12,7 +12,7 @@ type KubernetesBootstrap interface {
 
 	JoinWorkerplane(int, StorageFactory) error
 
-	K8sVersion(string) KubernetesBootstrap // TODO: make it return error
+	K8sVersion(string) KubernetesBootstrap
 
 	CNI(string) (externalCNI bool)
 }

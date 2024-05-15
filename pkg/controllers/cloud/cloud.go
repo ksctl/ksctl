@@ -315,12 +315,6 @@ func DelWorkerNodes(client *types.KsctlClient) ([]string, error) {
 }
 
 func CreateHACluster(client *types.KsctlClient) error {
-	var err error
-	err = client.Cloud.Name(client.Metadata.ClusterName + "-net").NewNetwork(client.Storage)
-	if err != nil {
-		return err
-	}
-
 	if _, err := client.Cloud.NoOfControlPlane(client.Metadata.NoCP, true); err != nil {
 		return err
 	}
@@ -330,6 +324,12 @@ func CreateHACluster(client *types.KsctlClient) error {
 	}
 
 	if _, err := client.Cloud.NoOfDataStore(client.Metadata.NoDS, true); err != nil {
+		return err
+	}
+
+	var err error
+	err = client.Cloud.Name(client.Metadata.ClusterName + "-net").NewNetwork(client.Storage)
+	if err != nil {
 		return err
 	}
 
