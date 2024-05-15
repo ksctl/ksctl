@@ -14,23 +14,23 @@ import (
 func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) error {
 
 	cloud.client.NewProvider(log, storage, nil)
-	if len(cloud.Metadata.tempDirKubeconfig) == 0 {
+	if len(cloud.metadata.tempDirKubeconfig) == 0 {
 		var err error
-		cloud.Metadata.tempDirKubeconfig, err = os.MkdirTemp("", cloud.ClusterName+"*")
+		cloud.metadata.tempDirKubeconfig, err = os.MkdirTemp("", cloud.clusterName+"*")
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(cloud.Metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig",
+		if err := os.WriteFile(cloud.metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig",
 			[]byte(mainStateDocument.ClusterKubeConfig), 0755); err != nil {
 			return err
 		}
 		defer func() {
-			_ = os.RemoveAll(cloud.Metadata.tempDirKubeconfig)
+			_ = os.RemoveAll(cloud.metadata.tempDirKubeconfig)
 		}()
 	}
 
-	if err := cloud.client.Delete(cloud.ClusterName,
-		cloud.Metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig"); err != nil {
+	if err := cloud.client.Delete(cloud.clusterName,
+		cloud.metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig"); err != nil {
 		return log.NewError(localCtx, "failed to delete cluster", "Reason", err)
 	}
 
@@ -47,7 +47,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 	cloud.client.NewProvider(log, storage, nil)
 
 	cni := false
-	if consts.KsctlValidCNIPlugin(cloud.Metadata.Cni) == consts.CNINone {
+	if consts.KsctlValidCNIPlugin(cloud.metadata.cni) == consts.CNINone {
 		cni = true
 	}
 
@@ -56,12 +56,12 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.Metadata.Version
+	mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.metadata.version
 	mainStateDocument.CloudInfra.Local.Nodes = noOfNodes
 
 	Wait := 50 * time.Second
 
-	cloud.tempDirKubeconfig, err = os.MkdirTemp("", cloud.ClusterName+"*")
+	cloud.tempDirKubeconfig, err = os.MkdirTemp("", cloud.clusterName+"*")
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 	}
 	Image := "kindest/node:v" + mainStateDocument.CloudInfra.Local.B.KubernetesVer
 
-	if err := cloud.client.Create(cloud.ClusterName, withConfig, Image, Wait, ConfigHandler); err != nil {
+	if err := cloud.client.Create(cloud.clusterName, withConfig, Image, Wait, ConfigHandler); err != nil {
 		return log.NewError(localCtx, "failed to create cluster", "err", err)
 	}
 
@@ -97,7 +97,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 	log.Debug(localCtx, "kubeconfig", "kubeconfigTempPath", path)
 
 	mainStateDocument.ClusterKubeConfig = string(data)
-	mainStateDocument.ClusterKubeConfigContext = "kind-" + cloud.ClusterName
+	mainStateDocument.ClusterKubeConfigContext = "kind-" + cloud.clusterName
 	mainStateDocument.CloudInfra.Local.B.IsCompleted = true
 
 	if err := storage.Write(mainStateDocument); err != nil {

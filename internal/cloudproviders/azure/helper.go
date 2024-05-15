@@ -8,7 +8,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func GenerateResourceGroupName(clusterName, clusterType string) string {
+func generateResourceGroupName(clusterName, clusterType string) string {
 	return fmt.Sprintf("ksctl-resgrp-%s-%s", clusterType, clusterName)
 }
 

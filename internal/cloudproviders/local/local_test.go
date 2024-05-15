@@ -238,7 +238,7 @@ func TestManagedCluster(t *testing.T) {
 	fakeClientManaged.Name("fake")
 	assert.Equal(t, fakeClientManaged.NewManagedCluster(storeManaged, 2), nil, "managed cluster should be created")
 	assert.Equal(t, mainStateDocument.CloudInfra.Local.Nodes, 2, "missmatch of no of nodes")
-	assert.Equal(t, mainStateDocument.CloudInfra.Local.B.KubernetesVer, fakeClientManaged.Metadata.Version, "k8s version does not match")
+	assert.Equal(t, mainStateDocument.CloudInfra.Local.B.KubernetesVer, fakeClientManaged.metadata.version, "k8s version does not match")
 	t.Run("check getState()", func(t *testing.T) {
 		expected, err := fakeClientManaged.GetStateFile(storeManaged)
 		assert.NilError(t, err, "no error should be there for getstate")

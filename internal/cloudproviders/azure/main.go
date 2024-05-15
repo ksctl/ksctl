@@ -120,7 +120,7 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 	obj.chRole = make(chan consts.KsctlRole, 1)
 	obj.chVMType = make(chan string, 1)
 
-	obj.resourceGroup = GenerateResourceGroupName(obj.clusterName, string(clusterType))
+	obj.resourceGroup = generateResourceGroupName(obj.clusterName, string(clusterType))
 
 	errLoadState := loadStateHelper(storage)
 	switch operation {
