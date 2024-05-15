@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"strings"
 	"sync"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/goccy/go-json"
 
@@ -183,7 +184,7 @@ func (s *Store) Import(src *types.StorageStateExportImport) error {
 	return nil
 }
 
-func InitStorage(parentCtx context.Context, _log types.LoggerFactory) types.StorageFactory {
+func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
 	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreLocal))
 	log = _log
 	return &Store{mu: &sync.RWMutex{}, wg: &sync.WaitGroup{}}

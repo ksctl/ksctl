@@ -214,7 +214,7 @@ func patchHelmDirectories(client *HelmClient) error {
 		return err
 	}
 
-	store := localStore.InitStorage(kubernetesCtx, log).(*localStore.Store)
+	store := localStore.NewClient(kubernetesCtx, log)
 
 	pathConfig := []string{usr, ".config", "helm"}
 	_, okConfig := store.PresentDirectory(pathConfig)

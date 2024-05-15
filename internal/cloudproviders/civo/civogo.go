@@ -45,7 +45,7 @@ type CivoGoClient struct {
 	region string
 }
 
-func ProvideMockCivoClient() CivoGo {
+func ProvideMockClient() CivoGo {
 	return &CivoGoMockClient{}
 }
 

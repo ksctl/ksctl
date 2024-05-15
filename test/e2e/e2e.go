@@ -19,7 +19,7 @@ func main() {
 	timer := time.Now()
 
 	verbosityLevel := 0
-	if os.Getenv("E2E_LOG_LEVEL") == "DEBUG" {
+	if os.Getenv("E2E_LOG_LEVEL") == "debug" {
 		verbosityLevel = -1
 	}
 

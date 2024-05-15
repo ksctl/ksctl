@@ -3,9 +3,10 @@ package cloud
 import (
 	"context"
 	"fmt"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"sync"
 	"time"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
 	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
@@ -33,7 +34,7 @@ func InitCloud(client *types.KsctlClient, state *storageTypes.StorageDocument, o
 		if !fakeClient {
 			client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, state, civoPkg.ProvideClient)
 		} else {
-			client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, state, civoPkg.ProvideMockCivoClient)
+			client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, state, civoPkg.ProvideMockClient)
 		}
 
 		if err != nil {

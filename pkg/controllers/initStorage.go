@@ -14,11 +14,11 @@ func (manager *KsctlControllerClient) initStorage(ctx context.Context) error {
 
 	switch manager.client.Metadata.StateLocation {
 	case consts.StoreLocal:
-		manager.client.Storage = localstate.InitStorage(ctx, manager.log)
+		manager.client.Storage = localstate.NewClient(ctx, manager.log)
 	case consts.StoreExtMongo:
-		manager.client.Storage = externalmongostate.InitStorage(ctx, manager.log)
+		manager.client.Storage = externalmongostate.NewClient(ctx, manager.log)
 	case consts.StoreK8s:
-		manager.client.Storage = kubernetesstate.InitStorage(ctx, manager.log)
+		manager.client.Storage = kubernetesstate.NewClient(ctx, manager.log)
 	default:
 		return manager.log.NewError(ctx, "invalid storage provider")
 	}

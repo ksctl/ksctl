@@ -267,7 +267,7 @@ func TestMain(m *testing.M) {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(&storageTypes.StorageDocument{})
+	fakeClient = NewPreBootStrap(parentCtx, parentLogger, &storageTypes.StorageDocument{})
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
@@ -287,16 +287,6 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(exitVal)
-}
-
-func NewClientHelper(state *storageTypes.StorageDocument) *PreBootstrap {
-	helper := NewPreBootStrap(parentCtx, parentLogger, state)
-	switch o := helper.(type) {
-	case *PreBootstrap:
-		return o
-	default:
-		return nil
-	}
 }
 
 func TestOverallScriptsCreation(t *testing.T) {

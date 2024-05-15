@@ -40,19 +40,16 @@ var (
 
 func TestMain(m *testing.M) {
 
-	func() {
+	fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo",
+		Region:      "fake",
+		Provider:    consts.CloudAzure,
+		IsHA:        true,
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo",
-			Region:      "fake",
-			Provider:    consts.CloudAzure,
-			IsHA:        true,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
-
-		storeVars = localstate.InitStorage(parentCtx, parentLogger)
-		_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
-		_ = storeVars.Connect(context.TODO())
-	}()
+	storeVars = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
+	_ = storeVars.Connect(context.TODO())
 	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
 	exitVal := m.Run()
@@ -427,7 +424,7 @@ func TestManagedCluster(t *testing.T) {
 			Provider:    consts.CloudAzure,
 		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeManaged = localstate.InitStorage(parentCtx, parentLogger)
+		storeManaged = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudAzure, "fake", "demo-managed", consts.ClusterTypeMang)
 		_ = storeManaged.Connect(context.TODO())
 
@@ -522,7 +519,7 @@ func TestHACluster(t *testing.T) {
 			K8sDistro:   consts.K8sK3s,
 		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeHA = localstate.InitStorage(parentCtx, parentLogger)
+		storeHA = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeHA.Setup(consts.CloudAzure, "fake", "demo-ha", consts.ClusterTypeHa)
 		_ = storeHA.Connect(context.TODO())
 
