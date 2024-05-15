@@ -18,7 +18,7 @@ type StructuredLog struct {
 }
 
 const (
-	LimitCol = 80
+	limitCol = 80
 )
 
 func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {

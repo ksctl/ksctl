@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
@@ -245,6 +246,24 @@ func TestManagedCluster(t *testing.T) {
 
 		got, _ := json.Marshal(mainStateDocument)
 		assert.DeepEqual(t, string(got), expected)
+	})
+
+	t.Run("Get cluster managed", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:     fakeClientManaged.clusterName,
+				Provider: consts.CloudLocal,
+				Type:     consts.ClusterTypeMang,
+				Region:   fakeClientManaged.region,
+				NoMgt:    mainStateDocument.CloudInfra.Local.Nodes,
+
+				K8sDistro:  "kind",
+				K8sVersion: mainStateDocument.CloudInfra.Local.B.KubernetesVer,
+			},
+		}
+		got, err := fakeClientManaged.GetRAWClusterInfos(storeManaged)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
 	})
 
 	assert.Equal(t, fakeClientManaged.DelManagedCluster(storeManaged), nil, "managed cluster should be deleted")
