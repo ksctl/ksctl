@@ -8,7 +8,7 @@ jobs:
   execute:
     environment: e2e
     env:
-      E2E_LOG_LEVEL: debug
+      E2E_FLAGS: debug
       KUBECONFIG: ${{ vars.KUBECONFIG_KSCTL_LOC }}
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

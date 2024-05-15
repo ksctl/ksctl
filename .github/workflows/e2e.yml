@@ -21,7 +21,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [ svr-1, svr-2 ]
+        runner: [svr-1, svr-2]
     steps:
       - name: remove the .ksctl
         run: |

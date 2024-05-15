@@ -19,13 +19,10 @@ import (
 )
 
 var (
-	dir                     = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
-	log types.LoggerFactory = func() types.LoggerFactory {
-		var l types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
-		return l
-	}()
-	mainStateDoc = &storageTypes.StorageDocument{}
-	dummyCtx     = context.TODO()
+	dir                              = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
+	log          types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	mainStateDoc                     = &storageTypes.StorageDocument{}
+	dummyCtx                         = context.TODO()
 )
 
 func TestConsts(t *testing.T) {
