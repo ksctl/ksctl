@@ -28,7 +28,7 @@ type server struct {
 
 var (
 	log      types.LoggerFactory
-	agentCtx context.Context
+	agentCtx context.Context = context.Background()
 )
 
 func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, error) {
