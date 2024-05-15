@@ -35,7 +35,26 @@ func (obj *CivoProvider) NewNetwork(storage types.StorageFactory) error {
 	log.Debug(civoCtx, "Printing", "networkCIDR", net.CIDR)
 	log.Success(civoCtx, "Created network", "name", name)
 
-	return storage.Write(mainStateDocument)
+	if err := storage.Write(mainStateDocument); err != nil {
+		return err
+	}
+
+	counter := 0
+	for ; counter < int(consts.CounterMaxRetryCount); counter++ {
+		time.Sleep(10 * time.Second)
+
+		net, err := obj.client.GetNetwork(res.ID)
+		if err != nil {
+			return err
+		}
+
+		if net.Status == "Active" {
+			return nil
+		}
+
+		log.Warn(civoCtx, "Waiting for the network to be active", "Status", net.Status, "attempt", counter, "maxCount", int(consts.CounterMaxRetryCount), "id", res.ID)
+	}
+	return log.NewError(civoCtx, "maximum retry of the network wait reached", "attempt", counter, "maxCount", int(consts.CounterMaxRetryCount), "id", res.ID)
 }
 
 // DelNetwork implements types.CloudFactory.
