@@ -27,31 +27,28 @@ docker-push-state-import: ## Push docker image for ksctl state-import
 docker-push-agent: ## Push docker image for ksctl agent
 	$(CONTAINER_TOOL) push ${KSCTL_AGENT_IMG}
 
-PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
+PLATFORMS ?= linux/arm64,linux/amd64
 .PHONY: docker-buildx-agent
 docker-buildx-agent: ## docker build agent
-		sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/agent/Dockerfile > build/agent/Dockerfile.cross
 		- $(CONTAINER_TOOL) buildx create --name project-v3-builder
 		$(CONTAINER_TOOL) buildx use project-v3-builder
-		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_AGENT_IMG} -f build/agent/Dockerfile.cross .
+		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_AGENT_IMG} -f build/agent/Dockerfile .
 		 - $(CONTAINER_TOOL) buildx rm project-v3-builder
-		 rm build/agent/Dockerfile.cross
 
-PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
+PLATFORMS ?= linux/arm64,linux/amd64
 .PHONY: docker-buildx-stateimport
 docker-buildx-stateimport: ## docker build stateimport
-		sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/stateimport/Dockerfile > build/stateimport/Dockerfile.cross
 		- $(CONTAINER_TOOL) buildx create --name project-v3-builder
 		$(CONTAINER_TOOL) buildx use project-v3-builder
-		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_STATE_IMPORTER_IMG} -f build/stateimport/Dockerfile.cross .
+		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_STATE_IMPORTER_IMG} -f build/stateimport/Dockerfile .
 		 - $(CONTAINER_TOOL) buildx rm project-v3-builder
-		 rm build/stateimport/Dockerfile.cross
 
 .PHONY: docker-build-agent
 docker-build-agent: ## docker build agent
 	docker build \
 		--file build/agent/Dockerfile \
 		--build-arg="GO_VERSION=1.22" \
+		--platform="linux/amd64" \
 		--tag ${KSCTL_AGENT_IMG} .
 
 .PHONY: docker-build-state-import
@@ -59,6 +56,7 @@ docker-build-state-import: ## docker build state importer
 	docker build \
 		--file build/stateimport/Dockerfile \
 		--build-arg="GO_VERSION=1.22" \
+		--platform="linux/amd64" \
 		--tag ${KSCTL_STATE_IMPORTER_IMG} .
 
 ##@ Unit Tests (Core)
