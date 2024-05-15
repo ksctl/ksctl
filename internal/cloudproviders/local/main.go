@@ -120,7 +120,7 @@ func (cloud *LocalProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	return cloud
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
+func (cloud *LocalProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
 
 	var data []cloudControlRes.AllClusterData
 	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{

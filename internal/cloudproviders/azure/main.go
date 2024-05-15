@@ -494,7 +494,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 	return -1, log.NewError(azureCtx, "constrains for no of workplane >= 0")
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
+func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
 
 	var data []cloudcontrolres.AllClusterData
 

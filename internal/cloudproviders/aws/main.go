@@ -443,7 +443,7 @@ func (obj *AwsProvider) GetStateFile(factory types.StorageFactory) (string, erro
 
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
+func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
 
 	var data []cloudcontrolres.AllClusterData
 

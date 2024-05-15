@@ -55,6 +55,8 @@ type CloudFactory interface {
 	// DelManagedCluster deletes managed kubernetes from cloud offering
 	DelManagedCluster(StorageFactory) error
 
+	GetRAWClusterInfos(storage StorageFactory) ([]cloud.AllClusterData, error)
+
 	// Name sets the name for the resource you want to operate
 	Name(string) CloudFactory
 

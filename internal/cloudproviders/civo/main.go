@@ -465,7 +465,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 	return -1, log.NewError(civoCtx, "constrains for no of workerplane >= 0")
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
+func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
 
 	var data []cloud_control_res.AllClusterData
 
