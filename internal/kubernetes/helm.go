@@ -1,9 +1,11 @@
 package kubernetes
 
 import (
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/fatih/color"
 	localStore "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -132,7 +134,15 @@ func (c *HelmClient) ListInstalledCharts() error {
 
 	log.Print(kubernetesCtx, "Lists installed Charts")
 	for _, rel := range results {
-		log.Print(kubernetesCtx, "chart data", "name", rel.Chart.Name(), "namespace", rel.Namespace, "description", rel.Info.Description)
+		log.Box(kubernetesCtx,
+			rel.Chart.Name(),
+			fmt.Sprintf(
+				"Namespace\n----\n%s\n\nVersion\n----\n%s\n\nDescription\n----\n%s\n\nStatus\n----\n%s\n\nNotes\n----\n%s",
+				color.MagentaString(rel.Namespace),
+				rel.Chart.AppVersion(),
+				rel.Info.Description,
+				rel.Info.Status,
+				rel.Info.Notes))
 	}
 	return nil
 }

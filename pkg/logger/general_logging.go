@@ -201,7 +201,7 @@ func (l *GeneralLog) Box(ctx context.Context, title string, lines string) {
 	Box := box.New(box.Config{
 		Px:       px,
 		Py:       2,
-		Type:     "Bold",
+		Type:     "Round",
 		TitlePos: "Top",
 		Color:    "Yellow"})
 

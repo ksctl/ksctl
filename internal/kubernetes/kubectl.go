@@ -16,7 +16,8 @@ import (
 
 type KubectlOptions struct {
 	createNamespace bool
-
+	postInstall     string
+	metadata        string
 	// Namespace Only specify if createNamespace is true
 	namespace string
 }

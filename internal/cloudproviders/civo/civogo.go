@@ -269,7 +269,7 @@ func (client *CivoGoMockClient) GetNetwork(id string) (*civogo.Network, error) {
 	return &civogo.Network{
 		ID:      id,
 		Default: false,
-		Status:  "ACTIVE",
+		Status:  "Active",
 	}, nil
 }
 
