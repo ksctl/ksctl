@@ -1,29 +1,9 @@
-name: release-ksctl-component-ghcr
+name: ghcr build and push ksctl-components
 on:
-  push:
-    paths:
-    - 'internal/**'
-    - 'pkg/**'
-    - 'go.mod'
-    - 'go.sum'
-    - 'build/**'
-    - 'build/agent/**'
-    - 'ksctl-components/**'
-    branches: [ main ]
   workflow_dispatch:
-    
-  # pull_request:
-  #   paths:
-  #     - 'internal/**'
-  #     - 'pkg/**'
-  #     - 'build/**'
-  #     - 'ksctl-agent/**'
-  #     - 'Makefile'
-  #   branches: [ main ]
-  #   types: [ labeled, opened, synchronize, reopened ]
+  workflow_call:
 
 jobs:
-
   ksctl-stateimport:
     runs-on: ubuntu-latest
 

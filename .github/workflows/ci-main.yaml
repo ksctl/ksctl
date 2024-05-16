@@ -1,0 +1,28 @@
+name: CI-CD for ksctl main branch
+
+on:
+  push:
+    paths:
+      - "internal/**"
+      - "pkg/**"
+      - "go.mod"
+      - "go.sum"
+      - "build/**"
+      - "test/e2e/**"
+      - "ksctl-components/**"
+      - ".github/workflows/*"
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger-oci-artifact-build-push:
+    uses: ./.github/workflows/docker.yaml
+    secrets: inherit
+    permissions:
+      packages: write
+      contents: read
+
+  trigger-e2e:
+    uses: ./.github/workflows/e2e.yml
+    needs: ["trigger-oci-artifact-build-push"]
+    secrets: inherit

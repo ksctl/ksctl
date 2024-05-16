@@ -1,17 +1,8 @@
 name: e2e for ksctl
 
 on:
-  push:
-    paths:
-      - "go.mod"
-      - "go.sum"
-      - "test/e2e/**"
-      - "pkg/**"
-      - "internal/**"
-      - ".github/workflows/*"
-    branches:
-      - "main"
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   setup:
