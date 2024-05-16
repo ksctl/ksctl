@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.160.0
 	github.com/civo/civogo v0.3.69
-	github.com/docker/docker v26.1.1+incompatible
+	github.com/docker/docker v26.1.2+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/fatih/color v1.17.0
 	github.com/goccy/go-json v0.10.2
