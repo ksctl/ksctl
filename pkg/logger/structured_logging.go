@@ -8,7 +8,6 @@ import (
 
 	"github.com/fatih/color"
 	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-	"github.com/rodaine/table"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
@@ -127,23 +126,46 @@ func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
 }
 
 func (l *StructuredLog) Table(ctx context.Context, data []cloudController.AllClusterData) {
-	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
-	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
-	tbl := table.New("Name", "Provider", "Nodes", "Type", "K8s")
-	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
-
-	for _, row := range data {
-		node := ""
-		if row.Type == "ha" {
-			node = fmt.Sprintf("cp: %d\nwp: %d\nds: %d\nlb: 1", row.NoCP, row.NoWP, row.NoDS)
-		} else {
-			node = fmt.Sprintf("wp: %d", row.NoMgt)
-		}
-		tbl.AddRow(row.Name, string(row.Provider)+"("+row.Region+")", node, row.Type, string(row.K8sDistro))
+	type nodeSchema struct {
+		Cp int
+		Wp int
+		Lb int
+		Ds int
+	}
+	type tableSchema struct {
+		Name         string
+		Provider     string
+		Region       string
+		Nodes        nodeSchema
+		Type         string
+		K8sBootstrap string
+		K8sVersion   string
 	}
 
-	tbl.Print()
+	vals := []tableSchema{}
+
+	for _, row := range data {
+		_val := tableSchema{}
+		_val.Name = row.Name
+		_val.Provider = string(row.Provider)
+		_val.Region = row.Region
+		_val.Type = string(row.Type)
+		_val.K8sBootstrap = string(row.K8sDistro)
+		_val.K8sVersion = row.K8sVersion
+
+		if row.Type == "ha" {
+			_val.Nodes.Cp = row.NoCP
+			_val.Nodes.Wp = row.NoWP
+			_val.Nodes.Ds = row.NoDS
+			_val.Nodes.Lb = 1
+		} else {
+			_val.Nodes.Wp = row.NoMgt
+		}
+
+		vals = append(vals, _val)
+	}
+	l.Success(ctx, "table content", "data", vals)
 }
 
 func (l *StructuredLog) Box(ctx context.Context, title string, lines string) {
