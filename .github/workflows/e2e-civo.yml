@@ -43,28 +43,28 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op create -file civo/create.json
-          go run . -op get -file civo/get.json
+          ksctl-e2e-amd64 -op create -file civo/create.json
+          ksctl-e2e-amd64 -op get -file civo/get.json
 
       - name: create (k3s ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op create -file civo/create-ha.json
-          go run . -op get -file civo/get.json
+          ksctl-e2e-amd64 -op create -file civo/create-ha.json
+          ksctl-e2e-amd64 -op get -file civo/get.json
 
       - name: create (kubeadm ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op create -file civo/create-ha-kubeadm.json
-          go run . -op get -file civo/get.json
+          ksctl-e2e-amd64 -op create -file civo/create-ha-kubeadm.json
+          ksctl-e2e-amd64 -op get -file civo/get.json
 
       - name: switch
         if: steps.changes.outputs.paths == 'true'
         run: |
           echo -e "\033[1;34m@@@\033[0m \033[1;35mManaged Cluster\033[0m \033[1;34m@@@\033[0m"
-          go run . -op switch -file civo/switch.json
+          ksctl-e2e-amd64 -op switch -file civo/switch.json
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/civo/managed/test-e2e-civo\ LON1/state.json
 
@@ -72,7 +72,7 @@ jobs:
 
           kubectl get nodes -owide
           echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
-          go run . -op switch -file civo/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file civo/switch-ha.json
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/civo/ha/test-e2e-ha-civo\ FRA1/state.json
 
@@ -80,7 +80,7 @@ jobs:
 
           kubectl get nodes -owide
           echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (kubeadm)\033[0m \033[1;34m@@@\033[0m"
-          go run . -op switch -file civo/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file civo/switch-ha-kubeadm.json
 
           tree ~/.ksctl/state
 
@@ -94,10 +94,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op switch -file civo/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file civo/switch-ha-kubeadm.json
 
           sleep 30s
-          go run . -op scaledown -file civo/scaledown-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaledown -file civo/scaledown-ha-kubeadm.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\ PHX1/state.json
@@ -106,10 +106,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op switch -file civo/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file civo/switch-ha-kubeadm.json
 
           sleep 1m
-          go run . -op scaleup -file civo/scaleup-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaleup -file civo/scaleup-ha-kubeadm.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/civo/ha/test-e2e-kubeadm-ha-civo\ PHX1/state.json
@@ -119,10 +119,10 @@ jobs:
         run: |
 
           set -xe
-          go run . -op switch -file civo/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file civo/switch-ha.json
 
           sleep 30s
-          go run . -op scaledown -file civo/scaledown-ha.json
+          ksctl-e2e-amd64 -op scaledown -file civo/scaledown-ha.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/civo/ha/test-e2e-ha-civo\ FRA1/state.json
@@ -132,10 +132,10 @@ jobs:
         run: |
           set -xe
 
-          go run . -op switch -file civo/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file civo/switch-ha.json
 
           sleep 30s
-          go run . -op scaleup -file civo/scaleup-ha.json
+          ksctl-e2e-amd64 -op scaleup -file civo/scaleup-ha.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/civo/ha/test-e2e-ha-civo\ FRA1/state.json
@@ -145,18 +145,18 @@ jobs:
         run: |
           set -xe
 
-          go run . -op delete -file civo/delete.json
+          ksctl-e2e-amd64 -op delete -file civo/delete.json
 
       - name: delete (ha k3s)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
-          go run . -op delete -file civo/delete-ha.json
+          ksctl-e2e-amd64 -op delete -file civo/delete-ha.json
 
       - name: delete (ha kubeadm)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
-          go run . -op delete -file civo/delete-ha-kubeadm.json
+          ksctl-e2e-amd64 -op delete -file civo/delete-ha-kubeadm.json

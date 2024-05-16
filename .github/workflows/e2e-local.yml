@@ -37,15 +37,15 @@ jobs:
       - name: create (managed)
         if: steps.changes.outputs.paths == 'true'
         run: |
-          go run . -op create -file local/create.json
-          go run . -op get -file local/get.json
+          ksctl-e2e-amd64 -op create -file local/create.json
+          ksctl-e2e-amd64 -op get -file local/get.json
 
       - name: switch (managed)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
-          go run . -op switch -file local/switch.json
+          ksctl-e2e-amd64 -op switch -file local/switch.json
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/local/managed/test-e2e-local\ LOCAL/state.json
           kubectl get nodes -owide
@@ -55,4 +55,4 @@ jobs:
         run: |
           set -xe
 
-          go run . -op delete -file local/delete.json
+          ksctl-e2e-amd64 -op delete -file local/delete.json

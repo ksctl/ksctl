@@ -46,43 +46,43 @@ jobs:
         run: |
           set -xe
           echo -e "\033[1;34m@@@\033[0m \033[1;35mFeature in Progress!\033[0m \033[1;34m@@@\033[0m"
-          # go run . -op create -file aws/create.json
-          # go run . -op get -file aws/get.json
+          # ksctl-e2e-amd64 -op create -file aws/create.json
+          # ksctl-e2e-amd64 -op get -file aws/get.json
 
       - name: create (k3s ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op create -file aws/create-ha.json
-          go run . -op get -file aws/get.json
+          ksctl-e2e-amd64 -op create -file aws/create-ha.json
+          ksctl-e2e-amd64 -op get -file aws/get.json
 
       - name: create (kubeadm ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op create -file aws/create-ha-kubeadm.json
-          go run . -op get -file aws/get.json
+          ksctl-e2e-amd64 -op create -file aws/create-ha-kubeadm.json
+          ksctl-e2e-amd64 -op get -file aws/get.json
 
       - name: switch
         if: steps.changes.outputs.paths == 'true'
         run: |
           echo -e "\033[1;34m@@@\033[0m \033[1;35mFeature in Progress!\033[0m \033[1;34m@@@\033[0m"
           # echo -e "\033[1;34m@@@\033[0m \033[1;35mManaged Cluster\033[0m \033[1;34m@@@\033[0m"
-          # go run . -op switch -file aws/switch.json
+          # ksctl-e2e-amd64 -op switch -file aws/switch.json
           # tree ~/.ksctl/state
           # jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ XXYYZZ/state.json
           # sleep 5s
           # kubectl get nodes -owide
 
           echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
-          go run . -op switch -file aws/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/aws/ha/test-e2e-ha-aws\ ap-south-1/state.json
           sleep 5s
           kubectl get nodes -owide
 
           echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (kubeadm)\033[0m \033[1;34m@@@\033[0m"
-          go run . -op switch -file aws/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-ha-kubeadm.json
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/aws/ha/test-e2e-kubeadm-ha-aws\ us-east-1/state.json
           sleep 5s
@@ -92,10 +92,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op switch -file aws/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-ha-kubeadm.json
 
           sleep 30s
-          go run . -op scaledown -file aws/scaledown-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaledown -file aws/scaledown-ha-kubeadm.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/ha/test-e2e-kubeadm-ha-aws\ us-east-1/state.json
@@ -104,10 +104,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          go run . -op switch -file aws/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-ha-kubeadm.json
 
           sleep 1m
-          go run . -op scaleup -file aws/scaleup-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaleup -file aws/scaleup-ha-kubeadm.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/ha/test-e2e-kubeadm-ha-aws\ us-east-1/state.json
@@ -117,10 +117,10 @@ jobs:
         run: |
 
           set -xe
-          go run . -op switch -file aws/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
 
           sleep 30s
-          go run . -op scaledown -file aws/scaledown-ha.json
+          ksctl-e2e-amd64 -op scaledown -file aws/scaledown-ha.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/ha/test-e2e-ha-aws\ ap-south-1/state.json
@@ -130,10 +130,10 @@ jobs:
         run: |
           set -xe
 
-          go run . -op switch -file aws/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
 
           sleep 30s
-          go run . -op scaleup -file aws/scaleup-ha.json
+          ksctl-e2e-amd64 -op scaleup -file aws/scaleup-ha.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/ha/test-e2e-ha-aws\ ap-south-1/state.json
@@ -143,18 +143,18 @@ jobs:
         run: |
           set -xe
           echo -e "\033[1;34m@@@\033[0m \033[1;35mFeature in Progress!\033[0m \033[1;34m@@@\033[0m"
-          # go run . -op delete -file aws/delete.json
+          # ksctl-e2e-amd64 -op delete -file aws/delete.json
 
       - name: delete (ha k3s)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
-          go run . -op delete -file aws/delete-ha.json
+          ksctl-e2e-amd64 -op delete -file aws/delete-ha.json
 
       - name: delete (ha kubeadm)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
-          go run . -op delete -file aws/delete-ha-kubeadm.json
+          ksctl-e2e-amd64 -op delete -file aws/delete-ha-kubeadm.json
