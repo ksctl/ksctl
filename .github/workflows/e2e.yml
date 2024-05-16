@@ -69,22 +69,22 @@ jobs:
 
   local-e2e:
     uses: ./.github/workflows/e2e-local.yml
-    needs: ["setup"]
+    needs: ["builder", "setup"]
     secrets: inherit
 
   civo-e2e:
     uses: ./.github/workflows/e2e-civo.yml
-    needs: ["setup"]
+    needs: ["builder", "setup"]
     secrets: inherit
 
   azure-e2e:
     uses: ./.github/workflows/e2e-azure.yml
-    needs: ["setup"]
+    needs: ["builder", "setup"]
     secrets: inherit
 
   aws-e2e:
     uses: ./.github/workflows/e2e-aws.yml
-    needs: ["setup"]
+    needs: ["builder", "setup"]
     secrets: inherit
 
   notification:
