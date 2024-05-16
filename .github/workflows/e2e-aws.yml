@@ -2,11 +2,10 @@ name: e2e for azure
 
 on:
   workflow_dispatch:
-
   workflow_call:
 
 jobs:
-  execute:
+  execute-aws:
     environment: e2e
     env:
       E2E_FLAGS: debug

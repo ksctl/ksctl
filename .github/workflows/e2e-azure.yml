@@ -5,7 +5,7 @@ on:
   workflow_call:
 
 jobs:
-  execute:
+  execute-azure:
     environment: e2e
     env:
       E2E_FLAGS: debug

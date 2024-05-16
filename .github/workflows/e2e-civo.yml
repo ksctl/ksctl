@@ -5,7 +5,7 @@ on:
   workflow_call:
 
 jobs:
-  execute:
+  execute-civo:
     environment: e2e
     runs-on: e2e
     env:

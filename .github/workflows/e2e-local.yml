@@ -5,7 +5,7 @@ on:
   workflow_call:
 
 jobs:
-  execute:
+  execute-local:
     environment: e2e
     env:
       E2E_FLAGS: debug
