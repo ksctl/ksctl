@@ -25,12 +25,12 @@ func addLineTerminationForLongStrings(str string) string {
 
 	helper = func(_str string) string {
 
-		if len(_str) < LimitCol {
+		if len(_str) < limitCol {
 			return _str
 		}
 
-		x := string(utilities.DeepCopySlice[byte]([]byte(_str[:LimitCol])))
-		y := string(utilities.DeepCopySlice[byte]([]byte(helper(_str[LimitCol:]))))
+		x := string(utilities.DeepCopySlice[byte]([]byte(_str[:limitCol])))
+		y := string(utilities.DeepCopySlice[byte]([]byte(helper(_str[limitCol:]))))
 
 		// ks
 		// ^^

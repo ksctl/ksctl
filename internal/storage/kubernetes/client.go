@@ -126,14 +126,14 @@ func (f *FakeClient) ReadConfigMap(namespace, name string, opts metav1.GetOption
 func (f *FakeClient) DeleteResourcesForTest() error {
 	if err := f.client.
 		CoreV1().
-		ConfigMaps(K8S_NAMESPACE).
-		Delete(f.ctx, K8S_STATE_NAME, metav1.DeleteOptions{}); err != nil {
+		ConfigMaps(ksctlNamespace).
+		Delete(f.ctx, ksctlStateName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	if err := f.client.
 		CoreV1().
-		Secrets(K8S_NAMESPACE).
-		Delete(f.ctx, K8S_CREDENTIAL_NAME, metav1.DeleteOptions{}); err != nil {
+		Secrets(ksctlNamespace).
+		Delete(f.ctx, ksctlCredentialName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	return nil

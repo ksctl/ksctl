@@ -34,8 +34,8 @@ func TestHelperToAddLineTerminationForLongStrings(t *testing.T) {
 
 	x := strings.Split(addLineTerminationForLongStrings(test), "\n")
 	for _, line := range x {
-		if len(line) > LimitCol+1 {
-			t.Errorf("Line too long: %s, got: %d, expected: %d", line, len(line), LimitCol)
+		if len(line) > limitCol+1 {
+			t.Errorf("Line too long: %s, got: %d, expected: %d", line, len(line), limitCol)
 		}
 	}
 }

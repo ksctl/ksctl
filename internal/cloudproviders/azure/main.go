@@ -66,7 +66,7 @@ func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 	return hostnames
 }
 
-func (obj *AzureProvider) Version(ver string) types.CloudFactory {
+func (obj *AzureProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	log.Debug(azureCtx, "Printing", "K8sVersion", ver)
 	if err := isValidK8sVersion(obj, ver); err != nil {
 		log.Error(azureCtx, "azure.Version()", "err", err.Error())
@@ -120,7 +120,7 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 	obj.chRole = make(chan consts.KsctlRole, 1)
 	obj.chVMType = make(chan string, 1)
 
-	obj.resourceGroup = GenerateResourceGroupName(obj.clusterName, string(clusterType))
+	obj.resourceGroup = generateResourceGroupName(obj.clusterName, string(clusterType))
 
 	errLoadState := loadStateHelper(storage)
 	switch operation {
@@ -494,7 +494,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 	return -1, log.NewError(azureCtx, "constrains for no of workplane >= 0")
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
+func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
 
 	var data []cloudcontrolres.AllClusterData
 

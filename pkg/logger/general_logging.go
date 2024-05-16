@@ -155,7 +155,6 @@ func (l *GeneralLog) Debug(ctx context.Context, msg string, args ...any) {
 	l.log(false, true, ctx, consts.LOG_DEBUG, msg, args...)
 }
 
-// TODO: Depricate the context for Error() method
 func (l *GeneralLog) Error(ctx context.Context, msg string, args ...any) {
 	l.log(true, true, ctx, consts.LOG_ERROR, msg, args...)
 }

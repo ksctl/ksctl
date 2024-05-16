@@ -24,7 +24,7 @@ var (
 
 func TestMain(m *testing.M) {
 	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
-	K8S_NAMESPACE = "default"
+	ksctlNamespace = "default"
 
 	exitVal := m.Run()
 

@@ -12,18 +12,18 @@ import (
 	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
-type Metadata struct {
-	ResName           string
-	Version           string
+type metadata struct {
+	resName           string
+	version           string
 	tempDirKubeconfig string
-	Cni               string
+	cni               string
 }
 
 type LocalProvider struct {
-	ClusterName string `json:"cluster_name"`
-	NoNodes     int    `json:"no_nodes"`
-	Region      string
-	Metadata
+	clusterName string
+	noNodes     int
+	region      string
+	metadata
 
 	client LocalGo
 }
@@ -51,11 +51,11 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 	mainStateDocument = state
 
 	obj := &LocalProvider{
-		ClusterName: meta.ClusterName,
+		clusterName: meta.ClusterName,
 		client:      ClientOption(),
-		Region:      meta.Region,
+		region:      meta.Region,
 	}
-	obj.Metadata.Version = meta.K8sVersion
+	obj.metadata.version = meta.K8sVersion
 
 	log.Debug(localCtx, "Printing", "localProvider", obj)
 
@@ -66,19 +66,19 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
 	switch operation {
 	case consts.OperationCreate:
-		if isPresent(storage, cloud.ClusterName) {
+		if isPresent(storage, cloud.clusterName) {
 			return log.NewError(localCtx, "already present")
 		}
 		log.Debug(localCtx, "Fresh state!!")
 
-		mainStateDocument.ClusterName = cloud.ClusterName
-		mainStateDocument.Region = cloud.Region
+		mainStateDocument.ClusterName = cloud.clusterName
+		mainStateDocument.Region = cloud.region
 		mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{Local: &storageTypes.StateConfigurationLocal{}}
 		mainStateDocument.InfraProvider = consts.CloudLocal
 		mainStateDocument.ClusterType = string(consts.ClusterTypeMang)
 
 		mainStateDocument.CloudInfra.Local.B.KubernetesDistro = "kind"
-		mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.Metadata.Version
+		mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.metadata.version
 	case consts.OperationDelete, consts.OperationGet:
 		err := loadStateHelper(storage)
 		if err != nil {
@@ -91,7 +91,7 @@ func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation co
 
 // it will contain the name of the resource to be created
 func (cloud *LocalProvider) Name(resName string) types.CloudFactory {
-	cloud.Metadata.ResName = resName
+	cloud.metadata.resName = resName
 	return cloud
 }
 
@@ -104,24 +104,23 @@ func (client *LocalProvider) CNI(s string) (externalCNI bool) {
 
 	switch consts.KsctlValidCNIPlugin(s) {
 	case consts.CNIKind, "":
-		client.Metadata.Cni = string(consts.CNIKind)
+		client.metadata.cni = string(consts.CNIKind)
 	default:
-		client.Metadata.Cni = string(consts.CNINone)
+		client.metadata.cni = string(consts.CNINone)
 		return true
 	}
 
 	return false
 }
 
-// Version implements types.CloudFactory.
-func (cloud *LocalProvider) Version(ver string) types.CloudFactory {
-	// TODO: validation of version
+// ManagedK8sVersion implements types.CloudFactory.
+func (cloud *LocalProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	log.Debug(localCtx, "Printing", "k8sVersion", ver)
-	cloud.Metadata.Version = ver
+	cloud.metadata.version = ver
 	return cloud
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
+func (cloud *LocalProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
 
 	var data []cloudControlRes.AllClusterData
 	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
@@ -155,7 +154,7 @@ func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudControlRes.AllClus
 
 func (obj *LocalProvider) IsPresent(storage types.StorageFactory) error {
 
-	if isPresent(storage, obj.ClusterName) {
+	if isPresent(storage, obj.clusterName) {
 
 		return nil
 	}

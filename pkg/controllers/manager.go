@@ -441,7 +441,7 @@ func (manager *KsctlControllerClient) GetCluster() error {
 	var printerTable []cloudControllerResource.AllClusterData
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
-		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
+		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
@@ -449,7 +449,7 @@ func (manager *KsctlControllerClient) GetCluster() error {
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudLocal:
-		data, err := localPkg.GetRAWClusterInfos(client.Storage)
+		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
@@ -457,7 +457,7 @@ func (manager *KsctlControllerClient) GetCluster() error {
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAws:
-		data, err := awsPkg.GetRAWClusterInfos(client.Storage)
+		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
@@ -465,7 +465,7 @@ func (manager *KsctlControllerClient) GetCluster() error {
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAzure:
-		data, err := azurePkg.GetRAWClusterInfos(client.Storage)
+		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
@@ -473,28 +473,28 @@ func (manager *KsctlControllerClient) GetCluster() error {
 		printerTable = append(printerTable, data...)
 
 	case consts.CloudAll:
-		data, err := civoPkg.GetRAWClusterInfos(client.Storage)
+		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = localPkg.GetRAWClusterInfos(client.Storage)
+		data, err = client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = azurePkg.GetRAWClusterInfos(client.Storage)
+		data, err = client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
 		}
 		printerTable = append(printerTable, data...)
 
-		data, err = awsPkg.GetRAWClusterInfos(client.Storage)
+		data, err = client.Cloud.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err

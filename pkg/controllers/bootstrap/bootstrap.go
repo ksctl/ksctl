@@ -93,7 +93,7 @@ func ConfigureCluster(client *types.KsctlClient) (bool, error) {
 
 	externalCNI := client.Bootstrap.CNI(client.Metadata.CNIPlugin)
 
-	client.Bootstrap = client.Bootstrap.Version(client.Metadata.K8sVersion)
+	client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
 	if client.Bootstrap == nil {
 		return false, log.NewError(controllerCtx, "invalid version of self-managed k8s cluster")
 	}
@@ -153,7 +153,7 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 	if err := client.Bootstrap.Setup(client.Storage, consts.OperationGet); err != nil {
 		return err
 	}
-	client.Bootstrap = client.Bootstrap.Version(client.Metadata.K8sVersion)
+	client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
 	if client.Bootstrap == nil {
 		return log.NewError(controllerCtx, "invalid version of self-managed k8s cluster")
 	}

@@ -68,7 +68,7 @@ func (obj *AwsProvider) IsPresent(storage types.StorageFactory) error {
 	return isPresent(storage, consts.ClusterTypeMang, obj.clusterName, obj.region)
 }
 
-func (obj *AwsProvider) Version(ver string) types.CloudFactory {
+func (obj *AwsProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	// TODO for ManagedCluster EKS
 	return obj
 }
@@ -443,7 +443,7 @@ func (obj *AwsProvider) GetStateFile(factory types.StorageFactory) (string, erro
 
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
+func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
 
 	var data []cloudcontrolres.AllClusterData
 

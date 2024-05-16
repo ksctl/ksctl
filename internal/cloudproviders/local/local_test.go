@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
@@ -234,17 +235,35 @@ func TestManagedCluster(t *testing.T) {
 	}()
 
 	assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationCreate), nil, "Init must work before")
-	fakeClientManaged.Version("1.27.1")
+	fakeClientManaged.ManagedK8sVersion("1.27.1")
 	fakeClientManaged.Name("fake")
 	assert.Equal(t, fakeClientManaged.NewManagedCluster(storeManaged, 2), nil, "managed cluster should be created")
 	assert.Equal(t, mainStateDocument.CloudInfra.Local.Nodes, 2, "missmatch of no of nodes")
-	assert.Equal(t, mainStateDocument.CloudInfra.Local.B.KubernetesVer, fakeClientManaged.Metadata.Version, "k8s version does not match")
+	assert.Equal(t, mainStateDocument.CloudInfra.Local.B.KubernetesVer, fakeClientManaged.metadata.version, "k8s version does not match")
 	t.Run("check getState()", func(t *testing.T) {
 		expected, err := fakeClientManaged.GetStateFile(storeManaged)
 		assert.NilError(t, err, "no error should be there for getstate")
 
 		got, _ := json.Marshal(mainStateDocument)
 		assert.DeepEqual(t, string(got), expected)
+	})
+
+	t.Run("Get cluster managed", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:     fakeClientManaged.clusterName,
+				Provider: consts.CloudLocal,
+				Type:     consts.ClusterTypeMang,
+				Region:   fakeClientManaged.region,
+				NoMgt:    mainStateDocument.CloudInfra.Local.Nodes,
+
+				K8sDistro:  "kind",
+				K8sVersion: mainStateDocument.CloudInfra.Local.B.KubernetesVer,
+			},
+		}
+		got, err := fakeClientManaged.GetRAWClusterInfos(storeManaged)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
 	})
 
 	assert.Equal(t, fakeClientManaged.DelManagedCluster(storeManaged), nil, "managed cluster should be deleted")

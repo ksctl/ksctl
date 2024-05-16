@@ -36,11 +36,11 @@ var (
 	storeCtx context.Context
 )
 
-var K8S_NAMESPACE string = "ksctl"
+var ksctlNamespace string = "ksctl"
 
 const (
-	K8S_STATE_NAME      string = "ksctl-state"       // configmap name
-	K8S_CREDENTIAL_NAME string = "ksctl-credentials" // secret name
+	ksctlStateName      string = "ksctl-state"       // configmap name
+	ksctlCredentialName string = "ksctl-credentials" // secret name
 )
 
 func copyStore(src *Store, dest *Store) {
@@ -285,16 +285,16 @@ func (db *Store) Write(data *storageTypes.StorageDocument) error {
 		}
 		c.BinaryData[helperGenerateKeyForState(db)] = raw
 
-		if _, err := db.clientSet.WriteConfigMap(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
+		if _, err := db.clientSet.WriteConfigMap(ksctlNamespace, c, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 		return nil
 	}
 	log.Debug(storeCtx, "configmap for write was not found")
-	c := generateConfigMap(K8S_STATE_NAME, K8S_NAMESPACE)
+	c := generateConfigMap(ksctlStateName, ksctlNamespace)
 	c.BinaryData[helperGenerateKeyForState(db)] = raw
 
-	if _, err := db.clientSet.WriteConfigMap(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
+	if _, err := db.clientSet.WriteConfigMap(ksctlNamespace, c, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	return nil
@@ -321,7 +321,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *storageTypes.Cr
 		}
 		c.Data[string(cloud)] = raw
 
-		if _, _err := db.clientSet.WriteSecret(K8S_NAMESPACE, c, metav1.UpdateOptions{}); _err != nil {
+		if _, _err := db.clientSet.WriteSecret(ksctlNamespace, c, metav1.UpdateOptions{}); _err != nil {
 			return _err
 		}
 		return nil
@@ -332,11 +332,11 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *storageTypes.Cr
 	}
 
 	log.Debug(storeCtx, "secret for write was not found")
-	c := generateSecret(K8S_CREDENTIAL_NAME, K8S_NAMESPACE)
+	c := generateSecret(ksctlCredentialName, ksctlNamespace)
 
 	c.Data[string(cloud)] = raw
 
-	if _, err := db.clientSet.WriteSecret(K8S_NAMESPACE, c, metav1.UpdateOptions{}); err != nil {
+	if _, err := db.clientSet.WriteSecret(ksctlNamespace, c, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	return nil
@@ -373,7 +373,7 @@ func (db *Store) DeleteCluster() error {
 		return log.NewError(storeCtx, "cluster doesn't exist")
 	} else {
 		delete(c.BinaryData, helperGenerateKeyForState(db))
-		_, err := db.clientSet.WriteConfigMap(K8S_NAMESPACE, c, metav1.UpdateOptions{})
+		_, err := db.clientSet.WriteConfigMap(ksctlNamespace, c, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -386,7 +386,7 @@ func helperGenerateKeyForState(db *Store) string {
 }
 
 func (db *Store) isPresent() (*v1.ConfigMap, bool) {
-	c, err := db.clientSet.ReadConfigMap(K8S_NAMESPACE, K8S_STATE_NAME, metav1.GetOptions{})
+	c, err := db.clientSet.ReadConfigMap(ksctlNamespace, ksctlStateName, metav1.GetOptions{})
 	if err != nil {
 		log.Debug(storeCtx, "storage.kubernetes.isPresent", "err", err)
 		//if errors.IsNotFound(err) {
@@ -398,7 +398,7 @@ func (db *Store) isPresent() (*v1.ConfigMap, bool) {
 }
 
 func (db *Store) isPresentCreds(cloud string) (*v1.Secret, error) {
-	c, err := db.clientSet.ReadSecret(K8S_NAMESPACE, K8S_CREDENTIAL_NAME, metav1.GetOptions{})
+	c, err := db.clientSet.ReadSecret(ksctlNamespace, ksctlCredentialName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +470,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 
 	clustersInfo := make(map[consts.KsctlClusterType][]*storageTypes.StorageDocument)
 
-	c, err := db.clientSet.ReadConfigMap(K8S_NAMESPACE, K8S_STATE_NAME, metav1.GetOptions{})
+	c, err := db.clientSet.ReadConfigMap(ksctlNamespace, ksctlStateName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

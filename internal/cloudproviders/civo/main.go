@@ -3,9 +3,10 @@ package civo
 import (
 	"context"
 	"encoding/json"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"strings"
 	"sync"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -303,8 +304,8 @@ func k8sVersion(obj *CivoProvider, ver string) (string, error) {
 	return ver, nil
 }
 
-// Version implements types.CloudFactory.
-func (obj *CivoProvider) Version(ver string) types.CloudFactory {
+// ManagedK8sVersion implements types.CloudFactory.
+func (obj *CivoProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	v, err := k8sVersion(obj, ver)
 	if err != nil {
 		log.Error(civoCtx, "cloud.Version()", "err", err)
@@ -464,7 +465,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 	return -1, log.NewError(civoCtx, "constrains for no of workerplane >= 0")
 }
 
-func GetRAWClusterInfos(storage types.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
+func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
 
 	var data []cloud_control_res.AllClusterData
 

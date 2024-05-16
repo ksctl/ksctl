@@ -55,14 +55,16 @@ type CloudFactory interface {
 	// DelManagedCluster deletes managed kubernetes from cloud offering
 	DelManagedCluster(StorageFactory) error
 
+	GetRAWClusterInfos(storage StorageFactory) ([]cloud.AllClusterData, error)
+
 	// Name sets the name for the resource you want to operate
-	Name(string) CloudFactory // TODO: add the error passing!
+	Name(string) CloudFactory
 
 	// Role specify what is its role. Ex. Controlplane or WorkerPlane or DataStore...
-	Role(consts.KsctlRole) CloudFactory // TODO: add the error passing!
+	Role(consts.KsctlRole) CloudFactory
 
 	// VMType specifiy what is the VirtualMachine size to be used
-	VMType(string) CloudFactory // TODO: add the error passing!
+	VMType(string) CloudFactory
 
 	// Visibility whether to make the VM public or private
 	Visibility(bool) CloudFactory
@@ -73,8 +75,8 @@ type CloudFactory interface {
 	// CNI for the CNI name (Managed cluster)
 	CNI(string) (willBeInstalled bool)
 
-	// Version for the Kubernetes Version (Managed cluster)
-	Version(string) CloudFactory // TODO: rename to ManagedK8sVersion and add error passing
+	// ManagedK8sVersion for the Kubernetes ManagedK8sVersion (Managed cluster)
+	ManagedK8sVersion(string) CloudFactory
 
 	// NoOfWorkerPlane if setter is enabled it writes the new no of workerplane to be used
 	// if getter is enabled it returns the current no of workerplane
