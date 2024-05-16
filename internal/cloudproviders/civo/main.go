@@ -34,7 +34,6 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    consts.KsctlKubernetes
 	k8sVersion string
 }
 
@@ -129,7 +128,6 @@ func (obj *CivoProvider) InitState(storage types.StorageFactory, operation const
 				Civo: &storageTypes.StateConfigurationCivo{},
 			}
 			mainStateDocument.CloudInfra.Civo.B.KubernetesVer = obj.k8sVersion
-			mainStateDocument.CloudInfra.Civo.B.KubernetesDistro = string(obj.k8sName)
 		}
 
 	case consts.OperationGet:
@@ -201,7 +199,7 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 		region:      meta.Region,
 		haCluster:   meta.IsHA,
 		metadata: metadata{
-			k8sName:    meta.K8sDistro,
+			// k8sName:    meta.K8sDistro,
 			k8sVersion: meta.K8sVersion,
 		},
 		client: ClientOption(),
@@ -348,11 +346,13 @@ func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes = make([]string, no)
 		}
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames)
+		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes)
 		return -1, nil
 	}
 	return -1, log.NewError(civoCtx, "constrains for no of controlplane >= 3 and odd number")
@@ -388,12 +388,14 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes = make([]string, no)
 		}
 
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs", mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs", mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs", mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames", mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames)
+		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes", mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes)
 		return -1, nil
 	}
 	return -1, log.NewError(civoCtx, "constrains for no of Datastore>= 3 and odd number")
@@ -431,6 +433,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames = make([]string, no)
+			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes = make([]string, no)
 		} else {
 			if currLen == newLen {
 				// no changes needed
@@ -442,6 +445,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs, "")
 					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs, "")
 					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames, "")
+					mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes = append(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes, "")
 				}
 			} else {
 				// for downscaling
@@ -449,6 +453,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[:newLen]
 				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[:newLen]
 				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames[:newLen]
+				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes[:newLen]
 			}
 		}
 		err := storage.Write(mainStateDocument)
@@ -460,6 +465,7 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs)
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames)
+		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes)
 		return -1, nil
 	}
 	return -1, log.NewError(civoCtx, "constrains for no of workerplane >= 0")
@@ -477,20 +483,61 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 		return nil, err
 	}
 
+	var convertToAllClusterDataType func(*storageTypes.StorageDocument, consts.KsctlRole) []cloud_control_res.VMData
+	convertToAllClusterDataType = func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloud_control_res.VMData) {
+
+		switch r {
+		case consts.RoleCp:
+			for _, d := range st.CloudInfra.Civo.InfoControlPlanes.VMSizes {
+				v = append(v, cloud_control_res.VMData{
+					VMSize: d,
+				})
+			}
+
+		case consts.RoleWp:
+			for _, d := range st.CloudInfra.Civo.InfoWorkerPlanes.VMSizes {
+				v = append(v, cloud_control_res.VMData{
+					VMSize: d,
+				})
+			}
+
+		case consts.RoleDs:
+			for _, d := range st.CloudInfra.Civo.InfoDatabase.VMSizes {
+				v = append(v, cloud_control_res.VMData{
+					VMSize: d,
+				})
+			}
+
+		default:
+			v = append(v, cloud_control_res.VMData{
+				VMSize: st.CloudInfra.Civo.InfoLoadBalancer.VMSize,
+			})
+		}
+		return v
+	}
+
 	for K, Vs := range clusters {
 		for _, v := range Vs {
 			data = append(data, cloud_control_res.AllClusterData{
-				Provider: consts.CloudCivo,
-				Name:     v.ClusterName,
-				Region:   v.Region,
-				Type:     K,
+				CloudProvider: consts.CloudCivo,
+				ClusterType:   K,
+				Name:          v.ClusterName,
+				Region:        v.Region,
+				CP:            convertToAllClusterDataType(v, consts.RoleCp),
+				WP:            convertToAllClusterDataType(v, consts.RoleWp),
+				DS:            convertToAllClusterDataType(v, consts.RoleDs),
+				LB:            convertToAllClusterDataType(v, consts.RoleLb)[0],
+
+				Mgt: cloud_control_res.VMData{
+					VMSize: v.CloudInfra.Civo.ManagedNodeSize,
+				},
 
 				NoWP:  len(v.CloudInfra.Civo.InfoWorkerPlanes.VMIDs),
 				NoCP:  len(v.CloudInfra.Civo.InfoControlPlanes.VMIDs),
 				NoDS:  len(v.CloudInfra.Civo.InfoDatabase.VMIDs),
 				NoMgt: v.CloudInfra.Civo.NoManagedNodes,
 
-				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Civo.B.KubernetesDistro),
+				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Civo.B.KubernetesVer,
 			})
 			log.Debug(civoCtx, "Printing", "cloudClusterInfoFetched", data)

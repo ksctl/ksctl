@@ -171,17 +171,41 @@ func (l *GeneralLog) Table(ctx context.Context, data []cloudController.AllCluste
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
-	tbl := table.New("Name", "Provider", "Nodes", "Type", "K8s")
+	tbl := table.New("ClusterName", "Region", "ClusterType", "CloudProvider", "BootStrap", "Mgt Nodes", "Self-Mgt Nodes")
 	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
 
-	for _, row := range data {
-		node := ""
-		if row.Type == "ha" {
-			node = fmt.Sprintf("cp: %d\nwp: %d\nds: %d\nlb: 1", row.NoCP, row.NoWP, row.NoDS)
-		} else {
-			node = fmt.Sprintf("wp: %d", row.NoMgt)
+	extractVMSizes := func(v []cloudController.VMData) string {
+		sizes := []string{}
+		for _, _v := range v {
+			sizes = append(sizes, _v.VMSize)
 		}
-		tbl.AddRow(row.Name, string(row.Provider)+"("+row.Region+")", node, row.Type, string(row.K8sDistro))
+		return strings.Join(sizes, ",")
+	}
+
+	for _, row := range data {
+		mgtN, selfMgtN := "null", "null"
+		if row.ClusterType == "ha" {
+			selfMgtN = fmt.Sprintf(
+				"cp: %d{%s}\nwp: %d{%s}\nds: %d{%s}\nlb: 1{%s}\n",
+				row.NoCP,
+				extractVMSizes(row.CP),
+				row.NoWP,
+				extractVMSizes(row.WP),
+				row.NoDS,
+				extractVMSizes(row.DS),
+				row.LB.VMSize,
+			)
+		} else {
+			mgtN = fmt.Sprintf("wp: %d{%s}", row.NoMgt, row.Mgt.VMSize)
+		}
+		tbl.AddRow(row.Name,
+			row.Region,
+			string(row.ClusterType),
+			string(row.CloudProvider),
+			string(row.K8sDistro),
+			mgtN,
+			selfMgtN,
+		)
 	}
 
 	tbl.Print()

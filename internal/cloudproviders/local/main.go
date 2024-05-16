@@ -21,8 +21,8 @@ type metadata struct {
 
 type LocalProvider struct {
 	clusterName string
-	noNodes     int
 	region      string
+	vmType      string
 	metadata
 
 	client LocalGo
@@ -77,7 +77,6 @@ func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation co
 		mainStateDocument.InfraProvider = consts.CloudLocal
 		mainStateDocument.ClusterType = string(consts.ClusterTypeMang)
 
-		mainStateDocument.CloudInfra.Local.B.KubernetesDistro = "kind"
 		mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.metadata.version
 	case consts.OperationDelete, consts.OperationGet:
 		err := loadStateHelper(storage)
@@ -134,14 +133,17 @@ func (cloud *LocalProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]
 	for K, Vs := range clusters {
 		for _, v := range Vs {
 			data = append(data, cloudControlRes.AllClusterData{
-				Provider: consts.CloudLocal,
-				Name:     v.ClusterName,
-				Region:   v.Region,
-				Type:     K,
+				CloudProvider: consts.CloudLocal,
+				Name:          v.ClusterName,
+				Region:        v.Region,
+				ClusterType:   K,
 
 				NoMgt: v.CloudInfra.Local.Nodes,
+				Mgt: cloudControlRes.VMData{
+					VMSize: v.CloudInfra.Local.ManagedNodeSize,
+				},
 
-				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Local.B.KubernetesDistro),
+				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Local.B.KubernetesVer,
 			})
 			log.Debug(localCtx, "Printing", "cloudClusterInfoFetched", data)
@@ -161,6 +163,11 @@ func (obj *LocalProvider) IsPresent(storage types.StorageFactory) error {
 	return log.NewError(localCtx, "Cluster not found")
 }
 
+func (cloud *LocalProvider) VMType(_ string) types.CloudFactory {
+	cloud.vmType = "local_machine"
+	return cloud
+}
+
 // //// NOT IMPLEMENTED //////
 func (cloud *LocalProvider) Credential(_ types.StorageFactory) error {
 	return log.NewError(localCtx, "no support")
@@ -172,9 +179,6 @@ func (cloud *LocalProvider) Role(consts.KsctlRole) types.CloudFactory {
 }
 
 // it will contain which vmType to create
-func (cloud *LocalProvider) VMType(string) types.CloudFactory {
-	return nil
-}
 
 // whether to have the resource as public or private (i.e. VMs)
 func (cloud *LocalProvider) Visibility(bool) types.CloudFactory {

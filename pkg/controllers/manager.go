@@ -6,9 +6,8 @@ import (
 	"runtime/debug"
 	"strings"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
 	"github.com/ksctl/ksctl/pkg/helpers"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
 	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
@@ -25,6 +24,8 @@ import (
 
 var (
 	controllerCtx context.Context
+
+	stateDocument *storageTypes.StorageDocument
 )
 
 type KsctlControllerClient struct {
@@ -40,6 +41,7 @@ func GenKsctlController(
 
 	defer panicCatcher(log)
 
+	stateDocument = new(storageTypes.StorageDocument)
 	controllerCtx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-manager")
 
 	cloudController.InitLogger(controllerCtx, log)
@@ -112,10 +114,6 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
-
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
 
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
@@ -218,10 +216,6 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 		return err
 	}
 
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
-
 	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
@@ -279,10 +273,6 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 		}
 	}()
 
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
-
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
@@ -337,10 +327,6 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
-
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
 
 	var err error
 	switch client.Metadata.Provider {
@@ -539,10 +525,6 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		}
 	}()
 
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
-
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
@@ -638,10 +620,6 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
-
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
 
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
@@ -743,10 +721,6 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		}
 	}()
 
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
-
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
@@ -836,10 +810,6 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
 		}
 	}()
-
-	var (
-		stateDocument *storageTypes.StorageDocument = &storageTypes.StorageDocument{}
-	)
 
 	fakeClient := false
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {

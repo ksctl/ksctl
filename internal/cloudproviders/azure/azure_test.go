@@ -473,12 +473,12 @@ func TestManagedCluster(t *testing.T) {
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
-				Name:       fakeClientManaged.clusterName,
-				Provider:   consts.CloudAzure,
-				Type:       consts.ClusterTypeMang,
-				Region:     fakeClientManaged.region,
-				NoMgt:      mainStateDocument.CloudInfra.Azure.NoManagedNodes,
-				K8sVersion: mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
+				Name:          fakeClientManaged.clusterName,
+				CloudProvider: consts.CloudAzure,
+				ClusterType:   consts.ClusterTypeMang,
+				Region:        fakeClientManaged.region,
+				NoMgt:         mainStateDocument.CloudInfra.Azure.NoManagedNodes,
+				K8sVersion:    mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos(storeManaged)
@@ -755,15 +755,15 @@ func TestHACluster(t *testing.T) {
 	t.Run("Get cluster ha", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
-				Name:       fakeClientHA.clusterName,
-				Region:     fakeClientHA.region,
-				Provider:   consts.CloudAzure,
-				Type:       consts.ClusterTypeHa,
-				NoWP:       fakeClientHA.noWP,
-				NoCP:       fakeClientHA.noCP,
-				NoDS:       fakeClientHA.noDS,
-				K8sDistro:  consts.K8sK3s,
-				K8sVersion: mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
+				Name:          fakeClientHA.clusterName,
+				Region:        fakeClientHA.region,
+				CloudProvider: consts.CloudAzure,
+				ClusterType:   consts.ClusterTypeHa,
+				NoWP:          fakeClientHA.noWP,
+				NoCP:          fakeClientHA.noCP,
+				NoDS:          fakeClientHA.noDS,
+				K8sDistro:     consts.K8sK3s,
+				K8sVersion:    mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
 			},
 		}
 		got, err := fakeClientHA.GetRAWClusterInfos(storeHA)

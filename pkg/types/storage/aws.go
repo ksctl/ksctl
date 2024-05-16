@@ -11,6 +11,7 @@ type AWSStateVm struct {
 	PublicIP             string `json:"public_ip" bson:"public_ip"`
 	PrivateIP            string `json:"private_ip" bson:"private_ip"`
 	NetworkInterfaceId   string `json:"network_interface_id" bson:"network_interface_id"`
+	VMSize               string `json:"vm_size" bson:"vm_size"`
 }
 
 type CredentialsAws struct {
@@ -28,6 +29,7 @@ type AWSStateVms struct {
 	SubnetNames          []string `json:"subnet_name" bson:"subnet_name"`
 	SubnetIDs            []string `json:"subnet_id" bson:"subnet_id"`
 	NetworkSecurityGroup string   `json:"network_security_group" bson:"network_security_group"`
+	VMSizes              []string `json:"vm_sizes" bson:"vm_sizes"` // keeping a dynamic sizes for autoscaler feature
 }
 
 type StateConfigurationAws struct {
@@ -42,9 +44,11 @@ type StateConfigurationAws struct {
 
 	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
 	NoManagedNodes     int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
-	SubnetName         string `json:"subnet_name" bson:"subnet_name"`
-	SubnetID           string `json:"subnet_id" bson:"subnet_id"`
-	NetworkAclID       string `json:"network_acl_id" bson:"network_acl_id"`
+	ManagedNodeSize    string `json:"managed_node_size" bson:"managed_node_size"`
+
+	SubnetName   string `json:"subnet_name" bson:"subnet_name"`
+	SubnetID     string `json:"subnet_id" bson:"subnet_id"`
+	NetworkAclID string `json:"network_acl_id" bson:"network_acl_id"`
 
 	GatewayID    string `json:"gateway_id" bson:"gateway_id"`
 	RouteTableID string `json:"route_table_id" bson:"route_table_id"`

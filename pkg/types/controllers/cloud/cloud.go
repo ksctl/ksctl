@@ -30,15 +30,24 @@ type SSHInfo struct {
 	PrivateKey string
 }
 
+type VMData struct {
+	VMSize string
+}
+
 type AllClusterData struct {
-	Name       string
-	Provider   consts.KsctlCloud
-	Type       consts.KsctlClusterType
-	Region     string
-	NoWP       int
-	NoCP       int
-	NoDS       int
-	NoMgt      int
-	K8sDistro  consts.KsctlKubernetes
-	K8sVersion string
+	Name          string
+	CloudProvider consts.KsctlCloud
+	ClusterType   consts.KsctlClusterType
+	K8sDistro     consts.KsctlKubernetes
+	Region        string
+	WP            []VMData
+	CP            []VMData
+	DS            []VMData
+	LB            VMData
+	Mgt           VMData
+	NoWP          int
+	NoCP          int
+	NoDS          int
+	NoMgt         int
+	K8sVersion    string
 }

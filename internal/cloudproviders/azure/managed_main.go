@@ -29,6 +29,7 @@ func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error 
 	log.Success(azureCtx, "Deleted the AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
 
 	mainStateDocument.CloudInfra.Azure.ManagedClusterName = ""
+	mainStateDocument.CloudInfra.Azure.ManagedNodeSize = ""
 	return storage.Write(mainStateDocument)
 }
 
@@ -87,6 +88,7 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 		return err
 	}
 	mainStateDocument.CloudInfra.Azure.ManagedClusterName = name
+	mainStateDocument.CloudInfra.Azure.ManagedNodeSize = vmtype
 
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err

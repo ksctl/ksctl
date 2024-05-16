@@ -94,7 +94,8 @@ func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNod
 	}
 
 	mainStateDocument.CloudInfra.Civo.NoManagedNodes = noOfNodes
-	mainStateDocument.CloudInfra.Civo.B.KubernetesDistro = string(consts.K8sK3s)
+	mainStateDocument.BootstrapProvider = "managed"
+	mainStateDocument.CloudInfra.Civo.ManagedNodeSize = vmtype
 	mainStateDocument.CloudInfra.Civo.B.KubernetesVer = obj.metadata.k8sVersion
 	mainStateDocument.CloudInfra.Civo.ManagedClusterID = resp.ID
 
@@ -121,6 +122,7 @@ func (obj *CivoProvider) DelManagedCluster(storage types.StorageFactory) error {
 	}
 	log.Success(civoCtx, "Deleted Managed cluster", "clusterID", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
 	mainStateDocument.CloudInfra.Civo.ManagedClusterID = ""
+	mainStateDocument.CloudInfra.Civo.ManagedNodeSize = ""
 
 	return storage.Write(mainStateDocument)
 }

@@ -5,6 +5,7 @@ type CivoStateVMs struct {
 	PrivateIPs []string `json:"private_ips" bson:"private_ips"`
 	PublicIPs  []string `json:"public_ips" bson:"public_ips"`
 	Hostnames  []string `json:"hostnames" bson:"hostnames"`
+	VMSizes    []string `json:"vm_sizes" bson:"vm_sizes"` // keeping a dynamic sizes for autoscaler feature
 }
 
 type CivoStateVM struct {
@@ -12,6 +13,7 @@ type CivoStateVM struct {
 	PrivateIP string `json:"private_ip" bson:"private_ip"`
 	PublicIP  string `json:"public_ip" bson:"public_ip"`
 	HostName  string `json:"hostname" bson:"hostname"`
+	VMSize    string `json:"vm_size" bson:"vm_size"`
 }
 
 type CredentialsCivo struct {
@@ -23,6 +25,7 @@ type StateConfigurationCivo struct {
 
 	ManagedClusterID string `json:"managed_cluster_id" bson:"managed_cluster_id"`
 	NoManagedNodes   int    `json:"no_managed_cluster_nodes" bson:"no_managed_cluster_nodes"`
+	ManagedNodeSize  string `json:"managed_node_size" bson:"managed_node_size"`
 
 	FirewallIDControlPlanes string `json:"fwidcontrolplanenode" bson:"fwidcontrolplanenode"`
 	FirewallIDWorkerNodes   string `json:"fwidworkernode" bson:"fwidworkernode"`

@@ -95,7 +95,7 @@ func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 		return nil
 	}
 	netCidr := mainStateDocument.CloudInfra.Azure.NetCidr
-	kubernetesDistro := consts.KsctlKubernetes(mainStateDocument.CloudInfra.Azure.B.KubernetesDistro)
+	kubernetesDistro := consts.KsctlKubernetes(mainStateDocument.BootstrapProvider)
 
 	var securityRules []*armnetwork.SecurityRule
 	switch role {

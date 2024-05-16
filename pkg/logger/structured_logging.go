@@ -148,13 +148,13 @@ func (l *StructuredLog) Table(ctx context.Context, data []cloudController.AllClu
 	for _, row := range data {
 		_val := tableSchema{}
 		_val.Name = row.Name
-		_val.Provider = string(row.Provider)
+		_val.Provider = string(row.CloudProvider)
 		_val.Region = row.Region
-		_val.Type = string(row.Type)
+		_val.Type = string(row.ClusterType)
 		_val.K8sBootstrap = string(row.K8sDistro)
 		_val.K8sVersion = row.K8sVersion
 
-		if row.Type == "ha" {
+		if row.ClusterType == "ha" {
 			_val.Nodes.Cp = row.NoCP
 			_val.Nodes.Wp = row.NoWP
 			_val.Nodes.Ds = row.NoDS

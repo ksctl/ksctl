@@ -96,7 +96,7 @@ func (obj *CivoProvider) NewFirewall(storage types.StorageFactory) error {
 	}
 
 	netCidr := mainStateDocument.CloudInfra.Civo.NetworkCIDR
-	kubernetesDistro := consts.KsctlKubernetes(mainStateDocument.CloudInfra.Civo.B.KubernetesDistro)
+	kubernetesDistro := mainStateDocument.BootstrapProvider
 
 	switch role {
 	case consts.RoleCp:
