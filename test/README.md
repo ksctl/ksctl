@@ -6,9 +6,22 @@ go tool pprof cpu.prof
 go tool pprof mem.prof
 ```
 
+# setting up github custom runner for e2e
+
+build is done using github managed runner
+run is done using github custom runner
+
+> [!TODO]
+> Need to add the instructions
+
+```bash
+
+```
+
 # setting up jenkins for e2e
 
 ## jenkins
+
 ```bash
 sudo apt update -y
 sudo apt upgrade -y
@@ -22,6 +35,7 @@ systemctl status jenkins
 ```
 
 ## Docker
+
 ```bash
 sudo apt install docker.io
 sudo usermod -aG docker jenkins
@@ -29,6 +43,7 @@ sudo usermod -aG docker ubuntu  # assuming current user is ubuntu
 ```
 
 ## Go
+
 ```bash
 wget https://go.dev/dl/go1.21.1.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.1.linux-amd64.tar.gz
@@ -39,6 +54,7 @@ sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.1.linux-amd64.ta
 [Link to Docs](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management)
 
 ## Let's Encrypt and Nginx
+
 ```bash
 sudo apt-get update
 sudo apt-get install certbot
@@ -60,7 +76,9 @@ server {
 > Docs: https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/
 
 ## Server final setup
+
 make the user access to sudo
+
 ```bash
 sudo visudo
 
