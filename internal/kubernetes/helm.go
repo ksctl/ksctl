@@ -234,13 +234,13 @@ func patchHelmDirectories(client *HelmClient) error {
 		}
 	}
 
-	pathCache := []string{usr, ".cache", "helm", "repository"}
-	cachePath, okCache := store.PresentDirectory(pathCache)
-	if !okCache {
-		if _err := store.CreateDirectory(pathCache); _err != nil {
-			return _err
-		}
-	}
+	// pathCache := []string{usr, ".cache", "helm", "repository"}
+	// cachePath, okCache := store.PresentDirectory(pathCache)
+	// if !okCache {
+	// 	if _err := store.CreateDirectory(pathCache); _err != nil {
+	// 		return _err
+	// 	}
+	// }
 
 	pathRegistry := []string{usr, ".config", "helm", "registry"}
 	_, okReg := store.PresentDirectory(pathRegistry)
@@ -270,7 +270,7 @@ func patchHelmDirectories(client *HelmClient) error {
 		return _err
 	}
 	client.settings.RepositoryConfig = configPath
-	client.settings.RepositoryCache = cachePath
+	// client.settings.RepositoryCache = cachePath
 	client.settings.RegistryConfig = registryPath
 	log.Print(kubernetesCtx, "Updated the Helm configuration settings")
 

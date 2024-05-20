@@ -18,6 +18,8 @@ jobs:
   trigger-oci-artifact-build-push:
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
+    with:
+      image_tag: latest
     permissions:
       packages: write
       contents: read

@@ -106,8 +106,18 @@ func (l *GeneralLog) log(disableContext bool, useGroupFormer bool, ctx context.C
 		msg = prefix + msg
 		format, _args := formGroups(disableContext, ctx, args...)
 		if _args == nil {
+			if disableContext && msgType == consts.LOG_ERROR {
+				l.boxBox(
+					"Error", msg+" "+format, "Red")
+				return
+			}
 			fmt.Fprint(l.writter, msg+" "+format)
 		} else {
+			if disableContext && msgType == consts.LOG_ERROR {
+				l.boxBox(
+					"Error", fmt.Sprintf(msg+" "+format, _args...), "Red")
+				return
+			}
 			fmt.Fprintf(l.writter, msg+" "+format, _args...)
 		}
 	} else {
@@ -211,7 +221,8 @@ func (l *GeneralLog) Table(ctx context.Context, data []cloudController.AllCluste
 	tbl.Print()
 }
 
-func (l *GeneralLog) Box(ctx context.Context, title string, lines string) {
+func (l *GeneralLog) boxBox(title, lines string, color string) {
+
 	px := 4
 
 	if len(title) >= 2*px+len(lines) {
@@ -219,14 +230,19 @@ func (l *GeneralLog) Box(ctx context.Context, title string, lines string) {
 		px = int(math.Ceil(float64(len(title)-len(lines))/2)) + 1
 	}
 
-	l.Debug(ctx, "PostUpdate Box", "px", px, "title", len(title), "lines", len(lines))
-
 	Box := box.New(box.Config{
 		Px:       px,
 		Py:       2,
 		Type:     "Round",
 		TitlePos: "Top",
-		Color:    "Yellow"})
+		Color:    color})
 
 	Box.Println(title, addLineTerminationForLongStrings(lines))
+}
+
+func (l *GeneralLog) Box(ctx context.Context, title string, lines string) {
+
+	l.Debug(ctx, "PostUpdate Box", "title", len(title), "lines", len(lines))
+
+	l.boxBox(title, lines, "Yellow")
 }

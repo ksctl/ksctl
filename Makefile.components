@@ -7,7 +7,7 @@ allowed_controllers = application
 
 ENVTEST_K8S_VERSION = 1.30.0
 
-CONTROLLER_IMG = ghcr.io/ksctl/ksctl-${CONTROLLER}-controller:latest
+CONTROLLER_IMG = ghcr.io/ksctl/ksctl-${CONTROLLER}-controller:${IMG_TAG_VERSION}
 
 WORKDIR = ksctl-components/operators/${CONTROLLER}
 
