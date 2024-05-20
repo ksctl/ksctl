@@ -4,5 +4,6 @@
 	"ha_cluster": false,
 	"cloud_provider": "local",
 	"storage_type": "local",
-	"desired_no_of_managed_nodes": 2
+	"desired_no_of_managed_nodes": 2,
+	"preinstalled_apps": ["prometheus-stack@55.0.0"]
 }
