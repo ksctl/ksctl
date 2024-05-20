@@ -25,16 +25,7 @@
    [![ci-test-go](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml)
   [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
   [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
-  [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
-  [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
-  [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
-  [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
-  [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
-  [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=kubesimplify_ksctl&metric=bugs)](https://sonarcloud.io/summary/new_code?id=kubesimplify_ksctl)
-
 </div>
-
-
 
 
 # Project Scope
@@ -65,15 +56,14 @@ Repo | Description
 
 - Go (if building from source)
 - Docker (if going to use Local provider)
-- Go version >1.20 for build process
 
 # Supported Platforms
 
 Platform | Status
 --|--
-Linux | :heavy_check_mark:
-macOS | :heavy_check_mark:
-Windows | :heavy_check_mark:
+Linux | `OK`
+macOS | `OK`
+Windows | `OK`
 
 # Getting Started guide
 
