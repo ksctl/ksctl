@@ -31,7 +31,6 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	// k8sName    consts.KsctlKubernetes
 	k8sVersion string
 }
 
@@ -174,7 +173,6 @@ func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.
 			mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{
 				Aws: &storageTypes.StateConfigurationAws{},
 			}
-			mainStateDocument.BootstrapProvider = "managed"
 			mainStateDocument.CloudInfra.Aws.B.KubernetesVer = obj.metadata.k8sVersion
 		}
 
@@ -236,6 +234,8 @@ func (obj *AwsProvider) GetStateForHACluster(storage types.StorageFactory) (clou
 }
 
 func (obj *AwsProvider) NewManagedCluster(factory types.StorageFactory, i int) error {
+
+	mainStateDocument.BootstrapProvider = "managed"
 	return log.NewError(awsCtx, "not implemented")
 
 }

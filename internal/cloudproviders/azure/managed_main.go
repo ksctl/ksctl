@@ -47,6 +47,7 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 
 	mainStateDocument.CloudInfra.Azure.NoManagedNodes = noOfNodes
 	mainStateDocument.CloudInfra.Azure.B.KubernetesVer = obj.metadata.k8sVersion
+	mainStateDocument.BootstrapProvider = "managed"
 
 	parameter := armcontainerservice.ManagedCluster{
 		Location: to.Ptr(mainStateDocument.Region),

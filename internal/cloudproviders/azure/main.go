@@ -139,7 +139,6 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 			mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{
 				Azure: &storageTypes.StateConfigurationAzure{},
 			}
-			mainStateDocument.BootstrapProvider = "managed"
 			mainStateDocument.CloudInfra.Azure.B.KubernetesVer = obj.metadata.k8sVersion
 		}
 

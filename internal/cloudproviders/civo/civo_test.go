@@ -488,7 +488,6 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, true, "cluster should not be completed")
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Civo.NoManagedNodes, 5)
-		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.KubernetesDistro, string(consts.K8sK3s))
 		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.KubernetesVer, fakeClientManaged.metadata.k8sVersion)
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) > 0, "Managed clusterID not saved")
 
@@ -507,8 +506,9 @@ func TestManagedCluster(t *testing.T) {
 				ClusterType:   consts.ClusterTypeMang,
 				Region:        fakeClientManaged.region,
 				NoMgt:         mainStateDocument.CloudInfra.Civo.NoManagedNodes,
+				Mgt:           cloud.VMData{VMSize: "g4s.kube.small"},
 
-				K8sDistro:  consts.K8sK3s,
+				K8sDistro:  "managed",
 				K8sVersion: mainStateDocument.CloudInfra.Civo.B.KubernetesVer,
 			},
 		}
@@ -747,8 +747,27 @@ func TestHACluster(t *testing.T) {
 				NoWP:          fakeClientHA.noWP,
 				NoCP:          fakeClientHA.noCP,
 				NoDS:          fakeClientHA.noDS,
-				K8sDistro:     consts.K8sK3s,
-				K8sVersion:    mainStateDocument.CloudInfra.Civo.B.KubernetesVer,
+				LB:            cloud.VMData{VMSize: "g4s.kube.small"},
+				WP: []cloud.VMData{
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+				},
+				CP: []cloud.VMData{
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"},
+				},
+				DS: []cloud.VMData{
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					{VMSize: "g4s.kube.small"},
+				},
+				K8sDistro:  "",
+				K8sVersion: mainStateDocument.CloudInfra.Civo.B.KubernetesVer,
 			},
 		}
 		got, err := fakeClientHA.GetRAWClusterInfos(storeHA)
