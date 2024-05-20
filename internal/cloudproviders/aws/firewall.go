@@ -111,7 +111,7 @@ func (obj *AwsProvider) CreateSecurityGroup(name string, role consts.KsctlRole) 
 		}
 	}
 
-	kubernetesDistro := mainStateDocument.CloudInfra.Aws.B.KubernetesDistro
+	kubernetesDistro := mainStateDocument.BootstrapProvider
 	netCidr := mainStateDocument.CloudInfra.Aws.VpcCidr
 
 	SecurityGroup, err := obj.client.BeginCreateSecurityGroup(awsCtx, SecurityGroupInput)

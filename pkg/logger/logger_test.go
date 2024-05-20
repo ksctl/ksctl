@@ -70,9 +70,9 @@ func TestPrintersStructured(t *testing.T) {
 		sL.Table(dummyCtx,
 			[]cloud.AllClusterData{
 				{
-					Name:     "fake-demo",
-					Provider: "fake",
-					Region:   "fake-reg",
+					Name:          "fake-demo",
+					CloudProvider: "fake",
+					Region:        "fake-reg",
 				},
 			})
 
@@ -122,9 +122,9 @@ func TestPrintersGeneral(t *testing.T) {
 		gL.Table(dummyCtx,
 			[]cloud.AllClusterData{
 				{
-					Name:     "fake-demo",
-					Provider: "fake",
-					Region:   "fake-reg",
+					Name:          "fake-demo",
+					CloudProvider: "fake",
+					Region:        "fake-reg",
 				},
 			})
 

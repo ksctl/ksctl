@@ -44,6 +44,8 @@ func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) erro
 // NewManagedCluster implements types.CloudFactory.
 func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 
+	vmType := cloud.vmType
+
 	cloud.client.NewProvider(log, storage, nil)
 
 	cni := false
@@ -58,6 +60,9 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 
 	mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.metadata.version
 	mainStateDocument.CloudInfra.Local.Nodes = noOfNodes
+
+	mainStateDocument.BootstrapProvider = "kind"
+	mainStateDocument.CloudInfra.Local.ManagedNodeSize = vmType
 
 	Wait := 50 * time.Second
 

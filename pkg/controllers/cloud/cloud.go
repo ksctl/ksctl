@@ -472,9 +472,7 @@ func CreateManagedCluster(client *types.KsctlClient) (bool, bool, error) {
 
 	managedClient := client.Cloud.Name(client.Metadata.ClusterName + "-ksctl-managed")
 
-	if client.Metadata.Provider != consts.CloudLocal {
-		managedClient = managedClient.VMType(client.Metadata.ManagedNodeType)
-	}
+	managedClient = managedClient.VMType(client.Metadata.ManagedNodeType)
 
 	externalApps := managedClient.Application(client.Metadata.Applications)
 

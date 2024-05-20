@@ -24,7 +24,6 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    consts.KsctlKubernetes
 	k8sVersion string
 }
 
@@ -141,7 +140,6 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 				Azure: &storageTypes.StateConfigurationAzure{},
 			}
 			mainStateDocument.CloudInfra.Azure.B.KubernetesVer = obj.metadata.k8sVersion
-			mainStateDocument.CloudInfra.Azure.B.KubernetesDistro = string(obj.metadata.k8sName)
 		}
 
 	case consts.OperationDelete:
@@ -255,7 +253,7 @@ func NewClient(
 		haCluster:   meta.IsHA,
 		metadata: metadata{
 			k8sVersion: meta.K8sVersion,
-			k8sName:    meta.K8sDistro,
+			// k8sName:    meta.K8sDistro,
 		},
 		client: ClientOption(),
 	}
@@ -366,6 +364,7 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkInterfaceIDs = make([]string, no)
 			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPNames = make([]string, no)
 			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.PublicIPIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.VMSizes = make([]string, no)
 		}
 
 		log.Debug(azureCtx, "Printing", "mainStateDocument.CloudInfra.Azure.InfoControlPlanes", mainStateDocument.CloudInfra.Azure.InfoControlPlanes)
@@ -409,6 +408,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceIDs = make([]string, no)
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPNames = make([]string, no)
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Azure.InfoDatabase.VMSizes = make([]string, no)
 		}
 
 		log.Debug(azureCtx, "Printing", "mainStateDocument.CloudInfra.Azure.InfoDatabase", mainStateDocument.CloudInfra.Azure.InfoDatabase)
@@ -452,6 +452,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 			mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs = make([]string, no)
 			mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPNames = make([]string, no)
 			mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.VMSizes = make([]string, no)
 		} else {
 			if currLen == newLen {
 				// no changes needed
@@ -468,6 +469,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 					mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs = append(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs, "")
 					mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPNames = append(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPNames, "")
 					mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPIDs = append(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPIDs, "")
+					mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.VMSizes = append(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.VMSizes, "")
 				}
 			} else {
 				// for downscaling
@@ -480,6 +482,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 				mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkInterfaceIDs[:newLen]
 				mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPNames = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPNames[:newLen]
 				mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPIDs = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.PublicIPIDs[:newLen]
+				mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.VMSizes = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.VMSizes[:newLen]
 			}
 		}
 
@@ -506,20 +509,60 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 		return nil, err
 	}
 
+	var convertToAllClusterDataType func(*storageTypes.StorageDocument, consts.KsctlRole) []cloudcontrolres.VMData
+	convertToAllClusterDataType = func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloudcontrolres.VMData) {
+
+		switch r {
+		case consts.RoleCp:
+			for _, d := range st.CloudInfra.Azure.InfoControlPlanes.VMSizes {
+				v = append(v, cloudcontrolres.VMData{
+					VMSize: d,
+				})
+			}
+
+		case consts.RoleWp:
+			for _, d := range st.CloudInfra.Azure.InfoWorkerPlanes.VMSizes {
+				v = append(v, cloudcontrolres.VMData{
+					VMSize: d,
+				})
+			}
+
+		case consts.RoleDs:
+			for _, d := range st.CloudInfra.Azure.InfoDatabase.VMSizes {
+				v = append(v, cloudcontrolres.VMData{
+					VMSize: d,
+				})
+			}
+
+		default:
+			v = append(v, cloudcontrolres.VMData{
+				VMSize: st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
+			})
+		}
+		return v
+	}
+
 	for K, Vs := range clusters {
 		for _, v := range Vs {
 			data = append(data, cloudcontrolres.AllClusterData{
-				Provider: consts.CloudAzure,
-				Name:     v.ClusterName,
-				Region:   v.Region,
-				Type:     K,
+				CloudProvider: consts.CloudAzure,
+				Name:          v.ClusterName,
+				Region:        v.Region,
+				ClusterType:   K,
+				CP:            convertToAllClusterDataType(v, consts.RoleCp),
+				WP:            convertToAllClusterDataType(v, consts.RoleWp),
+				DS:            convertToAllClusterDataType(v, consts.RoleDs),
+				LB:            convertToAllClusterDataType(v, consts.RoleLb)[0],
 
 				NoWP:  len(v.CloudInfra.Azure.InfoWorkerPlanes.Names),
 				NoCP:  len(v.CloudInfra.Azure.InfoControlPlanes.Names),
 				NoDS:  len(v.CloudInfra.Azure.InfoDatabase.Names),
 				NoMgt: v.CloudInfra.Azure.NoManagedNodes,
+				Mgt: cloudcontrolres.VMData{
+					VMSize: v.CloudInfra.Azure.ManagedNodeSize,
+				},
 
-				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Azure.B.KubernetesDistro),
+				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Azure.B.KubernetesVer,
 			})
 			log.Debug(azureCtx, "Printing", "cloudClusterInfoFetched", data)

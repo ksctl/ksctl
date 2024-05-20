@@ -417,18 +417,16 @@ func checkCurrentStateFileHA(t *testing.T) {
 }
 
 func TestManagedCluster(t *testing.T) {
-	func() {
-		fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo-managed",
-			Region:      "fake",
-			Provider:    consts.CloudAzure,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	mainStateDocument = &storageTypes.StorageDocument{}
+	fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo-managed",
+		Region:      "fake",
+		Provider:    consts.CloudAzure,
+	}, parentLogger, mainStateDocument, ProvideMockClient)
 
-		storeManaged = localstate.NewClient(parentCtx, parentLogger)
-		_ = storeManaged.Setup(consts.CloudAzure, "fake", "demo-managed", consts.ClusterTypeMang)
-		_ = storeManaged.Connect(context.TODO())
-
-	}()
+	storeManaged = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeManaged.Setup(consts.CloudAzure, "fake", "demo-managed", consts.ClusterTypeMang)
+	_ = storeManaged.Connect(context.TODO())
 
 	fakeClientManaged.ManagedK8sVersion("1.27")
 	t.Run("init state", func(t *testing.T) {
@@ -459,7 +457,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.IsCompleted, true, "cluster should not be completed")
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.NoManagedNodes, 5)
-		//assert.Equal(t, mainStateDocument.KubernetesDistro, utils.K8S_K3S)
+		//assert.Equal(t, mainStateDocument.BootstrapProvider, "managed")
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.KubernetesVer, fakeClientManaged.metadata.k8sVersion)
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) > 0, "Managed cluster Name not saved")
 
@@ -473,12 +471,14 @@ func TestManagedCluster(t *testing.T) {
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
-				Name:       fakeClientManaged.clusterName,
-				Provider:   consts.CloudAzure,
-				Type:       consts.ClusterTypeMang,
-				Region:     fakeClientManaged.region,
-				NoMgt:      mainStateDocument.CloudInfra.Azure.NoManagedNodes,
-				K8sVersion: mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
+				Name:          fakeClientManaged.clusterName,
+				CloudProvider: consts.CloudAzure,
+				ClusterType:   consts.ClusterTypeMang,
+				Region:        fakeClientManaged.region,
+				NoMgt:         mainStateDocument.CloudInfra.Azure.NoManagedNodes,
+				Mgt:           cloud.VMData{VMSize: "fake"},
+				K8sDistro:     "managed",
+				K8sVersion:    mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos(storeManaged)
@@ -507,23 +507,22 @@ func TestManagedCluster(t *testing.T) {
 }
 
 func TestHACluster(t *testing.T) {
-	func() {
-		fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo-ha",
-			Region:      "fake",
-			Provider:    consts.CloudAzure,
-			IsHA:        true,
-			NoCP:        7,
-			NoDS:        5,
-			NoWP:        10,
-			K8sDistro:   consts.K8sK3s,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	mainStateDocument = &storageTypes.StorageDocument{}
+	fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo-ha",
+		Region:      "fake",
+		Provider:    consts.CloudAzure,
+		IsHA:        true,
+		NoCP:        7,
+		NoDS:        5,
+		NoWP:        10,
+		K8sDistro:   consts.K8sK3s,
+	}, parentLogger, mainStateDocument, ProvideMockClient)
 
-		storeHA = localstate.NewClient(parentCtx, parentLogger)
-		_ = storeHA.Setup(consts.CloudAzure, "fake", "demo-ha", consts.ClusterTypeHa)
-		_ = storeHA.Connect(context.TODO())
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "demo-ha", consts.ClusterTypeHa)
+	_ = storeHA.Connect(context.TODO())
 
-	}()
 	fakeClientHA.metadata.noCP = 7
 	fakeClientHA.metadata.noDS = 5
 	fakeClientHA.metadata.noWP = 10
@@ -755,14 +754,32 @@ func TestHACluster(t *testing.T) {
 	t.Run("Get cluster ha", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
-				Name:       fakeClientHA.clusterName,
-				Region:     fakeClientHA.region,
-				Provider:   consts.CloudAzure,
-				Type:       consts.ClusterTypeHa,
-				NoWP:       fakeClientHA.noWP,
-				NoCP:       fakeClientHA.noCP,
-				NoDS:       fakeClientHA.noDS,
-				K8sDistro:  consts.K8sK3s,
+				Name:          fakeClientHA.clusterName,
+				Region:        fakeClientHA.region,
+				CloudProvider: consts.CloudAzure,
+				ClusterType:   consts.ClusterTypeHa,
+				NoWP:          fakeClientHA.noWP,
+				NoCP:          fakeClientHA.noCP,
+				NoDS:          fakeClientHA.noDS,
+
+				WP: []cloud.VMData{
+					{VMSize: "fake-wp-0"}, {VMSize: "fake-wp-1"}, {VMSize: "fake-wp-2"},
+					{VMSize: "fake-wp-3"}, {VMSize: "fake-wp-4"}, {VMSize: "fake-wp-5"},
+					{VMSize: "fake-wp-6"}, {VMSize: "fake-wp-7"}, {VMSize: "fake-wp-8"},
+					{VMSize: "fake-wp-9"},
+				},
+				CP: []cloud.VMData{
+					{VMSize: "fake-cp-0"}, {VMSize: "fake-cp-1"}, {VMSize: "fake-cp-2"},
+					{VMSize: "fake-cp-3"}, {VMSize: "fake-cp-4"}, {VMSize: "fake-cp-5"},
+					{VMSize: "fake-cp-6"},
+				},
+				DS: []cloud.VMData{
+					{VMSize: "fake-ds-0"}, {VMSize: "fake-ds-1"}, {VMSize: "fake-ds-2"},
+					{VMSize: "fake-ds-3"}, {VMSize: "fake-ds-4"},
+				},
+				LB: cloud.VMData{VMSize: "fake-lb"},
+
+				K8sDistro:  "",
 				K8sVersion: mainStateDocument.CloudInfra.Azure.B.KubernetesVer,
 			},
 		}

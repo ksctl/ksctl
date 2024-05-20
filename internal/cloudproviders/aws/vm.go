@@ -54,12 +54,16 @@ func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) erro
 			switch role {
 			case consts.RoleWp:
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = ""
+				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = ""
 			case consts.RoleCp:
 				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = ""
+				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = ""
 			case consts.RoleLb:
 				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = ""
+				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = ""
 			case consts.RoleDs:
 				mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = ""
+				mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = ""
 			}
 
 			err = obj.DeleteNetworkInterface(awsCtx, storage, indexNo, role)
@@ -218,6 +222,8 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		}
 	}
 
+	// stringindexNo := fmt.Sprintf("%d", indexNo)
+
 	nicid, err := obj.CreateNetworkInterface(awsCtx, storage, name, indexNo, role)
 	if err != nil {
 		return err
@@ -279,15 +285,19 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		case consts.RoleCp:
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = name
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = name
 		case consts.RoleLb:
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.HostName = name
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = name
 		case consts.RoleWp:
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = name
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {

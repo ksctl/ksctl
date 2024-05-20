@@ -132,12 +132,16 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 		switch role {
 		case consts.RoleCp:
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs[indexNo] = inst.ID
+			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleWp:
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[indexNo] = inst.ID
+			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs[indexNo] = inst.ID
+			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes[indexNo] = vmtype
 		case consts.RoleLb:
 			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMID = inst.ID
+			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMSize = vmtype
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {
@@ -202,6 +206,7 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames[indexNo] = ""
+			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes[indexNo] = ""
 
 			if err := storage.Write(mainStateDocument); err != nil {
 				errCreateVM = err
@@ -231,6 +236,7 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames[indexNo] = ""
+			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes[indexNo] = ""
 
 			if err := storage.Write(mainStateDocument); err != nil {
 				errCreateVM = err
@@ -258,6 +264,7 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs[indexNo] = ""
 			mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames[indexNo] = ""
+			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes[indexNo] = ""
 
 			if err := storage.Write(mainStateDocument); err != nil {
 				errCreateVM = err
@@ -285,6 +292,7 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP = ""
 			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP = ""
 			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.HostName = ""
+			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMSize = ""
 
 			if err := storage.Write(mainStateDocument); err != nil {
 				errCreateVM = err

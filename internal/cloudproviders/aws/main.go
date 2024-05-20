@@ -31,7 +31,6 @@ type metadata struct {
 	noWP int
 	noDS int
 
-	k8sName    consts.KsctlKubernetes
 	k8sVersion string
 }
 
@@ -118,7 +117,7 @@ func NewClient(parentCtx context.Context,
 		haCluster:   meta.IsHA,
 		metadata: metadata{
 			k8sVersion: meta.K8sVersion,
-			k8sName:    meta.K8sDistro,
+			// k8sName:    meta.K8sDistro,
 		},
 
 		client: ClientOption(),
@@ -175,7 +174,6 @@ func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.
 				Aws: &storageTypes.StateConfigurationAws{},
 			}
 			mainStateDocument.CloudInfra.Aws.B.KubernetesVer = obj.metadata.k8sVersion
-			mainStateDocument.CloudInfra.Aws.B.KubernetesDistro = string(obj.metadata.k8sName)
 		}
 
 	case consts.OperationDelete:
@@ -236,6 +234,8 @@ func (obj *AwsProvider) GetStateForHACluster(storage types.StorageFactory) (clou
 }
 
 func (obj *AwsProvider) NewManagedCluster(factory types.StorageFactory, i int) error {
+
+	mainStateDocument.BootstrapProvider = "managed"
 	return log.NewError(awsCtx, "not implemented")
 
 }
@@ -324,6 +324,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes = make([]string, no)
 		} else {
 			if currLen == newLen {
 				return -1, nil
@@ -335,6 +336,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs, "")
+					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes, "")
 				}
 			} else {
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[:newLen]
@@ -343,6 +345,7 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[:newLen]
+				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[:newLen]
 			}
 		}
 
@@ -382,6 +385,7 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.DiskNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes = make([]string, no)
 		}
 
 		log.Debug(awsCtx, "Printing", "awsCloudState.InfoControlplanes", mainStateDocument.CloudInfra.Aws.InfoControlPlanes)
@@ -419,6 +423,7 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.DiskNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs = make([]string, no)
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes = make([]string, no)
 		}
 
 		log.Debug(awsCtx, "Printing", "awsCloudState.InfoDatabase", mainStateDocument.CloudInfra.Aws.InfoDatabase)
@@ -455,20 +460,57 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 		return nil, log.NewError(awsCtx, "Error fetching cluster info", "error", err)
 	}
 
+	var convertToAllClusterDataType func(*storageTypes.StorageDocument, consts.KsctlRole) []cloudcontrolres.VMData
+	convertToAllClusterDataType = func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloudcontrolres.VMData) {
+
+		switch r {
+		case consts.RoleCp:
+			for _, d := range st.CloudInfra.Azure.InfoControlPlanes.VMSizes {
+				v = append(v, cloudcontrolres.VMData{
+					VMSize: d,
+				})
+			}
+
+		case consts.RoleWp:
+			for _, d := range st.CloudInfra.Azure.InfoWorkerPlanes.VMSizes {
+				v = append(v, cloudcontrolres.VMData{
+					VMSize: d,
+				})
+			}
+
+		case consts.RoleDs:
+			for _, d := range st.CloudInfra.Azure.InfoDatabase.VMSizes {
+				v = append(v, cloudcontrolres.VMData{
+					VMSize: d,
+				})
+			}
+
+		default:
+			v = append(v, cloudcontrolres.VMData{
+				VMSize: st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
+			})
+		}
+		return v
+	}
+
 	for K, Vs := range clusters {
 		for _, v := range Vs {
 			data = append(data, cloudcontrolres.AllClusterData{
-				Provider: consts.CloudAws,
-				Name:     v.ClusterName,
-				Region:   v.Region,
-				Type:     K,
+				CloudProvider: consts.CloudAws,
+				Name:          v.ClusterName,
+				Region:        v.Region,
+				ClusterType:   K,
+				CP:            convertToAllClusterDataType(v, consts.RoleCp),
+				WP:            convertToAllClusterDataType(v, consts.RoleWp),
+				DS:            convertToAllClusterDataType(v, consts.RoleDs),
+				LB:            convertToAllClusterDataType(v, consts.RoleLb)[0],
 
 				NoWP:  len(v.CloudInfra.Aws.InfoWorkerPlanes.HostNames),
 				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
 				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.HostNames),
 				NoMgt: v.CloudInfra.Aws.NoManagedNodes,
 
-				K8sDistro:  consts.KsctlKubernetes(v.CloudInfra.Aws.B.KubernetesDistro),
+				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Aws.B.KubernetesVer,
 			})
 			log.Debug(awsCtx, "Printing", "cloudClusterInfoFetched", data)

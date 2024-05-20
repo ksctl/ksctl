@@ -63,9 +63,15 @@ func TestRole(t *testing.T) {
 
 // it will contain which vmType to create
 func TestVMType(t *testing.T) {
-	if factory := fakeClientVars.VMType(""); factory != nil {
-		t.Fatalf("it should not be implemented")
+	if factory := fakeClientVars.VMType("abcd"); factory == nil {
+		t.Fatalf("it should be implemented")
 	}
+	assert.Equal(t, fakeClientVars.vmType, "local_machine")
+
+	if factory := fakeClientVars.VMType(""); factory == nil {
+		t.Fatalf("it should be implemented")
+	}
+	assert.Equal(t, fakeClientVars.vmType, "local_machine")
 }
 
 // whether to have the resource as public or private (i.e. VMs)
@@ -251,11 +257,12 @@ func TestManagedCluster(t *testing.T) {
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
-				Name:     fakeClientManaged.clusterName,
-				Provider: consts.CloudLocal,
-				Type:     consts.ClusterTypeMang,
-				Region:   fakeClientManaged.region,
-				NoMgt:    mainStateDocument.CloudInfra.Local.Nodes,
+				Name:          fakeClientManaged.clusterName,
+				CloudProvider: consts.CloudLocal,
+				ClusterType:   consts.ClusterTypeMang,
+				Region:        fakeClientManaged.region,
+				NoMgt:         mainStateDocument.CloudInfra.Local.Nodes,
+				Mgt:           cloud.VMData{VMSize: mainStateDocument.CloudInfra.Local.ManagedNodeSize},
 
 				K8sDistro:  "kind",
 				K8sVersion: mainStateDocument.CloudInfra.Local.B.KubernetesVer,

@@ -60,15 +60,19 @@ func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
 			case consts.RoleWp:
 				mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names[indexNo] = ""
 				mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Hostnames[indexNo] = ""
+				mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.VMSizes[indexNo] = ""
 			case consts.RoleCp:
 				mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names[indexNo] = ""
 				mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Hostnames[indexNo] = ""
+				mainStateDocument.CloudInfra.Azure.InfoControlPlanes.VMSizes[indexNo] = ""
 			case consts.RoleLb:
 				mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.Name = ""
 				mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.HostName = ""
+				mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.VMSize = ""
 			case consts.RoleDs:
 				mainStateDocument.CloudInfra.Azure.InfoDatabase.Names[indexNo] = ""
 				mainStateDocument.CloudInfra.Azure.InfoDatabase.Hostnames[indexNo] = ""
+				mainStateDocument.CloudInfra.Azure.InfoDatabase.VMSizes[indexNo] = ""
 			}
 
 			if err := storage.Write(mainStateDocument); err != nil {
@@ -247,12 +251,16 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 		switch role {
 		case consts.RoleWp:
 			mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names[indexNo] = name
+			mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.VMSizes[indexNo] = name
 		case consts.RoleCp:
 			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names[indexNo] = name
+			mainStateDocument.CloudInfra.Azure.InfoControlPlanes.VMSizes[indexNo] = name
 		case consts.RoleLb:
 			mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.Name = name
+			mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.VMSize = name
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.Names[indexNo] = name
+			mainStateDocument.CloudInfra.Azure.InfoDatabase.VMSizes[indexNo] = name
 		}
 		if err := storage.Write(mainStateDocument); err != nil {
 			errCreateVM = err

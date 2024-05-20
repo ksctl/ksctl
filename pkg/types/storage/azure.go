@@ -12,6 +12,7 @@ type AzureStateVMs struct {
 	NetworkInterfaceNames    []string `json:"network_interface_names" bson:"network_interface_names"`
 	NetworkInterfaceIDs      []string `json:"network_interface_ids" bson:"network_interface_ids"`
 	Hostnames                []string `json:"hostnames" bson:"hostnames"`
+	VMSizes                  []string `json:"vm_sizes" bson:"vm_sizes"` // keeping a dynamic sizes for autoscaler feature
 }
 
 type AzureStateVM struct {
@@ -26,6 +27,7 @@ type AzureStateVM struct {
 	PrivateIP                string `json:"private_ip" bson:"private_ip"`
 	PublicIP                 string `json:"public_ip" bson:"public_ip"`
 	HostName                 string `json:"hostname" bson:"hostname"`
+	VMSize                   string `json:"vm_size" bson:"vm_size"`
 }
 
 type CredentialsAzure struct {
@@ -42,6 +44,7 @@ type StateConfigurationAzure struct {
 
 	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
 	NoManagedNodes     int    `json:"no_managed_cluster_nodes" bson:"no_managed_cluster_nodes"`
+	ManagedNodeSize    string `json:"managed_node_size" bson:"managed_node_size"`
 
 	SubnetName         string `json:"subnet_name" bson:"subnet_name"`
 	SubnetID           string `json:"subnet_id" bson:"subnet_id"`
