@@ -1,7 +1,19 @@
 name: ghcr build and push ksctl-components
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'version tag for docker images'
+        default: 'latest'
+        required: true
+        type: string
   workflow_call:
+    inputs:
+      image_tag:
+        description: 'version tag for docker images'
+        default: 'latest'
+        required: true
+        type: string
 
 jobs:
   ksctl-stateimport:
@@ -24,7 +36,7 @@ jobs:
 
       - name: build and push ksctl stateimporter
         run: |
-          make docker-buildx-stateimport
+          make docker-buildx-stateimport IMG_TAG_VERSION=${{ inputs.image_tag }}
 
   ksctl-agent:
     runs-on: ubuntu-latest
@@ -46,7 +58,7 @@ jobs:
 
       - name: build and push ksctl agent
         run: |
-          make docker-buildx-agent
+          make docker-buildx-agent IMG_TAG_VERSION=${{ inputs.image_tag }}
 
   ksctl-application-controller:
     runs-on: ubuntu-latest
@@ -68,4 +80,4 @@ jobs:
 
       - name: build and push ksctl controller application
         run: |
-          make docker-buildx-controller CONTROLLER=application
+          make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ inputs.image_tag }}

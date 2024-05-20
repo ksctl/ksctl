@@ -15,7 +15,6 @@ import (
 	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
 
 	bootstrapController "github.com/ksctl/ksctl/pkg/controllers/bootstrap"
-	"github.com/ksctl/ksctl/pkg/controllers/cloud"
 	cloudController "github.com/ksctl/ksctl/pkg/controllers/cloud"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -120,7 +119,7 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 		fakeClient = true
 	}
 
-	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
@@ -216,13 +215,13 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 		return err
 	}
 
-	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
 	// it gets supportForApps, supportForCNI, error
-	externalApp, externalCNI, cloudResErr := cloud.CreateManagedCluster(client)
+	externalApp, externalCNI, cloudResErr := cloudController.CreateManagedCluster(client)
 	if cloudResErr != nil {
 		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
 		return cloudResErr
@@ -278,12 +277,12 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 		fakeClient = true
 	}
 
-	if err := cloud.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
 
-	cloudResErr := cloud.DeleteManagedCluster(client)
+	cloudResErr := cloudController.DeleteManagedCluster(client)
 	if cloudResErr != nil {
 		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
 		return cloudResErr
@@ -536,7 +535,7 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		return err
 	}
 
-	if err := cloud.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
@@ -547,7 +546,7 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 		return err
 	}
 
-	cloudResErr := cloud.CreateHACluster(client)
+	cloudResErr := cloudController.CreateHACluster(client)
 	if cloudResErr != nil {
 		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
 		return cloudResErr
@@ -626,7 +625,7 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 		fakeClient = true
 	}
 
-	if err := cloud.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
@@ -667,7 +666,7 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 	//	}
 	//}
 
-	cloudResErr := cloud.DeleteHACluster(client)
+	cloudResErr := cloudController.DeleteHACluster(client)
 	if cloudResErr != nil {
 		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
 		return cloudResErr
@@ -726,7 +725,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		fakeClient = true
 	}
 
-	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
@@ -737,7 +736,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		return err
 	}
 
-	currWP, cloudResErr := cloud.AddWorkerNodes(client)
+	currWP, cloudResErr := cloudController.AddWorkerNodes(client)
 	if cloudResErr != nil {
 		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
 		return cloudResErr
@@ -816,7 +815,7 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 		fakeClient = true
 	}
 
-	if err := cloud.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
@@ -827,7 +826,7 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 		return err
 	}
 
-	hostnames, err := cloud.DelWorkerNodes(client)
+	hostnames, err := cloudController.DelWorkerNodes(client)
 	if err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
