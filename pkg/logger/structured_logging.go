@@ -127,45 +127,7 @@ func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
 
 func (l *StructuredLog) Table(ctx context.Context, data []cloudController.AllClusterData) {
 
-	type nodeSchema struct {
-		Cp int
-		Wp int
-		Lb int
-		Ds int
-	}
-	type tableSchema struct {
-		Name         string
-		Provider     string
-		Region       string
-		Nodes        nodeSchema
-		Type         string
-		K8sBootstrap string
-		K8sVersion   string
-	}
-
-	vals := []tableSchema{}
-
-	for _, row := range data {
-		_val := tableSchema{}
-		_val.Name = row.Name
-		_val.Provider = string(row.CloudProvider)
-		_val.Region = row.Region
-		_val.Type = string(row.ClusterType)
-		_val.K8sBootstrap = string(row.K8sDistro)
-		_val.K8sVersion = row.K8sVersion
-
-		if row.ClusterType == "ha" {
-			_val.Nodes.Cp = row.NoCP
-			_val.Nodes.Wp = row.NoWP
-			_val.Nodes.Ds = row.NoDS
-			_val.Nodes.Lb = 1
-		} else {
-			_val.Nodes.Wp = row.NoMgt
-		}
-
-		vals = append(vals, _val)
-	}
-	l.Success(ctx, "table content", "data", vals)
+	l.Success(ctx, "table content", "data", data)
 }
 
 func (l *StructuredLog) Box(ctx context.Context, title string, lines string) {
