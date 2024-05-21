@@ -9,7 +9,9 @@ on:
       - "go.sum"
       - "build/**"
       - "test/e2e/**"
-      - "ksctl-components/**"
+      - "ksctl-components/agent/**"
+      - "ksctl-components/operators/**"
+      - "ksctl-components/stateimport/**"
       - ".github/workflows/*"
     branches: [main]
   workflow_dispatch:
