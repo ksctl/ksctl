@@ -1,8 +1,5 @@
 name: ghcr build and push ksctl-components
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       image_tag:
@@ -38,14 +35,8 @@ jobs:
           password: ${{secrets.GITHUB_TOKEN}}
 
       - name: build and push ksctl stateimporter
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
         run: |
           make docker-buildx-stateimport IMG_TAG_VERSION=${{ inputs.image_tag }}
-
-      - name: build and push ksctl stateimporter for tags
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-        run: |
-          make docker-buildx-stateimport IMG_TAG_VERSION=${{ github.ref_name }}
 
   ksctl-agent:
     runs-on: ubuntu-latest
@@ -66,14 +57,8 @@ jobs:
           password: ${{secrets.GITHUB_TOKEN}}
 
       - name: build and push ksctl agent
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
         run: |
           make docker-buildx-agent IMG_TAG_VERSION=${{ inputs.image_tag }}
-
-      - name: build and push ksctl agent for tags
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-        run: |
-          make docker-buildx-agent IMG_TAG_VERSION=${{ github.ref_name }}
 
   ksctl-application-controller:
     runs-on: ubuntu-latest
@@ -94,11 +79,5 @@ jobs:
           password: ${{secrets.GITHUB_TOKEN}}
 
       - name: build and push ksctl controller application
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
         run: |
           make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ inputs.image_tag }}
-
-      - name: build and push ksctl controller application for tags
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-        run: |
-          make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ github.ref_name }}

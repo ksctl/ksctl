@@ -145,15 +145,22 @@ func TestSSHExecute(t *testing.T) {
 
 func TestIsValidVersion(t *testing.T) {
 	testCases := map[string]bool{
-		"1.1.1":  true,
-		"latest": true,
-		"v1":     true,
-		"v1.1":   true,
-		"v1.1.1": true,
-		"1.1":    true,
-		"1":      true,
-		"v":      false,
-		"stable": true,
+		"1.1.1":            true,
+		"latest":           true,
+		"v1":               true,
+		"v1.1":             true,
+		"v1.1.1":           true,
+		"1.1":              true,
+		"1":                true,
+		"v":                false,
+		"stable":           true,
+		"enhancement-2342": true,
+		"enhancement":      true,
+		"feature-2342":     true,
+		"feature":          true,
+		"feat":             true,
+		"feat234":          true,
+		"fix234":           true,
 	}
 
 	for ver, expected := range testCases {

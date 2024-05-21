@@ -79,7 +79,7 @@ func (l *GeneralLog) logErrorf(disableContext bool, disablePrefix bool, ctx cont
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if !disablePrefix {
-		prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), consts.LOG_ERROR)
+		prefix := fmt.Sprintf("%s%s: ", getTime(l.level), consts.LOG_ERROR)
 		msg = prefix + msg
 	}
 	format, _args := formGroups(disableContext, ctx, args...)
@@ -100,7 +100,7 @@ func (l *GeneralLog) log(disableContext bool, useGroupFormer bool, ctx context.C
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	prefix := fmt.Sprintf("%s[%s] ", getTime(l.level), msgType)
+	prefix := fmt.Sprintf("%s%s: ", getTime(l.level), msgType)
 
 	if useGroupFormer {
 		msg = prefix + msg

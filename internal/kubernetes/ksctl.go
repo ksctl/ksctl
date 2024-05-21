@@ -3,6 +3,8 @@ package kubernetes
 import (
 	"fmt"
 
+	"github.com/ksctl/ksctl/ksctl-components/manifests"
+
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/types"
@@ -30,38 +32,6 @@ const (
 )
 
 var (
-	// only deploy the ksctl storage importer controller when the local storage is there
-	// also when the doing migration a already cluster to the ksctl management scope
-	// check the diagrams
-
-	// NOTE: we are going to transfer tht elogic of calling to the 2 palces and also use the fake client
-
-	// WARN: these rules only tested for the K3s distribution
-
-	// affinity = &corev1.Affinity{
-	// 	NodeAffinity: &corev1.NodeAffinity{
-	// 		RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-	// 			NodeSelectorTerms: []corev1.NodeSelectorTerm{
-	// 				corev1.NodeSelectorTerm{
-	// 					MatchExpressions: []corev1.NodeSelectorRequirement{
-	// 						corev1.NodeSelectorRequirement{
-	// 							Key:      "node-role.kubernetes.io/control-plane",
-	// 							Operator: corev1.NodeSelectorOpIn,
-	// 							Values:   []string{"true"},
-	// 						},
-	//
-	// 						corev1.NodeSelectorRequirement{
-	// 							Key:      "node-role.kubernetes.io/master",
-	// 							Operator: corev1.NodeSelectorOpIn,
-	// 							Values:   []string{"true"},
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 		},
-	// 	},
-	// }
-
 	tolerations = []corev1.Toleration{
 		{
 			Key:      "CriticalAddonsOnly",
@@ -85,89 +55,9 @@ var (
 	}
 )
 
-//func (k *Kubernetes) DeleteResourcesFromController() error {
-//	log.Print("Started to configure Cluster to delete workerplanes")
-//
-//	clusterName := k.Metadata.ClusterName
-//	region := k.Metadata.Region
-//	provider := k.Metadata.Provider
-//	distro := k.Metadata.K8sDistro
-//
-//	log.Debug(kubernetesCtx,"Printing", "clustername", clusterName, "region", region, "provider", provider, "distro", distro)
-//
-//	var destroyer *corev1.Pod = &corev1.Pod{
-//		TypeMeta: metav1.TypeMeta{
-//			Kind:       "Pod",
-//			APIVersion: "v1",
-//		},
-//		ObjectMeta: metav1.ObjectMeta{
-//			Name: "scale-to-0",
-//		},
-//		Spec: corev1.PodSpec{
-//
-//			PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
-//
-//			// Affinity: affinity,
-//
-//			Tolerations: tolerations,
-//
-//			RestartPolicy: corev1.RestartPolicyNever,
-//			Containers: []corev1.Container{
-//				{
-//					Name:    "destroyer",
-//					Image:   "alpine",
-//					Command: []string{"sh", "-c"},
-//					Args:    []string{fmt.Sprintf("apk add curl && curl -X PUT ksctl-service:8080/scaledown -d '{\"nowp\": 0, \"clustername\": \"%s\", \"region\": \"%s\", \"cloud\": \"%s\", \"distro\": \"%s\"}'", clusterName, region, provider, distro)},
-//
-//					Resources: corev1.ResourceRequirements{
-//						Limits: corev1.ResourceList{
-//							corev1.ResourceCPU:    resource.MustParse("50m"),
-//							corev1.ResourceMemory: resource.MustParse("50Mi"),
-//						},
-//						Requests: corev1.ResourceList{
-//							corev1.ResourceCPU:    resource.MustParse("10m"),
-//							corev1.ResourceMemory: resource.MustParse("10Mi"),
-//						},
-//					},
-//				},
-//			},
-//		},
-//	}
-//
-//	log.Debug(kubernetesCtx,"Printing", "destroyerPodManifest", destroyer)
-//
-//	if err := k.PodApply(destroyer, KSCTL_SYS_NAMESPACE); err != nil {
-//		return log.NewError(err.Error())
-//	}
-//
-//	count := consts.KsctlCounterConsts(0)
-//	for {
-//
-//		status, err := k.clientset.CoreV1().Pods(KSCTL_SYS_NAMESPACE).Get(context.Background(), destroyer.ObjectMeta.Name, metav1.GetOptions{})
-//		if err != nil {
-//			return log.NewError(err.Error())
-//		}
-//		if status.Status.Phase == corev1.PodSucceeded {
-//			log.Success(fmt.Sprintf("Status of Job [%v]", status.Status.Phase))
-//			break
-//		}
-//		count++
-//		if count == consts.CounterMaxRetryCount*2 {
-//			return log.NewError("max retry reached")
-//		}
-//		log.Debug(kubernetesCtx,fmt.Sprintf("retrying current no of success [%v]", status.Status.Phase))
-//		time.Sleep(10 * time.Second)
-//	}
-//
-//	time.Sleep(10 * time.Second) // to maintain a time gap for stable cluster and cloud storage
-//
-//	log.Success("Done configuring Cluster to Scale down the no of workerplane to 1")
-//	return nil
-//}
-
 func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
-	components := []string{"ksctl-application@latest"}
+	components := []string{"ksctl-application@" + manifests.KsctlApplicationStackBranchOrTagName}
 
 	_apps, err := helpers.ToApplicationTempl(components)
 	if err != nil {
@@ -265,7 +155,7 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 				Containers: []corev1.Container{
 					{
 						Name:            "ksctl-stateimport",
-						Image:           "ghcr.io/ksctl/ksctl-stateimport:latest",
+						Image:           "ghcr.io/ksctl/ksctl-stateimport:" + manifests.KsctlStateImportAppVersion,
 						ImagePullPolicy: corev1.PullAlways,
 						Ports: []corev1.ContainerPort{
 							{
@@ -362,7 +252,7 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 					Containers: []corev1.Container{
 						{
 							Name:            "ksctl-agent",
-							Image:           "ghcr.io/ksctl/ksctl-agent:latest",
+							Image:           "ghcr.io/ksctl/ksctl-agent:" + manifests.KsctlAgentAppVersion,
 							ImagePullPolicy: corev1.PullAlways,
 							Ports: []corev1.ContainerPort{
 								{

@@ -1,0 +1,59 @@
+name: CI-CD for ksctl tags
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        required: true
+        description: "tag name to tag the ksctl new release"
+        type: string
+
+jobs:
+  trigger-oci-artifact-build-push:
+    uses: ./.github/workflows/docker.yaml
+    secrets: inherit
+    with:
+      image_tag: ${{ inputs.tag_name }}
+    permissions:
+      packages: write
+      contents: read
+
+  upgrade-manifests-files-and-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: updates ksctl controller-application
+        run: |
+          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{inputs.tag_name}}
+          git add ksctl-components/manifests/controllers/application/deploy.yml ksctl-components/operators/application/config/manager/kustomization.yaml
+      - name: updates ksctl-component versions to the new tag
+        env:
+          TAG_NAME: ${{inputs.tag_name}}
+        run: |
+          cd ksctl-components/manifests
+          cp -v versions.go versions.go.bkp
+          sed -i "s/\"latest\"/\"${TAG_NAME}\"/g" versions.go
+          git add ksctl-components/manifests/versions.go
+
+      - name: commit, tag and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -s -m "[skip ci]!: Updated the ksctl-component versions"
+          git tag -s -a ${{inputs.tag_name}} -m "version ${{inputs.tag_name}} out :party:"
+          git push
+          git push --tags
+
+      - name: restore the development configurations
+        run: |
+          make build-installer CONTROLLER=application IMG_TAG_VERSION=latest
+          mv -v ksctl-components/manifests/versions.go.bkp ksctl-components/manifests/versions.go
+
+      - name: commit and push for restoring the dev configurations
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -s -m "[skip ci]!: Restored the Development ksctl-component versions"
+          git push
