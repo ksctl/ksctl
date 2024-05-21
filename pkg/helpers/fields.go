@@ -96,7 +96,12 @@ func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName strin
 }
 
 func IsValidVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
-	if ver == "latest" || ver == "stable" {
+	if ver == "latest" ||
+		ver == "stable" ||
+		strings.HasPrefix(ver, "feature") ||
+		strings.HasPrefix(ver, "feat") ||
+		strings.HasPrefix(ver, "fix") ||
+		strings.HasPrefix(ver, "enhancement") {
 		return nil
 	}
 
