@@ -1,0 +1,41 @@
+name: CI-CD for ksctl tags
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  trigger-oci-artifact-build-push:
+    uses: ./.github/workflows/docker.yaml
+    secrets: inherit
+    with:
+      image_tag: ${{ github.ref_name }}
+    permissions:
+      packages: write
+      contents: read
+
+  upgrade-manifests-files:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: controller-application
+        run: |
+          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{github.ref_name}}
+
+      - name: ksctl agent
+        run: |
+          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{github.ref_name}}
+
+      - name: ksctl stateimport
+        run: |
+          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{github.ref_name}}
+
+      - name: Commit deploy manifest on local repo
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -s -m "[skip ci] Generate deployment manifests"
+          git push
