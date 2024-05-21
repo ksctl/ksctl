@@ -1,41 +1,48 @@
 name: CI-CD for ksctl tags
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        required: true
+        description: "tag name to tag the ksctl new release"
+        type: string
 
 jobs:
   trigger-oci-artifact-build-push:
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
     with:
-      image_tag: ${{ github.ref_name }}
+      image_tag: ${{ inputs.tag_name }}
     permissions:
       packages: write
       contents: read
 
-  upgrade-manifests-files:
+  upgrade-manifests-files-and-tag:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: controller-application
         run: |
-          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{github.ref_name}}
+          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{inputs.tag_name}}
 
-      - name: ksctl agent
+      - name: updates ksctl-component versions to the new tag
         run: |
-          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{github.ref_name}}
+          cd ksctl-components/manifests
+          cp -v versions.go versions.go.bkp
+          sed -i 's/"latest"/${{inputs.tag_name}}/g' versions.go
 
-      - name: ksctl stateimport
-        run: |
-          make build-installer CONTROLLER=application IMG_TAG_VERSION=${{github.ref_name}}
-
-      - name: Commit deploy manifest on local repo
+      - name: commit, push, tag, push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .
-          git commit -s -m "[skip ci] Generate deployment manifests"
+          git add 
+          git commit -s -m "[skip ci]!: Updated the ksctl-component versions"
           git push
+
+      - name: ksctl components
+        run: |
+          cd ksctl-components/manifests
+          cp -v versions.go versions.go.bkp
+          sed -i 's/"latest"/${{inputs.tag_name}}/g' versions.go
