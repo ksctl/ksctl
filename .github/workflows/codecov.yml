@@ -35,73 +35,75 @@ jobs:
       working-directory: pkg/helpers
       run: |
          go test -race -coverprofile=../../coverage-utils.out -covermode=atomic -v
-         cd ../..
 
     - name: Run coverage (LOGGER)
       working-directory: pkg/logger
       run: |
         go test -race -coverprofile=../../coverage-logger.out -covermode=atomic -v
-        cd ../..
 
     - name: Run coverage (K3S)
       working-directory: internal/k8sdistros/k3s
       run: |
         go test -race -coverprofile=../../../coverage-k3s.out -covermode=atomic -v
-        cd ../../..
 
     - name: Run coverage (KUBEADM)
       working-directory: internal/k8sdistros/kubeadm
       run: |
         go test -race -coverprofile=../../../coverage-kubeadm.out -covermode=atomic -v
-        cd ../../..
 
     - name: Run coverage (K8S_DISTRIBUTION)
       working-directory: internal/k8sdistros
       run: |
         go test -race -coverprofile=../../../coverage-k8s.out -covermode=atomic -v
-        cd ../../..
 
     - name: Run coverage (CIVO)
       working-directory: internal/cloudproviders/civo
       run: |
          go test -race -coverprofile=../../../coverage-civo.out -covermode=atomic -v
-         cd ../../..
 
     - name: Run coverage (AZURE)
       working-directory: internal/cloudproviders/azure
       run: |
          go test -race -coverprofile=../../../coverage-azure.out -covermode=atomic -v
-         cd ../../..
 
     - name: Run coverage (AWS)
       working-directory: internal/cloudproviders/aws
       run: |
          go test -race -coverprofile=../../../coverage-aws.out -covermode=atomic -v
-         cd ../../..
 
     - name: Run coverage (LOCAL)
       working-directory: internal/cloudproviders/local
       run: |
          go test -race -coverprofile=../../../coverage-local.out -covermode=atomic -v
-         cd ../../..
 
     - name: Run coverage (LOCAL-Storage)
       working-directory: internal/storage/local
       run: |
          go test -race -coverprofile=../../../coverage-local-store.out -covermode=atomic -v
-         cd ../../..
 
     - name: Run coverage (KUBERNETES-Storage)
       working-directory: internal/storage/kubernetes
       run: |
         go test -race -coverprofile=../../../coverage-kubernetes-store.out -covermode=atomic -v
-        cd ../../..
 
     - name: Run coverage (MONGODB-Storage)
       working-directory: internal/storage/external/mongodb
       run: |
         go test -race -coverprofile=../../../../coverage-mongodb-store.out -covermode=atomic -v
-        cd ../../../..
+
+    - name: Run coverage (ksctl-stateimport)
+      working-directory: ksctl-components/stateimport
+      run: |
+        go test -race -coverprofile=../../coverage-ksctl-stateimport.out -covermode=atomic -v
+
+    - name: Run coverage (ksctl-agent)
+      working-directory: ksctl-components/agent
+      run: |
+        go test -race -coverprofile=../../coverage-ksctl-agent.out -covermode=atomic -v
+
+    - name: Run coverage (ksctl-application-controller)
+      run: |
+        make test-controller CONTROLLER=application
 
     - name: Run coverage (TESTS)
       working-directory: test
