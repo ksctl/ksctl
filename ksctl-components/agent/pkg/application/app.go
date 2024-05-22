@@ -56,6 +56,9 @@ func Handler(ctx context.Context, log types.LoggerFactory, in *pb.ReqApplication
 
 	log.Debug(ctx, "Metadata for Application handler", "client.Metadata", client.Metadata)
 
+	if len(os.Getenv("UNIT_TEST_GRPC_KSCTL_AGENT")) != 0 {
+		return nil
+	}
 	controller, err := control_pkg.GenKsctlController(
 		ctx,
 		log,

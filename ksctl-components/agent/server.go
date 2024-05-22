@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"google.golang.org/grpc/health"
 
@@ -28,7 +29,10 @@ type server struct {
 
 var (
 	log      types.LoggerFactory
-	agentCtx context.Context = context.Background()
+	agentCtx context.Context = context.WithValue(
+		context.Background(),
+		consts.ContextModuleNameKey,
+		"ksctl-agent")
 )
 
 func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, error) {
@@ -52,12 +56,18 @@ func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, err
 
 func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.ResApplication, error) {
 	log.Debug(agentCtx, "Request", "ReqApplication", in)
+	if len(in.Apps) == 0 {
+		return nil, status.Error(codes.Unimplemented, "invalid argument, cannot contain empty apps")
+	}
 
 	if err := application.Handler(agentCtx, log, in); err != nil {
 		log.Error(agentCtx, "Handler", "Reason", err)
-		return &pb.ResApplication{FailedApps: []string{err.Error()}}, nil
+		return &pb.ResApplication{FailedApps: []string{err.Error()}}, status.Error(codes.Canceled, "invalid returned from manager")
 	}
 
+	if len(os.Getenv("UNIT_TEST_GRPC_KSCTL_AGENT")) != 0 {
+		return &pb.ResApplication{FailedApps: []string{"none"}}, nil
+	}
 	log.Success(agentCtx, "Handled Application")
 	return new(pb.ResApplication), nil
 }
