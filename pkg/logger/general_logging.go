@@ -43,8 +43,8 @@ func formGroups(disableContext bool, ctx context.Context, v ...any) (format stri
 		format = _format.String()
 	}()
 	if !disableContext {
-		_format.WriteString("component=%s ")
-		vals = append(vals, color.MagentaString(getPackageName(ctx)))
+		_format.WriteString(color.HiBlackString("component=") + "%s ")
+		vals = append(vals, getPackageName(ctx))
 	}
 	i := 0
 	for ; i+1 < len(v); i += 2 {
@@ -79,7 +79,7 @@ func (l *GeneralLog) logErrorf(disableContext bool, disablePrefix bool, ctx cont
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if !disablePrefix {
-		prefix := fmt.Sprintf("%s%s: ", getTime(l.level), consts.LOG_ERROR)
+		prefix := fmt.Sprintf("%s%s ", getTime(l.level), consts.LOG_ERROR)
 		msg = prefix + msg
 	}
 	format, _args := formGroups(disableContext, ctx, args...)
@@ -100,7 +100,7 @@ func (l *GeneralLog) log(disableContext bool, useGroupFormer bool, ctx context.C
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	prefix := fmt.Sprintf("%s%s: ", getTime(l.level), msgType)
+	prefix := fmt.Sprintf("%s%s ", getTime(l.level), msgType)
 
 	if useGroupFormer {
 		msg = prefix + msg
@@ -121,17 +121,17 @@ func (l *GeneralLog) log(disableContext bool, useGroupFormer bool, ctx context.C
 			fmt.Fprintf(l.writter, msg+" "+format, _args...)
 		}
 	} else {
-		args = append([]any{color.MagentaString(getPackageName(ctx))}, args...)
-		fmt.Fprintf(l.writter, prefix+"component=%s "+msg+"\n", args...)
+		args = append([]any{getPackageName(ctx)}, args...)
+		fmt.Fprintf(l.writter, prefix+color.HiBlackString("component=")+"%s "+msg+"\n", args...)
 	}
 }
 
 func getTime(level uint) string {
-	if level < 9 {
-		return ""
-	}
+	// if level < 9 {
+	// 	return ""
+	// }
 	t := time.Now()
-	return fmt.Sprintf("%d:%d:%d ", t.Hour(), t.Minute(), t.Second())
+	return color.HiBlackString(fmt.Sprintf("%d:%d:%d ", t.Hour(), t.Minute(), t.Second()))
 }
 
 func NewGeneralLogger(verbose int, out io.Writer) *GeneralLog {

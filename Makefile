@@ -150,6 +150,18 @@ unit_test_mongodb-store: golang-test ## mongodb-store unit test case
 	cd scripts/ && \
 		/bin/bash test-mongodb-store.sh $(GO_TEST_COLOR)
 
+.PHONY: unit_test_ksctl_agent
+unit_test_ksctl_agent: golang-test ## ksctl-agent unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-ksctl-agent.sh $(GO_TEST_COLOR)
+
+.PHONY: unit_test_ksctl_stateimport
+unit_test_ksctl_stateimport: golang-test ## ksctl-stateimport unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-ksctl-stateimport.sh $(GO_TEST_COLOR)
+
 ##@ Mock Tests (Core)
 .PHONY: mock_all
 mock_all: golang-test ## All Mock tests
