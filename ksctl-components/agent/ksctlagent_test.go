@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
+	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,6 +19,17 @@ func TestMain(m *testing.M) {
 	log = logger.NewStructuredLogger(-1, os.Stdout)
 	_ = os.Setenv("UNIT_TEST_GRPC_KSCTL_AGENT", "true")
 	m.Run()
+}
+
+func TestVariables(t *testing.T) {
+	assert.Check(t, agentCtx != nil)
+
+	assert.Equal(t, helpers.LogVerbosity["DEBUG"], -1)
+	assert.Equal(t, helpers.LogVerbosity[""], 0)
+	if v, ok := helpers.LogVerbosity["erdrvf"]; ok {
+		// it should be absent
+		t.Fatalf("This annonomous verbosity convertion is not intended. %v -> %v", "erdrvf", v)
+	}
 }
 
 func TestApplication(t *testing.T) {

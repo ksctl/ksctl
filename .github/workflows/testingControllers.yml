@@ -1,10 +1,12 @@
-name: Regression Test Controller
+name: Regression Test Ksctl Components
 on:
   push:
     paths:
       - 'api/**'
       - 'build/**'
-      - 'ksctl-components/**'
+      - 'ksctl-components/agent/**'
+      - 'ksctl-components/operators/**'
+      - 'ksctl-components/stateimport/**'
       - 'internal/storage/**'
       - 'pkg/helpers/**'
       - 'pkg/logger/**'
@@ -16,7 +18,9 @@ on:
     paths:
     - 'api/**'
     - 'build/**'
-    - 'ksctl-components/**'
+    - 'ksctl-components/agent/**'
+    - 'ksctl-components/operators/**'
+    - 'ksctl-components/stateimport/**'
     - 'internal/storage/**'
     - 'pkg/helpers/**'
     - 'pkg/logger/**'
@@ -43,10 +47,10 @@ jobs:
         with:
           go-version: 1.21.0
 
-      # - name: Testing storage controller
-      #   if: always()
-      #   run: |
-      #     make test-controller CONTROLLER=storage
+      - name: Testing ksctl agent
+        if: always()
+        run: |
+          make test-ksctl-agent
 
       - name: Testing application controller
         if: always()
