@@ -28,6 +28,8 @@ func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, erro
 }
 
 func appHandler(ctx context.Context, client pb.KsctlAgentClient, apps []applicationv1alpha1.Component, operation pb.ApplicationOperation) error {
+	// TODO: make a function passing for what should be the client this will help
+	//  or something different
 	if strings.Compare(os.Getenv(string(consts.KsctlFakeFlag)), ControllerTestSkip) == 0 { // to ecape test
 		return nil
 	}

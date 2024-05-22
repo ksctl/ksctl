@@ -18,6 +18,8 @@ func GetUserName() string {
 func genOSKubeConfigPath() string {
 
 	var userLoc string
+	// TODO: make a function passing for what should be the client this will help
+	//  or something different
 	if v := os.Getenv(string(consts.KsctlCustomDirEnabled)); len(v) != 0 {
 		userLoc = strings.Join(strings.Split(strings.TrimSpace(v), " "), PathSeparator)
 	} else {

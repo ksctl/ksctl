@@ -64,7 +64,8 @@ func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.Re
 		log.Error(agentCtx, "Handler", "Reason", err)
 		return &pb.ResApplication{FailedApps: []string{err.Error()}}, status.Error(codes.Canceled, "invalid returned from manager")
 	}
-
+	// TODO: make a function passing for what should be the client this will help
+	//  or something different
 	if len(os.Getenv("UNIT_TEST_GRPC_KSCTL_AGENT")) != 0 {
 		return &pb.ResApplication{FailedApps: []string{"none"}}, nil
 	}

@@ -168,7 +168,7 @@ func (db *Store) Connect(ctx context.Context) error {
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
-
+	// TODO: make a function passing for what should be the client this will help
 	if !fakeClient {
 		db.clientSet, err = NewK8sClient(ctx)
 	} else {

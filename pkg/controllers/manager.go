@@ -115,6 +115,8 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 	}()
 
 	fakeClient := false
+	// TODO: make a function passing for what should be the client this will help
+	//  or something different
 	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
 		fakeClient = true
 	}
@@ -630,42 +632,6 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 		return err
 	}
 
-	//if len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
-	//
-	//	// find a better way to get the kubeconfig location
-	//
-	//	err := kubernetesController.Setup(client, stateDocument)
-	//	if err != nil {
-	//		return log.NewError(controllerCtx,err.Error())
-	//	}
-	//	var payload cloudControllerResource.CloudResourceState
-	//	payload, _ = client.Cloud.GetStateForHACluster(client.Storage)
-	//
-	//	err = client.PreBootstrap.Setup(payload, client.Storage, consts.OperationGet)
-	//	if err != nil {
-	//		return log.NewError(controllerCtx,err.Error())
-	//	}
-	//
-	//	kubeconfig := stateDocument.ClusterKubeConfig
-	//
-	//	kubernetesClient := kubernetes.Kubernetes{
-	//		Metadata:      client.Metadata,
-	//		StorageDriver: client.Storage,
-	//	}
-	//	if err := kubernetesClient.NewKubeconfigClient(kubeconfig); err != nil {
-	//		return log.NewError(controllerCtx,err.Error())
-	//	}
-	//
-	//	if err = kubernetesClient.DeleteResourcesFromController(); err != nil {
-	//		return log.NewError(controllerCtx,err.Error())
-	//	}
-	//
-	//	// NOTE: explict make the count of the workernodes as 0 as we need one schedulable workload to test of the operation was successful
-	//	if _, err := client.Cloud.NoOfWorkerPlane(client.Storage, 0, true); err != nil {
-	//		return log.NewError(controllerCtx,err.Error())
-	//	}
-	//}
-
 	cloudResErr := cloudController.DeleteHACluster(client)
 	if cloudResErr != nil {
 		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
@@ -686,11 +652,6 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
-
-	//if client.Metadata.IsHA && len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
-	//	// disable add AddWorkerPlaneNode when this feature is being used
-	//	return log.NewError(controllerCtx,"This Functionality is diabled for {HA type clusters}", "FEATURE_FLAG", consts.KsctlFeatureFlagHaAutoscale)
-	//}
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		err := log.NewError(controllerCtx, "ha not supported")
@@ -776,10 +737,6 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
-
-	//if client.Metadata.IsHA && len(os.Getenv(string(consts.KsctlFeatureFlagHaAutoscale))) > 0 {
-	//	return log.NewError(controllerCtx,"This Functionality is diabled for {HA type cluster}", "FEATURE_FLAG", consts.KsctlFeatureFlagHaAutoscale)
-	//}
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		err := log.NewError(controllerCtx, "ha not supported for local")
