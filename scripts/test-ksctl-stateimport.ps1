@@ -11,9 +11,9 @@ if (($PSVersionTable.PSVersion.Major) -lt 5) {
 Set-Location .\..\ksctl-components
 
 Write-Output "--------------------------------------------"
-Write-Output "|   Testing (ksctl-components\agent)"
+Write-Output "|   Testing (ksctl-components\stateimport)"
 Write-Output "--------------------------------------------"
 
-Set-Location agent
+Set-Location stateimport
 go test . -v && Set-Location -
 

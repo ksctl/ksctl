@@ -75,6 +75,13 @@ Write-Output "-------------------------------------------------"
 Set-Location ksctl-components\agent
 go test . -v && Set-Location -
 
+Write-Output "-------------------------------------------------"
+Write-Output "|   Testing (ksctl-components\stateimport)"
+Write-Output "-------------------------------------------------"
+
+Set-Location ksctl-components\stateimport
+go test . -v && Set-Location -
+
 # Write-Output "-------------------------------------------------"
 # Write-Output "|   Testing (internal/storage/external/mongodb)"
 # Write-Output "-------------------------------------------------"

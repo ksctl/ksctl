@@ -48,12 +48,14 @@ jobs:
           go-version: 1.21.0
 
       - name: Testing ksctl agent
-        if: always()
         run: |
           make test-ksctl-agent
 
+      - name: Testing ksctl stateimport
+        run: |
+          make test-ksctl-stateimport
+
       - name: Testing application controller
-        if: always()
         run: |
           make test-controller CONTROLLER=application
 
