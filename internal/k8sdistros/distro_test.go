@@ -31,6 +31,9 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
+	parentCtx = context.WithValue(parentCtx, consts.KsctlTestFlagKey, "true")
+
 	mainState := &storageTypes.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
 		log.Error(parentCtx, err.Error())
@@ -63,9 +66,6 @@ func TestMain(m *testing.M) {
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
-
-	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
-	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
