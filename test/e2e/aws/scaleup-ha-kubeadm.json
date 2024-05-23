@@ -5,7 +5,7 @@
   "ha_cluster": true,
   "cloud_provider": "aws",
   "kubernetes_distro": "kubeadm",
-  "storage_type": "local",
+  "storage_type": "store-local",
   "node_type_workerplane": "t2.medium",
   "desired_no_of_workerplane_nodes": 1
 }

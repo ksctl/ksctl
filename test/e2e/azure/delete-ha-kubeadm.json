@@ -3,5 +3,5 @@
 	"ha_cluster": true,
 	"region": "centralindia",
 	"cloud_provider": "azure",
-	"storage_type": "local"
+	"storage_type": "store-local"
 }

@@ -1,5 +1,5 @@
 {
 	"cluster_name": "test-e2e-local",
-	"storage_type": "external-mongo",
+	"storage_type": "external-store-mongodb",
 	"cloud_provider": "local"
 }

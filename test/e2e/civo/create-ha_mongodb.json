@@ -5,7 +5,7 @@
 	"ha_cluster": true,
 	"cloud_provider": "civo",
 	"kubernetes_distro": "k3s",
-	"storage_type": "external-mongo",
+	"storage_type": "external-store-mongodb",
 	"node_type_workerplane": "g3.large",
 	"node_type_controlplane": "g3.small",
 	"node_type_datastore": "g3.small",

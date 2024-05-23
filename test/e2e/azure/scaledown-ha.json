@@ -3,7 +3,7 @@
 	"region": "eastus2",
 	"ha_cluster": true,
 	"cloud_provider": "azure",
-	"storage_type": "local",
+	"storage_type": "store-local",
 	"kubernetes_distro": "k3s",
 	"desired_no_of_workerplane_nodes": 0
 }

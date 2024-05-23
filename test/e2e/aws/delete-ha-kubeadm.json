@@ -3,5 +3,5 @@
   "ha_cluster": true,
   "region": "us-east-1",
   "cloud_provider": "aws",
-  "storage_type": "local"
+  "storage_type": "store-local"
 }

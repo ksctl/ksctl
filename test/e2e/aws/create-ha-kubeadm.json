@@ -5,7 +5,7 @@
   "ha_cluster": true,
   "cloud_provider": "aws",
   "kubernetes_distro": "kubeadm",
-  "storage_type": "local",
+  "storage_type": "store-local",
   "node_type_workerplane": "t2.large",
   "node_type_controlplane": "t2.medium",
   "node_type_datastore": "t2.micro",
