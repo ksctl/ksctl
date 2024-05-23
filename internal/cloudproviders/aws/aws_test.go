@@ -24,8 +24,8 @@ import (
 var (
 	demoClient   *types.KsctlClient
 	fakeaws      *AwsProvider
-	dir                              = fmt.Sprintf("%s/ksctl-aws-test", os.TempDir())
-	parentCtx    context.Context     = context.TODO()
+	dir          = fmt.Sprintf("%s/ksctl-aws-test", os.TempDir())
+	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
@@ -35,6 +35,9 @@ func TestMain(m *testing.M) {
 	demoClient.Metadata.Region = "fake"
 	demoClient.Metadata.Provider = consts.CloudAws
 	state := new(storageTypes.StorageDocument)
+
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
+
 	demoClient.Cloud, _ = NewClient(
 		parentCtx,
 		demoClient.Metadata,
@@ -43,7 +46,6 @@ func TestMain(m *testing.M) {
 	fakeaws, _ = NewClient(parentCtx, demoClient.Metadata, parentLogger, state, ProvideMockClient)
 
 	demoClient.Storage = localstate.NewClient(parentCtx, parentLogger)
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
 	exitVal := m.Run()
 

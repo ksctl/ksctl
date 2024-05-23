@@ -19,6 +19,68 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+var (
+	storeHA types.StorageFactory
+
+	fakeClient         *PreBootstrap
+	dir                = fmt.Sprintf("%s ksctl-bootstrap-test", os.TempDir())
+	fakeStateFromCloud cloudControlRes.CloudResourceState
+
+	parentCtx    context.Context
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+)
+
+func TestMain(m *testing.M) {
+	mainState := &storageTypes.StorageDocument{}
+	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
+		log.Error(parentCtx, err.Error())
+		os.Exit(1)
+	}
+	fakeStateFromCloud = cloudControlRes.CloudResourceState{
+		SSHState: cloudControlRes.SSHInfo{
+			PrivateKey: mainState.SSHKeyPair.PrivateKey,
+			UserName:   "fakeuser",
+		},
+		Metadata: cloudControlRes.Metadata{
+			ClusterName: "fake",
+			Provider:    consts.CloudAzure,
+			Region:      "fake",
+			ClusterType: consts.ClusterTypeHa,
+		},
+		// public IPs
+		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
+		IPv4DataStores:    []string{"A.B.C.3"},
+		IPv4WorkerPlanes:  []string{"A.B.C.2"},
+		IPv4LoadBalancer:  "A.B.C.1",
+
+		// Private IPs
+		PrivateIPv4ControlPlanes: []string{"192.168.X.7", "192.168.X.9", "192.168.X.10"},
+		PrivateIPv4DataStores:    []string{"192.168.5.2"},
+		PrivateIPv4LoadBalancer:  "192.168.X.1",
+	}
+
+	fakeClient = NewPreBootStrap(parentCtx, parentLogger, &storageTypes.StorageDocument{})
+	if fakeClient == nil {
+		panic("unable to initialize")
+	}
+
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
+
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
+
+	exitVal := m.Run()
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-bootstrap-test"); err != nil {
+		panic(err)
+	}
+
+	os.Exit(exitVal)
+}
+
 func TestScriptsDataStore(t *testing.T) {
 	ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
 	privIPs := []string{"9.9.9.9"}
@@ -225,68 +287,6 @@ func TestGetEtcdMemberIPFieldForDatastore(t *testing.T) {
 	assert.Equal(t, res1, getEtcdMemberIPFieldForDatastore(ips), "it should be equal")
 
 	assert.Equal(t, "", getEtcdMemberIPFieldForDatastore([]string{}), "it should be equal")
-}
-
-var (
-	storeHA types.StorageFactory
-
-	fakeClient         *PreBootstrap
-	dir                = fmt.Sprintf("%s ksctl-bootstrap-test", os.TempDir())
-	fakeStateFromCloud cloudControlRes.CloudResourceState
-
-	parentCtx    context.Context     = context.TODO()
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
-)
-
-func TestMain(m *testing.M) {
-	mainState := &storageTypes.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
-		log.Error(parentCtx, err.Error())
-		os.Exit(1)
-	}
-	fakeStateFromCloud = cloudControlRes.CloudResourceState{
-		SSHState: cloudControlRes.SSHInfo{
-			PrivateKey: mainState.SSHKeyPair.PrivateKey,
-			UserName:   "fakeuser",
-		},
-		Metadata: cloudControlRes.Metadata{
-			ClusterName: "fake",
-			Provider:    consts.CloudAzure,
-			Region:      "fake",
-			ClusterType: consts.ClusterTypeHa,
-		},
-		// public IPs
-		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
-		IPv4DataStores:    []string{"A.B.C.3"},
-		IPv4WorkerPlanes:  []string{"A.B.C.2"},
-		IPv4LoadBalancer:  "A.B.C.1",
-
-		// Private IPs
-		PrivateIPv4ControlPlanes: []string{"192.168.X.7", "192.168.X.9", "192.168.X.10"},
-		PrivateIPv4DataStores:    []string{"192.168.5.2"},
-		PrivateIPv4LoadBalancer:  "192.168.X.1",
-	}
-
-	fakeClient = NewPreBootStrap(parentCtx, parentLogger, &storageTypes.StorageDocument{})
-	if fakeClient == nil {
-		panic("unable to initialize")
-	}
-
-	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect(context.TODO())
-
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
-
-	exitVal := m.Run()
-
-	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-bootstrap-test"); err != nil {
-		panic(err)
-	}
-
-	os.Exit(exitVal)
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
