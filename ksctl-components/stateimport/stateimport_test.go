@@ -2,20 +2,26 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 	"github.com/ksctl/ksctl/pkg/types/storage"
 	"gotest.tools/v3/assert"
 )
 
 func TestMain(m *testing.M) {
-	os.Setenv("UNIT_TEST_GRPC_KSCTL_STATEIMPORT", "true")
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlTestFlagKey,
+		"true",
+	)
+
 	m.Run()
 }
 

@@ -240,7 +240,6 @@ func InstallAdditionalTools(
 	}
 
 	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig)
-
 	if err != nil {
 		return err
 	}

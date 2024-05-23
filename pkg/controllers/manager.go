@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"runtime/debug"
 	"strings"
 
@@ -115,9 +114,7 @@ func (manager *KsctlControllerClient) Applications(op consts.KsctlOperation) err
 	}()
 
 	fakeClient := false
-	// TODO: make a function passing for what should be the client this will help
-	//  or something different
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		fakeClient = true
 	}
 
@@ -207,7 +204,7 @@ func (manager *KsctlControllerClient) CreateManagedCluster() error {
 	}()
 
 	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		fakeClient = true
 	}
 
@@ -275,7 +272,7 @@ func (manager *KsctlControllerClient) DeleteManagedCluster() error {
 	}()
 
 	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		fakeClient = true
 	}
 
@@ -527,7 +524,7 @@ func (manager *KsctlControllerClient) CreateHACluster() error {
 	}()
 
 	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		fakeClient = true
 	}
 
@@ -623,7 +620,7 @@ func (manager *KsctlControllerClient) DeleteHACluster() error {
 	}()
 
 	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		fakeClient = true
 	}
 
@@ -682,7 +679,7 @@ func (manager *KsctlControllerClient) AddWorkerPlaneNode() error {
 	}()
 
 	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		fakeClient = true
 	}
 
@@ -768,7 +765,7 @@ func (manager *KsctlControllerClient) DelWorkerPlaneNode() error {
 	}()
 
 	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		fakeClient = true
 	}
 

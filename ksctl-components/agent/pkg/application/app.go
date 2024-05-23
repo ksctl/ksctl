@@ -2,8 +2,9 @@ package application
 
 import (
 	"context"
-	ksctlHelpers "github.com/ksctl/ksctl/pkg/helpers"
 	"os"
+
+	ksctlHelpers "github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"

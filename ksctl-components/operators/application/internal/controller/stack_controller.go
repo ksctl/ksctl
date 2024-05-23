@@ -23,6 +23,7 @@ import (
 	"time"
 
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -39,8 +40,6 @@ var (
 	}
 
 	LogWriter io.Writer = os.Stdout
-
-	ControllerTestSkip string = "APPLICATION"
 )
 
 const stackFinalizer = "ksctl.com/stack-finalizer"
@@ -93,9 +92,8 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 			rpcClient, conn, err := NewClient(ctx)
 			defer cancel()
-			// TODO: make a function passing for what should be the client this will help
-			//  or something different
-			if os.Getenv(string(consts.KsctlFakeFlag)) != ControllerTestSkip { // to ecape test
+
+			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 				defer func() {
 					if err := conn.Close(); err != nil {
 						log.Error(ctx, "Connection failed to close", "Reason", err)
@@ -145,7 +143,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 			rpcClient, conn, err := NewClient(ctx)
 			defer cancel()
-			if os.Getenv(string(consts.KsctlFakeFlag)) != ControllerTestSkip { // to ecape test
+			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 				defer func() {
 					if err := conn.Close(); err != nil {
 						log.Error(ctx, "Connection failed to close", "Reason", err)

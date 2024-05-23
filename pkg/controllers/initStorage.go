@@ -23,7 +23,7 @@ func (manager *KsctlControllerClient) initStorage(ctx context.Context) error {
 		return manager.log.NewError(ctx, "invalid storage provider")
 	}
 
-	if err := manager.client.Storage.Connect(ctx); err != nil {
+	if err := manager.client.Storage.Connect(); err != nil {
 		return err
 	}
 	manager.log.Debug(ctx, "initialized storageFactory")
