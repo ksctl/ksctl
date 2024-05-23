@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	defaultError "errors"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"strings"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -165,10 +166,8 @@ func (db *Store) Connect() error {
 	var err error
 
 	if _, ok := helpers.IsContextPresent(storeCtx, consts.KsctlTestFlagKey); ok {
-		fmt.Println("fake")
 		db.clientSet, err = NewFakeK8sClient(storeCtx)
 	} else {
-		fmt.Println("real")
 		db.clientSet, err = NewK8sClient(storeCtx)
 	}
 
