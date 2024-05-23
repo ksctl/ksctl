@@ -23,13 +23,14 @@ import (
 var (
 	db types.StorageFactory
 
-	parentCtx    context.Context     = context.TODO()
+	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 	dir                              = fmt.Sprintf("%s ksctl-local-store-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
+	parentCtx = context.WithValue(parentCtx, consts.KsctlCustomDirLoc, dir)
 
 	_ = m.Run()
 
@@ -42,7 +43,7 @@ func TestInitStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Connect(context.WithValue(context.Background(), "USERID", "XYz")); err != nil {
+	if err := db.Connect(); err != nil {
 		t.Fatal(err)
 	}
 }

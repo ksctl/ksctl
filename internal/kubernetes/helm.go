@@ -215,7 +215,7 @@ type CustomLogger struct {
 }
 
 func (l *CustomLogger) HelmDebugf(format string, v ...interface{}) {
-	l.Logger.ExternalLogHandlerf(kubernetesCtx, consts.LOG_INFO, format+"\n", v...)
+	l.Logger.ExternalLogHandlerf(kubernetesCtx, consts.LogInfo, format+"\n", v...)
 }
 
 func patchHelmDirectories(client *HelmClient) error {

@@ -2,28 +2,32 @@ package helpers
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"regexp"
-)
 
-var (
-	contextVars = [...]string{
-		consts.KsctlTestFlag:        `true`,
-		consts.ContextModuleNameKey: `^[A-Za-z-]+$`,
-	}
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
 func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val string, isPresent bool) {
+	var contextVars = [...]string{
+		consts.KsctlTestFlagKey:   `true`,
+		consts.KsctlModuleNameKey: `^[\w-]+$`,
+		consts.KsctlCustomDirLoc:  `^[\w-/\s]+$`,
+	}
 	_val := ctx.Value(key)
+	if _val == nil {
+		return "", false
+	}
+
 	expectedPattern := contextVars[key]
 
-	if gotV, ok := _val.(string); ok {
-		if _ok, err := regexp.MatchString(expectedPattern, gotV); err != nil {
+	gotV, ok := _val.(string)
+	if ok {
+		_ok, err := regexp.MatchString(expectedPattern, gotV)
+		if err != nil {
 			return "", false
-		} else {
-			if _ok {
-				return gotV, true
-			}
+		}
+		if _ok {
+			return gotV, true
 		}
 	}
 	return "", false

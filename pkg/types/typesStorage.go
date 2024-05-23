@@ -1,7 +1,6 @@
 package types
 
 import (
-	"context"
 	"github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -13,7 +12,7 @@ type StorageFactory interface {
 	//always present in the storagedriver we can make the driver write the struct once termination is triggered
 	Kill() error
 
-	Connect(ctx context.Context) error
+	Connect() error
 
 	Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 

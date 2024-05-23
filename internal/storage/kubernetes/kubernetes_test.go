@@ -18,12 +18,12 @@ import (
 
 var (
 	db           types.StorageFactory
-	parentCtx    context.Context     = context.TODO()
+	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
-	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
 	ksctlNamespace = "default"
 
 	exitVal := m.Run()
@@ -39,7 +39,7 @@ func TestInitStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Connect(context.WithValue(context.Background(), "USERID", "XYz")); err != nil {
+	if err := db.Connect(); err != nil {
 		t.Fatal(err)
 	}
 }

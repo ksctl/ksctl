@@ -41,7 +41,7 @@ func GenKsctlController(
 	defer panicCatcher(log)
 
 	stateDocument = new(storageTypes.StorageDocument)
-	controllerCtx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-manager")
+	controllerCtx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-manager")
 
 	cloudController.InitLogger(controllerCtx, log)
 	bootstrapController.InitLogger(controllerCtx, log)
@@ -367,7 +367,7 @@ func (manager *KsctlControllerClient) SwitchCluster() (*string, error) {
 	kubeconfig := read.ClusterKubeConfig
 	log.Debug(controllerCtx, "data", "kubeconfig", kubeconfig)
 
-	path, err := helpers.WriteKubeConfig(kubeconfig)
+	path, err := helpers.WriteKubeConfig(controllerCtx, kubeconfig)
 	log.Debug(controllerCtx, "data", "kubeconfigPath", path)
 
 	if err != nil {

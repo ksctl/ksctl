@@ -190,7 +190,7 @@ func (cloud *CivoProvider) Credential(storage types.StorageFactory) error {
 func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() CivoGo) (*CivoProvider, error) {
 	log = parentLogger
 
-	civoCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudCivo))
+	civoCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.CloudCivo))
 
 	mainStateDocument = state
 

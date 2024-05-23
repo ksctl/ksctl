@@ -156,18 +156,20 @@ func (s *Store) Import(src *types.StorageStateExportImport) error {
 }
 
 func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
-	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreK8s))
+	storeCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreK8s))
 	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 }
 
-func (db *Store) Connect(ctx context.Context) error {
+func (db *Store) Connect() error {
 	var err error
 
-	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlag); ok {
-		db.clientSet, err = NewFakeK8sClient(ctx)
+	if _, ok := helpers.IsContextPresent(storeCtx, consts.KsctlTestFlagKey); ok {
+		fmt.Println("fake")
+		db.clientSet, err = NewFakeK8sClient(storeCtx)
 	} else {
-		db.clientSet, err = NewK8sClient(ctx)
+		fmt.Println("real")
+		db.clientSet, err = NewK8sClient(storeCtx)
 	}
 
 	if err != nil {

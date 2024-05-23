@@ -25,7 +25,7 @@ var (
 		}
 	}(), os.Stdout)
 
-	ctx = context.WithValue(context.Background(), consts.ContextModuleNameKey, "ksctl-stateimport")
+	ctx = context.WithValue(context.Background(), consts.KsctlModuleNameKey, "ksctl-stateimport")
 )
 
 type HealthRes struct {

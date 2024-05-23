@@ -17,6 +17,7 @@ import (
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/application"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/helpers"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/scale"
+	ksctlHelpers "github.com/ksctl/ksctl/pkg/helpers"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -31,7 +32,7 @@ var (
 	log      types.LoggerFactory
 	agentCtx context.Context = context.WithValue(
 		context.Background(),
-		consts.ContextModuleNameKey,
+		consts.KsctlModuleNameKey,
 		"ksctl-agent")
 )
 
@@ -64,9 +65,7 @@ func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.Re
 		log.Error(agentCtx, "Handler", "Reason", err)
 		return &pb.ResApplication{FailedApps: []string{err.Error()}}, status.Error(codes.Canceled, "invalid returned from manager")
 	}
-	// TODO: make a function passing for what should be the client this will help
-	//  or something different
-	if len(os.Getenv("UNIT_TEST_GRPC_KSCTL_AGENT")) != 0 {
+	if _, ok := ksctlHelpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 		return &pb.ResApplication{FailedApps: []string{"none"}}, nil
 	}
 	log.Success(agentCtx, "Handled Application")

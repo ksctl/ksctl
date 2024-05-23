@@ -26,19 +26,20 @@ import (
 
 var (
 	db           types.StorageFactory
-	parentCtx    context.Context     = context.TODO()
+	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
-	ctx := context.Background()
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
+	parentCtx = context.WithValue(parentCtx, "USERID", "fake")
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		panic(err)
 	}
 
-	reader, err := cli.ImagePull(ctx, "mongo", image.PullOptions{})
+	reader, err := cli.ImagePull(parentCtx, "mongo", image.PullOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +49,7 @@ func TestMain(m *testing.M) {
 
 	defer reader.Close()
 
-	resp, err := cli.ContainerCreate(ctx, &container.Config{
+	resp, err := cli.ContainerCreate(parentCtx, &container.Config{
 		Image: "mongo",
 		Env:   []string{"MONGO_INITDB_ROOT_USERNAME=root", "MONGO_INITDB_ROOT_PASSWORD=1234"},
 	}, &container.HostConfig{
@@ -66,7 +67,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Start the container
-	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := cli.ContainerStart(parentCtx, resp.ID, container.StartOptions{}); err != nil {
 		panic(err)
 	}
 
@@ -74,11 +75,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
+
+	defer func() {
+		if err := cli.ContainerRemove(parentCtx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
+			panic(err)
+		}
+	}()
 	_ = m.Run()
 
-	if err := cli.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
-		panic(err)
-	}
 }
 
 func TestInitStorage(t *testing.T) {
@@ -87,7 +91,7 @@ func TestInitStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Connect(context.WithValue(context.Background(), "USERID", "XYz")); err != nil {
+	if err := db.Connect(); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -373,7 +377,7 @@ func TestExportImport(t *testing.T) {
 			}
 		}(db)
 
-		err := f.databaseClient.Drop(f.context)
+		err := f.databaseClient.Drop(storeCtx)
 		if err != nil {
 			t.Fatal(err)
 		}

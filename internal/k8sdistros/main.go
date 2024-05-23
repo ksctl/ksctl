@@ -22,7 +22,7 @@ var (
 func NewPreBootStrap(parentCtx context.Context, parentLog types.LoggerFactory,
 	state *storageTypes.StorageDocument) *PreBootstrap {
 
-	bootstrapCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "bootstrap")
+	bootstrapCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, "bootstrap")
 	log = parentLog
 
 	mainStateDocument = state

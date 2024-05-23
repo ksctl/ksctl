@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -157,9 +156,8 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		return err
 	}
 	sshPayload.log.Debug(sshPayload.ctx, "SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
-	// TODO: make a function passing for what should be the client this will help
-	//  or something different
-	if fake := os.Getenv(string(consts.KsctlFakeFlag)); len(fake) != 0 {
+
+	if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
 		sshPayload.log.Debug(sshPayload.ctx, "Exec Scripts for fake flag")
 		sshPayload.Output = []string{}
 
@@ -174,7 +172,7 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		Timeout: time.Duration(5 * time.Minute),
+		Timeout: 5 * time.Minute,
 
 		HostKeyAlgorithms: []string{
 			ssh.KeyAlgoRSASHA256,

@@ -16,27 +16,27 @@ func (l *customLogger) Enabled() bool {
 }
 
 func (l *customLogger) Info(message string) {
-	l.Logger.ExternalLogHandler(localCtx, consts.LOG_INFO, message)
+	l.Logger.ExternalLogHandler(localCtx, consts.LogInfo, message)
 }
 
 func (l *customLogger) Infof(format string, args ...any) {
-	l.Logger.ExternalLogHandlerf(localCtx, consts.LOG_INFO, format, args...)
+	l.Logger.ExternalLogHandlerf(localCtx, consts.LogInfo, format, args...)
 }
 
 func (l *customLogger) Warn(message string) {
-	l.Logger.ExternalLogHandler(localCtx, consts.LOG_WARNING, message)
+	l.Logger.ExternalLogHandler(localCtx, consts.LogWarning, message)
 }
 
 func (l *customLogger) Warnf(format string, args ...interface{}) {
-	l.Logger.ExternalLogHandlerf(localCtx, consts.LOG_WARNING, format, args...)
+	l.Logger.ExternalLogHandlerf(localCtx, consts.LogWarning, format, args...)
 }
 
 func (l *customLogger) Error(message string) {
-	l.Logger.ExternalLogHandler(localCtx, consts.LOG_ERROR, message)
+	l.Logger.ExternalLogHandler(localCtx, consts.LogError, message)
 }
 
 func (l *customLogger) Errorf(format string, args ...interface{}) {
-	l.Logger.ExternalLogHandlerf(localCtx, consts.LOG_ERROR, format, args...)
+	l.Logger.ExternalLogHandlerf(localCtx, consts.LogError, format, args...)
 }
 
 func (l *customLogger) Enable(flag bool) {}

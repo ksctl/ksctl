@@ -95,9 +95,9 @@ const (
 )
 
 const (
-	StoreLocal    KsctlStore = "local"
-	StoreK8s      KsctlStore = "kubernetes"
-	StoreExtMongo KsctlStore = "external-mongo"
+	StoreLocal    KsctlStore = "store-local"
+	StoreK8s      KsctlStore = "store-kubernetes"
+	StoreExtMongo KsctlStore = "external-store-mongodb"
 )
 
 const (
@@ -114,15 +114,9 @@ const (
 type KsctlContextKeyType int
 
 const (
-	KsctlTestFlag = iota
-	ContextModuleNameKey
-)
-
-const (
-	// TODO: replace this
-	// KsctlCustomDirEnabled use this as environment variable to set a different home directory for ksctl during testing
-	// make sure the value is space seperated <directory> <directory> ....
-	KsctlCustomDirEnabled KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
+	KsctlTestFlagKey   KsctlContextKeyType = iota
+	KsctlModuleNameKey KsctlContextKeyType = iota
+	KsctlCustomDirLoc  KsctlContextKeyType = iota
 )
 
 const (

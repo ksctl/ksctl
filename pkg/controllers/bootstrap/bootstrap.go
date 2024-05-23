@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	"os"
 	"sync"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -233,9 +232,10 @@ func InstallAdditionalTools(
 	externalCNI, externalApp bool,
 	client *types.KsctlClient,
 	state *storageTypes.StorageDocument) error {
-	// TODO: make a function passing for what should be the client this will help
-	//  or something different
-	if os.Getenv(string(consts.KsctlFakeFlag)) == "1" {
+
+	// TODO: move it to the kubeconfigclient and make it excape the err
+	// so that we can get into the install phase
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
 

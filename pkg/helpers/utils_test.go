@@ -32,8 +32,9 @@ func TestConsts(t *testing.T) {
 	assert.Equal(t, string(consts.K8sK3s), "k3s")
 	assert.Equal(t, string(consts.CloudAws), "aws")
 	assert.Equal(t, string(consts.K8sKubeadm), "kubeadm")
-	assert.Equal(t, string(consts.StoreLocal), "local")
-	assert.Equal(t, string(consts.StoreExtMongo), "external-mongo")
+	assert.Equal(t, string(consts.StoreLocal), "store-local")
+	assert.Equal(t, string(consts.StoreK8s), "store-kubernetes")
+	assert.Equal(t, string(consts.StoreExtMongo), "external-store-mongodb")
 	assert.Equal(t, string(consts.RoleCp), "controlplane")
 	assert.Equal(t, string(consts.RoleLb), "loadbalancer")
 	assert.Equal(t, string(consts.RoleDs), "datastore")
@@ -69,12 +70,12 @@ func TestConsts(t *testing.T) {
 
 func TestGenerateCerts(t *testing.T) {
 	if ca, etcd, key, err := GenerateCerts(
-		context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"), log, []string{"192.168.1.1"}); err != nil {
+		context.WithValue(context.TODO(), consts.KsctlModuleNameKey, "demo"), log, []string{"192.168.1.1"}); err != nil {
 		t.Fatalf("it shouldn't fail, ca: %v, etcd: %v, key: %v, err: %v\n", ca, etcd, key, err)
 	}
 
 	if ca, etcd, key, err := GenerateCerts(
-		context.WithValue(context.TODO(), consts.ContextModuleNameKey, "demo"), log, []string{"192,168.1.1"}); err == nil ||
+		context.WithValue(context.TODO(), consts.KsctlModuleNameKey, "demo"), log, []string{"192,168.1.1"}); err == nil ||
 		len(ca) != 0 ||
 		len(etcd) != 0 ||
 		len(key) != 0 {

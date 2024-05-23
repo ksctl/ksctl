@@ -65,7 +65,7 @@ type StackReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
 func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	ctx = context.WithValue(ctx, consts.ContextModuleNameKey, "ksctl-app-stack-controller")
+	ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-app-stack-controller")
 
 	log.Debug(ctx, "Triggered Reconciliation")
 
