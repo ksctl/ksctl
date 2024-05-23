@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	defaultError "errors"
 	"fmt"
-	"os"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"strings"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -164,16 +164,12 @@ func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
 func (db *Store) Connect(ctx context.Context) error {
 	var err error
 
-	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
-		fakeClient = true
-	}
-	// TODO: make a function passing for what should be the client this will help
-	if !fakeClient {
-		db.clientSet, err = NewK8sClient(ctx)
-	} else {
+	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlag); ok {
 		db.clientSet, err = NewFakeK8sClient(ctx)
+	} else {
+		db.clientSet, err = NewK8sClient(ctx)
 	}
+
 	if err != nil {
 		return err
 	}

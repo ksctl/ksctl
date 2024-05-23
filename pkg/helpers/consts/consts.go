@@ -1,6 +1,8 @@
 package consts
 
-import "time"
+import (
+	"time"
+)
 
 type KsctlRole string
 
@@ -109,16 +111,18 @@ const (
 	ClusterTypeMang KsctlClusterType = "managed"
 )
 
-const (
-	// makes the fake client
-	KsctlFakeFlag KsctlSpecialFlags = "KSCTL_FAKE_FLAG_ENABLED"
+type KsctlContextKeyType int
 
+const (
+	KsctlTestFlag = iota
+	ContextModuleNameKey
+)
+
+const (
+	// TODO: replace this
 	// KsctlCustomDirEnabled use this as environment variable to set a different home directory for ksctl during testing
 	// make sure the value is space seperated <directory> <directory> ....
 	KsctlCustomDirEnabled KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
-
-	// KsctlFeatureFlagHaAutoscale to be set if feature for AUTOSCALE is needed
-	KsctlFeatureFlagHaAutoscale KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_HA_AUTOSCALE"
 )
 
 const (
@@ -128,8 +132,4 @@ const (
 	CNIKubenet KsctlValidCNIPlugin = "kubenet"
 	CNIKind    KsctlValidCNIPlugin = "kind"
 	CNINone    KsctlValidCNIPlugin = "none"
-)
-
-const (
-	ContextModuleNameKey string = "component"
 )
