@@ -233,8 +233,6 @@ func InstallAdditionalTools(
 	client *types.KsctlClient,
 	state *storageTypes.StorageDocument) error {
 
-	// TODO: move it to the kubeconfigclient and make it excape the err
-	// so that we can get into the install phase
 	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
