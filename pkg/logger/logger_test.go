@@ -87,8 +87,8 @@ func TestPrintersStructured(t *testing.T) {
 	})
 
 	t.Run("external", func(t *testing.T) {
-		sL.ExternalLogHandler(dummyCtx, consts.LOG_SUCCESS, "cdcc")
-		sL.ExternalLogHandlerf(dummyCtx, consts.LOG_SUCCESS, "cdcc: %v", nil)
+		sL.ExternalLogHandler(dummyCtx, consts.LogSuccess, "cdcc")
+		sL.ExternalLogHandlerf(dummyCtx, consts.LogSuccess, "cdcc: %v", nil)
 	})
 }
 
@@ -139,7 +139,7 @@ func TestPrintersGeneral(t *testing.T) {
 	})
 
 	t.Run("external", func(t *testing.T) {
-		gL.ExternalLogHandler(dummyCtx, consts.LOG_SUCCESS, "cdcc")
-		gL.ExternalLogHandlerf(dummyCtx, consts.LOG_SUCCESS, "cdcc", "Reason", fmt.Errorf("Error"))
+		gL.ExternalLogHandler(dummyCtx, consts.LogSuccess, "cdcc")
+		gL.ExternalLogHandlerf(dummyCtx, consts.LogSuccess, "cdcc", "Reason", fmt.Errorf("Error"))
 	})
 }

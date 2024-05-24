@@ -2,22 +2,35 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/controllers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
 var (
 	l   types.LoggerFactory
-	ctx = context.WithValue(context.Background(), "USERID", "e2e")
+	ctx context.Context
 )
 
 func main() {
+	ctx = context.WithValue(
+		context.Background(),
+		"USERID",
+		"e2e",
+	)
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlCustomDirLoc,
+		fmt.Sprintf("%s ksctl-e2e", os.TempDir()),
+	)
+
 	timer := time.Now()
 
 	flags := os.Getenv("E2E_FLAGS")

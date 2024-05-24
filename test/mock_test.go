@@ -6,14 +6,9 @@ import (
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
-
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 )
 
 func BenchmarkCivoTestingManaged(b *testing.B) {
-	if err := os.Setenv(string(consts.KsctlFakeFlag), "1"); err != nil {
-		b.Fatalf("Failed to set fake env %v", err)
-	}
 	if err := InitCore(); err != nil {
 		b.Fatalf("failed to start core: %v", err)
 	}
@@ -31,9 +26,6 @@ func BenchmarkCivoTestingManaged(b *testing.B) {
 }
 
 func BenchmarkCivoTestingHA(b *testing.B) {
-	if err := os.Setenv(string(consts.KsctlFakeFlag), "1"); err != nil {
-		b.Fatalf("Failed to set fake env %v", err)
-	}
 	if err := InitCore(); err != nil {
 		b.Fatalf("failed to start core: %v", err)
 	}
@@ -54,9 +46,6 @@ func BenchmarkCivoTestingHA(b *testing.B) {
 }
 
 func BenchmarkAzureTestingHA(b *testing.B) {
-	if err := os.Setenv(string(consts.KsctlFakeFlag), "1"); err != nil {
-		b.Fatalf("Failed to set fake env %v", err)
-	}
 	if err := InitCore(); err != nil {
 		b.Fatalf("failed to start core: %v", err)
 	}
@@ -77,9 +66,6 @@ func BenchmarkAzureTestingHA(b *testing.B) {
 }
 
 func BenchmarkAwsTestingHA(b *testing.B) {
-	if err := os.Setenv(string(consts.KsctlFakeFlag), "1"); err != nil {
-		b.Fatalf("Failed to set fake env %v", err)
-	}
 	if err := InitCore(); err != nil {
 		b.Fatalf("failed to start core: %v", err)
 	}
@@ -97,9 +83,6 @@ func BenchmarkAwsTestingHA(b *testing.B) {
 }
 
 func BenchmarkAzureTestingManaged(b *testing.B) {
-	if err := os.Setenv(string(consts.KsctlFakeFlag), "1"); err != nil {
-		b.Fatalf("Failed to set fake env %v", err)
-	}
 	if err := InitCore(); err != nil {
 		b.Fatalf("failed to start core: %v", err)
 	}
@@ -117,9 +100,6 @@ func BenchmarkAzureTestingManaged(b *testing.B) {
 }
 
 func BenchmarkLocalTestingManaged(b *testing.B) {
-	if err := os.Setenv(string(consts.KsctlFakeFlag), "1"); err != nil {
-		b.Fatalf("Failed to set fake env %v", err)
-	}
 	if err := InitCore(); err != nil {
 		b.Fatalf("failed to start core: %v", err)
 	}

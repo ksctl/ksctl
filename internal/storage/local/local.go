@@ -185,7 +185,7 @@ func (s *Store) Import(src *types.StorageStateExportImport) error {
 }
 
 func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
-	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreLocal))
+	storeCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreLocal))
 	log = _log
 	return &Store{mu: &sync.RWMutex{}, wg: &sync.WaitGroup{}}
 }
@@ -201,8 +201,8 @@ func (db *Store) Kill() error {
 	return db.disconnect()
 }
 
-func (db *Store) Connect(ctx context.Context) error {
-	db.userid = ctx.Value("USERID")
+func (db *Store) Connect() error {
+	db.userid = storeCtx.Value("USERID")
 
 	log.Success(storeCtx, "CONN to HostOS")
 	return nil
@@ -211,7 +211,7 @@ func (db *Store) Connect(ctx context.Context) error {
 func genOsClusterPath(creds bool, subDir ...string) string {
 
 	var userLoc string
-	if v := os.Getenv(string(consts.KsctlCustomDirEnabled)); len(v) != 0 {
+	if v, ok := helpers.IsContextPresent(storeCtx, consts.KsctlCustomDirLoc); ok {
 		userLoc = strings.Join(strings.Split(strings.TrimSpace(v), " "), helpers.PathSeparator)
 	} else {
 		userLoc = helpers.GetUserName()

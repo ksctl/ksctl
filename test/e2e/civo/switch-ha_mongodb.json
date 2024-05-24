@@ -2,6 +2,6 @@
 	"cluster_name": "test-e2e-ha-civo",
 	"region": "FRA1",
 	"ha_cluster": true,
-	"storage_type": "external-mongo",
+	"storage_type": "external-store-mongodb",
 	"cloud_provider": "civo"
 }

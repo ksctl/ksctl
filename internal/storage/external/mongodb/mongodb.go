@@ -17,9 +17,9 @@ import (
 )
 
 type Store struct {
-	client         *mongo.Client
-	mongoURI       string
-	context        context.Context
+	client   *mongo.Client
+	mongoURI string
+	//context        context.Context
 	databaseClient *mongo.Database
 
 	cloudProvider string
@@ -149,9 +149,12 @@ func (s *Store) Import(src *types.StorageStateExportImport) error {
 }
 
 func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
-	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreExtMongo))
+	storeCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreExtMongo))
 	log = _log
-	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
+	return &Store{
+		mu: &sync.Mutex{},
+		wg: &sync.WaitGroup{},
+	}
 }
 
 func getUserDatabase(userid string) string {
@@ -194,8 +197,8 @@ func ExportEndpoint() (map[string][]byte, error) {
 	}, nil
 }
 
-func (db *Store) Connect(ctx context.Context) error {
-	db.context = context.Background()
+func (db *Store) Connect() error {
+	//db.context = context.Background()
 
 	v, err := fetchCreds()
 	if err != nil {
@@ -206,16 +209,16 @@ func (db *Store) Connect(ctx context.Context) error {
 
 	opts := mongoOptions.Client().ApplyURI(db.mongoURI)
 
-	db.client, err = mongo.Connect(db.context, opts)
+	db.client, err = mongo.Connect(storeCtx, opts)
 	if err != nil {
 		return fmt.Errorf("MongoDB failed to connect. Reason: %w", err)
 	}
 
-	if err := db.client.Database("admin").RunCommand(db.context, bson.D{{"ping", 1}}).Err(); err != nil {
+	if err := db.client.Database("admin").RunCommand(storeCtx, bson.D{{"ping", 1}}).Err(); err != nil {
 		return err
 	}
 
-	db.userid = ctx.Value("USERID")
+	db.userid = storeCtx.Value("USERID")
 
 	switch o := db.userid.(type) {
 	case string:
@@ -249,7 +252,7 @@ func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	log.Debug(storeCtx, "storage.external.mongodb.Read", "Store", db)
 
 	if db.isPresent() {
-		ret := db.databaseClient.Collection(db.cloudProvider).FindOne(db.context, getClusterFilters(db))
+		ret := db.databaseClient.Collection(db.cloudProvider).FindOne(storeCtx, getClusterFilters(db))
 		if ret.Err() != nil {
 			return nil, ret.Err()
 		}
@@ -274,7 +277,7 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 	log.Debug(storeCtx, "storage.external.mongodb.ReadCredentials", "Store", db)
 
 	if db.isPresentCreds(cloud) {
-		ret := db.databaseClient.Collection(CredsCollection).FindOne(db.context, getCredentialsFilters(cloud))
+		ret := db.databaseClient.Collection(CredsCollection).FindOne(storeCtx, getCredentialsFilters(cloud))
 		if ret.Err() != nil {
 			return nil, ret.Err()
 		}
@@ -302,14 +305,14 @@ func (db *Store) Write(data *storageTypes.StorageDocument) error {
 	}
 
 	if db.isPresent() {
-		res := db.databaseClient.Collection(db.cloudProvider).FindOneAndReplace(db.context, getClusterFilters(db), bsonMap)
+		res := db.databaseClient.Collection(db.cloudProvider).FindOneAndReplace(storeCtx, getClusterFilters(db), bsonMap)
 		if err := res.Err(); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	_, err = db.databaseClient.Collection(db.cloudProvider).InsertOne(db.context, bsonMap)
+	_, err = db.databaseClient.Collection(db.cloudProvider).InsertOne(storeCtx, bsonMap)
 	return err
 }
 
@@ -328,14 +331,14 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *storageTypes.Cr
 	}
 
 	if db.isPresentCreds(cloud) {
-		res := db.databaseClient.Collection(CredsCollection).FindOneAndReplace(db.context, getCredentialsFilters(cloud), bsonMap)
+		res := db.databaseClient.Collection(CredsCollection).FindOneAndReplace(storeCtx, getCredentialsFilters(cloud), bsonMap)
 		if err := res.Err(); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	_, err = db.databaseClient.Collection(CredsCollection).InsertOne(db.context, bsonMap)
+	_, err = db.databaseClient.Collection(CredsCollection).InsertOne(storeCtx, bsonMap)
 	return err
 }
 
@@ -369,7 +372,7 @@ func (db *Store) DeleteCluster() error {
 	if !db.isPresent() {
 		return fmt.Errorf("cluster doesn't exist")
 	}
-	_, err := db.databaseClient.Collection(db.cloudProvider).DeleteOne(db.context, getClusterFilters(db))
+	_, err := db.databaseClient.Collection(db.cloudProvider).DeleteOne(storeCtx, getClusterFilters(db))
 	if err != nil {
 		return err
 	}
@@ -378,17 +381,17 @@ func (db *Store) DeleteCluster() error {
 }
 
 func (db *Store) isPresent() bool {
-	c, err := db.databaseClient.Collection(db.cloudProvider).Find(db.context, getClusterFilters(db))
+	c, err := db.databaseClient.Collection(db.cloudProvider).Find(storeCtx, getClusterFilters(db))
 	return !errors.Is(err, mongo.ErrNoDocuments) && c.RemainingBatchLength() == 1
 }
 
 func (db *Store) isPresentCreds(cloud consts.KsctlCloud) bool {
-	c, err := db.databaseClient.Collection(CredsCollection).Find(db.context, getCredentialsFilters(cloud))
+	c, err := db.databaseClient.Collection(CredsCollection).Find(storeCtx, getCredentialsFilters(cloud))
 	return !errors.Is(err, mongo.ErrNoDocuments) && c.RemainingBatchLength() == 1
 }
 
 func (db *Store) clusterPresent() error {
-	c := db.databaseClient.Collection(db.cloudProvider).FindOne(db.context, getClusterFilters(db))
+	c := db.databaseClient.Collection(db.cloudProvider).FindOne(storeCtx, getClusterFilters(db))
 	if c.Err() != nil {
 		return c.Err()
 	} else {
@@ -398,9 +401,6 @@ func (db *Store) clusterPresent() error {
 			return fmt.Errorf("unable to read data")
 		}
 	}
-	//if c.RemainingBatchLength() == 1 {
-	//	return fmt.Errorf("not present")
-	//}
 	return nil
 }
 
@@ -462,7 +462,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 	for _, cloud := range filterCloudPath {
 		for _, clusterType := range filterClusterType {
 
-			c, err := db.databaseClient.Collection(cloud).Find(db.context, bson.M{
+			c, err := db.databaseClient.Collection(cloud).Find(storeCtx, bson.M{
 				"cloud_provider": cloud,
 				"cluster_type":   clusterType,
 			})

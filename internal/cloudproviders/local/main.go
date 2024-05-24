@@ -46,7 +46,7 @@ func (*LocalProvider) GetStateFile(types.StorageFactory) (string, error) {
 func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
-	localCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudLocal))
+	localCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.CloudLocal))
 
 	mainStateDocument = state
 

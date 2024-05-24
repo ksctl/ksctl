@@ -28,7 +28,7 @@ var (
 	fakeClient         *Kubeadm
 	dir                = fmt.Sprintf("%s ksctl-kubeadm-test", os.TempDir())
 	fakeStateFromCloud cloudControlRes.CloudResourceState
-	parentCtx          context.Context     = context.TODO()
+	parentCtx          context.Context
 	parentLogger       types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
@@ -60,6 +60,9 @@ func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.S
 }
 
 func TestMain(m *testing.M) {
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
+	parentCtx = context.WithValue(parentCtx, consts.KsctlTestFlagKey, "true")
+
 	mainState := &storageTypes.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
 		log.Error(parentCtx, err.Error())
@@ -95,10 +98,7 @@ func TestMain(m *testing.M) {
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect(context.TODO())
-
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-	_ = os.Setenv(string(consts.KsctlFakeFlag), "true")
+	_ = storeHA.Connect()
 
 	exitVal := m.Run()
 

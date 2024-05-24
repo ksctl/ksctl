@@ -5,7 +5,7 @@
 	"ha_cluster": true,
 	"cloud_provider": "civo",
 	"kubernetes_distro": "kubeadm",
-	"storage_type": "local",
+	"storage_type": "store-local",
 	"node_type_workerplane": "g3.large",
 	"node_type_controlplane": "g3.medium",
 	"node_type_datastore": "g3.small",

@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	ksctlHelpers "github.com/ksctl/ksctl/pkg/helpers"
+
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -56,7 +58,7 @@ func Handler(ctx context.Context, log types.LoggerFactory, in *pb.ReqApplication
 
 	log.Debug(ctx, "Metadata for Application handler", "client.Metadata", client.Metadata)
 
-	if len(os.Getenv("UNIT_TEST_GRPC_KSCTL_AGENT")) != 0 {
+	if _, ok := ksctlHelpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
 	controller, err := control_pkg.GenKsctlController(

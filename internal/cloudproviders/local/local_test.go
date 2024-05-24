@@ -27,25 +27,20 @@ var (
 	storeManaged      types.StorageFactory
 
 	fakeClientVars *LocalProvider
-	//storeVars      storage.StorageFactory
-	parentCtx    context.Context     = context.TODO()
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentCtx      context.Context
+	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = fmt.Sprintf("%s ksctl-local-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
-	func() {
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
 
-		fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo",
-			Region:      "LOCAL",
-			Provider:    consts.CloudLocal,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
-
-	}()
-
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo",
+		Region:      "LOCAL",
+		Provider:    consts.CloudLocal,
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
 	exitVal := m.Run()
 	fmt.Println("Cleanup..")
@@ -236,7 +231,7 @@ func TestManagedCluster(t *testing.T) {
 
 		storeManaged = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)
-		_ = storeManaged.Connect(context.TODO())
+		_ = storeManaged.Connect()
 
 	}()
 

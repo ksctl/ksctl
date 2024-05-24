@@ -243,7 +243,7 @@ func NewClient(
 	ClientOption func() AzureGo) (*AzureProvider, error) {
 
 	log = parentLogger
-	azureCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAzure))
+	azureCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.CloudAzure))
 
 	mainStateDocument = state
 

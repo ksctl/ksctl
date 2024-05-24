@@ -32,29 +32,24 @@ var (
 	fakeClientVars *CivoProvider
 	storeVars      types.StorageFactory
 
-	dir                              = fmt.Sprintf("%s ksctl-civo-test", os.TempDir())
-	parentCtx    context.Context     = context.TODO()
+	dir          = fmt.Sprintf("%s ksctl-civo-test", os.TempDir())
+	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
+	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
 
-	func() {
+	fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo",
+		Region:      "LON1",
+		Provider:    consts.CloudCivo,
+		IsHA:        true,
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo",
-			Region:      "LON1",
-			Provider:    consts.CloudCivo,
-			IsHA:        true,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
-
-		storeVars = localstate.NewClient(parentCtx, parentLogger)
-		_ = storeVars.Setup(consts.CloudCivo, "LON1", "demo", consts.ClusterTypeHa)
-		_ = storeVars.Connect(context.TODO())
-	}()
-
-	// setup temporary folder
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	storeVars = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeVars.Setup(consts.CloudCivo, "LON1", "demo", consts.ClusterTypeHa)
+	_ = storeVars.Connect()
 
 	exitVal := m.Run()
 
@@ -452,7 +447,7 @@ func TestManagedCluster(t *testing.T) {
 
 		storeManaged = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudCivo, "LON1", "demo-managed", consts.ClusterTypeMang)
-		_ = storeManaged.Connect(context.TODO())
+		_ = storeManaged.Connect()
 	}()
 
 	t.Run("init state", func(t *testing.T) {
@@ -553,7 +548,7 @@ func TestHACluster(t *testing.T) {
 
 		storeHA = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)
-		_ = storeHA.Connect(context.TODO())
+		_ = storeHA.Connect()
 
 	}()
 	fakeClientHA.metadata.noCP = 7

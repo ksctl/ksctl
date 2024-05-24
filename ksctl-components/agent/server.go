@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/application"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/helpers"
 	"github.com/ksctl/ksctl/ksctl-components/agent/pkg/scale"
+	ksctlHelpers "github.com/ksctl/ksctl/pkg/helpers"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -29,10 +31,7 @@ type server struct {
 
 var (
 	log      types.LoggerFactory
-	agentCtx context.Context = context.WithValue(
-		context.Background(),
-		consts.ContextModuleNameKey,
-		"ksctl-agent")
+	agentCtx context.Context
 )
 
 func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, error) {
@@ -59,13 +58,15 @@ func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.Re
 	if len(in.Apps) == 0 {
 		return nil, status.Error(codes.Unimplemented, "invalid argument, cannot contain empty apps")
 	}
+	// FIXME: important the agentCtx is used instead of ctx
+	// Reason: the context from the unit test were not transfarable
 
 	if err := application.Handler(agentCtx, log, in); err != nil {
 		log.Error(agentCtx, "Handler", "Reason", err)
 		return &pb.ResApplication{FailedApps: []string{err.Error()}}, status.Error(codes.Canceled, "invalid returned from manager")
 	}
-
-	if len(os.Getenv("UNIT_TEST_GRPC_KSCTL_AGENT")) != 0 {
+	if _, ok := ksctlHelpers.IsContextPresent(agentCtx, consts.KsctlTestFlagKey); ok {
+		fmt.Println("sfvfsdv v vdf")
 		return &pb.ResApplication{FailedApps: []string{"none"}}, nil
 	}
 	log.Success(agentCtx, "Handled Application")
@@ -73,6 +74,10 @@ func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.Re
 }
 
 func main() {
+	agentCtx = context.WithValue(
+		context.Background(),
+		consts.KsctlModuleNameKey,
+		"ksctl-agent")
 
 	log = logger.NewStructuredLogger(
 		helpers.LogVerbosity[os.Getenv("LOG_LEVEL")],

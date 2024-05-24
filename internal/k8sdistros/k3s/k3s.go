@@ -28,7 +28,7 @@ func NewClient(
 	parentCtx context.Context,
 	parentLog types.LoggerFactory,
 	state *storageTypes.StorageDocument) *K3s {
-	k3sCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.K8sK3s))
+	k3sCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.K8sK3s))
 	log = parentLog
 
 	mainStateDocument = state

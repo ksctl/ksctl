@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,7 +36,11 @@ var _ = Describe("Stack Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
-		ctx := context.Background()
+		ctx := context.WithValue(
+			context.Background(),
+			consts.KsctlTestFlagKey,
+			"true",
+		)
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -47,7 +50,6 @@ var _ = Describe("Stack Controller", func() {
 		log = logger.NewStructuredLogger(
 			LogVerbosity["DEBUG"],
 			LogWriter)
-		_ = os.Setenv(string(consts.KsctlFakeFlag), ControllerTestSkip)
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Stack")

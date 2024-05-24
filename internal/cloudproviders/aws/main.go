@@ -107,7 +107,7 @@ func NewClient(parentCtx context.Context,
 	ClientOption func() AwsGo) (*AwsProvider, error) {
 	log = parentLogger // intentional shallow copy so that we can use the same
 	// logger to be used multiple places
-	awsCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.CloudAws))
+	awsCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.CloudAws))
 
 	mainStateDocument = state
 

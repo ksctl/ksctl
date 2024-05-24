@@ -1,6 +1,8 @@
 package consts
 
-import "time"
+import (
+	"time"
+)
 
 type KsctlRole string
 
@@ -93,9 +95,9 @@ const (
 )
 
 const (
-	StoreLocal    KsctlStore = "local"
-	StoreK8s      KsctlStore = "kubernetes"
-	StoreExtMongo KsctlStore = "external-mongo"
+	StoreLocal    KsctlStore = "store-local"
+	StoreK8s      KsctlStore = "store-kubernetes"
+	StoreExtMongo KsctlStore = "external-store-mongodb"
 )
 
 const (
@@ -109,16 +111,12 @@ const (
 	ClusterTypeMang KsctlClusterType = "managed"
 )
 
+type KsctlContextKeyType int
+
 const (
-	// makes the fake client
-	KsctlFakeFlag KsctlSpecialFlags = "KSCTL_FAKE_FLAG_ENABLED"
-
-	// KsctlCustomDirEnabled use this as environment variable to set a different home directory for ksctl during testing
-	// make sure the value is space seperated <directory> <directory> ....
-	KsctlCustomDirEnabled KsctlSpecialFlags = "KSCTL_CUSTOM_DIR_ENABLED"
-
-	// KsctlFeatureFlagHaAutoscale to be set if feature for AUTOSCALE is needed
-	KsctlFeatureFlagHaAutoscale KsctlSpecialFlags = "KSCTL_FEATURE_FLAG_HA_AUTOSCALE"
+	KsctlTestFlagKey   KsctlContextKeyType = iota
+	KsctlModuleNameKey KsctlContextKeyType = iota
+	KsctlCustomDirLoc  KsctlContextKeyType = iota
 )
 
 const (
@@ -128,8 +126,4 @@ const (
 	CNIKubenet KsctlValidCNIPlugin = "kubenet"
 	CNIKind    KsctlValidCNIPlugin = "kind"
 	CNINone    KsctlValidCNIPlugin = "none"
-)
-
-const (
-	ContextModuleNameKey string = "component"
 )

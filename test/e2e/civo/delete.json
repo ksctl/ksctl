@@ -3,5 +3,5 @@
 	"ha_cluster": false,
 	"region": "LON1",
 	"cloud_provider": "civo",
-	"storage_type": "local"
+	"storage_type": "store-local"
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/ksctl/ksctl/pkg/controllers"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -25,7 +26,7 @@ var (
 		}
 	}(), os.Stdout)
 
-	ctx = context.WithValue(context.Background(), consts.ContextModuleNameKey, "ksctl-stateimport")
+	ctx = context.WithValue(context.Background(), consts.KsctlModuleNameKey, "ksctl-stateimport")
 )
 
 type HealthRes struct {
@@ -83,7 +84,7 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 	client.Metadata.StateLocation = consts.StoreK8s
 	log.Debug(ctx, "Metadata for Storage", "client.Metadata", client.Metadata)
 
-	if len(os.Getenv("UNIT_TEST_GRPC_KSCTL_STATEIMPORT")) != 0 {
+	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 		_, _e := writeJson(
 			w,
 			http.StatusOK,

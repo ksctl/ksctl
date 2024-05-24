@@ -9,7 +9,7 @@ import (
 )
 
 func getPackageName(ctx context.Context) string {
-	if v, ok := ctx.Value(consts.ContextModuleNameKey).(string); ok {
+	if v, ok := ctx.Value(consts.KsctlModuleNameKey).(string); ok {
 		return v
 	} else {
 		return "!!NOT_SET"

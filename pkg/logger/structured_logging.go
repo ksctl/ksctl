@@ -23,35 +23,35 @@ const (
 func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
 	_m := ""
 	switch msgType {
-	case consts.LOG_DEBUG:
+	case consts.LogDebug:
 		_m = "DEBUG"
-	case consts.LOG_ERROR:
+	case consts.LogError:
 		_m = "ERROR"
-	case consts.LOG_SUCCESS:
+	case consts.LogSuccess:
 		_m = "SUCCESS"
-	case consts.LOG_WARNING:
+	case consts.LogWarning:
 		_m = "WARN"
 	default:
 		_m = "INFO"
 	}
-	l.logger.Info(message, "component", ctx.Value(consts.ContextModuleNameKey), "msgType", _m)
+	l.logger.Info(message, "component", ctx.Value(consts.KsctlModuleNameKey), "msgType", _m)
 }
 
 func (l *StructuredLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
 	_m := ""
 	switch msgType {
-	case consts.LOG_DEBUG:
+	case consts.LogDebug:
 		_m = "DEBUG"
-	case consts.LOG_ERROR:
+	case consts.LogError:
 		_m = "ERROR"
-	case consts.LOG_SUCCESS:
+	case consts.LogSuccess:
 		_m = "SUCCESS"
-	case consts.LOG_WARNING:
+	case consts.LogWarning:
 		_m = "WARN"
 	default:
 		_m = "INFO"
 	}
-	l.logger.Info(fmt.Sprintf(format, args...), "component", ctx.Value(consts.ContextModuleNameKey), "msgType", _m)
+	l.logger.Info(fmt.Sprintf(format, args...), "component", ctx.Value(consts.KsctlModuleNameKey), "msgType", _m)
 }
 
 func newLogger(out io.Writer, ver slog.Level) *slog.Logger {
@@ -82,27 +82,27 @@ func NewStructuredLogger(verbose int, out io.Writer) *StructuredLog {
 }
 
 func (l *StructuredLog) Print(ctx context.Context, msg string, args ...any) {
-	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey)}, args...)
+	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey)}, args...)
 	l.logger.Info(msg, args...)
 }
 
 func (l *StructuredLog) Success(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
-	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey), "msgType", "SUCCESS"}, args...)
+	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey), "msgType", "SUCCESS"}, args...)
 	l.logger.Info(msg, args...)
 }
 
 func (l *StructuredLog) Note(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgBlue, color.Bold)
 	defer color.Unset()
-	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey), "msgType", "NOTE"}, args...)
+	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey), "msgType", "NOTE"}, args...)
 	l.logger.Info(msg, args...)
 }
 
 func (l *StructuredLog) Debug(ctx context.Context, msg string, args ...any) {
 	defer color.Unset()
-	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey)}, args...)
+	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey)}, args...)
 	l.logger.Debug(msg, args...)
 }
 
@@ -114,14 +114,14 @@ func (l *StructuredLog) Error(ctx context.Context, msg string, args ...any) {
 }
 
 func (l *StructuredLog) NewError(ctx context.Context, format string, args ...any) error {
-	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey)}, args...)
+	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey)}, args...)
 	return fmt.Errorf(format, args...)
 }
 
 func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
 	color.Set(color.FgYellow, color.Bold)
 	defer color.Unset()
-	args = append([]any{"component", ctx.Value(consts.ContextModuleNameKey), "msgType", "WARN"}, args...)
+	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey), "msgType", "WARN"}, args...)
 	l.logger.Warn(msg, args...)
 }
 

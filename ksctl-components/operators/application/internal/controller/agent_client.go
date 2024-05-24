@@ -3,10 +3,10 @@ package controller
 import (
 	"context"
 	"os"
-	"strings"
 
 	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -15,7 +15,6 @@ import (
 func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, error) {
 	ksctlAgentUrl := os.Getenv("KSCTL_AGENT_URL")
 	opts := []grpc.DialOption{
-		// grpc.WithTransportCredentials(creds),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
@@ -28,7 +27,7 @@ func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, erro
 }
 
 func appHandler(ctx context.Context, client pb.KsctlAgentClient, apps []applicationv1alpha1.Component, operation pb.ApplicationOperation) error {
-	if strings.Compare(os.Getenv(string(consts.KsctlFakeFlag)), ControllerTestSkip) == 0 { // to ecape test
+	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
 	_apps := make([]*pb.Application, 0)

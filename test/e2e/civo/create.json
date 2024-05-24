@@ -4,7 +4,7 @@
 	"region": "LON1",
 	"ha_cluster": false,
 	"cloud_provider": "civo",
-	"storage_type": "local",
+	"storage_type": "store-local",
 	"desired_no_of_managed_nodes": 1,
 	"node_type_managed": "g4s.kube.small"
 }

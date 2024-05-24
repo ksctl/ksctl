@@ -1,4 +1,4 @@
 {
 	"cloud_provider": "aws",
-	"storage_type": "local"
+	"storage_type": "store-local"
 }

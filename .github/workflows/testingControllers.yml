@@ -49,11 +49,11 @@ jobs:
 
       - name: Testing ksctl agent
         run: |
-          make test-ksctl-agent
+          make unit_test_ksctl_agent
 
       - name: Testing ksctl stateimport
         run: |
-          make test-ksctl-stateimport
+          make unit_test_ksctl_stateimport
 
       - name: Testing application controller
         run: |

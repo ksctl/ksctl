@@ -19,12 +19,28 @@ var (
 )
 
 func InitCore() (err error) {
+	ctx := context.WithValue(
+		context.Background(),
+		"USERID",
+		"demo",
+	)
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlCustomDirLoc,
+		dir,
+	)
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlTestFlagKey,
+		"true",
+	)
+
 	cli = new(types.KsctlClient)
 
 	cli.Metadata.ClusterName = "fake"
 	cli.Metadata.StateLocation = consts.StoreLocal
 	cli.Metadata.K8sDistro = consts.K8sK3s
-	ctx := context.WithValue(context.Background(), "USERID", "demo")
+
 	log := logger.NewGeneralLogger(-1, os.Stdout)
 
 	controller, err = control_pkg.GenKsctlController(
@@ -62,8 +78,6 @@ func AzureTestingManaged() error {
 	cli.Metadata.NoMP = 2
 	cli.Metadata.K8sVersion = "1.27"
 
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-
 	return ExecuteManagedRun()
 }
 
@@ -73,16 +87,12 @@ func CivoTestingManaged() error {
 	cli.Metadata.ManagedNodeType = "g4s.kube.small"
 	cli.Metadata.NoMP = 2
 
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-
 	return ExecuteManagedRun()
 }
 
 func LocalTestingManaged() error {
 	cli.Metadata.Provider = consts.CloudLocal
 	cli.Metadata.NoMP = 5
-
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
 	return ExecuteManagedRun()
 }
@@ -141,8 +151,6 @@ func CivoTestingHAKubeadm() error {
 	cli.Metadata.NoDS = 3
 	cli.Metadata.K8sVersion = "1.28"
 
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-
 	return ExecuteHARun()
 }
 
@@ -161,8 +169,6 @@ func CivoTestingHAK3s() error {
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
 	cli.Metadata.K8sVersion = "1.27.4"
-
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
 	return ExecuteHARun()
 }
@@ -183,8 +189,6 @@ func AzureTestingHAKubeadm() error {
 	cli.Metadata.NoDS = 3
 	cli.Metadata.K8sVersion = "1.28"
 
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-
 	return ExecuteHARun()
 }
 
@@ -204,8 +208,6 @@ func AzureTestingHAK3s() error {
 	cli.Metadata.NoDS = 3
 	cli.Metadata.K8sVersion = "1.27.4"
 
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
-
 	return ExecuteHARun()
 }
 
@@ -223,8 +225,6 @@ func AwsTestingHA() error {
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
 	cli.Metadata.K8sVersion = "1.27.4"
-
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
 
 	return ExecuteHARun()
 }

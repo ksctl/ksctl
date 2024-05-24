@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	defaultError "errors"
 	"fmt"
-	"os"
 	"strings"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -156,24 +157,20 @@ func (s *Store) Import(src *types.StorageStateExportImport) error {
 }
 
 func NewClient(parentCtx context.Context, _log types.LoggerFactory) *Store {
-	storeCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, string(consts.StoreK8s))
+	storeCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreK8s))
 	log = _log
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 }
 
-func (db *Store) Connect(ctx context.Context) error {
+func (db *Store) Connect() error {
 	var err error
 
-	fakeClient := false
-	if str := os.Getenv(string(consts.KsctlFakeFlag)); len(str) != 0 {
-		fakeClient = true
+	if _, ok := helpers.IsContextPresent(storeCtx, consts.KsctlTestFlagKey); ok {
+		db.clientSet, err = NewFakeK8sClient(storeCtx)
+	} else {
+		db.clientSet, err = NewK8sClient(storeCtx)
 	}
 
-	if !fakeClient {
-		db.clientSet, err = NewK8sClient(ctx)
-	} else {
-		db.clientSet, err = NewFakeK8sClient(ctx)
-	}
 	if err != nil {
 		return err
 	}

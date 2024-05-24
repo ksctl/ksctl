@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -15,10 +16,10 @@ func GetUserName() string {
 	return os.Getenv(UserDir)
 }
 
-func genOSKubeConfigPath() string {
+func genOSKubeConfigPath(ctx context.Context) string {
 
 	var userLoc string
-	if v := os.Getenv(string(consts.KsctlCustomDirEnabled)); len(v) != 0 {
+	if v, ok := IsContextPresent(ctx, consts.KsctlCustomDirLoc); ok {
 		userLoc = strings.Join(strings.Split(strings.TrimSpace(v), " "), PathSeparator)
 	} else {
 		userLoc = GetUserName()
@@ -29,8 +30,8 @@ func genOSKubeConfigPath() string {
 	return strings.Join(pathArr, PathSeparator)
 }
 
-func WriteKubeConfig(kubeconfig string) (string, error) {
-	path := genOSKubeConfigPath()
+func WriteKubeConfig(ctx context.Context, kubeconfig string) (string, error) {
+	path := genOSKubeConfigPath(ctx)
 	err := os.WriteFile(path, []byte(kubeconfig), 0755)
 	if err != nil {
 		return "", err

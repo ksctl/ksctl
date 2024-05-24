@@ -56,7 +56,7 @@ func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 }
 
 func NewInClusterClient(parentCtx context.Context, parentLog types.LoggerFactory, storage types.StorageFactory) (k *Kubernetes, err error) {
-	kubernetesCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "kubernetes-client")
+	kubernetesCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, "kubernetes-client")
 	log = parentLog
 
 	k = &Kubernetes{
@@ -90,7 +90,7 @@ func NewInClusterClient(parentCtx context.Context, parentLog types.LoggerFactory
 }
 
 func NewKubeconfigClient(parentCtx context.Context, parentLog types.LoggerFactory, storage types.StorageFactory, kubeconfig string) (k *Kubernetes, err error) {
-	kubernetesCtx = context.WithValue(parentCtx, consts.ContextModuleNameKey, "kubernetes-client")
+	kubernetesCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, "kubernetes-client")
 	log = parentLog
 
 	k = &Kubernetes{

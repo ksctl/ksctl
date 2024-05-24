@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	"os"
 	"sync"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -234,12 +233,11 @@ func InstallAdditionalTools(
 	client *types.KsctlClient,
 	state *storageTypes.StorageDocument) error {
 
-	if os.Getenv(string(consts.KsctlFakeFlag)) == "1" {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
 
 	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig)
-
 	if err != nil {
 		return err
 	}
