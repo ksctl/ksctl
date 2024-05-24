@@ -34,6 +34,11 @@ func TestIsContextPresent(t *testing.T) {
 			expected: true,
 		},
 		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlCustomDirLoc, `C:\Users\RUNNER~1\AppData\Local\Temp ksctl-local-store-test`),
+			key:      consts.KsctlCustomDirLoc,
+			expected: true,
+		},
+		{
 			ctx:      context.WithValue(ppCtx, consts.KsctlTestFlagKey, ""),
 			key:      consts.KsctlTestFlagKey,
 			expected: false,
