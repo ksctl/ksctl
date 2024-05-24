@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/controllers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
 )
@@ -25,11 +23,11 @@ func main() {
 		"USERID",
 		"e2e",
 	)
-	ctx = context.WithValue(
-		ctx,
-		consts.KsctlCustomDirLoc,
-		fmt.Sprintf("%s ksctl-e2e", os.TempDir()),
-	)
+	// ctx = context.WithValue(
+	// 	ctx,
+	// 	consts.KsctlCustomDirLoc,
+	// 	fmt.Sprintf("%s ksctl-e2e", os.TempDir()),
+	// )
 
 	timer := time.Now()
 
