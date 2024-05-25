@@ -598,7 +598,7 @@ func (awsclient *AwsGoClient) setRequiredENVVAR(storage ksctlTypes.StorageFactor
 		msg = msg + " AWS_SECRET_ACCESS_KEY"
 	}
 
-	log.Warn(awsCtx, msg)
+	log.Note(awsCtx, msg)
 
 	credentials, err := storage.ReadCredentials(consts.CloudAws)
 	if err != nil {

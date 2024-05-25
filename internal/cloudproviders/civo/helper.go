@@ -1,8 +1,9 @@
 package civo
 
 import (
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -15,7 +16,7 @@ func fetchAPIKey(storage types.StorageFactory) string {
 	if civoToken != "" {
 		return civoToken
 	}
-	log.Warn(civoCtx, "environment vars not set: `CIVO_TOKEN`")
+	log.Note(civoCtx, "environment vars not set: `CIVO_TOKEN`")
 
 	credentials, err := storage.ReadCredentials(consts.CloudCivo)
 	if err != nil {
