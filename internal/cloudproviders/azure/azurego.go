@@ -287,7 +287,7 @@ func (obj *AzureGoClient) setRequiredENV_VAR(storage types.StorageFactory, ctx c
 		msg = msg + " AZURE_CLIENT_SECRET"
 	}
 
-	log.Warn(azureCtx, msg)
+	log.Note(azureCtx, msg)
 
 	credentials, err := storage.ReadCredentials(consts.CloudAzure)
 	if err != nil {

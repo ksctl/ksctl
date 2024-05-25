@@ -63,5 +63,10 @@ func GenerateInitScriptForVM(resName string) (string, error) {
 	}
 	return fmt.Sprintf(`#!/bin/bash
 sudo hostname %s-%s
+
+sudo cp /etc/localtime /etc/localtime.backup
+
+sudo ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+
 `, resName, postfixStr), nil
 }
