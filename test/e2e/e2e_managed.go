@@ -1,24 +1,25 @@
 package main
 
 import (
-	ksctlController "github.com/ksctl/ksctl/pkg/types/controllers"
 	"os"
+
+	"github.com/ksctl/ksctl/pkg/controllers"
 )
 
-func createManagedCluster(ksctlClient ksctlController.Controller) {
+func createManagedCluster(ksctlClient *controllers.ManagerClusterManaged) {
 	l.Print(ctx, "Started to Create Cluster...")
 
-	err := ksctlClient.CreateManagedCluster()
+	err := ksctlClient.CreateCluster()
 	if err != nil {
 		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}
 }
 
-func deleteManagedCluster(ksctlClient ksctlController.Controller) {
+func deleteManagedCluster(ksctlClient *controllers.ManagerClusterManaged) {
 	l.Print(ctx, "Started to Delete Cluster...")
 
-	err := ksctlClient.DeleteManagedCluster()
+	err := ksctlClient.DeleteCluster()
 	if err != nil {
 		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)

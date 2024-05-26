@@ -39,16 +39,11 @@ func NewManagerClusterSelfManaged(ctx context.Context, log types.LoggerFactory, 
 	return manager, nil
 }
 
-func (manager *ManagerClusterSelfManaged) CreateHACluster() error {
+func (manager *ManagerClusterSelfManaged) CreateCluster() error {
 	client := manager.client
 	log := manager.log
 	defer panicCatcher(log)
 
-	if client.Metadata.Provider == consts.CloudLocal {
-		err := log.NewError(controllerCtx, "ha not supported")
-		log.Error(controllerCtx, "handled error", "catch", err)
-		return err
-	}
 	if err := manager.setupConfigurations(); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
@@ -133,17 +128,11 @@ func (manager *ManagerClusterSelfManaged) CreateHACluster() error {
 	return nil
 }
 
-func (manager *ManagerClusterSelfManaged) DeleteHACluster() error {
+func (manager *ManagerClusterSelfManaged) DeleteCluster() error {
 
 	client := manager.client
 	log := manager.log
 	defer panicCatcher(log)
-
-	if client.Metadata.Provider == consts.CloudLocal {
-		err := log.NewError(controllerCtx, "ha not supported")
-		log.Error(controllerCtx, "handled error", "catch", err)
-		return err
-	}
 
 	if err := manager.setupConfigurations(); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
@@ -187,18 +176,12 @@ func (manager *ManagerClusterSelfManaged) DeleteHACluster() error {
 	return nil
 }
 
-func (manager *ManagerClusterSelfManaged) AddWorkerPlaneNode() error {
+func (manager *ManagerClusterSelfManaged) AddWorkerPlaneNodes() error {
 	client := manager.client
 	log := manager.log
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
-		return err
-	}
-
-	if client.Metadata.Provider == consts.CloudLocal {
-		err := log.NewError(controllerCtx, "ha not supported")
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
@@ -271,19 +254,13 @@ func (manager *ManagerClusterSelfManaged) AddWorkerPlaneNode() error {
 	return nil
 }
 
-func (manager *ManagerClusterSelfManaged) DelWorkerPlaneNode() error {
+func (manager *ManagerClusterSelfManaged) DelWorkerPlaneNodes() error {
 
 	client := manager.client
 	log := manager.log
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
-		return err
-	}
-
-	if client.Metadata.Provider == consts.CloudLocal {
-		err := log.NewError(controllerCtx, "ha not supported for local")
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}
