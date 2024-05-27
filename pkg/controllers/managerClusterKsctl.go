@@ -186,19 +186,50 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 
 	log.Note(controllerCtx, "Filter", "cloudProvider", string(client.Metadata.Provider))
 
+	var (
+		cloudMapper = map[consts.KsctlCloud]types.CloudFactory{
+			consts.CloudCivo:  nil,
+			consts.CloudAzure: nil,
+			consts.CloudAws:   nil,
+			consts.CloudLocal: nil,
+		}
+	)
+
 	var err error
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
-		client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
+		cloudMapper[consts.CloudCivo], err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
 
 	case consts.CloudAzure:
-		client.Cloud, err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
+		cloudMapper[consts.CloudAzure], err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
 
 	case consts.CloudAws:
-		client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
+		cloudMapper[consts.CloudAws], err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
 
 	case consts.CloudLocal:
-		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+		cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+
+	case consts.CloudAll:
+		cloudMapper[consts.CloudCivo], err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
+		if err != nil {
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
+		}
+		cloudMapper[consts.CloudAzure], err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
+		if err != nil {
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
+		}
+		cloudMapper[consts.CloudAws], err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
+		if err != nil {
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
+		}
+		cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+		if err != nil {
+			log.Error(controllerCtx, "handled error", "catch", err)
+			return err
+		}
 
 	default:
 		err = log.NewError(controllerCtx, "Currently not supported!")
@@ -210,68 +241,18 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 	}
 
 	var printerTable []cloudControllerResource.AllClusterData
-	switch client.Metadata.Provider {
-	case consts.CloudCivo:
-		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
-		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
-			return err
+	for _, v := range cloudMapper {
+		if v == nil {
+			continue
 		}
-		printerTable = append(printerTable, data...)
-
-	case consts.CloudLocal:
-		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
-		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
-			return err
-		}
-		printerTable = append(printerTable, data...)
-
-	case consts.CloudAws:
-		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
-		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
-			return err
-		}
-		printerTable = append(printerTable, data...)
-
-	case consts.CloudAzure:
-		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
-		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
-			return err
-		}
-		printerTable = append(printerTable, data...)
-
-	case consts.CloudAll:
-		data, err := client.Cloud.GetRAWClusterInfos(client.Storage)
-		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
-			return err
-		}
-		printerTable = append(printerTable, data...)
-
-		data, err = client.Cloud.GetRAWClusterInfos(client.Storage)
-		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
-			return err
-		}
-		printerTable = append(printerTable, data...)
-
-		data, err = client.Cloud.GetRAWClusterInfos(client.Storage)
-		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
-			return err
-		}
-		printerTable = append(printerTable, data...)
-
-		data, err = client.Cloud.GetRAWClusterInfos(client.Storage)
+		data, err := v.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error(controllerCtx, "handled error", "catch", err)
 			return err
 		}
 		printerTable = append(printerTable, data...)
 	}
+
 	log.Table(controllerCtx, printerTable)
 
 	log.Success(controllerCtx, "successfully get clusters")
