@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -42,12 +43,15 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 
 	log.Print(kubeadmCtx, "Generating Kubeadm Bootstrap Token")
 
-	if v, err := generatebootstrapToken(); err != nil {
-		return log.NewError(kubeadmCtx, "failed to gen bootstrap token", "Reason", err)
-	} else {
-		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = v
-		log.Debug(kubeadmCtx, "Printing", "BootstrapToken", mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken)
+	timeCreationBootStrapToken := time.Now().UTC()
+	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
+		Script(scriptToGenerateBootStrapToken()).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
+		SSHExecute(); err != nil {
+		return err
 	}
+	mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
+	mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenCreationTimeUtc = timeCreationBootStrapToken
 
 	log.Print(kubeadmCtx, "Configuring K8s cluster")
 
@@ -172,6 +176,22 @@ func generateExternalEtcdConfig(ips []string) string {
 	return ret.String()
 }
 
+func scriptToGenerateBootStrapToken() types.ScriptCollection {
+	collection := helpers.NewScriptCollection()
+	collection.Append(
+		types.Script{
+			Name:           "generate bootstrap token",
+			CanRetry:       false,
+			ScriptExecutor: consts.LinuxBash,
+			ShellScript: `
+kubeadm token create --ttl 1h --description "ksctl bootstrap token"
+`,
+		},
+	)
+
+	return collection
+}
+
 func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) types.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
@@ -190,7 +210,7 @@ bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
   token: %s
-  ttl: 24h0m0s
+  ttl: 1h
   usages:
   - signing
   - authentication
@@ -281,23 +301,6 @@ sudo kubeadm certs certificate-key
 `,
 	})
 	return collection
-}
-
-func generatebootstrapToken() (string, error) {
-	//form "\\A([a-z0-9]{6})\\.([a-z0-9]{16})\\z"
-	prefix, err := helpers.GenRandomString(6)
-	if err != nil {
-		return "", err
-	}
-
-	postfix, err := helpers.GenRandomString(16)
-	if err != nil {
-		return "", err
-	}
-
-	prefix = strings.ToLower(prefix)
-	postfix = strings.ToLower(postfix)
-	return prefix + "." + postfix, nil
 }
 
 func scriptTransferEtcdCerts(collection types.ScriptCollection, ca, etcd, key string) types.ScriptCollection {
