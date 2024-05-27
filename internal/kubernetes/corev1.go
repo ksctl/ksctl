@@ -204,7 +204,11 @@ func (k *Kubernetes) podReadyWait(name, namespace string) error {
 		if count == consts.CounterMaxRetryCount*2 {
 			return log.NewError(kubernetesCtx, "max retry reached", "retries", consts.CounterMaxRetryCount*2)
 		}
-		log.Warn(kubernetesCtx, "retrying current no of success", "status.Phase", string(status.Status.Phase), "status.Reason", status.Status.Reason)
+		if len(status.Status.Reason) != 0 {
+			log.Warn(kubernetesCtx, "retrying current no of success", "status.Phase", string(status.Status.Phase), "status.Reason", status.Status.Reason)
+		} else {
+			log.Warn(kubernetesCtx, "retrying current no of success", "status.Phase", string(status.Status.Phase))
+		}
 		time.Sleep(5 * time.Second)
 	}
 	return nil
