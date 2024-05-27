@@ -98,7 +98,7 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	_, err = controllers.GenKsctlController(ctx, log, client)
+	_, err = controllers.NewManagerClusterManaged(ctx, log, client)
 	if err != nil {
 		log.Error(ctx, "failed to decode the req", "Reason", err)
 		_, _e := writeJson(

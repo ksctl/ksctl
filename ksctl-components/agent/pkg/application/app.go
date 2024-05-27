@@ -61,7 +61,7 @@ func Handler(ctx context.Context, log types.LoggerFactory, in *pb.ReqApplication
 	if _, ok := ksctlHelpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
-	controller, err := control_pkg.GenKsctlController(
+	controller, err := control_pkg.NewManagerClusterKubernetes(
 		ctx,
 		log,
 		client,
@@ -74,10 +74,10 @@ func Handler(ctx context.Context, log types.LoggerFactory, in *pb.ReqApplication
 	switch in.Operation {
 	case pb.ApplicationOperation_CREATE:
 		log.Debug(ctx, "Application Create")
-		return controller.Applications(consts.OperationCreate)
+		return controller.ApplicationsAndCni(consts.OperationCreate)
 	case pb.ApplicationOperation_DELETE:
 		log.Debug(ctx, "Application Delete")
-		return controller.Applications(consts.OperationDelete)
+		return controller.ApplicationsAndCni(consts.OperationDelete)
 	default:
 		return log.NewError(ctx, "invalid operation")
 	}

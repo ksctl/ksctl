@@ -37,7 +37,7 @@ func CallManager(ctx context.Context, log types.LoggerFactory, in *pb.ReqScale) 
 		return _v
 	}()
 
-	controller, err := control_pkg.GenKsctlController(
+	controller, err := control_pkg.NewManagerClusterSelfManaged(
 		ctx,
 		log,
 		client,
@@ -50,9 +50,9 @@ func CallManager(ctx context.Context, log types.LoggerFactory, in *pb.ReqScale) 
 
 	switch in.Operation {
 	case pb.ScaleOperation_SCALE_UP:
-		return controller.AddWorkerPlaneNode()
+		return controller.AddWorkerPlaneNodes()
 	case pb.ScaleOperation_SCALE_DOWN:
-		return controller.DelWorkerPlaneNode()
+		return controller.DelWorkerPlaneNodes()
 	default:
 		return fmt.Errorf("invalid operation")
 	}
