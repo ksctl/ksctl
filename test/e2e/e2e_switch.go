@@ -1,11 +1,12 @@
 package main
 
 import (
-	ksctlController "github.com/ksctl/ksctl/pkg/types/controllers"
 	"os"
+
+	"github.com/ksctl/ksctl/pkg/controllers"
 )
 
-func switchCluster(ksctlClient ksctlController.Controller) {
+func switchCluster(ksctlClient *controllers.ManagerClusterKsctl) {
 
 	l.Print(ctx, "Exec ksctl switch...")
 

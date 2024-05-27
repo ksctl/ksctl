@@ -9,17 +9,16 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
-	"github.com/ksctl/ksctl/pkg/types/controllers"
 )
 
 var (
-	cli        *types.KsctlClient
-	controller controllers.Controller
-	dir        = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
+	cli *types.KsctlClient
+	dir = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
+	ctx context.Context
 )
 
 func InitCore() (err error) {
-	ctx := context.WithValue(
+	ctx = context.WithValue(
 		context.Background(),
 		"USERID",
 		"demo",
@@ -41,22 +40,21 @@ func InitCore() (err error) {
 	cli.Metadata.StateLocation = consts.StoreLocal
 	cli.Metadata.K8sDistro = consts.K8sK3s
 
+	return
+}
+
+func ExecuteKsctlSpecificRun() error {
+
 	log := logger.NewGeneralLogger(-1, os.Stdout)
 
-	controller, err = control_pkg.GenKsctlController(
+	controller, err := control_pkg.NewManagerClusterKsctl(
 		ctx,
 		log,
 		cli,
 	)
-	return
-}
-
-func ExecuteManagedRun() error {
-
-	if err := controller.CreateManagedCluster(); err != nil {
+	if err != nil {
 		return err
 	}
-
 	if _, err := controller.SwitchCluster(); err != nil {
 		return err
 	}
@@ -64,8 +62,74 @@ func ExecuteManagedRun() error {
 	if err := controller.GetCluster(); err != nil {
 		return err
 	}
+	return nil
+}
 
-	if err := controller.DeleteManagedCluster(); err != nil {
+func ExecuteManagedRun() error {
+	log := logger.NewGeneralLogger(-1, os.Stdout)
+
+	controller, err := control_pkg.NewManagerClusterManaged(
+		ctx,
+		log,
+		cli,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := controller.CreateCluster(); err != nil {
+		return err
+	}
+
+	if err := ExecuteKsctlSpecificRun(); err != nil {
+		return err
+	}
+
+	if err := controller.DeleteCluster(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ExecuteHARun() error {
+	log := logger.NewGeneralLogger(-1, os.Stdout)
+
+	controller, err := control_pkg.NewManagerClusterSelfManaged(
+		ctx,
+		log,
+		cli,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := controller.CreateCluster(); err != nil {
+		return err
+	}
+
+	if err := ExecuteKsctlSpecificRun(); err != nil {
+		return err
+	}
+
+	cli.Metadata.NoWP = 0
+	if err := controller.DelWorkerPlaneNodes(); err != nil {
+		return err
+	}
+
+	if err := ExecuteKsctlSpecificRun(); err != nil {
+		return err
+	}
+
+	cli.Metadata.NoWP = 1
+	if err := controller.AddWorkerPlaneNodes(); err != nil {
+		return err
+	}
+
+	if err := ExecuteKsctlSpecificRun(); err != nil {
+		return err
+	}
+
+	if err := controller.DeleteCluster(); err != nil {
 		return err
 	}
 	return nil
@@ -96,45 +160,6 @@ func LocalTestingManaged() error {
 
 	return ExecuteManagedRun()
 }
-
-func ExecuteHARun() error {
-
-	if err := controller.CreateHACluster(); err != nil {
-		return err
-	}
-
-	if _, err := controller.SwitchCluster(); err != nil {
-		return err
-	}
-
-	if err := controller.GetCluster(); err != nil {
-		return err
-	}
-
-	cli.Metadata.NoWP = 0
-	if err := controller.DelWorkerPlaneNode(); err != nil {
-		return err
-	}
-
-	if err := controller.GetCluster(); err != nil {
-		return err
-	}
-
-	cli.Metadata.NoWP = 1
-	if err := controller.AddWorkerPlaneNode(); err != nil {
-		return err
-	}
-
-	if err := controller.GetCluster(); err != nil {
-		return err
-	}
-
-	if err := controller.DeleteHACluster(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func CivoTestingHAKubeadm() error {
 	cli.Metadata.LoadBalancerNodeType = "fake.small"
 	cli.Metadata.ControlPlaneNodeType = "fake.small"
