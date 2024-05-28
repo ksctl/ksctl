@@ -203,17 +203,6 @@ func (obj *AwsProvider) GetStateForHACluster(storage types.StorageFactory) (clou
 	return payload, nil
 }
 
-func (obj *AwsProvider) NewManagedCluster(factory types.StorageFactory, i int) error {
-
-	mainStateDocument.BootstrapProvider = "managed"
-	return log.NewError(awsCtx, "not implemented")
-
-}
-
-func (obj *AwsProvider) DelManagedCluster(factory types.StorageFactory) error {
-	return log.NewError(awsCtx, "not implemented")
-}
-
 func (obj *AwsProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	if !helpers.ValidateRole(resRole) {
