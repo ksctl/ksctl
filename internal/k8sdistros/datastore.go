@@ -16,7 +16,7 @@ func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error 
 	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print(bootstrapCtx, "configuring Datastore", "number", strconv.Itoa(idx))
+	log.Note(bootstrapCtx, "configuring Datastore", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(

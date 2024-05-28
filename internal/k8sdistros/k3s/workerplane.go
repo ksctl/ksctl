@@ -16,7 +16,7 @@ func (k3s *K3s) JoinWorkerplane(no int, _ types.StorageFactory) error {
 	sshExecutor := helpers.NewSSHExecutor(k3sCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	k3s.mu.Unlock()
 
-	log.Print(k3sCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
+	log.Note(k3sCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).

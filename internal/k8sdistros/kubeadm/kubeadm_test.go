@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"regexp"
 	"sync"
 	"testing"
 
@@ -127,21 +126,48 @@ func TestK3sDistro_Version(t *testing.T) {
 	}
 }
 
-func TestGeneratebootstrapToken(t *testing.T) {
+func TestScriptGeneratebootstrapToken(t *testing.T) {
 
-	got, err := generatebootstrapToken()
-	assert.Assert(t, err == nil, "there shouldn't be error")
-	pattern := regexp.MustCompile(`\A([a-z0-9]{6})\.([a-z0-9]{16})\z`)
+	t.Run("scriptGeneratingBootstrapToken", func(t *testing.T) {
+		testHelper.HelperTestTemplate(
+			t,
+			[]types.Script{
+				{
+					Name:           "generate bootstrap token",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: `
+kubeadm token generate
+`,
+				},
+			},
+			func() types.ScriptCollection { // Adjust the signature to match your needs
+				return scriptToGenerateBootStrapToken()
+			},
+		)
+	})
+}
 
-	if pattern.MatchString(got) {
-		fmt.Println("Pattern matches")
-		match := pattern.FindStringSubmatch(got)
-		fmt.Println("Full match:", match[0])
-		fmt.Println("First group:", match[1])
-		fmt.Println("Second group:", match[2])
-	} else {
-		t.Fatalf("regex didn't match the helper-gen token")
-	}
+func TestScriptRenewbootstrapToken(t *testing.T) {
+
+	t.Run("scriptGeneratingBootstrapToken", func(t *testing.T) {
+		testHelper.HelperTestTemplate(
+			t,
+			[]types.Script{
+				{
+					Name:           "renew bootstrap token",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: `
+kubeadm token create --ttl 20m --description "ksctl bootstrap token"
+`,
+				},
+			},
+			func() types.ScriptCollection { // Adjust the signature to match your needs
+				return scriptToRenewBootStrapToken()
+			},
+		)
+	})
 }
 
 func TestScriptInstallKubeadmAndOtherTools(t *testing.T) {
@@ -339,7 +365,8 @@ bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
   token: %s
-  ttl: 24h0m0s
+  ttl: 20m
+  description: "ksctl bootstrap token"
   usages:
   - signing
   - authentication
@@ -387,6 +414,10 @@ EOF
 					MaxRetries: 3,
 					ShellScript: `
 sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
+#### Adding the below for the kubeconfig to be set so that otken renew can work
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 `,
 				},
 			},

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -42,12 +43,14 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 
 	log.Print(kubeadmCtx, "Generating Kubeadm Bootstrap Token")
 
-	if v, err := generatebootstrapToken(); err != nil {
-		return log.NewError(kubeadmCtx, "failed to gen bootstrap token", "Reason", err)
-	} else {
-		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = v
-		log.Debug(kubeadmCtx, "Printing", "BootstrapToken", mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken)
+	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
+		Script(scriptToGenerateBootStrapToken()).
+		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
+		SSHExecute(); err != nil {
+		return err
 	}
+	mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
+	mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc = time.Now().UTC().Add(20 * time.Minute)
 
 	log.Print(kubeadmCtx, "Configuring K8s cluster")
 
@@ -92,7 +95,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 	sshExecutor := helpers.NewSSHExecutor(kubeadmCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print(kubeadmCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
+	log.Note(kubeadmCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
 		err := configureCP_1(storage, p, sshExecutor)
 		if err != nil {
@@ -172,6 +175,38 @@ func generateExternalEtcdConfig(ips []string) string {
 	return ret.String()
 }
 
+func scriptToGenerateBootStrapToken() types.ScriptCollection {
+	collection := helpers.NewScriptCollection()
+	collection.Append(
+		types.Script{
+			Name:           "generate bootstrap token",
+			CanRetry:       false,
+			ScriptExecutor: consts.LinuxBash,
+			ShellScript: `
+kubeadm token generate
+`,
+		},
+	)
+
+	return collection
+}
+
+func scriptToRenewBootStrapToken() types.ScriptCollection {
+	collection := helpers.NewScriptCollection()
+	collection.Append(
+		types.Script{
+			Name:           "renew bootstrap token",
+			CanRetry:       false,
+			ScriptExecutor: consts.LinuxBash,
+			ShellScript: `
+kubeadm token create --ttl 20m --description "ksctl bootstrap token"
+`,
+		},
+	)
+
+	return collection
+}
+
 func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) types.ScriptCollection {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
@@ -190,7 +225,8 @@ bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
   token: %s
-  ttl: 24h0m0s
+  ttl: 20m
+  description: "ksctl bootstrap token"
   usages:
   - signing
   - authentication
@@ -239,6 +275,10 @@ EOF
 		MaxRetries: 3,
 		ShellScript: `
 sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
+#### Adding the below for the kubeconfig to be set so that otken renew can work
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 `,
 	})
 
@@ -281,23 +321,6 @@ sudo kubeadm certs certificate-key
 `,
 	})
 	return collection
-}
-
-func generatebootstrapToken() (string, error) {
-	//form "\\A([a-z0-9]{6})\\.([a-z0-9]{16})\\z"
-	prefix, err := helpers.GenRandomString(6)
-	if err != nil {
-		return "", err
-	}
-
-	postfix, err := helpers.GenRandomString(16)
-	if err != nil {
-		return "", err
-	}
-
-	prefix = strings.ToLower(prefix)
-	postfix = strings.ToLower(postfix)
-	return prefix + "." + postfix, nil
 }
 
 func scriptTransferEtcdCerts(collection types.ScriptCollection, ca, etcd, key string) types.ScriptCollection {

@@ -11,7 +11,7 @@ import (
 )
 
 func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
-	log.Print(bootstrapCtx, "configuring Loadbalancer")
+	log.Note(bootstrapCtx, "configuring Loadbalancer")
 	p.mu.Lock()
 	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
