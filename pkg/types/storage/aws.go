@@ -41,9 +41,10 @@ type StateConfigurationAws struct {
 	VpcId   string `json:"vpc_id" bson:"vpc_id"`
 	VpcCidr string `json:"vpc_cidr" bson:"vpc_cidr"`
 
-	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
-	NoManagedNodes     int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
-	ManagedNodeSize    string `json:"managed_node_size" bson:"managed_node_size"`
+	ManagedClusterName   string `json:"managed_cluster_name" bson:"managed_cluster_name"`
+	ManagedNodeGroupName string `json:"managed_node_group_name" bson:"managed_node_group_name"`
+	NoManagedNodes       int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
+	ManagedNodeSize      string `json:"managed_node_size" bson:"managed_node_size"`
 
 	SubnetName   string `json:"subnet_name" bson:"subnet_name"`
 	SubnetID     string `json:"subnet_id" bson:"subnet_id"`
