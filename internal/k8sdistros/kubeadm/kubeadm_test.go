@@ -137,12 +137,34 @@ func TestScriptGeneratebootstrapToken(t *testing.T) {
 					CanRetry:       false,
 					ScriptExecutor: consts.LinuxBash,
 					ShellScript: `
-kubeadm token create --ttl 1h --description "ksctl bootstrap token"
+kubeadm token generate
 `,
 				},
 			},
 			func() types.ScriptCollection { // Adjust the signature to match your needs
 				return scriptToGenerateBootStrapToken()
+			},
+		)
+	})
+}
+
+func TestScriptRenewbootstrapToken(t *testing.T) {
+
+	t.Run("scriptGeneratingBootstrapToken", func(t *testing.T) {
+		testHelper.HelperTestTemplate(
+			t,
+			[]types.Script{
+				{
+					Name:           "renew bootstrap token",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript: `
+kubeadm token create --ttl 20m --description "ksctl bootstrap token"
+`,
+				},
+			},
+			func() types.ScriptCollection { // Adjust the signature to match your needs
+				return scriptToRenewBootStrapToken()
 			},
 		)
 	})
@@ -343,7 +365,8 @@ bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
   token: %s
-  ttl: 1h
+  ttl: 20m
+  description: "ksctl bootstrap token"
   usages:
   - signing
   - authentication
@@ -391,6 +414,10 @@ EOF
 					MaxRetries: 3,
 					ShellScript: `
 sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
+#### Adding the below for the kubeconfig to be set so that otken renew can work
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 `,
 				},
 			},

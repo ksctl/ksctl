@@ -74,13 +74,13 @@ func main() {
 			}
 			switch operation {
 			case OpCreate:
-				_ = managerClient.CreateCluster()
+				createHACluster(managerClient)
 			case OpDelete:
-				_ = managerClient.DeleteCluster()
+				deleteHACluster(managerClient)
 			case OpScaleUp:
-				_ = managerClient.AddWorkerPlaneNodes()
+				scaleupHACluster(managerClient)
 			case OpScaleDown:
-				_ = managerClient.DelWorkerPlaneNodes()
+				scaleDownHACluster(managerClient)
 			}
 
 		case false:
@@ -97,9 +97,9 @@ func main() {
 			}
 			switch operation {
 			case OpCreate:
-				_ = managerClient.CreateCluster()
+				createManagedCluster(managerClient)
 			case OpDelete:
-				_ = managerClient.DeleteCluster()
+				deleteManagedCluster(managerClient)
 			}
 		}
 
@@ -117,11 +117,11 @@ func main() {
 		}
 		switch operation {
 		case OpCreds:
-			_ = managerClient.Credentials()
+			creds(managerClient)
 		case OpGet:
-			_ = managerClient.GetCluster()
+			getClusters(managerClient)
 		case OpSwitch:
-			_, _ = managerClient.SwitchCluster()
+			switchCluster(managerClient)
 		}
 
 	default:

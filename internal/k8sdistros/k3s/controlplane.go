@@ -70,7 +70,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) 
 	sshExecutor := helpers.NewSSHExecutor(k3sCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	k3s.mu.Unlock()
 
-	log.Print(k3sCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
+	log.Note(k3sCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
 		err := configureCP_1(storage, k3s, sshExecutor)
 		if err != nil {

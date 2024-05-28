@@ -43,7 +43,6 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 
 	log.Print(kubeadmCtx, "Generating Kubeadm Bootstrap Token")
 
-	timeCreationBootStrapToken := time.Now().UTC()
 	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 		Script(scriptToGenerateBootStrapToken()).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
@@ -51,7 +50,7 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 		return err
 	}
 	mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
-	mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenCreationTimeUtc = timeCreationBootStrapToken
+	mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc = time.Now().UTC().Add(20 * time.Minute)
 
 	log.Print(kubeadmCtx, "Configuring K8s cluster")
 
@@ -96,7 +95,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 	sshExecutor := helpers.NewSSHExecutor(kubeadmCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print(kubeadmCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
+	log.Note(kubeadmCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
 		err := configureCP_1(storage, p, sshExecutor)
 		if err != nil {
@@ -184,7 +183,23 @@ func scriptToGenerateBootStrapToken() types.ScriptCollection {
 			CanRetry:       false,
 			ScriptExecutor: consts.LinuxBash,
 			ShellScript: `
-kubeadm token create --ttl 1h --description "ksctl bootstrap token"
+kubeadm token generate
+`,
+		},
+	)
+
+	return collection
+}
+
+func scriptToRenewBootStrapToken() types.ScriptCollection {
+	collection := helpers.NewScriptCollection()
+	collection.Append(
+		types.Script{
+			Name:           "renew bootstrap token",
+			CanRetry:       false,
+			ScriptExecutor: consts.LinuxBash,
+			ShellScript: `
+kubeadm token create --ttl 20m --description "ksctl bootstrap token"
 `,
 		},
 	)
@@ -210,7 +225,8 @@ bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
   token: %s
-  ttl: 1h
+  ttl: 20m
+  description: "ksctl bootstrap token"
   usages:
   - signing
   - authentication
@@ -259,6 +275,10 @@ EOF
 		MaxRetries: 3,
 		ShellScript: `
 sudo kubeadm init --config kubeadm-config.yml --upload-certs  &>> ksctl.log
+#### Adding the below for the kubeconfig to be set so that otken renew can work
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 `,
 	})
 

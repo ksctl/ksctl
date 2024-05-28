@@ -17,27 +17,34 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage types.StorageFactory) erro
 	sshExecutor := helpers.NewSSHExecutor(kubeadmCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Print(kubeadmCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
+	log.Note(kubeadmCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	if err := func() error {
 		p.mu.Lock()
 		defer p.mu.Unlock()
 		log.Print(kubeadmCtx, "Checking validity Kubeadm Bootstrap Token")
 
-		if time.Now().UTC().Sub(mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenCreationTimeUtc) > 10*time.Minute {
+		tN := time.Now().UTC()
+		tM := mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc
+		tDiff := tM.Sub(tN)
+
+		log.Debug(kubeadmCtx, "printing debug", "tNow", tN, "tExpire", tM, "tDiff", tDiff)
+
+		// time.After means expire time is after the current time
+		if tM.After(tN) && tDiff.Minutes() > 10 {
 			log.Success(kubeadmCtx, "Valid Kubeadm Bootstrap Token")
 			return nil
 		} else {
 			log.Note(kubeadmCtx, "Regenerating Kubeadm Bootstrap Token ttl is near")
 			timeCreationBootStrapToken := time.Now().UTC()
 			if err := sshExecutor.Flag(consts.UtilExecWithOutput).
-				Script(scriptToGenerateBootStrapToken()).
+				Script(scriptToRenewBootStrapToken()).
 				IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 				SSHExecute(); err != nil {
 				return err
 			}
 			mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
-			mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenCreationTimeUtc = timeCreationBootStrapToken
+			mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc = timeCreationBootStrapToken
 		}
 
 		return nil
