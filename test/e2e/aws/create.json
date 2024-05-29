@@ -1,0 +1,10 @@
+{
+  "cluster_name": "test-e2e-aws",
+  "kubernetes_version": "1.27",
+  "region": "ap-south-1",
+  "ha_cluster": false,
+  "cloud_provider": "aws",
+  "storage_type": "store-local",
+  "desired_no_of_managed_nodes": 1,
+  "node_type_managed": "Standard_DS2_v2"
+}

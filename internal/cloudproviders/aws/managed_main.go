@@ -2,11 +2,56 @@ package aws
 
 import (
 	"fmt"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	eks_types "github.com/aws/aws-sdk-go-v2/service/eks/types"
+	iam2 "github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/ksctl/ksctl/pkg/types"
 )
+
+const eksNodeGroupPolicyDocument = `{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": [
+				"eks:CreateNodegroup",
+				"eks:DescribeNodegroup",
+				"eks:DeleteNodegroup"
+			],
+			"Resource": "*"
+		}
+	]
+}`
+
+const eksClusterPolicyDocument = `{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": [
+				"eks:CreateCluster",
+				"eks:DescribeCluster",
+				"eks:DeleteCluster"
+			],
+			"Resource": "*"
+		}
+	]
+}`
+
+const assumeRolePolicyDocument = `{
+		"Version": "2012-10-17",
+		"Statement": [
+			{
+				"Effect": "Allow",
+				"Principal": {
+					"Service": "eks.amazonaws.com"
+				},
+				"Action": "sts:AssumeRole"
+			}
+		]
+	}`
 
 func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) == 0 {
@@ -57,8 +102,18 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	mainStateDocument.CloudInfra.Aws.B.KubernetesVer = obj.metadata.k8sVersion
 	mainStateDocument.BootstrapProvider = "managed"
 
+	iamParameter := iam2.CreateRoleInput{
+		RoleName:                 aws.String(obj.clusterName + "Node-Group"),
+		AssumeRolePolicyDocument: aws.String(assumeRolePolicyDocument),
+	}
+	iamResp, err := obj.client.BeginCreateIAM(awsCtx, &iamParameter)
+	if err != nil {
+		return err
+	}
+
 	parameter := eks.CreateClusterInput{
-		Name: aws.String(name),
+		Name:    aws.String(name),
+		RoleArn: aws.String(*iamResp.Role.Arn),
 		ResourcesVpcConfig: &eks_types.VpcConfigRequest{
 			EndpointPrivateAccess: aws.Bool(true),
 			EndpointPublicAccess:  aws.Bool(true),
@@ -68,7 +123,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 			IpFamily:        eks_types.IpFamilyIpv4,
 			ServiceIpv4Cidr: aws.String("0.0.0.0/0"),
 		},
-		Version: aws.String(""),
+		Version: aws.String(obj.metadata.k8sVersion),
 	}
 
 	clusterResp, err := obj.client.BeginCreateEKS(awsCtx, &parameter)
@@ -85,8 +140,8 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	}
 
 	nodegroup := eks.CreateNodegroupInput{
-		ClusterName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
-		//NodeRole:      aws.String(*result.Role.RoleId),
+		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+		NodeRole:      aws.String(*iamResp.Role.RoleName),
 		NodegroupName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName + "nod-group"),
 		Subnets:       []string{mainStateDocument.CloudInfra.Aws.SubnetID},
 		CapacityType:  eks_types.CapacityTypesOnDemand,
