@@ -5,7 +5,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelSSHKeyPair implements types.CloudFactory.
 func (obj *CivoProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Civo.B.SSHID) == 0 {
 		log.Print(civoCtx, "skipped ssh keypair already deleted")
@@ -26,7 +25,6 @@ func (obj *CivoProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 	return storage.Write(mainStateDocument)
 }
 
-// CreateUploadSSHKeyPair implements types.CloudFactory.
 func (obj *CivoProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
 	name := <-obj.chResName
 

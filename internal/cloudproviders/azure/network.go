@@ -138,7 +138,6 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage types.Storag
 	return nil
 }
 
-// DelNetwork implements types.CloudFactory.
 func (obj *AzureProvider) DelNetwork(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) == 0 {

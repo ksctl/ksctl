@@ -2,7 +2,10 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 
@@ -125,22 +128,39 @@ func (k *Kubernetes) namespaceDelete(ns *corev1.Namespace, wait bool) error {
 		return log.NewError(kubernetesCtx, "namespace delete failed", "Reason", err)
 	}
 
-	for i := 0; wait && i < int(consts.CounterMaxRetryCount); i++ {
-		_, err := k.clientset.
-			CoreV1().
-			Namespaces().
-			Get(context.Background(), ns.Name, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) || apierrors.IsGone(err) {
-				log.Debug(kubernetesCtx, "Namespace deleted", "namespace", ns)
-				break
-			} else {
-				return log.NewError(kubernetesCtx, "Failed to get namespace", "namespace", ns.Name, "err", err)
-			}
-		}
+	expoBackoff := helpers.NewBackOff(
+		10*time.Second,
+		1,
+		int(consts.CounterMaxRetryCount),
+	)
+	var (
+		errStat error
+	)
+	_err := expoBackoff.Run(
+		kubernetesCtx,
+		log,
+		func() (err error) {
 
-		log.Warn(kubernetesCtx, "Namespace still deleting", "namespace", ns.Name, "retry", i, "threshold", int(consts.CounterMaxRetryCount))
-		time.Sleep(5 * time.Second)
+			_, errStat = k.clientset.
+				CoreV1().
+				Namespaces().
+				Get(context.Background(), ns.Name, metav1.GetOptions{})
+			return err
+		},
+		func() bool {
+			return apierrors.IsNotFound(errStat) || apierrors.IsGone(errStat)
+		},
+		func(err error) (errW error, escalateErr bool) {
+			return log.NewError(kubernetesCtx, "Failed to get namespace", "namespace", ns.Name, "err", err), true
+		},
+		func() error {
+			log.Success(kubernetesCtx, "Namespace is completely deleted", "namespace", ns)
+			return nil
+		},
+		fmt.Sprintf("Namespace still deleting: %s", ns.Name),
+	)
+	if _err != nil {
+		return _err
 	}
 	return nil
 }
@@ -186,30 +206,38 @@ func (k *Kubernetes) secretApply(o *corev1.Secret) error {
 
 func (k *Kubernetes) podReadyWait(name, namespace string) error {
 
-	count := consts.KsctlCounterConsts(0)
-	for {
-
-		status, err := k.clientset.
-			CoreV1().
-			Pods(namespace).
-			Get(context.Background(), name, metav1.GetOptions{})
-		if err != nil {
-			return log.NewError(kubernetesCtx, "pod get failed", "Reason", err)
-		}
-		if status.Status.Phase == corev1.PodRunning {
+	expoBackoff := helpers.NewBackOff(
+		2*time.Second,
+		2,
+		int(consts.CounterMaxRetryCount),
+	)
+	var (
+		status *corev1.Pod
+	)
+	_err := expoBackoff.Run(
+		kubernetesCtx,
+		log,
+		func() (err error) {
+			status, err = k.clientset.
+				CoreV1().
+				Pods(namespace).
+				Get(context.Background(), name, metav1.GetOptions{})
+			return err
+		},
+		func() bool {
+			return status.Status.Phase == corev1.PodRunning
+		},
+		func(err error) (errW error, escalateErr bool) {
+			return log.NewError(kubernetesCtx, "pod get failed", "Reason", err), true
+		},
+		func() error {
 			log.Success(kubernetesCtx, "pod is running", "name", name)
-			break
-		}
-		count++
-		if count == consts.CounterMaxRetryCount*2 {
-			return log.NewError(kubernetesCtx, "max retry reached", "retries", consts.CounterMaxRetryCount*2)
-		}
-		if len(status.Status.Reason) != 0 {
-			log.Warn(kubernetesCtx, "retrying current no of success", "status.Phase", string(status.Status.Phase), "status.Reason", status.Status.Reason)
-		} else {
-			log.Warn(kubernetesCtx, "retrying current no of success", "status.Phase", string(status.Status.Phase))
-		}
-		time.Sleep(5 * time.Second)
+			return nil
+		},
+		fmt.Sprintf("pod is not ready %s", name),
+	)
+	if _err != nil {
+		return _err
 	}
 	return nil
 }

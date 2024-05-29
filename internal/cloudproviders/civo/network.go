@@ -1,19 +1,21 @@
 package civo
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/civo/civogo"
+	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// NewNetwork implements types.CloudFactory.
 func (obj *CivoProvider) NewNetwork(storage types.StorageFactory) error {
 	name := <-obj.chResName
 
 	log.Debug(civoCtx, "Printing", "Name", name)
 
-	// check if the networkID already exist
 	if len(mainStateDocument.CloudInfra.Civo.NetworkID) != 0 {
 		log.Print(civoCtx, "skipped network creation found", "networkID", mainStateDocument.CloudInfra.Civo.NetworkID)
 		return nil
@@ -39,54 +41,70 @@ func (obj *CivoProvider) NewNetwork(storage types.StorageFactory) error {
 		return err
 	}
 
-	counter := 0
-	for ; counter < int(consts.CounterMaxRetryCount); counter++ {
-		time.Sleep(10 * time.Second)
-
-		net, err := obj.client.GetNetwork(res.ID)
-		if err != nil {
+	expoBackoff := helpers.NewBackOff(
+		10*time.Second,
+		2,
+		int(consts.CounterMaxWatchRetryCount),
+	)
+	var netInst *civogo.Network
+	_err := expoBackoff.Run(
+		civoCtx,
+		log,
+		func() (err error) {
+			netInst, err = obj.client.GetNetwork(res.ID)
 			return err
-		}
-
-		if net.Status == "Active" {
+		},
+		func() bool {
+			return netInst.Status == "Active"
+		},
+		nil,
+		func() error {
+			log.Print(civoCtx, "network ready", "name", name)
 			return nil
-		}
-
-		log.Warn(civoCtx, "Waiting for the network to be active", "Status", net.Status, "attempt", counter, "maxCount", int(consts.CounterMaxRetryCount), "id", res.ID)
+		},
+		fmt.Sprintf("Waiting for the network %s to be ready", name),
+	)
+	if _err != nil {
+		return _err
 	}
-	return log.NewError(civoCtx, "maximum retry of the network wait reached", "attempt", counter, "maxCount", int(consts.CounterMaxRetryCount), "id", res.ID)
+	return nil
 }
 
-// DelNetwork implements types.CloudFactory.
 func (obj *CivoProvider) DelNetwork(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Civo.NetworkID) == 0 {
 		log.Print(civoCtx, "skipped network already deleted")
-	} else {
-		netID := mainStateDocument.CloudInfra.Civo.NetworkID
-
-		currRetryCounter := consts.KsctlCounterConsts(0)
-		for currRetryCounter < consts.CounterMaxWatchRetryCount {
-			var err error
-			_, err = obj.client.DeleteNetwork(mainStateDocument.CloudInfra.Civo.NetworkID)
-			if err != nil {
-				currRetryCounter++
-				log.Warn(civoCtx, "retrying", "err", err)
-			} else {
-				break
-			}
-			time.Sleep(5 * time.Second)
-		}
-		if currRetryCounter == consts.CounterMaxWatchRetryCount {
-			return log.NewError(civoCtx, "failed to delete network timeout")
-		}
-
-		mainStateDocument.CloudInfra.Civo.NetworkID = ""
-		if err := storage.Write(mainStateDocument); err != nil {
-			return err
-		}
-		log.Success(civoCtx, "Deleted network", "networkID", netID)
+		return nil
 	}
+	netId := mainStateDocument.CloudInfra.Civo.NetworkID
+
+	expoBackoff := helpers.NewBackOff(
+		5*time.Second,
+		2,
+		int(consts.CounterMaxWatchRetryCount),
+	)
+	_err := expoBackoff.Run(
+		civoCtx,
+		log,
+		func() (err error) {
+			_, err = obj.client.DeleteNetwork(mainStateDocument.CloudInfra.Civo.NetworkID)
+			return err
+		},
+		func() bool {
+			return true
+		},
+		nil,
+		func() error {
+			mainStateDocument.CloudInfra.Civo.NetworkID = ""
+			return storage.Write(mainStateDocument)
+		},
+		fmt.Sprintf("Waiting for the network %s to be deleted", mainStateDocument.CloudInfra.Civo.NetworkID),
+	)
+	if _err != nil {
+		return _err
+	}
+
+	log.Success(civoCtx, "Deleted network", "networkID", netId)
 
 	return storage.DeleteCluster()
 }

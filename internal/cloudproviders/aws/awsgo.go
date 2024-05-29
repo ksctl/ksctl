@@ -92,8 +92,6 @@ type AwsGo interface {
 }
 
 type AwsGoClient struct {
-	// acessKeyID     string
-	// acessKeySecret string
 	region    string
 	vpc       string
 	ec2Client *ec2.Client

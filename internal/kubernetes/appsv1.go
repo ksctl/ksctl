@@ -2,7 +2,10 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -59,27 +62,40 @@ func (k *Kubernetes) deploymentApply(o *appsv1.Deployment) error {
 
 func (k *Kubernetes) deploymentReadyWait(name, namespace string) error {
 
-	count := consts.KsctlCounterConsts(0)
-	for {
-
-		status, err := k.clientset.
-			AppsV1().
-			Deployments(namespace).
-			Get(context.Background(), name, metav1.GetOptions{})
-		if err != nil {
-			return log.NewError(kubernetesCtx, "daemonset get failed", "Reason", err)
-		}
-		if status.Status.ReadyReplicas > 0 {
+	expoBackoff := helpers.NewBackOff(
+		2*time.Second,
+		2,
+		int(consts.CounterMaxRetryCount),
+	)
+	var (
+		status *appsv1.Deployment
+	)
+	_err := expoBackoff.Run(
+		kubernetesCtx,
+		log,
+		func() (err error) {
+			status, err = k.clientset.
+				AppsV1().
+				Deployments(namespace).
+				Get(context.Background(), name, metav1.GetOptions{})
+			return err
+		},
+		func() bool {
+			return status.Status.ReadyReplicas > 0
+		},
+		func(err error) (errW error, escalateErr bool) {
+			return log.NewError(kubernetesCtx, "deployment get failed", "Reason", err), true
+		},
+		func() error {
 			log.Success(kubernetesCtx, "Few of the replica are ready", "readyReplicas", status.Status.ReadyReplicas)
-			break
-		}
-		count++
-		if count == consts.CounterMaxRetryCount*2 {
-			return log.NewError(kubernetesCtx, "max retry reached", "retries", consts.CounterMaxRetryCount*2)
-		}
-		log.Warn(kubernetesCtx, "retrying current no of success", "readyReplicas", status.Status.ReadyReplicas)
-		time.Sleep(10 * time.Second)
+			return nil
+		},
+		fmt.Sprintf("retrying no of ready replicas == 0 %s", name),
+	)
+	if _err != nil {
+		return _err
 	}
+
 	return nil
 }
 

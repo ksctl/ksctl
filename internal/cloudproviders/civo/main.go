@@ -199,7 +199,6 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 		region:      meta.Region,
 		haCluster:   meta.IsHA,
 		metadata: metadata{
-			// k8sName:    meta.K8sDistro,
 			k8sVersion: meta.K8sVersion,
 		},
 		client: ClientOption(),
@@ -208,7 +207,6 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 	return obj, nil
 }
 
-// it will contain the name of the resource to be created
 func (cloud *CivoProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(civoCtx, log, resName); err != nil {
@@ -219,7 +217,6 @@ func (cloud *CivoProvider) Name(resName string) types.CloudFactory {
 	return cloud
 }
 
-// it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *CivoProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	switch resRole {
@@ -233,7 +230,6 @@ func (cloud *CivoProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 	}
 }
 
-// it will contain which vmType to create
 func (cloud *CivoProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(cloud, size); err != nil {
@@ -245,14 +241,12 @@ func (cloud *CivoProvider) VMType(size string) types.CloudFactory {
 	return cloud
 }
 
-// whether to have the resource as public or private (i.e. VMs)
 func (cloud *CivoProvider) Visibility(toBePublic bool) types.CloudFactory {
 	cloud.metadata.public = toBePublic
 	log.Debug(civoCtx, "Printing", "willBePublic", toBePublic)
 	return cloud
 }
 
-// if its ha its always false instead it tells whether the provider has support in their managed offerering
 func (cloud *CivoProvider) SupportForApplications() bool {
 	return true
 }
@@ -358,7 +352,6 @@ func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	return -1, log.NewError(civoCtx, "constrains for no of controlplane >= 3 and odd number")
 }
 
-// NoOfDataStore implements types.CloudFactory.
 func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	log.Debug(civoCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 
@@ -401,8 +394,6 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	return -1, log.NewError(civoCtx, "constrains for no of Datastore>= 3 and odd number")
 }
 
-// NoOfWorkerPlane implements types.CloudFactory.
-// NOTE: make it better for wokerplane to save add stuff and remove stuff
 func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
 	log.Debug(civoCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 

@@ -198,7 +198,6 @@ func ExportEndpoint() (map[string][]byte, error) {
 }
 
 func (db *Store) Connect() error {
-	//db.context = context.Background()
 
 	v, err := fetchCreds()
 	if err != nil {

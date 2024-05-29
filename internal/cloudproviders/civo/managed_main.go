@@ -2,7 +2,10 @@ package civo
 
 import (
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/civo/civogo"
 
@@ -12,44 +15,40 @@ import (
 
 func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id string, name string) error {
 
-	for {
-		// clusterDS fetches the current state of kubernetes cluster given its id
-		//NOTE: this is prone to network failure
-		var clusterDS *civogo.KubernetesCluster
-		currRetryCounter := consts.KsctlCounterConsts(0)
-		for currRetryCounter < consts.CounterMaxWatchRetryCount {
-			var err error
-			clusterDS, err = obj.client.GetKubernetesCluster(id)
-			if err != nil {
-				currRetryCounter++
-				log.Warn(civoCtx, "retrying", "err", err)
-			} else {
-				break
-			}
-			time.Sleep(5 * time.Second)
-		}
-		if currRetryCounter == consts.CounterMaxWatchRetryCount {
-			return log.NewError(civoCtx, "failed to get the state of managed cluster")
-		}
+	expoBackoff := helpers.NewBackOff(
+		10*time.Second,
+		3,
+		int(consts.CounterMaxWatchRetryCount),
+	)
 
-		if clusterDS.Ready {
+	var clusterDS *civogo.KubernetesCluster
+	_err := expoBackoff.Run(
+		civoCtx,
+		log,
+		func() (err error) {
+			clusterDS, err = obj.client.GetKubernetesCluster(id)
+			return err
+		},
+		func() bool {
+			return clusterDS.Ready
+		},
+		nil,
+		func() error {
 			log.Print(civoCtx, "cluster ready", "name", name)
 			mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
 			mainStateDocument.ClusterKubeConfig = clusterDS.KubeConfig
 			mainStateDocument.ClusterKubeConfigContext = name
-			err := storage.Write(mainStateDocument)
-			if err != nil {
-				return err
-			}
-			break
-		}
-		log.Debug(civoCtx, "cluster creating", "name", name, "Status", clusterDS.Status)
-		time.Sleep(10 * time.Second)
+			return storage.Write(mainStateDocument)
+		},
+		fmt.Sprintf("Waiting for managed cluster %s to be ready", id),
+	)
+	if _err != nil {
+		return _err
 	}
+
 	return nil
 }
 
-// NewManagedCluster implements types.CloudFactory.
 func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 
 	name := <-obj.chResName
@@ -110,7 +109,6 @@ func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNod
 	return nil
 }
 
-// DelManagedCluster implements types.CloudFactory.
 func (obj *CivoProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) == 0 {
 		log.Print(civoCtx, "skipped network deletion found", "id", mainStateDocument.CloudInfra.Civo.ManagedClusterID)

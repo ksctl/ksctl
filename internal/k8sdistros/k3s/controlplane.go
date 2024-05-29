@@ -63,7 +63,6 @@ func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.S
 	return nil
 }
 
-// ConfigureControlPlane implements storage.DistroFactory.
 func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) error {
 	k3s.mu.Lock()
 	idx := noOfCP
@@ -109,11 +108,6 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) 
 			return err
 		}
 
-		// err = storage.Write(mainStateDocument)
-		// if err != nil {
-		// 	return log.NewError(err.Error())
-		// }
-
 		if idx+1 == len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes) {
 
 			log.Debug(k3sCtx, "fetching kubeconfig")
@@ -134,7 +128,6 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) 
 			mainStateDocument.ClusterKubeConfigContext = contextName
 
 			log.Debug(k3sCtx, "Printing", "kubeconfig", kubeconfig)
-			// modify
 			err = storage.Write(mainStateDocument)
 			if err != nil {
 				return err

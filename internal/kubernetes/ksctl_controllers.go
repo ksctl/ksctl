@@ -15,7 +15,7 @@ func applicationStackData(ver string) Application {
 		KubectlConfig: KubectlOptions{
 			metadata: fmt.Sprintf("Ksctl Application controller (Ver: %s)", ver),
 			postInstall: `
-			As the controller and the crd are installed just need to apply application to be installed
+	As the controller and the crd are installed just need to apply application to be installed
 			`,
 			createNamespace: false,
 		},

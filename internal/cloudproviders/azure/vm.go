@@ -106,7 +106,6 @@ func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
 	return nil
 }
 
-// NewVM implements types.CloudFactory.
 func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 	name := <-obj.chResName
 	indexNo := index
@@ -330,7 +329,6 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 
 func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
 	diskName := ""
-	// pass the role
 	switch role {
 	case consts.RoleWp:
 		diskName = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.DiskNames[index]

@@ -16,7 +16,7 @@ func flannelData(ver string) Application {
 			createNamespace: false,
 			metadata:        fmt.Sprintf("Flannel (Ver: %s) is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.", ver),
 			postInstall: `
-			None
+	None
 			`,
 		},
 	}

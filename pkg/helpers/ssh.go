@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	mrand "math/rand"
 	"net"
 	"os/exec"
 	"strings"
@@ -96,53 +97,70 @@ func (sshPayload *SSHPayload) FastMode(mode bool) SSHCollection {
 
 func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdout string, stderr string, err error) {
 
-	netRetry := 0
-	for netRetry < int(consts.CounterMaxNetworkSessionRetry) {
+	if _, ok := IsContextPresent(sshExec.ctx, consts.KsctlTestFlagKey); ok {
+		return "stdout", "stderr", nil
+	}
 
-		stdout, stderr, err = func() (_stdout, _stderr string, _err error) {
-			var _session *ssh.Session
+	expoBackoff := NewBackOff(
+		5*time.Second,
+		1,
+		int(consts.CounterMaxNetworkSessionRetry),
+	)
 
-			_session, _err = conn.NewSession()
-			if _err != nil {
+	_err := expoBackoff.Run(
+		sshExec.ctx,
+		sshExec.log,
+		func() (err error) {
+			stdout, stderr, err = func() (_stdout, _stderr string, _err error) {
+				var _session *ssh.Session
+
+				_session, _err = conn.NewSession()
+				if _err != nil {
+					return
+				}
+
+				defer _session.Close()
+
+				_bout := new(strings.Builder)
+				_berr := new(strings.Builder)
+				_session.Stdout = _bout
+				_session.Stderr = _berr
+
+				defer func() {
+					_stdout, _stderr = _bout.String(), _berr.String()
+				}()
+
+				_err = _session.Run(script)
 				return
-			}
-
-			defer _session.Close()
-
-			_bout := new(strings.Builder)
-			_berr := new(strings.Builder)
-			_session.Stdout = _bout
-			_session.Stderr = _berr
-
-			defer func() {
-				_stdout, _stderr = _bout.String(), _berr.String()
 			}()
+			return err
+		},
+		func() bool {
+			return true
+		},
+		func(err error) (errW error, escalateErr bool) {
+			missingStatusErr := &ssh.ExitMissingError{}
+			channelErr := &ssh.OpenChannelError{}
 
-			_err = _session.Run(script)
-			return
-		}()
-
-		if err == nil {
-			return
-		}
-
-		missingStatusErr := &ssh.ExitMissingError{}
-		channelErr := &ssh.OpenChannelError{}
-
-		if errors.As(err, &missingStatusErr) {
-			sshExec.log.Warn(sshExec.ctx, "Retrying! Missing error code but exited", "Reason", err)
-			netRetry++
-		} else if errors.As(err, &channelErr) {
-			sshExec.log.Warn(sshExec.ctx, "Retrying! Facing some channel open issues", "Reason", err)
-			netRetry++
-		} else {
-			return
-		}
+			if errors.As(err, &missingStatusErr) {
+				sshExec.log.Warn(sshExec.ctx, "Retrying! Missing error code but exited", "Reason", err)
+				return nil, false
+			} else if errors.As(err, &channelErr) {
+				sshExec.log.Warn(sshExec.ctx, "Retrying! Facing some channel open issues", "Reason", err)
+				return nil, false
+			} else {
+				return sshExec.log.NewError(sshExec.ctx, "ssh execution faced error", "Reason", err), true
+			}
+		},
+		func() error {
+			return nil
+		},
+		"Retrying, failed in ssh execution",
+	)
+	if _err != nil {
+		err = _err
 	}
 
-	if netRetry == int(consts.CounterMaxNetworkSessionRetry) {
-		err = sshExec.log.NewError(sshExec.ctx, "Retry failed with network problems", "Reason", err)
-	}
 	return
 }
 
@@ -156,16 +174,6 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		return err
 	}
 	sshPayload.log.Debug(sshPayload.ctx, "SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
-
-	if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
-		sshPayload.log.Debug(sshPayload.ctx, "Exec Scripts for fake flag")
-		sshPayload.Output = []string{}
-
-		if sshPayload.flag == consts.UtilExecWithOutput {
-			sshPayload.Output = []string{"random fake"}
-		}
-		return nil
-	}
 
 	config := &ssh.ClientConfig{
 		User: sshPayload.UserName,
@@ -200,25 +208,53 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 	}
 
 	var conn *ssh.Client
-	currRetryCounter := consts.KsctlCounterConsts(0)
 
-	for currRetryCounter < consts.CounterMaxRetryCount {
-		conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)
-		if err == nil {
-			break
-		} else {
-			sshPayload.log.Warn(sshPayload.ctx, "RETRYING", "reason", err)
-		}
-		time.Sleep(10 * time.Second) // waiting for ssh to get started
-		currRetryCounter++
+	t0 := 5 * time.Second
+	multT := 2
+	maxRT := int(consts.CounterMaxRetryCount)
+	if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
+		t0 = time.Second
+		multT = 1
+		maxRT = 3
 	}
-	if currRetryCounter == consts.CounterMaxRetryCount {
-		return sshPayload.log.NewError(sshPayload.ctx, "maximum retry count reached for ssh conn", "Reason", err)
+
+	expoBackoff := NewBackOff(
+		t0,
+		multT,
+		maxRT,
+	)
+
+	_err := expoBackoff.Run(
+		sshPayload.ctx,
+		sshPayload.log,
+		func() (err error) {
+			conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)
+			return err
+		},
+		func() bool {
+			return true
+		},
+		nil,
+		func() error {
+			sshPayload.log.Note(sshPayload.ctx, "ssh tcp conn dial was successful")
+			return nil
+		},
+		"Retrying, failed to establish ssh tcp conn dial",
+	)
+	if _err != nil {
+		if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
+			sshPayload.log.Note(sshPayload.ctx, "skipping the test for the ssh connection error", "Err", _err)
+		} else {
+			return _err
+		}
 	}
 
 	sshPayload.log.Debug(sshPayload.ctx, "Printing", "bashScript", sshPayload.script)
 	sshPayload.log.Print(sshPayload.ctx, "Exec Scripts")
-	defer conn.Close()
+
+	if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); !ok {
+		defer conn.Close()
+	}
 
 	scripts := sshPayload.script
 
@@ -237,9 +273,17 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 
 			for retries < script.MaxRetries {
 				stdout, stderr, err = sshPayload.ExecuteScript(conn, script.ShellScript)
+				// adding some choas //
+				if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
+					if retries+1 < script.MaxRetries {
+						err = sshPayload.log.NewError(sshPayload.ctx, "creating a fake choas error")
+					}
+				}
+				/////////////////////
 				if err != nil {
 					sshPayload.log.Warn(sshPayload.ctx, "Failure in executing script", "retryCount", retries)
-					scriptFailureReason = sshPayload.log.NewError(sshPayload.ctx, "Execute Failure", "stderr", stderr)
+					scriptFailureReason = sshPayload.log.NewError(sshPayload.ctx, "Execute Failure", "stderr", stderr, "Reason", err)
+					<-time.After(time.Duration(mrand.Intn(2)+1) * time.Second)
 				} else {
 					sshPayload.log.Debug(sshPayload.ctx, "ssh outputs", "stdout", stdout)
 					success = true
