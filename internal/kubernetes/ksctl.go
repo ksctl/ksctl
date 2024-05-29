@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"fmt"
-
 	"github.com/ksctl/ksctl/ksctl-components/manifests"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
