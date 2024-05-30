@@ -62,9 +62,9 @@ const (
 )
 
 const (
-	CounterMaxRetryCount          KsctlCounterConsts = 8
-	CounterMaxNetworkSessionRetry KsctlCounterConsts = 9
-	CounterMaxWatchRetryCount     KsctlCounterConsts = 4
+	CounterMaxRetryCount          KsctlCounterConsts = 5
+	CounterMaxNetworkSessionRetry KsctlCounterConsts = 5
+	CounterMaxWatchRetryCount     KsctlCounterConsts = 3
 )
 
 const (

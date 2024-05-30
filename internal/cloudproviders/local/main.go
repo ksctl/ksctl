@@ -62,7 +62,6 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 	return obj, nil
 }
 
-// InitState implements types.CloudFactory.
 func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
 	switch operation {
 	case consts.OperationCreate:
@@ -88,7 +87,6 @@ func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation co
 	return nil
 }
 
-// it will contain the name of the resource to be created
 func (cloud *LocalProvider) Name(resName string) types.CloudFactory {
 	cloud.metadata.resName = resName
 	return cloud
@@ -112,7 +110,6 @@ func (client *LocalProvider) CNI(s string) (externalCNI bool) {
 	return false
 }
 
-// ManagedK8sVersion implements types.CloudFactory.
 func (cloud *LocalProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	log.Debug(localCtx, "Printing", "k8sVersion", ver)
 	cloud.metadata.version = ver
@@ -169,18 +166,16 @@ func (cloud *LocalProvider) VMType(_ string) types.CloudFactory {
 }
 
 // //// NOT IMPLEMENTED //////
+
 func (cloud *LocalProvider) Credential(_ types.StorageFactory) error {
 	return log.NewError(localCtx, "no support")
 }
 
-// it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *LocalProvider) Role(consts.KsctlRole) types.CloudFactory {
 	return nil
 }
 
-// it will contain which vmType to create
 
-// whether to have the resource as public or private (i.e. VMs)
 func (cloud *LocalProvider) Visibility(bool) types.CloudFactory {
 	return nil
 }
@@ -189,63 +184,51 @@ func (*LocalProvider) GetHostNameAllWorkerNode() []string {
 	return nil
 }
 
-// CreateUploadSSHKeyPair implements types.CloudFactory.
 func (*LocalProvider) CreateUploadSSHKeyPair(state types.StorageFactory) error {
 	return nil
 
 }
 
-// DelFirewall implements types.CloudFactory.
 func (*LocalProvider) DelFirewall(state types.StorageFactory) error {
 	return nil
 }
 
-// DelNetwork implements types.CloudFactory.
 func (*LocalProvider) DelNetwork(state types.StorageFactory) error {
 	return nil
 }
 
-// DelSSHKeyPair implements types.CloudFactory.
 func (*LocalProvider) DelSSHKeyPair(state types.StorageFactory) error {
 	return nil
 }
 
-// DelVM implements types.CloudFactory.
 func (*LocalProvider) DelVM(types.StorageFactory, int) error {
 	return nil
 }
 
-// GetStateForHACluster implements types.CloudFactory.
 func (*LocalProvider) GetStateForHACluster(state types.StorageFactory) (cloud.CloudResourceState, error) {
 	return cloud.CloudResourceState{}, log.NewError(localCtx, "should not be implemented")
 }
 
-// NewFirewall implements types.CloudFactory.
 func (*LocalProvider) NewFirewall(state types.StorageFactory) error {
 	return nil
 }
 
-// NewNetwork implements types.CloudFactory.
 func (*LocalProvider) NewNetwork(state types.StorageFactory) error {
 	return nil
 }
 
-// NewVM implements types.CloudFactory.
 func (*LocalProvider) NewVM(types.StorageFactory, int) error {
 	return nil
 }
 
-// NoOfControlPlane implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfControlPlane(int, bool) (int, error) {
 	return -1, log.NewError(localCtx, "unsupported operation")
 }
 
-// NoOfDataStore implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfDataStore(int, bool) (int, error) {
 	return -1, log.NewError(localCtx, "unsupported operation")
 }
 
-// NoOfWorkerPlane implements types.CloudFactory.
 func (cloud *LocalProvider) NoOfWorkerPlane(types.StorageFactory, int, bool) (int, error) {
 	return -1, log.NewError(localCtx, "unsupported operation")
 }

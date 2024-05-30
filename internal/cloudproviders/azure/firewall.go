@@ -70,7 +70,6 @@ func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 	return nil
 }
 
-// NewFirewall implements types.CloudFactory.
 func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 	name := <-obj.chResName
 	role := <-obj.chRole

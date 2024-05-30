@@ -1,7 +1,10 @@
 package civo
 
 import (
+	"fmt"
 	"time"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -168,7 +171,6 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 	return errCreateVM
 }
 
-// DelVM implements types.CloudFactory.
 func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 
 	indexNo := index
@@ -187,8 +189,17 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 	var errCreateVM error
 
 	switch role {
-	case consts.RoleCp:
-		instID = mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs[indexNo]
+	case consts.RoleCp, consts.RoleWp, consts.RoleDs:
+		var vmState *storageTypes.CivoStateVMs
+		switch role {
+		case consts.RoleCp:
+			vmState = &mainStateDocument.CloudInfra.Civo.InfoControlPlanes
+		case consts.RoleWp:
+			vmState = &mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes
+		case consts.RoleDs:
+			vmState = &mainStateDocument.CloudInfra.Civo.InfoDatabase
+		}
+		instID = vmState.VMIDs[indexNo]
 		log.Debug(civoCtx, "Printing", "instID", instID)
 
 		go func() {
@@ -202,11 +213,11 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 			obj.mu.Lock()
 			defer obj.mu.Unlock()
 
-			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes[indexNo] = ""
+			vmState.VMIDs[indexNo] = ""
+			vmState.PublicIPs[indexNo] = ""
+			vmState.PrivateIPs[indexNo] = ""
+			vmState.Hostnames[indexNo] = ""
+			vmState.VMSizes[indexNo] = ""
 
 			if err := storage.Write(mainStateDocument); err != nil {
 				errCreateVM = err
@@ -217,62 +228,6 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 			log.Success(civoCtx, "Deleted vm", "id", instID)
 		}()
 
-		<-done
-
-	case consts.RoleWp:
-		go func() {
-			defer close(done)
-			instID = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[indexNo]
-			log.Debug(civoCtx, "Printing", "instID", instID)
-
-			_, err := obj.client.DeleteInstance(instID)
-			if err != nil {
-				errCreateVM = err
-				return
-			}
-			obj.mu.Lock()
-			defer obj.mu.Unlock()
-			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes[indexNo] = ""
-
-			if err := storage.Write(mainStateDocument); err != nil {
-				errCreateVM = err
-				return
-			}
-			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success(civoCtx, "Deleted vm", "id", instID)
-		}()
-		<-done
-
-	case consts.RoleDs:
-		go func() {
-			defer close(done)
-			instID = mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs[indexNo]
-			log.Debug(civoCtx, "Printing", "instID", instID)
-
-			_, err := obj.client.DeleteInstance(instID)
-			if err != nil {
-				errCreateVM = err
-				return
-			}
-			obj.mu.Lock()
-			defer obj.mu.Unlock()
-			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames[indexNo] = ""
-			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes[indexNo] = ""
-
-			if err := storage.Write(mainStateDocument); err != nil {
-				errCreateVM = err
-				return
-			}
-			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success(civoCtx, "Deleted vm", "id", instID)
-		}()
 		<-done
 
 	case consts.RoleLb:
@@ -304,35 +259,33 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 		}()
 		<-done
 	}
+
 	log.Debug(civoCtx, "Printing", "cloudState", mainStateDocument)
 
 	return errCreateVM
 }
 
 func watchInstance(obj *CivoProvider, storage types.StorageFactory, instID string, idx int, role consts.KsctlRole, name string) error {
-	for {
-		// NOTE: this is prone to network failure
 
-		currRetryCounter := consts.KsctlCounterConsts(0)
-		var getInst *civogo.Instance
-		for currRetryCounter < consts.CounterMaxWatchRetryCount {
-			var err error
+	expoBackoff := helpers.NewBackOff(
+		10*time.Second,
+		2,
+		2*int(consts.CounterMaxWatchRetryCount),
+	)
 
+	var getInst *civogo.Instance
+	_err := expoBackoff.Run(
+		civoCtx,
+		log,
+		func() (err error) {
 			getInst, err = obj.client.GetInstance(instID)
-			if err != nil {
-				currRetryCounter++
-				log.Warn(civoCtx, "retrying", "err", err)
-			} else {
-				break
-			}
-			time.Sleep(5 * time.Second)
-		}
-		if currRetryCounter == consts.CounterMaxWatchRetryCount {
-			return log.NewError(civoCtx, "maximum retry reached failed to get the state of vm")
-		}
-
-		if getInst.Status == "ACTIVE" {
-
+			return err
+		},
+		func() bool {
+			return getInst.Status == "ACTIVE"
+		},
+		nil,
+		func() error {
 			pubIP := getInst.PublicIP
 			pvIP := getInst.PrivateIP
 			hostNam := getInst.Hostname
@@ -368,13 +321,13 @@ func watchInstance(obj *CivoProvider, storage types.StorageFactory, instID strin
 				mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.HostName = hostNam
 			}
 
-			if err := storage.Write(mainStateDocument); err != nil {
-				return err
-			}
-
-			return nil
-		}
-		log.Debug(civoCtx, "waiting for vm to be ready..", "vmName", name, "Status", getInst.Status)
-		time.Sleep(10 * time.Second)
+			return storage.Write(mainStateDocument)
+		},
+		fmt.Sprintf("waiting for vm %s to be ready", name),
+	)
+	if _err != nil {
+		return _err
 	}
+
+	return nil
 }

@@ -127,11 +127,8 @@ func (l *GeneralLog) log(disableContext bool, useGroupFormer bool, ctx context.C
 }
 
 func getTime(level uint) string {
-	// if level < 9 {
-	// 	return ""
-	// }
 	t := time.Now()
-	return color.HiBlackString(fmt.Sprintf("%d:%d:%d ", t.Hour(), t.Minute(), t.Second()))
+	return color.HiBlackString(fmt.Sprintf("%02d:%02d:%02d ", t.Hour(), t.Minute(), t.Second()))
 }
 
 func NewGeneralLogger(verbose int, out io.Writer) *GeneralLog {

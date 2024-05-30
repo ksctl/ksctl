@@ -6,7 +6,7 @@ import (
 )
 
 func isValidK3sVersion(ver string) error {
-	validVersion := []string{"1.29.4", "1.27.4", "1.27.1", "1.26.7", "1.25.12"} // TODO: check
+	validVersion := []string{"1.30.1", "1.29.5", "1.29.4", "1.28.10", "1.27.4", "1.27.1", "1.26.7", "1.25.12"} // TODO: check
 
 	for _, vver := range validVersion {
 		if vver == ver {

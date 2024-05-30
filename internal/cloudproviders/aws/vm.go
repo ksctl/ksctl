@@ -222,8 +222,6 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		}
 	}
 
-	// stringindexNo := fmt.Sprintf("%d", indexNo)
-
 	nicid, err := obj.CreateNetworkInterface(awsCtx, storage, name, indexNo, role)
 	if err != nil {
 		return err

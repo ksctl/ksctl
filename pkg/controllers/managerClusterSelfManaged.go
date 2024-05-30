@@ -106,8 +106,6 @@ func (manager *ManagerClusterSelfManaged) CreateCluster() error {
 		return err
 	}
 
-	log.Note(controllerCtx, "only cloud storage are having replay!")
-
 	externalCNI, err := bootstrapController.ConfigureCluster(client)
 	if err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
@@ -243,7 +241,6 @@ func (manager *ManagerClusterSelfManaged) AddWorkerPlaneNodes() error {
 		return err
 	}
 
-	log.Note(controllerCtx, "Only cloud storage are having replay!")
 	err = bootstrapController.JoinMoreWorkerPlanes(client, currWP, client.Metadata.NoWP)
 	if err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)

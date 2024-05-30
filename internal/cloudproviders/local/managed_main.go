@@ -41,7 +41,6 @@ func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) erro
 	return nil
 }
 
-// NewManagedCluster implements types.CloudFactory.
 func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 
 	vmType := cloud.vmType

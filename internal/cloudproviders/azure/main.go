@@ -210,24 +210,6 @@ func (cloud *AzureProvider) Credential(storage types.StorageFactory) error {
 		},
 	}
 
-	// FIXME: add ping pong for validation of credentials
-	//if err = os.Setenv("AZURE_SUBSCRIPTION_ID", skey); err != nil {
-	//	return err
-	//}
-	//
-	//if err = os.Setenv("AZURE_TENANT_ID", tid); err != nil {
-	//	return err
-	//}
-	//
-	//if err = os.Setenv("AZURE_CLIENT_ID", cid); err != nil {
-	//	return err
-	//}
-	//
-	//if err = os.Setenv("AZURE_CLIENT_SECRET", cs); err != nil {
-	//	return err
-	//}
-	// ADD SOME PING method to validate credentials
-
 	if err := storage.WriteCredentials(consts.CloudAzure, apiStore); err != nil {
 		return err
 	}
@@ -253,7 +235,6 @@ func NewClient(
 		haCluster:   meta.IsHA,
 		metadata: metadata{
 			k8sVersion: meta.K8sVersion,
-			// k8sName:    meta.K8sDistro,
 		},
 		client: ClientOption(),
 	}
@@ -263,7 +244,6 @@ func NewClient(
 	return obj, nil
 }
 
-// Name it will contain the name of the resource to be created
 func (cloud *AzureProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(azureCtx, log, resName); err != nil {
@@ -275,7 +255,6 @@ func (cloud *AzureProvider) Name(resName string) types.CloudFactory {
 	return cloud
 }
 
-// Role it will contain whether the resource to be created belongs for controlplane component or loadbalancer...
 func (cloud *AzureProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	switch resRole {
@@ -289,7 +268,6 @@ func (cloud *AzureProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 	}
 }
 
-// VMType it will contain which vmType to create
 func (cloud *AzureProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(cloud, size); err != nil {
@@ -301,7 +279,6 @@ func (cloud *AzureProvider) VMType(size string) types.CloudFactory {
 	return cloud
 }
 
-// Visibility whether to have the resource as public or private (i.e. VMs)
 func (cloud *AzureProvider) Visibility(toBePublic bool) types.CloudFactory {
 	cloud.metadata.public = toBePublic
 	return cloud
@@ -311,7 +288,6 @@ func (cloud *AzureProvider) Application(s []string) (externalApps bool) {
 	return true
 }
 
-// CNI Why will be installed because it will be done by the extensions
 func (cloud *AzureProvider) CNI(s string) (externalCNI bool) {
 
 	log.Debug(azureCtx, "Printing", "cni", s)
@@ -329,7 +305,6 @@ func (cloud *AzureProvider) CNI(s string) (externalCNI bool) {
 	return false
 }
 
-// NoOfControlPlane implements types.CloudFactory.
 func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 
 	log.Debug(azureCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
@@ -373,7 +348,6 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	return -1, log.NewError(azureCtx, "constrains for no of controlplane >= 3 and odd number")
 }
 
-// NoOfDataStore implements types.CloudFactory.
 func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	log.Debug(azureCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
@@ -417,7 +391,6 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	return -1, log.NewError(azureCtx, "constrains for no of Datastore>= 3 and odd number")
 }
 
-// NoOfWorkerPlane implements types.CloudFactory.
 func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
 	log.Debug(azureCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {

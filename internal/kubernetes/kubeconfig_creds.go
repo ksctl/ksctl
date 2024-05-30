@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
@@ -106,67 +107,45 @@ func transferData(kubeconfig,
 		TLSClientConfig: tlsConf,
 	}
 
-	for counter := 0; counter <= int(consts.CounterMaxRetryCount); counter++ {
+	expoBackoff := helpers.NewBackOff(
+		10*time.Second,
+		1,
+		int(consts.CounterMaxWatchRetryCount),
+	)
+	var (
+		resHttp *http.Response
+	)
+	_err := expoBackoff.Run(
+		kubernetesCtx,
+		log,
+		func() (err error) {
+			req, _err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
+			if _err != nil {
+				return log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", _err)
+			}
+			client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
 
-		time.Sleep(10 * time.Second)
-
-		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
-		if err != nil {
-			return log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err)
-		}
-		client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
-
-		res, err := client.Do(req)
-
-		if err != nil {
-
-			if counter == int(consts.CounterMaxRetryCount) {
-				return log.NewError(kubernetesCtx,
-					"failed, client error making http request",
-					"Reason", err,
+			resHttp, err = client.Do(req)
+			return err
+		},
+		func() bool {
+			return resHttp.StatusCode == http.StatusOK
+		},
+		nil,
+		func() error {
+			body, _err := io.ReadAll(resHttp.Body)
+			if _err != nil {
+				return log.NewError(kubernetesCtx, "status code was 200, but failed to read response",
+					"Reason", _err,
 				)
 			}
-			log.Warn(kubernetesCtx, "failed, client error making http request",
-				"failed", counter,
-				"maxRetries", int(consts.CounterMaxRetryCount),
-				"Reason", err,
-			)
-			continue
-		}
-
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-
-			if counter == int(consts.CounterMaxRetryCount) {
-				return log.NewError(kubernetesCtx,
-					"failed, to read response",
-					"Reason", err,
-				)
-			}
-
-			log.Warn(kubernetesCtx, "failed, to read response",
-				"failed", counter,
-				"maxRetries", int(consts.CounterMaxRetryCount),
-				"Reason", err,
-			)
-			continue
-		}
-
-		if res.StatusCode < 300 {
-			log.Success(kubernetesCtx, "Response of successful state transfer", "StatusCode", res.StatusCode, "Response", string(body))
-			break
-		}
-
-		if counter == int(consts.CounterMaxRetryCount) {
-			return log.NewError(kubernetesCtx, "failed, to send data", "Headers", res.Header, "StatusCode", res.StatusCode, "Response", string(body))
-		}
-
-		log.Warn(kubernetesCtx, "Error from state transfer",
-			"failed", counter,
-			"maxRetries", int(consts.CounterMaxRetryCount),
-			"StatusCode", res.StatusCode,
-			"Response", string(body))
-
+			log.Success(kubernetesCtx, "Response of successful state transfer", "StatusCode", resHttp.StatusCode, "Response", string(body))
+			return nil
+		},
+		"Retrying to get valid response from state transfer",
+	)
+	if _err != nil {
+		return _err
 	}
 
 	return nil

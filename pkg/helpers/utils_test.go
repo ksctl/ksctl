@@ -2,10 +2,12 @@ package helpers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
 	"testing"
+	"time"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -22,7 +24,7 @@ var (
 	dir                              = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
 	log          types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 	mainStateDoc                     = &storageTypes.StorageDocument{}
-	dummyCtx                         = context.TODO()
+	dummyCtx                         = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
 )
 
 func TestConsts(t *testing.T) {
@@ -131,11 +133,30 @@ func TestSSHExecute(t *testing.T) {
 		ctx: dummyCtx,
 		log: log,
 	}
+	testSimulator := NewScriptCollection()
+	testSimulator.Append(types.Script{
+		Name:           "test",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
+cat /etc/os-releases
+`,
+	})
+	testSimulator.Append(types.Script{
+		Name:           "testhaving retry",
+		CanRetry:       true,
+		MaxRetries:     3,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript: `
+suao apt install ...
+`,
+	})
 	sshTest.Username("fake")
 	sshTest.PrivateKey(mainStateDoc.SSHKeyPair.PrivateKey)
-	assert.Assert(t, sshTest.Flag(consts.UtilExecWithoutOutput).Script(NewScriptCollection()).
+	sshT := sshTest.Flag(consts.UtilExecWithoutOutput).Script(testSimulator).
 		IPv4("A.A.A.A").
-		FastMode(true).SSHExecute() != nil, "ssh should fail")
+		FastMode(true).SSHExecute()
+	assert.Assert(t, sshT == nil, fmt.Sprintf("ssh should fail, got: %v, exepected ! nil", sshT))
 
 	fmt.Println("Cleanup..")
 	if err := os.RemoveAll(dir); err != nil {
@@ -505,4 +526,118 @@ func TestFirewallRules(t *testing.T) {
 				expectedTcp,
 			})
 	})
+}
+
+func TestBackOffRun_SuccessOnFirstAttempt(t *testing.T) {
+	ctx := context.Background()
+
+	executeFunc := func() error {
+		return nil
+	}
+
+	isSuccessful := func() bool {
+		return true
+	}
+
+	errorFunc := func(err error) (error, bool) {
+		return nil, false
+	}
+
+	successFunc := func() error {
+		return nil
+	}
+
+	backOff := NewBackOff(1*time.Second, 1, 3)
+
+	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
+	assert.Assert(t, err == nil)
+}
+
+func TestBackOffRun_RetryOnFailure(t *testing.T) {
+	ctx := context.Background()
+
+	callCount := 0
+	executeFunc := func() error {
+		callCount++
+		if callCount < 3 {
+			return errors.New("execute error")
+		}
+		return nil
+	}
+
+	isSuccessful := func() bool {
+		return callCount == 3
+	}
+
+	errorFunc := func(err error) (error, bool) {
+		return nil, false
+	}
+
+	successFunc := func() error {
+		return nil
+	}
+
+	backOff := NewBackOff(1*time.Second, 1, 3)
+
+	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
+	assert.Assert(t, err == nil)
+
+	assert.Equal(t, 3, callCount)
+}
+
+func TestBackOffRun_ContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	executeFunc := func() error {
+		return errors.New("execute error")
+	}
+
+	isSuccessful := func() bool {
+		return false
+	}
+
+	errorFunc := func(err error) (error, bool) {
+		return nil, false
+	}
+
+	successFunc := func() error {
+		return nil
+	}
+
+	backOff := NewBackOff(1*time.Second, 1, 3)
+
+	go func() {
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
+	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
+	assert.Assert(t, err != nil)
+
+	assert.Equal(t, context.Canceled, ctx.Err())
+}
+
+func TestBackOffRun_MaxRetriesExceeded(t *testing.T) {
+	ctx := context.Background()
+
+	executeFunc := func() error {
+		return errors.New("execute error")
+	}
+
+	isSuccessful := func() bool {
+		return false
+	}
+
+	errorFunc := func(err error) (error, bool) {
+		return nil, false
+	}
+
+	successFunc := func() error {
+		return nil
+	}
+
+	backOff := NewBackOff(1*time.Second, 1, 3)
+
+	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
+	assert.Assert(t, err != nil)
 }

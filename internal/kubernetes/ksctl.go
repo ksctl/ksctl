@@ -54,6 +54,9 @@ var (
 	}
 )
 
+// TODO: add netpolicy so that the ksctl agent is only available by ksctl specific components
+// in ksctl namespace only
+
 func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
 	components := []string{"ksctl-application@" + manifests.KsctlApplicationStackBranchOrTagName}
