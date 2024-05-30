@@ -12,7 +12,10 @@ on:
       - "ksctl-components/agent/**"
       - "ksctl-components/operators/**"
       - "ksctl-components/stateimport/**"
-      - ".github/workflows/*"
+      - ".github/workflows/e2e-*"
+      - ".github/workflows/testing-*"
+      - ".github/workflows/docker.yaml"
+      - ".github/workflows/ci-main.yaml"
     branches: [main]
   workflow_dispatch:
 
