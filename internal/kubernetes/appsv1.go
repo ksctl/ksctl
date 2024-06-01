@@ -63,7 +63,7 @@ func (k *Kubernetes) deploymentApply(o *appsv1.Deployment) error {
 func (k *Kubernetes) deploymentReadyWait(name, namespace string) error {
 
 	expoBackoff := helpers.NewBackOff(
-		2*time.Second,
+		5*time.Second,
 		2,
 		int(consts.CounterMaxRetryCount),
 	)

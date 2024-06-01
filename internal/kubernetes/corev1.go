@@ -207,7 +207,7 @@ func (k *Kubernetes) secretApply(o *corev1.Secret) error {
 func (k *Kubernetes) podReadyWait(name, namespace string) error {
 
 	expoBackoff := helpers.NewBackOff(
-		2*time.Second,
+		5*time.Second,
 		2,
 		int(consts.CounterMaxRetryCount),
 	)
