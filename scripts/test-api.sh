@@ -83,6 +83,8 @@ echo "-------------------------------------------------"
 cd storage/external/mongodb/
 GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
+cd ..
+
 
 echo "-------------------------------------------------"
 echo "|   Testing (ksctl-components/agent)"

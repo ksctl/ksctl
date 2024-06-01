@@ -45,7 +45,7 @@ func InitCore() (err error) {
 
 func ExecuteKsctlSpecificRun() error {
 
-	log := logger.NewGeneralLogger(-1, os.Stdout)
+	log := logger.NewStructuredLogger(-1, os.Stdout)
 
 	controller, err := control_pkg.NewManagerClusterKsctl(
 		ctx,
@@ -66,7 +66,7 @@ func ExecuteKsctlSpecificRun() error {
 }
 
 func ExecuteManagedRun() error {
-	log := logger.NewGeneralLogger(-1, os.Stdout)
+	log := logger.NewStructuredLogger(-1, os.Stdout)
 
 	controller, err := control_pkg.NewManagerClusterManaged(
 		ctx,
@@ -92,7 +92,7 @@ func ExecuteManagedRun() error {
 }
 
 func ExecuteHARun() error {
-	log := logger.NewGeneralLogger(-1, os.Stdout)
+	log := logger.NewStructuredLogger(-1, os.Stdout)
 
 	controller, err := control_pkg.NewManagerClusterSelfManaged(
 		ctx,

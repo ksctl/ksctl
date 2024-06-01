@@ -1,20 +1,10 @@
 package logger
 
 import (
-	"context"
 	"strings"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
-
-func getPackageName(ctx context.Context) string {
-	if v, ok := ctx.Value(consts.KsctlModuleNameKey).(string); ok {
-		return v
-	} else {
-		return "!!NOT_SET"
-	}
-}
 
 func addLineTerminationForLongStrings(str string) string {
 

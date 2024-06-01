@@ -41,11 +41,7 @@ func main() {
 		verbosityLevel = -1
 	}
 
-	if slices.Contains[[]string, string](rFlags, "new_logging") {
-		l = logger.NewGeneralLogger(verbosityLevel, os.Stdout)
-	} else {
-		l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
-	}
+	l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
 
 	operation, meta := GetReqPayload(l)
 
