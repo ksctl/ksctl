@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"reflect"
+	"strings"
 
 	"github.com/fatih/color"
 	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
@@ -81,6 +83,49 @@ func NewStructuredLogger(verbose int, out io.Writer) *StructuredLog {
 	return &StructuredLog{logger: newLogger(out, ve)}
 }
 
+func formGroups(ctx context.Context, v ...any) (format string, vals []any) {
+	if len(v) == 0 {
+		return "", nil
+	}
+	_format := strings.Builder{}
+
+	defer func() {
+		format = strings.TrimSpace(_format.String())
+	}()
+	i := 0
+	for ; i+1 < len(v); i += 2 {
+		if !reflect.TypeOf(v[i+1]).Implements(reflect.TypeOf((*error)(nil)).Elem()) &&
+			(reflect.TypeOf(v[i+1]).Kind() == reflect.Interface ||
+				reflect.TypeOf(v[i+1]).Kind() == reflect.Ptr ||
+				reflect.TypeOf(v[i+1]).Kind() == reflect.Struct) {
+			_format.WriteString(fmt.Sprintf("%s", v[i]) + "=%#v ")
+		} else {
+			_format.WriteString(fmt.Sprintf("%s", v[i]) + "=%v ")
+		}
+
+		vals = append(vals, v[i+1])
+	}
+
+	for ; i < len(v); i++ {
+		_format.WriteString("!!EXTRA:%v ")
+		vals = append(vals, v[i])
+	}
+	return
+}
+
+func (l *StructuredLog) logErrorf(ctx context.Context, msg string, args ...any) error {
+	format, _args := formGroups(ctx, args...)
+
+	var errMsg error
+	if _args == nil {
+		errMsg = fmt.Errorf(msg + " " + format)
+	} else {
+		errMsg = fmt.Errorf(msg+" "+format, _args...)
+	}
+
+	return errMsg
+}
+
 func (l *StructuredLog) Print(ctx context.Context, msg string, args ...any) {
 	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey)}, args...)
 	l.logger.Info(msg, args...)
@@ -115,7 +160,7 @@ func (l *StructuredLog) Error(ctx context.Context, msg string, args ...any) {
 
 func (l *StructuredLog) NewError(ctx context.Context, format string, args ...any) error {
 	args = append([]any{"component", ctx.Value(consts.KsctlModuleNameKey)}, args...)
-	return fmt.Errorf(format, args...)
+	return l.logErrorf(ctx, format, args...)
 }
 
 func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {

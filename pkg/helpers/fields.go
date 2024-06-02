@@ -11,6 +11,7 @@ import (
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"golang.org/x/term"
 )
@@ -84,12 +85,16 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 
 func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName string) error {
 	if len(clusterName) > 50 {
-		return log.NewError(ctx, "name is too long", "name", clusterName)
+		return ksctlErrors.ErrInvalidResourceName.Wrap(
+			log.NewError(ctx, "name is too long", "name", clusterName),
+		)
 	}
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
 
 	if !matched || err != nil {
-		return log.NewError(ctx, "invalid cluster-name")
+		return ksctlErrors.ErrInvalidResourceName.Wrap(
+			log.NewError(ctx, "invalid cluster name", "expectedToBePattern", `(^[a-z])([-a-z0-9])*([a-z0-9]$)`),
+		)
 	}
 
 	return nil

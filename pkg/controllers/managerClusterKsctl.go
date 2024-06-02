@@ -169,7 +169,7 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 	log := manager.log
 	defer panicCatcher(log)
 
-	if err := validationFields(client.Metadata); err != nil {
+	if err := manager.validationFields(client.Metadata); err != nil {
 		log.Error(controllerCtx, "handled error", "catch", err)
 		return err
 	}

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"runtime/debug"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -27,7 +28,13 @@ type managerInfo struct {
 }
 
 func (manager *managerInfo) initStorage(ctx context.Context) error {
-
+	if !helpers.ValidateStorage(manager.client.Metadata.StateLocation) {
+		return ksctlErrors.ErrInvalidStorageProvider.Wrap(
+			manager.log.NewError(
+				controllerCtx, "Problem in validation", "storage", manager.client.Metadata.StateLocation,
+			),
+		)
+	}
 	switch manager.client.Metadata.StateLocation {
 	case consts.StoreLocal:
 		manager.client.Storage = localstate.NewClient(ctx, manager.log)
@@ -35,8 +42,6 @@ func (manager *managerInfo) initStorage(ctx context.Context) error {
 		manager.client.Storage = externalmongostate.NewClient(ctx, manager.log)
 	case consts.StoreK8s:
 		manager.client.Storage = kubernetesstate.NewClient(ctx, manager.log)
-	default:
-		return manager.log.NewError(ctx, "invalid storage provider")
 	}
 
 	if err := manager.client.Storage.Connect(); err != nil {
@@ -55,8 +60,8 @@ func panicCatcher(log types.LoggerFactory) {
 
 func (manager *managerInfo) setupConfigurations() error {
 
-	if err := validationFields(manager.client.Metadata); err != nil {
-		return manager.log.NewError(controllerCtx, "field validation failed", "Reason", err)
+	if err := manager.validationFields(manager.client.Metadata); err != nil {
+		return err
 	}
 
 	if err := helpers.IsValidName(controllerCtx, manager.log, manager.client.Metadata.ClusterName); err != nil {

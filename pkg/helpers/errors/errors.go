@@ -6,49 +6,50 @@ import (
 )
 
 var (
-	ErrMissingArgument      = globalError("MissingArgumentError")
-	ErrMissingConfiguration = globalError("MissingConfigurationError")
+	ErrMissingArgument      = ksctlGlobalErr("MissingArgumentError")
+	ErrMissingConfiguration = ksctlGlobalErr("MissingConfigurationError")
 
-	ErrNilCredentials = globalError("NilCredentialsError")
+	ErrNilCredentials = ksctlGlobalErr("NilCredentialsError")
 
-	ErrTimeOut        = globalError("TimeoutError")
-	ErrSSHFingerprint = globalError("SSHFingerPrintError")
+	ErrTimeOut        = ksctlGlobalErr("TimeoutError")
+	ErrSSHFingerprint = ksctlGlobalErr("SSHFingerPrintError")
 
-	ErrInvalidRegion           = globalError("InvalidRegionError")
-	ErrInvalidCloudProvider    = globalError("InvalidCloudProviderError")
-	ErrInvalidDistribution     = globalError("InvalidDistributionError")
-	ErrInvalidStorage          = globalError("InvalidStorageError")
-	ErrInvalidLogger           = globalError("InvalidLoggerError")
-	ErrInvalidResourceName     = globalError("InvalidResourceNameError")
-	ErrInvalidVMSize           = globalError("InvalidVMSizeError")
-	ErrInvalidNoOfControlplane = globalError("InvalidNoOfControlplaneError")
-	ErrInvalidNoOfLoadbalancer = globalError("InvalidNoOfLoadbalancerError")
-	ErrInvalidNoOfDatastore    = globalError("InvalidNoOfDatastoreError")
-	ErrInvalidNoOfWorkerplane  = globalError("InvalidNoOfWorkerplaneError")
+	ErrInvalidRegion            = ksctlGlobalErr("InvalidRegionError")
+	ErrInvalidCloudProvider     = ksctlGlobalErr("InvalidCloudProviderError")
+	ErrInvalidBootstrapProvider = ksctlGlobalErr("InvalidBootstrapProvider")
+	ErrInvalidStorageProvider   = ksctlGlobalErr("InvalidStorageProviderError")
+	ErrInvalidLogger            = ksctlGlobalErr("InvalidLoggerError")
+	ErrInvalidResourceName      = ksctlGlobalErr("InvalidResourceNameError")
+	ErrInvalidVMSize            = ksctlGlobalErr("InvalidVMSizeError")
+	ErrInvalidNoOfControlplane  = ksctlGlobalErr("InvalidNoOfControlplaneError")
+	ErrInvalidNoOfLoadbalancer  = ksctlGlobalErr("InvalidNoOfLoadbalancerError")
+	ErrInvalidNoOfDatastore     = ksctlGlobalErr("InvalidNoOfDatastoreError")
+	ErrInvalidNoOfWorkerplane   = ksctlGlobalErr("InvalidNoOfWorkerplaneError")
 
-	ErrUnknown  = globalError("UnknownError")
-	ErrInternal = globalError("InternalError")
+	ErrUnknown  = ksctlGlobalErr("UnknownError")
+	ErrInternal = ksctlGlobalErr("InternalError")
 
-	ErrFailedInitDatastore               = globalError("FailedInitDatastoreError")
-	ErrFailedInitControlplane            = globalError("FailedInitControlplaneError")
-	ErrFailedInitWorkerplane             = globalError("FailedInitWorkerplaneError")
-	ErrFailedInitLoadbalancer            = globalError("FailedInitLoadbalancerError")
-	ErrFailedConnectingKubernetesCluster = globalError("FailedConnectingKubernetesClusterError")
+	ErrFailedCloudResourceQuotaLimitReached = ksctlGlobalErr("FailedCloudResourceQuotaLimitReached")
+	ErrFailedInitDatastore                  = ksctlGlobalErr("FailedInitDatastoreError")
+	ErrFailedInitControlplane               = ksctlGlobalErr("FailedInitControlplaneError")
+	ErrFailedInitWorkerplane                = ksctlGlobalErr("FailedInitWorkerplaneError")
+	ErrFailedInitLoadbalancer               = ksctlGlobalErr("FailedInitLoadbalancerError")
+	ErrFailedConnectingKubernetesCluster    = ksctlGlobalErr("FailedConnectingKubernetesClusterError")
 )
 
-type globalError string
+type ksctlGlobalErr string
 
-func (err globalError) Error() string {
+func (err ksctlGlobalErr) Error() string {
 	return string(err)
 }
 
-func (err globalError) Is(target error) bool {
+func (err ksctlGlobalErr) Is(target error) bool {
 	ts := target.Error()
 	es := string(err)
 	return ts == es || strings.HasPrefix(ts, es+": ")
 }
 
-func (err globalError) Wrap(inner error) error {
+func (err ksctlGlobalErr) Wrap(inner error) error {
 	return wrapError{code: string(err), err: inner}
 }
 
@@ -69,5 +70,5 @@ func (err wrapError) Unwrap() error {
 }
 
 func (err wrapError) Is(target error) bool {
-	return globalError(err.code).Is(target)
+	return ksctlGlobalErr(err.code).Is(target)
 }

@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/ksctl/ksctl/pkg/controllers"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 )
 
 func createManagedCluster(ksctlClient *controllers.ManagerClusterManaged) {
@@ -11,6 +12,12 @@ func createManagedCluster(ksctlClient *controllers.ManagerClusterManaged) {
 
 	err := ksctlClient.CreateCluster()
 	if err != nil {
+		if ksctlErrors.ErrInvalidCloudProvider.Is(err) {
+			l.Error(ctx, "problem is invalid cloud provider")
+		}
+		if ksctlErrors.ErrInvalidResourceName.Is(err) {
+			l.Error(ctx, "problem from resource name")
+		}
 		l.Error(ctx, "Failure", "err", err)
 		os.Exit(1)
 	}

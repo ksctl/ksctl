@@ -24,6 +24,11 @@ func main() {
 		"USERID",
 		"e2e",
 	)
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlModuleNameKey,
+		"e2e",
+	)
 	// ctx = context.WithValue(
 	// 	ctx,
 	// 	consts.KsctlCustomDirLoc,
