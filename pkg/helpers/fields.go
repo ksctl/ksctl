@@ -89,8 +89,12 @@ func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName strin
 		)
 	}
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
-
-	if !matched || err != nil {
+	if err != nil {
+		return ksctlErrors.ErrUnknown.Wrap(
+			log.NewError(ctx, "failed to compile the regex", "Reason", err),
+		)
+	}
+	if !matched {
 		return ksctlErrors.ErrInvalidResourceName.Wrap(
 			log.NewError(ctx, "invalid cluster name", "expectedToBePattern", `(^[a-z])([-a-z0-9])*([a-z0-9]$)`),
 		)

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"runtime"
+	"path"
 	"testing"
 	"time"
 
@@ -13,6 +13,7 @@ import (
 
 	"github.com/gookit/goutil/dump"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -21,7 +22,7 @@ import (
 )
 
 var (
-	dir                              = fmt.Sprintf("%s/ksctl-k3s-test", os.TempDir())
+	dir                              = path.Join(os.TempDir(), "ksctl-k3s-test")
 	log          types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 	mainStateDoc                     = &storageTypes.StorageDocument{}
 	dummyCtx                         = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
@@ -89,14 +90,6 @@ func TestGenerateCerts(t *testing.T) {
 	}
 }
 
-func TestGetUsername(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		assert.Equal(t, os.Getenv(UserDir), GetUserName(), "Unable to fetch correct username")
-	} else {
-		assert.Equal(t, os.Getenv(UserDir), GetUserName(), "Unable to fetch correct username")
-	}
-}
-
 func TestCNIValidation(t *testing.T) {
 	cnitests := map[string]bool{
 		string(consts.CNIAzure):   true,
@@ -120,15 +113,51 @@ func TestCreateSSHKeyPair(t *testing.T) {
 	dump.Println(mainStateDoc.SSHKeyPair)
 }
 
-func TestIsValidClusterName(T *testing.T) {
-	assert.Check(T, nil == IsValidName(dummyCtx, log, "demo"), "Returns false for valid cluster name")
-	assert.Check(T, nil != IsValidName(dummyCtx, log, "Dem-o234"), "Returns True for invalid cluster name")
-	assert.Check(T, nil == IsValidName(dummyCtx, log, "d-234"), "Returns false for valid cluster name")
-	assert.Check(T, nil != IsValidName(dummyCtx, log, "234"), "Returns true for invalid cluster name")
-	assert.Check(T, nil != IsValidName(dummyCtx, log, "-2342"), "Returns True for invalid cluster name")
-	assert.Check(T, nil != IsValidName(dummyCtx, log, "demo-"), "Returns True for invalid cluster name")
-	assert.Check(T, nil != IsValidName(dummyCtx, log, "dscdscsd-#$#$#"), "Returns True for invalid cluster name")
-	assert.Check(T, nil != IsValidName(dummyCtx, log, "ds@#$#$#"), "Returns True for invalid cluster name")
+func TestIsValidClusterName(t *testing.T) {
+	assert.Check(t, nil == IsValidName(dummyCtx, log, "demo"), "Returns false for valid cluster name")
+	assert.Check(
+		t,
+		func() bool {
+			err := IsValidName(dummyCtx, log, "Dem-o234")
+			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+		}(),
+		"Returns True for invalid cluster name")
+	assert.Check(t, nil == IsValidName(dummyCtx, log, "d-234"), "Returns false for valid cluster name")
+	assert.Check(
+		t,
+		func() bool {
+			err := IsValidName(dummyCtx, log, "234")
+			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+		}(),
+		"Returns true for invalid cluster name")
+	assert.Check(
+		t,
+		func() bool {
+			err := IsValidName(dummyCtx, log, "-2342")
+			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+		}(),
+		"Returns True for invalid cluster name")
+	assert.Check(
+		t,
+		func() bool {
+			err := IsValidName(dummyCtx, log, "demo-")
+			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+		}(),
+		"Returns True for invalid cluster name")
+	assert.Check(
+		t,
+		func() bool {
+			err := IsValidName(dummyCtx, log, "dscdscsd-#$#$#")
+			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+		}(),
+		"Returns True for invalid cluster name")
+	assert.Check(
+		t,
+		func() bool {
+			err := IsValidName(dummyCtx, log, "dds@#$#$#ds@#$#$#ds@#$#$#ds@#$#$#ds@#$#$#s@#$#$wefe#")
+			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+		}(),
+		"Returns True for invalid cluster name")
 }
 
 func TestSSHExecute(t *testing.T) {
@@ -225,7 +254,7 @@ func TestToApplicationTempl(t *testing.T) {
 	}
 
 	for _, testcase := range testCases {
-		got, err := ToApplicationTempl([]string{testcase.inp})
+		got, err := ToApplicationTempl(dummyCtx, log, []string{testcase.inp})
 		gotErr := err != nil
 
 		t.Logf("App: %v\n", testcase.inp)
@@ -616,7 +645,7 @@ func TestBackOffRun_ContextCancellation(t *testing.T) {
 	}()
 
 	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
-	assert.Assert(t, err != nil)
+	assert.Assert(t, err != nil && ksctlErrors.ErrContextCancelled.Is(err))
 
 	assert.Equal(t, context.Canceled, ctx.Err())
 }
@@ -643,5 +672,5 @@ func TestBackOffRun_MaxRetriesExceeded(t *testing.T) {
 	backOff := NewBackOff(1*time.Second, 1, 3)
 
 	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
-	assert.Assert(t, err != nil)
+	assert.Assert(t, err != nil && ksctlErrors.ErrTimeOut.Is(err))
 }
