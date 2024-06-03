@@ -11,8 +11,9 @@ var (
 
 	ErrNilCredentials = ksctlGlobalErr("NilCredentialsError")
 
-	ErrTimeOut        = ksctlGlobalErr("TimeoutError")
-	ErrSSHFingerprint = ksctlGlobalErr("SSHFingerPrintError")
+	ErrTimeOut          = ksctlGlobalErr("TimeoutError")
+	ErrContextCancelled = ksctlGlobalErr("ContextCancelled")
+	ErrSSHFingerprint   = ksctlGlobalErr("SSHFingerPrintError")
 
 	ErrInvalidRegion                = ksctlGlobalErr("InvalidRegionError")
 	ErrInvalidCloudProvider         = ksctlGlobalErr("InvalidCloudProviderError")
