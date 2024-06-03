@@ -6,15 +6,17 @@ import (
 )
 
 var (
-	ErrMissingArgument      = ksctlGlobalErr("MissingArgumentErr")
-	ErrMissingConfiguration = ksctlGlobalErr("MissingConfigurationErr")
-
-	ErrNilCredentials = ksctlGlobalErr("NilCredentialsErr")
-
-	ErrTimeOut              = ksctlGlobalErr("TimeoutErr")
-	ErrContextCancelled     = ksctlGlobalErr("ContextCancelled")
-	ErrSSHExec              = ksctlGlobalErr("SSHExecErr")
-	ErrKubeconfigOperations = ksctlGlobalErr("KubeconfigOperationsErr")
+	ErrMissingArgument        = ksctlGlobalErr("MissingArgumentErr")
+	ErrMissingConfiguration   = ksctlGlobalErr("MissingConfigurationErr")
+	ErrNilCredentials         = ksctlGlobalErr("NilCredentialsErr")
+	ErrTimeOut                = ksctlGlobalErr("TimeoutErr")
+	ErrContextCancelled       = ksctlGlobalErr("ContextCancelled")
+	ErrSSHExec                = ksctlGlobalErr("SSHExecErr")
+	ErrKubeconfigOperations   = ksctlGlobalErr("KubeconfigOperationsErr")
+	ErrUnknown                = ksctlGlobalErr("UnknownErr")
+	ErrInternal               = ksctlGlobalErr("InternalErr")
+	ErrDuplicateRecords       = ksctlGlobalErr("DuplicateRecordsErr")
+	ErrNoMatchingRecordsFound = ksctlGlobalErr("NoMatchingRecordsFoundErr")
 
 	ErrInvalidRegion                = ksctlGlobalErr("InvalidRegionErr")
 	ErrInvalidUserInput             = ksctlGlobalErr("InvalidUserInputErr")
@@ -29,9 +31,6 @@ var (
 	ErrInvalidNoOfDatastore         = ksctlGlobalErr("InvalidNoOfDatastoreErr")
 	ErrInvalidNoOfWorkerplane       = ksctlGlobalErr("InvalidNoOfWorkerplaneErr")
 	ErrInvalidKsctlComponentVersion = ksctlGlobalErr("InvalidKsctlComponentVersionErr")
-
-	ErrUnknown  = ksctlGlobalErr("UnknownErr")
-	ErrInternal = ksctlGlobalErr("InternalErr")
 
 	ErrFailedCloudResourceQuotaLimitReached = ksctlGlobalErr("FailedCloudResourceQuotaLimitReachedErr")
 	ErrFailedGenerateCertificates           = ksctlGlobalErr("FailedGenerateCertificatesErr")
