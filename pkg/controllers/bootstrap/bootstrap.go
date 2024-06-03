@@ -207,9 +207,9 @@ func ApplicationsInCluster(
 	}
 
 	if len(client.Metadata.CNIPlugin) != 0 {
-		_cni, err := helpers.ToApplicationTempl([]string{client.Metadata.CNIPlugin})
+		_cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{client.Metadata.CNIPlugin})
 		if err != nil {
-			return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
+			return err
 		}
 
 		if err := k.InstallCNI(_cni[0], state, op); err != nil {
@@ -217,9 +217,9 @@ func ApplicationsInCluster(
 		}
 	}
 
-	_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+	_apps, err := helpers.ToApplicationTempl(controllerCtx, log, client.Metadata.Applications)
 	if err != nil {
-		return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
+		return err
 	}
 
 	if len(client.Metadata.Applications) != 0 {
@@ -250,9 +250,9 @@ func InstallAdditionalTools(
 			cni = client.Metadata.CNIPlugin
 		}
 
-		_cni, err := helpers.ToApplicationTempl([]string{cni})
+		_cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{cni})
 		if err != nil {
-			return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
+			return err
 		}
 
 		if err := k.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
@@ -267,9 +267,9 @@ func InstallAdditionalTools(
 	}
 
 	if len(client.Metadata.Applications) != 0 && externalApp {
-		_apps, err := helpers.ToApplicationTempl(client.Metadata.Applications)
+		_apps, err := helpers.ToApplicationTempl(controllerCtx, log, client.Metadata.Applications)
 		if err != nil {
-			return log.NewError(controllerCtx, "toApplication Template failed", "Reason", err)
+			return err
 		}
 		if err := k.Applications(_apps, state, consts.OperationCreate); err != nil {
 			return err

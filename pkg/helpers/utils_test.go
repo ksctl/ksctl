@@ -72,7 +72,11 @@ func TestConsts(t *testing.T) {
 
 func TestGenerateCerts(t *testing.T) {
 	if ca, etcd, key, err := GenerateCerts(
-		context.WithValue(context.TODO(), consts.KsctlModuleNameKey, "demo"), log, []string{"192.168.1.1"}); err != nil {
+		context.WithValue(
+			context.TODO(),
+			consts.KsctlModuleNameKey,
+			"demo"),
+		log, []string{"192.168.1.1"}); err != nil {
 		t.Fatalf("it shouldn't fail, ca: %v, etcd: %v, key: %v, err: %v\n", ca, etcd, key, err)
 	}
 
@@ -186,7 +190,7 @@ func TestIsValidVersion(t *testing.T) {
 	}
 
 	for ver, expected := range testCases {
-		err := IsValidVersion(dummyCtx, log, ver)
+		err := IsValidKsctlComponentVersion(dummyCtx, log, ver)
 		var got bool = err == nil
 		assert.Equal(t, got, expected, fmt.Sprintf("Ver: %s, got: %v, expected: %v", ver, got, expected))
 	}

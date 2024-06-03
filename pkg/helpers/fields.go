@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -100,7 +99,7 @@ func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName strin
 	return nil
 }
 
-func IsValidVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
+func IsValidKsctlComponentVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
 	if ver == "latest" ||
 		ver == "stable" ||
 		strings.HasPrefix(ver, "feature") ||
@@ -114,20 +113,28 @@ func IsValidVersion(ctx context.Context, log types.LoggerFactory, ver string) er
 	patternWithVPrefix := `^v\d+(\.\d{1,2}){0,2}$`
 	matchStringWithoutVPrefix, err := regexp.MatchString(patternWithoutVPrefix, ver)
 	if err != nil {
-		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
+		return ksctlErrors.ErrUnknown.Wrap(
+			log.NewError(ctx, "failed to compile the regex", "Reason", err),
+		)
 	}
 	matchStringWithVPrefix, err := regexp.MatchString(patternWithVPrefix, ver)
 	if err != nil {
-		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
+		return ksctlErrors.ErrUnknown.Wrap(
+			log.NewError(ctx, "failed to compile the regex", "Reason", err),
+		)
 	}
 
 	if !matchStringWithoutVPrefix && !matchStringWithVPrefix {
-		return log.NewError(ctx, "invalid version", "version", ver)
+		return ksctlErrors.ErrInvalidKsctlComponentVersion.Wrap(
+			log.NewError(ctx, "invalid version", "version", ver),
+		)
 	}
 	return nil
 }
 
-func ToApplicationTempl(apps []string) ([]storageTypes.Application, error) {
+func ToApplicationTempl(ctx context.Context,
+	log types.LoggerFactory,
+	apps []string) ([]storageTypes.Application, error) {
 
 	_apps := make([]storageTypes.Application, 0)
 	for _, app := range apps {
@@ -135,7 +142,9 @@ func ToApplicationTempl(apps []string) ([]storageTypes.Application, error) {
 		temp := strings.Split(app, "@")
 
 		if len(temp) > 2 || len(app) == 0 {
-			return nil, fmt.Errorf("invalid format for application should be APP_NAME@VERSION")
+			return nil, ksctlErrors.ErrInvalidKsctlComponentVersion.Wrap(
+				log.NewError(ctx, "invalid format for application should be APP_NAME@VERSION", "app", app),
+			)
 		}
 		if len(temp) == 1 {
 			// version was not specified

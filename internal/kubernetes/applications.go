@@ -255,7 +255,7 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 
 func installApplication(client *Kubernetes, app storageTypes.Application) error {
 
-	if err := helpers.IsValidVersion(kubernetesCtx, log, app.Version); err != nil {
+	if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, app.Version); err != nil {
 		return err
 	}
 
@@ -285,7 +285,7 @@ func installApplication(client *Kubernetes, app storageTypes.Application) error 
 
 func deleteApplication(client *Kubernetes, app storageTypes.Application) error {
 
-	if err := helpers.IsValidVersion(kubernetesCtx, log, app.Version); err != nil {
+	if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, app.Version); err != nil {
 		return err
 	}
 	appStruct, err := GetApps(app.Name, app.Version)
