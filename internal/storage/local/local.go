@@ -15,6 +15,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -68,22 +69,30 @@ func (s *Store) CreateFileIfNotPresent(_path []string) (loc string, err error) {
 	if _, err = os.ReadFile(loc); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			if _, _err := os.Create(loc); _err != nil {
-				err = _err
+				err = ksctlErrors.ErrInternal.Wrap(
+					log.NewError(storeCtx, "unable to create file", "Reason", _err),
+				)
 				return
 			}
 			err = nil
 			return
 		}
+		err = ksctlErrors.ErrUnknown.Wrap(
+			log.NewError(storeCtx, "failed to read the file", "Reason", err),
+		)
 		return
 	}
 	return
 }
 
-func (s *Store) CreateDirectory(path []string) error {
-	loc := strings.Join(path, helpers.PathSeparator)
+func (s *Store) CreateDirectory(_path []string) error {
+	loc := path.Join(_path...)
 
 	if err := os.MkdirAll(loc, dirPerm); err != nil {
-		return err
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to mkdir all folders", "Reason", err),
+		)
+
 	}
 	return nil
 }
@@ -135,6 +144,7 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 				if errors.Is(_err, os.ErrNotExist) {
 					continue
 				} else {
+					// TODO: need to see if we wrap our own here or inside the RedCredentials
 					return nil, _err
 				}
 			}
@@ -209,13 +219,17 @@ func (db *Store) Connect() error {
 	return nil
 }
 
-func genOsClusterPath(creds bool, subDir ...string) string {
+func genOsClusterPath(creds bool, subDir ...string) (string, error) {
 
 	var userLoc string
 	if v, ok := helpers.IsContextPresent(storeCtx, consts.KsctlCustomDirLoc); ok {
-		userLoc = strings.Join(strings.Split(strings.TrimSpace(v), " "), helpers.PathSeparator)
+		userLoc = path.Join(strings.Split(strings.TrimSpace(v), " ")...)
 	} else {
-		userLoc = helpers.GetUserName()
+		v, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		userLoc = v
 	}
 	subKsctlLoc := subDirState
 	if creds {
@@ -227,7 +241,8 @@ func genOsClusterPath(creds bool, subDir ...string) string {
 		pathArr = append(pathArr, subDir...)
 	}
 	log.Debug(storeCtx, "storage.local.genOsClusterPath", "userLoc", userLoc, "subKsctlLoc", subKsctlLoc, "pathArr", pathArr)
-	return strings.Join(pathArr, helpers.PathSeparator)
+
+	return path.Join(pathArr...), nil
 }
 
 func reader(loc string) (*storageTypes.StorageDocument, error) {
@@ -244,6 +259,8 @@ func reader(loc string) (*storageTypes.StorageDocument, error) {
 	return v, nil
 }
 
+// TODO(Bookmark): for the error wrapping is left
+
 func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
@@ -253,9 +270,20 @@ func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	if e := db.clusterPresent(nil); e != nil {
 		return nil, e
 	}
-	dirPath := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region, "state.json")
+	dirPath, err := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region, "state.json")
+	if err != nil {
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to gen clusterpath in host", "Reason", err),
+		)
+	}
 	log.Debug(storeCtx, "storage.local.Read", "dirPath", dirPath)
-	return reader(dirPath)
+	if v, e := reader(dirPath); e != nil {
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to exec reader in host", "Reason", err),
+		)
+	} else {
+		return v, nil
+	}
 }
 
 func (db *Store) Write(v *storageTypes.StorageDocument) error {
@@ -264,13 +292,18 @@ func (db *Store) Write(v *storageTypes.StorageDocument) error {
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	dirPath := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
+	dirPath, err := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
+	if err != nil {
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to gen clusterpath in host", "Reason", err),
+		)
+	}
 	FileLoc := ""
 	log.Debug(storeCtx, "storage.local.Write", "dirPath", dirPath)
 
 	if err := db.clusterPresent(func(err error) error {
 		if errors.Is(err, os.ErrNotExist) {
-			if err := os.MkdirAll(genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region), dirPerm); err != nil {
+			if err := os.MkdirAll(dirPath, dirPerm); err != nil {
 				return err
 			}
 		}
@@ -279,7 +312,7 @@ func (db *Store) Write(v *storageTypes.StorageDocument) error {
 		return fmt.Errorf("cluster present: %w", err)
 	}
 
-	FileLoc = dirPath + helpers.PathSeparator + "state.json"
+	FileLoc = path.Join(dirPath, "state.json")
 	log.Debug(storeCtx, "storage.local.Write", "FileLoc", FileLoc)
 
 	data, err := json.Marshal(v)
@@ -304,9 +337,14 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 	if e := db.credentialsPresent(nil); e != nil {
 		return nil, e
 	}
-	dirPath := genOsClusterPath(true)
+	dirPath, err := genOsClusterPath(true)
+	if err != nil {
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to gen clusterpath in host", "Reason", err),
+		)
+	}
 
-	data, err := os.ReadFile(dirPath + helpers.PathSeparator + string(cloud) + ".json")
+	data, err := os.ReadFile(path.Join(dirPath, string(cloud)+".json"))
 	if err != nil {
 		return nil, err
 	}
@@ -325,9 +363,15 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *storageTypes.Crede
 	db.wg.Add(1)
 	defer db.wg.Done()
 
+	dirPath, err := genOsClusterPath(true)
+	if err != nil {
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to gen clusterpath in host", "Reason", err),
+		)
+	}
 	if err := db.credentialsPresent(func(err error) error {
 		if errors.Is(err, os.ErrNotExist) {
-			if err := os.MkdirAll(genOsClusterPath(true), dirPerm); err != nil {
+			if err := os.MkdirAll(dirPath, dirPerm); err != nil {
 				return err
 			}
 		}
@@ -336,10 +380,9 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *storageTypes.Crede
 		return fmt.Errorf("cluster present: %w", err)
 	}
 
-	dirPath := genOsClusterPath(true)
 	FileLoc := ""
 
-	FileLoc = dirPath + helpers.PathSeparator + string(cloud) + ".json"
+	FileLoc = path.Join(dirPath, string(cloud)+".json")
 	log.Debug(storeCtx, "storage.local.WriteCredentials", "FileLoc", FileLoc)
 
 	data, err := json.Marshal(v)
@@ -375,7 +418,12 @@ func (db *Store) DeleteCluster() error {
 	if e := db.clusterPresent(nil); e != nil {
 		return fmt.Errorf("cluster not present: %w", e)
 	}
-	dirPath := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
+	dirPath, err := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
+	if err != nil {
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to gen clusterpath in host", "Reason", err),
+		)
+	}
 
 	return os.RemoveAll(dirPath)
 }
@@ -383,8 +431,8 @@ func (db *Store) DeleteCluster() error {
 // clusterPresent ir returns error when we have to create the folder when that folder is not present
 // and if its present it returns nil
 func (db *Store) clusterPresent(f func(error) error) error {
-	dirPath := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
-	_, err := os.Stat(dirPath)
+	dirPath, err := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
+	_, err = os.Stat(dirPath)
 	if err != nil {
 		log.Debug(storeCtx, "storage.local.clusterPresent", "err", err)
 		if f != nil {
@@ -397,8 +445,8 @@ func (db *Store) clusterPresent(f func(error) error) error {
 }
 
 func (db *Store) credentialsPresent(f func(error) error) error {
-	dirPath := genOsClusterPath(true)
-	_, err := os.Stat(dirPath)
+	dirPath, err := genOsClusterPath(true)
+	_, err = os.Stat(dirPath)
 	if err != nil {
 		if f != nil {
 			if e := f(err); e != nil {
@@ -504,7 +552,12 @@ func getClustersInfo(locs []string) ([]*storageTypes.StorageDocument, error) {
 }
 
 func fetchFilePaths(cloud string, clusterType string) ([]string, error) {
-	dirPath := genOsClusterPath(false, cloud, clusterType)
+	dirPath, err := genOsClusterPath(false, cloud, clusterType)
+	if err != nil {
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to gen clusterpath in host", "Reason", err),
+		)
+	}
 
 	folders, err := os.ReadDir(dirPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -515,7 +568,7 @@ func fetchFilePaths(cloud string, clusterType string) ([]string, error) {
 	var info []string
 	for _, file := range folders {
 		if file.IsDir() {
-			info = append(info, dirPath+helpers.PathSeparator+file.Name()+helpers.PathSeparator+"state.json")
+			info = append(info, dirPath, file.Name(), "state.json")
 		}
 	}
 
