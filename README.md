@@ -67,7 +67,7 @@ Windows | `OK`
 
 # Getting Started guide
 
-[Getting Started guide](https://docs.ksctl.com/docs/getting-started/cli/)
+[Getting Started guide](https://docs.ksctl.com/docs/getting-started/)
 
 # Usage
 
