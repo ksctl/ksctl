@@ -465,21 +465,21 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 
 		switch r {
 		case consts.RoleCp:
-			for _, d := range st.CloudInfra.Azure.InfoControlPlanes.VMSizes {
+			for _, d := range st.CloudInfra.Aws.InfoControlPlanes.VMSizes {
 				v = append(v, cloudcontrolres.VMData{
 					VMSize: d,
 				})
 			}
 
 		case consts.RoleWp:
-			for _, d := range st.CloudInfra.Azure.InfoWorkerPlanes.VMSizes {
+			for _, d := range st.CloudInfra.Aws.InfoWorkerPlanes.VMSizes {
 				v = append(v, cloudcontrolres.VMData{
 					VMSize: d,
 				})
 			}
 
 		case consts.RoleDs:
-			for _, d := range st.CloudInfra.Azure.InfoDatabase.VMSizes {
+			for _, d := range st.CloudInfra.Aws.InfoDatabase.VMSizes {
 				v = append(v, cloudcontrolres.VMData{
 					VMSize: d,
 				})
@@ -487,7 +487,7 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 
 		default:
 			v = append(v, cloudcontrolres.VMData{
-				VMSize: st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
+				VMSize: st.CloudInfra.Aws.InfoLoadBalancer.VMSize,
 			})
 		}
 		return v
