@@ -2,16 +2,14 @@ package local
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"strings"
 	"sync"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	"github.com/goccy/go-json"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -141,10 +139,11 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 			_v, _err := s.ReadCredentials(constsCloud)
 
 			if _err != nil {
-				if errors.Is(_err, os.ErrNotExist) {
+				log.Debug(storeCtx, "error in reading credentials", "Reason", _err)
+				if ksctlErrors.ErrNoMatchingRecordsFound.Is(_err) {
+					// if errors.Is(_err, os.ErrNotExist) {
 					continue
 				} else {
-					// TODO: need to see if we wrap our own here or inside the RedCredentials
 					return nil, _err
 				}
 			}
@@ -259,8 +258,6 @@ func reader(loc string) (*storageTypes.StorageDocument, error) {
 	return v, nil
 }
 
-// TODO(Bookmark): for the error wrapping is left
-
 func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
@@ -279,7 +276,7 @@ func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	log.Debug(storeCtx, "storage.local.Read", "dirPath", dirPath)
 	if v, e := reader(dirPath); e != nil {
 		return nil, ksctlErrors.ErrInternal.Wrap(
-			log.NewError(storeCtx, "failed to exec reader in host", "Reason", err),
+			log.NewError(storeCtx, "failed to read in host", "Reason", err),
 		)
 	} else {
 		return v, nil
@@ -304,12 +301,20 @@ func (db *Store) Write(v *storageTypes.StorageDocument) error {
 	if err := db.clusterPresent(func(err error) error {
 		if errors.Is(err, os.ErrNotExist) {
 			if err := os.MkdirAll(dirPath, dirPerm); err != nil {
-				return err
+				return ksctlErrors.ErrInternal.Wrap(
+					log.NewError(storeCtx, "failure in creating directories", "Reason", err),
+				)
 			}
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("cluster present: %w", err)
+		if !ksctlErrors.ErrInternal.Is(err) {
+			return ksctlErrors.ErrDuplicateRecords.Wrap(
+				log.NewError(storeCtx, "cluster already present", "Reason", err),
+			)
+		} else {
+			return err
+		}
 	}
 
 	FileLoc = path.Join(dirPath, "state.json")
@@ -318,13 +323,19 @@ func (db *Store) Write(v *storageTypes.StorageDocument) error {
 	data, err := json.Marshal(v)
 	if err != nil {
 		// if the error occurs cleanup the directry
-		if err := os.RemoveAll(dirPath); err != nil {
-			return fmt.Errorf("unable to cleanup after failure: %w", err)
-
-		}
-		return err
+		// if err := os.RemoveAll(dirPath); err != nil { // TODO: why are we removing the directory
+		// 	return fmt.Errorf("unable to cleanup after failure: %w", err)
+		// }
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to serialize state", "Reason", err),
+		)
 	}
-	return os.WriteFile(FileLoc, data, filePerm)
+	if err := os.WriteFile(FileLoc, data, filePerm); err != nil {
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to write in host", "Reason", err),
+		)
+	}
+	return nil
 }
 
 func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.CredentialsDocument, error) {
@@ -335,7 +346,9 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 
 	// for now create multiple files civo.json, azure.json, etc.
 	if e := db.credentialsPresent(nil); e != nil {
-		return nil, e
+		return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+			log.NewError(storeCtx, "credentials are absent", "Reason", e),
+		)
 	}
 	dirPath, err := genOsClusterPath(true)
 	if err != nil {
@@ -346,12 +359,16 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 
 	data, err := os.ReadFile(path.Join(dirPath, string(cloud)+".json"))
 	if err != nil {
-		return nil, err
+		return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+			log.NewError(storeCtx, "failed to read a host file", "Reason", err),
+		)
 	}
 
 	var v *storageTypes.CredentialsDocument
 	if err := json.Unmarshal(data, &v); err != nil {
-		return nil, err
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to deserialize the credentials", "Reason", err),
+		)
 	}
 
 	return v, nil
@@ -369,15 +386,24 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *storageTypes.Crede
 			log.NewError(storeCtx, "failed to gen clusterpath in host", "Reason", err),
 		)
 	}
+
 	if err := db.credentialsPresent(func(err error) error {
 		if errors.Is(err, os.ErrNotExist) {
 			if err := os.MkdirAll(dirPath, dirPerm); err != nil {
-				return err
+				return ksctlErrors.ErrInternal.Wrap(
+					log.NewError(storeCtx, "failure in creating directories", "Reason", err),
+				)
 			}
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("cluster present: %w", err)
+		if !ksctlErrors.ErrInternal.Is(err) {
+			return ksctlErrors.ErrDuplicateRecords.Wrap( // TODO: need to check if it is a duplicate record error or not?
+				log.NewError(storeCtx, "credentials already present", "Reason", err),
+			)
+		} else {
+			return err
+		}
 	}
 
 	FileLoc := ""
@@ -387,10 +413,16 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *storageTypes.Crede
 
 	data, err := json.Marshal(v)
 	if err != nil {
-
-		return err
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to serialize the credentials", "Reason", err),
+		)
 	}
-	return os.WriteFile(FileLoc, data, credentialPerm)
+	if e := os.WriteFile(FileLoc, data, credentialPerm); e != nil {
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to write file in host", "Reason", err),
+		)
+	}
+	return nil
 }
 
 func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error {
@@ -398,10 +430,10 @@ func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clus
 	case consts.CloudAws, consts.CloudAzure, consts.CloudCivo, consts.CloudLocal:
 		db.cloudProvider = string(cloud)
 	default:
-		return errors.New("invalid cloud")
+		return ksctlErrors.ErrInvalidCloudProvider
 	}
 	if clusterType != consts.ClusterTypeHa && clusterType != consts.ClusterTypeMang {
-		return errors.New("invalid cluster type")
+		return ksctlErrors.ErrInvalidClusterType
 	}
 	db.clusterName = clusterName
 	db.region = region
@@ -416,7 +448,9 @@ func (db *Store) DeleteCluster() error {
 	defer db.wg.Done()
 
 	if e := db.clusterPresent(nil); e != nil {
-		return fmt.Errorf("cluster not present: %w", e)
+		return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+			log.NewError(storeCtx, "cluster not present", "Reason", e),
+		)
 	}
 	dirPath, err := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
 	if err != nil {
@@ -425,18 +459,21 @@ func (db *Store) DeleteCluster() error {
 		)
 	}
 
-	return os.RemoveAll(dirPath)
+	if err := os.RemoveAll(dirPath); err != nil {
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to perform complete clenup some directories are left behind", "Reason", err),
+		)
+	}
+	return nil
 }
 
-// clusterPresent ir returns error when we have to create the folder when that folder is not present
-// and if its present it returns nil
-func (db *Store) clusterPresent(f func(error) error) error {
-	dirPath, err := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
-	_, err = os.Stat(dirPath)
+func (db *Store) clusterPresent(handleErrFunc func(error) error) error {
+	dirPath, _ := genOsClusterPath(false, db.cloudProvider, db.clusterType, db.clusterName+" "+db.region)
+	_, err := os.Stat(dirPath)
 	if err != nil {
 		log.Debug(storeCtx, "storage.local.clusterPresent", "err", err)
-		if f != nil {
-			return f(err)
+		if handleErrFunc != nil {
+			return handleErrFunc(err)
 		}
 		return err
 	}
@@ -444,16 +481,13 @@ func (db *Store) clusterPresent(f func(error) error) error {
 	return nil
 }
 
-func (db *Store) credentialsPresent(f func(error) error) error {
-	dirPath, err := genOsClusterPath(true)
-	_, err = os.Stat(dirPath)
+func (db *Store) credentialsPresent(handleErrFunc func(error) error) error {
+	dirPath, _ := genOsClusterPath(true)
+	_, err := os.Stat(dirPath)
 	if err != nil {
-		if f != nil {
-			if e := f(err); e != nil {
-				return e
-			} else {
-				return nil
-			}
+		log.Debug(storeCtx, "storage.local.credentialsPresent", "err", err)
+		if handleErrFunc != nil {
+			return handleErrFunc(err)
 		}
 		return err
 	}
@@ -472,7 +506,12 @@ func (db *Store) AlreadyCreated(cloud consts.KsctlCloud, region, clusterName str
 		return err
 	}
 
-	return db.clusterPresent(nil)
+	if e := db.clusterPresent(nil); e != nil {
+		return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+			log.NewError(storeCtx, "cluster not present", "Reason", e),
+		)
+	}
+	return nil
 }
 
 func (db *Store) GetOneOrMoreClusters(filter map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*storageTypes.StorageDocument, error) {
@@ -542,7 +581,9 @@ func getClustersInfo(locs []string) ([]*storageTypes.StorageDocument, error) {
 	for _, loc := range locs {
 		v, err := reader(loc)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return nil, err
+			return nil, ksctlErrors.ErrInternal.Wrap(
+				log.NewError(storeCtx, "failed to read in host", "Reason", err),
+			)
 		}
 		data = append(data, v)
 	}
@@ -561,14 +602,14 @@ func fetchFilePaths(cloud string, clusterType string) ([]string, error) {
 
 	folders, err := os.ReadDir(dirPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, err
+		return nil, err // as the other function uses the err code getClustersInfo
 	}
 
 	log.Debug(storeCtx, "storage.local.fetchFilePaths", "folders", folders)
 	var info []string
 	for _, file := range folders {
 		if file.IsDir() {
-			info = append(info, dirPath, file.Name(), "state.json")
+			info = append(info, path.Join(dirPath, file.Name(), "state.json"))
 		}
 	}
 

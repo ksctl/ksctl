@@ -21,6 +21,7 @@ var (
 	ErrInvalidRegion                = ksctlGlobalErr("InvalidRegionErr")
 	ErrInvalidUserInput             = ksctlGlobalErr("InvalidUserInputErr")
 	ErrInvalidCloudProvider         = ksctlGlobalErr("InvalidCloudProviderErr")
+	ErrInvalidClusterType           = ksctlGlobalErr("InvalidClusterTypeErr")
 	ErrInvalidBootstrapProvider     = ksctlGlobalErr("InvalidBootstrapProviderErr")
 	ErrInvalidStorageProvider       = ksctlGlobalErr("InvalidStorageProviderErr")
 	ErrInvalidLogger                = ksctlGlobalErr("InvalidLoggerErr")
