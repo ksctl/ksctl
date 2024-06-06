@@ -97,8 +97,7 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 			_v, _err := s.ReadCredentials(constsCloud)
 
 			if _err != nil {
-				if errors.Is(_err, mongo.ErrNoDocuments) {
-					// if ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
+				if ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
 					continue
 				} else {
 					return nil, _err
@@ -257,7 +256,6 @@ func (db *Store) Kill() error {
 	return db.disconnect()
 }
 
-// Read implements types.StorageFactory.
 func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -266,24 +264,22 @@ func (db *Store) Read() (*storageTypes.StorageDocument, error) {
 
 	log.Debug(storeCtx, "storage.external.mongodb.Read", "Store", db)
 
-	if db.isPresent() {
-		ret := db.databaseClient.Collection(db.cloudProvider).FindOne(storeCtx, getClusterFilters(db))
-		if ret.Err() != nil {
-			return nil, ret.Err()
-		}
-
+	if ret, err := db.isPresent(); err != nil {
 		var result *storageTypes.StorageDocument
 		err := ret.Decode(&result)
 		if err != nil {
-			return nil, err
+			return nil, ksctlErrors.ErrInternal.Wrap(
+				log.NewError(storeCtx, "failed to deserialize the state", "Reason", err),
+			)
 		}
 
 		return result, nil
+	} else {
+		return nil, err
 	}
-	return nil, mongo.ErrNoDocuments
+
 }
 
-// ReadCredentials implements types.StorageFactory.
 func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.CredentialsDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -291,22 +287,21 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 	defer db.wg.Done()
 	log.Debug(storeCtx, "storage.external.mongodb.ReadCredentials", "Store", db)
 
-	if db.isPresentCreds(cloud) {
-		ret := db.databaseClient.Collection(CredsCollection).FindOne(storeCtx, getCredentialsFilters(cloud))
-		if ret.Err() != nil {
-			return nil, ret.Err()
-		}
+	if ret, err := db.isPresentCreds(cloud); err != nil {
 		var result *storageTypes.CredentialsDocument
 		err := ret.Decode(&result)
 		if err != nil {
-			return nil, err
+			return nil, ksctlErrors.ErrInternal.Wrap(
+				log.NewError(storeCtx, "failed to deserialize the state", "Reason", err),
+			)
 		}
+
 		return result, nil
+	} else {
+		return nil, err
 	}
-	return nil, mongo.ErrNoDocuments
 }
 
-// Write implements types.StorageFactory.
 func (db *Store) Write(data *storageTypes.StorageDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -316,22 +311,27 @@ func (db *Store) Write(data *storageTypes.StorageDocument) error {
 
 	bsonMap, err := bson.Marshal(data)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to serialize the state", "Reason", err),
+		)
 	}
 
-	if db.isPresent() {
+	if _, err := db.isPresent(); err != nil {
 		res := db.databaseClient.Collection(db.cloudProvider).FindOneAndReplace(storeCtx, getClusterFilters(db), bsonMap)
 		if err := res.Err(); err != nil {
-			return err
+			return ksctlErrors.ErrInternal.Wrap(
+				log.NewError(storeCtx, "failed to update the state", "Reason", err),
+			)
 		}
 		return nil
+	} else {
+		_, err = db.databaseClient.Collection(db.cloudProvider).InsertOne(storeCtx, bsonMap)
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to write state", "Reason", err),
+		)
 	}
-
-	_, err = db.databaseClient.Collection(db.cloudProvider).InsertOne(storeCtx, bsonMap)
-	return err
 }
 
-// WriteCredentials implements types.StorageFactory.
 func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *storageTypes.CredentialsDocument) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -342,19 +342,26 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *storageTypes.Cr
 
 	bsonMap, err := bson.Marshal(data)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to serialize the state", "Reason", err),
+		)
 	}
 
-	if db.isPresentCreds(cloud) {
+	if _, err := db.isPresentCreds(cloud); err != nil {
 		res := db.databaseClient.Collection(CredsCollection).FindOneAndReplace(storeCtx, getCredentialsFilters(cloud), bsonMap)
 		if err := res.Err(); err != nil {
-			return err
+			return ksctlErrors.ErrInternal.Wrap(
+				log.NewError(storeCtx, "failed to update the credentials", "Reason", err),
+			)
 		}
 		return nil
+	} else {
+		_, err = db.databaseClient.Collection(CredsCollection).InsertOne(storeCtx, bsonMap)
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to write credential", "Reason", err),
+		)
 	}
 
-	_, err = db.databaseClient.Collection(CredsCollection).InsertOne(storeCtx, bsonMap)
-	return err
 }
 
 func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error {
@@ -362,10 +369,10 @@ func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clus
 	case consts.CloudAws, consts.CloudAzure, consts.CloudCivo, consts.CloudLocal:
 		db.cloudProvider = string(cloud)
 	default:
-		return errors.New("invalid cloud")
+		return ksctlErrors.ErrInvalidCloudProvider
 	}
 	if clusterType != consts.ClusterTypeHa && clusterType != consts.ClusterTypeMang {
-		return errors.New("invalid cluster type")
+		return ksctlErrors.ErrInvalidClusterType
 	}
 
 	db.clusterName = clusterName
@@ -384,8 +391,8 @@ func (db *Store) DeleteCluster() error {
 
 	log.Debug(storeCtx, "storage.external.mongodb.Delete", "Store", db)
 
-	if !db.isPresent() {
-		return fmt.Errorf("cluster doesn't exist")
+	if _, err := db.isPresent(); err != nil {
+		return err
 	}
 	_, err := db.databaseClient.Collection(db.cloudProvider).DeleteOne(storeCtx, getClusterFilters(db))
 	if err != nil {
@@ -395,32 +402,34 @@ func (db *Store) DeleteCluster() error {
 	return nil
 }
 
-func (db *Store) isPresent() bool {
-	c, err := db.databaseClient.Collection(db.cloudProvider).Find(storeCtx, getClusterFilters(db))
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return false
+func (db *Store) isPresent() (*mongo.SingleResult, error) {
+	c := db.databaseClient.Collection(db.cloudProvider).FindOne(storeCtx, getClusterFilters(db))
+	if c.Err() != nil {
+		if errors.Is(c.Err(), mongo.ErrNoDocuments) {
+			return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+				log.NewError(storeCtx, "no matching cluster present"),
+			)
 		}
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to get cluster", "Reason", c.Err()),
+		)
 	}
-	if c.RemainingBatchLength() == 1 {
-		return true
-	} else {
-		return false
-	}
+	return c, nil
 }
 
-func (db *Store) isPresentCreds(cloud consts.KsctlCloud) bool {
-	c, err := db.databaseClient.Collection(CredsCollection).Find(storeCtx, getCredentialsFilters(cloud))
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return false
+func (db *Store) isPresentCreds(cloud consts.KsctlCloud) (*mongo.SingleResult, error) {
+	c := db.databaseClient.Collection(CredsCollection).FindOne(storeCtx, getCredentialsFilters(cloud))
+	if c.Err() != nil {
+		if errors.Is(c.Err(), mongo.ErrNoDocuments) {
+			return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+				log.NewError(storeCtx, "no matching credentials present"),
+			)
 		}
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "failed to get credentials", "Reason", c.Err()),
+		)
 	}
-	if c.RemainingBatchLength() == 1 {
-		return true
-	} else {
-		return false
-	}
+	return c, nil
 }
 
 func (db *Store) clusterPresent() error {
