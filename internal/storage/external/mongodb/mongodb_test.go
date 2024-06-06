@@ -32,7 +32,7 @@ var (
 
 func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
-	parentCtx = context.WithValue(parentCtx, "USERID", "fake")
+	parentCtx = context.WithValue(parentCtx, consts.KsctlContextUserID, "fake")
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {

@@ -7,9 +7,11 @@ import (
 	"os"
 	"sync"
 
+	"github.com/ksctl/ksctl/pkg/helpers"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -180,7 +182,9 @@ func fetchCreds() (string, error) {
 	connURI := os.Getenv("MONGODB_URI")
 
 	if len(connURI) == 0 {
-		return "", log.NewError(storeCtx, "environment vars not set for the storage to work.", "Hint", "mongodb://${username}:${password}@${domain}:${port} or mongo+atlas mongodb+srv://${username}:${password}@${domain}")
+		return "", ksctlErrors.ErrInvalidUserInput.Wrap(
+			log.NewError(storeCtx, "environment vars not set for the storage to work.", "Hint", "mongodb://${username}:${password}@${domain}:${port} or mongo+atlas mongodb+srv://${username}:${password}@${domain}"),
+		)
 	}
 
 	return fmt.Sprintf("%s/?retryWrites=true&w=majority", connURI), nil
@@ -210,21 +214,32 @@ func (db *Store) Connect() error {
 
 	db.client, err = mongo.Connect(storeCtx, opts)
 	if err != nil {
-		return fmt.Errorf("MongoDB failed to connect. Reason: %w", err)
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "MongoDB failed to connect", "Reason", err),
+		)
 	}
 
-	if err := db.client.Database("admin").RunCommand(storeCtx, bson.D{{"ping", 1}}).Err(); err != nil {
-		return err
+	if err := db.client.Database("admin").RunCommand(storeCtx, bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "MongoDB failed to ping pong the database", "Reason", err),
+		)
 	}
 
-	db.userid = storeCtx.Value("USERID")
+	if v, ok := helpers.IsContextPresent(storeCtx, consts.KsctlContextUserID); ok {
+		db.userid = v
+	} else {
+		db.userid = "default"
+	}
 
 	switch o := db.userid.(type) {
 	case string:
 		db.databaseClient = db.client.Database(getUserDatabase(o))
 	default:
-		return fmt.Errorf("invalid type for context value `USERID`")
+		return ksctlErrors.ErrInvalidUserInput.Wrap(
+			log.NewError(storeCtx, "invalid type for context value `USERID`"),
+		)
 	}
+
 	log.Success(storeCtx, "CONN to MongoDB")
 
 	return nil

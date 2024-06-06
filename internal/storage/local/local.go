@@ -212,7 +212,11 @@ func (db *Store) Kill() error {
 }
 
 func (db *Store) Connect() error {
-	db.userid = storeCtx.Value("USERID")
+	if v, ok := helpers.IsContextPresent(storeCtx, consts.KsctlContextUserID); ok {
+		db.userid = v
+	} else {
+		db.userid = "default"
+	}
 
 	log.Success(storeCtx, "CONN to HostOS")
 	return nil
