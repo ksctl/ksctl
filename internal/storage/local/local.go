@@ -430,10 +430,14 @@ func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clus
 	case consts.CloudAws, consts.CloudAzure, consts.CloudCivo, consts.CloudLocal:
 		db.cloudProvider = string(cloud)
 	default:
-		return ksctlErrors.ErrInvalidCloudProvider
+		return ksctlErrors.ErrInvalidCloudProvider.Wrap(
+			log.NewError(storeCtx, "invalid", "cloud", cloud),
+		)
 	}
 	if clusterType != consts.ClusterTypeHa && clusterType != consts.ClusterTypeMang {
-		return ksctlErrors.ErrInvalidClusterType
+		return ksctlErrors.ErrInvalidClusterType.Wrap(
+			log.NewError(storeCtx, "invalid", "clusterType", clusterType),
+		)
 	}
 	db.clusterName = clusterName
 	db.region = region

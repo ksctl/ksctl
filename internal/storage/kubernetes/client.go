@@ -8,6 +8,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -29,12 +30,16 @@ func NewK8sClient(ctx context.Context) (ClientSet, error) {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, log.NewError(storeCtx, "Error loading in-cluster config", "Reason", err)
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "Error loading in-cluster config", "Reason", err),
+		)
 	}
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, log.NewError(storeCtx, "Error creating Kubernetes client", "Reason", err)
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(storeCtx, "Error creating Kubernetes client", "Reason", err),
+		)
 	}
 
 	return &Client{
