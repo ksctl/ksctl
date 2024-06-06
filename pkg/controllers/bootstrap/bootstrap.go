@@ -311,7 +311,7 @@ func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctl
 	case consts.StoreExtMongo:
 		isExternalStore = true
 		var _err error
-		externalCredEndpoint, _err = external.HandleCreds(consts.StoreExtMongo)
+		externalCredEndpoint, _err = external.HandleCreds(controllerCtx, log, consts.StoreExtMongo)
 		if _err != nil {
 			return _err
 		}

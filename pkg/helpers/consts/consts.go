@@ -117,6 +117,7 @@ const (
 	KsctlTestFlagKey   KsctlContextKeyType = iota
 	KsctlModuleNameKey KsctlContextKeyType = iota
 	KsctlCustomDirLoc  KsctlContextKeyType = iota
+	KsctlContextUserID KsctlContextKeyType = iota
 )
 
 const (

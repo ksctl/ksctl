@@ -20,7 +20,7 @@ var (
 func InitCore() (err error) {
 	ctx = context.WithValue(
 		context.Background(),
-		"USERID",
+		consts.KsctlContextUserID,
 		"demo",
 	)
 	ctx = context.WithValue(

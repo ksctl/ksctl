@@ -82,13 +82,13 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 }
 
-func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName string) error {
-	if len(clusterName) > 50 {
+func IsValidName(ctx context.Context, log types.LoggerFactory, name string) error {
+	if len(name) > 50 {
 		return ksctlErrors.ErrInvalidResourceName.Wrap(
-			log.NewError(ctx, "name is too long", "name", clusterName),
+			log.NewError(ctx, "name is too long", "name", name),
 		)
 	}
-	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
+	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, name)
 	if err != nil {
 		return ksctlErrors.ErrUnknown.Wrap(
 			log.NewError(ctx, "failed to compile the regex", "Reason", err),
@@ -96,7 +96,7 @@ func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName strin
 	}
 	if !matched {
 		return ksctlErrors.ErrInvalidResourceName.Wrap(
-			log.NewError(ctx, "invalid cluster name", "expectedToBePattern", `(^[a-z])([-a-z0-9])*([a-z0-9]$)`),
+			log.NewError(ctx, "invalid name", "expectedToBePattern", `(^[a-z])([-a-z0-9])*([a-z0-9]$)`),
 		)
 	}
 

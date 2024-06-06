@@ -21,7 +21,7 @@ var (
 func main() {
 	ctx = context.WithValue(
 		context.Background(),
-		"USERID",
+		consts.KsctlContextUserID,
 		"e2e",
 	)
 	ctx = context.WithValue(

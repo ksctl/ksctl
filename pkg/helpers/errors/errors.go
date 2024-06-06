@@ -55,25 +55,25 @@ func (err ksctlGlobalErr) Is(target error) bool {
 }
 
 func (err ksctlGlobalErr) Wrap(inner error) error {
-	return wrapError{code: string(err), err: inner}
+	return KsctlWrappedError{code: string(err), err: inner}
 }
 
-type wrapError struct {
+type KsctlWrappedError struct {
 	err  error
 	code string
 }
 
-func (err wrapError) Error() string {
+func (err KsctlWrappedError) Error() string {
 	if err.err != nil {
 		return fmt.Sprintf("%s: %v", err.code, err.err)
 	}
 	return err.code
 }
 
-func (err wrapError) Unwrap() error {
+func (err KsctlWrappedError) Unwrap() error {
 	return err.err
 }
 
-func (err wrapError) Is(target error) bool {
+func (err KsctlWrappedError) Is(target error) bool {
 	return ksctlGlobalErr(err.code).Is(target)
 }
