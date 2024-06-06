@@ -96,6 +96,7 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 			_v, _err := s.ReadCredentials(constsCloud)
 
 			if _err != nil {
+				log.Debug(storeCtx, "failed to read the credentials for export", "err", _err)
 				if ksctlErrors.ErrNoMatchingRecordsFound.Is(_err) {
 					continue
 				} else {
@@ -297,15 +298,16 @@ func (db *Store) Write(data *storageTypes.StorageDocument) error {
 	if err != nil {
 		if ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
 			log.Debug(storeCtx, "configmap for write was not found")
-			if c.BinaryData == nil {
-				c.BinaryData = make(map[string][]byte)
-			}
+
+			c = generateConfigMap(ksctlStateName, ksctlNamespace)
 		} else {
 			return err
 		}
 	} else {
 		log.Debug(storeCtx, "configmap for write was found")
-		c = generateConfigMap(ksctlStateName, ksctlNamespace)
+		if c.BinaryData == nil {
+			c.BinaryData = make(map[string][]byte)
+		}
 	}
 
 	c.BinaryData[helperGenerateKeyForState(db)] = raw
