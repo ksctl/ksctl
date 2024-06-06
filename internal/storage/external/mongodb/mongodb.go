@@ -98,6 +98,7 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 
 			if _err != nil {
 				if errors.Is(_err, mongo.ErrNoDocuments) {
+					// if ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
 					continue
 				} else {
 					return nil, _err
@@ -396,12 +397,30 @@ func (db *Store) DeleteCluster() error {
 
 func (db *Store) isPresent() bool {
 	c, err := db.databaseClient.Collection(db.cloudProvider).Find(storeCtx, getClusterFilters(db))
-	return !errors.Is(err, mongo.ErrNoDocuments) && c.RemainingBatchLength() == 1
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return false
+		}
+	}
+	if c.RemainingBatchLength() == 1 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (db *Store) isPresentCreds(cloud consts.KsctlCloud) bool {
 	c, err := db.databaseClient.Collection(CredsCollection).Find(storeCtx, getCredentialsFilters(cloud))
-	return !errors.Is(err, mongo.ErrNoDocuments) && c.RemainingBatchLength() == 1
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return false
+		}
+	}
+	if c.RemainingBatchLength() == 1 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (db *Store) clusterPresent() error {
