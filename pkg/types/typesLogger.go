@@ -16,7 +16,7 @@ type LoggerFactory interface {
 
 	Warn(ctx context.Context, msg string, v ...any)
 
-	Error(ctx context.Context, msg string, v ...any)
+	Error(msg string, v ...any)
 
 	Debug(ctx context.Context, msg string, v ...any)
 

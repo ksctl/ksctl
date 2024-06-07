@@ -11,6 +11,7 @@ import (
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 	cloud_control_res "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
@@ -56,14 +57,15 @@ type CivoProvider struct {
 func (*CivoProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
-		return "", log.NewError(civoCtx, "Unable to Marshal main_state_document", "Reason", err)
+		return "", ksctlErrors.ErrInternal.Wrap(
+			log.NewError(civoCtx, "failed to serialize the state", "Reason", err),
+		)
 	}
 
 	log.Debug(civoCtx, "Printing", "cloudstate", string(cloudstate))
 	return string(cloudstate), nil
 }
 
-// GetStateForHACluster implements types.CloudFactory.
 func (client *CivoProvider) GetStateForHACluster(storage types.StorageFactory) (cloud_control_res.CloudResourceState, error) {
 
 	payload := cloud_control_res.CloudResourceState{
@@ -111,7 +113,9 @@ func (obj *CivoProvider) InitState(storage types.StorageFactory, operation const
 	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Civo.B.IsCompleted {
 			// then found and it and the process is done then no point of duplicate creation
-			return log.NewError(civoCtx, "already exist")
+			return ksctlErrors.ErrDuplicateRecords.Wrap(
+				log.NewError(civoCtx, "cluster already exist", "name", mainStateDocument.ClusterName, "region", mainStateDocument.Region),
+			)
 		}
 
 		if errLoadState == nil && !mainStateDocument.CloudInfra.Civo.B.IsCompleted {
@@ -133,18 +137,20 @@ func (obj *CivoProvider) InitState(storage types.StorageFactory, operation const
 	case consts.OperationGet:
 
 		if errLoadState != nil {
-			return log.NewError(civoCtx, "no cluster state found", "Reason", errLoadState)
+			return errLoadState
 		}
 		log.Debug(civoCtx, "Get storage")
 
 	case consts.OperationDelete:
 
 		if errLoadState != nil {
-			return log.NewError(civoCtx, "no cluster state found", "Reason", errLoadState)
+			return errLoadState
 		}
 		log.Debug(civoCtx, "Delete resource(s)")
 	default:
-		return log.NewError(civoCtx, "Invalid operation for init state")
+		return ksctlErrors.ErrInvalidOperation.Wrap(
+			log.NewError(civoCtx, "Invalid operation for init state"),
+		)
 	}
 
 	if err := obj.client.InitClient(storage, obj.region); err != nil {
@@ -172,7 +178,9 @@ func (cloud *CivoProvider) Credential(storage types.StorageFactory) error {
 	id := client.GetAccountID()
 
 	if len(id) == 0 {
-		return log.NewError(civoCtx, "Invalid user")
+		return ksctlErrors.ErrInvalidCloudAccount.Wrap(
+			log.NewError(civoCtx, "Invalid user"),
+		)
 	}
 	log.Print(civoCtx, "Recieved accountId", "userId", id)
 
@@ -210,7 +218,7 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 func (cloud *CivoProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(civoCtx, log, resName); err != nil {
-		log.Error(civoCtx, "cloud.Name()", "err", err)
+		log.Error("Resource Name", err.Error())
 		return nil
 	}
 	cloud.chResName <- resName
@@ -225,6 +233,7 @@ func (cloud *CivoProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 		log.Debug(civoCtx, "Printing", "Role", resRole)
 		return cloud
 	default:
+		// Role??
 		log.Error(civoCtx, "invalid role assumed")
 		return nil
 	}

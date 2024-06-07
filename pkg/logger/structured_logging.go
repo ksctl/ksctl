@@ -159,7 +159,7 @@ func (l *StructuredLog) Debug(ctx context.Context, msg string, args ...any) {
 	l.logger.Debug(msg, args...)
 }
 
-func (l *StructuredLog) Error(ctx context.Context, msg string, args ...any) {
+func (l *StructuredLog) Error(msg string, args ...any) {
 	color.Set(color.FgHiRed, color.Bold)
 	defer color.Unset()
 

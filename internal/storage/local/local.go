@@ -370,7 +370,7 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 
 	var v *storageTypes.CredentialsDocument
 	if err := json.Unmarshal(data, &v); err != nil {
-		return nil, ksctlErrors.ErrInternal.Wrap(
+		return nil, ksctlErrors.ErrNilCredentials.Wrap(
 			log.NewError(storeCtx, "failed to deserialize the credentials", "Reason", err),
 		)
 	}

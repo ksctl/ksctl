@@ -429,7 +429,7 @@ func (db *Store) isPresentCreds(cloud consts.KsctlCloud) (*mongo.SingleResult, e
 				log.NewError(storeCtx, "no matching credentials present"),
 			)
 		}
-		return nil, ksctlErrors.ErrInternal.Wrap(
+		return nil, ksctlErrors.ErrNilCredentials.Wrap(
 			log.NewError(storeCtx, "failed to get credentials", "Reason", c.Err()),
 		)
 	}

@@ -239,8 +239,8 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 
 			return result, nil
 		} else {
-			return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
-				log.NewError(storeCtx, "no state as data", "Reason", "c.Data==nil"),
+			return nil, ksctlErrors.ErrNilCredentials.Wrap(
+				log.NewError(storeCtx, "no credentials", "Reason", "c.Data==nil"),
 			)
 		}
 

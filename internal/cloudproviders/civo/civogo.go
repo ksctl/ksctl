@@ -8,6 +8,7 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -190,9 +191,15 @@ func (client *CivoGoClient) DeleteInstance(id string) (*civogo.SimpleResponse, e
 }
 
 func (client *CivoGoClient) InitClient(factory types.StorageFactory, region string) (err error) {
-	client.client, err = civogo.NewClient(fetchAPIKey(factory), region)
+	apiKey, err := fetchAPIKey(factory)
 	if err != nil {
-		err = log.NewError(civoCtx, "Failed to Init civo client", "Reason", err)
+		return err
+	}
+	client.client, err = civogo.NewClient(apiKey, region)
+	if err != nil {
+		err = ksctlErrors.ErrInternal.Wrap(
+			log.NewError(civoCtx, "Failed to Init civo client", "Reason", err),
+		)
 		return
 	}
 	client.region = region

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -32,7 +33,7 @@ var (
 	fakeClientVars *CivoProvider
 	storeVars      types.StorageFactory
 
-	dir          = fmt.Sprintf("%s ksctl-civo-test", os.TempDir())
+	dir          = path.Join(os.TempDir(), "ksctl-civo-test")
 	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
@@ -54,7 +55,7 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-civo-test"); err != nil {
+	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
 
@@ -113,6 +114,9 @@ func TestCivoProvider_InitState(t *testing.T) {
 	})
 }
 
+// TODO make it also check the file based fetch as well
+//
+//	and also get the error wrapped code and compare
 func TestFetchAPIKey(t *testing.T) {
 	environmentTest := [][3]string{
 		{"CIVO_TOKEN", "12", "12"},
