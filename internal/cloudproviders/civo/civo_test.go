@@ -114,9 +114,6 @@ func TestCivoProvider_InitState(t *testing.T) {
 	})
 }
 
-// TODO make it also check the file based fetch as well
-//
-//	and also get the error wrapped code and compare
 func TestFetchAPIKey(t *testing.T) {
 	environmentTest := [][3]string{
 		{"CIVO_TOKEN", "12", "12"},
@@ -127,9 +124,15 @@ func TestFetchAPIKey(t *testing.T) {
 		if err := os.Setenv(data[0], data[1]); err != nil {
 			t.Fatalf("unable to set env vars")
 		}
-		token := fetchAPIKey(storeVars)
-		if strings.Compare(token, data[2]) != 0 {
-			t.Fatalf("missmatch Key: `%s` -> `%s`\texpected `%s` but got `%s`", data[0], data[1], data[2], token)
+		token, err := fetchAPIKey(storeVars)
+		if len(data[2]) == 0 {
+			if err == nil {
+				t.Fatalf("It should fail")
+			}
+		} else {
+			if strings.Compare(token, data[2]) != 0 {
+				t.Fatalf("missmatch Key: `%s` -> `%s`\texpected `%s` but got `%s`", data[0], data[1], data[2], token)
+			}
 		}
 		if err := os.Unsetenv(data[0]); err != nil {
 			t.Fatalf("unable to unset env vars")
@@ -538,23 +541,21 @@ func TestManagedCluster(t *testing.T) {
 }
 
 func TestHACluster(t *testing.T) {
-	func() {
-		fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo-ha",
-			Region:      "LON1",
-			Provider:    consts.CloudCivo,
-			IsHA:        true,
-			NoCP:        7,
-			NoDS:        5,
-			NoWP:        10,
-			K8sDistro:   consts.K8sK3s,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo-ha",
+		Region:      "LON1",
+		Provider:    consts.CloudCivo,
+		IsHA:        true,
+		NoCP:        7,
+		NoDS:        5,
+		NoWP:        10,
+		K8sDistro:   consts.K8sK3s,
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeHA = localstate.NewClient(parentCtx, parentLogger)
-		_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)
-		_ = storeHA.Connect()
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
 
-	}()
 	fakeClientHA.metadata.noCP = 7
 	fakeClientHA.metadata.noDS = 5
 	fakeClientHA.metadata.noWP = 10

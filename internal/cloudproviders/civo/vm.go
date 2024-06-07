@@ -39,27 +39,33 @@ func (obj *CivoProvider) foundStateVM(storage types.StorageFactory, idx int, cre
 		pvIP = mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP
 	}
 
-	if len(instID) != 0 {
-		// instance id present
-		if len(pubIP) != 0 && len(pvIP) != 0 {
-			// all info present
-			if creationMode {
-				log.Print(civoCtx, "skipped vm found", "id", instID)
-			}
-			return nil
-		} else {
-			// either one or > 1 info are absent
-			err := watchInstance(obj, storage, instID, idx, role, name)
-			return err
-		}
-	}
 	if creationMode {
+		// creation mode
+		if len(instID) != 0 {
+			// instance id present
+			if len(pubIP) != 0 && len(pvIP) != 0 {
+				log.Print(civoCtx, "skipped vm found", "id", instID)
+				return nil
+			} else {
+				// either one or > 1 info are absent
+				err := watchInstance(obj, storage, instID, idx, role, name)
+				return err
+			}
+		}
 		return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
 			log.NewError(civoCtx, "vm not found"),
 		)
+
 	} else {
-		log.Success(civoCtx, "skipped already deleted vm", "name", name)
-		return nil
+		// deletion mode
+		if len(instID) != 0 {
+			// need to delete
+			log.Print(civoCtx, "Deleting the VM")
+			return nil
+		}
+		// already deleted
+		return ksctlErrors.ErrNoMatchingRecordsFound
+
 	}
 }
 
@@ -185,12 +191,9 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 
 	log.Debug(civoCtx, "Printing", "role", role, "indexNo", indexNo)
 
-	if err := obj.foundStateVM(storage, indexNo, false, role, ""); err == nil {
-		return nil
-	} else {
-		if ksctlErrors.ErrTimeOut.Is(err) ||
-			ksctlErrors.ErrContextCancelled.Is(err) {
-			return err
+	if err := obj.foundStateVM(storage, indexNo, false, role, ""); err != nil {
+		if ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
+			log.Success(civoCtx, "skipped already deleted vm")
 		}
 	}
 
