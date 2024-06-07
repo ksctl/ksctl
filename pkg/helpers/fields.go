@@ -42,6 +42,19 @@ func ValidateDistro(distro consts.KsctlKubernetes) bool {
 	}
 }
 
+func ValidateRole(role consts.KsctlRole) bool {
+	if b := utf8.ValidString(string(role)); !b {
+		return false
+	}
+
+	switch role {
+	case consts.RoleCp, consts.RoleLb, consts.RoleWp, consts.RoleDs:
+		return true
+	default:
+		return false
+	}
+}
+
 func ValidateStorage(storage consts.KsctlStore) bool {
 	if b := utf8.ValidString(string(storage)); !b {
 		return false

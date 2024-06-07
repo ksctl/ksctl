@@ -8,6 +8,7 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -53,12 +54,15 @@ func (obj *CivoProvider) foundStateVM(storage types.StorageFactory, idx int, cre
 		}
 	}
 	if creationMode {
-		return log.NewError(civoCtx, "vm not found")
+		return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+			log.NewError(civoCtx, "vm not found"),
+		)
+	} else {
+		log.Success(civoCtx, "skipped already deleted vm", "name", name)
+		return nil
 	}
-	return log.NewError(civoCtx, "skipped already deleted vm", "role", role)
 }
 
-// NewVM implements types.CloudFactory.
 func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	name := <-obj.chResName
@@ -68,9 +72,12 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	log.Debug(civoCtx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
-	err := obj.foundStateVM(storage, indexNo, true, role, name)
-	if err == nil {
+	if err := obj.foundStateVM(storage, indexNo, true, role, name); err == nil {
 		return nil
+	} else {
+		if !ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
+			return err
+		}
 	}
 
 	publicIP := "create"
@@ -178,10 +185,13 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 
 	log.Debug(civoCtx, "Printing", "role", role, "indexNo", indexNo)
 
-	err := obj.foundStateVM(storage, indexNo, false, role, "")
-	if err != nil {
-		log.Success(civoCtx, err.Error()) // Try to make it better
+	if err := obj.foundStateVM(storage, indexNo, false, role, ""); err == nil {
 		return nil
+	} else {
+		if ksctlErrors.ErrTimeOut.Is(err) ||
+			ksctlErrors.ErrContextCancelled.Is(err) {
+			return err
+		}
 	}
 
 	instID := ""

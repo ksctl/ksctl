@@ -44,9 +44,7 @@ func loadStateHelper(storage types.StorageFactory) error {
 func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
 	vers, err := obj.client.ListAvailableKubernetesVersions()
 	if err != nil {
-		return nil, ksctlErrors.ErrInternal.Wrap(
-			log.NewError(civoCtx, "failed to get the valid managed kubernetes versions", "Reason", err),
-		)
+		return nil, err
 	}
 	log.Debug(civoCtx, "Printing", "ListAvailableKubernetesVersions", vers)
 	var val []string
@@ -61,9 +59,7 @@ func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
 func getValidRegionsClient(obj *CivoProvider) ([]string, error) {
 	regions, err := obj.client.ListRegions()
 	if err != nil {
-		return nil, ksctlErrors.ErrInternal.Wrap(
-			log.NewError(civoCtx, "failed to get the valid regions", "Reason", err),
-		)
+		return nil, err
 	}
 	log.Debug(civoCtx, "Printing", "ListRegions", regions)
 	var val []string
@@ -76,9 +72,7 @@ func getValidRegionsClient(obj *CivoProvider) ([]string, error) {
 func getValidVMSizesClient(obj *CivoProvider) ([]string, error) {
 	nodeSizes, err := obj.client.ListInstanceSizes()
 	if err != nil {
-		return nil, ksctlErrors.ErrInternal.Wrap(
-			log.NewError(civoCtx, "failed to get the valid virtual machine sizes", "Reason", err),
-		)
+		return nil, err
 	}
 	log.Debug(civoCtx, "Printing", "ListInstanceSizes", nodeSizes)
 	var val []string

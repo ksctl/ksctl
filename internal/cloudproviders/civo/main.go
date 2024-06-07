@@ -178,7 +178,7 @@ func (cloud *CivoProvider) Credential(storage types.StorageFactory) error {
 	id := client.GetAccountID()
 
 	if len(id) == 0 {
-		return ksctlErrors.ErrInvalidCloudAccount.Wrap(
+		return ksctlErrors.ErrFailedCloudAccountAuth.Wrap(
 			log.NewError(civoCtx, "Invalid user"),
 		)
 	}
@@ -227,22 +227,24 @@ func (cloud *CivoProvider) Name(resName string) types.CloudFactory {
 
 func (cloud *CivoProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
-	switch resRole {
-	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
-		cloud.chRole <- resRole
-		log.Debug(civoCtx, "Printing", "Role", resRole)
-		return cloud
-	default:
-		// Role??
-		log.Error(civoCtx, "invalid role assumed")
+	if !helpers.ValidateRole(resRole) {
+		log.Error("invalidParameters",
+			ksctlErrors.ErrInvalidKsctlRole.Wrap(
+				log.NewError(civoCtx, "invalid role", "role", resRole)).
+				Error(),
+		)
 		return nil
 	}
+
+	cloud.chRole <- resRole
+	log.Debug(civoCtx, "Printing", "Role", resRole)
+	return cloud
 }
 
 func (cloud *CivoProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(cloud, size); err != nil {
-		log.Error(civoCtx, "cloud.VMType()", "err", err)
+		log.Error("VM", err.Error())
 		return nil
 	}
 	cloud.chVMType <- size
@@ -305,11 +307,10 @@ func k8sVersion(obj *CivoProvider, ver string) (string, error) {
 	return ver, nil
 }
 
-// ManagedK8sVersion implements types.CloudFactory.
 func (obj *CivoProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	v, err := k8sVersion(obj, ver)
 	if err != nil {
-		log.Error(civoCtx, "cloud.Version()", "err", err)
+		log.Error("Managed k8s version", err.Error())
 		return nil
 	}
 	obj.metadata.k8sVersion = v
@@ -322,17 +323,20 @@ func (*CivoProvider) GetHostNameAllWorkerNode() []string {
 	return hostnames
 }
 
-// NoOfControlPlane implements types.CloudFactory.
 func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	log.Debug(civoCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 
 	if !setter {
 		// delete operation
 		if mainStateDocument == nil {
-			return -1, log.NewError(civoCtx, "state init not called!")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(civoCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs == nil {
-			return -1, log.NewError(civoCtx, "unable to fetch controlplane instanceID")
+			return -1, ksctlErrors.ErrInvalidNoOfControlplane.Wrap(
+				log.NewError(civoCtx, "unable to fetch controlplane instanceIDs"),
+			)
 		}
 		log.Debug(civoCtx, "Printing", "InstanceIDsOfControlplanes", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs)
 		return len(mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs), nil
@@ -340,7 +344,9 @@ func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noCP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError(civoCtx, "state init not called!")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(civoCtx, "state init not called!"),
+			)
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs)
@@ -358,7 +364,9 @@ func (obj *CivoProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes", mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes)
 		return -1, nil
 	}
-	return -1, log.NewError(civoCtx, "constrains for no of controlplane >= 3 and odd number")
+	return -1, ksctlErrors.ErrInvalidNoOfControlplane.Wrap(
+		log.NewError(civoCtx, "constrains for no of controlplane >= 3 and odd number"),
+	)
 }
 
 func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
@@ -367,10 +375,14 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	if !setter {
 		// delete operation
 		if mainStateDocument == nil {
-			return -1, log.NewError(civoCtx, "state init not called!")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(civoCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs == nil {
-			return -1, log.NewError(civoCtx, "unable to fetch DataStore instanceID")
+			return -1, ksctlErrors.ErrInvalidNoOfDatastore.Wrap(
+				log.NewError(civoCtx, "unable to fetch DataStore instanceID"),
+			)
 		}
 
 		log.Debug(civoCtx, "Printing", "InstanceIDsOfDatabaseNode", mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs)
@@ -381,7 +393,9 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {
-			return -1, log.NewError(civoCtx, "state init not called!")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(civoCtx, "state init not called!"),
+			)
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs)
@@ -400,7 +414,9 @@ func (obj *CivoProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes", mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes)
 		return -1, nil
 	}
-	return -1, log.NewError(civoCtx, "constrains for no of Datastore>= 3 and odd number")
+	return -1, ksctlErrors.ErrInvalidNoOfDatastore.Wrap(
+		log.NewError(civoCtx, "constrains for no of Datastore>= 3 and odd number"),
+	)
 }
 
 func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
@@ -409,10 +425,14 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 	if !setter {
 		// delete operation
 		if mainStateDocument == nil {
-			return -1, log.NewError(civoCtx, "state init not called!")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(civoCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs == nil {
-			return -1, log.NewError(civoCtx, "unable to fetch workerplane instanceID")
+			return -1, ksctlErrors.ErrInvalidNoOfWorkerplane.Wrap(
+				log.NewError(civoCtx, "unable to fetch WorkerNode instanceIDs"),
+			)
 		}
 
 		log.Debug(civoCtx, "Printing", "InstanceIDsOfWorkerPlane", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs)
@@ -422,7 +442,9 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 	if no >= 0 {
 		obj.metadata.noWP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError(civoCtx, "state init not called!")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(civoCtx, "state init not called!"),
+			)
 		}
 		currLen := len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs)
 
@@ -468,7 +490,9 @@ func (obj *CivoProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, s
 		log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes", mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes)
 		return -1, nil
 	}
-	return -1, log.NewError(civoCtx, "constrains for no of workerplane >= 0")
+	return -1, ksctlErrors.ErrInvalidNoOfWorkerplane.Wrap(
+		log.NewError(civoCtx, "constrains for no of workerplane >= 0"),
+	)
 }
 
 func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloud_control_res.AllClusterData, error) {
