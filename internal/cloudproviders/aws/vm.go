@@ -283,19 +283,19 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		case consts.RoleCp:
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = vmtype
 		case consts.RoleLb:
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.HostName = name
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = name
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = vmtype
 		case consts.RoleWp:
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {

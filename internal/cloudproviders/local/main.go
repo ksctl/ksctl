@@ -38,7 +38,9 @@ var (
 func (*LocalProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
-		return "", ksctlErrors.ErrInternal.Wrap(err)
+		return "", ksctlErrors.ErrInternal.Wrap(
+			log.NewError(localCtx, "failed to serialize the state", "Reason", err),
+		)
 	}
 	log.Debug(localCtx, "Printing", "cloudState", cloudstate)
 	return string(cloudstate), nil
@@ -66,7 +68,7 @@ func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger type
 func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
 	switch operation {
 	case consts.OperationCreate:
-		if isPresent(storage, cloud.clusterName) {
+		if err := isPresent(storage, cloud.clusterName); err == nil {
 			return ksctlErrors.ErrDuplicateRecords.Wrap(
 				log.NewError(localCtx, "already present", "name", cloud.clusterName),
 			)
@@ -156,13 +158,7 @@ func (cloud *LocalProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]
 
 func (obj *LocalProvider) IsPresent(storage types.StorageFactory) error {
 
-	if isPresent(storage, obj.clusterName) {
-
-		return nil
-	}
-	return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
-		log.NewError(localCtx, "Cluster not found"),
-	)
+	return isPresent(storage, obj.clusterName)
 }
 
 func (cloud *LocalProvider) VMType(_ string) types.CloudFactory {

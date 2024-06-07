@@ -33,6 +33,7 @@ var (
 	ErrInvalidNoOfWorkerplane       = ksctlGlobalErr("InvalidNoOfWorkerplaneErr")
 	ErrInvalidKsctlComponentVersion = ksctlGlobalErr("InvalidKsctlComponentVersionErr")
 
+	ErrFailedClusterOperation               = ksctlGlobalErr("ErrClusterOperation")
 	ErrFailedCloudResourceQuotaLimitReached = ksctlGlobalErr("FailedCloudResourceQuotaLimitReachedErr")
 	ErrFailedGenerateCertificates           = ksctlGlobalErr("FailedGenerateCertificatesErr")
 	ErrFailedInitDatastore                  = ksctlGlobalErr("FailedInitDatastoreErr")

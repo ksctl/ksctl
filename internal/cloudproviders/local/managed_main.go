@@ -10,7 +10,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelManagedCluster implements types.CloudFactory.
 func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) error {
 
 	_path := path.Join(cloud.metadata.tempDirKubeconfig, "kubeconfig")
@@ -25,7 +24,9 @@ func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) erro
 		}
 		if err := os.WriteFile(_path,
 			[]byte(mainStateDocument.ClusterKubeConfig), 0755); err != nil {
-			return err
+			return ksctlErrors.ErrInternal.Wrap(
+				log.NewError(localCtx, "failed to write file", "Reason", err),
+			)
 		}
 		defer func() {
 			_ = os.RemoveAll(cloud.metadata.tempDirKubeconfig)
@@ -33,7 +34,7 @@ func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) erro
 	}
 
 	if err := cloud.client.Delete(cloud.clusterName, _path); err != nil {
-		return ksctlErrors.ErrUnknown.Wrap(
+		return ksctlErrors.ErrFailedClusterOperation.Wrap(
 			log.NewError(localCtx, "failed to delete cluster", "Reason", err),
 		)
 	}
@@ -77,7 +78,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 	}
 
 	ConfigHandler := func() string {
-		path, err := createNecessaryConfigs(cloud.tempDirKubeconfig)
+		_path, err := createNecessaryConfigs(cloud.tempDirKubeconfig)
 		if err != nil {
 			log.Error(localCtx, "rollback Cannot continue 😢")
 			err = cloud.DelManagedCluster(storage)
@@ -86,12 +87,14 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 				return "" // asumming it never comes here
 			}
 		}
-		return path
+		return _path
 	}
 	Image := "kindest/node:v" + mainStateDocument.CloudInfra.Local.B.KubernetesVer
 
 	if err := cloud.client.Create(cloud.clusterName, withConfig, Image, Wait, ConfigHandler); err != nil {
-		return log.NewError(localCtx, "failed to create cluster", "err", err)
+		return ksctlErrors.ErrFailedClusterOperation.Wrap(
+			log.NewError(localCtx, "failed to create cluster", "err", err),
+		)
 	}
 
 	_path := path.Join(cloud.tempDirKubeconfig, "kubeconfig")

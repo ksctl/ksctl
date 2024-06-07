@@ -15,7 +15,9 @@ import (
 
 func generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
-		return nil, log.NewError(localCtx, "invalid config request control node cannot be 0")
+		return nil, ksctlError.ErrInvalidUserInput.Wrap(
+			log.NewError(localCtx, "invalid config request control node cannot be 0"),
+		)
 	}
 	var config string
 	config += `---
@@ -68,7 +70,7 @@ networking:
 	worker := noOfNodes - control
 	raw, err := generateConfig(worker, control, cni)
 	if err != nil {
-		return nil, ksctlError.ErrInternal.Wrap(err)
+		return nil, err
 	}
 
 	log.Debug(localCtx, "Printing", "configCluster", string(raw))
@@ -76,9 +78,8 @@ networking:
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
-func isPresent(storage types.StorageFactory, clusterName string) bool {
-	err := storage.AlreadyCreated(consts.CloudLocal, "LOCAL", clusterName, consts.ClusterTypeMang)
-	return err == nil
+func isPresent(storage types.StorageFactory, clusterName string) error {
+	return storage.AlreadyCreated(consts.CloudLocal, "LOCAL", clusterName, consts.ClusterTypeMang)
 }
 
 func createNecessaryConfigs(storeDir string) (string, error) {
@@ -86,7 +87,9 @@ func createNecessaryConfigs(storeDir string) (string, error) {
 
 	_, err := os.Create(_path)
 	if err != nil {
-		return "", err
+		return "", ksctlError.ErrInternal.Wrap(
+			log.NewError(localCtx, "failed to create file to store kubeconfig", "Reason", err),
+		)
 	}
 	return _path, nil
 }
