@@ -36,11 +36,10 @@ type StateConfigurationAws struct {
 	B BaseInfra `json:"b" bson:"b"`
 
 	IsCompleted bool
-	ClusterName string `json:"cluster_name" bson:"cluster_name"`
-	Region      string `json:"region" bson:"region"`
-	VpcName     string `json:"vpc" bson:"vpc"`
-	VpcId       string `json:"vpc_id" bson:"vpc_id"`
-	VpcCidr     string `json:"vpc_cidr" bson:"vpc_cidr"`
+
+	VpcName string `json:"vpc" bson:"vpc"`
+	VpcId   string `json:"vpc_id" bson:"vpc_id"`
+	VpcCidr string `json:"vpc_cidr" bson:"vpc_cidr"`
 
 	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
 	NoManagedNodes     int    `json:"no_managed_nodes" bson:"no_managed_nodes"`

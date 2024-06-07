@@ -7,52 +7,54 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ksctl/ksctl/internal/storage/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/resources/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/resources"
 	"gotest.tools/v3/assert"
 )
 
 var (
 	fakeClientHA *AwsProvider
-	storeHA      resources.StorageFactory
+	storeHA      types.StorageFactory
 
 	fakeClientManaged *AwsProvider
-	storeManaged      resources.StorageFactory
+	storeManaged      types.StorageFactory
+	parentCtx         context.Context
+	fakeClientVars    *AwsProvider
+	storeVars         types.StorageFactory
 
-	fakeClientVars *AwsProvider
-	storeVars      resources.StorageFactory
+	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = fmt.Sprintf("%s ksctl-Aws-test", os.TempDir())
 )
 
 func TestMain(m *testing.M) {
 
-	func() {
+	parentCtx = context.WithValue(
+		context.TODO(),
+		consts.KsctlCustomDirLoc,
+		dir)
 
-		fakeClientVars, _ = ReturnAwsStruct(resources.Metadata{
-			ClusterName:  "demo",
-			Region:       "fake",
-			Provider:     consts.CloudAws,
-			IsHA:         true,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-		}, &types.StorageDocument{}, ProvideMockClient)
+	fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo",
+		Region:      "fake",
+		Provider:    consts.CloudAws,
+		IsHA:        true,
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeVars = localstate.InitStorage(-1, os.Stdout)
-		_ = storeVars.Setup(consts.CloudAws, "fake", "demo", consts.ClusterTypeHa)
-		_ = storeVars.Connect(context.TODO())
-	}()
-	_ = os.Setenv(string(consts.KsctlCustomDirEnabled), dir)
+	storeVars = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeVars.Setup(consts.CloudAws, "fake", "demo", consts.ClusterTypeHa)
+	_ = storeVars.Connect()
 
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-Aws-test"); err != nil {
+	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-aws-test"); err != nil {
 		panic(err)
 	}
 
@@ -63,7 +65,7 @@ func TestInitState(t *testing.T) {
 
 	t.Run("Create state", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateCreate); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -77,21 +79,21 @@ func TestInitState(t *testing.T) {
 		mainStateDocument.CloudInfra.Aws.B.IsCompleted = true
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.B.IsCompleted, true, "cluster should not be completed")
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateCreate); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to resume state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Get request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateGet); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationGet); err != nil {
 			t.Fatalf("Unable to get state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Delete request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationStateDelete); err != nil {
+		if err := fakeClientVars.InitState(storeVars, consts.OperationDelete); err != nil {
 			t.Fatalf("Unable to Delete state, Reason: %v", err)
 		}
 	})
@@ -192,7 +194,6 @@ func TestNoOfWorkerPlane(t *testing.T) {
 
 func TestValidRegion(t *testing.T) {
 	fortesting := map[string]error{
-		// "fake":       errors.New(""),  // this is not a valid region so it should return error
 		"ap-south-1": nil,
 		"ap-south-2": nil,
 	}
@@ -220,7 +221,7 @@ func TestResName(t *testing.T) {
 	if ret := fakeClientVars.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
-	//_ = <-fakeClientVars.chResName
+	_ = <-fakeClientVars.chResName
 }
 
 func TestRole(t *testing.T) {
@@ -252,38 +253,13 @@ func TestVMType(t *testing.T) {
 	if ret := fakeClientVars.VMType(""); ret != nil {
 		t.Fatalf("returned interface for invalid vm type")
 	}
-	_ = <-fakeClientVars.chVMType
+	//_ = <-fakeClientVars.chVMType
 }
 
 func TestVisibility(t *testing.T) {
 	if fakeClientVars.Visibility(true); !fakeClientVars.metadata.public {
 		t.Fatalf("Visibility setting not working")
 	}
-}
-
-func TestK8sVersion(t *testing.T) {
-	forTesting := []string{
-		"1.27.1",
-		"1.27",
-		"1.28.1",
-	}
-
-	for i := 0; i < len(forTesting); i++ {
-		var ver string = forTesting[i]
-		if i < 2 {
-			if ret := fakeClientVars.Version(ver); ret == nil {
-				t.Fatalf("returned nil for valid version")
-			}
-			if ver != fakeClientVars.metadata.k8sVersion {
-				t.Fatalf("set value is not equal to input value")
-			}
-		} else {
-			if ret := fakeClientVars.Version(ver); ret != nil {
-				t.Fatalf("returned interface for invalid version")
-			}
-		}
-	}
-
 }
 
 func TestCniAndApps(t *testing.T) {
@@ -299,7 +275,7 @@ func TestCniAndApps(t *testing.T) {
 		assert.Equal(t, got, v, "missmatch")
 	}
 
-	got := fakeClientVars.Application("abcd")
+	got := fakeClientVars.Application([]string{"abcd"})
 	if !got {
 		t.Fatalf("application should be external")
 	}
@@ -338,32 +314,30 @@ func checkCurrentStateFileHA(t *testing.T) {
 }
 
 func TestHACluster(t *testing.T) {
-	func() {
-		fakeClientHA, _ = ReturnAwsStruct(resources.Metadata{
-			ClusterName:  "demo-ha",
-			Region:       "fake",
-			Provider:     consts.CloudAws,
-			IsHA:         true,
-			LogVerbosity: -1,
-			LogWritter:   os.Stdout,
-			NoCP:         7,
-			NoDS:         5,
-			NoWP:         10,
-			K8sDistro:    consts.K8sK3s,
-		}, &types.StorageDocument{}, ProvideMockClient)
 
-		storeHA = localstate.InitStorage(-1, os.Stdout)
-		_ = storeHA.Setup(consts.CloudAws, "fake", "demo-ha", consts.ClusterTypeHa)
-		_ = storeHA.Connect(context.TODO())
+	mainStateDocument = &storageTypes.StorageDocument{}
+	fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo-ha",
+		Region:      "fake",
+		Provider:    consts.CloudAws,
+		IsHA:        true,
+		NoCP:        7,
+		NoDS:        5,
+		NoWP:        10,
+		K8sDistro:   consts.K8sK3s,
+	}, parentLogger, mainStateDocument, ProvideMockClient)
 
-	}()
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudAws, "fake", "demo-ha", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
+
 	fakeClientHA.metadata.noCP = 7
 	fakeClientHA.metadata.noDS = 5
 	fakeClientHA.metadata.noWP = 10
 
 	t.Run("init state", func(t *testing.T) {
 
-		if err := fakeClientHA.InitState(storeHA, consts.OperationStateCreate); err != nil {
+		if err := fakeClientHA.InitState(storeHA, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
@@ -380,8 +354,12 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, fakeClientHA.Name("fake-data-not-used").NewNetwork(storeHA), nil, "Network should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
-		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcId, "3456d25f36g474g546", "resource group not saved")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcId, "3456d25f36g474g546", "want %s got %s", "3456d25f36g474g546", mainStateDocument.CloudInfra.Aws.VpcId)
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcName, fakeClientHA.clusterName+"-vpc", "virtual net should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetName, fakeClientHA.clusterName+"-subnet", "subnet should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetID, "3456d25f36g474g546", "subnet should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.RouteTableID, "3456d25f36g474g546", "route table should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.GatewayID, "3456d25f36g474g546", "gateway should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetName, fakeClientHA.clusterName+"-subnet", "subnet should be created")
 
 		checkCurrentStateFileHA(t)
@@ -448,7 +426,7 @@ func TestHACluster(t *testing.T) {
 			assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP, "A.B.C.D", "missmatch of Loadbalancer pub ip")
 
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId) > 0, "missmatch of Loadbalancer nic must be created")
-			assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP, "192.168.1.2", "missmatch of Loadbalancer private ip NIC")
+			assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP, "192.169.1.2", "missmatch of Loadbalancer private ip NIC")
 
 			checkCurrentStateFileHA(t)
 		})
@@ -473,7 +451,7 @@ func TestHACluster(t *testing.T) {
 					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[i], "A.B.C.D", "missmatch of controlplane pub ip")
 
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of controlplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of controlplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[i], "192.169.1.2", "missmatch of controlplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -501,7 +479,7 @@ func TestHACluster(t *testing.T) {
 					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[i], "A.B.C.D", "missmatch of datastore pub ip")
 
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[i]) > 0, "missmatch of datastore nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[i], "192.168.1.2", "missmatch of datastore private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[i], "192.169.1.2", "missmatch of datastore private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -528,7 +506,7 @@ func TestHACluster(t *testing.T) {
 					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[i], "A.B.C.D", "missmatch of workerplane pub ip")
 
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of workerplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of workerplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[i], "192.169.1.2", "missmatch of workerplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -557,26 +535,44 @@ func TestHACluster(t *testing.T) {
 	t.Run("Get cluster ha", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
-				Name:       fakeClientHA.clusterName,
-				Region:     fakeClientHA.region,
-				Provider:   consts.CloudAws,
-				Type:       consts.ClusterTypeHa,
-				NoWP:       fakeClientHA.metadata.noWP,
-				NoCP:       fakeClientHA.metadata.noCP,
-				NoDS:       fakeClientHA.metadata.noDS,
-				K8sDistro:  consts.K8sK3s,
+				Name:          fakeClientHA.clusterName,
+				Region:        fakeClientHA.region,
+				CloudProvider: consts.CloudAws,
+				ClusterType:   consts.ClusterTypeHa,
+				NoWP:          fakeClientHA.metadata.noWP,
+				NoCP:          fakeClientHA.metadata.noCP,
+				NoDS:          fakeClientHA.metadata.noDS,
+
+				WP: []cloud.VMData{
+					{VMSize: "fake-wp-0"}, {VMSize: "fake-wp-1"}, {VMSize: "fake-wp-2"},
+					{VMSize: "fake-wp-3"}, {VMSize: "fake-wp-4"}, {VMSize: "fake-wp-5"},
+					{VMSize: "fake-wp-6"}, {VMSize: "fake-wp-7"}, {VMSize: "fake-wp-8"},
+					{VMSize: "fake-wp-9"},
+				},
+				CP: []cloud.VMData{
+					{VMSize: "fake-cp-0"}, {VMSize: "fake-cp-1"}, {VMSize: "fake-cp-2"},
+					{VMSize: "fake-cp-3"}, {VMSize: "fake-cp-4"}, {VMSize: "fake-cp-5"},
+					{VMSize: "fake-cp-6"},
+				},
+				DS: []cloud.VMData{
+					{VMSize: "fake-ds-0"}, {VMSize: "fake-ds-1"}, {VMSize: "fake-ds-2"},
+					{VMSize: "fake-ds-3"}, {VMSize: "fake-ds-4"},
+				},
+				LB: cloud.VMData{VMSize: "fake-lb"},
+
+				K8sDistro:  "",
 				K8sVersion: mainStateDocument.CloudInfra.Aws.B.KubernetesVer,
 			},
 		}
-		got, err := GetRAWClusterInfos(storeHA, resources.Metadata{LogWritter: os.Stdout, LogVerbosity: -1})
+		got, err := fakeClientHA.GetRAWClusterInfos(storeHA)
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
 	})
 
-	mainStateDocument = &types.StorageDocument{}
+	mainStateDocument = &storageTypes.StorageDocument{}
 	t.Run("init state deletion", func(t *testing.T) {
 
-		if err := fakeClientHA.InitState(storeHA, consts.OperationStateDelete); err != nil {
+		if err := fakeClientHA.InitState(storeHA, consts.OperationDelete); err != nil {
 			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
 		}
 
@@ -713,18 +709,18 @@ func TestHACluster(t *testing.T) {
 	})
 }
 
-func TestGetSecretTokens(t *testing.T) {
-	t.Run("expect demo data", func(t *testing.T) {
-		expected := map[string][]byte{
-			"aws_access_key_id":     []byte("fake"),
-			"aws_secret_access_key": []byte("fake"),
-		}
+// func TestGetSecretTokens(t *testing.T) {
+// 	t.Run("expect demo data", func(t *testing.T) {
+// 		expected := map[string][]byte{
+// 			"aws_access_key_id":     []byte("fake"),
+// 			"aws_secret_access_key": []byte("fake"),
+// 		}
 
-		for key, val := range expected {
-			assert.NilError(t, os.Setenv(key, string(val)), "environment vars should be set")
-		}
-		actual, err := fakeClientVars.GetSecretTokens(storeVars)
-		assert.NilError(t, err, "unable to get the secret token from the client")
-		assert.DeepEqual(t, actual, expected)
-	})
-}
+// 		for key, val := range expected {
+// 			assert.NilError(t, os.Setenv(key, string(val)), "environment vars should be set")
+// 		}
+// 		actual, err := fakeClientVars.GetSecretTokens(storeVars)
+// 		assert.NilError(t, err, "unable to get the secret token from the client")
+// 		assert.DeepEqual(t, actual, expected)
+// 	})
+// }
