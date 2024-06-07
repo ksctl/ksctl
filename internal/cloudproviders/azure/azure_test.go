@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -35,7 +36,7 @@ var (
 	parentCtx      context.Context
 	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
-	dir = fmt.Sprintf("%s ksctl-azure-test", os.TempDir())
+	dir = path.Join(os.TempDir(), "ksctl-azure-test")
 )
 
 func TestMain(m *testing.M) {
@@ -55,7 +56,7 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-azure-test"); err != nil {
+	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
 
@@ -112,7 +113,7 @@ func TestNoOfControlPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfControlPlane(-1, false)
-	if no != -1 || err != nil {
+	if no != -1 || err == nil {
 		t.Fatalf("Getter failed on unintalized controlplanes array got no: %d and err: %v", no, err)
 	}
 
@@ -138,7 +139,7 @@ func TestNoOfDataStore(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
-	if no != -1 || err != nil {
+	if no != -1 || err == nil {
 		t.Fatalf("Getter failed on unintalized datastore array got no: %d and err: %v", no, err)
 	}
 
@@ -162,7 +163,7 @@ func TestNoOfWorkerPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfWorkerPlane(storeVars, -1, false)
-	if no != -1 || err != nil {
+	if no != -1 || err == nil {
 		t.Fatalf("Getter failed on unintalized workerplane array got no: %d and err: %v", no, err)
 	}
 

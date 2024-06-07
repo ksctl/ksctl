@@ -9,6 +9,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 	cloudcontrolres "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
@@ -53,7 +54,9 @@ var (
 func (*AzureProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
-		return "", err
+		return "", ksctlErrors.ErrInternal.Wrap(
+			log.NewError(azureCtx, "failed to serialize the state", "Reason", err),
+		)
 	}
 	log.Debug(azureCtx, "Printing", "cloudstate", cloudstate)
 	return string(cloudstate), nil
@@ -68,7 +71,7 @@ func (*AzureProvider) GetHostNameAllWorkerNode() []string {
 func (obj *AzureProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	log.Debug(azureCtx, "Printing", "K8sVersion", ver)
 	if err := isValidK8sVersion(obj, ver); err != nil {
-		log.Error(azureCtx, "azure.Version()", "err", err.Error())
+		log.Error("Managed k8s version", err.Error())
 		return nil
 	}
 
@@ -105,7 +108,6 @@ func (*AzureProvider) GetStateForHACluster(storage types.StorageFactory) (cloudc
 	return payload, nil
 }
 
-// InitState implements types.CloudFactory.
 func (obj *AzureProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
 
 	switch obj.haCluster {
@@ -125,7 +127,9 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 	switch operation {
 	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Azure.B.IsCompleted {
-			return log.NewError(azureCtx, "cluster already exist")
+			return ksctlErrors.ErrDuplicateRecords.Wrap(
+				log.NewError(azureCtx, "cluster already exist", "name", mainStateDocument.ClusterName, "region", mainStateDocument.Region),
+			)
 		}
 		if errLoadState == nil && !mainStateDocument.CloudInfra.Azure.B.IsCompleted {
 			log.Debug(azureCtx, "RESUME triggered!!")
@@ -144,7 +148,7 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 
 	case consts.OperationDelete:
 		if errLoadState != nil {
-			return log.NewError(azureCtx, "no cluster state found", "Reason", errLoadState)
+			return errLoadState
 		}
 		log.Debug(azureCtx, "Delete resource(s)")
 
@@ -154,14 +158,15 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 		}
 		log.Debug(azureCtx, "Get storage")
 	default:
-		return log.NewError(azureCtx, "Invalid operation for init state")
+		return ksctlErrors.ErrInvalidOperation.Wrap(
+			log.NewError(azureCtx, "Invalid operation for init state"),
+		)
 	}
 
 	if err := obj.client.InitClient(storage); err != nil {
 		return err
 	}
 
-	// added the resource grp and region for easy of use for the client library
 	obj.client.SetRegion(obj.region)
 	obj.client.SetResourceGrp(obj.resourceGroup)
 
@@ -247,7 +252,7 @@ func NewClient(
 func (cloud *AzureProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(azureCtx, log, resName); err != nil {
-		log.Error(azureCtx, err.Error())
+		log.Error("Resource Name", err.Error())
 		return nil
 	}
 
@@ -257,21 +262,24 @@ func (cloud *AzureProvider) Name(resName string) types.CloudFactory {
 
 func (cloud *AzureProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
-	switch resRole {
-	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
-		cloud.chRole <- resRole
-		return cloud
-	default:
-		log.Error(azureCtx, "invalid role assumed", "role", string(resRole))
-
+	if !helpers.ValidateRole(resRole) {
+		log.Error("invalidParameters",
+			ksctlErrors.ErrInvalidKsctlRole.Wrap(
+				log.NewError(azureCtx, "invalid role", "role", resRole)).
+				Error(),
+		)
 		return nil
 	}
+
+	cloud.chRole <- resRole
+	log.Debug(azureCtx, "Printing", "Role", resRole)
+	return cloud
 }
 
 func (cloud *AzureProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(cloud, size); err != nil {
-		log.Error(azureCtx, err.Error())
+		log.Error("VM", err.Error())
 		return nil
 	}
 	cloud.chVMType <- size
@@ -311,12 +319,16 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	if !setter {
 		// delete operation
 		if mainStateDocument == nil {
-			return -1, log.NewError(azureCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(azureCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names == nil {
 			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
-			return -1, nil
+			return -1, ksctlErrors.ErrInvalidNoOfControlplane.Wrap(
+				log.NewError(azureCtx, "unable to fetch controlplane instanceIDs"),
+			)
 		}
 
 		log.Debug(azureCtx, "Printing", "mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names", mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names)
@@ -325,7 +337,9 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noCP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError(azureCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(azureCtx, "state init not called!"),
+			)
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names)
@@ -345,7 +359,9 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		log.Debug(azureCtx, "Printing", "mainStateDocument.CloudInfra.Azure.InfoControlPlanes", mainStateDocument.CloudInfra.Azure.InfoControlPlanes)
 		return -1, nil
 	}
-	return -1, log.NewError(azureCtx, "constrains for no of controlplane >= 3 and odd number")
+	return -1, ksctlErrors.ErrInvalidNoOfControlplane.Wrap(
+		log.NewError(azureCtx, "constrains for no of controlplane >= 3 and odd number"),
+	)
 }
 
 func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
@@ -353,12 +369,16 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	if !setter {
 		// delete operation
 		if mainStateDocument == nil {
-			return -1, log.NewError(azureCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(azureCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Azure.InfoDatabase.Names == nil {
 			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
-			return -1, nil
+			return -1, ksctlErrors.ErrInvalidNoOfDatastore.Wrap(
+				log.NewError(azureCtx, "unable to fetch DataStore instanceID"),
+			)
 		}
 
 		log.Debug(azureCtx, "Printing", "mainStateDocument.CloudInfra.Azure.InfoDatabase.Names", mainStateDocument.CloudInfra.Azure.InfoDatabase.Names)
@@ -368,7 +388,9 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {
-			return -1, log.NewError(azureCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(azureCtx, "state init not called!"),
+			)
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Azure.InfoDatabase.Names)
@@ -388,7 +410,9 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Debug(azureCtx, "Printing", "mainStateDocument.CloudInfra.Azure.InfoDatabase", mainStateDocument.CloudInfra.Azure.InfoDatabase)
 		return -1, nil
 	}
-	return -1, log.NewError(azureCtx, "constrains for no of Datastore>= 3 and odd number")
+	return -1, ksctlErrors.ErrInvalidNoOfDatastore.Wrap(
+		log.NewError(azureCtx, "constrains for no of Datastore>= 3 and odd number"),
+	)
 }
 
 func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
@@ -396,12 +420,16 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 	if !setter {
 		// delete operation
 		if mainStateDocument == nil {
-			return -1, log.NewError(azureCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(azureCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names == nil {
 			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
 			// it happens when the resource groups and network is created but interrup occurs before setter is called
-			return -1, nil
+			return -1, ksctlErrors.ErrInvalidNoOfWorkerplane.Wrap(
+				log.NewError(azureCtx, "unable to fetch WorkerNode instanceIDs"),
+			)
 		}
 		log.Debug(azureCtx, "Prnting", "mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names", mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names)
 		return len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names), nil
@@ -409,7 +437,9 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 	if no >= 0 {
 		obj.metadata.noWP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError(azureCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(azureCtx, "state init not called!"),
+			)
 		}
 		currLen := len(mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names)
 
@@ -467,7 +497,9 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 
 		return -1, nil
 	}
-	return -1, log.NewError(azureCtx, "constrains for no of workplane >= 0")
+	return -1, ksctlErrors.ErrInvalidNoOfWorkerplane.Wrap(
+		log.NewError(azureCtx, "constrains for no of workerplane >= 0"),
+	)
 }
 
 func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
@@ -549,7 +581,7 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) error {
 	err := storage.AlreadyCreated(consts.CloudAzure, region, name, ksctlClusterType)
 	if err != nil {
-		return log.NewError(azureCtx, "Cluster not found", "ErrStorage", err)
+		return err
 	}
 	return nil
 }

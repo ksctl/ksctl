@@ -9,7 +9,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// NewNetwork implements types.CloudFactory
 func (obj *AzureProvider) NewNetwork(storage types.StorageFactory) error {
 	<-obj.chResName
 
@@ -145,12 +144,10 @@ func (obj *AzureProvider) DelNetwork(storage types.StorageFactory) error {
 		return nil
 	} else {
 		if obj.haCluster {
-			// delete subnet
 			if err := obj.DeleteSubnet(azureCtx, storage); err != nil {
 				return err
 			}
 
-			// delete vnet
 			if err := obj.DeleteVirtualNetwork(azureCtx, storage); err != nil {
 				return err
 			}

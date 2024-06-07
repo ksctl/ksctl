@@ -574,7 +574,7 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) error {
 	err := storage.AlreadyCreated(consts.CloudCivo, region, name, ksctlClusterType)
 	if err != nil {
-		return log.NewError(civoCtx, "Cluster not found", "ErrStorage", err)
+		return err
 	}
 	return nil
 }

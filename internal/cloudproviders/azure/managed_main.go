@@ -8,7 +8,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelManagedCluster implements types.CloudFactory.
 func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) == 0 {
 		log.Print(azureCtx, "skipped already deleted AKS cluster")
@@ -33,7 +32,6 @@ func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error 
 	return storage.Write(mainStateDocument)
 }
 
-// NewManagedCluster implements types.CloudFactory.
 func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 	name := <-obj.chResName
 	vmtype := <-obj.chVMType

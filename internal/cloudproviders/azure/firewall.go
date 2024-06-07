@@ -1,8 +1,6 @@
 package azure
 
 import (
-	"fmt"
-
 	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -11,7 +9,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelFirewall implements types.CloudFactory.
 func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 	role := <-obj.chRole
 
@@ -27,8 +24,6 @@ func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
-	default:
-		return fmt.Errorf("invalid role")
 	}
 
 	if len(nsg) == 0 {
@@ -86,8 +81,6 @@ func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
-	default:
-		return log.NewError(azureCtx, "invalid role")
 	}
 	if len(nsg) != 0 {
 		log.Success(azureCtx, "skipped firewall already created", "name", nsg)
@@ -106,8 +99,6 @@ func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 		securityRules = firewallRuleLoadBalancer()
 	case consts.RoleDs:
 		securityRules = firewallRuleDataStore(netCidr)
-	default:
-		return log.NewError(azureCtx, "invalid role")
 	}
 
 	log.Debug(azureCtx, "Printing", "firewallrule", securityRules)

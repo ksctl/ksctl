@@ -7,7 +7,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// CreateUploadSSHKeyPair implements types.CloudFactory.
 func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
 	name := <-obj.chResName
 	log.Debug(azureCtx, "Printing", "name", name)
@@ -50,7 +49,6 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 	return nil
 }
 
-// DelSSHKeyPair implements types.CloudFactory.
 func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) == 0 {
