@@ -23,7 +23,7 @@ func UserInputCredentials(ctx context.Context, logging types.LoggerFactory) (str
 		return "", err
 	}
 	if len(bytePassword) == 0 {
-		logging.Error(ctx, "Empty secret passed!")
+		logging.Error("Empty secret passed!")
 		return UserInputCredentials(ctx, logging)
 	}
 	return strings.TrimSpace(string(bytePassword)), nil
