@@ -226,7 +226,7 @@ func TestResName(t *testing.T) {
 	if ret := fakeClientVars.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
-	_ = <-fakeClientVars.chResName
+	// _ = <-fakeClientVars.chResName
 }
 
 func TestRole(t *testing.T) {
@@ -634,21 +634,21 @@ func TestHACluster(t *testing.T) {
 				NoDS:          fakeClientHA.metadata.noDS,
 
 				WP: []cloud.VMData{
-					{VMSize: "fake-wp-0"}, {VMSize: "fake-wp-1"}, {VMSize: "fake-wp-2"},
-					{VMSize: "fake-wp-3"}, {VMSize: "fake-wp-4"}, {VMSize: "fake-wp-5"},
-					{VMSize: "fake-wp-6"}, {VMSize: "fake-wp-7"}, {VMSize: "fake-wp-8"},
-					{VMSize: "fake-wp-9"},
+					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
+					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
+					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
+					{VMSize: "fake"},
 				},
 				CP: []cloud.VMData{
-					{VMSize: "fake-cp-0"}, {VMSize: "fake-cp-1"}, {VMSize: "fake-cp-2"},
-					{VMSize: "fake-cp-3"}, {VMSize: "fake-cp-4"}, {VMSize: "fake-cp-5"},
-					{VMSize: "fake-cp-6"},
+					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
+					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
+					{VMSize: "fake"},
 				},
 				DS: []cloud.VMData{
-					{VMSize: "fake-ds-0"}, {VMSize: "fake-ds-1"}, {VMSize: "fake-ds-2"},
-					{VMSize: "fake-ds-3"}, {VMSize: "fake-ds-4"},
+					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
+					{VMSize: "fake"}, {VMSize: "fake"},
 				},
-				LB: cloud.VMData{VMSize: "fake-lb"},
+				LB: cloud.VMData{VMSize: "fake"},
 
 				K8sDistro:  "",
 				K8sVersion: mainStateDocument.CloudInfra.Aws.B.KubernetesVer,

@@ -855,6 +855,7 @@ func (*AwsGoMockClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOu
 func (*AwsGoMockClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
 
 	mainStateDocument.CloudInfra.Aws.SubnetID = ""
+	mainStateDocument.CloudInfra.Aws.SubnetName = ""
 
 	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
@@ -897,6 +898,14 @@ func (*AwsGoMockClient) BeginDeleteVM(vmname string) error {
 }
 
 func (*AwsGoMockClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+
+	mainStateDocument.CloudInfra.Aws.GatewayID = ""
+	mainStateDocument.CloudInfra.Aws.RouteTableID = ""
+	mainStateDocument.CloudInfra.Aws.NetworkAclID = ""
+
+	if err := storage.Write(mainStateDocument); err != nil {
+		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+	}
 
 	return nil
 }
