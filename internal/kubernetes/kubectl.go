@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -27,19 +29,25 @@ func getManifests(app Application) ([]string, error) {
 	// Get the manifest
 	resp, err := http.Get(app.Url)
 	if err != nil {
-		return nil, log.NewError(kubernetesCtx, "failed to get manifests", "Reason", err)
+		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "failed to get manifests", "Reason", err),
+		)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, log.NewError(kubernetesCtx, "failed to ready manifests", "Reason", err)
+		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "failed to ready manifests", "Reason", err),
+		)
 	}
 
 	// Split the manifest into individual storage
 	resources := strings.Split(string(body), "---")
 	if err := apiextensionsv1.AddToScheme(scheme.Scheme); err != nil {
-		return nil, log.NewError(kubernetesCtx, "failed to add apiextensionv1 to the scheme", "Reason", err)
+		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "failed to add apiextensionv1 to the scheme", "Reason", err),
+		)
 	}
 	return resources, nil
 }
@@ -55,7 +63,9 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 
 		obj, _, err := decUnstructured([]byte(resource), nil, nil)
 		if err != nil {
-			return log.NewError(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err)
+			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err),
+			)
 		}
 
 		var errRes error
@@ -154,7 +164,9 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 			errRes = client.netPolicyDelete(o)
 
 		default:
-			log.Error(kubernetesCtx, "unexpected type", "obj", o)
+			errRes = ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "unexpected type", "obj", o),
+			)
 		}
 
 		if errRes != nil {
@@ -194,7 +206,9 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 
 		obj, _, err := decUnstructured([]byte(resource), nil, nil)
 		if err != nil {
-			return log.NewError(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err)
+			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err),
+			)
 		}
 
 		var errRes error
@@ -293,7 +307,9 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 			errRes = client.netPolicyApply(o)
 
 		default:
-			log.Error(kubernetesCtx, "unexpected type", "obj", o)
+			errRes = ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "unexpected type", "obj", o),
+			)
 		}
 
 		if errRes != nil {

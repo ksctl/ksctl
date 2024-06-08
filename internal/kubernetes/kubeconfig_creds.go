@@ -12,6 +12,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -23,7 +24,9 @@ func httpClient(caCert, clientCert, clientKey []byte) (*tls.Config, error) {
 
 	cert, err := tls.X509KeyPair(clientCert, clientKey)
 	if err != nil {
-		return nil, log.NewError(kubernetesCtx, "Error loading client certificate and key", "Reason", err)
+		return nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+			log.NewError(kubernetesCtx, "Error loading client certificate and key", "Reason", err),
+		)
 	}
 
 	tlsConfig := &tls.Config{
@@ -37,7 +40,9 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 
 	config, err := clientcmd.Load([]byte(kubeconfig))
 	if err != nil {
-		return "", nil, log.NewError(kubernetesCtx, "failed deserializes the contents into Config object", "Reason", err)
+		return "", nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+			log.NewError(kubernetesCtx, "failed deserializes the contents into Config object", "Reason", err),
+		)
 	}
 
 	clusterContext := ""
@@ -64,7 +69,9 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 	}
 
 	if !isPresent {
-		return "", nil, log.NewError(kubernetesCtx, "failed to find the context", "contextName", clusterContextName)
+		return "", nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+			log.NewError(kubernetesCtx, "failed to find the context", "contextName", clusterContextName),
+		)
 	}
 
 	cluster := config.Clusters[clusterContext]
@@ -96,7 +103,9 @@ func transferData(kubeconfig,
 
 	out, err := json.Marshal(v)
 	if err != nil {
-		return log.NewError(kubernetesCtx, "failed to marshal the exported stateDocuments", "Reason", err)
+		return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+			log.NewError(kubernetesCtx, "failed to marshal the exported stateDocuments", "Reason", err),
+		)
 	}
 
 	url = fmt.Sprintf("%s/api/v1/namespaces/%s/pods/%s:%d/proxy/import", url, podNs, podName, podPort)
@@ -121,12 +130,18 @@ func transferData(kubeconfig,
 		func() (err error) {
 			req, _err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
 			if _err != nil {
-				return log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", _err)
+				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+					log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", _err),
+				)
 			}
 			client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
 
 			resHttp, err = client.Do(req)
-			return err
+			if err != nil {
+				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+					log.NewError(kubernetesCtx, "failed to connect", "Reason", err))
+			}
+			return nil
 		},
 		func() bool {
 			return resHttp.StatusCode == http.StatusOK
@@ -135,8 +150,10 @@ func transferData(kubeconfig,
 		func() error {
 			body, _err := io.ReadAll(resHttp.Body)
 			if _err != nil {
-				return log.NewError(kubernetesCtx, "status code was 200, but failed to read response",
-					"Reason", _err,
+				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+					log.NewError(kubernetesCtx, "status code was 200, but failed to read response",
+						"Reason", _err,
+					),
 				)
 			}
 			log.Success(kubernetesCtx, "Response of successful state transfer", "StatusCode", resHttp.StatusCode, "Response", string(body))

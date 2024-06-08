@@ -18,8 +18,8 @@ var (
 	ErrDuplicateRecords       = ksctlGlobalErr("DuplicateRecordsErr")
 	ErrNoMatchingRecordsFound = ksctlGlobalErr("NoMatchingRecordsFoundErr")
 
-	ErrInvalidOperation             = ksctlGlobalErr("InvalidOperation")
-	ErrInvalidKsctlRole             = ksctlGlobalErr("InvalidKsctlRole")
+	ErrInvalidOperation             = ksctlGlobalErr("InvalidOperationErr")
+	ErrInvalidKsctlRole             = ksctlGlobalErr("InvalidKsctlRoleErr")
 	ErrInvalidUserInput             = ksctlGlobalErr("InvalidUserInputErr")
 	ErrInvalidCloudProvider         = ksctlGlobalErr("InvalidCloudProviderErr")
 	ErrInvalidClusterType           = ksctlGlobalErr("InvalidClusterTypeErr")
@@ -38,6 +38,9 @@ var (
 	ErrInvalidCloudRegion                   = ksctlGlobalErr("InvalidCloudRegionErr")
 	ErrInvalidCloudVMSize                   = ksctlGlobalErr("InvalidCloudVMSizeErr")
 
+	ErrFailedKsctlComponent              = ksctlGlobalErr("FailedKsctlComponentErr")
+	ErrFailedKubernetesClient            = ksctlGlobalErr("FailedKubernetesClientErr")
+	ErrFailedHelmClient                  = ksctlGlobalErr("FailedHelmClientErr")
 	ErrFailedKsctlClusterOperation       = ksctlGlobalErr("FailedKsctlClusterOperationErr")
 	ErrFailedGenerateCertificates        = ksctlGlobalErr("FailedGenerateCertificatesErr")
 	ErrFailedInitDatastore               = ksctlGlobalErr("FailedInitDatastoreErr")

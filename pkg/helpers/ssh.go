@@ -150,7 +150,9 @@ func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdou
 				sshExec.log.Warn(sshExec.ctx, "Retrying! Facing some channel open issues", "Reason", err)
 				return nil, false
 			} else {
-				return err, true
+				return ksctlErrors.ErrSSHExec.Wrap(
+					sshExec.log.NewError(sshExec.ctx, err.Error()),
+				), true
 			}
 		},
 		func() error {
@@ -241,7 +243,11 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		sshPayload.log,
 		func() (err error) {
 			conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)
-			return err
+			if err != nil {
+				return ksctlErrors.ErrSSHExec.Wrap(
+					sshPayload.log.NewError(sshPayload.ctx, "failed to get", "Reason", err))
+			}
+			return nil
 		},
 		func() bool {
 			return true

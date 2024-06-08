@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,10 +29,14 @@ func (k *Kubernetes) daemonsetApply(o *appsv1.DaemonSet) error {
 				DaemonSets(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(kubernetesCtx, "daemonset apply failed", "Reason", err)
+				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+					log.NewError(kubernetesCtx, "daemonset apply failed", "Reason", err),
+				)
 			}
 		} else {
-			return log.NewError(kubernetesCtx, "daemonset apply failed", "Reason", err)
+			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "daemonset apply failed", "Reason", err),
+			)
 		}
 	}
 	return nil
@@ -51,10 +56,14 @@ func (k *Kubernetes) deploymentApply(o *appsv1.Deployment) error {
 				Deployments(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(kubernetesCtx, "deployment apply failed", "Reason", err)
+				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+					log.NewError(kubernetesCtx, "deployment apply failed", "Reason", err),
+				)
 			}
 		} else {
-			return log.NewError(kubernetesCtx, "deployment apply failed", "Reason", err)
+			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "deployment apply failed", "Reason", err),
+			)
 		}
 	}
 	return nil
@@ -78,13 +87,19 @@ func (k *Kubernetes) deploymentReadyWait(name, namespace string) error {
 				AppsV1().
 				Deployments(namespace).
 				Get(context.Background(), name, metav1.GetOptions{})
-			return err
+			if err != nil {
+				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+					log.NewError(kubernetesCtx, "failed to get", "Reason", err))
+			}
+			return nil
 		},
 		func() bool {
 			return status.Status.ReadyReplicas > 0
 		},
 		func(err error) (errW error, escalateErr bool) {
-			return log.NewError(kubernetesCtx, "deployment get failed", "Reason", err), true
+			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "deployment get failed", "Reason", err),
+			), true
 		},
 		func() error {
 			log.Success(kubernetesCtx, "Few of the replica are ready", "readyReplicas", status.Status.ReadyReplicas)
@@ -107,7 +122,9 @@ func (k *Kubernetes) daemonsetDelete(o *appsv1.DaemonSet) error {
 		DaemonSets(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(kubernetesCtx, "daemonset delete failed", "Reason", err)
+		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "daemonset delete failed", "Reason", err),
+		)
 	}
 	return nil
 }
@@ -119,7 +136,9 @@ func (k *Kubernetes) deploymentDelete(o *appsv1.Deployment) error {
 		Deployments(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(kubernetesCtx, "deployment delete failed", "Reason", err)
+		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "deployment delete failed", "Reason", err),
+		)
 	}
 	return nil
 }
@@ -138,10 +157,14 @@ func (k *Kubernetes) statefulSetApply(o *appsv1.StatefulSet) error {
 				StatefulSets(ns).
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
-				return log.NewError(kubernetesCtx, "statefulset apply failed", "Reason", err)
+				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+					log.NewError(kubernetesCtx, "statefulset apply failed", "Reason", err),
+				)
 			}
 		} else {
-			return log.NewError(kubernetesCtx, "statefulset apply failed", "Reason", err)
+			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+				log.NewError(kubernetesCtx, "statefulset apply failed", "Reason", err),
+			)
 		}
 	}
 	return nil
@@ -155,7 +178,9 @@ func (k *Kubernetes) statefulSetDelete(o *appsv1.StatefulSet) error {
 		StatefulSets(ns).
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return log.NewError(kubernetesCtx, "statefulset delete failed", "Reason", err)
+		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "statefulset delete failed", "Reason", err),
+		)
 	}
 	return nil
 }

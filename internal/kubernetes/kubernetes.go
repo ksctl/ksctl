@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -45,7 +46,9 @@ func (k *Kubernetes) DeleteWorkerNodes(nodeName string) error {
 	}
 
 	if len(kNodeName) == 0 {
-		return log.NewError(kubernetesCtx, "node not found!")
+		return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+			log.NewError(kubernetesCtx, "node not found!"),
+		)
 	}
 	err = k.nodeDelete(kNodeName)
 	if err != nil {
