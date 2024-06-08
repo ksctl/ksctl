@@ -5,13 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
 	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+
+	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -311,6 +316,91 @@ func checkCurrentStateFileHA(t *testing.T) {
 	}
 
 	assert.DeepEqual(t, mainStateDocument, read)
+}
+
+func TestFirewallRules(t *testing.T) {
+	_rules := []helpers.FirewallRule{
+		{
+			Description: "nice",
+			Name:        "hello",
+			Protocol:    consts.FirewallActionUDP,
+			Direction:   consts.FirewallActionEgress,
+			Action:      consts.FirewallActionDeny,
+			Cidr:        "1.1.1./0",
+			StartPort:   "34",
+			EndPort:     "34",
+		},
+		{
+			Description: "324nice",
+			Name:        "he23llo",
+			Protocol:    consts.FirewallActionTCP,
+			Direction:   consts.FirewallActionIngress,
+			Cidr:        "1.1.12./0",
+			StartPort:   "1",
+			EndPort:     "65000",
+		},
+	}
+	expectIng := ec2.AuthorizeSecurityGroupIngressInput{
+		GroupId: to.Ptr("143e124"),
+		IpPermissions: []awsTypes.IpPermission{
+			{
+				FromPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[1].StartPort)
+					return int32(_p)
+				}()),
+				ToPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[1].EndPort)
+					return int32(_p)
+				}()),
+				IpProtocol: to.Ptr[string]("tcp"),
+				IpRanges: []awsTypes.IpRange{
+					{
+						CidrIp:      to.Ptr[string](_rules[1].Cidr),
+						Description: to.Ptr[string](_rules[1].Description),
+					},
+				},
+			},
+		},
+	}
+	expectEgr := ec2.AuthorizeSecurityGroupEgressInput{
+		GroupId: to.Ptr("143e124"),
+		IpPermissions: []awsTypes.IpPermission{
+			{
+				FromPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[0].StartPort)
+					return int32(_p)
+				}()),
+				ToPort: to.Ptr[int32](func() int32 {
+					_p, _ := strconv.Atoi(_rules[0].EndPort)
+					return int32(_p)
+				}()),
+				IpProtocol: to.Ptr[string]("udp"),
+				IpRanges: []awsTypes.IpRange{
+					{
+						CidrIp:      to.Ptr[string](_rules[0].Cidr),
+						Description: to.Ptr[string](_rules[0].Description),
+					},
+				},
+			},
+		},
+	}
+	gotIng, gotEgr := convertToProviderSpecific(_rules, to.Ptr("143e124"))
+
+	// Compare the expected and actual values
+	assert.DeepEqual(t, expectIng.GroupId, gotIng.GroupId)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].FromPort, gotIng.IpPermissions[0].FromPort)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].ToPort, gotIng.IpPermissions[0].ToPort)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].IpProtocol, gotIng.IpPermissions[0].IpProtocol)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].IpRanges[0].CidrIp, gotIng.IpPermissions[0].IpRanges[0].CidrIp)
+	assert.DeepEqual(t, expectIng.IpPermissions[0].IpRanges[0].Description, gotIng.IpPermissions[0].IpRanges[0].Description)
+
+	assert.DeepEqual(t, expectEgr.GroupId, gotEgr.GroupId)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].FromPort, gotEgr.IpPermissions[0].FromPort)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].ToPort, gotEgr.IpPermissions[0].ToPort)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].IpProtocol, gotEgr.IpPermissions[0].IpProtocol)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].IpRanges[0].CidrIp, gotEgr.IpPermissions[0].IpRanges[0].CidrIp)
+	assert.DeepEqual(t, expectEgr.IpPermissions[0].IpRanges[0].Description, gotEgr.IpPermissions[0].IpRanges[0].Description)
+
 }
 
 func TestHACluster(t *testing.T) {
@@ -706,6 +796,9 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetID, "", "subnet should be created")
 
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.SubnetID) == 0, "subnet should be created")
+		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.RouteTableID) == 0, "route table should be created")
+		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.GatewayID) == 0, "gateway should be created")
+		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.SubnetName) == 0, "subnet should be created")
 	})
 }
 
