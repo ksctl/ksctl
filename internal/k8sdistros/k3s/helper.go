@@ -3,6 +3,8 @@ package k3s
 import (
 	"fmt"
 	"strings"
+
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 )
 
 func isValidK3sVersion(ver string) error {
@@ -13,7 +15,9 @@ func isValidK3sVersion(ver string) error {
 			return nil
 		}
 	}
-	return log.NewError(k3sCtx, "invalid k3s version", "valid versions", strings.Join(validVersion, " "))
+	return ksctlErrors.ErrInvalidVersion.Wrap(
+		log.NewError(k3sCtx, "invalid k3s version", "valid versions", strings.Join(validVersion, " ")),
+	)
 }
 
 func getEtcdMemberIPFieldForControlplane(ips []string) string {

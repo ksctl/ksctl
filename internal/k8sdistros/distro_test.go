@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"testing"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -23,7 +24,7 @@ var (
 	storeHA types.StorageFactory
 
 	fakeClient         *PreBootstrap
-	dir                = fmt.Sprintf("%s ksctl-bootstrap-test", os.TempDir())
+	dir                = path.Join(os.TempDir(), "ksctl-bootstrap-test")
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 
 	parentCtx    context.Context
@@ -36,7 +37,7 @@ func TestMain(m *testing.M) {
 
 	mainState := &storageTypes.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
-		log.Error(parentCtx, err.Error())
+		log.Error(err.Error())
 		os.Exit(1)
 	}
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
@@ -74,7 +75,7 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-bootstrap-test"); err != nil {
+	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
 
