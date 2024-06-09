@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -21,6 +20,7 @@ import (
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"gotest.tools/v3/assert"
 )
 
@@ -339,50 +339,50 @@ func TestFirewallRules(t *testing.T) {
 		},
 	}
 	expectIng := ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId: to.Ptr("143e124"),
+		GroupId: utilities.Ptr("143e124"),
 		IpPermissions: []awsTypes.IpPermission{
 			{
-				FromPort: to.Ptr[int32](func() int32 {
+				FromPort: utilities.Ptr[int32](func() int32 {
 					_p, _ := strconv.Atoi(_rules[1].StartPort)
 					return int32(_p)
 				}()),
-				ToPort: to.Ptr[int32](func() int32 {
+				ToPort: utilities.Ptr[int32](func() int32 {
 					_p, _ := strconv.Atoi(_rules[1].EndPort)
 					return int32(_p)
 				}()),
-				IpProtocol: to.Ptr[string]("tcp"),
+				IpProtocol: utilities.Ptr[string]("tcp"),
 				IpRanges: []awsTypes.IpRange{
 					{
-						CidrIp:      to.Ptr[string](_rules[1].Cidr),
-						Description: to.Ptr[string](_rules[1].Description),
+						CidrIp:      utilities.Ptr[string](_rules[1].Cidr),
+						Description: utilities.Ptr[string](_rules[1].Description),
 					},
 				},
 			},
 		},
 	}
 	expectEgr := ec2.AuthorizeSecurityGroupEgressInput{
-		GroupId: to.Ptr("143e124"),
+		GroupId: utilities.Ptr("143e124"),
 		IpPermissions: []awsTypes.IpPermission{
 			{
-				FromPort: to.Ptr[int32](func() int32 {
+				FromPort: utilities.Ptr[int32](func() int32 {
 					_p, _ := strconv.Atoi(_rules[0].StartPort)
 					return int32(_p)
 				}()),
-				ToPort: to.Ptr[int32](func() int32 {
+				ToPort: utilities.Ptr[int32](func() int32 {
 					_p, _ := strconv.Atoi(_rules[0].EndPort)
 					return int32(_p)
 				}()),
-				IpProtocol: to.Ptr[string]("udp"),
+				IpProtocol: utilities.Ptr[string]("udp"),
 				IpRanges: []awsTypes.IpRange{
 					{
-						CidrIp:      to.Ptr[string](_rules[0].Cidr),
-						Description: to.Ptr[string](_rules[0].Description),
+						CidrIp:      utilities.Ptr[string](_rules[0].Cidr),
+						Description: utilities.Ptr[string](_rules[0].Description),
 					},
 				},
 			},
 		},
 	}
-	gotIng, gotEgr := convertToProviderSpecific(_rules, to.Ptr("143e124"))
+	gotIng, gotEgr := convertToProviderSpecific(_rules, utilities.Ptr("143e124"))
 
 	// Compare the expected and actual values
 	assert.DeepEqual(t, expectIng.GroupId, gotIng.GroupId)

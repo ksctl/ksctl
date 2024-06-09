@@ -12,7 +12,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/logger"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -20,6 +19,7 @@ import (
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
 )
@@ -353,31 +353,31 @@ func TestFirewallRules(t *testing.T) {
 	defer func() { mainStateDocument.CloudInfra.Azure.NetCidr = bkp }()
 	_expected := []*armnetwork.SecurityRule{
 		{
-			Name: to.Ptr(_rules[0].Name),
+			Name: utilities.Ptr(_rules[0].Name),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr(mainStateDocument.CloudInfra.Azure.NetCidr),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr(_rules[0].Cidr),
-				DestinationPortRange:     to.Ptr(_rules[0].StartPort),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolUDP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessDeny),
-				Priority:                 to.Ptr[int32](101),
-				Description:              to.Ptr(_rules[0].Description),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
+				SourceAddressPrefix:      utilities.Ptr(mainStateDocument.CloudInfra.Azure.NetCidr),
+				SourcePortRange:          utilities.Ptr("*"),
+				DestinationAddressPrefix: utilities.Ptr(_rules[0].Cidr),
+				DestinationPortRange:     utilities.Ptr(_rules[0].StartPort),
+				Protocol:                 utilities.Ptr(armnetwork.SecurityRuleProtocolUDP),
+				Access:                   utilities.Ptr(armnetwork.SecurityRuleAccessDeny),
+				Priority:                 utilities.Ptr[int32](101),
+				Description:              utilities.Ptr(_rules[0].Description),
+				Direction:                utilities.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 			},
 		},
 		{
-			Name: to.Ptr(_rules[1].Name),
+			Name: utilities.Ptr(_rules[1].Name),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr(_rules[1].Cidr),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr(mainStateDocument.CloudInfra.Azure.NetCidr),
-				DestinationPortRange:     to.Ptr(_rules[1].StartPort + "-" + _rules[1].EndPort),
-				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-				Priority:                 to.Ptr[int32](102),
-				Description:              to.Ptr(_rules[1].Description),
-				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
+				SourceAddressPrefix:      utilities.Ptr(_rules[1].Cidr),
+				SourcePortRange:          utilities.Ptr("*"),
+				DestinationAddressPrefix: utilities.Ptr(mainStateDocument.CloudInfra.Azure.NetCidr),
+				DestinationPortRange:     utilities.Ptr(_rules[1].StartPort + "-" + _rules[1].EndPort),
+				Protocol:                 utilities.Ptr(armnetwork.SecurityRuleProtocolTCP),
+				Access:                   utilities.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Priority:                 utilities.Ptr[int32](102),
+				Description:              utilities.Ptr(_rules[1].Description),
+				Direction:                utilities.Ptr(armnetwork.SecurityRuleDirectionInbound),
 			},
 		},
 	}

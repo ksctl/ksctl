@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -184,42 +184,42 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 	log.Debug(azureCtx, "initscript", "script", initScript)
 
 	parameters := armcompute.VirtualMachine{
-		Location: to.Ptr(obj.region),
+		Location: utilities.Ptr(obj.region),
 		Identity: &armcompute.VirtualMachineIdentity{
-			Type: to.Ptr(armcompute.ResourceIdentityTypeNone),
+			Type: utilities.Ptr(armcompute.ResourceIdentityTypeNone),
 		},
 		Properties: &armcompute.VirtualMachineProperties{
 			StorageProfile: &armcompute.StorageProfile{
 				ImageReference: &armcompute.ImageReference{
-					Offer:     to.Ptr("0001-com-ubuntu-server-jammy"),
-					Publisher: to.Ptr("Canonical"),
-					SKU:       to.Ptr("22_04-lts-gen2"),
-					Version:   to.Ptr("latest"),
+					Offer:     utilities.Ptr("0001-com-ubuntu-server-jammy"),
+					Publisher: utilities.Ptr("Canonical"),
+					SKU:       utilities.Ptr("22_04-lts-gen2"),
+					Version:   utilities.Ptr("latest"),
 				},
 				OSDisk: &armcompute.OSDisk{
-					Name:         to.Ptr(diskName),
-					CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
-					Caching:      to.Ptr(armcompute.CachingTypesReadWrite),
+					Name:         utilities.Ptr(diskName),
+					CreateOption: utilities.Ptr(armcompute.DiskCreateOptionTypesFromImage),
+					Caching:      utilities.Ptr(armcompute.CachingTypesReadWrite),
 					ManagedDisk: &armcompute.ManagedDiskParameters{
-						StorageAccountType: to.Ptr(armcompute.StorageAccountTypesStandardLRS), // OSDisk type Standard/Premium HDD/SSD
+						StorageAccountType: utilities.Ptr(armcompute.StorageAccountTypesStandardLRS), // OSDisk type Standard/Premium HDD/SSD
 					},
-					//DiskSizeGB: to.Ptr[int32](100), // default 127G
+					//DiskSizeGB: utilities.Ptr[int32](100), // default 127G
 				},
 			},
 			HardwareProfile: &armcompute.HardwareProfile{
-				VMSize: to.Ptr(armcompute.VirtualMachineSizeTypes(vmtype)), // VM size include vCPUs,RAM,Data Disks,Temp storage.
+				VMSize: utilities.Ptr(armcompute.VirtualMachineSizeTypes(vmtype)), // VM size include vCPUs,RAM,Data Disks,Temp storage.
 			},
 			OSProfile: &armcompute.OSProfile{
-				ComputerName:  to.Ptr(name),
-				AdminUsername: to.Ptr(mainStateDocument.CloudInfra.Azure.B.SSHUser),
-				CustomData:    to.Ptr(base64.StdEncoding.EncodeToString([]byte(initScript))),
+				ComputerName:  utilities.Ptr(name),
+				AdminUsername: utilities.Ptr(mainStateDocument.CloudInfra.Azure.B.SSHUser),
+				CustomData:    utilities.Ptr(base64.StdEncoding.EncodeToString([]byte(initScript))),
 				LinuxConfiguration: &armcompute.LinuxConfiguration{
-					DisablePasswordAuthentication: to.Ptr(true),
+					DisablePasswordAuthentication: utilities.Ptr(true),
 					SSH: &armcompute.SSHConfiguration{
 						PublicKeys: []*armcompute.SSHPublicKey{
 							{
-								Path:    to.Ptr("/home/azureuser/.ssh/authorized_keys"),
-								KeyData: to.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
+								Path:    utilities.Ptr("/home/azureuser/.ssh/authorized_keys"),
+								KeyData: utilities.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
 							},
 						},
 					},
@@ -228,7 +228,7 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 			NetworkProfile: &armcompute.NetworkProfile{
 				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
 					{
-						ID: to.Ptr(netInterfaceID),
+						ID: utilities.Ptr(netInterfaceID),
 					},
 				},
 			},
@@ -409,9 +409,9 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.Stor
 	}
 
 	parameters := armnetwork.PublicIPAddress{
-		Location: to.Ptr(obj.region),
+		Location: utilities.Ptr(obj.region),
 		Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-			PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic), // Static or Dynamic
+			PublicIPAllocationMethod: utilities.Ptr(armnetwork.IPAllocationMethodStatic), // Static or Dynamic
 		},
 	}
 
@@ -587,24 +587,24 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage ty
 	}
 
 	parameters := armnetwork.Interface{
-		Location: to.Ptr(obj.region),
+		Location: utilities.Ptr(obj.region),
 		Properties: &armnetwork.InterfacePropertiesFormat{
 			IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 				{
-					Name: to.Ptr(mainStateDocument.CloudInfra.Azure.ResourceGroupName),
+					Name: utilities.Ptr(mainStateDocument.CloudInfra.Azure.ResourceGroupName),
 					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodDynamic),
+						PrivateIPAllocationMethod: utilities.Ptr(armnetwork.IPAllocationMethodDynamic),
 						Subnet: &armnetwork.Subnet{
-							ID: to.Ptr(subnetID),
+							ID: utilities.Ptr(subnetID),
 						},
 						PublicIPAddress: &armnetwork.PublicIPAddress{
-							ID: to.Ptr(publicIPID),
+							ID: utilities.Ptr(publicIPID),
 						},
 					},
 				},
 			},
 			NetworkSecurityGroup: &armnetwork.SecurityGroup{
-				ID: to.Ptr(networkSecurityGroupID),
+				ID: utilities.Ptr(networkSecurityGroupID),
 			},
 		},
 	}

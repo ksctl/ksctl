@@ -6,8 +6,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -926,13 +925,13 @@ func (mock *AzureGoMockClient) ListKubernetesVersions() (armcontainerservice.Man
 		KubernetesVersionListResult: armcontainerservice.KubernetesVersionListResult{
 			Values: []*armcontainerservice.KubernetesVersion{
 				&armcontainerservice.KubernetesVersion{
-					Version: to.Ptr("1.27.1"),
+					Version: utilities.Ptr("1.27.1"),
 				},
 				&armcontainerservice.KubernetesVersion{
-					Version: to.Ptr("1.26"),
+					Version: utilities.Ptr("1.26"),
 				},
 				&armcontainerservice.KubernetesVersion{
-					Version: to.Ptr("1.27"),
+					Version: utilities.Ptr("1.27"),
 				},
 			},
 		},
@@ -946,7 +945,7 @@ func (mock *AzureGoMockClient) ListVMTypes() ([]string, error) {
 func (mock *AzureGoMockClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
 	return armresources.ResourceGroupsClientCreateOrUpdateResponse{
 		ResourceGroup: armresources.ResourceGroup{
-			Name: to.Ptr(mock.ResourceGrp),
+			Name: utilities.Ptr(mock.ResourceGrp),
 		},
 	}, nil
 }
@@ -1028,7 +1027,7 @@ func (mock *AzureGoMockClient) ListClusterAdminCredentials(resourceName string, 
 		CredentialResults: armcontainerservice.CredentialResults{
 			Kubeconfigs: []*armcontainerservice.CredentialResult{
 				&armcontainerservice.CredentialResult{
-					Name:  to.Ptr("fake-kubeconfig"),
+					Name:  utilities.Ptr("fake-kubeconfig"),
 					Value: []byte("fake kubeconfig"),
 				},
 			},
@@ -1044,8 +1043,8 @@ func (mock *AzureGoMockClient) PollUntilDoneDelNSG(ctx context.Context, poll *ru
 func (mock *AzureGoMockClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
 	return armnetwork.SecurityGroupsClientCreateOrUpdateResponse{
 		SecurityGroup: armnetwork.SecurityGroup{
-			ID:   to.Ptr("XXYY"),
-			Name: to.Ptr("fake-firewall-123"),
+			ID:   utilities.Ptr("XXYY"),
+			Name: utilities.Ptr("fake-firewall-123"),
 		},
 	}, nil
 }
@@ -1058,8 +1057,8 @@ func (mock *AzureGoMockClient) PollUntilDoneDelResourceGrp(ctx context.Context, 
 func (mock *AzureGoMockClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error) {
 	return armnetwork.SubnetsClientCreateOrUpdateResponse{
 		Subnet: armnetwork.Subnet{
-			ID:   to.Ptr("XXYY"),
-			Name: to.Ptr("fake-subnet-123"),
+			ID:   utilities.Ptr("XXYY"),
+			Name: utilities.Ptr("fake-subnet-123"),
 		},
 	}, nil
 }
@@ -1073,8 +1072,8 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateVirtNet(ctx context.Context, p
 
 	return armnetwork.VirtualNetworksClientCreateOrUpdateResponse{
 		VirtualNetwork: armnetwork.VirtualNetwork{
-			ID:   to.Ptr("XXYY"),
-			Name: to.Ptr("fake-virt-net-123"),
+			ID:   utilities.Ptr("XXYY"),
+			Name: utilities.Ptr("fake-virt-net-123"),
 		},
 	}, nil
 }
@@ -1089,7 +1088,7 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateAKS(ctx context.Context, poll 
 
 	return armcontainerservice.ManagedClustersClientCreateOrUpdateResponse{
 		ManagedCluster: armcontainerservice.ManagedCluster{
-			Name: to.Ptr("fake-ksctl-managed-resgrp"),
+			Name: utilities.Ptr("fake-ksctl-managed-resgrp"),
 		},
 	}, nil
 }
@@ -1110,10 +1109,10 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateVM(ctx context.Context, poll *
 		VirtualMachine: armcompute.VirtualMachine{
 			Properties: &armcompute.VirtualMachineProperties{
 				OSProfile: &armcompute.OSProfile{
-					ComputerName: to.Ptr("fake-hostname"),
+					ComputerName: utilities.Ptr("fake-hostname"),
 				},
 			},
-			Name: to.Ptr("fake-vm-123"),
+			Name: utilities.Ptr("fake-vm-123"),
 		},
 	}, nil
 }
@@ -1126,10 +1125,10 @@ func (mock *AzureGoMockClient) PollUntilDoneCreatePubIP(ctx context.Context, pol
 
 	return armnetwork.PublicIPAddressesClientCreateOrUpdateResponse{
 		PublicIPAddress: armnetwork.PublicIPAddress{
-			ID:   to.Ptr("fake-XXYYY"),
-			Name: to.Ptr("fake-pubip"),
+			ID:   utilities.Ptr("fake-XXYYY"),
+			Name: utilities.Ptr("fake-pubip"),
 			Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-				IPAddress: to.Ptr("A.B.C.D"),
+				IPAddress: utilities.Ptr("A.B.C.D"),
 			},
 		},
 	}, nil
@@ -1144,13 +1143,13 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateNetInterface(ctx context.Conte
 
 	return armnetwork.InterfacesClientCreateOrUpdateResponse{
 		Interface: armnetwork.Interface{
-			ID:   to.Ptr("XYYY"),
-			Name: to.Ptr("fake-nic-123"),
+			ID:   utilities.Ptr("XYYY"),
+			Name: utilities.Ptr("fake-nic-123"),
 			Properties: &armnetwork.InterfacePropertiesFormat{
 				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 					&armnetwork.InterfaceIPConfiguration{
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-							PrivateIPAddress: to.Ptr("192.168.1.2"),
+							PrivateIPAddress: utilities.Ptr("192.168.1.2"),
 						},
 					},
 				},

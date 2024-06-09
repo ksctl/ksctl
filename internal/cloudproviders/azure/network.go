@@ -3,9 +3,9 @@ package azure
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -20,7 +20,7 @@ func (obj *AzureProvider) NewNetwork(storage types.StorageFactory) error {
 
 		// NOTE: for the azure resource group we are not using the resName field
 		parameter := armresources.ResourceGroup{
-			Location: to.Ptr(obj.region),
+			Location: utilities.Ptr(obj.region),
 		}
 
 		log.Debug(azureCtx, "Printing", "resourceGrpConfig", parameter)
@@ -61,11 +61,11 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage type
 	}
 
 	parameters := armnetwork.VirtualNetwork{
-		Location: to.Ptr(obj.region),
+		Location: utilities.Ptr(obj.region),
 		Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 			AddressSpace: &armnetwork.AddressSpace{
 				AddressPrefixes: []*string{
-					to.Ptr("10.1.0.0/16"), // example 10.1.0.0/16
+					utilities.Ptr("10.1.0.0/16"), // example 10.1.0.0/16
 				},
 			},
 		},
@@ -106,7 +106,7 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage types.Storag
 
 	parameters := armnetwork.Subnet{
 		Properties: &armnetwork.SubnetPropertiesFormat{
-			AddressPrefix: to.Ptr("10.1.0.0/16"),
+			AddressPrefix: utilities.Ptr("10.1.0.0/16"),
 		},
 	}
 

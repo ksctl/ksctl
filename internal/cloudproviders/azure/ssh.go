@@ -1,9 +1,9 @@
 package azure
 
 import (
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -25,9 +25,9 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 	}
 
 	parameters := armcompute.SSHPublicKeyResource{
-		Location: to.Ptr(obj.region),
+		Location: utilities.Ptr(obj.region),
 		Properties: &armcompute.SSHPublicKeyResourceProperties{
-			PublicKey: to.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
+			PublicKey: utilities.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
 		},
 	}
 
