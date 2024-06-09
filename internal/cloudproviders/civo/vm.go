@@ -113,7 +113,7 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	initScript, err := helpers.GenerateInitScriptForVM(name)
 	if err != nil {
-		return log.NewError(civoCtx, "failed gen init script for vm", "Reason", err)
+		return err
 	}
 	log.Debug(civoCtx, "initscript", "script", initScript)
 

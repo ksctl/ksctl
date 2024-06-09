@@ -154,7 +154,7 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 
 	case consts.OperationGet:
 		if errLoadState != nil {
-			return log.NewError(azureCtx, "no cluster state found", "Reason", errLoadState)
+			return errLoadState
 		}
 		log.Debug(azureCtx, "Get storage")
 	default:
@@ -167,12 +167,12 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 		return err
 	}
 
-	obj.client.SetRegion(obj.region)
-	obj.client.SetResourceGrp(obj.resourceGroup)
-
 	if err := validationOfArguments(obj); err != nil {
 		return err
 	}
+
+	obj.client.SetRegion(obj.region)
+	obj.client.SetResourceGrp(obj.resourceGroup)
 
 	log.Debug(azureCtx, "init cloud state")
 
@@ -324,8 +324,6 @@ func (obj *AzureProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			)
 		}
 		if mainStateDocument.CloudInfra.Azure.InfoControlPlanes.Names == nil {
-			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
-			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, ksctlErrors.ErrInvalidNoOfControlplane.Wrap(
 				log.NewError(azureCtx, "unable to fetch controlplane instanceIDs"),
 			)
@@ -374,8 +372,6 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			)
 		}
 		if mainStateDocument.CloudInfra.Azure.InfoDatabase.Names == nil {
-			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
-			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, ksctlErrors.ErrInvalidNoOfDatastore.Wrap(
 				log.NewError(azureCtx, "unable to fetch DataStore instanceID"),
 			)
@@ -425,8 +421,6 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 			)
 		}
 		if mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.Names == nil {
-			// NOTE: returning nil as in case of azure the controlplane [] of instances are not initialized
-			// it happens when the resource groups and network is created but interrup occurs before setter is called
 			return -1, ksctlErrors.ErrInvalidNoOfWorkerplane.Wrap(
 				log.NewError(azureCtx, "unable to fetch WorkerNode instanceIDs"),
 			)

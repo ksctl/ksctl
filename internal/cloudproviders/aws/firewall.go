@@ -43,8 +43,6 @@ func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
 		nsg = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup
-	default:
-		return log.NewError(awsCtx, "invalid role")
 	}
 
 	if len(nsg) == 0 {
@@ -65,8 +63,6 @@ func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup = ""
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = ""
-		default:
-			return log.NewError(awsCtx, "invalid role")
 		}
 
 		err = storage.Write(mainStateDocument)
@@ -169,8 +165,6 @@ func (obj *AwsProvider) createSecurityGroupRules(
 			netCidr,
 		)
 
-	default:
-		return log.NewError(awsCtx, "invalid role")
 	}
 
 	if err := obj.client.AuthorizeSecurityGroupIngress(awsCtx, ingressrules); err != nil {

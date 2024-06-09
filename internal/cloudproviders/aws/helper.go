@@ -2,6 +2,7 @@ package aws
 
 import (
 	"github.com/ksctl/ksctl/pkg/helpers"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 )
@@ -26,11 +27,15 @@ func isValidRegion(obj *AwsProvider) error {
 		return err
 	}
 
-	if validReg == nil { // FIXME: do we actually need this?
-		return log.NewError(awsCtx, "no region found")
+	for _, reg := range validReg {
+		if reg == obj.region {
+			return nil
+		}
 	}
 
-	return nil
+	return ksctlErrors.ErrInvalidCloudRegion.Wrap(
+		log.NewError(awsCtx, "region not found", "validRegions", validReg),
+	)
 }
 
 func isValidVMSize(obj *AwsProvider, size string) error {
@@ -46,7 +51,9 @@ func isValidVMSize(obj *AwsProvider, size string) error {
 		}
 	}
 
-	return log.NewError(awsCtx, "invalid vm size", "Valid options", validSize)
+	return ksctlErrors.ErrInvalidCloudVMSize.Wrap(
+		log.NewError(awsCtx, "invalid vm size", "Valid options", validSize),
+	)
 }
 
 func loadStateHelper(storage types.StorageFactory) error {

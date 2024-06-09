@@ -187,7 +187,7 @@ type AzureGoClient struct {
 func (*AzureGoClient) PollUntilDoneCreateNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientCreateOrUpdateResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -197,7 +197,7 @@ func (*AzureGoClient) PollUntilDoneCreateNetInterface(ctx context.Context, poll 
 func (*AzureGoClient) PollUntilDoneCreatePubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -207,7 +207,7 @@ func (*AzureGoClient) PollUntilDoneCreatePubIP(ctx context.Context, poll *runtim
 func (*AzureGoClient) PollUntilDoneCreateVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientCreateOrUpdateResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -217,7 +217,7 @@ func (*AzureGoClient) PollUntilDoneCreateVM(ctx context.Context, poll *runtime.P
 func (*AzureGoClient) PollUntilDoneDelDisk(ctx context.Context, poll *runtime.Poller[armcompute.DisksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.DisksClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -227,7 +227,7 @@ func (*AzureGoClient) PollUntilDoneDelDisk(ctx context.Context, poll *runtime.Po
 func (*AzureGoClient) PollUntilDoneDelNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -237,7 +237,7 @@ func (*AzureGoClient) PollUntilDoneDelNetInterface(ctx context.Context, poll *ru
 func (*AzureGoClient) PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -247,7 +247,7 @@ func (*AzureGoClient) PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.P
 func (*AzureGoClient) PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -257,7 +257,7 @@ func (*AzureGoClient) PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poll
 func (obj *AzureGoClient) PollUntilDoneDelNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -267,7 +267,7 @@ func (obj *AzureGoClient) PollUntilDoneDelNSG(ctx context.Context, poll *runtime
 func (obj *AzureGoClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -277,7 +277,7 @@ func (obj *AzureGoClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runt
 func (obj *AzureGoClient) PollUntilDoneDelResourceGrp(ctx context.Context, poll *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armresources.ResourceGroupsClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -287,7 +287,7 @@ func (obj *AzureGoClient) PollUntilDoneDelResourceGrp(ctx context.Context, poll 
 func (obj *AzureGoClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -297,7 +297,7 @@ func (obj *AzureGoClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *r
 func (obj *AzureGoClient) PollUntilDoneDelSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -307,7 +307,7 @@ func (obj *AzureGoClient) PollUntilDoneDelSubNet(ctx context.Context, poll *runt
 func (obj *AzureGoClient) PollUntilDoneCreateVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -317,7 +317,7 @@ func (obj *AzureGoClient) PollUntilDoneCreateVirtNet(ctx context.Context, poll *
 func (obj *AzureGoClient) PollUntilDoneDelVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -327,7 +327,7 @@ func (obj *AzureGoClient) PollUntilDoneDelVirtNet(ctx context.Context, poll *run
 func (obj *AzureGoClient) PollUntilDoneCreateAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientCreateOrUpdateResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}
@@ -337,7 +337,7 @@ func (obj *AzureGoClient) PollUntilDoneCreateAKS(ctx context.Context, poll *runt
 func (obj *AzureGoClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientDeleteResponse, error) {
 	res, err := poll.PollUntilDone(ctx, options)
 	if err != nil {
-		return res, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+		return res, ksctlErrors.ErrTimeOut.Wrap(
 			log.NewError(azureCtx, "failed waiting", "Reason", err),
 		)
 	}

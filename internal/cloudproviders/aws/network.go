@@ -26,7 +26,7 @@ func (obj *AwsProvider) DelNetwork(storage ksctlTypes.StorageFactory) error {
 	}
 
 	if mainStateDocument.CloudInfra.Aws.VpcId == "" {
-		log.Success(awsCtx, "deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
+		log.Success(awsCtx, "Deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
 	} else {
 		err = obj.DeleteVpc(awsCtx, storage, mainStateDocument.CloudInfra.Aws.VpcId)
 		if err != nil {
@@ -34,7 +34,7 @@ func (obj *AwsProvider) DelNetwork(storage ksctlTypes.StorageFactory) error {
 		}
 	}
 
-	log.Success(awsCtx, "deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
+	log.Success(awsCtx, "Deleted the vpc", "name", mainStateDocument.CloudInfra.Aws.VpcName)
 
 	if err := storage.DeleteCluster(); err != nil {
 		return err
@@ -55,7 +55,7 @@ func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage ksctlTypes.Sto
 		return err
 	}
 
-	log.Success(awsCtx, "deleted the subnet", "id", mainStateDocument.CloudInfra.Aws.SubnetName)
+	log.Success(awsCtx, "Deleted the subnet", "id", mainStateDocument.CloudInfra.Aws.SubnetName)
 
 	return nil
 }
@@ -67,12 +67,13 @@ func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage ksctlTypes.Storag
 		return err
 	}
 	mainStateDocument.CloudInfra.Aws.VpcId = ""
+	name := mainStateDocument.CloudInfra.Aws.VpcName
 	mainStateDocument.CloudInfra.Aws.VpcName = ""
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
-	log.Success(awsCtx, "deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
+	log.Success(awsCtx, "Deleted the vpc", "name", name)
 	return nil
 }
 
@@ -83,7 +84,6 @@ func (obj *AwsProvider) NewNetwork(storage ksctlTypes.StorageFactory) error {
 		log.Print(awsCtx, "skipped already created the vpc", mainStateDocument.CloudInfra.Aws.VpcName)
 	} else {
 		vpcclient := ec2.CreateVpcInput{
-			// the subnet cidr block should be in the range of vpc cidr block
 			CidrBlock: aws.String("172.31.0.0/16"),
 			TagSpecifications: []types.TagSpecification{
 				{

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"testing"
 
@@ -35,7 +36,7 @@ var (
 
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
-	dir = fmt.Sprintf("%s ksctl-Aws-test", os.TempDir())
+	dir = path.Join(os.TempDir(), "ksctl-aws-test")
 )
 
 func TestMain(m *testing.M) {
@@ -47,19 +48,19 @@ func TestMain(m *testing.M) {
 
 	fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
 		ClusterName: "demo",
-		Region:      "fake",
+		Region:      "fake-region",
 		Provider:    consts.CloudAws,
 		IsHA:        true,
 	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeVars.Setup(consts.CloudAws, "fake", "demo", consts.ClusterTypeHa)
+	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeHa)
 	_ = storeVars.Connect()
 
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-aws-test"); err != nil {
+	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
 
@@ -116,7 +117,7 @@ func TestNoOfControlPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfControlPlane(-1, false)
-	if no != -1 || err != nil {
+	if no != -1 || err == nil {
 		t.Fatalf("Getter failed on unintalized controlplanes array got no: %d and err: %v", no, err)
 	}
 
@@ -142,7 +143,7 @@ func TestNoOfDataStore(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
-	if no != -1 || err != nil {
+	if no != -1 || err == nil {
 		t.Fatalf("Getter failed on unintalized datastore array got no: %d and err: %v", no, err)
 	}
 
@@ -166,7 +167,7 @@ func TestNoOfWorkerPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfWorkerPlane(storeVars, -1, false)
-	if no != -1 || err != nil {
+	if no != -1 || err == nil {
 		t.Fatalf("Getter failed on unintalized workerplane array got no: %d and err: %v", no, err)
 	}
 
@@ -226,7 +227,6 @@ func TestResName(t *testing.T) {
 	if ret := fakeClientVars.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
-	// _ = <-fakeClientVars.chResName
 }
 
 func TestRole(t *testing.T) {
@@ -243,7 +243,6 @@ func TestRole(t *testing.T) {
 	if ret := fakeClientVars.Role("fake"); ret != nil {
 		t.Fatalf("returned interface for invalid role")
 	}
-	//_ = <-fakeClientVars.chRole
 }
 
 func TestVMType(t *testing.T) {
@@ -258,7 +257,6 @@ func TestVMType(t *testing.T) {
 	if ret := fakeClientVars.VMType(""); ret != nil {
 		t.Fatalf("returned interface for invalid vm type")
 	}
-	//_ = <-fakeClientVars.chVMType
 }
 
 func TestVisibility(t *testing.T) {
@@ -408,7 +406,7 @@ func TestHACluster(t *testing.T) {
 	mainStateDocument = &storageTypes.StorageDocument{}
 	fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
 		ClusterName: "demo-ha",
-		Region:      "fake",
+		Region:      "fake-region",
 		Provider:    consts.CloudAws,
 		IsHA:        true,
 		NoCP:        7,
@@ -418,7 +416,7 @@ func TestHACluster(t *testing.T) {
 	}, parentLogger, mainStateDocument, ProvideMockClient)
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAws, "fake", "demo-ha", consts.ClusterTypeHa)
+	_ = storeHA.Setup(consts.CloudAws, "fake-region", "demo-ha", consts.ClusterTypeHa)
 	_ = storeHA.Connect()
 
 	fakeClientHA.metadata.noCP = 7

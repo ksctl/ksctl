@@ -10,6 +10,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 
@@ -123,7 +124,6 @@ func NewClient(parentCtx context.Context,
 		client: ClientOption(),
 	}
 
-	obj.client.SetRegion(obj.region)
 	log.Debug(awsCtx, "Printing", "AwsProvider", obj)
 
 	return obj, nil
@@ -132,7 +132,7 @@ func NewClient(parentCtx context.Context,
 func (obj *AwsProvider) Name(resName string) types.CloudFactory {
 
 	if err := helpers.IsValidName(awsCtx, log, resName); err != nil {
-		log.Error(awsCtx, err.Error())
+		log.Error(err.Error())
 		return nil
 	}
 	obj.chResName <- resName
@@ -159,7 +159,9 @@ func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.
 	switch opration {
 	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Aws.IsCompleted {
-			return log.NewError(awsCtx, "cluster %s already exists", obj.clusterName)
+			return ksctlErrors.ErrDuplicateRecords.Wrap(
+				log.NewError(awsCtx, "cluster already exist", "name", mainStateDocument.ClusterName, "region", mainStateDocument.Region),
+			)
 		}
 		if errLoadState == nil && !mainStateDocument.CloudInfra.Aws.IsCompleted {
 			log.Note(awsCtx, "Cluster state found but not completed, resuming operation")
@@ -178,24 +180,28 @@ func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.
 
 	case consts.OperationDelete:
 		if errLoadState != nil {
-			return log.NewError(awsCtx, "no cluster state found reason:%s\n", errLoadState.Error())
+			return errLoadState
 		}
 		log.Debug(awsCtx, "Delete resource(s)")
 
 	case consts.OperationGet:
 		if errLoadState != nil {
-			return log.NewError(awsCtx, "no cluster state found reason:%s\n", errLoadState.Error())
+			return errLoadState
 		}
 		log.Debug(awsCtx, "Get storage")
 	default:
-		return log.NewError(awsCtx, "Invalid operation for init state")
-	}
-
-	if err := obj.client.InitClient(storage); err != nil {
-		return err
+		return ksctlErrors.ErrInvalidOperation.Wrap(
+			log.NewError(awsCtx, "Invalid operation for init state"),
+		)
 	}
 
 	if err := validationOfArguments(obj); err != nil {
+		return err
+	}
+
+	obj.client.SetRegion(obj.region)
+
+	if err := obj.client.InitClient(storage); err != nil {
 		return err
 	}
 
@@ -246,20 +252,24 @@ func (obj *AwsProvider) DelManagedCluster(factory types.StorageFactory) error {
 
 func (obj *AwsProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
-	switch resRole {
-	case consts.RoleCp, consts.RoleDs, consts.RoleLb, consts.RoleWp:
-		obj.chRole <- resRole
-		return obj
-	default:
-		log.Error(awsCtx, "invalid role assumed")
+	if !helpers.ValidateRole(resRole) {
+		log.Error("invalidParameters",
+			ksctlErrors.ErrInvalidKsctlRole.Wrap(
+				log.NewError(awsCtx, "invalid role", "role", resRole)).
+				Error(),
+		)
 		return nil
 	}
+
+	obj.chRole <- resRole
+	log.Debug(awsCtx, "Printing", "Role", resRole)
+	return obj
 }
 
 func (obj *AwsProvider) VMType(size string) types.CloudFactory {
 
 	if err := isValidVMSize(obj, size); err != nil {
-		log.Error(awsCtx, err.Error())
+		log.Error("VM", err.Error())
 		return nil
 	}
 	obj.chVMType <- size
@@ -301,17 +311,23 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 	log.Debug(awsCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		if mainStateDocument == nil {
-			return -1, log.NewError(awsCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(awsCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames == nil {
-			return -1, nil
+			return -1, ksctlErrors.ErrInvalidNoOfWorkerplane.Wrap(
+				log.NewError(awsCtx, "unable to fetch WorkerNode instanceIDs"),
+			)
 		}
 		return len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames), nil
 	}
 	if no >= 0 {
 		obj.metadata.noWP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError(awsCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(awsCtx, "state init not called!"),
+			)
 		}
 		currLen := len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 
@@ -355,17 +371,23 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 
 		return -1, nil
 	}
-	return -1, log.NewError(awsCtx, "constrains for no of workplane >= 0")
+	return -1, ksctlErrors.ErrInvalidNoOfWorkerplane.Wrap(
+		log.NewError(awsCtx, "constrains for no of workerplane >= 0"),
+	)
 
 }
 
 func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	if !setter {
 		if mainStateDocument == nil {
-			return -1, log.NewError(awsCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(awsCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames == nil {
-			return -1, nil
+			return -1, ksctlErrors.ErrInvalidNoOfControlplane.Wrap(
+				log.NewError(awsCtx, "unable to fetch Controlplane instanceIDs"),
+			)
 		}
 
 		log.Debug(awsCtx, "Printing", "mainStateDocument.CloudInfra.Aws.InfoControlPlanes.Names", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames)
@@ -374,7 +396,9 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 	if no >= 3 && (no&1) == 1 {
 		obj.metadata.noCP = no
 		if mainStateDocument == nil {
-			return -1, log.NewError(awsCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(awsCtx, "state init not called!"),
+			)
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames)
@@ -391,7 +415,9 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 		log.Debug(awsCtx, "Printing", "awsCloudState.InfoControlplanes", mainStateDocument.CloudInfra.Aws.InfoControlPlanes)
 		return -1, nil
 	}
-	return -1, log.NewError(awsCtx, "constrains for no of controlplane >= 3 and odd number")
+	return -1, ksctlErrors.ErrInvalidNoOfControlplane.Wrap(
+		log.NewError(awsCtx, "constrains for no of controlplane >= 3 and odd number"),
+	)
 
 }
 
@@ -399,10 +425,14 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	log.Debug(awsCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		if mainStateDocument == nil {
-			return -1, log.NewError(awsCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(awsCtx, "state init not called!"),
+			)
 		}
 		if mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames == nil {
-			return -1, nil
+			return -1, ksctlErrors.ErrInvalidNoOfDatastore.Wrap(
+				log.NewError(awsCtx, "unable to fetch Datastore instanceIDs"),
+			)
 		}
 
 		log.Debug(awsCtx, "Printing", "awsCloudState.InfoDatabase.Names", mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
@@ -412,7 +442,9 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		obj.metadata.noDS = no
 
 		if mainStateDocument == nil {
-			return -1, log.NewError(awsCtx, "state init not called")
+			return -1, ksctlErrors.ErrInvalidOperation.Wrap(
+				log.NewError(awsCtx, "state init not called!"),
+			)
 		}
 
 		currLen := len(mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames)
@@ -429,7 +461,9 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 		log.Debug(awsCtx, "Printing", "awsCloudState.InfoDatabase", mainStateDocument.CloudInfra.Aws.InfoDatabase)
 		return -1, nil
 	}
-	return -1, log.NewError(awsCtx, "constrains for no of Datastore>= 3 and odd number")
+	return -1, ksctlErrors.ErrInvalidNoOfDatastore.Wrap(
+		log.NewError(awsCtx, "constrains for no of Datastore>= 3 and odd number"),
+	)
 }
 
 func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
@@ -441,7 +475,9 @@ func (obj *AwsProvider) GetHostNameAllWorkerNode() []string {
 func (obj *AwsProvider) GetStateFile(factory types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
-		return "", log.NewError(awsCtx, "Error marshalling state", "error", err)
+		return "", ksctlErrors.ErrInternal.Wrap(
+			log.NewError(awsCtx, "failed to serialize the state", "Reason", err),
+		)
 	}
 	log.Debug(awsCtx, "Printing", "cloudstate", cloudstate)
 	return string(cloudstate), nil
@@ -457,7 +493,7 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 		consts.ClusterType: "",
 	})
 	if err != nil {
-		return nil, log.NewError(awsCtx, "Error fetching cluster info", "error", err)
+		return nil, err
 	}
 
 	var convertToAllClusterDataType func(*storageTypes.StorageDocument, consts.KsctlRole) []cloudcontrolres.VMData
