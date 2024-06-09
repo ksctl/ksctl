@@ -30,7 +30,7 @@ func NewManagerClusterManaged(ctx context.Context, log types.LoggerFactory, clie
 
 	err := manager.initStorage(controllerCtx)
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -43,7 +43,7 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -57,13 +57,13 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 		client.Metadata.ClusterName,
 		consts.ClusterTypeMang); err != nil {
 
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
-			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
+			log.Error("StorageClass Kill failed", "reason", err)
 		}
 	}()
 
@@ -74,19 +74,19 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 
 	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
 		err := log.NewError(controllerCtx, "invalid CNI plugin")
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	if err := cloudController.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	// it gets supportForApps, supportForCNI, error
 	externalApp, externalCNI, cloudResErr := cloudController.CreateManagedCluster(client)
 	if cloudResErr != nil {
-		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
+		log.Error("handled error", "catch", cloudResErr)
 		return cloudResErr
 	}
 
@@ -96,7 +96,7 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 		client,
 		stateDocument); err != nil {
 
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (manager *ManagerClusterManaged) DeleteCluster() error {
 
 	defer panicCatcher(log)
 	if err := manager.setupConfigurations(); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -125,13 +125,13 @@ func (manager *ManagerClusterManaged) DeleteCluster() error {
 		client.Metadata.ClusterName,
 		consts.ClusterTypeMang); err != nil {
 
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
-			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
+			log.Error("StorageClass Kill failed", "reason", err)
 		}
 	}()
 
@@ -141,13 +141,13 @@ func (manager *ManagerClusterManaged) DeleteCluster() error {
 	}
 
 	if err := cloudController.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	cloudResErr := cloudController.DeleteManagedCluster(client)
 	if cloudResErr != nil {
-		log.Error(controllerCtx, "handled error", "catch", cloudResErr)
+		log.Error("handled error", "catch", cloudResErr)
 		return cloudResErr
 	}
 

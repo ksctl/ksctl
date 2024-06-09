@@ -30,7 +30,7 @@ func NewManagerClusterKubernetes(ctx context.Context, log types.LoggerFactory, c
 
 	err := manager.initStorage(controllerCtx)
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (manager *ManagerClusterKubernetes) ApplicationsAndCni(op consts.KsctlOpera
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -62,13 +62,13 @@ func (manager *ManagerClusterKubernetes) ApplicationsAndCni(op consts.KsctlOpera
 		client.Metadata.Region,
 		client.Metadata.ClusterName,
 		clusterType); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
-			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
+			log.Error("StorageClass Kill failed", "reason", err)
 		}
 	}()
 
@@ -78,19 +78,19 @@ func (manager *ManagerClusterKubernetes) ApplicationsAndCni(op consts.KsctlOpera
 	}
 
 	if err := cloudController.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	if op != consts.OperationCreate && op != consts.OperationDelete {
 
 		err := log.NewError(controllerCtx, "Invalid operation")
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	if err := bootstrapController.ApplicationsInCluster(client, stateDocument, op); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 	return nil

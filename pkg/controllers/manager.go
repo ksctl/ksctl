@@ -54,7 +54,7 @@ func (manager *managerInfo) initStorage(ctx context.Context) error {
 
 func panicCatcher(log types.LoggerFactory) {
 	if r := recover(); r != nil {
-		log.Error(controllerCtx, "Failed to recover stack trace", "error", r)
+		log.Error("Failed to recover stack trace", "error", r)
 		debug.PrintStack()
 	}
 }

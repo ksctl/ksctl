@@ -35,7 +35,7 @@ func NewManagerClusterKsctl(ctx context.Context, log types.LoggerFactory, client
 
 	err := manager.initStorage(controllerCtx)
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -64,13 +64,13 @@ func (manager *ManagerClusterKsctl) Credentials() error {
 	}
 
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
 	err = client.Cloud.Credential(client.Storage)
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 	log.Success(controllerCtx, "Successfully Credential Added")
@@ -84,7 +84,7 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 	defer panicCatcher(log)
 
 	if err := manager.setupConfigurations(); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -103,13 +103,13 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 		client.Metadata.ClusterName,
 		clusterType); err != nil {
 
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
-			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
+			log.Error("StorageClass Kill failed", "reason", err)
 		}
 	}()
 
@@ -132,18 +132,18 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 	}
 
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
 	if err := client.Cloud.IsPresent(client.Storage); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
 	read, err := client.Storage.Read()
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 	log.Debug(controllerCtx, "data", "read", read)
@@ -155,7 +155,7 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 	log.Debug(controllerCtx, "data", "kubeconfigPath", path)
 
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -170,7 +170,7 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 	defer panicCatcher(log)
 
 	if err := manager.validationFields(client.Metadata); err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -180,7 +180,7 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 
 	defer func() {
 		if err := client.Storage.Kill(); err != nil {
-			log.Error(controllerCtx, "StorageClass Kill failed", "reason", err)
+			log.Error("StorageClass Kill failed", "reason", err)
 		}
 	}()
 
@@ -212,22 +212,22 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 	case consts.CloudAll:
 		cloudMapper[consts.CloudCivo], err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
 		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
+			log.Error("handled error", "catch", err)
 			return err
 		}
 		cloudMapper[consts.CloudAzure], err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
 		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
+			log.Error("handled error", "catch", err)
 			return err
 		}
 		cloudMapper[consts.CloudAws], err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
 		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
+			log.Error("handled error", "catch", err)
 			return err
 		}
 		cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
 		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
+			log.Error("handled error", "catch", err)
 			return err
 		}
 
@@ -236,7 +236,7 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 	}
 
 	if err != nil {
-		log.Error(controllerCtx, "handled error", "catch", err)
+		log.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -247,7 +247,7 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 		}
 		data, err := v.GetRAWClusterInfos(client.Storage)
 		if err != nil {
-			log.Error(controllerCtx, "handled error", "catch", err)
+			log.Error("handled error", "catch", err)
 			return err
 		}
 		printerTable = append(printerTable, data...)
