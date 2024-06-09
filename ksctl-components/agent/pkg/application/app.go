@@ -67,7 +67,7 @@ func Handler(ctx context.Context, log types.LoggerFactory, in *pb.ReqApplication
 		client,
 	)
 	if err != nil {
-		log.Error(ctx, "Failed to initialize storage factory", "error", err)
+		log.Error("Failed to initialize storage factory", "error", err)
 		return err
 	}
 

@@ -12,7 +12,7 @@ func createHACluster(ksctlClient *controllers.ManagerClusterSelfManaged) {
 	err := ksctlClient.CreateCluster()
 
 	if err != nil {
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }
@@ -22,7 +22,7 @@ func deleteHACluster(ksctlClient *controllers.ManagerClusterSelfManaged) {
 
 	err := ksctlClient.DeleteCluster()
 	if err != nil {
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }
@@ -32,7 +32,7 @@ func scaleupHACluster(ksctlClient *controllers.ManagerClusterSelfManaged) {
 
 	err := ksctlClient.AddWorkerPlaneNodes()
 	if err != nil {
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }
@@ -42,7 +42,7 @@ func scaleDownHACluster(ksctlClient *controllers.ManagerClusterSelfManaged) {
 
 	err := ksctlClient.DelWorkerPlaneNodes()
 	if err != nil {
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }

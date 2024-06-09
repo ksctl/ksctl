@@ -24,14 +24,14 @@ func GetReqPayload(l types.LoggerFactory) (Operation, types.Metadata) {
 
 	raw, err := os.ReadFile(*arg2)
 	if err != nil {
-		l.Error(ctx, err.Error())
+		l.Error(err.Error())
 		os.Exit(1)
 	}
 
 	var payload types.Metadata
 	err = json.Unmarshal(raw, &payload)
 	if err != nil {
-		l.Error(ctx, err.Error())
+		l.Error(err.Error())
 		os.Exit(1)
 	}
 

@@ -13,12 +13,12 @@ func createManagedCluster(ksctlClient *controllers.ManagerClusterManaged) {
 	err := ksctlClient.CreateCluster()
 	if err != nil {
 		if ksctlErrors.ErrInvalidCloudProvider.Is(err) {
-			l.Error(ctx, "problem is invalid cloud provider")
+			l.Error("problem is invalid cloud provider")
 		}
 		if ksctlErrors.ErrInvalidResourceName.Is(err) {
-			l.Error(ctx, "problem from resource name")
+			l.Error("problem from resource name")
 		}
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }
@@ -28,7 +28,7 @@ func deleteManagedCluster(ksctlClient *controllers.ManagerClusterManaged) {
 
 	err := ksctlClient.DeleteCluster()
 	if err != nil {
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }

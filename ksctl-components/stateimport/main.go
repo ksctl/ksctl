@@ -53,7 +53,7 @@ func healthzHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if _e != nil {
-		log.Error(ctx, "handled the error", "caught", _e)
+		log.Error("handled the error", "caught", _e)
 	}
 	log.Success(ctx, "Handled the request")
 }
@@ -65,7 +65,7 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 	err := decoder.Decode(&rawData)
 	if err != nil {
-		log.Error(ctx, "failed to decode the req", "Reason", err)
+		log.Error("failed to decode the req", "Reason", err)
 		_, _e := writeJson(
 			w,
 			http.StatusBadRequest,
@@ -75,7 +75,7 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		)
 		if _e != nil {
-			log.Error(ctx, "handled the error", "caught", _e)
+			log.Error("handled the error", "caught", _e)
 		}
 		return
 	}
@@ -94,13 +94,13 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		)
 		if _e != nil {
-			log.Error(ctx, "handled the error", "caught", _e)
+			log.Error("handled the error", "caught", _e)
 		}
 		return
 	}
 	_, err = controllers.NewManagerClusterManaged(ctx, log, client)
 	if err != nil {
-		log.Error(ctx, "failed to decode the req", "Reason", err)
+		log.Error("failed to decode the req", "Reason", err)
 		_, _e := writeJson(
 			w,
 			http.StatusBadRequest,
@@ -110,13 +110,13 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		)
 		if _e != nil {
-			log.Error(ctx, "handled the error", "caught", _e)
+			log.Error("handled the error", "caught", _e)
 		}
 		return
 	}
 	err = client.Storage.Import(&rawData)
 	if err != nil {
-		log.Error(ctx, "failed to decode the req", "Reason", err)
+		log.Error("failed to decode the req", "Reason", err)
 		_, _e := writeJson(
 			w,
 			http.StatusBadRequest,
@@ -126,7 +126,7 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		)
 		if _e != nil {
-			log.Error(ctx, "handled the error", "caught", _e)
+			log.Error("handled the error", "caught", _e)
 		}
 		return
 	}
@@ -140,7 +140,7 @@ func importHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if _e != nil {
-		log.Error(ctx, "handled the error", "caught", _e)
+		log.Error("handled the error", "caught", _e)
 	}
 	log.Success(ctx, "Handled the request")
 }

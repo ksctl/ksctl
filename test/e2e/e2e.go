@@ -59,7 +59,7 @@ func main() {
 
 			if meta.Provider == consts.CloudLocal {
 				err := l.NewError(ctx, "ha not supported for local")
-				l.Error(ctx, "handled error", "catch", err)
+				l.Error("handled error", "catch", err)
 				os.Exit(1)
 			}
 			managerClient, err := controllers.NewManagerClusterSelfManaged(
@@ -70,7 +70,7 @@ func main() {
 				},
 			)
 			if err != nil {
-				l.Error(ctx, "unable to initialize the ksctl manager", "Reason", err)
+				l.Error("unable to initialize the ksctl manager", "Reason", err)
 				os.Exit(1)
 			}
 			switch operation {
@@ -93,7 +93,7 @@ func main() {
 				},
 			)
 			if err != nil {
-				l.Error(ctx, "unable to initialize the ksctl manager", "Reason", err)
+				l.Error("unable to initialize the ksctl manager", "Reason", err)
 				os.Exit(1)
 			}
 			switch operation {
@@ -113,7 +113,7 @@ func main() {
 			},
 		)
 		if err != nil {
-			l.Error(ctx, "unable to initialize the ksctl manager", "Reason", err)
+			l.Error("unable to initialize the ksctl manager", "Reason", err)
 			os.Exit(1)
 		}
 		switch operation {
@@ -126,7 +126,7 @@ func main() {
 		}
 
 	default:
-		l.Error(ctx, "This operation is not supported")
+		l.Error("This operation is not supported")
 		os.Exit(1)
 	}
 
