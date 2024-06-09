@@ -9,7 +9,7 @@ import (
 
 func (manager *managerInfo) validationFields(meta types.Metadata) error {
 
-	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlContextUserID); ok {
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlContextUserID); !ok {
 		return ksctlErrors.ErrInvalidUserInput.Wrap(
 			manager.log.NewError(controllerCtx, "invalid format for context value `USERID`", "Reason", "Make sure the value", "type", "string", "format", `^[\w-]+$`),
 		)

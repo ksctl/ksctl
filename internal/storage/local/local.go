@@ -133,7 +133,6 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 		for _, constsCloud := range []consts.KsctlCloud{
 			consts.CloudAws,
 			consts.CloudCivo,
-			consts.CloudLocal,
 			consts.CloudAzure,
 		} {
 			_v, _err := s.ReadCredentials(constsCloud)
@@ -141,7 +140,6 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 			if _err != nil {
 				log.Debug(storeCtx, "error in reading credentials", "Reason", _err)
 				if ksctlErrors.ErrNoMatchingRecordsFound.Is(_err) {
-					// if errors.Is(_err, os.ErrNotExist) {
 					continue
 				} else {
 					return nil, _err
@@ -151,8 +149,10 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 		}
 	} else {
 		_v, _err := s.ReadCredentials(consts.KsctlCloud(_cloud))
-		if _err != nil && !errors.Is(_err, os.ErrNotExist) {
-			return nil, _err
+		if _cloud != string(consts.CloudLocal) {
+			if _err != nil && !ksctlErrors.ErrNoMatchingRecordsFound.Is(_err) {
+				return nil, _err
+			}
 		}
 		dest.Credentials = append(dest.Credentials, _v)
 	}

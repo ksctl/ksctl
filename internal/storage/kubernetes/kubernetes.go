@@ -107,8 +107,10 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*types.Stor
 		}
 	} else {
 		_v, _err := s.ReadCredentials(consts.KsctlCloud(_cloud))
-		if _err != nil {
-			return nil, _err
+		if _cloud != string(consts.CloudLocal) {
+			if _err != nil {
+				return nil, _err
+			}
 		}
 		dest.Credentials = append(dest.Credentials, _v)
 	}
