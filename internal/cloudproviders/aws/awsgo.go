@@ -361,6 +361,8 @@ func (awsclient *AwsGoClient) BeginDeleteVpc(ctx context.Context, storage ksctlT
 
 func (awsclient *AwsGoClient) BeginDeleteNIC(nicID string) error {
 	initialWater := time.Now()
+	// TODO(praful): use the helpers.Backoff
+	// also why do we wait for the nic to be available when it is deleting
 	for {
 		nic, err := awsclient.ec2Client.DescribeNetworkInterfaces(awsCtx, &ec2.DescribeNetworkInterfacesInput{
 			NetworkInterfaceIds: []string{nicID},

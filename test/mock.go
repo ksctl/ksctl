@@ -244,7 +244,7 @@ func AwsTestingHA() error {
 
 	cli.Metadata.IsHA = true
 
-	cli.Metadata.Region = "fake"
+	cli.Metadata.Region = "fake-region"
 	cli.Metadata.Provider = consts.CloudAws
 	cli.Metadata.NoCP = 3
 	cli.Metadata.NoWP = 1
