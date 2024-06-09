@@ -261,6 +261,9 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage ksctlT
 			return err
 		}
 
+		mainStateDocument.CloudInfra.Aws.RouteTableID = *routeresponce.RouteTable.RouteTableId
+		mainStateDocument.CloudInfra.Aws.GatewayID = *gatewayresp.InternetGateway.InternetGatewayId
+
 		if err := storage.Write(mainStateDocument); err != nil {
 			return err
 		}

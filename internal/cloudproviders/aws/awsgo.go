@@ -726,7 +726,7 @@ func (*AwsGoMockClient) BeginCreateNIC(ctx context.Context, parameter *ec2.Creat
 			TagSet: []types.Tag{
 				{
 					Key:   aws.String("Name"),
-					Value: aws.String("test-nic"),
+					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
 				},
 			},
 		},
@@ -736,14 +736,14 @@ func (*AwsGoMockClient) BeginCreateNIC(ctx context.Context, parameter *ec2.Creat
 
 }
 
-func (*AwsGoMockClient) BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
+func (awsgoclient *AwsGoMockClient) BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
 	subnet := &ec2.CreateSubnetOutput{
 		Subnet: &types.Subnet{
-			SubnetId: aws.String("demo-ha-subnet"),
+			SubnetId: aws.String("3456d25f36g474g546"),
 			Tags: []types.Tag{
 				{
 					Key:   aws.String("Name"),
-					Value: aws.String("test-subnet"),
+					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
 				},
 			},
 		},
@@ -775,7 +775,7 @@ func (*AwsGoMockClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGa
 
 	routeTable := &ec2.CreateRouteTableOutput{
 		RouteTable: &types.RouteTable{
-			RouteTableId: aws.String("test-route-table-1234567890"),
+			RouteTableId: aws.String("3456d25f36g474g546"),
 			Tags: []types.Tag{
 				{
 					Key:   aws.String("Name"),
@@ -786,7 +786,7 @@ func (*AwsGoMockClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGa
 	}
 	createInternetGateway := &ec2.CreateInternetGatewayOutput{
 		InternetGateway: &types.InternetGateway{
-			InternetGatewayId: aws.String("test-internet-gateway-1234567890"),
+			InternetGatewayId: aws.String("3456d25f36g474g546"),
 			Tags: []types.Tag{
 				{
 					Key:   aws.String("Name"),
@@ -802,11 +802,11 @@ func (*AwsGoMockClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGa
 func (awsclient *AwsGoMockClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
 	vpc := &ec2.CreateVpcOutput{
 		Vpc: &types.Vpc{
-			VpcId: aws.String("demo-ha-vpc"),
+			VpcId: aws.String("3456d25f36g474g546"),
 			Tags: []types.Tag{
 				{
 					Key:   aws.String("Name"),
-					Value: aws.String("demo-ha-vpc"),
+					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
 				},
 			},
 		},
@@ -855,6 +855,7 @@ func (*AwsGoMockClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOu
 func (*AwsGoMockClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
 
 	mainStateDocument.CloudInfra.Aws.SubnetID = ""
+	mainStateDocument.CloudInfra.Aws.SubnetName = ""
 
 	if err := storage.Write(mainStateDocument); err != nil {
 		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
@@ -898,6 +899,14 @@ func (*AwsGoMockClient) BeginDeleteVM(vmname string) error {
 
 func (*AwsGoMockClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
+	mainStateDocument.CloudInfra.Aws.GatewayID = ""
+	mainStateDocument.CloudInfra.Aws.RouteTableID = ""
+	mainStateDocument.CloudInfra.Aws.NetworkAclID = ""
+
+	if err := storage.Write(mainStateDocument); err != nil {
+		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+	}
+
 	return nil
 }
 
@@ -940,6 +949,7 @@ func (*AwsGoMockClient) InitClient(storage ksctlTypes.StorageFactory) error {
 }
 
 func (*AwsGoMockClient) ImportKeyPair(ctx context.Context, keypair *ec2.ImportKeyPairInput) error {
+
 	return nil
 }
 
