@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -159,16 +160,15 @@ func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.
 		)
 	}
 
-	if err := validationOfArguments(obj); err != nil {
-		return err
-	}
-
 	obj.client.SetRegion(obj.region)
 
 	if err := obj.client.InitClient(storage); err != nil {
 		return err
 	}
 
+	if err := validationOfArguments(obj); err != nil {
+		return err
+	}
 	log.Debug(awsCtx, "init cloud state")
 
 	return nil
