@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 		ClusterName: "demo",
 		Region:      "LOCAL",
 		Provider:    consts.CloudLocal,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 	exitVal := m.Run()
 	fmt.Println("Cleanup..")
@@ -221,25 +221,29 @@ networking:
 
 func TestManagedCluster(t *testing.T) {
 	mainStateDocument = &storageTypes.StorageDocument{}
-	func() {
-		fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo-managed",
-			Region:      "LOCAL",
-			Provider:    consts.CloudLocal,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo-managed",
+		Region:      "LOCAL",
+		Provider:    consts.CloudLocal,
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
-		storeManaged = localstate.NewClient(parentCtx, parentLogger)
-		_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)
-		_ = storeManaged.Connect()
+	storeManaged = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)
+	_ = storeManaged.Connect()
 
-	}()
+	t.Run("initState", func(t *testing.T) {
+		assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationCreate), nil, "Init must work before")
+	})
+	t.Run("managed cluster", func(t *testing.T) {
 
-	assert.Equal(t, fakeClientManaged.InitState(storeManaged, consts.OperationCreate), nil, "Init must work before")
-	fakeClientManaged.ManagedK8sVersion("1.27.1")
-	fakeClientManaged.Name("fake")
-	assert.Equal(t, fakeClientManaged.NewManagedCluster(storeManaged, 2), nil, "managed cluster should be created")
-	assert.Equal(t, mainStateDocument.CloudInfra.Local.Nodes, 2, "missmatch of no of nodes")
-	assert.Equal(t, mainStateDocument.CloudInfra.Local.B.KubernetesVer, fakeClientManaged.metadata.version, "k8s version does not match")
+		fakeClientManaged.ManagedK8sVersion("1.27.1")
+		fakeClientManaged.Name("fake")
+
+		assert.Equal(t, fakeClientManaged.NewManagedCluster(storeManaged, 2), nil, "managed cluster should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Local.Nodes, 2, "missmatch of no of nodes")
+		assert.Equal(t, mainStateDocument.CloudInfra.Local.B.KubernetesVer, fakeClientManaged.metadata.version, "k8s version does not match")
+	})
+
 	t.Run("check getState()", func(t *testing.T) {
 		expected, err := fakeClientManaged.GetStateFile(storeManaged)
 		assert.NilError(t, err, "no error should be there for getstate")

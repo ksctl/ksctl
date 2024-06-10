@@ -7,5 +7,5 @@ echo "|   Testing (internal/cloudproviders/civo)"
 echo "--------------------------------------------"
 
 cd cloudproviders/civo/
-GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC -tags testing_civo . -v && cd -
 

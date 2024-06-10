@@ -80,7 +80,7 @@ jobs:
       - name: integration testing
         working-directory: test
         if: ${{ matrix.os == 'windows-latest' }}
-        run: go test -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
+        run: go test -tags testing_local -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
 
       - name: integration testing
         if: ${{ matrix.os != 'windows-latest' }}

@@ -59,17 +59,17 @@ jobs:
     - name: Run coverage (CIVO)
       working-directory: internal/cloudproviders/civo
       run: |
-         go test -race -coverprofile=../../../coverage-civo.out -covermode=atomic -v
+         go test -tags testing_civo -race -coverprofile=../../../coverage-civo.out -covermode=atomic -v
 
     - name: Run coverage (AZURE)
       working-directory: internal/cloudproviders/azure
       run: |
-         go test -race -coverprofile=../../../coverage-azure.out -covermode=atomic -v
+         go test -tags testing_azure -race -coverprofile=../../../coverage-azure.out -covermode=atomic -v
 
     - name: Run coverage (AWS)
       working-directory: internal/cloudproviders/aws
       run: |
-         go test -race -coverprofile=../../../coverage-aws.out -covermode=atomic -v
+         go test -tags testing_aws -race -coverprofile=../../../coverage-aws.out -covermode=atomic -v
 
     - name: Run coverage (LOCAL)
       working-directory: internal/cloudproviders/local
@@ -109,7 +109,7 @@ jobs:
       working-directory: test
       run: |
         export KSCTL_FAKE_FLAG_ENABLED="1"
-        go test -bench=. -benchtime=1x -coverprofile=../coverage-mock-test.out -covermode=atomic -v
+        go test -tags testing_local,testing_aws,testing_civo,testing_azure -bench=. -benchtime=1x -coverprofile=../coverage-mock-test.out -covermode=atomic -v
         cd ../
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

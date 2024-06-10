@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 		Region:      "fake",
 		Provider:    consts.CloudAzure,
 		IsHA:        true,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
@@ -415,7 +415,7 @@ func TestManagedCluster(t *testing.T) {
 		ClusterName: "demo-managed",
 		Region:      "fake",
 		Provider:    consts.CloudAzure,
-	}, parentLogger, mainStateDocument, ProvideMockClient)
+	}, parentLogger, mainStateDocument, ProvideClient)
 
 	storeManaged = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeManaged.Setup(consts.CloudAzure, "fake", "demo-managed", consts.ClusterTypeMang)
@@ -509,7 +509,7 @@ func TestHACluster(t *testing.T) {
 		NoDS:        5,
 		NoWP:        10,
 		K8sDistro:   consts.K8sK3s,
-	}, parentLogger, mainStateDocument, ProvideMockClient)
+	}, parentLogger, mainStateDocument, ProvideClient)
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "demo-ha", consts.ClusterTypeHa)

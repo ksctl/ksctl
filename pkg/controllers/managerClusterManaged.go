@@ -67,18 +67,13 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 		}
 	}()
 
-	fakeClient := false
-	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
-		fakeClient = true
-	}
-
 	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
 		err := log.NewError(controllerCtx, "invalid CNI plugin")
 		log.Error("handled error", "catch", err)
 		return err
 	}
 
-	if err := cloudController.InitCloud(client, stateDocument, consts.OperationCreate, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationCreate); err != nil {
 		log.Error("handled error", "catch", err)
 		return err
 	}
@@ -135,12 +130,7 @@ func (manager *ManagerClusterManaged) DeleteCluster() error {
 		}
 	}()
 
-	fakeClient := false
-	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
-		fakeClient = true
-	}
-
-	if err := cloudController.InitCloud(client, stateDocument, consts.OperationDelete, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationDelete); err != nil {
 		log.Error("handled error", "catch", err)
 		return err
 	}

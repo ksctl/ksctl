@@ -3,8 +3,6 @@ package azure
 import (
 	"context"
 	"encoding/json"
-	"sync"
-
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -13,42 +11,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 	cloudcontrolres "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-)
-
-type metadata struct {
-	public bool
-
-	cni string
-
-	// these are used for managing the state and are the size of the arrays
-	noCP int
-	noWP int
-	noDS int
-
-	k8sVersion string
-}
-
-type AzureProvider struct {
-	clusterName   string
-	haCluster     bool
-	resourceGroup string
-	region        string
-	metadata
-
-	chResName chan string
-	chRole    chan consts.KsctlRole
-	chVMType  chan string
-
-	mu sync.Mutex
-
-	client AzureGo
-}
-
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	clusterType       consts.KsctlClusterType // it stores the ha or managed
-	azureCtx          context.Context
-	log               types.LoggerFactory
 )
 
 func (*AzureProvider) GetStateFile(types.StorageFactory) (string, error) {
