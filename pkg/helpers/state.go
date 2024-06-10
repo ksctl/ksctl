@@ -6,48 +6,51 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 )
 
-// GetUserName returns current active username
-func GetUserName() string {
-	return os.Getenv(UserDir)
-}
-
-func genOSKubeConfigPath(ctx context.Context) string {
+func genOSKubeConfigPath(ctx context.Context) (string, error) {
 
 	var userLoc string
 	if v, ok := IsContextPresent(ctx, consts.KsctlCustomDirLoc); ok {
-		userLoc = strings.Join(strings.Split(strings.TrimSpace(v), " "), PathSeparator)
+		userLoc = path.Join(strings.Split(strings.TrimSpace(v), " ")...)
 	} else {
-		userLoc = GetUserName()
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		userLoc = home
 	}
 
 	pathArr := []string{userLoc, ".ksctl", "kubeconfig"}
 
-	return strings.Join(pathArr, PathSeparator)
+	return path.Join(pathArr...), nil
 }
 
 func WriteKubeConfig(ctx context.Context, kubeconfig string) (string, error) {
-	path := genOSKubeConfigPath(ctx)
-	err := os.WriteFile(path, []byte(kubeconfig), 0755)
+	path, err := genOSKubeConfigPath(ctx)
 	if err != nil {
-		return "", err
+		return "", ksctlErrors.ErrInternal.Wrap(err)
+	}
+
+	if err := os.WriteFile(path, []byte(kubeconfig), 0755); err != nil {
+		return "", ksctlErrors.ErrKubeconfigOperations.Wrap(err)
 	}
 
 	return path, nil
 }
 
-// GenRandomString it generates RandomString
 func GenRandomString(length int) (string, error) {
 	const letters string = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	ret := make([]byte, length)
 	for i := 0; i < length; i++ {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
-			return "", err
+			return "", ksctlErrors.ErrUnknown.Wrap(err)
 		}
 		ret[i] = letters[num.Int64()]
 	}

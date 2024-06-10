@@ -3,12 +3,11 @@ package azure
 import (
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelManagedCluster implements types.CloudFactory.
 func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) == 0 {
 		log.Print(azureCtx, "skipped already deleted AKS cluster")
@@ -33,7 +32,6 @@ func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error 
 	return storage.Write(mainStateDocument)
 }
 
-// NewManagedCluster implements types.CloudFactory.
 func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
 	name := <-obj.chResName
 	vmtype := <-obj.chVMType
@@ -50,34 +48,34 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 	mainStateDocument.BootstrapProvider = "managed"
 
 	parameter := armcontainerservice.ManagedCluster{
-		Location: to.Ptr(mainStateDocument.Region),
+		Location: utilities.Ptr(mainStateDocument.Region),
 		Properties: &armcontainerservice.ManagedClusterProperties{
-			DNSPrefix:         to.Ptr("aksgosdk"),
-			KubernetesVersion: to.Ptr(mainStateDocument.CloudInfra.Azure.B.KubernetesVer),
+			DNSPrefix:         utilities.Ptr("aksgosdk"),
+			KubernetesVersion: utilities.Ptr(mainStateDocument.CloudInfra.Azure.B.KubernetesVer),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
-				NetworkPlugin: to.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(obj.metadata.cni)),
+				NetworkPlugin: utilities.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(obj.metadata.cni)),
 			},
 			AutoUpgradeProfile: &armcontainerservice.ManagedClusterAutoUpgradeProfile{
-				NodeOSUpgradeChannel: to.Ptr[armcontainerservice.NodeOSUpgradeChannel](armcontainerservice.NodeOSUpgradeChannelNodeImage),
-				UpgradeChannel:       to.Ptr[armcontainerservice.UpgradeChannel](armcontainerservice.UpgradeChannelPatch),
+				NodeOSUpgradeChannel: utilities.Ptr[armcontainerservice.NodeOSUpgradeChannel](armcontainerservice.NodeOSUpgradeChannelNodeImage),
+				UpgradeChannel:       utilities.Ptr[armcontainerservice.UpgradeChannel](armcontainerservice.UpgradeChannelPatch),
 			},
 			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 				{
-					Name:              to.Ptr("askagent"),
-					Count:             to.Ptr[int32](int32(noOfNodes)),
-					VMSize:            to.Ptr(vmtype),
-					MaxPods:           to.Ptr[int32](110),
-					MinCount:          to.Ptr[int32](1),
-					MaxCount:          to.Ptr[int32](100),
-					OSType:            to.Ptr(armcontainerservice.OSTypeLinux),
-					Type:              to.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
-					EnableAutoScaling: to.Ptr(true),
-					Mode:              to.Ptr(armcontainerservice.AgentPoolModeSystem),
+					Name:              utilities.Ptr("askagent"),
+					Count:             utilities.Ptr[int32](int32(noOfNodes)),
+					VMSize:            utilities.Ptr(vmtype),
+					MaxPods:           utilities.Ptr[int32](110),
+					MinCount:          utilities.Ptr[int32](1),
+					MaxCount:          utilities.Ptr[int32](100),
+					OSType:            utilities.Ptr(armcontainerservice.OSTypeLinux),
+					Type:              utilities.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
+					EnableAutoScaling: utilities.Ptr(true),
+					Mode:              utilities.Ptr(armcontainerservice.AgentPoolModeSystem),
 				},
 			},
 			ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{
-				ClientID: to.Ptr(os.Getenv("AZURE_CLIENT_ID")),
-				Secret:   to.Ptr(os.Getenv("AZURE_CLIENT_SECRET")),
+				ClientID: utilities.Ptr(os.Getenv("AZURE_CLIENT_ID")),
+				Secret:   utilities.Ptr(os.Getenv("AZURE_CLIENT_SECRET")),
 			},
 		},
 	}

@@ -68,7 +68,7 @@ func (k3s *K3s) K8sVersion(ver string) types.KubernetesBootstrap {
 		log.Debug(k3sCtx, "Printing", "k3s.K3sVer", k3s.K3sVer)
 		return k3s
 	} else {
-		log.Error(k3sCtx, err.Error())
+		log.Error(err.Error())
 		return nil
 	}
 }

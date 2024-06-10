@@ -43,6 +43,16 @@ func TestIsContextPresent(t *testing.T) {
 			key:      consts.KsctlTestFlagKey,
 			expected: false,
 		},
+		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlContextUserID, "abcd-e2e"),
+			key:      consts.KsctlContextUserID,
+			expected: true,
+		},
+		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlContextUserID, ""),
+			key:      consts.KsctlContextUserID,
+			expected: false,
+		},
 	}
 
 	for _, tt := range testCases {

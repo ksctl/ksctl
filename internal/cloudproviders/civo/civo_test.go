@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -18,6 +19,7 @@ import (
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
 )
@@ -32,7 +34,7 @@ var (
 	fakeClientVars *CivoProvider
 	storeVars      types.StorageFactory
 
-	dir          = fmt.Sprintf("%s ksctl-civo-test", os.TempDir())
+	dir          = path.Join(os.TempDir(), "ksctl-civo-test")
 	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
@@ -54,7 +56,7 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-civo-test"); err != nil {
+	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
 
@@ -123,9 +125,15 @@ func TestFetchAPIKey(t *testing.T) {
 		if err := os.Setenv(data[0], data[1]); err != nil {
 			t.Fatalf("unable to set env vars")
 		}
-		token := fetchAPIKey(storeVars)
-		if strings.Compare(token, data[2]) != 0 {
-			t.Fatalf("missmatch Key: `%s` -> `%s`\texpected `%s` but got `%s`", data[0], data[1], data[2], token)
+		token, err := fetchAPIKey(storeVars)
+		if len(data[2]) == 0 {
+			if err == nil {
+				t.Fatalf("It should fail")
+			}
+		} else {
+			if strings.Compare(token, data[2]) != 0 {
+				t.Fatalf("missmatch Key: `%s` -> `%s`\texpected `%s` but got `%s`", data[0], data[1], data[2], token)
+			}
 		}
 		if err := os.Unsetenv(data[0]); err != nil {
 			t.Fatalf("unable to unset env vars")
@@ -151,24 +159,21 @@ func TestApplications(t *testing.T) {
 	}
 }
 
-// Test for the Noof WP and setter and getter
 func TestCivoProvider_NoOfControlPlane(t *testing.T) {
 	var no int
 	var err error
 
 	no, err = fakeClientVars.NoOfControlPlane(-1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
 		t.Fatalf("Getter failed on unintalized controlplanes array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(1, true)
-	// it should return error
-	if err == nil {
+	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
 		t.Fatalf("setter should fail on when no < 3 controlplanes provided_no: %d", 1)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(5, true)
-	// it should return error
 	if err != nil {
 		t.Fatalf("setter should not fail on when n >= 3 controlplanes err: %v", err)
 	}
@@ -184,13 +189,12 @@ func TestCivoProvider_NoOfDataStore(t *testing.T) {
 	var err error
 
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
 		t.Fatalf("Getter failed on unintalized datastore array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(0, true)
-	// it should return error
-	if err == nil {
+	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
 		t.Fatalf("setter should fail on when no < 3 datastore provided_no: %d", 1)
 	}
 
@@ -210,13 +214,12 @@ func TestCivoProvider_NoOfWorkerPlane(t *testing.T) {
 	var err error
 
 	no, err = fakeClientVars.NoOfWorkerPlane(storeVars, -1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfWorkerplane.Is(err)) {
 		t.Fatalf("Getter failed on unintalized workerplane array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfWorkerPlane(storeVars, 2, true)
-	// it shouldn't return err
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil {
 		t.Fatalf("setter should not fail on when no >= 0 workerplane provided_no: %d, err: %v", 2, err)
 	}
 
@@ -294,7 +297,6 @@ func TestVisibility(t *testing.T) {
 	}
 }
 
-// Mock the return of ValidListOfRegions
 func TestRegion(t *testing.T) {
 
 	forTesting := map[string]error{
@@ -311,8 +313,6 @@ func TestRegion(t *testing.T) {
 }
 
 func TestK8sVersion(t *testing.T) {
-	// these are invalid
-	// input and output
 	forTesting := []string{
 		"1.27.4",
 		"1.27.1",
@@ -460,7 +460,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeManaged.Read()
-		if os.IsExist(err) {
+		if err == nil {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
 	})
@@ -487,7 +487,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) > 0, "Managed clusterID not saved")
 
 		_, err := storeManaged.Read()
-		if os.IsNotExist(err) {
+		if err != nil {
 			t.Fatalf("kubeconfig should not be absent")
 		}
 		checkCurrentStateFile(t)
@@ -526,7 +526,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, len(mainStateDocument.CloudInfra.Civo.NetworkID), 0, "network id still present")
 		// at this moment the file is not present
 		_, err := storeManaged.Read()
-		if os.IsExist(err) {
+		if err == nil {
 			t.Fatalf("State file and cluster directory still present")
 		}
 	})
@@ -534,23 +534,21 @@ func TestManagedCluster(t *testing.T) {
 }
 
 func TestHACluster(t *testing.T) {
-	func() {
-		fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
-			ClusterName: "demo-ha",
-			Region:      "LON1",
-			Provider:    consts.CloudCivo,
-			IsHA:        true,
-			NoCP:        7,
-			NoDS:        5,
-			NoWP:        10,
-			K8sDistro:   consts.K8sK3s,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	fakeClientHA, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName: "demo-ha",
+		Region:      "LON1",
+		Provider:    consts.CloudCivo,
+		IsHA:        true,
+		NoCP:        7,
+		NoDS:        5,
+		NoWP:        10,
+		K8sDistro:   consts.K8sK3s,
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
 
-		storeHA = localstate.NewClient(parentCtx, parentLogger)
-		_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)
-		_ = storeHA.Connect()
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
 
-	}()
 	fakeClientHA.metadata.noCP = 7
 	fakeClientHA.metadata.noDS = 5
 	fakeClientHA.metadata.noWP = 10
@@ -565,7 +563,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeHA.Read()
-		if os.IsExist(err) {
+		if err == nil {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
 	})

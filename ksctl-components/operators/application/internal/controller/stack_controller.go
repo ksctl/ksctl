@@ -96,17 +96,17 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 				defer func() {
 					if err := conn.Close(); err != nil {
-						log.Error(ctx, "Connection failed to close", "Reason", err)
+						log.Error("Connection failed to close", "Reason", err)
 					}
 				}()
 			}
 
 			if err != nil {
-				log.Error(ctx, "New RPC Client", "Reason", err)
+				log.Error("New RPC Client", "Reason", err)
 				stack.Status.ReasonOfFailure = err.Error()
 
 				if _err := r.Update(context.Background(), stack); _err != nil {
-					log.Error(ctx, "update failed", "Reason", _err)
+					log.Error("update failed", "Reason", _err)
 					return ctrl.Result{}, _err
 				}
 				return ctrl.Result{
@@ -116,12 +116,12 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}
 
 			if _err := InstallApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
-				log.Error(ctx, "InstallApp", "Reason", _err)
+				log.Error("InstallApp", "Reason", _err)
 				stack.Status.Success = false
 				stack.Status.ReasonOfFailure = _err.Error()
 
 				if __err := r.Update(context.Background(), stack); __err != nil {
-					log.Error(ctx, "update failed", "Reason", _err)
+					log.Error("update failed", "Reason", _err)
 					return ctrl.Result{}, __err
 				}
 				return ctrl.Result{}, _err
@@ -130,7 +130,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			stack.Status.Success = true
 
 			if _err := r.Update(context.Background(), stack); _err != nil {
-				log.Error(ctx, "update failed", "Reason", _err)
+				log.Error("update failed", "Reason", _err)
 				return ctrl.Result{}, _err
 			}
 
@@ -146,13 +146,13 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
 				defer func() {
 					if err := conn.Close(); err != nil {
-						log.Error(ctx, "Connection failed to close", "Reason", err)
+						log.Error("Connection failed to close", "Reason", err)
 					}
 				}()
 			}
 
 			if err != nil {
-				log.Error(ctx, "New RPC Client", "Reason", err)
+				log.Error("New RPC Client", "Reason", err)
 				return ctrl.Result{
 					RequeueAfter: 30 * time.Second,
 					Requeue:      true,
@@ -160,7 +160,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}
 
 			if _err := DeleteApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
-				log.Error(ctx, "UninstallApp", "Reason", _err)
+				log.Error("UninstallApp", "Reason", _err)
 				return ctrl.Result{}, _err
 			}
 

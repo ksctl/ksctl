@@ -10,6 +10,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -44,7 +45,7 @@ func (p *Kubeadm) K8sVersion(ver string) types.KubernetesBootstrap {
 		log.Debug(kubeadmCtx, "Printing", "kubeadm.KubeadmVersion", p.KubeadmVer)
 		return p
 	} else {
-		log.Error(kubeadmCtx, err.Error())
+		log.Error(err.Error())
 		return nil
 	}
 }
@@ -68,7 +69,9 @@ func isValidKubeadmVersion(ver string) error {
 			return nil
 		}
 	}
-	return log.NewError(kubeadmCtx, "invalid kubeadm version", "valid versions", strings.Join(validVersion, " "))
+	return ksctlErrors.ErrInvalidVersion.Wrap(
+		log.NewError(kubeadmCtx, "invalid kubeadm version", "valid versions", strings.Join(validVersion, " ")),
+	)
 }
 
 func NewClient(parentCtx context.Context,

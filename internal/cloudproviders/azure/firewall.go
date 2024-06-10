@@ -1,17 +1,14 @@
 package azure
 
 import (
-	"fmt"
-
 	"github.com/ksctl/ksctl/pkg/helpers"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelFirewall implements types.CloudFactory.
 func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 	role := <-obj.chRole
 
@@ -27,8 +24,6 @@ func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
-	default:
-		return fmt.Errorf("invalid role")
 	}
 
 	if len(nsg) == 0 {
@@ -86,8 +81,6 @@ func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
-	default:
-		return log.NewError(azureCtx, "invalid role")
 	}
 	if len(nsg) != 0 {
 		log.Success(azureCtx, "skipped firewall already created", "name", nsg)
@@ -106,14 +99,12 @@ func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 		securityRules = firewallRuleLoadBalancer()
 	case consts.RoleDs:
 		securityRules = firewallRuleDataStore(netCidr)
-	default:
-		return log.NewError(azureCtx, "invalid role")
 	}
 
 	log.Debug(azureCtx, "Printing", "firewallrule", securityRules)
 
 	parameters := armnetwork.SecurityGroup{
-		Location: to.Ptr(obj.region),
+		Location: utilities.Ptr(obj.region),
 		Properties: &armnetwork.SecurityGroupPropertiesFormat{
 			SecurityRules: securityRules,
 		},
@@ -218,17 +209,17 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule) []*armnetwork.Secu
 		}
 
 		rules = append(rules, &armnetwork.SecurityRule{
-			Name: to.Ptr(_r.Name),
+			Name: utilities.Ptr(_r.Name),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
-				SourceAddressPrefix:      to.Ptr(srcCidr),
-				SourcePortRange:          to.Ptr("*"),
-				DestinationAddressPrefix: to.Ptr(destCidr),
-				DestinationPortRange:     to.Ptr(portRange),
-				Protocol:                 to.Ptr(protocol),
-				Access:                   to.Ptr(action),
-				Priority:                 to.Ptr[int32](priority),
-				Description:              to.Ptr(_r.Description),
-				Direction:                to.Ptr(direction),
+				SourceAddressPrefix:      utilities.Ptr(srcCidr),
+				SourcePortRange:          utilities.Ptr("*"),
+				DestinationAddressPrefix: utilities.Ptr(destCidr),
+				DestinationPortRange:     utilities.Ptr(portRange),
+				Protocol:                 utilities.Ptr(protocol),
+				Access:                   utilities.Ptr(action),
+				Priority:                 utilities.Ptr[int32](priority),
+				Description:              utilities.Ptr(_r.Description),
+				Direction:                utilities.Ptr(direction),
 			},
 		})
 	}

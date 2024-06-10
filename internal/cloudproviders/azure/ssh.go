@@ -1,13 +1,12 @@
 package azure
 
 import (
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// CreateUploadSSHKeyPair implements types.CloudFactory.
 func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
 	name := <-obj.chResName
 	log.Debug(azureCtx, "Printing", "name", name)
@@ -26,9 +25,9 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 	}
 
 	parameters := armcompute.SSHPublicKeyResource{
-		Location: to.Ptr(obj.region),
+		Location: utilities.Ptr(obj.region),
 		Properties: &armcompute.SSHPublicKeyResourceProperties{
-			PublicKey: to.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
+			PublicKey: utilities.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
 		},
 	}
 
@@ -50,7 +49,6 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 	return nil
 }
 
-// DelSSHKeyPair implements types.CloudFactory.
 func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) == 0 {

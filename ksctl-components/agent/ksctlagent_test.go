@@ -53,7 +53,7 @@ func TestApplication(t *testing.T) {
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
-			log.Error(agentCtx, "server serve failed", "Reason", err)
+			log.Error("server serve failed", "Reason", err)
 			os.Exit(1)
 		}
 	}()

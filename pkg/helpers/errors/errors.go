@@ -6,68 +6,74 @@ import (
 )
 
 var (
-	ErrMissingArgument      = globalError("MissingArgumentError")
-	ErrMissingConfiguration = globalError("MissingConfigurationError")
+	ErrNilCredentials         = ksctlGlobalErr("NilCredentialsErr")
+	ErrTimeOut                = ksctlGlobalErr("TimeoutErr")
+	ErrContextCancelled       = ksctlGlobalErr("ContextCancelledErr")
+	ErrSSHExec                = ksctlGlobalErr("SSHExecErr")
+	ErrKubeconfigOperations   = ksctlGlobalErr("KubeconfigOperationsErr")
+	ErrUnknown                = ksctlGlobalErr("UnknownErr")
+	ErrInternal               = ksctlGlobalErr("InternalErr")
+	ErrDuplicateRecords       = ksctlGlobalErr("DuplicateRecordsErr")
+	ErrNoMatchingRecordsFound = ksctlGlobalErr("NoMatchingRecordsFoundErr")
 
-	ErrNilCredentials = globalError("NilCredentialsError")
+	ErrInvalidOperation             = ksctlGlobalErr("InvalidOperationErr")
+	ErrInvalidKsctlRole             = ksctlGlobalErr("InvalidKsctlRoleErr")
+	ErrInvalidUserInput             = ksctlGlobalErr("InvalidUserInputErr")
+	ErrInvalidCloudProvider         = ksctlGlobalErr("InvalidCloudProviderErr")
+	ErrInvalidClusterType           = ksctlGlobalErr("InvalidClusterTypeErr")
+	ErrInvalidBootstrapProvider     = ksctlGlobalErr("InvalidBootstrapProviderErr")
+	ErrInvalidStorageProvider       = ksctlGlobalErr("InvalidStorageProviderErr")
+	ErrInvalidResourceName          = ksctlGlobalErr("InvalidResourceNameErr")
+	ErrInvalidVersion               = ksctlGlobalErr("InvalidVersion")
+	ErrInvalidNoOfControlplane      = ksctlGlobalErr("InvalidNoOfControlplaneErr")
+	ErrInvalidNoOfDatastore         = ksctlGlobalErr("InvalidNoOfDatastoreErr")
+	ErrInvalidNoOfWorkerplane       = ksctlGlobalErr("InvalidNoOfWorkerplaneErr")
+	ErrInvalidKsctlComponentVersion = ksctlGlobalErr("InvalidKsctlComponentVersionErr")
 
-	ErrTimeOut        = globalError("TimeoutError")
-	ErrSSHFingerprint = globalError("SSHFingerPrintError")
+	ErrFailedCloudAccountAuth = ksctlGlobalErr("FailedCloudAccountAuthErr")
+	ErrInvalidCloudRegion     = ksctlGlobalErr("InvalidCloudRegionErr")
+	ErrInvalidCloudVMSize     = ksctlGlobalErr("InvalidCloudVMSizeErr")
 
-	ErrInvalidRegion           = globalError("InvalidRegionError")
-	ErrInvalidCloudProvider    = globalError("InvalidCloudProviderError")
-	ErrInvalidDistribution     = globalError("InvalidDistributionError")
-	ErrInvalidStorage          = globalError("InvalidStorageError")
-	ErrInvalidLogger           = globalError("InvalidLoggerError")
-	ErrInvalidResourceName     = globalError("InvalidResourceNameError")
-	ErrInvalidVMSize           = globalError("InvalidVMSizeError")
-	ErrInvalidNoOfControlplane = globalError("InvalidNoOfControlplaneError")
-	ErrInvalidNoOfLoadbalancer = globalError("InvalidNoOfLoadbalancerError")
-	ErrInvalidNoOfDatastore    = globalError("InvalidNoOfDatastoreError")
-	ErrInvalidNoOfWorkerplane  = globalError("InvalidNoOfWorkerplaneError")
-
-	ErrUnknown  = globalError("UnknownError")
-	ErrInternal = globalError("InternalError")
-
-	ErrFailedInitDatastore               = globalError("FailedInitDatastoreError")
-	ErrFailedInitControlplane            = globalError("FailedInitControlplaneError")
-	ErrFailedInitWorkerplane             = globalError("FailedInitWorkerplaneError")
-	ErrFailedInitLoadbalancer            = globalError("FailedInitLoadbalancerError")
-	ErrFailedConnectingKubernetesCluster = globalError("FailedConnectingKubernetesClusterError")
+	ErrFailedKsctlComponent              = ksctlGlobalErr("FailedKsctlComponentErr")
+	ErrFailedKubernetesClient            = ksctlGlobalErr("FailedKubernetesClientErr")
+	ErrFailedHelmClient                  = ksctlGlobalErr("FailedHelmClientErr")
+	ErrFailedKsctlClusterOperation       = ksctlGlobalErr("FailedKsctlClusterOperationErr")
+	ErrFailedGenerateCertificates        = ksctlGlobalErr("FailedGenerateCertificatesErr")
+	ErrFailedConnectingKubernetesCluster = ksctlGlobalErr("FailedConnectingKubernetesClusterErr")
 )
 
-type globalError string
+type ksctlGlobalErr string
 
-func (err globalError) Error() string {
+func (err ksctlGlobalErr) Error() string {
 	return string(err)
 }
 
-func (err globalError) Is(target error) bool {
+func (err ksctlGlobalErr) Is(target error) bool {
 	ts := target.Error()
 	es := string(err)
 	return ts == es || strings.HasPrefix(ts, es+": ")
 }
 
-func (err globalError) Wrap(inner error) error {
-	return wrapError{code: string(err), err: inner}
+func (err ksctlGlobalErr) Wrap(inner error) error {
+	return KsctlWrappedError{code: string(err), err: inner}
 }
 
-type wrapError struct {
+type KsctlWrappedError struct {
 	err  error
 	code string
 }
 
-func (err wrapError) Error() string {
+func (err KsctlWrappedError) Error() string {
 	if err.err != nil {
 		return fmt.Sprintf("%s: %v", err.code, err.err)
 	}
 	return err.code
 }
 
-func (err wrapError) Unwrap() error {
+func (err KsctlWrappedError) Unwrap() error {
 	return err.err
 }
 
-func (err wrapError) Is(target error) bool {
-	return globalError(err.code).Is(target)
+func (err KsctlWrappedError) Is(target error) bool {
+	return ksctlGlobalErr(err.code).Is(target)
 }

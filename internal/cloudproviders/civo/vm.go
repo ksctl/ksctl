@@ -8,6 +8,7 @@ import (
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -38,27 +39,36 @@ func (obj *CivoProvider) foundStateVM(storage types.StorageFactory, idx int, cre
 		pvIP = mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP
 	}
 
-	if len(instID) != 0 {
-		// instance id present
-		if len(pubIP) != 0 && len(pvIP) != 0 {
-			// all info present
-			if creationMode {
-				log.Print(civoCtx, "skipped vm found", "id", instID)
-			}
-			return nil
-		} else {
-			// either one or > 1 info are absent
-			err := watchInstance(obj, storage, instID, idx, role, name)
-			return err
-		}
-	}
 	if creationMode {
-		return log.NewError(civoCtx, "vm not found")
+		// creation mode
+		if len(instID) != 0 {
+			// instance id present
+			if len(pubIP) != 0 && len(pvIP) != 0 {
+				log.Print(civoCtx, "skipped vm found", "id", instID)
+				return nil
+			} else {
+				// either one or > 1 info are absent
+				err := watchInstance(obj, storage, instID, idx, role, name)
+				return err
+			}
+		}
+		return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+			log.NewError(civoCtx, "vm not found"),
+		)
+
+	} else {
+		// deletion mode
+		if len(instID) != 0 {
+			// need to delete
+			log.Print(civoCtx, "Deleting the VM")
+			return nil
+		}
+		// already deleted
+		return ksctlErrors.ErrNoMatchingRecordsFound
+
 	}
-	return log.NewError(civoCtx, "skipped already deleted vm", "role", role)
 }
 
-// NewVM implements types.CloudFactory.
 func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	name := <-obj.chResName
@@ -68,9 +78,12 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	log.Debug(civoCtx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
-	err := obj.foundStateVM(storage, indexNo, true, role, name)
-	if err == nil {
+	if err := obj.foundStateVM(storage, indexNo, true, role, name); err == nil {
 		return nil
+	} else {
+		if !ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
+			return err
+		}
 	}
 
 	publicIP := "create"
@@ -100,7 +113,7 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	initScript, err := helpers.GenerateInitScriptForVM(name)
 	if err != nil {
-		return log.NewError(civoCtx, "failed gen init script for vm", "Reason", err)
+		return err
 	}
 	log.Debug(civoCtx, "initscript", "script", initScript)
 
@@ -178,10 +191,10 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 
 	log.Debug(civoCtx, "Printing", "role", role, "indexNo", indexNo)
 
-	err := obj.foundStateVM(storage, indexNo, false, role, "")
-	if err != nil {
-		log.Success(civoCtx, err.Error()) // Try to make it better
-		return nil
+	if err := obj.foundStateVM(storage, indexNo, false, role, ""); err != nil {
+		if ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
+			log.Success(civoCtx, "skipped already deleted vm")
+		}
 	}
 
 	instID := ""

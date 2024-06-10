@@ -3,18 +3,21 @@ package local
 import (
 	"fmt"
 	"os"
+	"path"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlError "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 func generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
-		return nil, log.NewError(localCtx, "invalid config request control node cannot be 0")
+		return nil, ksctlError.ErrInvalidUserInput.Wrap(
+			log.NewError(localCtx, "invalid config request control node cannot be 0"),
+		)
 	}
 	var config string
 	config += `---
@@ -46,7 +49,9 @@ nodes:
 func configOption(noOfNodes int, cni bool) (cluster.CreateOption, error) {
 
 	if noOfNodes < 1 {
-		return nil, log.NewError(localCtx, "invalid config request control node cannot be 0")
+		return nil, ksctlError.ErrInvalidUserInput.Wrap(
+			log.NewError(localCtx, "invalid config request control node cannot be 0"),
+		)
 	}
 	if noOfNodes == 1 {
 		var config string
@@ -65,7 +70,7 @@ networking:
 	worker := noOfNodes - control
 	raw, err := generateConfig(worker, control, cni)
 	if err != nil {
-		return nil, fmt.Errorf("ERR in node config generation")
+		return nil, err
 	}
 
 	log.Debug(localCtx, "Printing", "configCluster", string(raw))
@@ -73,18 +78,20 @@ networking:
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
-func isPresent(storage types.StorageFactory, clusterName string) bool {
-	err := storage.AlreadyCreated(consts.CloudLocal, "LOCAL", clusterName, consts.ClusterTypeMang)
-	return err == nil
+func isPresent(storage types.StorageFactory, clusterName string) error {
+	return storage.AlreadyCreated(consts.CloudLocal, "LOCAL", clusterName, consts.ClusterTypeMang)
 }
 
 func createNecessaryConfigs(storeDir string) (string, error) {
+	_path := path.Join(storeDir, "kubeconfig")
 
-	_, err := os.Create(storeDir + helpers.PathSeparator + "kubeconfig")
+	_, err := os.Create(_path)
 	if err != nil {
-		return "", err
+		return "", ksctlError.ErrInternal.Wrap(
+			log.NewError(localCtx, "failed to create file to store kubeconfig", "Reason", err),
+		)
 	}
-	return storeDir + helpers.PathSeparator + "kubeconfig", nil
+	return _path, nil
 }
 
 func loadStateHelper(storage types.StorageFactory) error {

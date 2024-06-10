@@ -11,7 +11,7 @@ func creds(ksctlClient *controllers.ManagerClusterKsctl) {
 
 	err := ksctlClient.Credentials()
 	if err != nil {
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }

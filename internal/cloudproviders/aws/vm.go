@@ -12,6 +12,7 @@ import (
 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 )
 
 func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) error {
@@ -149,9 +150,6 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId = *nicresponse.NetworkInterface.NetworkInterfaceId
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
-
-		default:
-			errCreate = log.NewError(awsCtx, "invalid role", "role", role)
 		}
 		if err := storage.Write(mainStateDocument); err != nil {
 			errCreate = err
@@ -229,11 +227,11 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 
 	ami, err := obj.getLatestUbuntuAMI()
 	if err != nil {
-		log.Error(awsCtx, "Error getting latest ubuntu ami", "Reason", err)
+		return err
 	}
 	initScript, err := helpers.GenerateInitScriptForVM(name)
 	if err != nil {
-		log.Error(awsCtx, "Error generating init script", "Reason", err)
+		return err
 	}
 	initScriptBase64 := base64.StdEncoding.EncodeToString([]byte(initScript))
 
@@ -283,19 +281,19 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		case consts.RoleCp:
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = vmtype
 		case consts.RoleLb:
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.HostName = name
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = name
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = vmtype
 		case consts.RoleWp:
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = instanceId
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = name
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
 		}
 
 		if err := storage.Write(mainStateDocument); err != nil {
@@ -417,8 +415,6 @@ func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage ksct
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId = ""
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = ""
-		default:
-			return log.NewError(awsCtx, "invalid role", "role", role)
 		}
 		err = storage.Write(mainStateDocument)
 		if err != nil {
@@ -443,5 +439,7 @@ func fetchgroupid(role consts.KsctlRole) (string, error) {
 
 	}
 
-	return "", log.NewError(awsCtx, "invalid role", "role", role)
+	return "", ksctlErrors.ErrInvalidKsctlRole.Wrap(
+		log.NewError(awsCtx, "invalid role", "role", role),
+	)
 }

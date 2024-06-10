@@ -3,13 +3,13 @@ package aws
 import (
 	"strconv"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -43,8 +43,6 @@ func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
 		nsg = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup
 	case consts.RoleDs:
 		nsg = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup
-	default:
-		return log.NewError(awsCtx, "invalid role")
 	}
 
 	if len(nsg) == 0 {
@@ -65,8 +63,6 @@ func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
 			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup = ""
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = ""
-		default:
-			return log.NewError(awsCtx, "invalid role")
 		}
 
 		err = storage.Write(mainStateDocument)
@@ -169,8 +165,6 @@ func (obj *AwsProvider) createSecurityGroupRules(
 			netCidr,
 		)
 
-	default:
-		return log.NewError(awsCtx, "invalid role")
 	}
 
 	if err := obj.client.AuthorizeSecurityGroupIngress(awsCtx, ingressrules); err != nil {
@@ -205,13 +199,13 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule, SgId *string) (ec2
 		_endPort, _ := strconv.Atoi(_r.EndPort)
 
 		v := types.IpPermission{
-			FromPort:   to.Ptr[int32](int32(_startPort)),
-			ToPort:     to.Ptr[int32](int32(_endPort)),
-			IpProtocol: to.Ptr[string](protocol),
+			FromPort:   utilities.Ptr[int32](int32(_startPort)),
+			ToPort:     utilities.Ptr[int32](int32(_endPort)),
+			IpProtocol: utilities.Ptr[string](protocol),
 			IpRanges: []types.IpRange{
 				{
-					CidrIp:      to.Ptr[string](_r.Cidr),
-					Description: to.Ptr[string](_r.Description),
+					CidrIp:      utilities.Ptr[string](_r.Cidr),
+					Description: utilities.Ptr[string](_r.Description),
 				},
 			},
 		}

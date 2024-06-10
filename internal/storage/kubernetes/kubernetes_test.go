@@ -62,13 +62,10 @@ func TestStore_RWD(t *testing.T) {
 		ClusterType: "ha",
 	}
 	err := db.Write(fakeData)
-	if err != nil {
-		t.Fatalf("Error shouln't happen: %v", err)
-	}
+	assert.NilError(t, err, fmt.Sprintf("Error shouln't happen: %v", err))
 
-	if err := db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeHa); err != nil {
-		t.Fatalf("Error shouldn't happen on checking for presence of the cluster: %v", err)
-	}
+	err = db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
+	assert.NilError(t, err, fmt.Sprintf("Error shouldn't happen on checking for presence of the cluster: %v", err))
 
 	if gotFakeData, err := db.Read(); err != nil {
 		t.Fatalf("Error shouln't happen on reading file: %v", err)

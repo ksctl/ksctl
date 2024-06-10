@@ -11,6 +11,7 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 	var contextVars = [...]string{
 		consts.KsctlTestFlagKey:   `true`,
 		consts.KsctlModuleNameKey: `^[\w-]+$`,
+		consts.KsctlContextUserID: `^[\w-]+$`,
 		consts.KsctlCustomDirLoc:  `^[\w-:~\\/\s]+$`,
 	}
 	_val := ctx.Value(key)

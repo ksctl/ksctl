@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"reflect"
-	"strings"
 	"testing"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -14,7 +14,6 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -25,7 +24,7 @@ var (
 
 	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
-	dir                              = fmt.Sprintf("%s ksctl-local-store-test", os.TempDir())
+	dir                              = path.Join(os.TempDir(), "ksctl-local-store-test")
 )
 
 func TestMain(m *testing.M) {
@@ -34,7 +33,7 @@ func TestMain(m *testing.M) {
 
 	_ = m.Run()
 
-	_ = os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-local-store-test")
+	_ = os.RemoveAll(dir)
 }
 
 func TestInitStorage(t *testing.T) {
@@ -62,27 +61,48 @@ func TestReader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile(dir+helpers.PathSeparator+"fake.json", d, 0755); err != nil {
+	if err := os.WriteFile(path.Join(dir, "fake.json"), d, 0755); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestGenOsClusterPath(t *testing.T) {
-	expectedHa := strings.Join([]string{os.TempDir(), "ksctl-local-store-test", ".ksctl", "state", "civo", "ha", "name region"}, helpers.PathSeparator)
-	expectedManaged := strings.Join([]string{os.TempDir(), "ksctl-local-store-test", ".ksctl", "state", "azure", "managed", "name region"}, helpers.PathSeparator)
-	expectedCreds := strings.Join([]string{os.TempDir(), "ksctl-local-store-test", ".ksctl", "credentials"}, helpers.PathSeparator)
+	expectedHa := path.Join([]string{
+		os.TempDir(),
+		"ksctl-local-store-test",
+		".ksctl",
+		"state",
+		"civo",
+		"ha",
+		"name region"}...)
+	expectedManaged := path.Join([]string{
+		os.TempDir(),
+		"ksctl-local-store-test",
+		".ksctl",
+		"state",
+		"azure",
+		"managed",
+		"name region"}...)
+	expectedCreds := path.Join([]string{
+		os.TempDir(),
+		"ksctl-local-store-test",
+		".ksctl",
+		"credentials"}...)
 
-	gotH := genOsClusterPath(false, string(consts.CloudCivo), string(consts.ClusterTypeHa), "name region")
+	gotH, err := genOsClusterPath(false, string(consts.CloudCivo), string(consts.ClusterTypeHa), "name region")
+	assert.NilError(t, err)
 	if gotH != expectedHa {
 		t.Fatalf("expected %s; but got %s\n", expectedHa, gotH)
 	}
 
-	gotM := genOsClusterPath(false, string(consts.CloudAzure), string(consts.ClusterTypeMang), "name region")
+	gotM, err := genOsClusterPath(false, string(consts.CloudAzure), string(consts.ClusterTypeMang), "name region")
+	assert.NilError(t, err)
 	if gotM != expectedManaged {
 		t.Fatalf("expected %s; but got %s\n", expectedManaged, gotM)
 	}
 
-	gotC := genOsClusterPath(true)
+	gotC, err := genOsClusterPath(true)
+	assert.NilError(t, err)
 	if gotC != expectedCreds {
 		t.Fatalf("expected %s; but got %s\n", expectedCreds, gotC)
 	}
@@ -92,8 +112,9 @@ func TestStore_RWD(t *testing.T) {
 	if _, err := db.Read(); err == nil {
 		t.Fatal("Error should occur as there is no folder created")
 	}
+
 	if err := db.DeleteCluster(); err == nil {
-		t.Fatalf("Error should happen on deleting cluster info")
+		t.Fatal("Error should happen on deleting cluster info")
 	}
 
 	if err := db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeHa); err == nil {
@@ -106,13 +127,10 @@ func TestStore_RWD(t *testing.T) {
 		ClusterType: "ha",
 	}
 	err := db.Write(fakeData)
-	if err != nil {
-		t.Fatalf("Error shouln't happen: %v", err)
-	}
+	assert.NilError(t, err)
 
-	if err := db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeHa); err != nil {
-		t.Fatalf("Error shouldn't happen on checking for presence of the cluster: %v", err)
-	}
+	err = db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
+	assert.NilError(t, err, fmt.Sprintf("Error shouldn't happen on checking for presence of the cluster: %v", err))
 
 	if gotFakeData, err := db.Read(); err != nil {
 		t.Fatalf("Error shouln't happen on reading file: %v", err)
@@ -127,9 +145,8 @@ func TestStore_RWD(t *testing.T) {
 		}
 	}
 
-	if err := db.DeleteCluster(); err != nil {
-		t.Fatalf("Error shouln't happen on deleting cluster info: %v", err)
-	}
+	err = db.DeleteCluster()
+	assert.NilError(t, err, fmt.Sprintf("Error shouln't happen on deleting cluster info: %v", err))
 }
 
 func TestStore_RWDCredentials(t *testing.T) {
@@ -137,26 +154,52 @@ func TestStore_RWDCredentials(t *testing.T) {
 		t.Fatal("Error should occur as there is no folder created")
 	}
 
-	fakeData := &storageTypes.CredentialsDocument{
-		Azure: &storageTypes.CredentialsAzure{
-			ClientID: "client_id",
-		},
-		InfraProvider: consts.CloudAzure,
-	}
-	err := db.WriteCredentials(consts.CloudAzure, fakeData)
-	if err != nil {
-		t.Fatalf("Error shouln't happen: %v", err)
-	}
-
-	if gotFakeData, err := db.ReadCredentials(consts.CloudAzure); err != nil {
-		t.Fatalf("Error shouln't happen on reading file: %v", err)
-	} else {
-		fmt.Printf("%#+v\n", gotFakeData)
-
-		if !reflect.DeepEqual(gotFakeData, fakeData) {
-			t.Fatalf("Written data doesn't match Reading")
+	t.Run("azure", func(t *testing.T) {
+		fakeDataAzure := &storageTypes.CredentialsDocument{
+			Azure: &storageTypes.CredentialsAzure{
+				ClientID: "client_id",
+			},
+			InfraProvider: consts.CloudAzure,
 		}
-	}
+		err := db.WriteCredentials(consts.CloudAzure, fakeDataAzure)
+		if err != nil {
+			t.Fatalf("Error shouln't happen: %v", err)
+		}
+
+		if gotFakeData, err := db.ReadCredentials(consts.CloudAzure); err != nil {
+			t.Fatalf("Error shouln't happen on reading file: %v", err)
+		} else {
+			fmt.Printf("%#+v\n", gotFakeData)
+
+			if !reflect.DeepEqual(gotFakeData, fakeDataAzure) {
+				t.Fatalf("Written data doesn't match Reading")
+			}
+		}
+	})
+
+	t.Run("aws", func(t *testing.T) {
+		fakeDataAws := &storageTypes.CredentialsDocument{
+			Aws: &storageTypes.CredentialsAws{
+				AccessKeyId:     "access_key",
+				SecretAccessKey: "secret",
+			},
+			InfraProvider: consts.CloudAws,
+		}
+		err := db.WriteCredentials(consts.CloudAws, fakeDataAws)
+		if err != nil {
+			t.Fatalf("Error shouln't happen: %v", err)
+		}
+
+		if gotFakeData, err := db.ReadCredentials(consts.CloudAws); err != nil {
+			t.Fatalf("Error shouln't happen on reading file: %v", err)
+		} else {
+			fmt.Printf("%#+v\n", gotFakeData)
+
+			if !reflect.DeepEqual(gotFakeData, fakeDataAws) {
+				t.Fatalf("Written data doesn't match Reading")
+			}
+		}
+	})
 }
 
 func TestGetClusterInfo(t *testing.T) {
@@ -281,6 +324,13 @@ func TestExportImport(t *testing.T) {
 					},
 					InfraProvider: consts.CloudAzure,
 				},
+				&storageTypes.CredentialsDocument{
+					Aws: &storageTypes.CredentialsAws{
+						AccessKeyId:     "access_key",
+						SecretAccessKey: "secret",
+					},
+					InfraProvider: consts.CloudAws,
+				},
 			},
 			Clusters: []*storageTypes.StorageDocument{
 				&storageTypes.StorageDocument{
@@ -354,7 +404,7 @@ func TestExportImport(t *testing.T) {
 			dump.Println(m)
 		}(t)
 
-		if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-local-store-test"); err != nil {
+		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -440,19 +490,21 @@ func TestExternalUsageFunctions(t *testing.T) {
 	extDb := db.(*Store)
 
 	locGot, okGot := extDb.PresentDirectory([]string{"demo03", "234"})
-	assert.Equal(t, locGot, "demo03"+helpers.PathSeparator+"234")
+	assert.Equal(t, locGot, path.Join("demo03", "234"))
 	assert.Equal(t, okGot, false)
 
-	locGot, okGot = extDb.PresentDirectory([]string{helpers.GetUserName()})
-	assert.Equal(t, locGot, helpers.GetUserName())
+	home, _ := os.UserHomeDir()
+	locGot, okGot = extDb.PresentDirectory([]string{home})
+	assert.Equal(t, locGot, home)
 	assert.Equal(t, okGot, true)
 
 	err := extDb.CreateDirectory([]string{os.TempDir(), "ksctl-local-store-test"})
-	assert.Assert(t, err == nil)
+	assert.NilError(t, err)
 
 	locGot, err = extDb.CreateFileIfNotPresent([]string{os.TempDir(), "ksctl-local-store-test", "abcd.yml"})
-	assert.Assert(t, err == nil)
-	assert.Equal(t, locGot, os.TempDir()+helpers.PathSeparator+"ksctl-local-store-test"+helpers.PathSeparator+"abcd.yml")
+	assert.NilError(t, err)
+
+	assert.Equal(t, locGot, path.Join(os.TempDir(), "ksctl-local-store-test", "abcd.yml"))
 }
 
 func TestKill(t *testing.T) {

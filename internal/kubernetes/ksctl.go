@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+
 	"github.com/ksctl/ksctl/ksctl-components/manifests"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -54,16 +55,13 @@ var (
 	}
 )
 
-// TODO: add netpolicy so that the ksctl agent is only available by ksctl specific components
-// in ksctl namespace only
-
 func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
 	components := []string{"ksctl-application@" + manifests.KsctlApplicationStackBranchOrTagName}
 
-	_apps, err := helpers.ToApplicationTempl(components)
+	_apps, err := helpers.ToApplicationTempl(kubernetesCtx, log, components)
 	if err != nil {
-		return log.NewError(kubernetesCtx, "toApplication Template failed", "Reason", err)
+		return err
 	}
 	err = k.Applications(_apps, state, consts.OperationCreate)
 	if err != nil {

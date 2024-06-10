@@ -55,7 +55,7 @@ func TestGetApp(t *testing.T) {
 	}
 
 	for app, expect := range testCase {
-		_app, _ := helpers.ToApplicationTempl([]string{app})
+		_app, _ := helpers.ToApplicationTempl(kubernetesCtx, log, []string{app})
 		got, err := GetApps(_app[0].Name, _app[0].Version)
 		v := err == nil // it will be true if there is no error
 		assert.Equal(t, v, expect.expectedToExist)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -56,7 +57,9 @@ func (b *BackOff) Run(
 		case <-ctx.Done():
 			log.Print(ctx, "Operation cancelled during backoff")
 			if ctx.Err() != nil {
-				return log.NewError(ctx, "Operation cancelled", "Reason", ctx.Err())
+				return ksctlErrors.ErrContextCancelled.Wrap(
+					log.NewError(ctx, "backoff termination", "Reason", ctx.Err()),
+				)
 			}
 			return nil
 		case <-time.After(waitTime):
@@ -65,8 +68,12 @@ func (b *BackOff) Run(
 	}
 
 	if storePrevErr != nil {
-		return log.NewError(ctx, "Max retries exceeded", "Reason", storePrevErr)
+		return ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(ctx, "Max backoff retries reached", "Reason", storePrevErr),
+		)
 	}
 
-	return log.NewError(ctx, "Max retries exceeded")
+	return ksctlErrors.ErrTimeOut.Wrap(
+		log.NewError(ctx, "Max backoff retries reached"),
+	)
 }

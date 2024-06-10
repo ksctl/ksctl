@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -15,8 +16,6 @@ import (
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/pkg/helpers"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
@@ -30,7 +29,7 @@ var (
 	parentCtx      context.Context
 	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
-	dir = fmt.Sprintf("%s ksctl-local-test", os.TempDir())
+	dir = path.Join(os.TempDir(), "ksctl-local-test")
 )
 
 func TestMain(m *testing.M) {
@@ -44,7 +43,7 @@ func TestMain(m *testing.M) {
 
 	exitVal := m.Run()
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-local-test"); err != nil {
+	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
 	os.Exit(exitVal)

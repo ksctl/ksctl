@@ -6,26 +6,28 @@ import (
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// fetchAPIKey returns the api_token from the cred/civo.json file store
-func fetchAPIKey(storage types.StorageFactory) string {
+func fetchAPIKey(storage types.StorageFactory) (string, error) {
 
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if civoToken != "" {
-		return civoToken
+		return civoToken, nil
 	}
-	log.Note(civoCtx, "environment vars not set: `CIVO_TOKEN`")
+	log.Debug(civoCtx, "environment vars not set: `CIVO_TOKEN`")
 
 	credentials, err := storage.ReadCredentials(consts.CloudCivo)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	if credentials.Civo == nil {
-		return ""
+		return "", ksctlErrors.ErrNilCredentials.Wrap(
+			log.NewError(civoCtx, "no credentials was found"),
+		)
 	}
-	return credentials.Civo.Token
+	return credentials.Civo.Token, nil
 }
 
 func loadStateHelper(storage types.StorageFactory) error {
@@ -39,8 +41,6 @@ func loadStateHelper(storage types.StorageFactory) error {
 	return nil
 }
 
-// helper functions to get storage from civogo client
-// seperation so that we can test logic by assert
 func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
 	vers, err := obj.client.ListAvailableKubernetesVersions()
 	if err != nil {
@@ -101,10 +101,11 @@ func isValidK8sVersion(obj *CivoProvider, ver string) error {
 			return nil
 		}
 	}
-	return log.NewError(civoCtx, "invalid k8s version", "Valid options", valver)
+	return ksctlErrors.ErrInvalidVersion.Wrap(
+		log.NewError(civoCtx, "invalid k8s version", "ValidManagedK8sVersions", valver),
+	)
 }
 
-// IsValidRegionCIVO validates the region code for CIVO
 func isValidRegion(obj *CivoProvider, reg string) error {
 	validFromClient, err := getValidRegionsClient(obj)
 	if err != nil {
@@ -115,7 +116,9 @@ func isValidRegion(obj *CivoProvider, reg string) error {
 			return nil
 		}
 	}
-	return log.NewError(civoCtx, "invalid region", "Valid options", validFromClient)
+	return ksctlErrors.ErrInvalidCloudRegion.Wrap(
+		log.NewError(civoCtx, "invalid region", "ValidRegion", validFromClient),
+	)
 }
 
 func isValidVMSize(obj *CivoProvider, size string) error {
@@ -128,5 +131,7 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 			return nil
 		}
 	}
-	return log.NewError(civoCtx, "invalid VM size", "Valid options", validFromClient)
+	return ksctlErrors.ErrInvalidCloudVMSize.Wrap(
+		log.NewError(civoCtx, "invalid Virtual Machine size", "ValidVMSize", validFromClient),
+	)
 }

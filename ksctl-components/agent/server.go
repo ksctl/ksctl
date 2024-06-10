@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 
@@ -38,8 +37,8 @@ func (s *server) Scale(ctx context.Context, in *pb.ReqScale) (*pb.ResScale, erro
 	log.Debug(agentCtx, "Request", "ReqScale", in)
 
 	if err := scale.CallManager(agentCtx, log, in); err != nil {
-		log.Error(agentCtx, "CallManager", "Reason", err)
-		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason:"+err.Error())
+		log.Error("CallManager", "Reason", err)
+		return nil, status.Error(codes.Unimplemented, "failure from calling ksctl manager. Reason: "+err.Error())
 	}
 
 	log.Success(agentCtx, "Handled Scale")
@@ -62,11 +61,10 @@ func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.Re
 	// Reason: the context from the unit test were not transfarable
 
 	if err := application.Handler(agentCtx, log, in); err != nil {
-		log.Error(agentCtx, "Handler", "Reason", err)
+		log.Error("Handler", "Reason", err)
 		return &pb.ResApplication{FailedApps: []string{err.Error()}}, status.Error(codes.Canceled, "invalid returned from manager")
 	}
 	if _, ok := ksctlHelpers.IsContextPresent(agentCtx, consts.KsctlTestFlagKey); ok {
-		fmt.Println("sfvfsdv v vdf")
 		return &pb.ResApplication{FailedApps: []string{"none"}}, nil
 	}
 	log.Success(agentCtx, "Handled Application")
@@ -85,7 +83,7 @@ func main() {
 
 	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		log.Error(agentCtx, "unable to do http listener", "err", err)
+		log.Error("unable to do http listener", "err", err)
 	}
 
 	s := grpc.NewServer()
@@ -100,6 +98,6 @@ func main() {
 	log.Print(agentCtx, "Server started", "port", "8080")
 
 	if err := s.Serve(listener); err != nil {
-		log.Error(agentCtx, "failed to serve", "err", err)
+		log.Error("failed to serve", "err", err)
 	}
 }

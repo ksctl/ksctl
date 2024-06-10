@@ -2,36 +2,41 @@ package local
 
 import (
 	"os"
+	"path"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-// DelManagedCluster implements types.CloudFactory.
 func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) error {
 
+	_path := path.Join(cloud.metadata.tempDirKubeconfig, "kubeconfig")
 	cloud.client.NewProvider(log, storage, nil)
 	if len(cloud.metadata.tempDirKubeconfig) == 0 {
 		var err error
 		cloud.metadata.tempDirKubeconfig, err = os.MkdirTemp("", cloud.clusterName+"*")
 		if err != nil {
-			return err
+			return ksctlErrors.ErrInternal.Wrap(
+				log.NewError(localCtx, "mkdirTemp", "Reason", err),
+			)
 		}
-		if err := os.WriteFile(cloud.metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig",
+		if err := os.WriteFile(_path,
 			[]byte(mainStateDocument.ClusterKubeConfig), 0755); err != nil {
-			return err
+			return ksctlErrors.ErrInternal.Wrap(
+				log.NewError(localCtx, "failed to write file", "Reason", err),
+			)
 		}
 		defer func() {
 			_ = os.RemoveAll(cloud.metadata.tempDirKubeconfig)
 		}()
 	}
 
-	if err := cloud.client.Delete(cloud.clusterName,
-		cloud.metadata.tempDirKubeconfig+helpers.PathSeparator+"kubeconfig"); err != nil {
-		return log.NewError(localCtx, "failed to delete cluster", "Reason", err)
+	if err := cloud.client.Delete(cloud.clusterName, _path); err != nil {
+		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+			log.NewError(localCtx, "failed to delete cluster", "Reason", err),
+		)
 	}
 
 	if err := storage.DeleteCluster(); err != nil {
@@ -67,38 +72,41 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 
 	cloud.tempDirKubeconfig, err = os.MkdirTemp("", cloud.clusterName+"*")
 	if err != nil {
-		return err
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(localCtx, "mkdirTemp", "Reason", err),
+		)
 	}
 
 	ConfigHandler := func() string {
-		path, err := createNecessaryConfigs(cloud.tempDirKubeconfig)
+		_path, err := createNecessaryConfigs(cloud.tempDirKubeconfig)
 		if err != nil {
-			log.Error(localCtx, "rollback Cannot continue 😢")
+			log.Error("rollback Cannot continue 😢")
 			err = cloud.DelManagedCluster(storage)
 			if err != nil {
-				log.Error(localCtx, "failed to perform cleanup", "Reason", err)
+				log.Error("failed to perform cleanup", "Reason", err)
 				return "" // asumming it never comes here
 			}
 		}
-		return path
+		return _path
 	}
 	Image := "kindest/node:v" + mainStateDocument.CloudInfra.Local.B.KubernetesVer
 
 	if err := cloud.client.Create(cloud.clusterName, withConfig, Image, Wait, ConfigHandler); err != nil {
-		return log.NewError(localCtx, "failed to create cluster", "err", err)
+		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+			log.NewError(localCtx, "failed to create cluster", "err", err),
+		)
 	}
 
-	path := cloud.tempDirKubeconfig + helpers.PathSeparator + "kubeconfig"
+	_path := path.Join(cloud.tempDirKubeconfig, "kubeconfig")
+
+	data, err := os.ReadFile(_path)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrKubeconfigOperations.Wrap(
+			log.NewError(localCtx, "failed to read kubeconfig", "Reason", err),
+		)
 	}
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	log.Debug(localCtx, "kubeconfig", "kubeconfigTempPath", path)
+	log.Debug(localCtx, "kubeconfig", "kubeconfigTempPath", _path)
 
 	mainStateDocument.ClusterKubeConfig = string(data)
 	mainStateDocument.ClusterKubeConfigContext = "kind-" + cloud.clusterName

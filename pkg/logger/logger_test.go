@@ -48,7 +48,7 @@ func TestPrintersStructured(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		sL.Error(dummyCtx, "FAKE", "type", "error")
+		sL.Error("FAKE", "type", "error")
 	})
 
 	t.Run("Debug", func(t *testing.T) {

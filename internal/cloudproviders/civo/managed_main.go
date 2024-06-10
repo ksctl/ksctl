@@ -1,7 +1,6 @@
 package civo
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -80,15 +79,6 @@ func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNod
 
 	resp, err := obj.client.NewKubernetesClusters(configK8s)
 	if err != nil {
-		if errors.Is(err, civogo.DatabaseKubernetesClusterDuplicateError) {
-			return err
-		}
-		if errors.Is(err, civogo.AuthenticationFailedError) {
-			return err
-		}
-		if errors.Is(err, civogo.UnknownError) {
-			return log.NewError(civoCtx, "unknown error", "err", err)
-		}
 		return err
 	}
 

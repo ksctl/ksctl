@@ -19,6 +19,7 @@ import (
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"golang.org/x/crypto/ssh"
 )
@@ -149,7 +150,9 @@ func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdou
 				sshExec.log.Warn(sshExec.ctx, "Retrying! Facing some channel open issues", "Reason", err)
 				return nil, false
 			} else {
-				return sshExec.log.NewError(sshExec.ctx, "ssh execution faced error", "Reason", err), true
+				return ksctlErrors.ErrSSHExec.Wrap(
+					sshExec.log.NewError(sshExec.ctx, err.Error()),
+				), true
 			}
 		},
 		func() error {
@@ -169,10 +172,11 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 	privateKeyBytes := []byte(sshPayload.Privatekey)
 
 	// create signer
-	signer, err := signerFromPem(privateKeyBytes)
+	signer, err := signerFromPem(sshPayload.ctx, sshPayload.log, privateKeyBytes)
 	if err != nil {
 		return err
 	}
+
 	sshPayload.log.Debug(sshPayload.ctx, "SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
 
 	config := &ssh.ClientConfig{
@@ -193,14 +197,24 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 				if keyType == ssh.KeyAlgoRSA || keyType == ssh.KeyAlgoED25519 {
 					recvFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP, keyType)
 					if err != nil {
-						return err
+						return ksctlErrors.ErrSSHExec.Wrap(
+							sshPayload.log.NewError(
+								sshPayload.ctx,
+								"failed to fetch server public keys",
+								err,
+							),
+						)
 					}
 					if recvFingerprint != gotFingerprint {
-						return sshPayload.log.NewError(sshPayload.ctx, "mismatch of SSH fingerprint")
+						return ksctlErrors.ErrSSHExec.Wrap(
+							sshPayload.log.NewError(sshPayload.ctx, "mismatch of SSH fingerprint"),
+						)
 					}
 					return nil
 				}
-				return sshPayload.log.NewError(sshPayload.ctx, "unsupported key type", "keyType", keyType)
+				return ksctlErrors.ErrSSHExec.Wrap(
+					sshPayload.log.NewError(sshPayload.ctx, "unsupported key type", "keyType", keyType),
+				)
 			})}
 
 	if !sshPayload.fastMode {
@@ -229,7 +243,11 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		sshPayload.log,
 		func() (err error) {
 			conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)
-			return err
+			if err != nil {
+				return ksctlErrors.ErrSSHExec.Wrap(
+					sshPayload.log.NewError(sshPayload.ctx, "failed to get", "Reason", err))
+			}
+			return nil
 		},
 		func() bool {
 			return true
@@ -303,7 +321,7 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		}
 
 		if !success {
-			return scriptFailureReason
+			return ksctlErrors.ErrSSHExec.Wrap(scriptFailureReason)
 		}
 		if sshPayload.flag == consts.UtilExecWithOutput {
 			sshPayload.Output = append(sshPayload.Output, stdout)
@@ -320,13 +338,17 @@ func generatePrivateKey(ctx context.Context, log types.LoggerFactory, bitSize in
 	// Private Key generation
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
-		return nil, err
+		return nil, ksctlErrors.ErrSSHExec.Wrap(
+			log.NewError(ctx, "failed to generate key", "Reason", err),
+		)
 	}
 
 	// Validate Private Key
 	err = privateKey.Validate()
 	if err != nil {
-		return nil, err
+		return nil, ksctlErrors.ErrSSHExec.Wrap(
+			log.NewError(ctx, "failed to validate key", "Reason", err),
+		)
 	}
 
 	log.Print(ctx, "Private Key helper-gen")
@@ -356,7 +378,9 @@ func encodePrivateKeyToPEM(log types.LoggerFactory, privateKey *rsa.PrivateKey) 
 func generatePublicKey(ctx context.Context, log types.LoggerFactory, privatekey *rsa.PublicKey) ([]byte, error) {
 	publicRsaKey, err := ssh.NewPublicKey(privatekey)
 	if err != nil {
-		return nil, err
+		return nil, ksctlErrors.ErrSSHExec.Wrap(
+			log.NewError(ctx, "failed to create public key for given private key", "Reason", err),
+		)
 	}
 
 	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
@@ -390,20 +414,26 @@ func CreateSSHKeyPair(ctx context.Context, log types.LoggerFactory, state *stora
 	return nil
 }
 
-func signerFromPem(pemBytes []byte) (ssh.Signer, error) {
+func signerFromPem(ctx context.Context, log types.LoggerFactory, pemBytes []byte) (ssh.Signer, error) {
 
 	// read pem block
 	pemBlock, _ := pem.Decode(pemBytes)
 	if pemBlock == nil {
-		return nil, errors.New("pem decode failed, no key found")
+		return nil, ksctlErrors.ErrSSHExec.Wrap(
+			log.NewError(ctx, "pem decode failed, no key found"),
+		)
 	}
 	if x509.IsEncryptedPEMBlock(pemBlock) {
-		return nil, fmt.Errorf("pem file is encrypted")
+		return nil, ksctlErrors.ErrSSHExec.Wrap(
+			log.NewError(ctx, "pem file is encrypted"),
+		)
 	}
 
 	signer, err := ssh.ParsePrivateKey(pemBytes)
 	if err != nil {
-		return nil, fmt.Errorf("parsing plain private key failed %v", err)
+		return nil, ksctlErrors.ErrSSHExec.Wrap(
+			log.NewError(ctx, "parsing plain private key failed", "Reason", err),
+		)
 	}
 
 	return signer, nil

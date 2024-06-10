@@ -2,8 +2,8 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"os"
+	"path"
 
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -13,14 +13,14 @@ import (
 
 var (
 	cli *types.KsctlClient
-	dir = fmt.Sprintf("%s ksctl-black-box-test", os.TempDir())
+	dir = path.Join(os.TempDir(), "ksctl-black-box-test")
 	ctx context.Context
 )
 
 func InitCore() (err error) {
 	ctx = context.WithValue(
 		context.Background(),
-		"USERID",
+		consts.KsctlContextUserID,
 		"demo",
 	)
 	ctx = context.WithValue(
@@ -244,7 +244,7 @@ func AwsTestingHA() error {
 
 	cli.Metadata.IsHA = true
 
-	cli.Metadata.Region = "fake"
+	cli.Metadata.Region = "fake-region"
 	cli.Metadata.Provider = consts.CloudAws
 	cli.Metadata.NoCP = 3
 	cli.Metadata.NoWP = 1

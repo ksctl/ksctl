@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"sync"
 	"testing"
 
@@ -25,7 +26,7 @@ var (
 	storeHA types.StorageFactory
 
 	fakeClient         *Kubeadm
-	dir                = fmt.Sprintf("%s ksctl-kubeadm-test", os.TempDir())
+	dir                = path.Join(os.TempDir(), "ksctl-kubeadm-test")
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 	parentCtx          context.Context
 	parentLogger       types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
@@ -64,7 +65,7 @@ func TestMain(m *testing.M) {
 
 	mainState := &storageTypes.StorageDocument{}
 	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
-		log.Error(parentCtx, err.Error())
+		log.Error(err.Error())
 		os.Exit(1)
 	}
 	fakeStateFromCloud = cloudControlRes.CloudResourceState{
@@ -102,7 +103,7 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(os.TempDir() + helpers.PathSeparator + "ksctl-kubeadm-test"); err != nil {
+	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
 

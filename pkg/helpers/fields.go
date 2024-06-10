@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"golang.org/x/term"
 )
@@ -23,7 +23,7 @@ func UserInputCredentials(ctx context.Context, logging types.LoggerFactory) (str
 		return "", err
 	}
 	if len(bytePassword) == 0 {
-		logging.Error(ctx, "Empty secret passed!")
+		logging.Error("Empty secret passed!")
 		return UserInputCredentials(ctx, logging)
 	}
 	return strings.TrimSpace(string(bytePassword)), nil
@@ -36,6 +36,19 @@ func ValidateDistro(distro consts.KsctlKubernetes) bool {
 
 	switch distro {
 	case consts.K8sK3s, consts.K8sKubeadm, "":
+		return true
+	default:
+		return false
+	}
+}
+
+func ValidateRole(role consts.KsctlRole) bool {
+	if b := utf8.ValidString(string(role)); !b {
+		return false
+	}
+
+	switch role {
+	case consts.RoleCp, consts.RoleLb, consts.RoleWp, consts.RoleDs:
 		return true
 	default:
 		return false
@@ -82,20 +95,28 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 }
 
-func IsValidName(ctx context.Context, log types.LoggerFactory, clusterName string) error {
-	if len(clusterName) > 50 {
-		return log.NewError(ctx, "name is too long", "name", clusterName)
+func IsValidName(ctx context.Context, log types.LoggerFactory, name string) error {
+	if len(name) > 50 {
+		return ksctlErrors.ErrInvalidResourceName.Wrap(
+			log.NewError(ctx, "name is too long", "name", name),
+		)
 	}
-	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, clusterName)
-
-	if !matched || err != nil {
-		return log.NewError(ctx, "invalid cluster-name")
+	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, name)
+	if err != nil {
+		return ksctlErrors.ErrUnknown.Wrap(
+			log.NewError(ctx, "failed to compile the regex", "Reason", err),
+		)
+	}
+	if !matched {
+		return ksctlErrors.ErrInvalidResourceName.Wrap(
+			log.NewError(ctx, "invalid name", "expectedToBePattern", `(^[a-z])([-a-z0-9])*([a-z0-9]$)`),
+		)
 	}
 
 	return nil
 }
 
-func IsValidVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
+func IsValidKsctlComponentVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
 	if ver == "latest" ||
 		ver == "stable" ||
 		strings.HasPrefix(ver, "feature") ||
@@ -109,20 +130,28 @@ func IsValidVersion(ctx context.Context, log types.LoggerFactory, ver string) er
 	patternWithVPrefix := `^v\d+(\.\d{1,2}){0,2}$`
 	matchStringWithoutVPrefix, err := regexp.MatchString(patternWithoutVPrefix, ver)
 	if err != nil {
-		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
+		return ksctlErrors.ErrUnknown.Wrap(
+			log.NewError(ctx, "failed to compile the regex", "Reason", err),
+		)
 	}
 	matchStringWithVPrefix, err := regexp.MatchString(patternWithVPrefix, ver)
 	if err != nil {
-		return log.NewError(ctx, "failed to compile the regex", "Reason", err)
+		return ksctlErrors.ErrUnknown.Wrap(
+			log.NewError(ctx, "failed to compile the regex", "Reason", err),
+		)
 	}
 
 	if !matchStringWithoutVPrefix && !matchStringWithVPrefix {
-		return log.NewError(ctx, "invalid version", "version", ver)
+		return ksctlErrors.ErrInvalidKsctlComponentVersion.Wrap(
+			log.NewError(ctx, "invalid version", "version", ver),
+		)
 	}
 	return nil
 }
 
-func ToApplicationTempl(apps []string) ([]storageTypes.Application, error) {
+func ToApplicationTempl(ctx context.Context,
+	log types.LoggerFactory,
+	apps []string) ([]storageTypes.Application, error) {
 
 	_apps := make([]storageTypes.Application, 0)
 	for _, app := range apps {
@@ -130,7 +159,9 @@ func ToApplicationTempl(apps []string) ([]storageTypes.Application, error) {
 		temp := strings.Split(app, "@")
 
 		if len(temp) > 2 || len(app) == 0 {
-			return nil, fmt.Errorf("invalid format for application should be APP_NAME@VERSION")
+			return nil, ksctlErrors.ErrInvalidKsctlComponentVersion.Wrap(
+				log.NewError(ctx, "invalid format for application should be APP_NAME@VERSION", "app", app),
+			)
 		}
 		if len(temp) == 1 {
 			// version was not specified

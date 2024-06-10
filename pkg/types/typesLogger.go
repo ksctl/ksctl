@@ -16,15 +16,14 @@ type LoggerFactory interface {
 
 	Warn(ctx context.Context, msg string, v ...any)
 
-	Error(ctx context.Context, msg string, v ...any)
+	Error(msg string, v ...any)
 
 	Debug(ctx context.Context, msg string, v ...any)
 
-	// To be used by external logging
 	ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string)
 	ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{})
 
-	NewError(ctx context.Context, format string, v ...any) error
+	NewError(ctx context.Context, msg string, v ...any) error
 
 	Table(ctx context.Context, data []cloudController.AllClusterData)
 

@@ -1,22 +1,34 @@
 package controllers
 
 import (
-	"errors"
-
 	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func validationFields(meta types.Metadata) error {
+func (manager *managerInfo) validationFields(meta types.Metadata) error {
+
+	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlContextUserID); !ok {
+		return ksctlErrors.ErrInvalidUserInput.Wrap(
+			manager.log.NewError(controllerCtx, "invalid format for context value `USERID`", "Reason", "Make sure the value", "type", "string", "format", `^[\w-]+$`),
+		)
+	}
 
 	if !helpers.ValidateCloud(meta.Provider) {
-		return errors.New("invalid cloud provider")
+		return ksctlErrors.ErrInvalidCloudProvider.Wrap(
+			manager.log.NewError(
+				controllerCtx, "Problem in validation", "cloud", meta.Provider,
+			),
+		)
 	}
 	if !helpers.ValidateDistro(meta.K8sDistro) {
-		return errors.New("invalid kubernetes distro")
+		return ksctlErrors.ErrInvalidBootstrapProvider.Wrap(
+			manager.log.NewError(
+				controllerCtx, "Problem in validation", "bootstrap", meta.K8sDistro,
+			),
+		)
 	}
-	if !helpers.ValidateStorage(meta.StateLocation) {
-		return errors.New("invalid storage driver")
-	}
+
 	return nil
 }

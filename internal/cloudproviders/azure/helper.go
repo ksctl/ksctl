@@ -3,6 +3,7 @@ package azure
 import (
 	"fmt"
 
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/types"
@@ -49,7 +50,10 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 			return nil
 		}
 	}
-	return log.NewError(azureCtx, "Invalid k8s version", "Valid options", vers)
+
+	return ksctlErrors.ErrInvalidVersion.Wrap(
+		log.NewError(azureCtx, "invalid k8s version", "ValidManagedK8sVersions", vers),
+	)
 }
 
 func isValidRegion(obj *AzureProvider, reg string) error {
@@ -64,7 +68,9 @@ func isValidRegion(obj *AzureProvider, reg string) error {
 			return nil
 		}
 	}
-	return log.NewError(azureCtx, "Invalid region", "Valid options", validReg)
+	return ksctlErrors.ErrInvalidCloudRegion.Wrap(
+		log.NewError(azureCtx, "Invalid region", "Valid options", validReg),
+	)
 }
 
 func isValidVMSize(obj *AzureProvider, size string) error {
@@ -81,5 +87,7 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 		}
 	}
 
-	return log.NewError(azureCtx, "Invalid vm size", "Valid options", validSize)
+	return ksctlErrors.ErrInvalidCloudVMSize.Wrap(
+		log.NewError(azureCtx, "Invalid vm size", "Valid options", validSize),
+	)
 }

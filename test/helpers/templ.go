@@ -1,10 +1,11 @@
 package helpers
 
 import (
+	"testing"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
-	"testing"
 )
 
 func HelperTestTemplate(t *testing.T, testData []types.Script, f func() types.ScriptCollection) {

@@ -11,7 +11,7 @@ func getClusters(ksctlClient *controllers.ManagerClusterKsctl) {
 
 	err := ksctlClient.GetCluster()
 	if err != nil {
-		l.Error(ctx, "Failure", "err", err)
+		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }

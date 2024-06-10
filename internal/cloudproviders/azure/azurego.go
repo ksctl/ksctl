@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -183,75 +183,164 @@ type AzureGoClient struct {
 	ResourceGrp    string
 }
 
-// PollUntilDoneCreateNetInterface implements AzureGo.
 func (*AzureGoClient) PollUntilDoneCreateNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientCreateOrUpdateResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
-// PollUntilDoneCreatePubIP implements AzureGo.
 func (*AzureGoClient) PollUntilDoneCreatePubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
-// PollUntilDoneCreateVM implements AzureGo.
 func (*AzureGoClient) PollUntilDoneCreateVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientCreateOrUpdateResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
-// PollUntilDoneDelDisk implements AzureGo.
 func (*AzureGoClient) PollUntilDoneDelDisk(ctx context.Context, poll *runtime.Poller[armcompute.DisksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.DisksClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
-// PollUntilDoneDelNetInterface implements AzureGo.
 func (*AzureGoClient) PollUntilDoneDelNetInterface(ctx context.Context, poll *runtime.Poller[armnetwork.InterfacesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.InterfacesClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
-// PollUntilDoneDelPubIP implements AzureGo.
 func (*AzureGoClient) PollUntilDoneDelPubIP(ctx context.Context, poll *runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.PublicIPAddressesClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
-// PollUntilDoneDelVM implements AzureGo.
 func (*AzureGoClient) PollUntilDoneDelVM(ctx context.Context, poll *runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcompute.VirtualMachinesClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneDelNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneDelResourceGrp(ctx context.Context, poll *runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armresources.ResourceGroupsClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneDelSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneCreateVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneDelVirtNet(ctx context.Context, poll *runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armnetwork.VirtualNetworksClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneCreateAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientCreateOrUpdateResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], options *runtime.PollUntilDoneOptions) (armcontainerservice.ManagedClustersClientDeleteResponse, error) {
-	return poll.PollUntilDone(ctx, options)
+	res, err := poll.PollUntilDone(ctx, options)
+	if err != nil {
+		return res, ksctlErrors.ErrTimeOut.Wrap(
+			log.NewError(azureCtx, "failed waiting", "Reason", err),
+		)
+	}
+	return res, nil
 }
 
 func (obj *AzureGoClient) setRequiredENV_VAR(storage types.StorageFactory, ctx context.Context) error {
@@ -287,33 +376,38 @@ func (obj *AzureGoClient) setRequiredENV_VAR(storage types.StorageFactory, ctx c
 		msg = msg + " AZURE_CLIENT_SECRET"
 	}
 
-	log.Note(azureCtx, msg)
+	log.Debug(azureCtx, msg)
 
 	credentials, err := storage.ReadCredentials(consts.CloudAzure)
 	if err != nil {
 		return err
+	}
+	if credentials.Azure == nil {
+		return ksctlErrors.ErrNilCredentials.Wrap(
+			log.NewError(azureCtx, "no credentials was found"),
+		)
 	}
 
 	obj.SubscriptionID = credentials.Azure.SubscriptionID
 
 	err = os.Setenv("AZURE_SUBSCRIPTION_ID", credentials.Azure.SubscriptionID)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrUnknown.Wrap(err)
 	}
 
 	err = os.Setenv("AZURE_TENANT_ID", credentials.Azure.TenantID)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrUnknown.Wrap(err)
 	}
 
 	err = os.Setenv("AZURE_CLIENT_ID", credentials.Azure.ClientID)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrUnknown.Wrap(err)
 	}
 
 	err = os.Setenv("AZURE_CLIENT_SECRET", credentials.Azure.ClientSecret)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrUnknown.Wrap(err)
 	}
 	return nil
 }
@@ -325,7 +419,9 @@ func (azclient *AzureGoClient) InitClient(storage types.StorageFactory) error {
 	}
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return err
+		return ksctlErrors.ErrInternal.Wrap(
+			log.NewError(azureCtx, "defaultAzureCredential", "Reason", err),
+		)
 	}
 	azclient.AzureTokenCred = cred
 	return nil
@@ -342,7 +438,9 @@ func (azclient *AzureGoClient) SetResourceGrp(grp string) {
 func (azclient *AzureGoClient) ListLocations() ([]string, error) {
 	clientFactory, err := armsubscriptions.NewClientFactory(azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(azureCtx, "failed in azure client", "Reason", err),
+		)
 	}
 	pager := clientFactory.NewClient().NewListLocationsPager(azclient.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
 
@@ -350,7 +448,9 @@ func (azclient *AzureGoClient) ListLocations() ([]string, error) {
 	for pager.More() {
 		page, err := pager.NextPage(azureCtx)
 		if err != nil {
-			return nil, log.NewError(azureCtx, "failed to advance page", "Reason", err)
+			return nil, ksctlErrors.ErrInternal.Wrap(
+				log.NewError(azureCtx, "failed to advance page", "Reason", err),
+			)
 		}
 		for _, v := range page.Value {
 			validReg = append(validReg, *v.Name)
@@ -362,16 +462,30 @@ func (azclient *AzureGoClient) ListLocations() ([]string, error) {
 func (azclient *AzureGoClient) ListKubernetesVersions() (armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse, error) {
 	clientFactory, err := armcontainerservice.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse{}, log.NewError(azureCtx, "failed to create client", "Reason", err)
+		return armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse{},
+			ksctlErrors.ErrInternal.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
 
-	return clientFactory.NewManagedClustersClient().ListKubernetesVersions(azureCtx, azclient.Region, nil)
+	if res, err := clientFactory.
+		NewManagedClustersClient().
+		ListKubernetesVersions(azureCtx, azclient.Region, nil); err != nil {
+		return res, ksctlErrors.ErrInternal.Wrap(
+			log.NewError(azureCtx, "failed to get managed kubernetes versions", "Reason", err),
+		)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) ListVMTypes() ([]string, error) {
 	clientFactory, err := armcompute.NewClientFactory(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrInternal.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
 	pager := clientFactory.NewVirtualMachineSizesClient().NewListPager(azclient.Region, nil)
 
@@ -380,7 +494,9 @@ func (azclient *AzureGoClient) ListVMTypes() ([]string, error) {
 
 		page, err := pager.NextPage(azureCtx)
 		if err != nil {
-			return nil, log.NewError(azureCtx, "failed to advance page", "Reason", err)
+			return nil, ksctlErrors.ErrInternal.Wrap(
+				log.NewError(azureCtx, "failed to advance page", "Reason", err),
+			)
 		}
 		for _, v := range page.Value {
 			validSize = append(validSize, *v.Name)
@@ -392,7 +508,10 @@ func (azclient *AzureGoClient) ListVMTypes() ([]string, error) {
 func (azclient *AzureGoClient) PublicIPClient() (*armnetwork.PublicIPAddressesClient, error) {
 	client, err := armnetwork.NewPublicIPAddressesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
 	return client, nil
 }
@@ -400,162 +519,380 @@ func (azclient *AzureGoClient) PublicIPClient() (*armnetwork.PublicIPAddressesCl
 func (azclient *AzureGoClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
 	client, err := armresources.NewResourceGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return armresources.ResourceGroupsClientCreateOrUpdateResponse{}, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return armresources.ResourceGroupsClientCreateOrUpdateResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.CreateOrUpdate(azureCtx, azclient.ResourceGrp, parameters, options)
+	if res, err := client.CreateOrUpdate(azureCtx, azclient.ResourceGrp, parameters, options); err != nil {
+		return armresources.ResourceGroupsClientCreateOrUpdateResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create resource group", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteResourceGrp(options *armresources.ResourceGroupsClientBeginDeleteOptions) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error) {
 	client, err := armresources.NewResourceGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, options)
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete resource group", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginCreateVirtNet(virtualNetworkName string, parameters armnetwork.VirtualNetwork, options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error) {
 	client, err := armnetwork.NewVirtualNetworksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, virtualNetworkName, parameters, options)
+
+	if res, err := client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, virtualNetworkName, parameters, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create virtual network", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteVirtNet(virtualNetworkName string, options *armnetwork.VirtualNetworksClientBeginDeleteOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], error) {
 	client, err := armnetwork.NewVirtualNetworksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, virtualNetworkName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, virtualNetworkName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete virtual network", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginCreateSubNet(virtualNetworkName string, subnetName string, subnetParameters armnetwork.Subnet, options *armnetwork.SubnetsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], error) {
 	client, err := armnetwork.NewSubnetsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, virtualNetworkName,
-		subnetName, subnetParameters, options)
+
+	if res, err := client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, virtualNetworkName,
+		subnetName, subnetParameters, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create subnet", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteSubNet(virtualNetworkName string, subnetName string, options *armnetwork.SubnetsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SubnetsClientDeleteResponse], error) {
 	client, err := armnetwork.NewSubnetsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, virtualNetworkName, subnetName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, virtualNetworkName, subnetName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete subnet", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteSecurityGrp(networkSecurityGroupName string, options *armnetwork.SecurityGroupsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], error) {
 	client, err := armnetwork.NewSecurityGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, networkSecurityGroupName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, networkSecurityGroupName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete security group", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginCreateSecurityGrp(networkSecurityGroupName string, parameters armnetwork.SecurityGroup, options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error) {
 	client, err := armnetwork.NewSecurityGroupsClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, networkSecurityGroupName, parameters, options)
+
+	if res, err := client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, networkSecurityGroupName, parameters, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create security group", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) CreateSSHKey(sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource, options *armcompute.SSHPublicKeysClientCreateOptions) (armcompute.SSHPublicKeysClientCreateResponse, error) {
 	client, err := armcompute.NewSSHPublicKeysClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return armcompute.SSHPublicKeysClientCreateResponse{}, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return armcompute.SSHPublicKeysClientCreateResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.Create(azureCtx, azclient.ResourceGrp, sshPublicKeyName, parameters, options)
+
+	if res, err := client.Create(azureCtx, azclient.ResourceGrp, sshPublicKeyName, parameters, options); err != nil {
+		return armcompute.SSHPublicKeysClientCreateResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create sshkey", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) DeleteSSHKey(sshPublicKeyName string, options *armcompute.SSHPublicKeysClientDeleteOptions) (armcompute.SSHPublicKeysClientDeleteResponse, error) {
 	client, err := armcompute.NewSSHPublicKeysClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return armcompute.SSHPublicKeysClientDeleteResponse{}, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return armcompute.SSHPublicKeysClientDeleteResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.Delete(azureCtx, azclient.ResourceGrp, sshPublicKeyName, options)
+
+	if res, err := client.Delete(azureCtx, azclient.ResourceGrp, sshPublicKeyName, options); err != nil {
+		return armcompute.SSHPublicKeysClientDeleteResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete sshkey", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginCreateVM(vmName string, parameters armcompute.VirtualMachine, options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
 	client, err := armcompute.NewVirtualMachinesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, vmName, parameters, options)
+
+	if res, err := client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, vmName, parameters, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create virtual machine", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteVM(vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (*runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], error) {
 	client, err := armcompute.NewVirtualMachinesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, vmName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, vmName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete virtual machine", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteDisk(diskName string, options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error) {
 	client, err := armcompute.NewDisksClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, diskName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, diskName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete virtual disk", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginCreatePubIP(publicIPAddressName string, parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error) {
 	client, err := armnetwork.NewPublicIPAddressesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, publicIPAddressName, parameters, options)
+
+	if res, err := client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, publicIPAddressName, parameters, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create public IP", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeletePubIP(publicIPAddressName string, options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error) {
 	client, err := armnetwork.NewPublicIPAddressesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, publicIPAddressName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, publicIPAddressName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete public IP", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginCreateNIC(networkInterfaceName string, parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error) {
 	client, err := armnetwork.NewInterfacesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, networkInterfaceName, parameters, options)
+
+	if res, err := client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, networkInterfaceName, parameters, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create network interface", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteNIC(networkInterfaceName string, options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error) {
 	client, err := armnetwork.NewInterfacesClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, networkInterfaceName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, networkInterfaceName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete network interface", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginDeleteAKS(resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
 	client, err := armcontainerservice.NewManagedClustersClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginDelete(azureCtx, azclient.ResourceGrp, resourceName, options)
+
+	if res, err := client.BeginDelete(azureCtx, azclient.ResourceGrp, resourceName, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to delete aks", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) BeginCreateAKS(resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
 	client, err := armcontainerservice.NewManagedClustersClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return nil, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, resourceName, parameters, options)
+
+	if res, err := client.BeginCreateOrUpdate(azureCtx, azclient.ResourceGrp, resourceName, parameters, options); err != nil {
+		return nil,
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to create aks", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 func (azclient *AzureGoClient) ListClusterAdminCredentials(resourceName string, options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error) {
 	client, err := armcontainerservice.NewManagedClustersClient(azclient.SubscriptionID, azclient.AzureTokenCred, nil)
 	if err != nil {
-		return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{}, log.NewError(azureCtx, "failed in azure client", "Reason", err)
+		return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed in azure client", "Reason", err),
+			)
 	}
-	return client.ListClusterAdminCredentials(azureCtx, azclient.ResourceGrp, resourceName, options)
+
+	if res, err := client.ListClusterAdminCredentials(azureCtx, azclient.ResourceGrp, resourceName, options); err != nil {
+		return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{},
+			ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(azureCtx, "failed to list aks credentials", "Reason", err),
+			)
+	} else {
+		return res, nil
+	}
 }
 
 type AzureGoMockClient struct {
@@ -588,13 +925,13 @@ func (mock *AzureGoMockClient) ListKubernetesVersions() (armcontainerservice.Man
 		KubernetesVersionListResult: armcontainerservice.KubernetesVersionListResult{
 			Values: []*armcontainerservice.KubernetesVersion{
 				&armcontainerservice.KubernetesVersion{
-					Version: to.Ptr("1.27.1"),
+					Version: utilities.Ptr("1.27.1"),
 				},
 				&armcontainerservice.KubernetesVersion{
-					Version: to.Ptr("1.26"),
+					Version: utilities.Ptr("1.26"),
 				},
 				&armcontainerservice.KubernetesVersion{
-					Version: to.Ptr("1.27"),
+					Version: utilities.Ptr("1.27"),
 				},
 			},
 		},
@@ -608,7 +945,7 @@ func (mock *AzureGoMockClient) ListVMTypes() ([]string, error) {
 func (mock *AzureGoMockClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
 	return armresources.ResourceGroupsClientCreateOrUpdateResponse{
 		ResourceGroup: armresources.ResourceGroup{
-			Name: to.Ptr(mock.ResourceGrp),
+			Name: utilities.Ptr(mock.ResourceGrp),
 		},
 	}, nil
 }
@@ -690,7 +1027,7 @@ func (mock *AzureGoMockClient) ListClusterAdminCredentials(resourceName string, 
 		CredentialResults: armcontainerservice.CredentialResults{
 			Kubeconfigs: []*armcontainerservice.CredentialResult{
 				&armcontainerservice.CredentialResult{
-					Name:  to.Ptr("fake-kubeconfig"),
+					Name:  utilities.Ptr("fake-kubeconfig"),
 					Value: []byte("fake kubeconfig"),
 				},
 			},
@@ -706,8 +1043,8 @@ func (mock *AzureGoMockClient) PollUntilDoneDelNSG(ctx context.Context, poll *ru
 func (mock *AzureGoMockClient) PollUntilDoneCreateNSG(ctx context.Context, poll *runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
 	return armnetwork.SecurityGroupsClientCreateOrUpdateResponse{
 		SecurityGroup: armnetwork.SecurityGroup{
-			ID:   to.Ptr("XXYY"),
-			Name: to.Ptr("fake-firewall-123"),
+			ID:   utilities.Ptr("XXYY"),
+			Name: utilities.Ptr("fake-firewall-123"),
 		},
 	}, nil
 }
@@ -720,8 +1057,8 @@ func (mock *AzureGoMockClient) PollUntilDoneDelResourceGrp(ctx context.Context, 
 func (mock *AzureGoMockClient) PollUntilDoneCreateSubNet(ctx context.Context, poll *runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], options *runtime.PollUntilDoneOptions) (armnetwork.SubnetsClientCreateOrUpdateResponse, error) {
 	return armnetwork.SubnetsClientCreateOrUpdateResponse{
 		Subnet: armnetwork.Subnet{
-			ID:   to.Ptr("XXYY"),
-			Name: to.Ptr("fake-subnet-123"),
+			ID:   utilities.Ptr("XXYY"),
+			Name: utilities.Ptr("fake-subnet-123"),
 		},
 	}, nil
 }
@@ -735,8 +1072,8 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateVirtNet(ctx context.Context, p
 
 	return armnetwork.VirtualNetworksClientCreateOrUpdateResponse{
 		VirtualNetwork: armnetwork.VirtualNetwork{
-			ID:   to.Ptr("XXYY"),
-			Name: to.Ptr("fake-virt-net-123"),
+			ID:   utilities.Ptr("XXYY"),
+			Name: utilities.Ptr("fake-virt-net-123"),
 		},
 	}, nil
 }
@@ -751,7 +1088,7 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateAKS(ctx context.Context, poll 
 
 	return armcontainerservice.ManagedClustersClientCreateOrUpdateResponse{
 		ManagedCluster: armcontainerservice.ManagedCluster{
-			Name: to.Ptr("fake-ksctl-managed-resgrp"),
+			Name: utilities.Ptr("fake-ksctl-managed-resgrp"),
 		},
 	}, nil
 }
@@ -772,10 +1109,10 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateVM(ctx context.Context, poll *
 		VirtualMachine: armcompute.VirtualMachine{
 			Properties: &armcompute.VirtualMachineProperties{
 				OSProfile: &armcompute.OSProfile{
-					ComputerName: to.Ptr("fake-hostname"),
+					ComputerName: utilities.Ptr("fake-hostname"),
 				},
 			},
-			Name: to.Ptr("fake-vm-123"),
+			Name: utilities.Ptr("fake-vm-123"),
 		},
 	}, nil
 }
@@ -788,10 +1125,10 @@ func (mock *AzureGoMockClient) PollUntilDoneCreatePubIP(ctx context.Context, pol
 
 	return armnetwork.PublicIPAddressesClientCreateOrUpdateResponse{
 		PublicIPAddress: armnetwork.PublicIPAddress{
-			ID:   to.Ptr("fake-XXYYY"),
-			Name: to.Ptr("fake-pubip"),
+			ID:   utilities.Ptr("fake-XXYYY"),
+			Name: utilities.Ptr("fake-pubip"),
 			Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-				IPAddress: to.Ptr("A.B.C.D"),
+				IPAddress: utilities.Ptr("A.B.C.D"),
 			},
 		},
 	}, nil
@@ -806,13 +1143,13 @@ func (mock *AzureGoMockClient) PollUntilDoneCreateNetInterface(ctx context.Conte
 
 	return armnetwork.InterfacesClientCreateOrUpdateResponse{
 		Interface: armnetwork.Interface{
-			ID:   to.Ptr("XYYY"),
-			Name: to.Ptr("fake-nic-123"),
+			ID:   utilities.Ptr("XYYY"),
+			Name: utilities.Ptr("fake-nic-123"),
 			Properties: &armnetwork.InterfacePropertiesFormat{
 				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 					&armnetwork.InterfaceIPConfiguration{
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-							PrivateIPAddress: to.Ptr("192.168.1.2"),
+							PrivateIPAddress: utilities.Ptr("192.168.1.2"),
 						},
 					},
 				},
