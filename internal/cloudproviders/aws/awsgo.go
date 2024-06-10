@@ -362,7 +362,7 @@ func (awsclient *AwsGoClient) BeginDeleteVpc(ctx context.Context, storage ksctlT
 func (awsclient *AwsGoClient) BeginDeleteNIC(nicID string) error {
 	initialWater := time.Now()
 	// TODO(praful): use the helpers.Backoff
-	// also why do we wait for the nic to be available when it is deleting
+	//  also why do we wait for the nic to be available when it is deleting
 	for {
 		nic, err := awsclient.ec2Client.DescribeNetworkInterfaces(awsCtx, &ec2.DescribeNetworkInterfacesInput{
 			NetworkInterfaceIds: []string{nicID},
@@ -385,7 +385,6 @@ func (awsclient *AwsGoClient) BeginDeleteNIC(nicID string) error {
 		NetworkInterfaceId: aws.String(nicID),
 	})
 	if err != nil {
-		// TODO(praful): need to fix this
 		log.Success(awsCtx, "skipped already deleted the nic", "id", nicID)
 		return nil
 	}
@@ -680,24 +679,24 @@ func (awsclient *AwsGoClient) setRequiredENVVAR(storage ksctlTypes.StorageFactor
 
 	log.Debug(awsCtx, msg)
 
-	credentials, err := storage.ReadCredentials(consts.CloudAws)
+	credentialsDocument, err := storage.ReadCredentials(consts.CloudAws)
 	if err != nil {
 		return err
 	}
 
-	if credentials.Aws == nil {
+	if credentialsDocument.Aws == nil {
 		return ksctlErrors.ErrNilCredentials.Wrap(
 			log.NewError(awsCtx, "no entry for aws present"),
 		)
 	}
 
-	err = os.Setenv("AWS_ACCESS_KEY_ID", credentials.Aws.AccessKeyId)
+	err = os.Setenv("AWS_ACCESS_KEY_ID", credentialsDocument.Aws.AccessKeyId)
 	if err != nil {
 		return ksctlErrors.ErrUnknown.Wrap(
 			log.NewError(awsCtx, "failed to set environmenet variable", "Reason", err),
 		)
 	}
-	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentials.Aws.SecretAccessKey)
+	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentialsDocument.Aws.SecretAccessKey)
 	if err != nil {
 		return ksctlErrors.ErrUnknown.Wrap(
 			log.NewError(awsCtx, "failed to set environmenet variable", "Reason", err),
@@ -737,7 +736,6 @@ func (awsclient *AwsGoClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, er
 		},
 	}
 
-	// TODO(praful): why is their a infinite loop here
 	for {
 		output, err := awsclient.ec2Client.DescribeInstanceTypes(awsCtx, input)
 		if err != nil {
