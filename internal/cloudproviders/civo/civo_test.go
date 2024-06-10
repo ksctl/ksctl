@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 		Region:      "LON1",
 		Provider:    consts.CloudCivo,
 		IsHA:        true,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudCivo, "LON1", "demo", consts.ClusterTypeHa)
@@ -443,7 +443,7 @@ func TestManagedCluster(t *testing.T) {
 			ClusterName: "demo-managed",
 			Region:      "LON1",
 			Provider:    consts.CloudCivo,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 		storeManaged = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudCivo, "LON1", "demo-managed", consts.ClusterTypeMang)
@@ -543,7 +543,7 @@ func TestHACluster(t *testing.T) {
 		NoDS:        5,
 		NoWP:        10,
 		K8sDistro:   consts.K8sK3s,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudCivo, "LON1", "demo-ha", consts.ClusterTypeHa)

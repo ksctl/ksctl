@@ -3,10 +3,8 @@ package civo
 import (
 	"context"
 	"encoding/json"
-	"strings"
-	"sync"
-
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"strings"
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -16,43 +14,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 	cloud_control_res "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
-
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	clusterType       consts.KsctlClusterType // it stores the ha or managed
-	civoCtx           context.Context
-	log               types.LoggerFactory
-)
-
-type metadata struct {
-	public bool
-
-	// purpose: application in managed cluster
-	apps string
-	cni  string
-	// these are used for managing the state and are the size of the arrays
-	noCP int
-	noWP int
-	noDS int
-
-	k8sVersion string
-}
-
-type CivoProvider struct {
-	clusterName string
-	haCluster   bool
-	region      string
-
-	mu sync.Mutex
-
-	metadata
-
-	chResName chan string
-	chRole    chan consts.KsctlRole
-	chVMType  chan string
-
-	client CivoGo
-}
 
 func (*CivoProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
