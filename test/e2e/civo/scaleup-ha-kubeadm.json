@@ -1,7 +1,7 @@
 {
 	"cluster_name": "test-e2e-kubeadm-ha-civo",
 	"kubernetes_version": "1.28",
-	"region": "PHX1",
+	"region": "phx1",
 	"ha_cluster": true,
 	"cloud_provider": "civo",
 	"kubernetes_distro": "kubeadm",

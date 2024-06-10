@@ -1,7 +1,7 @@
 {
 	"cluster_name": "test-e2e-civo",
 	"kubernetes_version": "1.28.7",
-	"region": "LON1",
+	"region": "lon1",
 	"ha_cluster": false,
 	"cloud_provider": "civo",
 	"storage_type": "store-local",
