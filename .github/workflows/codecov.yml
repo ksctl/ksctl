@@ -109,7 +109,7 @@ jobs:
       working-directory: test
       run: |
         export KSCTL_FAKE_FLAG_ENABLED="1"
-        go test -tags testing_aws,testing_civo,testing_azure -bench=. -benchtime=1x -coverprofile=../coverage-mock-test.out -covermode=atomic -v
+        go test -tags testing_local,testing_aws,testing_civo,testing_azure -bench=. -benchtime=1x -coverprofile=../coverage-mock-test.out -covermode=atomic -v
         cd ../
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

@@ -157,6 +157,7 @@ func CivoTestingManaged() error {
 func LocalTestingManaged() error {
 	cli.Metadata.Provider = consts.CloudLocal
 	cli.Metadata.NoMP = 5
+	cli.Metadata.K8sVersion = "1.30.0"
 
 	return ExecuteManagedRun()
 }

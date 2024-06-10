@@ -167,7 +167,7 @@ unit_test_ksctl_stateimport: golang-test ## ksctl-stateimport unit test case
 mock_all: golang-test ## All Mock tests
 	@echo "Mock Test (integration)"
 	cd test/ && \
-		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws,testing_civo,testing_azure -bench=. -benchtime=1x -cover -v
+		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws,testing_civo,testing_azure,testing_local -bench=. -benchtime=1x -cover -v
 
 .PHONY: mock-civo-ha
 mock_civo_ha: golang-test ## Civo HA mock test
@@ -198,7 +198,7 @@ mock_aws_ha: golang-test ## Aws HA mock test
 .PHONY: mock-local-managed
 mock_local_managed: golang-test ## Local managed mock test
 	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_local -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
 
 
 ##@ Complete Testing (Core)
