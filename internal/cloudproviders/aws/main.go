@@ -195,15 +195,15 @@ func (obj *AwsProvider) InitState(storage types.StorageFactory, opration consts.
 		)
 	}
 
+	if err := obj.client.InitClient(storage); err != nil {
+		return err
+	}
+
 	if err := validationOfArguments(obj); err != nil {
 		return err
 	}
 
 	obj.client.SetRegion(obj.region)
-
-	if err := obj.client.InitClient(storage); err != nil {
-		return err
-	}
 
 	log.Debug(awsCtx, "init cloud state")
 
