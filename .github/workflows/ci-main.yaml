@@ -19,6 +19,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   trigger-oci-artifact-build-push:
     uses: ./.github/workflows/docker.yaml
