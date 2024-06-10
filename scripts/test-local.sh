@@ -9,4 +9,4 @@ echo "|   Testing (internal/cloudproviders/local)"
 echo "--------------------------------------------"
 
 cd cloudproviders/local/
-GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC -tags testing_local . -v && cd -

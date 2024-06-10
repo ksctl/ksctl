@@ -26,47 +26,31 @@ func InitLogger(ctx context.Context, _log types.LoggerFactory) {
 	controllerCtx = ctx
 }
 
-func InitCloud(client *types.KsctlClient, state *storageTypes.StorageDocument, operation consts.KsctlOperation, fakeClient bool) error {
+func InitCloud(client *types.KsctlClient, state *storageTypes.StorageDocument, operation consts.KsctlOperation) error {
 
 	var err error
 	switch client.Metadata.Provider {
 	case consts.CloudCivo:
-		if !fakeClient {
-			client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, state, civoPkg.ProvideClient)
-		} else {
-			client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, state, civoPkg.ProvideMockClient)
-		}
+		client.Cloud, err = civoPkg.NewClient(controllerCtx, client.Metadata, log, state, civoPkg.ProvideClient)
 
 		if err != nil {
 			return err
 		}
 	case consts.CloudAzure:
-		if !fakeClient {
-			client.Cloud, err = azurePkg.NewClient(controllerCtx, client.Metadata, log, state, azurePkg.ProvideClient)
-		} else {
-			client.Cloud, err = azurePkg.NewClient(controllerCtx, client.Metadata, log, state, azurePkg.ProvideMockClient)
-		}
+		client.Cloud, err = azurePkg.NewClient(controllerCtx, client.Metadata, log, state, azurePkg.ProvideClient)
 
 		if err != nil {
 			return err
 		}
 	case consts.CloudAws:
-		if !fakeClient {
-			client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, state, awsPkg.ProvideClient)
-		} else {
-			client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, state, awsPkg.ProvideMockClient)
-		}
+		client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, state, awsPkg.ProvideClient)
 
 		if err != nil {
 			return err
 		}
 
 	case consts.CloudLocal:
-		if !fakeClient {
-			client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, state, localPkg.ProvideClient)
-		} else {
-			client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, state, localPkg.ProvideMockClient)
-		}
+		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, state, localPkg.ProvideClient)
 
 		if err != nil {
 			return err

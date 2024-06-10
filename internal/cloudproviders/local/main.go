@@ -13,28 +13,6 @@ import (
 	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
-type metadata struct {
-	resName           string
-	version           string
-	tempDirKubeconfig string
-	cni               string
-}
-
-type LocalProvider struct {
-	clusterName string
-	region      string
-	vmType      string
-	metadata
-
-	client LocalGo
-}
-
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	log               types.LoggerFactory
-	localCtx          context.Context
-)
-
 func (*LocalProvider) GetStateFile(types.StorageFactory) (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {

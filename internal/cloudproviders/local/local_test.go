@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 		ClusterName: "demo",
 		Region:      "LOCAL",
 		Provider:    consts.CloudLocal,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 	exitVal := m.Run()
 	fmt.Println("Cleanup..")
@@ -226,7 +226,7 @@ func TestManagedCluster(t *testing.T) {
 			ClusterName: "demo-managed",
 			Region:      "LOCAL",
 			Provider:    consts.CloudLocal,
-		}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+		}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 		storeManaged = localstate.NewClient(parentCtx, parentLogger)
 		_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)

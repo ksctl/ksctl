@@ -5,7 +5,6 @@ import (
 
 	bootstrapController "github.com/ksctl/ksctl/pkg/controllers/bootstrap"
 	cloudController "github.com/ksctl/ksctl/pkg/controllers/cloud"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -72,12 +71,7 @@ func (manager *ManagerClusterKubernetes) ApplicationsAndCni(op consts.KsctlOpera
 		}
 	}()
 
-	fakeClient := false
-	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
-		fakeClient = true
-	}
-
-	if err := cloudController.InitCloud(client, stateDocument, consts.OperationGet, fakeClient); err != nil {
+	if err := cloudController.InitCloud(client, stateDocument, consts.OperationGet); err != nil {
 		log.Error("handled error", "catch", err)
 		return err
 	}
