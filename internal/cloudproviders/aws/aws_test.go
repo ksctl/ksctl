@@ -20,6 +20,7 @@ import (
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"gotest.tools/v3/assert"
 )
@@ -112,23 +113,20 @@ func TestInitState(t *testing.T) {
 	})
 }
 
-// Test for the Noof WP and setter and getter
 func TestNoOfControlPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfControlPlane(-1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
 		t.Fatalf("Getter failed on unintalized controlplanes array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(1, true)
-	// it should return error
-	if err == nil {
+	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
 		t.Fatalf("setter should fail on when no < 3 controlplanes provided_no: %d", 1)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(5, true)
-	// it should return error
 	if err != nil {
 		t.Fatalf("setter should not fail on when n >= 3 controlplanes err: %v", err)
 	}
@@ -143,12 +141,12 @@ func TestNoOfDataStore(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
 		t.Fatalf("Getter failed on unintalized datastore array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(0, true)
-	if err == nil {
+	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
 		t.Fatalf("setter should fail on when no < 3 datastore provided_no: %d", 1)
 	}
 
@@ -167,13 +165,12 @@ func TestNoOfWorkerPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfWorkerPlane(storeVars, -1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfWorkerplane.Is(err)) {
 		t.Fatalf("Getter failed on unintalized workerplane array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfWorkerPlane(storeVars, 2, true)
-	// it shouldn't return err
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil {
 		t.Fatalf("setter should not fail on when no >= 0 workerplane provided_no: %d", 2)
 	}
 
@@ -433,7 +430,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeHA.Read()
-		if os.IsExist(err) {
+		if err == nil {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
 	})

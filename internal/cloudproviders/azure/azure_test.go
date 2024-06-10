@@ -19,6 +19,7 @@ import (
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 	"gotest.tools/v3/assert"
@@ -113,18 +114,16 @@ func TestNoOfControlPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfControlPlane(-1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
 		t.Fatalf("Getter failed on unintalized controlplanes array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(1, true)
-	// it should return error
-	if err == nil {
+	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
 		t.Fatalf("setter should fail on when no < 3 controlplanes provided_no: %d", 1)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(5, true)
-	// it should return error
 	if err != nil {
 		t.Fatalf("setter should not fail on when n >= 3 controlplanes err: %v", err)
 	}
@@ -139,12 +138,12 @@ func TestNoOfDataStore(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
 		t.Fatalf("Getter failed on unintalized datastore array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(0, true)
-	if err == nil {
+	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
 		t.Fatalf("setter should fail on when no < 3 datastore provided_no: %d", 1)
 	}
 
@@ -163,13 +162,12 @@ func TestNoOfWorkerPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfWorkerPlane(storeVars, -1, false)
-	if no != -1 || err == nil {
+	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfWorkerplane.Is(err)) {
 		t.Fatalf("Getter failed on unintalized workerplane array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfWorkerPlane(storeVars, 2, true)
-	// it shouldn't return err
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil {
 		t.Fatalf("setter should not fail on when no >= 0 workerplane provided_no: %d", 2)
 	}
 
@@ -223,7 +221,6 @@ func TestResName(t *testing.T) {
 	if ret := fakeClientVars.Name("12demo"); ret != nil {
 		t.Fatalf("returned interface for invalid res name")
 	}
-	//_ = <-fakeClientVars.chResName
 }
 
 func TestRole(t *testing.T) {
@@ -240,7 +237,6 @@ func TestRole(t *testing.T) {
 	if ret := fakeClientVars.Role("fake"); ret != nil {
 		t.Fatalf("returned interface for invalid role")
 	}
-	//_ = <-fakeClientVars.chRole
 }
 
 func TestVMType(t *testing.T) {
@@ -255,7 +251,6 @@ func TestVMType(t *testing.T) {
 	if ret := fakeClientVars.VMType(""); ret != nil {
 		t.Fatalf("returned interface for invalid vm type")
 	}
-	//_ = <-fakeClientVars.chVMType
 }
 
 func TestVisibility(t *testing.T) {
@@ -264,7 +259,6 @@ func TestVisibility(t *testing.T) {
 	}
 }
 
-// Mock the return of ValidListOfRegions
 func TestRegion(t *testing.T) {
 
 	forTesting := map[string]error{
@@ -281,8 +275,6 @@ func TestRegion(t *testing.T) {
 }
 
 func TestK8sVersion(t *testing.T) {
-	// these are invalid
-	// input and output
 	forTesting := []string{
 		"1.27.1",
 		"1.27",
@@ -440,7 +432,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeManaged.Read()
-		if os.IsExist(err) {
+		if err == nil {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
 	})
@@ -458,13 +450,12 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.IsCompleted, true, "cluster should not be completed")
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.NoManagedNodes, 5)
-		//assert.Equal(t, mainStateDocument.BootstrapProvider, "managed")
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.KubernetesVer, fakeClientManaged.metadata.k8sVersion)
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) > 0, "Managed cluster Name not saved")
 
 		_, err := storeManaged.Read()
-		if os.IsNotExist(err) {
-			t.Fatalf("kubeconfig should not be absent")
+		if err != nil {
+			t.Fatalf("kubeconfig should be present: %v", err)
 		}
 		checkCurrentStateFile(t)
 	})
@@ -501,7 +492,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, len(mainStateDocument.CloudInfra.Azure.ResourceGroupName), 0, "resource grp still present")
 		// at this moment the file is not present
 		_, err := storeManaged.Read()
-		if os.IsExist(err) {
+		if err == nil {
 			t.Fatalf("State file and cluster directory still present")
 		}
 	})
@@ -538,7 +529,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeHA.Read()
-		if os.IsExist(err) {
+		if err == nil {
 			t.Fatalf("State file and cluster directory present where it should not be")
 		}
 	})

@@ -6,8 +6,6 @@ import (
 )
 
 var (
-	ErrMissingArgument        = ksctlGlobalErr("MissingArgumentErr")
-	ErrMissingConfiguration   = ksctlGlobalErr("MissingConfigurationErr")
 	ErrNilCredentials         = ksctlGlobalErr("NilCredentialsErr")
 	ErrTimeOut                = ksctlGlobalErr("TimeoutErr")
 	ErrContextCancelled       = ksctlGlobalErr("ContextCancelledErr")
@@ -28,25 +26,19 @@ var (
 	ErrInvalidResourceName          = ksctlGlobalErr("InvalidResourceNameErr")
 	ErrInvalidVersion               = ksctlGlobalErr("InvalidVersion")
 	ErrInvalidNoOfControlplane      = ksctlGlobalErr("InvalidNoOfControlplaneErr")
-	ErrInvalidNoOfLoadbalancer      = ksctlGlobalErr("InvalidNoOfLoadbalancerErr")
 	ErrInvalidNoOfDatastore         = ksctlGlobalErr("InvalidNoOfDatastoreErr")
 	ErrInvalidNoOfWorkerplane       = ksctlGlobalErr("InvalidNoOfWorkerplaneErr")
 	ErrInvalidKsctlComponentVersion = ksctlGlobalErr("InvalidKsctlComponentVersionErr")
 
-	ErrFailedCloudResourceQuotaLimitReached = ksctlGlobalErr("FailedCloudResourceQuotaLimitReachedErr")
-	ErrFailedCloudAccountAuth               = ksctlGlobalErr("FailedCloudAccountAuthErr")
-	ErrInvalidCloudRegion                   = ksctlGlobalErr("InvalidCloudRegionErr")
-	ErrInvalidCloudVMSize                   = ksctlGlobalErr("InvalidCloudVMSizeErr")
+	ErrFailedCloudAccountAuth = ksctlGlobalErr("FailedCloudAccountAuthErr")
+	ErrInvalidCloudRegion     = ksctlGlobalErr("InvalidCloudRegionErr")
+	ErrInvalidCloudVMSize     = ksctlGlobalErr("InvalidCloudVMSizeErr")
 
 	ErrFailedKsctlComponent              = ksctlGlobalErr("FailedKsctlComponentErr")
 	ErrFailedKubernetesClient            = ksctlGlobalErr("FailedKubernetesClientErr")
 	ErrFailedHelmClient                  = ksctlGlobalErr("FailedHelmClientErr")
 	ErrFailedKsctlClusterOperation       = ksctlGlobalErr("FailedKsctlClusterOperationErr")
 	ErrFailedGenerateCertificates        = ksctlGlobalErr("FailedGenerateCertificatesErr")
-	ErrFailedInitDatastore               = ksctlGlobalErr("FailedInitDatastoreErr")
-	ErrFailedInitControlplane            = ksctlGlobalErr("FailedInitControlplaneErr")
-	ErrFailedInitWorkerplane             = ksctlGlobalErr("FailedInitWorkerplaneErr")
-	ErrFailedInitLoadbalancer            = ksctlGlobalErr("FailedInitLoadbalancerErr")
 	ErrFailedConnectingKubernetesCluster = ksctlGlobalErr("FailedConnectingKubernetesClusterErr")
 )
 
