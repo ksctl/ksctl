@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
-
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -16,40 +14,6 @@ import (
 
 	cloudcontrolres "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
-
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	clusterType       consts.KsctlClusterType
-	log               types.LoggerFactory
-	awsCtx            context.Context
-)
-
-type metadata struct {
-	public bool
-	cni    string
-
-	noCP int
-	noWP int
-	noDS int
-
-	k8sVersion string
-}
-
-type AwsProvider struct {
-	clusterName string
-	haCluster   bool
-	region      string
-	vpc         string
-	metadata    metadata
-
-	mu sync.Mutex
-
-	chResName chan string
-	chRole    chan consts.KsctlRole
-	chVMType  chan string
-
-	client AwsGo
-}
 
 func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlClusterType, name, region string) error {
 

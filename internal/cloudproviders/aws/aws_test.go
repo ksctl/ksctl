@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 		Region:      "fake-region",
 		Provider:    consts.CloudAws,
 		IsHA:        true,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideMockClient)
+	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeHa)
@@ -410,7 +410,7 @@ func TestHACluster(t *testing.T) {
 		NoDS:        5,
 		NoWP:        10,
 		K8sDistro:   consts.K8sK3s,
-	}, parentLogger, mainStateDocument, ProvideMockClient)
+	}, parentLogger, mainStateDocument, ProvideClient)
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAws, "fake-region", "demo-ha", consts.ClusterTypeHa)
