@@ -46,21 +46,21 @@ echo "|   Testing (internal/cloudproviders/civo)"
 echo "--------------------------------------------"
 
 cd cloudproviders/civo/
-GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC -tags testing_civo . -v && cd -
 
 echo "--------------------------------------------"
 echo "|   Testing (internal/cloudproviders/azure)"
 echo "--------------------------------------------"
 
 cd cloudproviders/azure/
-GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC -tags testing_azure . -v && cd -
 
 echo "--------------------------------------------"
 echo "|   Testing (internal/cloudproviders/aws)"
 echo "--------------------------------------------"
 
 cd cloudproviders/aws/
-GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC -tags testing_aws . -v && cd -
 
 echo "--------------------------------------------"
 echo "|   Testing (internal/storage/local)"

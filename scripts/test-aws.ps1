@@ -15,4 +15,4 @@ Write-Output "|   Testing (internal/cloudproviders/aws)"
 Write-Output "--------------------------------------------"
 
 Set-Location cloudproviders\aws
-go test . -v && Set-Location -
+go test -tags testing_aws . -v && Set-Location -

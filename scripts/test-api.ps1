@@ -51,15 +51,21 @@ Write-Output "|   Testing (internal/cloudproviders/civo)"
 Write-Output "--------------------------------------------"
 
 Set-Location cloudproviders\civo
-go test . -v && Set-Location -
+go test -tags testing_civo . -v && Set-Location -
 
 Write-Output "--------------------------------------------"
 Write-Output "|   Testing (internal/cloudproviders/azure)"
 Write-Output "--------------------------------------------"
 
 Set-Location cloudproviders\azure
-go test . -v && Set-Location -
+go test -tags testing_azure . -v && Set-Location -
 
+Write-Output "--------------------------------------------"
+Write-Output "|   Testing (internal/cloudproviders/aws)"
+Write-Output "--------------------------------------------"
+
+Set-Location cloudproviders\aws
+go test -tags testing_aws . -v && Set-Location -
 
 Write-Output "--------------------------------------------"
 Write-Output "|   Testing (internal/storage/local)"
