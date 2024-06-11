@@ -24,7 +24,7 @@
 
    [![ci-test-go](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml)
   [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
-  [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7469/badge)](https://bestpractices.coreinfrastructure.org/projects/7469)
+  [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469)
 </div>
 
 
