@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -11,10 +12,10 @@ import (
 
 func (obj *AwsProvider) DelNetwork(storage ksctlTypes.StorageFactory) error {
 
-	if len(mainStateDocument.CloudInfra.Aws.SubnetID) == 0 {
+	if len(mainStateDocument.CloudInfra.Aws.SubnetIDs) == 0 {
 		log.Print(awsCtx, "skipped already deleted the vpc", "name", mainStateDocument.CloudInfra.Aws.VpcName)
 	} else {
-		err := obj.DeleteSubnet(awsCtx, storage, mainStateDocument.CloudInfra.Aws.SubnetID)
+		err := obj.DeleteSubnet(awsCtx, storage, mainStateDocument.CloudInfra.Aws.SubnetIDs)
 		if err != nil {
 			return err
 		}
@@ -43,13 +44,14 @@ func (obj *AwsProvider) DelNetwork(storage ksctlTypes.StorageFactory) error {
 	return nil
 }
 
-func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetName string) error {
+func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID []string) error {
 
-	err := obj.client.BeginDeleteSubNet(ctx, storage, subnetName)
-	if err != nil {
-		return err
-	}
-	mainStateDocument.CloudInfra.Aws.SubnetID = ""
+	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
+		err := obj.client.BeginDeleteSubNet(ctx, storage, subnetID[i])
+		if err != nil {
+			return err
+		}
+		mainStateDocument.CloudInfra.Aws.SubnetIDs[i] = ""
 
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err
@@ -121,19 +123,19 @@ func (obj *AwsProvider) NewNetwork(storage ksctlTypes.StorageFactory) error {
 
 	}
 
-	if obj.haCluster {
-		virtNet := obj.clusterName + "-vnet"
-		subNet := obj.clusterName + "-subnet"
+	// if obj.haCluster {
+	virtNet := obj.clusterName + "-vnet"
+	subNet := obj.clusterName + "-subnet"
 
-		if err := obj.CreateSubnet(awsCtx, storage, subNet); err != nil {
-			return err
-		}
-
-		if err := obj.CreateVirtualNetwork(awsCtx, storage, virtNet); err != nil {
-			return err
-		}
-
+	if err := obj.CreateSubnet(awsCtx, storage, subNet); err != nil {
+		return err
 	}
+
+	if err := obj.CreateVirtualNetwork(awsCtx, storage, virtNet); err != nil {
+		return err
+	}
+
+	// }
 
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err
@@ -149,46 +151,49 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage ksctlTypes.Sto
 		return err
 	}
 
-	log.Print(awsCtx, "Selected availability zone", "zone", *zones.AvailabilityZones[0].ZoneName)
+	subnets := []string{"172.31.0.0/20", "172.31.32.0/20", "172.31.16.0/20"}
 
-	if len(mainStateDocument.CloudInfra.Aws.SubnetID) != 0 {
-		log.Print(awsCtx, "skipped already created the subnet", mainStateDocument.CloudInfra.Aws.SubnetID)
+	if len(mainStateDocument.CloudInfra.Aws.SubnetIDs) != 0 {
+		log.Print(awsCtx, "skipped already created the subnet", mainStateDocument.CloudInfra.Aws.SubnetIDs)
 	} else {
+		for i := 0; i < 3; i++ {
+			parameter := ec2.CreateSubnetInput{
+				CidrBlock: aws.String(subnets[i]),
+				VpcId:     aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
 
-		parameter := ec2.CreateSubnetInput{
-			CidrBlock: aws.String("172.31.32.0/20"),
-			VpcId:     aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
-
-			TagSpecifications: []types.TagSpecification{
-				{
-					ResourceType: types.ResourceType("subnet"),
-					Tags: []types.Tag{
-						{
-							Key:   aws.String("Name"),
-							Value: aws.String(obj.clusterName + "-subnet"),
+				TagSpecifications: []types.TagSpecification{
+					{
+						ResourceType: types.ResourceType("subnet"),
+						Tags: []types.Tag{
+							{
+								Key:   aws.String("Name"),
+								Value: aws.String(obj.clusterName + "-subnet" + strconv.Itoa(i)),
+							},
 						},
 					},
 				},
-			},
-			AvailabilityZone: aws.String(*zones.AvailabilityZones[0].ZoneName),
-		}
-		response, err := obj.client.BeginCreateSubNet(ctx, subnetName, parameter)
-		if err != nil {
-			return err
-		}
+				AvailabilityZone: aws.String(*zones.AvailabilityZones[i].ZoneName),
+			}
 
-		mainStateDocument.CloudInfra.Aws.SubnetID = *response.Subnet.SubnetId
-		mainStateDocument.CloudInfra.Aws.SubnetName = *response.Subnet.Tags[0].Value
+			log.Print(awsCtx, "Selected availability zone", "zone", *zones.AvailabilityZones[i].ZoneName)
+			response, err := obj.client.BeginCreateSubNet(ctx, subnetName, parameter)
+			if err != nil {
+				return err
+			}
 
-		if err := obj.client.ModifySubnetAttribute(ctx); err != nil {
-			return err
+			mainStateDocument.CloudInfra.Aws.SubnetIDs = append(mainStateDocument.CloudInfra.Aws.SubnetIDs, *response.Subnet.SubnetId)
+			mainStateDocument.CloudInfra.Aws.SubnetName = append(mainStateDocument.CloudInfra.Aws.SubnetName, *response.Subnet.Tags[0].Value)
+
+			if err := obj.client.ModifySubnetAttribute(ctx, i); err != nil {
+				return err
+			}
+
+			if err := storage.Write(mainStateDocument); err != nil {
+				return err
+			}
+
+			log.Success(awsCtx, "created the subnet", "id", *response.Subnet.Tags[0].Value)
 		}
-
-		if err := storage.Write(mainStateDocument); err != nil {
-			return err
-		}
-
-		log.Success(awsCtx, "created the subnet", "id", *response.Subnet.Tags[0].Value)
 
 		naclinput := ec2.CreateNetworkAclInput{
 			VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
