@@ -5,90 +5,192 @@ on:
   workflow_call:
 
 jobs:
-  setup:
+  create-infra:
     env:
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
-
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      matrix:
-        runner: [svr-1, svr-2]
-    steps:
-      - name: remove the .ksctl
-        run: |
-          rm -rf ${HOME}/.ksctl
-
-  builder:
-    environment: runners
-    env:
-      PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
-      SSH_USER_SVR: ${{secrets.SSH_USER_SVR}}
+    environment: e2e
 
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: test/gh-runner
     steps:
       - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: setup ansible latest
+        run: |
+          sudo apt update -y
+          sudo apt install software-properties-common -y
+          sudo add-apt-repository --yes --update ppa:ansible/ansible
+          sudo apt install ansible -y
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
-      - name: building amd64 binary
-        working-directory: test/e2e
+
+      - name: terraform init
+        working-directory: test/gh-runner/infra
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
+          TF_VAR_hcloud_token: ${{ secrets.HETZNER_TOKEN }}
         run: |
-          GOOS="linux" GOARCH="amd64" go build -v -o ksctl-e2e-amd64 .
+          terraform init
 
       - name: ssh setup
         env:
-          SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
-          SSH_HOST_SVR_1: ${{secrets.SSH_HOST_SVR_1}}
-          SSH_HOST_SVR_2: ${{secrets.SSH_HOST_SVR_2}}
+          E2E_SSH_PVT_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+          E2E_SSH_PUB_KEY: ${{secrets.SSH_PUBLIC_KEY}}
         run: |
+          set -e
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          echo "$E2E_SSH_PVT_KEY" > ~/.ssh/id_ed25519
+          echo "$E2E_SSH_PUB_KEY" > ~/.ssh/id_ed25519.pub
           chmod 400 ~/.ssh/id_ed25519
-          cat <<EOF > ~/.ssh/config
-          Host server_1
-              HostName $SSH_HOST_SVR_1
-              User $SSH_USER_SVR
-              IdentityFile ~/.ssh/id_ed25519
-              StrictHostKeyChecking no
-          Host server_2
-              HostName $SSH_HOST_SVR_2
-              User $SSH_USER_SVR
-              IdentityFile ~/.ssh/id_ed25519
-              StrictHostKeyChecking no
-          EOF
+          chmod 644 ~/.ssh/id_ed25519.pub
 
-      - name: transfer binary to svr-1
+      - name: terraform apply
+        working-directory: test/gh-runner/infra
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
+          TF_VAR_hcloud_token: ${{ secrets.HETZNER_TOKEN }}
+          TF_VAR_ssh_pvt_loc: ~/.ssh/id_ed25519
+          TF_VAR_ssh_pub_loc: ~/.ssh/id_ed25519.pub
+        run: |
+          terraform apply --auto-approve
+
+      - name: extract the public ip and configure the ansible inventory
+        working-directory: test/gh-runner/infra
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
+        run: |
+          KSCTL_RUNNER_IP=$(terraform output -json ip_address | jq -r '.|join(",")')
+          cd ../configure/templates
+          go run writeInventory.go \
+            -ips $KSCTL_RUNNER_IP \
+            -user root \
+            -ssh-pvt-loc ~/.ssh/id_ed25519 \
+            -inventory-loc /tmp/inventory.ini
+
+      - name: building amd64 binary
         working-directory: test/e2e
         run: |
-          rsync -vzh ./ksctl-e2e-amd64 server_1:/home/$SSH_USER_SVR/actions-runner/ksctl-bin/
+          GOOS="linux" GOARCH="amd64" go build -v -o /tmp/ksctl-e2e-amd64 .
 
-      - name: transfer binary to svr-2
-        working-directory: test/e2e
+      - name: add VM as github runner
+        working-directory: test/gh-runner/configure
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT_CUSTOM_RUNNER }}
+          ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          rsync -vzh ./ksctl-e2e-amd64 server_2:/home/$SSH_USER_SVR/actions-runner/ksctl-bin/
+          ansible-playbook -i /tmp/inventory.ini setup.yml
+
+      - name: transfer binary
+        working-directory: test/gh-runner/configure
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          ansible-playbook -i /tmp/inventory.ini transfer.yml
 
   local-e2e:
     uses: ./.github/workflows/e2e-local.yml
-    needs: ["builder", "setup"]
+    needs: ["create-infra"]
     secrets: inherit
 
   civo-e2e:
     uses: ./.github/workflows/e2e-civo.yml
-    needs: ["builder", "setup"]
+    needs: ["create-infra"]
     secrets: inherit
 
   azure-e2e:
     uses: ./.github/workflows/e2e-azure.yml
-    needs: ["builder", "setup"]
+    needs: ["create-infra"]
     secrets: inherit
 
   aws-e2e:
     uses: ./.github/workflows/e2e-aws.yml
-    needs: ["builder", "setup"]
+    needs: ["create-infra"]
     secrets: inherit
 
+  destroy_infra:
+    if: always()
+    needs: [local-e2e, azure-e2e, civo-e2e, aws-e2e]
+
+    env:
+      PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
+    environment: e2e
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: setup ansible latest
+        run: |
+          sudo apt update -y
+          sudo apt install software-properties-common -y
+          sudo add-apt-repository --yes --update ppa:ansible/ansible
+          sudo apt install ansible -y
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      - name: terraform init
+        working-directory: test/gh-runner/infra
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
+          TF_VAR_hcloud_token: ${{ secrets.HETZNER_TOKEN }}
+        run: |
+          terraform init
+
+      - name: ssh setup
+        env:
+          E2E_SSH_PVT_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+          E2E_SSH_PUB_KEY: ${{secrets.SSH_PUBLIC_KEY}}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$E2E_SSH_PVT_KEY" > ~/.ssh/id_ed25519
+          echo "$E2E_SSH_PUB_KEY" > ~/.ssh/id_ed25519.pub
+          chmod 400 ~/.ssh/id_ed25519
+          chmod 644 ~/.ssh/id_ed25519.pub
+
+      - name: extract the public ip and configure the ansible inventory
+        working-directory: test/gh-runner/infra
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
+        run: |
+          KSCTL_RUNNER_IP=$(terraform output -json ip_address | jq -r '.|join(",")')
+          cd ../configure/templates
+          go run writeInventory.go \
+            -ips $KSCTL_RUNNER_IP \
+            -user root \
+            -ssh-pvt-loc ~/.ssh/id_ed25519 \
+            -inventory-loc /tmp/inventory.ini
+
+      - name: rm VM as github runner
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT_CUSTOM_RUNNER }}
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        working-directory: test/gh-runner/configure
+        run: |
+          ansible-playbook -i /tmp/inventory.ini destroy.yml
+
+      - name: terraform destroy
+        working-directory: test/gh-runner/infra
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
+          TF_VAR_hcloud_token: ${{ secrets.HETZNER_TOKEN }}
+          TF_VAR_ssh_pvt_loc: ~/.ssh/id_ed25519
+          TF_VAR_ssh_pub_loc: ~/.ssh/id_ed25519.pub
+        if: always()
+        run: |
+          terraform destroy --auto-approve
+
   notification:
-    runs-on: e2e
+    runs-on: ubuntu-latest
     environment: e2e
     env:
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
@@ -100,7 +202,7 @@ jobs:
       GITHUB_RUN: ${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}
 
     if: always()
-    needs: [local-e2e, azure-e2e, civo-e2e, aws-e2e]
+    needs: [local-e2e, azure-e2e, civo-e2e, aws-e2e, destroy_infra]
     steps:
       - name: Discord
         run: |
@@ -109,9 +211,9 @@ jobs:
           azure_status=$(echo "${{ needs.azure-e2e.result }}")
           civo_status=$(echo "${{ needs.civo-e2e.result }}")
           aws_status=$(echo "${{ needs.aws-e2e.result }}")
+          infra_status=$(echo "${{ needs.destroy_infra.result }}")
 
-
-          if [[ $local_status == "failure" || $azure_status == "failure" || $civo_status == "failure" || $aws_status == "failure" ]]; then
+          if [[ $local_status == "failure" || $azure_status == "failure" || $civo_status == "failure" || $aws_status == "failure" || $infra_status == "failure" ]]; then
             SUMMARY='### FAILURE :warning:'
 
             if [[ $local_status == "failure" ]]; then
@@ -129,6 +231,10 @@ jobs:
             if [[ $aws_status == "failure" ]]; then
               SUMMARY+='\n- AWS'
             fi
+          
+            if [[ $infra_status == "failure" ]]; then
+              SUMMARY+='\n- INFRA'
+            fi
 
             curl --fail \
               -X POST \
@@ -145,3 +251,4 @@ jobs:
               -d "{\"embeds\": [{ \"title\": \"${DISCORD_TITLE}\", \"description\": \"${SUMMARY}\", \"url\": \"${GITHUB_RUN}\", \"color\": $GREEN, \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\", \"footer\": {\"text\": \"no bots were harmed\"}, \"author\": {\"name\": \"github actions\" } }]}" \
               $DISCORD_WEBHOOK_URL
           fi
+

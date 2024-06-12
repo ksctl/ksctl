@@ -8,15 +8,7 @@ go tool pprof mem.prof
 
 # setting up github custom runner for e2e
 
-build is done using github managed runner
-run is done using github custom runner
-
-> [!TODO]
-> Need to add the instructions
-
-```bash
-
-```
+now present in `gh-runner` folder
 
 # setting up jenkins for e2e
 
