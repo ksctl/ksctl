@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -24,7 +24,7 @@ var (
 	storeHA types.StorageFactory
 
 	fakeClient         *PreBootstrap
-	dir                = path.Join(os.TempDir(), "ksctl-bootstrap-test")
+	dir                = filepath.Join(os.TempDir(), "ksctl-bootstrap-test")
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 
 	parentCtx    context.Context

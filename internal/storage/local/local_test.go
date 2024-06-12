@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -24,7 +24,7 @@ var (
 
 	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
-	dir                              = path.Join(os.TempDir(), "ksctl-local-store-test")
+	dir                              = filepath.Join(os.TempDir(), "ksctl-local-store-test")
 )
 
 func TestMain(m *testing.M) {
@@ -61,13 +61,13 @@ func TestReader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile(path.Join(dir, "fake.json"), d, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "fake.json"), d, 0755); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestGenOsClusterPath(t *testing.T) {
-	expectedHa := path.Join([]string{
+	expectedHa := filepath.Join([]string{
 		os.TempDir(),
 		"ksctl-local-store-test",
 		".ksctl",
@@ -75,7 +75,7 @@ func TestGenOsClusterPath(t *testing.T) {
 		"civo",
 		"ha",
 		"name region"}...)
-	expectedManaged := path.Join([]string{
+	expectedManaged := filepath.Join([]string{
 		os.TempDir(),
 		"ksctl-local-store-test",
 		".ksctl",
@@ -83,7 +83,7 @@ func TestGenOsClusterPath(t *testing.T) {
 		"azure",
 		"managed",
 		"name region"}...)
-	expectedCreds := path.Join([]string{
+	expectedCreds := filepath.Join([]string{
 		os.TempDir(),
 		"ksctl-local-store-test",
 		".ksctl",
@@ -490,7 +490,7 @@ func TestExternalUsageFunctions(t *testing.T) {
 	extDb := db.(*Store)
 
 	locGot, okGot := extDb.PresentDirectory([]string{"demo03", "234"})
-	assert.Equal(t, locGot, path.Join("demo03", "234"))
+	assert.Equal(t, locGot, filepath.Join("demo03", "234"))
 	assert.Equal(t, okGot, false)
 
 	home, _ := os.UserHomeDir()
@@ -504,7 +504,7 @@ func TestExternalUsageFunctions(t *testing.T) {
 	locGot, err = extDb.CreateFileIfNotPresent([]string{os.TempDir(), "ksctl-local-store-test", "abcd.yml"})
 	assert.NilError(t, err)
 
-	assert.Equal(t, locGot, path.Join(os.TempDir(), "ksctl-local-store-test", "abcd.yml"))
+	assert.Equal(t, locGot, filepath.Join(os.TempDir(), "ksctl-local-store-test", "abcd.yml"))
 }
 
 func TestKill(t *testing.T) {

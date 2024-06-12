@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -17,7 +17,7 @@ func genOSKubeConfigPath(ctx context.Context) (string, error) {
 
 	var userLoc string
 	if v, ok := IsContextPresent(ctx, consts.KsctlCustomDirLoc); ok {
-		userLoc = path.Join(strings.Split(strings.TrimSpace(v), " ")...)
+		userLoc = filepath.Join(strings.Split(strings.TrimSpace(v), " ")...)
 	} else {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -28,7 +28,7 @@ func genOSKubeConfigPath(ctx context.Context) (string, error) {
 
 	pathArr := []string{userLoc, ".ksctl", "kubeconfig"}
 
-	return path.Join(pathArr...), nil
+	return filepath.Join(pathArr...), nil
 }
 
 func WriteKubeConfig(ctx context.Context, kubeconfig string) (string, error) {

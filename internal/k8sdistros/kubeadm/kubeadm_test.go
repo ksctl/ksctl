@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -26,7 +26,7 @@ var (
 	storeHA types.StorageFactory
 
 	fakeClient         *Kubeadm
-	dir                = path.Join(os.TempDir(), "ksctl-kubeadm-test")
+	dir                = filepath.Join(os.TempDir(), "ksctl-kubeadm-test")
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 	parentCtx          context.Context
 	parentLogger       types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -26,7 +26,7 @@ var (
 	storeHA types.StorageFactory
 
 	fakeClient         *K3s
-	dir                = path.Join(os.TempDir(), "ksctl-k3s-test")
+	dir                = filepath.Join(os.TempDir(), "ksctl-k3s-test")
 	fakeStateFromCloud cloudControlRes.CloudResourceState
 
 	parentCtx    context.Context

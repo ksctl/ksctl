@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -37,7 +37,7 @@ var (
 	parentCtx      context.Context
 	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
-	dir = path.Join(os.TempDir(), "ksctl-azure-test")
+	dir = filepath.Join(os.TempDir(), "ksctl-azure-test")
 )
 
 func TestMain(m *testing.M) {

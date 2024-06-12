@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -34,7 +34,7 @@ var (
 	fakeClientVars *CivoProvider
 	storeVars      types.StorageFactory
 
-	dir          = path.Join(os.TempDir(), "ksctl-civo-test")
+	dir          = filepath.Join(os.TempDir(), "ksctl-civo-test")
 	parentCtx    context.Context
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )

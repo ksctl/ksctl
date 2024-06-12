@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	dir                              = path.Join(os.TempDir(), "ksctl-k3s-test")
+	dir                              = filepath.Join(os.TempDir(), "ksctl-k3s-test")
 	log          types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 	mainStateDoc                     = &storageTypes.StorageDocument{}
 	dummyCtx                         = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")

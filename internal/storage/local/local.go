@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -49,7 +49,7 @@ func copyStore(src *Store, dest *Store) {
 }
 
 func (s *Store) PresentDirectory(_path []string) (loc string, isPresent bool) {
-	loc = path.Join(_path...)
+	loc = filepath.Join(_path...)
 	_, err := os.ReadDir(loc)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -62,7 +62,7 @@ func (s *Store) PresentDirectory(_path []string) (loc string, isPresent bool) {
 }
 
 func (s *Store) CreateFileIfNotPresent(_path []string) (loc string, err error) {
-	loc = path.Join(_path...)
+	loc = filepath.Join(_path...)
 
 	if _, err = os.ReadFile(loc); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -84,7 +84,7 @@ func (s *Store) CreateFileIfNotPresent(_path []string) (loc string, err error) {
 }
 
 func (s *Store) CreateDirectory(_path []string) error {
-	loc := path.Join(_path...)
+	loc := filepath.Join(_path...)
 
 	if err := os.MkdirAll(loc, dirPerm); err != nil {
 		return ksctlErrors.ErrInternal.Wrap(
@@ -226,7 +226,7 @@ func genOsClusterPath(creds bool, subDir ...string) (string, error) {
 
 	var userLoc string
 	if v, ok := helpers.IsContextPresent(storeCtx, consts.KsctlCustomDirLoc); ok {
-		userLoc = path.Join(strings.Split(strings.TrimSpace(v), " ")...)
+		userLoc = filepath.Join(strings.Split(strings.TrimSpace(v), " ")...)
 	} else {
 		v, err := os.UserHomeDir()
 		if err != nil {
@@ -245,7 +245,7 @@ func genOsClusterPath(creds bool, subDir ...string) (string, error) {
 	}
 	log.Debug(storeCtx, "storage.local.genOsClusterPath", "userLoc", userLoc, "subKsctlLoc", subKsctlLoc, "pathArr", pathArr)
 
-	return path.Join(pathArr...), nil
+	return filepath.Join(pathArr...), nil
 }
 
 func reader(loc string) (*storageTypes.StorageDocument, error) {
@@ -321,7 +321,7 @@ func (db *Store) Write(v *storageTypes.StorageDocument) error {
 		}
 	}
 
-	FileLoc = path.Join(dirPath, "state.json")
+	FileLoc = filepath.Join(dirPath, "state.json")
 	log.Debug(storeCtx, "storage.local.Write", "FileLoc", FileLoc)
 
 	data, err := json.Marshal(v)
@@ -361,7 +361,7 @@ func (db *Store) ReadCredentials(cloud consts.KsctlCloud) (*storageTypes.Credent
 		)
 	}
 
-	data, err := os.ReadFile(path.Join(dirPath, string(cloud)+".json"))
+	data, err := os.ReadFile(filepath.Join(dirPath, string(cloud)+".json"))
 	if err != nil {
 		return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
 			log.NewError(storeCtx, "failed to read a host file", "Reason", err),
@@ -412,7 +412,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, v *storageTypes.Crede
 
 	FileLoc := ""
 
-	FileLoc = path.Join(dirPath, string(cloud)+".json")
+	FileLoc = filepath.Join(dirPath, string(cloud)+".json")
 	log.Debug(storeCtx, "storage.local.WriteCredentials", "FileLoc", FileLoc)
 
 	data, err := json.Marshal(v)
@@ -617,7 +617,7 @@ func fetchFilePaths(cloud string, clusterType string) ([]string, error) {
 	var info []string
 	for _, file := range folders {
 		if file.IsDir() {
-			info = append(info, path.Join(dirPath, file.Name(), "state.json"))
+			info = append(info, filepath.Join(dirPath, file.Name(), "state.json"))
 		}
 	}
 

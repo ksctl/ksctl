@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -37,7 +37,7 @@ var (
 
 	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
-	dir = path.Join(os.TempDir(), "ksctl-aws-test")
+	dir = filepath.Join(os.TempDir(), "ksctl-aws-test")
 )
 
 func TestMain(m *testing.M) {

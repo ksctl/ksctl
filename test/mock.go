@@ -3,7 +3,7 @@ package test
 import (
 	"context"
 	"os"
-	"path"
+	"path/filepath"
 
 	control_pkg "github.com/ksctl/ksctl/pkg/controllers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -13,7 +13,7 @@ import (
 
 var (
 	cli *types.KsctlClient
-	dir = path.Join(os.TempDir(), "ksctl-black-box-test")
+	dir = filepath.Join(os.TempDir(), "ksctl-black-box-test")
 	ctx context.Context
 )
 

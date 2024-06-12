@@ -3,7 +3,7 @@ package local
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -83,7 +83,7 @@ func isPresent(storage types.StorageFactory, clusterName string) error {
 }
 
 func createNecessaryConfigs(storeDir string) (string, error) {
-	_path := path.Join(storeDir, "kubeconfig")
+	_path := filepath.Join(storeDir, "kubeconfig")
 
 	_, err := os.Create(_path)
 	if err != nil {

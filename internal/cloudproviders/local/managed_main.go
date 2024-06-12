@@ -2,7 +2,7 @@ package local
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -12,7 +12,7 @@ import (
 
 func (cloud *LocalProvider) DelManagedCluster(storage types.StorageFactory) error {
 
-	_path := path.Join(cloud.metadata.tempDirKubeconfig, "kubeconfig")
+	_path := filepath.Join(cloud.metadata.tempDirKubeconfig, "kubeconfig")
 	cloud.client.NewProvider(log, storage, nil)
 	if len(cloud.metadata.tempDirKubeconfig) == 0 {
 		var err error
@@ -97,7 +97,7 @@ func (cloud *LocalProvider) NewManagedCluster(storage types.StorageFactory, noOf
 		)
 	}
 
-	_path := path.Join(cloud.tempDirKubeconfig, "kubeconfig")
+	_path := filepath.Join(cloud.tempDirKubeconfig, "kubeconfig")
 
 	data, err := os.ReadFile(_path)
 	if err != nil {

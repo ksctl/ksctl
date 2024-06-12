@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -29,7 +29,7 @@ var (
 	parentCtx      context.Context
 	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
-	dir = path.Join(os.TempDir(), "ksctl-local-test")
+	dir = filepath.Join(os.TempDir(), "ksctl-local-test")
 )
 
 func TestMain(m *testing.M) {
