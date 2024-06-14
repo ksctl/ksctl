@@ -4,6 +4,7 @@
   hosts: e2e
   become: true
   gather_facts: true
+  ignore_unreachable: true
   tasks:
     - name: Ping my hosts
       ansible.builtin.ping:

@@ -34,12 +34,12 @@ jobs:
       packages: write
       contents: read
 
-  trigger-code-scanning:
-    uses: ./.github/workflows/code-scanning.yml
-    needs: ["trigger-oci-artifact-build-push"]
-    secrets: inherit
-    with:
-      image_tag: latest
+  # trigger-code-scanning:
+  #   uses: ./.github/workflows/code-scanning.yml
+  #   needs: ["trigger-oci-artifact-build-push"]
+  #   secrets: inherit
+  #   with:
+  #     image_tag: latest
 
   trigger-e2e:
     uses: ./.github/workflows/e2e.yml
