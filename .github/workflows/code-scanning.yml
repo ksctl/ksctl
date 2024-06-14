@@ -29,7 +29,7 @@ jobs:
 
       ## for docker images
       - name: Run Trivy vulnerability scanner ksctl-agent
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.22.0
         with:
           image-ref: 'ghcr.io/ksctl/ksctl-agent:${{ inputs.image_tag }}'
           format: 'sarif'
@@ -39,7 +39,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner ksctl-stateimport
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.22.0
         with:
           image-ref: 'ghcr.io/ksctl/ksctl-stateimport:${{ inputs.image_tag }}'
           format: 'sarif'
@@ -49,7 +49,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner ksctl-application-controller
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.22.0
         with:
           image-ref: 'ghcr.io/ksctl/ksctl-application-controller:${{ inputs.image_tag }}'
           format: 'sarif'
@@ -60,7 +60,7 @@ jobs:
 
       ## for IAC
       - name: Run Trivy vulnerability scanner in IaC mode
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.22.0
         with:
           scan-type: 'config'
           hide-progress: true

@@ -21,6 +21,7 @@ jobs:
   trigger-code-scanning:
     uses: ./.github/workflows/code-scanning.yml
     secrets: inherit
+    needs: ["trigger-oci-artifact-build-push"]
     with:
       image_tag: ${{ inputs.tag_name }}
 

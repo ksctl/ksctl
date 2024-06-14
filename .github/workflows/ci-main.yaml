@@ -36,11 +36,12 @@ jobs:
 
   trigger-code-scanning:
     uses: ./.github/workflows/code-scanning.yml
+    needs: ["trigger-oci-artifact-build-push"]
     secrets: inherit
     with:
       image_tag: latest
 
   trigger-e2e:
     uses: ./.github/workflows/e2e.yml
-    needs: ["trigger-code-scanning","trigger-oci-artifact-build-push"]
+    needs: ["trigger-oci-artifact-build-push"]
     secrets: inherit
