@@ -81,3 +81,4 @@ jobs:
       - name: build and push ksctl controller application
         run: |
           make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ inputs.image_tag }} || exit 1
+
