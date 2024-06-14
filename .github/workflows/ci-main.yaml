@@ -35,7 +35,7 @@ jobs:
       contents: read
 
   trigger-code-scanning:
-    uses: ./.github/workflows/code-scanning.yaml
+    uses: ./.github/workflows/code-scanning.yml
     secrets: inherit
     with:
       image_tag: latest
