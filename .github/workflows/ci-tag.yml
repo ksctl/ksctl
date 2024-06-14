@@ -18,6 +18,12 @@ jobs:
       packages: write
       contents: read
 
+  trigger-code-scanning:
+    uses: ./.github/workflows/code-scanning.yaml
+    secrets: inherit
+    with:
+      image_tag: ${{ inputs.tag_name }}
+
   upgrade-manifests-files-and-tag:
     runs-on: ubuntu-latest
     permissions:

@@ -1,0 +1,77 @@
+name: code-scanning
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'version tag for docker images'
+        default: 'latest'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      image_tag:
+        description: 'version tag for docker images'
+        default: 'latest'
+        required: true
+        type: string
+
+jobs:
+  ksctl-docker-image-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: create a directory
+        run: |
+          mkdir security
+
+      ## for docker images
+      - name: Run Trivy vulnerability scanner ksctl-agent
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'ghcr.io/ksctl/ksctl-agent:${{ inputs.image_tag }}'
+          format: 'sarif'
+          output: 'security/trivy-results-agent.sarif'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Trivy vulnerability scanner ksctl-stateimport
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'ghcr.io/ksctl/ksctl-stateimport:${{ inputs.image_tag }}'
+          format: 'sarif'
+          output: 'security/trivy-results-stateimport.sarif'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Trivy vulnerability scanner ksctl-application-controller
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'ghcr.io/ksctl/ksctl-application-controller:${{ inputs.image_tag }}'
+          format: 'sarif'
+          output: 'security/trivy-results-app-controller.sarif'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      ## for IAC
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'config'
+          hide-progress: true
+          format: 'sarif'
+          output: 'security/trivy-results-iac.sarif'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      ## for uploading
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          output: 'security'
