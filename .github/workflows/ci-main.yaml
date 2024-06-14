@@ -9,6 +9,7 @@ on:
       - "go.sum"
       - "build/**"
       - "test/e2e/**"
+      - "test/gh-runner/**"
       - "ksctl-components/agent/**"
       - "ksctl-components/operators/**"
       - "ksctl-components/stateimport/**"
