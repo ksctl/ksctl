@@ -10,3 +10,6 @@
       ansible.builtin.copy:
         dest: /home/runner/actions-runner/ksctl-bin/ksctl-e2e-amd64
         src: /tmp/ksctl-e2e-amd64
+        owner: runner
+        group: runner
+        mode: '0750'
