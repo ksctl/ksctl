@@ -26,8 +26,7 @@
     - name: uninstall the service
       when: credentials_exist.stat.exists == true
       shell: |
-        cd /home/runner/actions-runner
-        sudo ./svc.sh uninstall
+        sudo su - runner -c "cd ~/actions-runner && sudo ./svc.sh uninstall"
 
     - name: command to add the runner to github
       when: credentials_exist.stat.exists == true

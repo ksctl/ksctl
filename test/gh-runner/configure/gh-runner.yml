@@ -6,6 +6,14 @@
     shell: '/bin/bash'
     state: present
 
+- name: give runner sudo nopasswd previliges
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/runner
+    content: 'runner ALL=(ALL) NOPASSWD: ALL'
+    owner: root
+    group: root
+    mode: '0440'
+
 - name: Fetch JSON data using curl
   ansible.builtin.shell: curl -fsSL https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name'
   register: curl_output
@@ -63,15 +71,12 @@
 - name: start the service
   when: credentials_exist.stat.exists == false
   ansible.builtin.shell: |
-    cd /home/runner/actions-runner
-    sudo ./svc.sh install
-    sudo ./svc.sh start
+    sudo su - runner -c "cd ~/actions-runner && sudo ./svc.sh install && sudo ./svc.sh start"
 
 - name: status of the service
   register: gh_runner_svc_stat
   ansible.builtin.shell: |
-    cd /home/runner/actions-runner
-    sudo ./svc.sh status
+    sudo su - runner -c "cd ~/actions-runner && sudo ./svc.sh status"
 
 - name: display the status
   ansible.builtin.debug:
