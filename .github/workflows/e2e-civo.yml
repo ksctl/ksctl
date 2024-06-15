@@ -31,6 +31,7 @@ jobs:
               - 'internal/k8sdistros/*'
               - 'internal/storage/**'
               - 'pkg/helpers/**'
+              - 'test/gh-runner/**'
               - 'pkg/logger/**'
               - 'test/e2e/*'
               - 'test/e2e/civo/*'
