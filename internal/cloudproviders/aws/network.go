@@ -53,8 +53,9 @@ func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage ksctlTypes.Sto
 		}
 		mainStateDocument.CloudInfra.Aws.SubnetIDs[i] = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return err
+		if err := storage.Write(mainStateDocument); err != nil {
+			return err
+		}
 	}
 
 	log.Success(awsCtx, "Deleted the subnet", "id", mainStateDocument.CloudInfra.Aws.SubnetName)

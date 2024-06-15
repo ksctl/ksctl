@@ -85,7 +85,7 @@ type AwsGo interface {
 	InstanceInitialWaiter(ctx context.Context, instanceInput string) error
 
 	ModifyVpcAttribute(ctx context.Context) error
-	ModifySubnetAttribute(ctx context.Context) error
+	ModifySubnetAttribute(ctx context.Context, i int) error
 
 	BeginCreateEKS(ctx context.Context, parameter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error)
 	BeignCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error)

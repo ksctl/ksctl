@@ -4,6 +4,9 @@ package aws
 
 import (
 	"context"
+	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"os"
 	"sort"
 	"strings"
@@ -31,6 +34,11 @@ const (
 	instanceInitialWaiterTime      = time.Minute * 10
 	initialNicDeletionWaiterTime   = time.Second * 30
 	instanceInitialTerminationTime = time.Second * 200
+	managedEksClusterMinDelay      = time.Minute * 600
+	managedEksClusterMaxDelay      = time.Minute * 600
+	managedNodeGroupMindelay       = time.Second * 600
+	managedNodeGroupMaxDelay       = time.Second * 600
+	eksInitialTerminationTime      = time.Second * 500
 )
 
 func ProvideClient() AwsGo {
@@ -41,6 +49,8 @@ type AwsClient struct {
 	region    string
 	vpc       string
 	ec2Client *ec2.Client
+	eksClient *eks.Client
+	iam       *iam.Client
 	storage   ksctlTypes.StorageFactory
 }
 
@@ -248,15 +258,16 @@ func (awsclient *AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateIntern
 		)
 	}
 
-	_, err = awsclient.ec2Client.AssociateRouteTable(awsCtx, &ec2.AssociateRouteTableInput{
-		RouteTableId: aws.String(*routeTable.RouteTable.RouteTableId),
-		SubnetId:     aws.String(mainStateDocument.CloudInfra.Aws.SubnetID),
-	})
-
-	if err != nil {
-		return nil, nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error assiciating route table", "Reason", err),
-		)
+	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
+		_, err = awsclient.ec2Client.AssociateRouteTable(awsCtx, &ec2.AssociateRouteTableInput{
+			RouteTableId: aws.String(*routeTable.RouteTable.RouteTableId),
+			SubnetId:     aws.String(mainStateDocument.CloudInfra.Aws.SubnetIDs[i]),
+		})
+		if err != nil {
+			return nil, nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+				log.NewError(awsCtx, "Error assiciating route table", "Reason", err),
+			)
+		}
 	}
 
 	return routeTable, createInternetGateway, err
@@ -583,12 +594,14 @@ func (awsclient *AwsClient) InitClient(storage ksctlTypes.StorageFactory) error 
 
 	awsclient.storage = storage
 	awsclient.region = mainStateDocument.Region
-	ec2client, err := newEC2Client(awsclient.region)
+	session, err := newEC2Client(awsclient.region)
 	if err != nil {
 		return err
 	}
 
-	awsclient.ec2Client = ec2.NewFromConfig(ec2client)
+	awsclient.ec2Client = ec2.NewFromConfig(session)
+	awsclient.eksClient = eks.NewFromConfig(session)
+	awsclient.iam = iam.NewFromConfig(session)
 	return nil
 }
 
@@ -716,10 +729,10 @@ func (awsclient *AwsClient) ModifyVpcAttribute(ctx context.Context) error {
 	return nil
 }
 
-func (awsclient *AwsClient) ModifySubnetAttribute(ctx context.Context) error {
+func (awsclient *AwsClient) ModifySubnetAttribute(ctx context.Context, i int) error {
 
 	modifyusbnetinput := &ec2.ModifySubnetAttributeInput{
-		SubnetId: aws.String(mainStateDocument.CloudInfra.Aws.SubnetID),
+		SubnetId: aws.String(mainStateDocument.CloudInfra.Aws.SubnetIDs[i]),
 		MapPublicIpOnLaunch: &types.AttributeBooleanValue{
 			Value: aws.Bool(true),
 		},
@@ -744,4 +757,157 @@ func (awsclient *AwsClient) SetVpc(vpc string) string {
 	log.Print(awsCtx, "vpc set", "name", awsclient.vpc)
 
 	return awsclient.vpc
+}
+
+func (awsclient *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error) {
+
+	resp, err := awsclient.eksClient.CreateCluster(ctx, paramter)
+	if err != nil {
+		return nil, err
+	}
+
+	waiter := eks.NewClusterActiveWaiter(awsclient.eksClient, func(options *eks.ClusterActiveWaiterOptions) {
+		options.MaxDelay = managedEksClusterMinDelay
+		options.MinDelay = managedEksClusterMinDelay
+	})
+
+	describeCluster := eks.DescribeClusterInput{
+		Name: resp.Cluster.Name,
+	}
+
+	err = waiter.Wait(ctx, &describeCluster, eksInitialTerminationTime)
+	if err != nil {
+		return resp, err
+	}
+	return resp, nil
+}
+
+func (awsclient *AwsClient) BeignCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
+	resp, err := awsclient.eksClient.CreateNodegroup(ctx, paramter)
+	if err != nil {
+		return nil, err
+	}
+
+	waiter := eks.NewNodegroupActiveWaiter(awsclient.eksClient, func(options *eks.NodegroupActiveWaiterOptions) {
+		options.MaxDelay = managedNodeGroupMindelay
+		options.MaxDelay = managedNodeGroupMaxDelay
+	})
+
+	describeNodeGroup := eks.DescribeNodegroupInput{
+		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
+	}
+	err = waiter.Wait(ctx, &describeNodeGroup, eksInitialTerminationTime)
+	if err != nil {
+		return resp, err
+	}
+	return resp, nil
+}
+
+func (awsclient *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *eks.DeleteNodegroupInput) (*eks.DeleteNodegroupOutput, error) {
+
+	resp, err := awsclient.eksClient.DeleteNodegroup(ctx, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	waiter := eks.NewNodegroupDeletedWaiter(awsclient.eksClient, func(options *eks.NodegroupDeletedWaiterOptions) {
+		options.MaxDelay = managedNodeGroupMindelay
+		options.MaxDelay = managedNodeGroupMaxDelay
+	})
+
+	describeNodeGroup := eks.DescribeNodegroupInput{
+		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
+	}
+
+	err = waiter.Wait(ctx, &describeNodeGroup, eksInitialTerminationTime)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (awsclient *AwsClient) BeginDeleteManagedCluster(ctx context.Context, parameter *eks.DeleteClusterInput) (*eks.DeleteClusterOutput, error) {
+
+	resp, err := awsclient.eksClient.DeleteCluster(ctx, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	waiter := eks.NewClusterDeletedWaiter(awsclient.eksClient, func(options *eks.ClusterDeletedWaiterOptions) {
+		options.MaxDelay = managedEksClusterMinDelay
+		options.MaxDelay = managedEksClusterMaxDelay
+	})
+
+	describeCluster := eks.DescribeClusterInput{
+		Name: aws.String(*resp.Cluster.Name),
+	}
+
+	err = waiter.Wait(ctx, &describeCluster, eksInitialTerminationTime)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (awsclient *AwsClient) DescribeCluster(ctx context.Context, parameter *eks.DescribeClusterInput) (*eks.DescribeClusterOutput, error) {
+	resp, err := awsclient.eksClient.DescribeCluster(ctx, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (awsclient *AwsClient) BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error) {
+	createRoleResp, err := awsclient.iam.CreateRole(ctx, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	switch node {
+	case "controlplane":
+		fmt.Println("AmazonEKSClusterPolicy     ......")
+		attachClusterPolicyInput := &iam.AttachRolePolicyInput{
+			RoleName:  aws.String(*createRoleResp.Role.RoleName),
+			PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"),
+		}
+
+		_, err = awsclient.iam.AttachRolePolicy(ctx, attachClusterPolicyInput)
+		if err != nil {
+			return nil, err
+		}
+	case "worker":
+		fmt.Println("AmazonEKSWorkerNodePolicy")
+		policyArn := []string{"arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy", "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy", "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"}
+		for _, policy := range policyArn {
+			attachWorkerPolicyInput := &iam.AttachRolePolicyInput{
+				RoleName:  aws.String(*createRoleResp.Role.RoleName),
+				PolicyArn: aws.String(policy),
+			}
+
+			_, err = awsclient.iam.AttachRolePolicy(ctx, attachWorkerPolicyInput)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	mainStateDocument.CloudInfra.Aws.IamRoleName = *createRoleResp.Role.RoleName
+	mainStateDocument.CloudInfra.Aws.IamRoleArn = *createRoleResp.Role.Arn
+	err = awsclient.storage.Write(mainStateDocument)
+	if err != nil {
+		return nil, err
+	}
+
+	return createRoleResp, nil
+}
+
+func (awsclient *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error) {
+	resp, err := awsclient.iam.DeleteRole(ctx, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
