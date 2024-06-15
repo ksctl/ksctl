@@ -31,6 +31,7 @@ jobs:
               - 'internal/k8sdistros/k3s/*'
               - 'internal/k8sdistros/kubeadm/*'
               - 'internal/k8sdistros/*'
+              - 'test/gh-runner/**'
               - 'internal/storage/**'
               - 'pkg/helpers/**'
               - 'pkg/logger/**'

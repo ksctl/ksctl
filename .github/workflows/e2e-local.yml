@@ -28,6 +28,7 @@ jobs:
               - 'pkg/helpers/**'
               - 'pkg/logger/**'
               - 'test/e2e/*'
+              - 'test/gh-runner/**'
               - 'test/e2e/local/*'
               - 'go.mod'
               - 'go.sum'
