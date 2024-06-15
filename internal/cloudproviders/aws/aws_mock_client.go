@@ -1,4 +1,4 @@
-//go:build testing_aws
+// go:build testing_aws
 
 package aws
 
@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
 
@@ -163,14 +165,16 @@ func (*AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, 
 
 func (*AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
 
-	mainStateDocument.CloudInfra.Aws.SubnetID = ""
-	mainStateDocument.CloudInfra.Aws.SubnetName = ""
+	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
+		mainStateDocument.CloudInfra.Aws.SubnetIDs[i] = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+		if err := storage.Write(mainStateDocument); err != nil {
+			return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+		}
+
+		log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetName)
+
 	}
-
-	log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetName)
 
 	return nil
 
@@ -281,7 +285,7 @@ func (*AwsClient) ModifyVpcAttribute(ctx context.Context) error {
 	return nil
 }
 
-func (*AwsClient) ModifySubnetAttribute(ctx context.Context) error {
+func (*AwsClient) ModifySubnetAttribute(ctx context.Context, i int) error {
 	return nil
 }
 func (a *AwsClient) SetRegion(string) {
@@ -290,4 +294,32 @@ func (a *AwsClient) SetRegion(string) {
 
 func (*AwsClient) SetVpc(string) string {
 	return "fake-vpc"
+}
+
+func (*AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error) {
+
+	return nil, nil
+}
+func (*AwsClient) BeignCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
+	return nil, nil
+}
+
+func (*AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *eks.DeleteNodegroupInput) (*eks.DeleteNodegroupOutput, error) {
+	return nil, nil
+}
+
+func (*AwsClient) BeginDeleteManagedCluster(ctx context.Context, parameter *eks.DeleteClusterInput) (*eks.DeleteClusterOutput, error) {
+	return nil, nil
+}
+
+func (*AwsClient) BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error) {
+	return nil, nil
+}
+
+func (*AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error) {
+	return nil, nil
+}
+
+func (*AwsClient) DescribeCluster(ctx context.Context, parameter *eks.DescribeClusterInput) (*eks.DescribeClusterOutput, error) {
+	return nil, nil
 }
