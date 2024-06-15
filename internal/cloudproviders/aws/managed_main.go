@@ -10,30 +10,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-const assumeClusterRolePolicyDocument = `{
-    "Version": "2012-10-17",
-    "Statement": {
-        "Sid": "TrustPolicyStatementThatAllowsEC2ServiceToAssumeTheAttachedRole",
-        "Effect": "Allow",
-        "Principal": { "Service": "eks.amazonaws.com" },
-       "Action": "sts:AssumeRole"
-    }
-}                    
-  `
-
-const assumeWorkerNodeRolePolicyDocument = `{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "ec2.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-}`
-
 func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) == 0 {
 		log.Print(awsCtx, "Skipping deleting EKS cluster.")
