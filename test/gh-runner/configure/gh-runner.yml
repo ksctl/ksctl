@@ -14,6 +14,12 @@
     group: root
     mode: '0440'
 
+- name: add runner user to the docker group
+  ansible.builtin.user:
+    name: runner
+    groups: docker
+    append: true
+
 - name: Fetch JSON data using curl
   ansible.builtin.shell: curl -fsSL https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name'
   register: curl_output

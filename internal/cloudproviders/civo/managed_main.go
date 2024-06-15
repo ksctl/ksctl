@@ -16,7 +16,7 @@ func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id str
 
 	expoBackoff := helpers.NewBackOff(
 		10*time.Second,
-		3,
+		2,
 		2*int(consts.CounterMaxWatchRetryCount),
 	)
 
