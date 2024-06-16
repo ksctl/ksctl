@@ -460,8 +460,7 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 		return nil, err
 	}
 
-	var convertToAllClusterDataType func(*storageTypes.StorageDocument, consts.KsctlRole) []cloudcontrolres.VMData
-	convertToAllClusterDataType = func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloudcontrolres.VMData) {
+	convertToAllClusterDataType := func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloudcontrolres.VMData) {
 
 		switch r {
 		case consts.RoleCp:
@@ -469,39 +468,51 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
-					VMSize:       o.VMSizes[i],
-					FirewallID:   st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
-					FirewallName: st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName,
-					PublicIP:     o.PublicIPs[i],
-					PrivateIP:    o.PrivateIPs[i],
-					SubnetID:     st.CloudInfra.Azure.SubnetID,
-					SubnetName:   st.CloudInfra.Azure.SubnetName,
-				})
-			}
-
-			for _, d := range st.CloudInfra.Aws.InfoControlPlanes.VMSizes {
-				v = append(v, cloudcontrolres.VMData{
-					VMSize: d,
+					VMSize:     o.VMSizes[i],
+					FirewallID: st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
+					PublicIP:   o.PublicIPs[i],
+					PrivateIP:  o.PrivateIPs[i],
+					SubnetID:   st.CloudInfra.Aws.SubnetID,
+					SubnetName: st.CloudInfra.Aws.SubnetName,
 				})
 			}
 
 		case consts.RoleWp:
-			for _, d := range st.CloudInfra.Aws.InfoWorkerPlanes.VMSizes {
+			o := st.CloudInfra.Aws.InfoWorkerPlanes
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
-					VMSize: d,
+					VMSize:     o.VMSizes[i],
+					FirewallID: st.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs,
+					PublicIP:   o.PublicIPs[i],
+					PrivateIP:  o.PrivateIPs[i],
+					SubnetID:   st.CloudInfra.Aws.SubnetID,
+					SubnetName: st.CloudInfra.Aws.SubnetName,
 				})
 			}
 
 		case consts.RoleDs:
-			for _, d := range st.CloudInfra.Aws.InfoDatabase.VMSizes {
+			o := st.CloudInfra.Aws.InfoDatabase
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
-					VMSize: d,
+					VMSize:     o.VMSizes[i],
+					FirewallID: st.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs,
+					PublicIP:   o.PublicIPs[i],
+					PrivateIP:  o.PrivateIPs[i],
+					SubnetID:   st.CloudInfra.Aws.SubnetID,
+					SubnetName: st.CloudInfra.Aws.SubnetName,
 				})
 			}
 
 		default:
 			v = append(v, cloudcontrolres.VMData{
-				VMSize: st.CloudInfra.Aws.InfoLoadBalancer.VMSize,
+				VMSize:     st.CloudInfra.Aws.InfoLoadBalancer.VMSize,
+				FirewallID: st.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID,
+				PublicIP:   st.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
+				PrivateIP:  st.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
+				SubnetID:   st.CloudInfra.Aws.SubnetID,
+				SubnetName: st.CloudInfra.Aws.SubnetName,
 			})
 		}
 		return v
@@ -519,13 +530,25 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 				DS:            convertToAllClusterDataType(v, consts.RoleDs),
 				LB:            convertToAllClusterDataType(v, consts.RoleLb)[0],
 
-				NoWP:  len(v.CloudInfra.Aws.InfoWorkerPlanes.HostNames),
-				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
-				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.HostNames),
-				NoMgt: v.CloudInfra.Aws.NoManagedNodes,
+				NoWP:         len(v.CloudInfra.Aws.InfoWorkerPlanes.HostNames),
+				NoCP:         len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
+				NoDS:         len(v.CloudInfra.Aws.InfoDatabase.HostNames),
+				NoMgt:        v.CloudInfra.Aws.NoManagedNodes,
+				ManagedK8sID: "", //TODO(praful): need to add it once EKS is added
+				NetworkID:    v.CloudInfra.Aws.VpcId,
+				NetworkName:  v.CloudInfra.Aws.VpcName,
+				SSHKeyID:     v.CloudInfra.Aws.B.SSHID,
+				SSHKeyName:   v.CloudInfra.Aws.B.SSHKeyName,
 
 				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Aws.B.KubernetesVer,
+				Apps: func() (_a []string) {
+					for _, a := range v.Addons.Apps {
+						_a = append(_a, a.String())
+					}
+					return
+				}(),
+				Cni: v.Addons.Cni.String(),
 			})
 			log.Debug(awsCtx, "Printing", "cloudClusterInfoFetched", data)
 
