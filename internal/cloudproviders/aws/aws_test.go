@@ -441,11 +441,11 @@ func TestHACluster(t *testing.T) {
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcId, "3456d25f36g474g546", "want %s got %s", "3456d25f36g474g546", mainStateDocument.CloudInfra.Aws.VpcId)
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcName, fakeClientHA.clusterName+"-vpc", "virtual net should be created")
-		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetName, fakeClientHA.clusterName+"-subnet", "subnet should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetNames, fakeClientHA.clusterName+"-subnet", "subnet should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetID, "3456d25f36g474g546", "subnet should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.RouteTableID, "3456d25f36g474g546", "route table should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.GatewayID, "3456d25f36g474g546", "gateway should be created")
-		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetName, fakeClientHA.clusterName+"-subnet", "subnet should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetNames, fakeClientHA.clusterName+"-subnet", "subnet should be created")
 
 		checkCurrentStateFileHA(t)
 	})
@@ -804,7 +804,7 @@ func TestHACluster(t *testing.T) {
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.SubnetID) == 0, "subnet should be created")
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.RouteTableID) == 0, "route table should be created")
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.GatewayID) == 0, "gateway should be created")
-		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.SubnetName) == 0, "subnet should be created")
+		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.SubnetNames) == 0, "subnet should be created")
 	})
 }
 

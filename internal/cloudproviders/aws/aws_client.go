@@ -5,12 +5,13 @@ package aws
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/eks"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"os"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -34,11 +35,8 @@ const (
 	instanceInitialWaiterTime      = time.Minute * 10
 	initialNicDeletionWaiterTime   = time.Second * 30
 	instanceInitialTerminationTime = time.Second * 200
-	managedEksClusterMinDelay      = time.Minute * 600
-	managedEksClusterMaxDelay      = time.Minute * 600
-	managedNodeGroupMindelay       = time.Second * 600
-	managedNodeGroupMaxDelay       = time.Second * 600
-	eksInitialTerminationTime      = time.Second * 500
+	managedClusterActiveWaiter     = time.Minute * 10
+	managedNodeGroupActiveWaiter   = time.Minute * 10
 )
 
 func ProvideClient() AwsGo {
@@ -767,18 +765,18 @@ func (awsclient *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.Cr
 	}
 
 	waiter := eks.NewClusterActiveWaiter(awsclient.eksClient, func(options *eks.ClusterActiveWaiterOptions) {
-		options.MaxDelay = managedEksClusterMinDelay
-		options.MinDelay = managedEksClusterMinDelay
+		options.MinDelay.Minutes()
+		options.MaxDelay.Minutes()
 	})
 
 	describeCluster := eks.DescribeClusterInput{
 		Name: resp.Cluster.Name,
 	}
-
-	err = waiter.Wait(ctx, &describeCluster, eksInitialTerminationTime)
+	dresp, err := waiter.WaitForOutput(ctx, &describeCluster, managedClusterActiveWaiter)
 	if err != nil {
 		return resp, err
 	}
+	fmt.Println(dresp)
 	return resp, nil
 }
 
@@ -789,17 +787,18 @@ func (awsclient *AwsClient) BeignCreateNodeGroup(ctx context.Context, paramter *
 	}
 
 	waiter := eks.NewNodegroupActiveWaiter(awsclient.eksClient, func(options *eks.NodegroupActiveWaiterOptions) {
-		options.MaxDelay = managedNodeGroupMindelay
-		options.MaxDelay = managedNodeGroupMaxDelay
+		options.MaxDelay.Minutes()
+		options.MaxDelay.Minutes()
 	})
 
 	describeNodeGroup := eks.DescribeNodegroupInput{
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
 	}
-	err = waiter.Wait(ctx, &describeNodeGroup, eksInitialTerminationTime)
+	dresp, err := waiter.WaitForOutput(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
 	if err != nil {
 		return resp, err
 	}
+	fmt.Println(dresp)
 	return resp, nil
 }
 
@@ -811,15 +810,15 @@ func (awsclient *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter 
 	}
 
 	waiter := eks.NewNodegroupDeletedWaiter(awsclient.eksClient, func(options *eks.NodegroupDeletedWaiterOptions) {
-		options.MaxDelay = managedNodeGroupMindelay
-		options.MaxDelay = managedNodeGroupMaxDelay
+		options.MinDelay.Minutes()
+		options.MaxDelay.Minutes()
 	})
 
 	describeNodeGroup := eks.DescribeNodegroupInput{
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
 	}
 
-	err = waiter.Wait(ctx, &describeNodeGroup, eksInitialTerminationTime)
+	err = waiter.Wait(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
 	if err != nil {
 		return nil, err
 	}
@@ -835,15 +834,15 @@ func (awsclient *AwsClient) BeginDeleteManagedCluster(ctx context.Context, param
 	}
 
 	waiter := eks.NewClusterDeletedWaiter(awsclient.eksClient, func(options *eks.ClusterDeletedWaiterOptions) {
-		options.MaxDelay = managedEksClusterMinDelay
-		options.MaxDelay = managedEksClusterMaxDelay
+		options.MaxDelay.Minutes()
+		options.MaxDelay.Minutes()
 	})
 
 	describeCluster := eks.DescribeClusterInput{
 		Name: aws.String(*resp.Cluster.Name),
 	}
 
-	err = waiter.Wait(ctx, &describeCluster, eksInitialTerminationTime)
+	err = waiter.Wait(ctx, &describeCluster, managedClusterActiveWaiter)
 	if err != nil {
 		return nil, err
 	}
@@ -891,13 +890,6 @@ func (awsclient *AwsClient) BeginCreateIAM(ctx context.Context, node string, par
 				return nil, err
 			}
 		}
-	}
-
-	mainStateDocument.CloudInfra.Aws.IamRoleName = *createRoleResp.Role.RoleName
-	mainStateDocument.CloudInfra.Aws.IamRoleArn = *createRoleResp.Role.Arn
-	err = awsclient.storage.Write(mainStateDocument)
-	if err != nil {
-		return nil, err
 	}
 
 	return createRoleResp, nil

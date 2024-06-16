@@ -52,21 +52,21 @@ func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 		return err
 	}
 
-	iamParameter := iam.DeleteRoleInput{
-		RoleName: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleName),
-	}
+	// iamParameter := iam.DeleteRoleInput{
+	// 	RoleName: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleName),
+	// }
 
-	_, err = obj.client.BeginDeleteIAM(awsCtx, &iamParameter)
-	if err != nil {
-		return err
-	}
+	// _, err = obj.client.BeginDeleteIAM(awsCtx, &iamParameter)
+	// if err != nil {
+	// 	return err
+	// }
 
-	mainStateDocument.CloudInfra.Aws.IamRoleName = ""
-	mainStateDocument.CloudInfra.Aws.IamRoleArn = ""
-	err = storage.Write(mainStateDocument)
-	if err != nil {
-		return err
-	}
+	// mainStateDocument.CloudInfra.Aws.IamRoleName = ""
+	// mainStateDocument.CloudInfra.Aws.IamRoleArn = ""
+	// err = storage.Write(mainStateDocument)
+	// if err != nil {
+	// 	return err
+	// }
 
 	log.Success(awsCtx, "Deleted the EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 	return storage.Write(mainStateDocument)
@@ -81,18 +81,33 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) != 0 {
 		log.Print(awsCtx, "skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 	} else {
-		iamParameter := iam.CreateRoleInput{
-			RoleName:                 aws.String(mainStateDocument.ClusterName + "-controlplane" + "role"),
-			AssumeRolePolicyDocument: aws.String(assumeClusterRolePolicyDocument),
-		}
-		iamRespCp, err := obj.client.BeginCreateIAM(awsCtx, "controlplane", &iamParameter)
-		if err != nil {
-			return err
+
+		if len(mainStateDocument.CloudInfra.Aws.IamRoleArnWP) == 0 {
+			iamParameter := iam.CreateRoleInput{
+				RoleName:                 aws.String(mainStateDocument.ClusterName + "-controlplane" + "role"),
+				AssumeRolePolicyDocument: aws.String(assumeClusterRolePolicyDocument),
+			}
+			iamRespCp, err := obj.client.BeginCreateIAM(awsCtx, "controlplane", &iamParameter)
+			if err != nil {
+				return err
+			}
+
+			mainStateDocument.CloudInfra.Aws.IamRoleNameCN = *iamRespCp.Role.RoleName
+			mainStateDocument.CloudInfra.Aws.IamRoleArnCN = *iamRespCp.Role.Arn
+
+			err = storage.Write(mainStateDocument)
+			if err != nil {
+				return err
+			}
+
+			log.Success(awsCtx, "created the EKS controlplane role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameCN)
+		} else {
+			log.Print(awsCtx, "skipped already created EKS controlplane role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameCN)
 		}
 
 		parameter := eks.CreateClusterInput{
 			Name:    aws.String(name),
-			RoleArn: aws.String(*iamRespCp.Role.Arn),
+			RoleArn: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleArnCN),
 			ResourcesVpcConfig: &eks_types.VpcConfigRequest{
 				EndpointPrivateAccess: aws.Bool(true),
 				EndpointPublicAccess:  aws.Bool(true),
@@ -124,27 +139,33 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	}
 
 	if len(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName) != 0 {
-		log.Print(awsCtx, "skipped already created AKS node-group", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
+		log.Print(awsCtx, "skipped already created EKS nodegroup", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
 	} else {
-		iamParameter := iam.CreateRoleInput{
-			RoleName:                 aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-worker" + "role"),
-			AssumeRolePolicyDocument: aws.String(assumeWorkerNodeRolePolicyDocument),
-		}
-		iamRespWp, err := obj.client.BeginCreateIAM(awsCtx, "worker", &iamParameter)
-		if err != nil {
-			return err
-		}
+		if len(mainStateDocument.CloudInfra.Aws.IamRoleArnWP) == 0 {
+			iamParameter := iam.CreateRoleInput{
+				RoleName:                 aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-worker" + "role"),
+				AssumeRolePolicyDocument: aws.String(assumeWorkerNodeRolePolicyDocument),
+			}
+			iamRespWp, err := obj.client.BeginCreateIAM(awsCtx, "worker", &iamParameter)
+			if err != nil {
+				return err
+			}
 
-		mainStateDocument.CloudInfra.Aws.IamRoleName = *iamRespWp.Role.RoleName
-		mainStateDocument.CloudInfra.Aws.IamRoleArn = *iamRespWp.Role.Arn
-		err = storage.Write(mainStateDocument)
-		if err != nil {
-			return err
+			mainStateDocument.CloudInfra.Aws.IamRoleNameWP = *iamRespWp.Role.RoleName
+			mainStateDocument.CloudInfra.Aws.IamRoleArnWP = *iamRespWp.Role.Arn
+			err = storage.Write(mainStateDocument)
+			if err != nil {
+				return err
+			}
+
+			log.Success(awsCtx, "created the EKS worker role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
+		} else {
+			log.Print(awsCtx, "skipped already created EKS worker role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
 		}
 
 		nodegroup := eks.CreateNodegroupInput{
 			ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
-			NodeRole:      aws.String(*iamRespWp.Role.Arn),
+			NodeRole:      aws.String(mainStateDocument.CloudInfra.Aws.IamRoleArnWP),
 			NodegroupName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-nodegroup"),
 			Subnets:       mainStateDocument.CloudInfra.Aws.SubnetIDs,
 			CapacityType:  eks_types.CapacityTypesOnDemand,
@@ -174,14 +195,14 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 		}
 	}
 
-	result, err := obj.client.DescribeCluster(awsCtx, &eks.DescribeClusterInput{
-		Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
-	})
-	if err != nil {
-		return err
-	}
+	// result, err := obj.client.DescribeCluster(awsCtx, &eks.DescribeClusterInput{
+	// 	Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
-	config := result.Cluster.AccessConfig
+	// config := result.Cluster.AccessConfig
 
 	// create get kubeconfig funtion
 	// kubeconfig, err := obj.client.GetKubeConfig(awsCtx, mainStateDocument.CloudInfra.Aws.ManagedClusterName)

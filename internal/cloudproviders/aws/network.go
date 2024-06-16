@@ -58,7 +58,7 @@ func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage ksctlTypes.Sto
 		}
 	}
 
-	log.Success(awsCtx, "Deleted the subnet", "id", mainStateDocument.CloudInfra.Aws.SubnetName)
+	log.Success(awsCtx, "Deleted the subnet", "id", mainStateDocument.CloudInfra.Aws.SubnetNames)
 
 	return nil
 }
@@ -183,7 +183,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage ksctlTypes.Sto
 			}
 
 			mainStateDocument.CloudInfra.Aws.SubnetIDs = append(mainStateDocument.CloudInfra.Aws.SubnetIDs, *response.Subnet.SubnetId)
-			mainStateDocument.CloudInfra.Aws.SubnetName = append(mainStateDocument.CloudInfra.Aws.SubnetName, *response.Subnet.Tags[0].Value)
+			mainStateDocument.CloudInfra.Aws.SubnetNames = append(mainStateDocument.CloudInfra.Aws.SubnetNames, *response.Subnet.Tags[0].Value)
 
 			if err := obj.client.ModifySubnetAttribute(ctx, i); err != nil {
 				return err
