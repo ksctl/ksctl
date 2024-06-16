@@ -465,6 +465,20 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 
 		switch r {
 		case consts.RoleCp:
+			o := st.CloudInfra.Aws.InfoControlPlanes
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
+				v = append(v, cloudcontrolres.VMData{
+					VMSize:       o.VMSizes[i],
+					FirewallID:   st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
+					FirewallName: st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName,
+					PublicIP:     o.PublicIPs[i],
+					PrivateIP:    o.PrivateIPs[i],
+					SubnetID:     st.CloudInfra.Azure.SubnetID,
+					SubnetName:   st.CloudInfra.Azure.SubnetName,
+				})
+			}
+
 			for _, d := range st.CloudInfra.Aws.InfoControlPlanes.VMSizes {
 				v = append(v, cloudcontrolres.VMData{
 					VMSize: d,

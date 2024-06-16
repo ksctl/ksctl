@@ -2,10 +2,11 @@ package aws
 
 import (
 	"context"
+	"sync"
+
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
-	"sync"
 )
 
 type metadata struct {

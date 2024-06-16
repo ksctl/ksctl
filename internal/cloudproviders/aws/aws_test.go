@@ -469,28 +469,28 @@ func TestHACluster(t *testing.T) {
 			fakeClientHA.Name("fake-fw-cp")
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup) > 0, "fw id for controlplane missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs) > 0, "fw id for controlplane missing")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
 			fakeClientHA.Role(consts.RoleWp)
 			fakeClientHA.Name("fake-fw-wp")
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup) > 0, "fw id for workerplane missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs) > 0, "fw id for workerplane missing")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
 			fakeClientHA.Role(consts.RoleLb)
 			fakeClientHA.Name("fake-fw-lb")
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup) > 0, "fw id for loadbalacer missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID) > 0, "fw id for loadbalacer missing")
 		})
 		t.Run("Datastore", func(t *testing.T) {
 			fakeClientHA.Role(consts.RoleDs)
 			fakeClientHA.Name("fake-fw-ds")
 
 			assert.Equal(t, fakeClientHA.NewFirewall(storeHA), nil, "new firewall failed")
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup) > 0, "fw id for datastore missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs) > 0, "fw id for datastore missing")
 		})
 
 		checkCurrentStateFileHA(t)
@@ -745,28 +745,28 @@ func TestHACluster(t *testing.T) {
 
 			assert.Equal(t, fakeClientHA.DelFirewall(storeHA), nil, "del firewall failed")
 
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup) == 0, "fw id for controlplane missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs) == 0, "fw id for controlplane missing")
 		})
 		t.Run("Workerplane", func(t *testing.T) {
 			fakeClientHA.Role(consts.RoleWp)
 
 			assert.Equal(t, fakeClientHA.DelFirewall(storeHA), nil, "new firewall failed")
 
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup) == 0, "fw id for workerplane missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs) == 0, "fw id for workerplane missing")
 		})
 		t.Run("Loadbalancer", func(t *testing.T) {
 			fakeClientHA.Role(consts.RoleLb)
 
 			assert.Equal(t, fakeClientHA.DelFirewall(storeHA), nil, "new firewall failed")
 
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup) == 0, "fw id for loadbalacer missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID) == 0, "fw id for loadbalacer missing")
 		})
 		t.Run("Datastore", func(t *testing.T) {
 			fakeClientHA.Role(consts.RoleDs)
 
 			assert.Equal(t, fakeClientHA.DelFirewall(storeHA), nil, "new firewall failed")
 
-			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup) == 0, "fw id for datastore missing")
+			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs) == 0, "fw id for datastore missing")
 		})
 
 		checkCurrentStateFileHA(t)

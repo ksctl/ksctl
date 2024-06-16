@@ -1,17 +1,17 @@
 package storage
 
 type AWSStateVm struct {
-	Vpc                  string `json:"vpc" bson:"vpc"`
-	HostName             string `json:"name" bson:"name"`
-	DiskSize             string `json:"disk_size" bson:"disk_size"`
-	InstanceType         string `json:"instance_type" bson:"instance_type"`
-	InstanceID           string `json:"instance_id" bson:"instance_id"`
-	Subnet               string `json:"subnet" bson:"subnet"`
-	NetworkSecurityGroup string `json:"network_security_group" bson:"network_security_group"`
-	PublicIP             string `json:"public_ip" bson:"public_ip"`
-	PrivateIP            string `json:"private_ip" bson:"private_ip"`
-	NetworkInterfaceId   string `json:"network_interface_id" bson:"network_interface_id"`
-	VMSize               string `json:"vm_size" bson:"vm_size"`
+	Vpc                    string `json:"vpc" bson:"vpc"`
+	HostName               string `json:"name" bson:"name"`
+	DiskSize               string `json:"disk_size" bson:"disk_size"`
+	InstanceType           string `json:"instance_type" bson:"instance_type"`
+	InstanceID             string `json:"instance_id" bson:"instance_id"`
+	Subnet                 string `json:"subnet" bson:"subnet"`
+	NetworkSecurityGroupID string `json:"network_security_group_id" bson:"network_security_group_id"`
+	PublicIP               string `json:"public_ip" bson:"public_ip"`
+	PrivateIP              string `json:"private_ip" bson:"private_ip"`
+	NetworkInterfaceId     string `json:"network_interface_id" bson:"network_interface_id"`
+	VMSize                 string `json:"vm_size" bson:"vm_size"`
 }
 
 type CredentialsAws struct {
@@ -20,16 +20,16 @@ type CredentialsAws struct {
 }
 
 type AWSStateVms struct {
-	HostNames            []string `json:"names" bson:"name"`
-	DiskNames            []string `json:"disk_name" bson:"disk_name"`
-	InstanceIds          []string `json:"instance_id" bson:"instance_id"`
-	PrivateIPs           []string `json:"private_ip" bson:"private_ip"`
-	PublicIPs            []string `json:"public_ip" bson:"public_ip"`
-	NetworkInterfaceIDs  []string `json:"network_interface_id" bson:"network_interface_id"`
-	SubnetNames          []string `json:"subnet_name" bson:"subnet_name"`
-	SubnetIDs            []string `json:"subnet_id" bson:"subnet_id"`
-	NetworkSecurityGroup string   `json:"network_security_group" bson:"network_security_group"`
-	VMSizes              []string `json:"vm_sizes" bson:"vm_sizes"` // keeping a dynamic sizes for autoscaler feature
+	HostNames               []string `json:"names" bson:"name"`
+	DiskNames               []string `json:"disk_name" bson:"disk_name"`
+	InstanceIds             []string `json:"instance_id" bson:"instance_id"`
+	PrivateIPs              []string `json:"private_ip" bson:"private_ip"`
+	PublicIPs               []string `json:"public_ip" bson:"public_ip"`
+	NetworkInterfaceIDs     []string `json:"network_interface_id" bson:"network_interface_id"`
+	SubnetNames             []string `json:"subnet_name" bson:"subnet_name"`
+	SubnetIDs               []string `json:"subnet_id" bson:"subnet_id"`
+	NetworkSecurityGroupIDs string   `json:"network_security_group_ids" bson:"network_security_group_ids"`
+	VMSizes                 []string `json:"vm_sizes" bson:"vm_sizes"` // keeping a dynamic sizes for autoscaler feature
 }
 
 type StateConfigurationAws struct {
