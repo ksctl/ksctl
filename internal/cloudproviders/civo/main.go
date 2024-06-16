@@ -3,8 +3,9 @@ package civo
 import (
 	"context"
 	"encoding/json"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"strings"
+
+	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -468,34 +469,51 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 		return nil, err
 	}
 
-	var convertToAllClusterDataType func(*storageTypes.StorageDocument, consts.KsctlRole) []cloud_control_res.VMData
-	convertToAllClusterDataType = func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloud_control_res.VMData) {
+	convertToAllClusterDataType := func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloud_control_res.VMData) {
 
 		switch r {
 		case consts.RoleCp:
-			for _, d := range st.CloudInfra.Civo.InfoControlPlanes.VMSizes {
+			o := st.CloudInfra.Civo.InfoControlPlanes
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloud_control_res.VMData{
-					VMSize: d,
+					VMSize:     o.VMSizes[i],
+					FirewallID: st.CloudInfra.Civo.FirewallIDControlPlanes,
+					PublicIP:   o.PublicIPs[i],
+					PrivateIP:  o.PrivateIPs[i],
 				})
 			}
 
 		case consts.RoleWp:
-			for _, d := range st.CloudInfra.Civo.InfoWorkerPlanes.VMSizes {
+			o := st.CloudInfra.Civo.InfoWorkerPlanes
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloud_control_res.VMData{
-					VMSize: d,
+					VMSize:     o.VMSizes[i],
+					FirewallID: st.CloudInfra.Civo.FirewallIDWorkerNodes,
+					PublicIP:   o.PublicIPs[i],
+					PrivateIP:  o.PrivateIPs[i],
 				})
 			}
 
 		case consts.RoleDs:
-			for _, d := range st.CloudInfra.Civo.InfoDatabase.VMSizes {
+			o := st.CloudInfra.Civo.InfoDatabase
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloud_control_res.VMData{
-					VMSize: d,
+					VMSize:     o.VMSizes[i],
+					FirewallID: st.CloudInfra.Civo.FirewallIDDatabaseNodes,
+					PublicIP:   o.PublicIPs[i],
+					PrivateIP:  o.PrivateIPs[i],
 				})
 			}
 
 		default:
 			v = append(v, cloud_control_res.VMData{
-				VMSize: st.CloudInfra.Civo.InfoLoadBalancer.VMSize,
+				VMSize:     st.CloudInfra.Civo.InfoLoadBalancer.VMSize,
+				FirewallID: st.CloudInfra.Civo.FirewallIDLoadBalancer,
+				PrivateIP:  st.CloudInfra.Civo.InfoLoadBalancer.PrivateIP,
+				PublicIP:   st.CloudInfra.Civo.InfoLoadBalancer.PublicIP,
 			})
 		}
 		return v
@@ -516,6 +534,10 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 				Mgt: cloud_control_res.VMData{
 					VMSize: v.CloudInfra.Civo.ManagedNodeSize,
 				},
+				ManagedK8sID: v.CloudInfra.Civo.ManagedClusterID,
+				NetworkID:    v.CloudInfra.Civo.NetworkID,
+				SSHKeyName:   v.CloudInfra.Civo.B.SSHKeyName,
+				SSHKeyID:     v.CloudInfra.Civo.B.SSHID,
 
 				NoWP:  len(v.CloudInfra.Civo.InfoWorkerPlanes.VMIDs),
 				NoCP:  len(v.CloudInfra.Civo.InfoControlPlanes.VMIDs),
@@ -524,6 +546,13 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 
 				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Civo.B.KubernetesVer,
+				Apps: func() (_a []string) {
+					for _, a := range v.Addons.Apps {
+						_a = append(_a, a.String())
+					}
+					return
+				}(),
+				Cni: v.Addons.Cni.String(),
 			})
 			log.Debug(civoCtx, "Printing", "cloudClusterInfoFetched", data)
 		}
