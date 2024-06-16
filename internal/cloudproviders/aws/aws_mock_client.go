@@ -233,7 +233,7 @@ func (*AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) 
 							Name: types.InstanceStateNameRunning,
 						},
 						PublicIpAddress:  aws.String("A.B.C.D"),
-						PrivateIpAddress: aws.String("192.169.1.2"),
+						PrivateIpAddress: aws.String("192.168.1.2"),
 					},
 				},
 			},

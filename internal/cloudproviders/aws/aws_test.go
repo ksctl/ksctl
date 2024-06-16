@@ -511,7 +511,7 @@ func TestHACluster(t *testing.T) {
 			assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP, "A.B.C.D", "missmatch of Loadbalancer pub ip")
 
 			assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId) > 0, "missmatch of Loadbalancer nic must be created")
-			assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP, "192.169.1.2", "missmatch of Loadbalancer private ip NIC")
+			assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP, "192.168.1.2", "missmatch of Loadbalancer private ip NIC")
 
 			checkCurrentStateFileHA(t)
 		})
@@ -536,7 +536,7 @@ func TestHACluster(t *testing.T) {
 					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[i], "A.B.C.D", "missmatch of controlplane pub ip")
 
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of controlplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[i], "192.169.1.2", "missmatch of controlplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of controlplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -564,7 +564,7 @@ func TestHACluster(t *testing.T) {
 					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[i], "A.B.C.D", "missmatch of datastore pub ip")
 
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[i]) > 0, "missmatch of datastore nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[i], "192.169.1.2", "missmatch of datastore private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[i], "192.168.1.2", "missmatch of datastore private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -591,7 +591,7 @@ func TestHACluster(t *testing.T) {
 					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[i], "A.B.C.D", "missmatch of workerplane pub ip")
 
 					assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[i]) > 0, "missmatch of workerplane nic must be created")
-					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[i], "192.169.1.2", "missmatch of workerplane private ip NIC")
+					assert.Equal(t, mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[i], "192.168.1.2", "missmatch of workerplane private ip NIC")
 
 					checkCurrentStateFileHA(t)
 				})
@@ -618,32 +618,43 @@ func TestHACluster(t *testing.T) {
 	})
 
 	t.Run("Get cluster ha", func(t *testing.T) {
+		_e := cloud.VMData{
+			VMSize:     "fake",
+			VMID:       "test-instance-1234567890",
+			FirewallID: "test-security-group-1234567890",
+			SubnetID:   "3456d25f36g474g546",
+			SubnetName: "demo-ha-subnet",
+			PublicIP:   "A.B.C.D",
+			PrivateIP:  "192.168.1.2",
+		}
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
 				Name:          fakeClientHA.clusterName,
 				Region:        fakeClientHA.region,
 				CloudProvider: consts.CloudAws,
 				ClusterType:   consts.ClusterTypeHa,
-				NoWP:          fakeClientHA.metadata.noWP,
-				NoCP:          fakeClientHA.metadata.noCP,
-				NoDS:          fakeClientHA.metadata.noDS,
+				SSHKeyName:    "fake-ssh",
+				NetworkName:   fakeClientHA.clusterName + "-vpc",
+				NetworkID:     "3456d25f36g474g546",
+
+				NoWP: fakeClientHA.metadata.noWP,
+				NoCP: fakeClientHA.metadata.noCP,
+				NoDS: fakeClientHA.metadata.noDS,
 
 				WP: []cloud.VMData{
-					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
-					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
-					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
-					{VMSize: "fake"},
+					_e, _e, _e, _e,
+					_e, _e, _e, _e,
+					_e, _e,
 				},
 				CP: []cloud.VMData{
-					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
-					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
-					{VMSize: "fake"},
+					_e, _e, _e, _e,
+					_e, _e, _e,
 				},
 				DS: []cloud.VMData{
-					{VMSize: "fake"}, {VMSize: "fake"}, {VMSize: "fake"},
-					{VMSize: "fake"}, {VMSize: "fake"},
+					_e, _e, _e, _e,
+					_e,
 				},
-				LB: cloud.VMData{VMSize: "fake"},
+				LB: _e,
 
 				K8sDistro:  "",
 				K8sVersion: mainStateDocument.CloudInfra.Aws.B.KubernetesVer,

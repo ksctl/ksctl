@@ -499,6 +499,8 @@ func TestManagedCluster(t *testing.T) {
 				Name:          fakeClientManaged.clusterName,
 				CloudProvider: consts.CloudCivo,
 				ClusterType:   consts.ClusterTypeMang,
+				NetworkID:     "fake-net",
+				ManagedK8sID:  "fake-k8s",
 				Region:        fakeClientManaged.region,
 				NoMgt:         mainStateDocument.CloudInfra.Civo.NoManagedNodes,
 				Mgt:           cloud.VMData{VMSize: "g4s.kube.small"},
@@ -731,6 +733,13 @@ func TestHACluster(t *testing.T) {
 	})
 
 	t.Run("Get cluster ha", func(t *testing.T) {
+		_e := cloud.VMData{
+			VMSize:     "g4s.kube.small",
+			VMID:       "vm-fake",
+			FirewallID: "fake-fw",
+			PublicIP:   "A.B.C.D",
+			PrivateIP:  "192.168.1.2",
+		}
 		expected := []cloud.AllClusterData{
 			cloud.AllClusterData{
 				Name:          fakeClientHA.clusterName,
@@ -740,24 +749,21 @@ func TestHACluster(t *testing.T) {
 				NoWP:          fakeClientHA.noWP,
 				NoCP:          fakeClientHA.noCP,
 				NoDS:          fakeClientHA.noDS,
-				LB:            cloud.VMData{VMSize: "g4s.kube.small"},
+				SSHKeyID:      "fake-ssh",
+				NetworkID:     "fake-net",
+				LB:            _e,
 				WP: []cloud.VMData{
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
+					_e, _e, _e, _e,
+					_e, _e, _e, _e,
+					_e, _e,
 				},
 				CP: []cloud.VMData{
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"},
+					_e, _e, _e, _e,
+					_e, _e, _e,
 				},
 				DS: []cloud.VMData{
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"}, {VMSize: "g4s.kube.small"},
-					{VMSize: "g4s.kube.small"},
+					_e, _e, _e, _e,
+					_e,
 				},
 				K8sDistro:  "",
 				K8sVersion: mainStateDocument.CloudInfra.Civo.B.KubernetesVer,
