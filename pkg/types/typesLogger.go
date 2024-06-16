@@ -25,7 +25,7 @@ type LoggerFactory interface {
 
 	NewError(ctx context.Context, msg string, v ...any) error
 
-	Table(ctx context.Context, data []cloudController.AllClusterData)
+	Table(ctx context.Context, operation consts.LogClusterDetail, data []cloudController.AllClusterData)
 
 	Box(ctx context.Context, title string, lines string)
 }
