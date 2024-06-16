@@ -51,6 +51,7 @@ type AllClusterData struct {
 	NetworkName     string
 	NetworkID       string
 	ManagedK8sID    string
+	ManagedK8sName  string
 	WP              []VMData
 	CP              []VMData
 	DS              []VMData
