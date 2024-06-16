@@ -468,6 +468,7 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
+					VMID:       o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -482,6 +483,7 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
+					VMID:       o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -496,6 +498,7 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
+					VMID:       o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -507,6 +510,7 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 
 		default:
 			v = append(v, cloudcontrolres.VMData{
+				VMID:       st.CloudInfra.Aws.InfoLoadBalancer.InstanceID,
 				VMSize:     st.CloudInfra.Aws.InfoLoadBalancer.VMSize,
 				FirewallID: st.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID,
 				PublicIP:   st.CloudInfra.Aws.InfoLoadBalancer.PublicIP,

@@ -477,6 +477,7 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloud_control_res.VMData{
+					VMID:       o.VMIDs[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Civo.FirewallIDControlPlanes,
 					PublicIP:   o.PublicIPs[i],
@@ -489,6 +490,7 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloud_control_res.VMData{
+					VMID:       o.VMIDs[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Civo.FirewallIDWorkerNodes,
 					PublicIP:   o.PublicIPs[i],
@@ -501,6 +503,7 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloud_control_res.VMData{
+					VMID:       o.VMIDs[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Civo.FirewallIDDatabaseNodes,
 					PublicIP:   o.PublicIPs[i],
@@ -510,6 +513,7 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 
 		default:
 			v = append(v, cloud_control_res.VMData{
+				VMID:       st.CloudInfra.Civo.InfoLoadBalancer.VMID,
 				VMSize:     st.CloudInfra.Civo.InfoLoadBalancer.VMSize,
 				FirewallID: st.CloudInfra.Civo.FirewallIDLoadBalancer,
 				PrivateIP:  st.CloudInfra.Civo.InfoLoadBalancer.PrivateIP,

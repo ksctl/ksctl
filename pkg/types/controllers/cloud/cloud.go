@@ -30,6 +30,8 @@ type SSHInfo struct {
 }
 
 type VMData struct {
+	VMID         string
+	VMName       string
 	VMSize       string
 	FirewallID   string
 	FirewallName string

@@ -479,6 +479,7 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
+					VMName:       o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName,
@@ -494,6 +495,7 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
+					VMName:       o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName,
@@ -509,6 +511,7 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
+					VMName:       o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName,
@@ -521,6 +524,7 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 
 		default:
 			v = append(v, cloudcontrolres.VMData{
+				VMName:       st.CloudInfra.Azure.InfoLoadBalancer.Name,
 				VMSize:       st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
 				FirewallID:   st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID,
 				FirewallName: st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName,
