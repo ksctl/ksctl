@@ -200,13 +200,15 @@ func (manager *ManagerClusterKsctl) clusterDataHelper(
 				),
 			)
 		}
-		_err := ksctlErrors.ErrInvalidUserInput.Wrap(
-			log.NewError(controllerCtx, "Failure", "reason", err),
-		)
+		if len(err) != 0 {
+			_err := ksctlErrors.ErrInvalidUserInput.Wrap(
+				log.NewError(controllerCtx, "Failure", "reason", err),
+			)
 
-		log.Error("Failure", "reason", _err)
+			log.Error("Failure", "reason", _err)
 
-		return nil, _err
+			return nil, _err
+		}
 	}
 
 	defer func() {
