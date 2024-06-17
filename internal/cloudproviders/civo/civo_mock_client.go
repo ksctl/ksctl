@@ -3,8 +3,6 @@
 package civo
 
 import (
-	cryptoRand "crypto/rand"
-	"encoding/base64"
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -18,15 +16,6 @@ func ProvideClient() CivoGo {
 type CivoClient struct {
 	client *civogo.FakeClient
 	region string
-}
-
-func generateRandomString(length int) string {
-	b := make([]byte, length)
-	_, err := cryptoRand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-	return base64.StdEncoding.EncodeToString(b)
 }
 
 func (client *CivoClient) ListAvailableKubernetesVersions() ([]civogo.KubernetesVersion, error) {
@@ -120,7 +109,7 @@ users:
 
 func (client *CivoClient) NewKubernetesClusters(kc *civogo.KubernetesClusterConfig) (*civogo.KubernetesCluster, error) {
 	return &civogo.KubernetesCluster{
-		ID:        generateRandomString(10),
+		ID:        "fake-k8s",
 		Name:      kc.Name,
 		NetworkID: kc.NetworkID,
 		Version:   kc.KubernetesVersion,
@@ -139,7 +128,7 @@ func (client *CivoClient) GetDiskImageByName(name string) (*civogo.DiskImage, er
 
 	return &civogo.DiskImage{
 		Name:  name,
-		ID:    "disk-" + generateRandomString(5),
+		ID:    "disk-fake",
 		State: "ACTIVE",
 	}, nil
 }
@@ -148,7 +137,7 @@ func (client *CivoClient) CreateNetwork(label string) (*civogo.NetworkResult, er
 
 	return &civogo.NetworkResult{
 		Label:  label,
-		ID:     generateRandomString(10),
+		ID:     "fake-net",
 		Result: "created fake network",
 	}, nil
 }
@@ -164,7 +153,7 @@ func (client *CivoClient) DeleteNetwork(id string) (*civogo.SimpleResponse, erro
 func (client *CivoClient) NewFirewall(config *civogo.FirewallConfig) (*civogo.FirewallResult, error) {
 
 	return &civogo.FirewallResult{
-		ID:     generateRandomString(10),
+		ID:     "fake-fw",
 		Name:   config.Name,
 		Result: "fake firewall created",
 	}, nil
@@ -179,7 +168,7 @@ func (client *CivoClient) DeleteFirewall(id string) (*civogo.SimpleResponse, err
 
 func (client *CivoClient) NewSSHKey(_, _ string) (*civogo.SimpleResponse, error) {
 	return &civogo.SimpleResponse{
-		ID:     generateRandomString(10),
+		ID:     "fake-ssh",
 		Result: "created fake ssh key",
 	}, nil
 }
@@ -194,9 +183,9 @@ func (client *CivoClient) DeleteSSHKey(id string) (*civogo.SimpleResponse, error
 func (client *CivoClient) CreateInstance(config *civogo.InstanceConfig) (*civogo.Instance, error) {
 
 	return &civogo.Instance{
-		ID:         generateRandomString(10),
+		ID:         "vm-fake",
 		Region:     config.Region,
-		PrivateIP:  "192.169.1.2",
+		PrivateIP:  "192.168.1.2",
 		PublicIP:   "A.B.C.D",
 		CreatedAt:  time.Now(),
 		FirewallID: config.FirewallID,
@@ -211,7 +200,7 @@ func (client *CivoClient) GetInstance(id string) (*civogo.Instance, error) {
 
 	return &civogo.Instance{
 		ID:        id,
-		PrivateIP: "192.169.1.2",
+		PrivateIP: "192.168.1.2",
 		PublicIP:  "A.B.C.D",
 		Hostname:  "fake-hostname",
 		Status:    "ACTIVE",

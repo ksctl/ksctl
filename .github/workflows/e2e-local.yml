@@ -40,6 +40,11 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           ksctl-e2e-amd64 -op create -file local/create.json
+          ksctl-e2e-amd64 -op info -file local/info.json
+
+      - name: get
+        if: steps.changes.outputs.paths == 'true'
+        run: |
           ksctl-e2e-amd64 -op get -file local/get.json
 
       - name: switch (managed)

@@ -46,20 +46,26 @@ jobs:
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file civo/create.json
-          ksctl-e2e-amd64 -op get -file civo/get.json
+          ksctl-e2e-amd64 -op info -file civo/info.json
 
       - name: create (k3s ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file civo/create-ha.json
-          ksctl-e2e-amd64 -op get -file civo/get.json
+          ksctl-e2e-amd64 -op info -file civo/info-ha.json
 
       - name: create (kubeadm ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file civo/create-ha-kubeadm.json
+          ksctl-e2e-amd64 -op info -file civo/info-ha-kubeadm.json
+
+      - name: get
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          set -xe
           ksctl-e2e-amd64 -op get -file civo/get.json
 
       - name: switch

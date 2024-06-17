@@ -10,4 +10,5 @@ const (
 	OpGet       = Operation("get")
 	OpSwitch    = Operation("switch")
 	OpCreds     = Operation("creds")
+	OpInfo      = Operation("info")
 )

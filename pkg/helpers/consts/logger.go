@@ -12,3 +12,10 @@ var (
 	LogSuccess = CustomExternalLogLevel(color.HiGreenString("PASS"))
 	LogDebug   = CustomExternalLogLevel(color.WhiteString("DEBUG"))
 )
+
+type LogClusterDetail uint
+
+const (
+	LoggingGetClusters LogClusterDetail = iota
+	LoggingInfoCluster LogClusterDetail = iota
+)

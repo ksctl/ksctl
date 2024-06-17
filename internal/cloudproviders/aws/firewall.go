@@ -36,13 +36,13 @@ func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
 	nsg := ""
 	switch role {
 	case consts.RoleCp:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup
+		nsg = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs
 	case consts.RoleWp:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup
+		nsg = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs
 	case consts.RoleLb:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup
+		nsg = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID
 	case consts.RoleDs:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup
+		nsg = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs
 	}
 
 	if len(nsg) == 0 {
@@ -56,13 +56,13 @@ func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
 
 		switch role {
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup = ""
+			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs = ""
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup = ""
+			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs = ""
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup = ""
+			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID = ""
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = ""
+			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs = ""
 		}
 
 		err = storage.Write(mainStateDocument)
@@ -86,24 +86,24 @@ func (obj *AwsProvider) CreateSecurityGroup(name string, role consts.KsctlRole) 
 
 	switch role {
 	case consts.RoleCp:
-		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup)
-			return mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup, nil
+		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs != "" {
+			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs)
+			return mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs, nil
 		}
 	case consts.RoleWp:
-		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup)
-			return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup, nil
+		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs != "" {
+			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs)
+			return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs, nil
 		}
 	case consts.RoleLb:
-		if mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup)
-			return mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup, nil
+		if mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID != "" {
+			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID)
+			return mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID, nil
 		}
 	case consts.RoleDs:
-		if mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup)
-			return mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup, nil
+		if mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs != "" {
+			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs)
+			return mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs, nil
 		}
 	}
 
@@ -139,11 +139,11 @@ func (obj *AwsProvider) createSecurityGroupRules(
 
 	switch role {
 	case consts.RoleLb:
-		mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroup = *SecurityGroup.GroupId
+		mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleLoadBalancer(SecurityGroup.GroupId)
 
 	case consts.RoleCp:
-		mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+		mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleControlPlane(
 			SecurityGroup.GroupId,
 			netCidr,
@@ -151,7 +151,7 @@ func (obj *AwsProvider) createSecurityGroupRules(
 		)
 
 	case consts.RoleWp:
-		mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroup = *SecurityGroup.GroupId
+		mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleWorkerPlane(
 			SecurityGroup.GroupId,
 			netCidr,
@@ -159,7 +159,7 @@ func (obj *AwsProvider) createSecurityGroupRules(
 		)
 
 	case consts.RoleDs:
-		mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroup = *SecurityGroup.GroupId
+		mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleDataStore(
 			SecurityGroup.GroupId,
 			netCidr,

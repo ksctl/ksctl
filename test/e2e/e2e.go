@@ -104,7 +104,7 @@ func main() {
 			}
 		}
 
-	case OpCreds, OpGet, OpSwitch:
+	case OpCreds, OpGet, OpSwitch, OpInfo:
 		managerClient, err := controllers.NewManagerClusterKsctl(
 			ctx,
 			l,
@@ -121,6 +121,8 @@ func main() {
 			creds(managerClient)
 		case OpGet:
 			getClusters(managerClient)
+		case OpInfo:
+			infoClusters(managerClient)
 		case OpSwitch:
 			switchCluster(managerClient)
 		}

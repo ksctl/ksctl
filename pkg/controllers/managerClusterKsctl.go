@@ -11,6 +11,8 @@ import (
 	cloudController "github.com/ksctl/ksctl/pkg/controllers/cloud"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 	cloudControllerResource "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -60,7 +62,11 @@ func (manager *ManagerClusterKsctl) Credentials() error {
 		client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
 
 	default:
-		err = log.NewError(controllerCtx, "Currently not supported!")
+		err = ksctlErrors.ErrInvalidCloudProvider.Wrap(
+			manager.log.NewError(
+				controllerCtx, "Problem in validation", "cloud", client.Metadata.Provider,
+			),
+		)
 	}
 
 	if err != nil {
@@ -127,8 +133,6 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 	case consts.CloudLocal:
 		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, stateDocument, localPkg.ProvideClient)
 
-	default:
-		err = log.NewError(controllerCtx, "Currently not supported!")
 	}
 
 	if err != nil {
@@ -164,18 +168,47 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 	return &kubeconfig, nil
 }
 
-func (manager *ManagerClusterKsctl) GetCluster() error {
+func (manager *ManagerClusterKsctl) clusterDataHelper(
+	operation consts.LogClusterDetail) ([]cloudControllerResource.AllClusterData, error) {
+
 	client := manager.client
 	log := manager.log
 	defer panicCatcher(log)
 
 	if err := manager.validationFields(client.Metadata); err != nil {
 		log.Error("handled error", "catch", err)
-		return err
+		return nil, err
 	}
 
 	if client.Metadata.Provider == consts.CloudLocal {
 		client.Metadata.Region = "LOCAL"
+	}
+
+	if operation == consts.LoggingInfoCluster {
+		var err []error
+		if len(client.Metadata.ClusterName) == 0 {
+			err = append(err,
+				ksctlErrors.ErrInvalidResourceName.Wrap(
+					log.NewError(controllerCtx, "clustername is needed for cluster info details"),
+				),
+			)
+		}
+		if len(client.Metadata.Region) == 0 {
+			err = append(err,
+				ksctlErrors.ErrInvalidCloudRegion.Wrap(
+					log.NewError(controllerCtx, "region is needed for cluster info details"),
+				),
+			)
+		}
+		if len(err) != 0 {
+			_err := ksctlErrors.ErrInvalidUserInput.Wrap(
+				log.NewError(controllerCtx, "Failure", "reason", err),
+			)
+
+			log.Error("Failure", "reason", _err)
+
+			return nil, _err
+		}
 	}
 
 	defer func() {
@@ -209,35 +242,51 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 	case consts.CloudLocal:
 		cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
 
-	case consts.CloudAll:
-		cloudMapper[consts.CloudCivo], err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
-		if err != nil {
-			log.Error("handled error", "catch", err)
-			return err
-		}
-		cloudMapper[consts.CloudAzure], err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
-		if err != nil {
-			log.Error("handled error", "catch", err)
-			return err
-		}
-		cloudMapper[consts.CloudAws], err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
-		if err != nil {
-			log.Error("handled error", "catch", err)
-			return err
-		}
-		cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
-		if err != nil {
-			log.Error("handled error", "catch", err)
-			return err
+	default:
+		switch operation {
+		case consts.LoggingGetClusters:
+			if client.Metadata.Provider != consts.CloudAll {
+				err = ksctlErrors.ErrInvalidCloudProvider.Wrap(
+					manager.log.NewError(
+						controllerCtx, "", "cloud", client.Metadata.Provider,
+					),
+				)
+			} else {
+				cloudMapper[consts.CloudCivo], err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
+				if err != nil {
+					log.Error("handled error", "catch", err)
+					return nil, err
+				}
+				cloudMapper[consts.CloudAzure], err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
+				if err != nil {
+					log.Error("handled error", "catch", err)
+					return nil, err
+				}
+				cloudMapper[consts.CloudAws], err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
+				if err != nil {
+					log.Error("handled error", "catch", err)
+					return nil, err
+				}
+				cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+				if err != nil {
+					log.Error("handled error", "catch", err)
+					return nil, err
+				}
+			}
+
+		case consts.LoggingInfoCluster:
+			err = ksctlErrors.ErrInvalidCloudProvider.Wrap(
+				manager.log.NewError(
+					controllerCtx, "", "cloud", client.Metadata.Provider,
+				),
+			)
 		}
 
-	default:
-		err = log.NewError(controllerCtx, "Currently not supported!")
 	}
 
 	if err != nil {
 		log.Error("handled error", "catch", err)
-		return err
+		return nil, err
 	}
 
 	var printerTable []cloudControllerResource.AllClusterData
@@ -248,14 +297,57 @@ func (manager *ManagerClusterKsctl) GetCluster() error {
 		data, err := v.GetRAWClusterInfos(client.Storage)
 		if err != nil {
 			log.Error("handled error", "catch", err)
-			return err
+			return nil, err
 		}
+
+		if operation == consts.LoggingInfoCluster {
+			// as the info will not have all as cloud provider this loop will only run once
+			for _, _data := range data {
+				if _data.Name != manager.client.Metadata.ClusterName ||
+					_data.Region != manager.client.Metadata.Region {
+					continue
+				} else {
+					printerTable = append(printerTable, data...)
+					return printerTable, nil
+				}
+			}
+			return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
+				log.NewError(controllerCtx, "No state is present",
+					"name", manager.client.Metadata.ClusterName),
+			)
+		}
+
 		printerTable = append(printerTable, data...)
 	}
+	return printerTable, err
+}
 
-	log.Table(controllerCtx, printerTable)
+func (manager *ManagerClusterKsctl) GetCluster() error {
+	v, err := manager.clusterDataHelper(
+		consts.LoggingGetClusters,
+	)
+	if err != nil {
+		return err
+	}
 
-	log.Success(controllerCtx, "successfully get clusters")
+	manager.log.Table(controllerCtx, consts.LoggingGetClusters, v)
+
+	manager.log.Success(controllerCtx, "successfully get clusters")
 
 	return nil
+}
+
+func (manager *ManagerClusterKsctl) InfoCluster() (*cloudControllerResource.AllClusterData, error) {
+	v, err := manager.clusterDataHelper(
+		consts.LoggingInfoCluster,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	manager.log.Table(controllerCtx, consts.LoggingInfoCluster, v)
+
+	manager.log.Success(controllerCtx, "successfully cluster info")
+
+	return utilities.Ptr[cloudControllerResource.AllClusterData](v[0]), nil
 }

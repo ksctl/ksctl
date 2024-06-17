@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"encoding/json"
+
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -470,34 +471,67 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 		return nil, err
 	}
 
-	var convertToAllClusterDataType func(*storageTypes.StorageDocument, consts.KsctlRole) []cloudcontrolres.VMData
-	convertToAllClusterDataType = func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloudcontrolres.VMData) {
+	convertToAllClusterDataType := func(st *storageTypes.StorageDocument, r consts.KsctlRole) (v []cloudcontrolres.VMData) {
 
 		switch r {
 		case consts.RoleCp:
-			for _, d := range st.CloudInfra.Azure.InfoControlPlanes.VMSizes {
+			o := st.CloudInfra.Azure.InfoControlPlanes
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
-					VMSize: d,
+					VMName:       o.Names[i],
+					VMSize:       o.VMSizes[i],
+					FirewallID:   st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID,
+					FirewallName: st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName,
+					PublicIP:     o.PublicIPs[i],
+					PrivateIP:    o.PrivateIPs[i],
+					SubnetID:     st.CloudInfra.Azure.SubnetID,
+					SubnetName:   st.CloudInfra.Azure.SubnetName,
 				})
 			}
 
 		case consts.RoleWp:
-			for _, d := range st.CloudInfra.Azure.InfoWorkerPlanes.VMSizes {
+			o := st.CloudInfra.Azure.InfoWorkerPlanes
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
-					VMSize: d,
+					VMName:       o.Names[i],
+					VMSize:       o.VMSizes[i],
+					FirewallID:   st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID,
+					FirewallName: st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName,
+					PublicIP:     o.PublicIPs[i],
+					PrivateIP:    o.PrivateIPs[i],
+					SubnetID:     st.CloudInfra.Azure.SubnetID,
+					SubnetName:   st.CloudInfra.Azure.SubnetName,
 				})
 			}
 
 		case consts.RoleDs:
-			for _, d := range st.CloudInfra.Azure.InfoDatabase.VMSizes {
+			o := st.CloudInfra.Azure.InfoDatabase
+			no := len(o.VMSizes)
+			for i := 0; i < no; i++ {
 				v = append(v, cloudcontrolres.VMData{
-					VMSize: d,
+					VMName:       o.Names[i],
+					VMSize:       o.VMSizes[i],
+					FirewallID:   st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID,
+					FirewallName: st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName,
+					PublicIP:     o.PublicIPs[i],
+					PrivateIP:    o.PrivateIPs[i],
+					SubnetID:     st.CloudInfra.Azure.SubnetID,
+					SubnetName:   st.CloudInfra.Azure.SubnetName,
 				})
 			}
 
 		default:
 			v = append(v, cloudcontrolres.VMData{
-				VMSize: st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
+				VMName:       st.CloudInfra.Azure.InfoLoadBalancer.Name,
+				VMSize:       st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
+				FirewallID:   st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID,
+				FirewallName: st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName,
+				PublicIP:     st.CloudInfra.Azure.InfoLoadBalancer.PublicIP,
+				PrivateIP:    st.CloudInfra.Azure.InfoLoadBalancer.PrivateIP,
+				SubnetID:     st.CloudInfra.Azure.SubnetID,
+				SubnetName:   st.CloudInfra.Azure.SubnetName,
 			})
 		}
 		return v
@@ -522,9 +556,22 @@ func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cl
 				Mgt: cloudcontrolres.VMData{
 					VMSize: v.CloudInfra.Azure.ManagedNodeSize,
 				},
+				ManagedK8sName:  v.CloudInfra.Azure.ManagedClusterName,
+				NetworkName:     v.CloudInfra.Azure.VirtualNetworkName,
+				NetworkID:       v.CloudInfra.Azure.VirtualNetworkID,
+				ResourceGrpName: v.CloudInfra.Azure.ResourceGroupName,
+				SSHKeyName:      v.CloudInfra.Azure.B.SSHKeyName,
+				SSHKeyID:        v.CloudInfra.Azure.B.SSHID,
 
 				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Azure.B.KubernetesVer,
+				Apps: func() (_a []string) {
+					for _, a := range v.Addons.Apps {
+						_a = append(_a, a.String())
+					}
+					return
+				}(),
+				Cni: v.Addons.Cni.String(),
 			})
 			log.Debug(azureCtx, "Printing", "cloudClusterInfoFetched", data)
 

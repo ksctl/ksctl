@@ -1,9 +1,9 @@
 package cloud
 
-import "github.com/ksctl/ksctl/pkg/helpers/consts"
+import (
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+)
 
-// CloudResourceState provides the state which cloud provider creates
-// and which is consumed by the kubernetes to configure them
 type CloudResourceState struct {
 	SSHState          SSHInfo
 	IPv4ControlPlanes []string
@@ -20,7 +20,6 @@ type CloudResourceState struct {
 type Metadata struct {
 	ClusterName string
 	Region      string
-	//ClusterDir  string
 	ClusterType consts.KsctlClusterType
 	Provider    consts.KsctlCloud
 }
@@ -31,23 +30,40 @@ type SSHInfo struct {
 }
 
 type VMData struct {
-	VMSize string
+	VMID         string
+	VMName       string
+	VMSize       string
+	FirewallID   string
+	FirewallName string
+	SubnetID     string
+	SubnetName   string
+	PublicIP     string
+	PrivateIP    string
 }
 
 type AllClusterData struct {
-	Name          string
-	CloudProvider consts.KsctlCloud
-	ClusterType   consts.KsctlClusterType
-	K8sDistro     consts.KsctlKubernetes
-	Region        string
-	WP            []VMData
-	CP            []VMData
-	DS            []VMData
-	LB            VMData
-	Mgt           VMData
-	NoWP          int
-	NoCP          int
-	NoDS          int
-	NoMgt         int
-	K8sVersion    string
+	Name            string
+	CloudProvider   consts.KsctlCloud
+	ClusterType     consts.KsctlClusterType
+	K8sDistro       consts.KsctlKubernetes
+	SSHKeyName      string
+	SSHKeyID        string
+	Region          string
+	ResourceGrpName string
+	NetworkName     string
+	NetworkID       string
+	ManagedK8sID    string
+	ManagedK8sName  string
+	WP              []VMData
+	CP              []VMData
+	DS              []VMData
+	LB              VMData
+	Mgt             VMData
+	NoWP            int
+	NoCP            int
+	NoDS            int
+	NoMgt           int
+	K8sVersion      string
+	Apps            []string
+	Cni             string
 }
