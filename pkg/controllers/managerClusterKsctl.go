@@ -307,7 +307,7 @@ func (manager *ManagerClusterKsctl) clusterDataHelper(
 					_data.Region != manager.client.Metadata.Region {
 					continue
 				} else {
-					printerTable = append(printerTable, data...)
+					printerTable = append(printerTable, _data)
 					return printerTable, nil
 				}
 			}
