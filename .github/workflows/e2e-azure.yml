@@ -48,20 +48,26 @@ jobs:
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file azure/create.json
-          ksctl-e2e-amd64 -op get -file azure/get.json
+          ksctl-e2e-amd64 -op info -file azure/info.json
 
       - name: create (k3s ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file azure/create-ha.json
-          ksctl-e2e-amd64 -op get -file azure/get.json
+          ksctl-e2e-amd64 -op info -file azure/info-ha.json
 
       - name: create (kubeadm ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file azure/create-ha-kubeadm.json
+          ksctl-e2e-amd64 -op info -file azure/info-ha-kubeadm.json
+
+      - name: get
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          set -xe
           ksctl-e2e-amd64 -op get -file azure/get.json
 
       - name: switch

@@ -49,20 +49,27 @@ jobs:
           set -xe
           echo -e "\033[1;34m@@@\033[0m \033[1;35mFeature in Progress!\033[0m \033[1;34m@@@\033[0m"
           # ksctl-e2e-amd64 -op create -file aws/create.json
-          # ksctl-e2e-amd64 -op get -file aws/get.json
+          # ksctl-e2e-amd64 -op info -file aws/info.json
 
       - name: create (k3s ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file aws/create-ha.json
-          ksctl-e2e-amd64 -op get -file aws/get.json
+          ksctl-e2e-amd64 -op info -file aws/info-ha.json
+
 
       - name: create (kubeadm ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file aws/create-ha-kubeadm.json
+          ksctl-e2e-amd64 -op info -file aws/info-ha-kubeadm.json
+
+      - name: get
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          set -xe
           ksctl-e2e-amd64 -op get -file aws/get.json
 
       - name: switch
