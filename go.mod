@@ -20,7 +20,7 @@ require (
 	github.com/fatih/color v1.17.0
 	github.com/goccy/go-json v0.10.2
 	github.com/gookit/goutil v0.6.15
-	github.com/onsi/ginkgo/v2 v2.17.3
+	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	go.mongodb.org/mongo-driver v1.15.0
 	golang.org/x/crypto v0.24.0
