@@ -193,19 +193,18 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 		if err != nil {
 			return err
 		}
+		log.Success(awsCtx, "created the EKS nodegroup", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
+
 	}
 
-	// result, err := obj.client.DescribeCluster(awsCtx, &eks.DescribeClusterInput{
-	// 	Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
-	// })
-	// if err != nil {
-	// 	return err
-	// }
+	describeClusterInput := eks.DescribeClusterInput{
+		Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+	}
 
-	// config := result.Cluster.AccessConfig
-
-	// create get kubeconfig funtion
-	// kubeconfig, err := obj.client.GetKubeConfig(awsCtx, mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	kubeconfig, err := obj.client.GetKubeConfig(awsCtx, &describeClusterInput)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

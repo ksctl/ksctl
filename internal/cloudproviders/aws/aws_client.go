@@ -4,23 +4,27 @@ package aws
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/eks"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	"sigs.k8s.io/aws-iam-authenticator/pkg/token"
 )
 
 const (
@@ -69,7 +73,6 @@ func newEC2Client(region string) (aws.Config, error) {
 		)
 	}
 	log.Success(awsCtx, "AWS Session created successfully")
-
 	return _session, nil
 }
 
@@ -893,6 +896,51 @@ func (awsclient *AwsClient) BeginCreateIAM(ctx context.Context, node string, par
 	}
 
 	return createRoleResp, nil
+}
+
+func (awsclient *AwsClient) GetKubeConfig(ctx context.Context, parameter *eks.DescribeClusterInput) (*kubernetes.Clientset, error) {
+	clusterDescription, err := awsclient.eksClient.DescribeCluster(ctx, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenGenerator, err := token.NewGenerator(true, false)
+	if err != nil {
+		return nil, err
+	}
+	sess, err := newEC2Client(awsclient.region)
+	if err != nil {
+		return nil, err
+	}
+	// TODO GET THIS FIXED UP
+	opts := &token.GetTokenOptions{
+		ClusterID: *clusterDescription.Cluster.Name,
+		Region:    awsclient.region,
+		Session:   sess,
+	}
+	token, err := tokenGenerator.GetWithOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	certificateAuthority, err := base64.StdEncoding.DecodeString(*clusterDescription.Cluster.CertificateAuthority.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(
+		&rest.Config{
+			Host:        *clusterDescription.Cluster.Endpoint,
+			BearerToken: token.Token,
+			TLSClientConfig: rest.TLSClientConfig{
+				CAData: certificateAuthority,
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
 }
 
 func (awsclient *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error) {
