@@ -59,6 +59,10 @@ func ExecuteKsctlSpecificRun() error {
 		return err
 	}
 
+	if _, err := controller.InfoCluster(); err != nil {
+		return err
+	}
+
 	if err := controller.GetCluster(); err != nil {
 		return err
 	}
