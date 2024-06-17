@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
+	"k8s.io/client-go/kubernetes"
 )
 
 type metadata struct {
@@ -96,6 +97,8 @@ type AwsGo interface {
 
 	BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error)
 	BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error)
+
+	GetKubeConfig(ctx context.Context, parameter *eks.DescribeClusterInput) (*kubernetes.Clientset, error)
 
 	SetRegion(string)
 	SetVpc(string) string
