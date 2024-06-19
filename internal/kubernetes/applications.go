@@ -16,6 +16,7 @@ const (
 	InstallHelm    = InstallType("helm")
 )
 
+// TODO Need to have a sequence for both Helm and Kubeapply commands for each project
 type Application struct {
 	Name          string
 	Url           string
