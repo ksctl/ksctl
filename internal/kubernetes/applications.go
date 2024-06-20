@@ -9,27 +9,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-type InstallType string
-
-const (
-	InstallKubectl = InstallType("kubectl")
-	InstallHelm    = InstallType("helm")
-)
-
-type Application struct {
-	Name          string
-	Url           string
-	Version       string
-	Maintainer    string
-	HelmConfig    []HelmOptions
-	KubectlConfig KubectlOptions
-	InstallType
-}
-
-var (
-	apps map[string]func(string) Application
-)
-
 func initApps() {
 	apps = map[string]func(string) Application{
 		"argo-rollouts":     argoRolloutsData,

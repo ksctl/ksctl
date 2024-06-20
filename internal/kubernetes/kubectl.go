@@ -16,14 +16,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-type KubectlOptions struct {
-	createNamespace bool
-	postInstall     string
-	metadata        string
-	// Namespace Only specify if createNamespace is true
-	namespace string
-}
-
 func getManifests(app Application) ([]string, error) {
 
 	// Get the manifest
