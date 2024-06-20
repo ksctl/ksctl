@@ -8,7 +8,7 @@ func istioData(ver string) Application {
 		Version:     ver,
 		InstallType: InstallHelm,
 		HelmConfig: []HelmOptions{
-			HelmOptions{
+			{
 				chartName:       "istio/base",
 				chartVer:        ver,
 				releaseName:     "istio-base",
@@ -18,7 +18,7 @@ func istioData(ver string) Application {
 					"defaultRevision": "default",
 				},
 			},
-			HelmOptions{
+			{
 				chartName:       "istio/istiod",
 				chartVer:        ver,
 				releaseName:     "istiod",

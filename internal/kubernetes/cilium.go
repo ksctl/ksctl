@@ -8,7 +8,7 @@ func ciliumData(ver string) Application {
 		Version:     ver,
 		InstallType: InstallHelm,
 		HelmConfig: []HelmOptions{
-			HelmOptions{
+			{
 				chartName:       "cilium/cilium",
 				chartVer:        ver,
 				releaseName:     "cilium",

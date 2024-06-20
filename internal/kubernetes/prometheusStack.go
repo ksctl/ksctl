@@ -9,7 +9,7 @@ func prometheusStackData(ver string) Application {
 		Version:     ver,
 		InstallType: InstallHelm,
 		HelmConfig: []HelmOptions{
-			HelmOptions{
+			{
 				chartName:       "prometheus-community/kube-prometheus-stack",
 				chartVer:        ver,
 				releaseName:     "kube-prometheus-stack",
