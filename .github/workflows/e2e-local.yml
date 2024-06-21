@@ -5,7 +5,76 @@ on:
   workflow_call:
 
 jobs:
+  execute-local-mongodb-store:
+    environment: e2e
+    env:
+      E2E_FLAGS: debug
+      KUBECONFIG: ${{ vars.KUBECONFIG_KSCTL_LOC }}
+      MONGODB_URI: "mongodb://root:1234@127.0.0.1:27017"
+      PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
+    runs-on: e2e
+    defaults:
+      run:
+        working-directory: test/e2e
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            paths:
+              - 'internal/cloudproviders/local/*'
+              - 'internal/storage/**'
+              - 'pkg/helpers/**'
+              - 'pkg/logger/**'
+              - 'test/e2e/*'
+              - 'test/gh-runner/**'
+              - 'test/e2e/local/*'
+              - 'go.mod'
+              - 'go.sum'
+              - 'pkg/controllers/**'
+              - 'pkg/resources/**'
+              - '.github/workflows/e2e-local.yml'
+      - name: run mongodb server
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          docker run -d \
+            --name mongodb \
+            -p 27017:27017 \
+            -e MONGO_INITDB_ROOT_USERNAME=root \
+            -e MONGO_INITDB_ROOT_PASSWORD=1234 \
+            mongo
+
+      - name: create (managed)
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          ksctl-e2e-amd64 -op create -file local/create_mongodb.json
+          ksctl-e2e-amd64 -op info -file local/info_mongodb.json
+
+      - name: get
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          ksctl-e2e-amd64 -op get -file local/get_mongodb.json
+
+      - name: switch (managed)
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          set -xe
+
+          ksctl-e2e-amd64 -op switch -file local/switch_mongodb.json
+          kubectl get nodes -owide
+
+      - name: delete (managed)
+        if: always() && steps.changes.outputs.paths == 'true'
+        run: |
+          set -xe
+
+          ksctl-e2e-amd64 -op delete -file local/delete.json
+          docker rm -f mongo
+
   execute-local:
+    needs: ["execute-local-mongodb-store"]
     environment: e2e
     env:
       E2E_FLAGS: debug

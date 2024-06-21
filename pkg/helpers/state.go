@@ -37,6 +37,12 @@ func WriteKubeConfig(ctx context.Context, kubeconfig string) (string, error) {
 		return "", ksctlErrors.ErrInternal.Wrap(err)
 	}
 
+	dir, _ := filepath.Split(path)
+
+	if err := os.MkdirAll(dir, 0750); err != nil {
+		return "", ksctlErrors.ErrKubeconfigOperations.Wrap(err)
+	}
+
 	if err := os.WriteFile(path, []byte(kubeconfig), 0755); err != nil {
 		return "", ksctlErrors.ErrKubeconfigOperations.Wrap(err)
 	}
