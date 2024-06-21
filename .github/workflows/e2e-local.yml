@@ -69,8 +69,7 @@ jobs:
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-
-          ksctl-e2e-amd64 -op delete -file local/delete.json
+          ksctl-e2e-amd64 -op delete -file local/delete_mongodb.json
           docker rm -f mongo
 
   execute-local:
