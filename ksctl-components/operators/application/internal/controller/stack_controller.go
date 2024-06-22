@@ -65,6 +65,7 @@ type StackReconciler struct {
 func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-app-stack-controller")
+	ctx = context.WithValue(ctx, consts.KsctlContextUserID, "ksctl-app-stack-controller")
 
 	log.Debug(ctx, "Triggered Reconciliation")
 

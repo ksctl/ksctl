@@ -77,6 +77,11 @@ func main() {
 		consts.KsctlModuleNameKey,
 		"ksctl-agent")
 
+	agentCtx = context.WithValue(
+		agentCtx,
+		consts.KsctlContextUserID,
+		"ksctl-agent")
+
 	log = logger.NewStructuredLogger(
 		helpers.LogVerbosity[os.Getenv("LOG_LEVEL")],
 		helpers.LogWriter)
