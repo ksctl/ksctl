@@ -12,6 +12,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.3.0
+	github.com/aws/aws-sdk-go v1.44.332
 	github.com/aws/aws-sdk-go-v2 v1.27.2
 	github.com/aws/aws-sdk-go-v2/config v1.27.11
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
@@ -57,7 +58,6 @@ require (
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
-	github.com/aws/aws-sdk-go v1.44.332 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.9 // indirect
