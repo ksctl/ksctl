@@ -14,59 +14,80 @@ func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) == 0 {
 		log.Print(awsCtx, "Skipping deleting EKS cluster.")
 		return nil
+	} else {
+
+		if len(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName) == 0 {
+			log.Print(awsCtx, "Skipping deleting EKS node-group.")
+		} else {
+			nodeParameter := eks.DeleteNodegroupInput{
+				ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+				NodegroupName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName),
+			}
+
+			_, err := obj.client.BeginDeleteNodeGroup(awsCtx, &nodeParameter)
+			if err != nil {
+				return err
+			}
+
+			log.Success(awsCtx, "Deleted the EKS node-group", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
+
+			mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = ""
+			mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = ""
+			mainStateDocument.CloudInfra.Aws.NoManagedNodes = 0
+			err = storage.Write(mainStateDocument)
+			if err != nil {
+				return err
+			}
+		}
+
+		clusterPerimeter := eks.DeleteClusterInput{
+			Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+		}
+
+		_, err := obj.client.BeginDeleteManagedCluster(awsCtx, &clusterPerimeter)
+		if err != nil {
+			return err
+		}
+
+		mainStateDocument.CloudInfra.Aws.ManagedClusterName = ""
+		mainStateDocument.CloudInfra.Aws.ManagedClusterArn = ""
+		err = storage.Write(mainStateDocument)
+		if err != nil {
+			return err
+		}
 	}
 
-	nodeParameter := eks.DeleteNodegroupInput{
-		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
-		NodegroupName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName),
+	iamParameter := iam.DeleteRoleInput{
+		RoleName: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleNameWP),
 	}
 
-	_, err := obj.client.BeginDeleteNodeGroup(awsCtx, &nodeParameter)
+	_, err := obj.client.BeginDeleteIAM(awsCtx, &iamParameter, "worker")
 	if err != nil {
 		return err
 	}
 
-	log.Success(awsCtx, "Deleted the EKS node-group", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
-
-	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = ""
-	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = ""
-	mainStateDocument.CloudInfra.Aws.NoManagedNodes = 0
+	mainStateDocument.CloudInfra.Aws.IamRoleNameWP = ""
+	mainStateDocument.CloudInfra.Aws.IamRoleArnWP = ""
 	err = storage.Write(mainStateDocument)
 	if err != nil {
 		return err
 	}
 
-	clusterPerimeter := eks.DeleteClusterInput{
-		Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+	iamParameter = iam.DeleteRoleInput{
+		RoleName: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleNameCN),
 	}
 
-	_, err = obj.client.BeginDeleteManagedCluster(awsCtx, &clusterPerimeter)
+	_, err = obj.client.BeginDeleteIAM(awsCtx, &iamParameter, "controlplane")
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Aws.ManagedClusterName = ""
-	mainStateDocument.CloudInfra.Aws.ManagedClusterArn = ""
+	mainStateDocument.CloudInfra.Aws.IamRoleNameCN = ""
+	mainStateDocument.CloudInfra.Aws.IamRoleArnCN = ""
 	err = storage.Write(mainStateDocument)
 	if err != nil {
 		return err
 	}
-
-	// iamParameter := iam.DeleteRoleInput{
-	// 	RoleName: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleName),
-	// }
-
-	// _, err = obj.client.BeginDeleteIAM(awsCtx, &iamParameter)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// mainStateDocument.CloudInfra.Aws.IamRoleName = ""
-	// mainStateDocument.CloudInfra.Aws.IamRoleArn = ""
-	// err = storage.Write(mainStateDocument)
-	// if err != nil {
-	// 	return err
-	// }
 
 	log.Success(awsCtx, "Deleted the EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 	return storage.Write(mainStateDocument)
@@ -160,7 +181,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 
 			log.Success(awsCtx, "created the EKS worker role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
 		} else {
-			log.Print(awsCtx, "skipped already created EKS worker role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
+			log.Print(awsCtx, "skipped already created ROLE EKS Worker ", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
 		}
 
 		nodegroup := eks.CreateNodegroupInput{
@@ -197,12 +218,16 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 
 	}
 
-	describeClusterInput := eks.DescribeClusterInput{
-		Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+	kubeconfig, err := obj.client.GetKubeConfig(awsCtx, mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	if err != nil {
+		return err
 	}
 
-	kubeconfig, err := obj.client.GetKubeConfig(awsCtx, &describeClusterInput)
-	if err != nil {
+	mainStateDocument.CloudInfra.Azure.B.IsCompleted = true
+
+	mainStateDocument.ClusterKubeConfig = kubeconfig
+
+	if err := storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 

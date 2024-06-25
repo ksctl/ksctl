@@ -462,8 +462,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 					FirewallID: st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetID,
-					SubnetName: st.CloudInfra.Aws.SubnetName,
+					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 				})
 			}
 
@@ -477,8 +477,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 					FirewallID: st.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetID,
-					SubnetName: st.CloudInfra.Aws.SubnetName,
+					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 				})
 			}
 
@@ -492,8 +492,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 					FirewallID: st.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetID,
-					SubnetName: st.CloudInfra.Aws.SubnetName,
+					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 				})
 			}
 
@@ -504,8 +504,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 				FirewallID: st.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID,
 				PublicIP:   st.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
 				PrivateIP:  st.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
-				SubnetID:   st.CloudInfra.Aws.SubnetID,
-				SubnetName: st.CloudInfra.Aws.SubnetName,
+				SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+				SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 			})
 		}
 		return v
@@ -549,4 +549,27 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 	}
 
 	return data, nil
+}
+
+func (obj *AwsProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
+
+	_read, err := storage.Read()
+	if err != nil {
+		log.Error("handled error", "catch", err)
+		return nil, err
+	}
+	log.Debug(awsCtx, "data", "read", _read)
+
+	// add logic to fetch the updated kubeconfig
+	// may be store some sort of ttl inside the already existing kubeconfig
+
+	//if _read.ClusterKubeConfig.ttls > time.After()
+	// storage.Write()
+	// InitState(storage, Get) // client initilaiz
+	// obj.client.GetKubeconfig()
+	//}
+
+	kubeconfig := _read.ClusterKubeConfig
+	log.Debug(awsCtx, "data", "kubeconfig", kubeconfig)
+	return &kubeconfig, nil
 }

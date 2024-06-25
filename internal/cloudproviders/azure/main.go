@@ -596,3 +596,16 @@ func (obj *AzureProvider) IsPresent(storage types.StorageFactory) error {
 	}
 	return isPresent(storage, consts.ClusterTypeMang, obj.clusterName, obj.region)
 }
+
+func (obj *AzureProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
+	_read, err := storage.Read()
+	if err != nil {
+		log.Error("handled error", "catch", err)
+		return nil, err
+	}
+	log.Debug(azureCtx, "data", "read", _read)
+
+	kubeconfig := _read.ClusterKubeConfig
+	log.Debug(azureCtx, "data", "kubeconfig", kubeconfig)
+	return &kubeconfig, nil
+}

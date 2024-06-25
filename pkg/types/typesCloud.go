@@ -100,4 +100,6 @@ type CloudFactory interface {
 	GetHostNameAllWorkerNode() []string
 
 	IsPresent(StorageFactory) error
+
+	GetKubeconfig(StorageFactory) (*string, error)
 }
