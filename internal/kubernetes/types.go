@@ -29,7 +29,7 @@ type HelmOptions struct {
 	args            map[string]interface{}
 }
 
-type HelmHandler struct {
+type KubectlHandler struct {
 	createNamespace bool
 	namespace       string
 
@@ -39,7 +39,7 @@ type HelmHandler struct {
 	metadata    string
 }
 
-type KubectlHandler struct {
+type HelmHandler struct {
 	namespace       string
 	createNamespace bool
 
