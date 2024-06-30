@@ -33,21 +33,16 @@ type KubectlHandler struct {
 	createNamespace bool
 	namespace       string
 
-	version     string
+	version     string // how to get the version propogated?
 	url         string
 	postInstall string
 	metadata    string
 }
 
 type HelmHandler struct {
-	namespace       string
-	createNamespace bool
-
-	chartVer    string
-	chartName   string
-	releaseName string
-	args        map[string]interface{}
-	version     string
+	repoUrl  string
+	repoName string
+	charts   []HelmOptions
 }
 
 type (

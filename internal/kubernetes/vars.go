@@ -5,8 +5,9 @@ var (
 )
 
 const (
-	ArgocdStandardStackID   string = "standard-argocd"
-	ArgocdProductionStackID string = "production-argocd"
+	ArgocdStandardStackID     string = "standard-argocd"
+	ArgocdProductionStackID   string = "production-argocd"
+	KubeSpinProductionStackID string = "production-kubespin"
 )
 
 const (
