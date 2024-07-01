@@ -25,7 +25,7 @@ func argoRolloutsData(ver string) Application {
 	}
 }
 
-func argoRolloutsStandardApp(ver string, clusterAccess bool) ApplicationStack {
+func argoRolloutsStandardCICD(ver string, clusterAccess bool) ApplicationStack {
 	url := fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/%s/download/install.yaml", ver)
 	postInstall := `
 	Commands to execute to access Argo-Rollouts
@@ -57,8 +57,7 @@ func argoRolloutsStandardApp(ver string, clusterAccess bool) ApplicationStack {
 				handlerType: ComponentTypeKubectl,
 			},
 		},
-		StackType:   StackTypeStandard,
-		StackNameID: ArgocdStandardStackID,
+		StackNameID: ArgoRolloutsStandardStackID,
 		Maintainer:  "github@dipankardas011",
 	}
 }

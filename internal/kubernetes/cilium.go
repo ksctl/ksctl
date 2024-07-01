@@ -19,3 +19,29 @@ func ciliumData(ver string) Application {
 		},
 	}
 }
+
+func ciliumStandardCNI(ver string) ApplicationStack {
+	return ApplicationStack{
+		components: []StackComponent{
+			{
+				helm: &HelmHandler{
+					repoName: "cilium",
+					repoUrl:  "https://helm.cilium.io/",
+					charts: []HelmOptions{
+						{
+							chartName:       "cilium/cilium",
+							chartVer:        ver,
+							releaseName:     "cilium",
+							namespace:       "kube-system",
+							createNamespace: false,
+							args:            nil,
+						},
+					},
+				},
+				handlerType: ComponentTypeHelm,
+			},
+		},
+		StackNameID: CiliumStandardStackID,
+		Maintainer:  "github@dipankardas011",
+	}
+}

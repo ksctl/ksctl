@@ -7,7 +7,6 @@ import "fmt"
 func kubespinProductionApp(ver string) ApplicationStack {
 	return ApplicationStack{
 		Maintainer:  "github@dipankardas011",
-		StackType:   StackTypeProduction,
 		StackNameID: KubeSpinProductionStackID,
 		components: []StackComponent{
 			{

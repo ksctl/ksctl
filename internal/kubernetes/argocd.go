@@ -23,7 +23,7 @@ func argocdData(ver string) Application {
 	}
 }
 
-func argocdStandardApp(ver string, withUI bool, clusterAccess bool) ApplicationStack {
+func argocdStandardCICD(ver string, withUI bool, clusterAccess bool) ApplicationStack {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/install.yaml", ver)
 	postInstall := `
 	Commands to execute to access Argocd
@@ -60,7 +60,6 @@ https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-
 				handlerType: ComponentTypeKubectl,
 			},
 		},
-		StackType:   StackTypeStandard,
 		StackNameID: ArgocdStandardStackID,
 		Maintainer:  "github@dipankardas011",
 	}
@@ -104,7 +103,6 @@ https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-
 				handlerType: ComponentTypeKubectl,
 			},
 		},
-		StackType:   StackTypeProduction,
 		StackNameID: ArgocdProductionStackID,
 		Maintainer:  "github@dipankardas011",
 	}

@@ -47,17 +47,11 @@ type HelmHandler struct {
 
 type (
 	StackComponentType uint
-	StackType          string
 )
 
 const (
 	ComponentTypeHelm    StackComponentType = iota
 	ComponentTypeKubectl StackComponentType = iota
-)
-
-const (
-	StackTypeProduction StackType = "production"
-	StackTypeStandard   StackType = "standard"
 )
 
 type StackComponent struct {
@@ -79,7 +73,6 @@ type ApplicationStack struct {
 	// Suitable for Production mode
 	//		else `std` components are treated as loosly grouped or accomulated standard installation without keeping in mind whether the application are of similar nature or deps
 	// Suitable for Development mode
-	StackType  StackType
 	Maintainer string
 
 	StackNameID string
