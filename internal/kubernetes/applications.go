@@ -9,6 +9,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
+// Come up with other methods for the function pointer mapping
 func initApps() {
 	apps = map[string]func(string) Application{
 		"argo-rollouts":     argoRolloutsData,
