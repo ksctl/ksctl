@@ -462,7 +462,7 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
-			cloud.AllClusterData{
+			{
 				Name:            fakeClientManaged.clusterName,
 				CloudProvider:   consts.CloudAzure,
 				ClusterType:     consts.ClusterTypeMang,
@@ -747,7 +747,7 @@ func TestHACluster(t *testing.T) {
 
 	t.Run("Get cluster ha", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
-			cloud.AllClusterData{
+			{
 				Name:            fakeClientHA.clusterName,
 				Region:          fakeClientHA.region,
 				ResourceGrpName: generateResourceGroupName(fakeClientHA.clusterName, string(consts.ClusterTypeHa)),

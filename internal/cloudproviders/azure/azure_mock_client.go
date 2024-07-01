@@ -47,13 +47,13 @@ func (mock *AzureClient) ListKubernetesVersions() (armcontainerservice.ManagedCl
 	return armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse{
 		KubernetesVersionListResult: armcontainerservice.KubernetesVersionListResult{
 			Values: []*armcontainerservice.KubernetesVersion{
-				&armcontainerservice.KubernetesVersion{
+				{
 					Version: utilities.Ptr("1.27.1"),
 				},
-				&armcontainerservice.KubernetesVersion{
+				{
 					Version: utilities.Ptr("1.26"),
 				},
-				&armcontainerservice.KubernetesVersion{
+				{
 					Version: utilities.Ptr("1.27"),
 				},
 			},
@@ -149,7 +149,7 @@ func (mock *AzureClient) ListClusterAdminCredentials(resourceName string, option
 	return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{
 		CredentialResults: armcontainerservice.CredentialResults{
 			Kubeconfigs: []*armcontainerservice.CredentialResult{
-				&armcontainerservice.CredentialResult{
+				{
 					Name:  utilities.Ptr("fake-kubeconfig"),
 					Value: []byte("fake kubeconfig"),
 				},
@@ -270,7 +270,7 @@ func (mock *AzureClient) PollUntilDoneCreateNetInterface(ctx context.Context, po
 			Name: utilities.Ptr("fake-nic-123"),
 			Properties: &armnetwork.InterfacePropertiesFormat{
 				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
-					&armnetwork.InterfaceIPConfiguration{
+					{
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 							PrivateIPAddress: utilities.Ptr("192.168.1.2"),
 						},

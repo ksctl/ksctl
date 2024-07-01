@@ -288,7 +288,7 @@ func TestExportImport(t *testing.T) {
 	t.Run("Export all", func(t *testing.T) {
 		var _expect types.StorageStateExportImport = types.StorageStateExportImport{
 			Credentials: []*storageTypes.CredentialsDocument{
-				&storageTypes.CredentialsDocument{
+				{
 					Azure: &storageTypes.CredentialsAzure{
 						ClientID: "client_id",
 					},
@@ -296,7 +296,7 @@ func TestExportImport(t *testing.T) {
 				},
 			},
 			Clusters: []*storageTypes.StorageDocument{
-				&storageTypes.StorageDocument{
+				{
 					Region:        "regionCivo",
 					ClusterName:   "name_ha",
 					ClusterType:   "ha",
@@ -304,7 +304,7 @@ func TestExportImport(t *testing.T) {
 					CloudInfra:    &storageTypes.InfrastructureState{Civo: &storageTypes.StateConfigurationCivo{}},
 					K8sBootstrap:  &storageTypes.KubernetesBootstrapState{K3s: &storageTypes.StateConfigurationK3s{}},
 				},
-				&storageTypes.StorageDocument{
+				{
 					Region:        "regionCivo",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
@@ -312,7 +312,7 @@ func TestExportImport(t *testing.T) {
 					CloudInfra:    &storageTypes.InfrastructureState{Civo: &storageTypes.StateConfigurationCivo{}},
 				},
 
-				&storageTypes.StorageDocument{
+				{
 					Region:        "regionAzure",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
@@ -407,7 +407,7 @@ func TestExportImport(t *testing.T) {
 
 		var _expect types.StorageStateExportImport = types.StorageStateExportImport{
 			Credentials: []*storageTypes.CredentialsDocument{
-				&storageTypes.CredentialsDocument{
+				{
 					Azure: &storageTypes.CredentialsAzure{
 						ClientID: "client_id",
 					},
@@ -415,7 +415,7 @@ func TestExportImport(t *testing.T) {
 				},
 			},
 			Clusters: []*storageTypes.StorageDocument{
-				&storageTypes.StorageDocument{
+				{
 					Region:        "regionAzure",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",

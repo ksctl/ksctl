@@ -254,7 +254,7 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
-			cloud.AllClusterData{
+			{
 				Name:          fakeClientManaged.clusterName,
 				CloudProvider: consts.CloudLocal,
 				ClusterType:   consts.ClusterTypeMang,

@@ -8,7 +8,7 @@ func istioData(ver string) Application {
 		Version:     ver,
 		InstallType: InstallHelm,
 		HelmConfig: []HelmOptions{
-			HelmOptions{
+			{
 				chartName:       "istio/base",
 				chartVer:        ver,
 				releaseName:     "istio-base",
@@ -18,7 +18,7 @@ func istioData(ver string) Application {
 					"defaultRevision": "default",
 				},
 			},
-			HelmOptions{
+			{
 				chartName:       "istio/istiod",
 				chartVer:        ver,
 				releaseName:     "istiod",
@@ -27,5 +27,41 @@ func istioData(ver string) Application {
 				args:            nil,
 			},
 		},
+	}
+}
+
+func istioStandardServiceMesh(ver string) ApplicationStack {
+	return ApplicationStack{
+		components: []StackComponent{
+			{
+				helm: &HelmHandler{
+					repoUrl:  "https://istio-release.storage.googleapis.com/charts",
+					repoName: "istio",
+					charts: []HelmOptions{
+						{
+							chartName:       "istio/base",
+							chartVer:        ver,
+							releaseName:     "istio-base",
+							namespace:       "istio-system",
+							createNamespace: true,
+							args: map[string]interface{}{
+								"defaultRevision": "default",
+							},
+						},
+						{
+							chartName:       "istio/istiod",
+							chartVer:        ver,
+							releaseName:     "istiod",
+							namespace:       "istio-system",
+							createNamespace: false,
+							args:            nil,
+						},
+					},
+				},
+				handlerType: ComponentTypeHelm,
+			},
+		},
+		Maintainer:  "github:dipankardas011",
+		StackNameID: IstioStandardStackID,
 	}
 }

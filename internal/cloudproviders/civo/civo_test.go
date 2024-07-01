@@ -495,7 +495,7 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
-			cloud.AllClusterData{
+			{
 				Name:          fakeClientManaged.clusterName,
 				CloudProvider: consts.CloudCivo,
 				ClusterType:   consts.ClusterTypeMang,
@@ -741,7 +741,7 @@ func TestHACluster(t *testing.T) {
 			PrivateIP:  "192.168.1.2",
 		}
 		expected := []cloud.AllClusterData{
-			cloud.AllClusterData{
+			{
 				Name:          fakeClientHA.clusterName,
 				CloudProvider: consts.CloudCivo,
 				ClusterType:   consts.ClusterTypeHa,

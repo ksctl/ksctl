@@ -21,3 +21,27 @@ func flannelData(ver string) Application {
 		},
 	}
 }
+
+func flannelStandardCNI(ver string) ApplicationStack {
+	if ver == "stable" {
+		ver = "latest"
+	}
+	return ApplicationStack{
+		Maintainer:  "github:dipankardas011",
+		StackNameID: FlannelStandardStackID,
+		components: []StackComponent{
+			{
+				handlerType: ComponentTypeKubectl,
+				kubectl: &KubectlHandler{
+					url:             fmt.Sprintf("https://github.com/flannel-io/flannel/releases/%s/download/kube-flannel.yml", ver),
+					version:         ver,
+					createNamespace: false,
+					metadata:        fmt.Sprintf("Flannel (Ver: %s) is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.", ver),
+					postInstall: `
+	None
+			`,
+				},
+			},
+		},
+	}
+}

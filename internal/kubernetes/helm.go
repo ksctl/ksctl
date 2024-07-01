@@ -31,15 +31,6 @@ type HelmClient struct {
 	settings     *cli.EnvSettings
 }
 
-type HelmOptions struct {
-	chartVer        string
-	chartName       string
-	releaseName     string
-	namespace       string
-	createNamespace bool
-	args            map[string]interface{}
-}
-
 func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 
 	repoEntry := repo.Entry{
