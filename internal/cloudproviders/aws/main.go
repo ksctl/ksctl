@@ -560,14 +560,7 @@ func (obj *AwsProvider) GetKubeconfig(storage types.StorageFactory) (*string, er
 	}
 	log.Debug(awsCtx, "data", "read", _read)
 
-	// add logic to fetch the updated kubeconfig
-	// may be store some sort of ttl inside the already existing kubeconfig
-
-	//if _read.ClusterKubeConfig.ttls > time.After()
-	// storage.Write()
-	// InitState(storage, Get) // client initilaiz
-	// obj.client.GetKubeconfig()
-	//}
+	obj.client.GetKubeConfig(awsCtx, mainStateDocument.ClusterName)
 
 	kubeconfig := _read.ClusterKubeConfig
 	log.Debug(awsCtx, "data", "kubeconfig", kubeconfig)
