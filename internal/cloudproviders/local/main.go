@@ -144,6 +144,19 @@ func (cloud *LocalProvider) VMType(_ string) types.CloudFactory {
 	return cloud
 }
 
+func (obj *LocalProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
+	_read, err := storage.Read()
+	if err != nil {
+		log.Error("handled error", "catch", err)
+		return nil, err
+	}
+	log.Debug(localCtx, "data", "read", _read)
+
+	kubeconfig := _read.ClusterKubeConfig
+	log.Debug(localCtx, "data", "kubeconfig", kubeconfig)
+	return &kubeconfig, nil
+}
+
 // //// NOT IMPLEMENTED //////
 
 func (cloud *LocalProvider) Credential(_ types.StorageFactory) error {

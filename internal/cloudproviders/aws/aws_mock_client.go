@@ -1,292 +1,325 @@
-//go:build testing_aws
+// go:build testing_aws
 
 package aws
 
-import (
-	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
-)
+// import (
+// 	"context"
 
-func ProvideClient() AwsGo {
-	return &AwsClient{}
-}
+// 	"github.com/aws/aws-sdk-go-v2/aws"
+// 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+// 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+// 	"github.com/aws/aws-sdk-go-v2/service/eks"
+// 	"github.com/aws/aws-sdk-go-v2/service/iam"
+// 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
+// )
 
-type AwsClient struct {
-	region string
-}
+// func ProvideClient() AwsGo {
+// 	return &AwsClient{}
+// }
 
-func (*AwsClient) AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
-	return nil
-}
+// type AwsClient struct {
+// 	region string
+// }
 
-func (*AwsClient) AuthorizeSecurityGroupEgress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupEgressInput) error {
-	return nil
-}
+// func (*AwsClient) AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
+// 	return nil
+// }
 
-func (*AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.CreateNetworkInterfaceInput) (*ec2.CreateNetworkInterfaceOutput, error) {
+// func (*AwsClient) AuthorizeSecurityGroupEgress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupEgressInput) error {
+// 	return nil
+// }
 
-	nic := &ec2.CreateNetworkInterfaceOutput{
-		NetworkInterface: &types.NetworkInterface{
-			NetworkInterfaceId: aws.String("test-nic-1234567890"),
-			TagSet: []types.Tag{
-				{
-					Key:   aws.String("Name"),
-					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
-				},
-			},
-		},
-	}
+// func (*AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.CreateNetworkInterfaceInput) (*ec2.CreateNetworkInterfaceOutput, error) {
 
-	return nic, nil
+// 	nic := &ec2.CreateNetworkInterfaceOutput{
+// 		NetworkInterface: &types.NetworkInterface{
+// 			NetworkInterfaceId: aws.String("test-nic-1234567890"),
+// 			TagSet: []types.Tag{
+// 				{
+// 					Key:   aws.String("Name"),
+// 					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
+// 				},
+// 			},
+// 		},
+// 	}
 
-}
+// 	return nic, nil
 
-func (awsgoclient *AwsClient) BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
-	subnet := &ec2.CreateSubnetOutput{
-		Subnet: &types.Subnet{
-			SubnetId: aws.String("3456d25f36g474g546"),
-			Tags: []types.Tag{
-				{
-					Key:   aws.String("Name"),
-					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
-				},
-			},
-		},
-	}
+// }
 
-	return subnet, nil
-}
+// func (awsgoclient *AwsClient) BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
+// 	subnet := &ec2.CreateSubnetOutput{
+// 		Subnet: &types.Subnet{
+// 			SubnetId: aws.String("3456d25f36g474g546"),
+// 			Tags: []types.Tag{
+// 				{
+// 					Key:   aws.String("Name"),
+// 					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
+// 				},
+// 			},
+// 		},
+// 	}
 
-func (*AwsClient) BeginCreateVM(ctx context.Context, parameter *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
+// 	return subnet, nil
+// }
 
-	instances := &ec2.RunInstancesOutput{
-		Instances: []types.Instance{
-			{
-				InstanceId: aws.String("test-instance-1234567890"),
-				Tags: []types.Tag{
-					{
-						Key:   aws.String("Name"),
-						Value: aws.String("test-instance"),
-					},
-				},
-			},
-		},
-	}
+// func (*AwsClient) BeginCreateVM(ctx context.Context, parameter *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
 
-	return instances, nil
-}
+// 	instances := &ec2.RunInstancesOutput{
+// 		Instances: []types.Instance{
+// 			{
+// 				InstanceId: aws.String("test-instance-1234567890"),
+// 				Tags: []types.Tag{
+// 					{
+// 						Key:   aws.String("Name"),
+// 						Value: aws.String("test-instance"),
+// 					},
+// 				},
+// 			},
+// 		},
+// 	}
 
-func (*AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
+// 	return instances, nil
+// }
 
-	routeTable := &ec2.CreateRouteTableOutput{
-		RouteTable: &types.RouteTable{
-			RouteTableId: aws.String("3456d25f36g474g546"),
-			Tags: []types.Tag{
-				{
-					Key:   aws.String("Name"),
-					Value: aws.String("test-route-table"),
-				},
-			},
-		},
-	}
-	createInternetGateway := &ec2.CreateInternetGatewayOutput{
-		InternetGateway: &types.InternetGateway{
-			InternetGatewayId: aws.String("3456d25f36g474g546"),
-			Tags: []types.Tag{
-				{
-					Key:   aws.String("Name"),
-					Value: aws.String("test-internet-gateway"),
-				},
-			},
-		},
-	}
+// func (*AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
 
-	return routeTable, createInternetGateway, nil
-}
+// 	routeTable := &ec2.CreateRouteTableOutput{
+// 		RouteTable: &types.RouteTable{
+// 			RouteTableId: aws.String("3456d25f36g474g546"),
+// 			Tags: []types.Tag{
+// 				{
+// 					Key:   aws.String("Name"),
+// 					Value: aws.String("test-route-table"),
+// 				},
+// 			},
+// 		},
+// 	}
+// 	createInternetGateway := &ec2.CreateInternetGatewayOutput{
+// 		InternetGateway: &types.InternetGateway{
+// 			InternetGatewayId: aws.String("3456d25f36g474g546"),
+// 			Tags: []types.Tag{
+// 				{
+// 					Key:   aws.String("Name"),
+// 					Value: aws.String("test-internet-gateway"),
+// 				},
+// 			},
+// 		},
+// 	}
 
-func (awsclient *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
-	vpc := &ec2.CreateVpcOutput{
-		Vpc: &types.Vpc{
-			VpcId: aws.String("3456d25f36g474g546"),
-			Tags: []types.Tag{
-				{
-					Key:   aws.String("Name"),
-					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
-				},
-			},
-		},
-	}
-	return vpc, nil
-}
+// 	return routeTable, createInternetGateway, nil
+// }
 
-func (*AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+// func (awsclient *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
+// 	vpc := &ec2.CreateVpcOutput{
+// 		Vpc: &types.Vpc{
+// 			VpcId: aws.String("3456d25f36g474g546"),
+// 			Tags: []types.Tag{
+// 				{
+// 					Key:   aws.String("Name"),
+// 					Value: aws.String(*parameter.TagSpecifications[0].Tags[0].Value),
+// 				},
+// 			},
+// 		},
+// 	}
+// 	return vpc, nil
+// }
 
-	mainStateDocument.CloudInfra.Aws.VpcId = ""
+// func (*AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
-	}
+// 	mainStateDocument.CloudInfra.Aws.VpcId = ""
 
-	log.Success(awsCtx, "deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcId)
+// 	if err := storage.Write(mainStateDocument); err != nil {
+// 		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+// 	}
 
-	return nil
+// 	log.Success(awsCtx, "deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcId)
 
-}
+// 	return nil
 
-func (*AwsClient) BeginDeleteNIC(nicID string) error {
+// }
 
-	return nil
-}
+// func (*AwsClient) BeginDeleteNIC(nicID string) error {
 
-func (*AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
-	return "ami-1234567890", nil
-}
+// 	return nil
+// }
 
-func (*AwsClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error {
+// func (*AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
+// 	return "ami-1234567890", nil
+// }
 
-	return nil
-}
+// func (*AwsClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error {
 
-func (*AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
-	return &ec2.DescribeAvailabilityZonesOutput{
-		AvailabilityZones: []types.AvailabilityZone{
-			{
-				ZoneName: aws.String("us-east-1a"),
-			},
-		},
-	}, nil
-}
+// 	return nil
+// }
 
-func (*AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
+// func (*AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
+// 	return &ec2.DescribeAvailabilityZonesOutput{
+// 		AvailabilityZones: []types.AvailabilityZone{
+// 			{
+// 				ZoneName: aws.String("us-east-1a"),
+// 			},
+// 		},
+// 	}, nil
+// }
 
-	mainStateDocument.CloudInfra.Aws.SubnetID = ""
-	mainStateDocument.CloudInfra.Aws.SubnetName = ""
+// func (*AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
-	}
+// 	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
+// 		mainStateDocument.CloudInfra.Aws.SubnetIDs[i] = ""
 
-	log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetName)
+// 		if err := storage.Write(mainStateDocument); err != nil {
+// 			return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+// 		}
 
-	return nil
+// 		log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetName)
 
-}
+// 	}
 
-func (*AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error) {
+// 	return nil
 
-	naclresp := &ec2.CreateNetworkAclOutput{
-		NetworkAcl: &types.NetworkAcl{
-			NetworkAclId: aws.String("test-nacl-1234567890"),
-			Tags: []types.Tag{
-				{
-					Key:   aws.String("Name"),
-					Value: aws.String("test-nacl"),
-				},
-			},
-		},
-	}
+// }
 
-	return naclresp, nil
-}
+// func (*AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error) {
 
-func (*AwsClient) BeginCreateSecurityGroup(ctx context.Context, parameter ec2.CreateSecurityGroupInput) (*ec2.CreateSecurityGroupOutput, error) {
+// 	naclresp := &ec2.CreateNetworkAclOutput{
+// 		NetworkAcl: &types.NetworkAcl{
+// 			NetworkAclId: aws.String("test-nacl-1234567890"),
+// 			Tags: []types.Tag{
+// 				{
+// 					Key:   aws.String("Name"),
+// 					Value: aws.String("test-nacl"),
+// 				},
+// 			},
+// 		},
+// 	}
 
-	securitygroup := &ec2.CreateSecurityGroupOutput{
-		GroupId: aws.String("test-security-group-1234567890"),
-	}
+// 	return naclresp, nil
+// }
 
-	return securitygroup, nil
-}
+// func (*AwsClient) BeginCreateSecurityGroup(ctx context.Context, parameter ec2.CreateSecurityGroupInput) (*ec2.CreateSecurityGroupOutput, error) {
 
-func (*AwsClient) BeginDeleteVM(vmname string) error {
-	return nil
-}
+// 	securitygroup := &ec2.CreateSecurityGroupOutput{
+// 		GroupId: aws.String("test-security-group-1234567890"),
+// 	}
 
-func (*AwsClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+// 	return securitygroup, nil
+// }
 
-	mainStateDocument.CloudInfra.Aws.GatewayID = ""
-	mainStateDocument.CloudInfra.Aws.RouteTableID = ""
-	mainStateDocument.CloudInfra.Aws.NetworkAclID = ""
+// func (*AwsClient) BeginDeleteVM(vmname string) error {
+// 	return nil
+// }
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
-	}
+// func (*AwsClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
-	return nil
-}
+// 	mainStateDocument.CloudInfra.Aws.GatewayID = ""
+// 	mainStateDocument.CloudInfra.Aws.RouteTableID = ""
+// 	mainStateDocument.CloudInfra.Aws.NetworkAclID = ""
 
-func (*AwsClient) CreateSSHKey() error {
-	return nil
-}
+// 	if err := storage.Write(mainStateDocument); err != nil {
+// 		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+// 	}
 
-func (*AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
+// 	return nil
+// }
 
-	instanceinforesponse := &ec2.DescribeInstancesOutput{
-		Reservations: []types.Reservation{
-			{
-				Instances: []types.Instance{
-					{
-						State: &types.InstanceState{
-							Name: types.InstanceStateNameRunning,
-						},
-						PublicIpAddress:  aws.String("A.B.C.D"),
-						PrivateIpAddress: aws.String("192.168.1.2"),
-					},
-				},
-			},
-		},
-	}
+// func (*AwsClient) CreateSSHKey() error {
+// 	return nil
+// }
 
-	return instanceinforesponse, nil
-}
+// func (*AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
 
-func (*AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
+// 	instanceinforesponse := &ec2.DescribeInstancesOutput{
+// 		Reservations: []types.Reservation{
+// 			{
+// 				Instances: []types.Instance{
+// 					{
+// 						State: &types.InstanceState{
+// 							Name: types.InstanceStateNameRunning,
+// 						},
+// 						PublicIpAddress:  aws.String("A.B.C.D"),
+// 						PrivateIpAddress: aws.String("192.168.1.2"),
+// 					},
+// 				},
+// 			},
+// 		},
+// 	}
 
-	return nil
-}
+// 	return instanceinforesponse, nil
+// }
 
-func (*AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID string) error {
-	return nil
-}
+// func (*AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
 
-func (*AwsClient) InitClient(storage ksctlTypes.StorageFactory) error {
-	return nil
-}
+// 	return nil
+// }
 
-func (*AwsClient) ImportKeyPair(ctx context.Context, keypair *ec2.ImportKeyPairInput) error {
+// func (*AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID string) error {
+// 	return nil
+// }
 
-	return nil
-}
+// func (*AwsClient) InitClient(storage ksctlTypes.StorageFactory) error {
+// 	return nil
+// }
 
-func (awsclient *AwsClient) ListLocations() ([]string, error) {
+// func (*AwsClient) ImportKeyPair(ctx context.Context, keypair *ec2.ImportKeyPairInput) error {
 
-	return []string{"fake-region"}, nil
-}
+// 	return nil
+// }
 
-func (*AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
-	return ec2.DescribeInstanceTypesOutput{
-		InstanceTypes: []types.InstanceTypeInfo{
-			{
-				InstanceType: "fake",
-			},
-		},
-	}, nil
-}
+// func (awsclient *AwsClient) ListLocations() ([]string, error) {
 
-func (*AwsClient) ModifyVpcAttribute(ctx context.Context) error {
-	return nil
-}
+// 	return []string{"fake-region"}, nil
+// }
 
-func (*AwsClient) ModifySubnetAttribute(ctx context.Context) error {
-	return nil
-}
-func (a *AwsClient) SetRegion(string) {
-	a.region = "fake-region"
-}
+// func (*AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
+// 	return ec2.DescribeInstanceTypesOutput{
+// 		InstanceTypes: []types.InstanceTypeInfo{
+// 			{
+// 				InstanceType: "fake",
+// 			},
+// 		},
+// 	}, nil
+// }
 
-func (*AwsClient) SetVpc(string) string {
-	return "fake-vpc"
-}
+// func (*AwsClient) ModifyVpcAttribute(ctx context.Context) error {
+// 	return nil
+// }
+
+// func (*AwsClient) ModifySubnetAttribute(ctx context.Context, i int) error {
+// 	return nil
+// }
+// func (a *AwsClient) SetRegion(string) {
+// 	a.region = "fake-region"
+// }
+
+// func (*AwsClient) SetVpc(string) string {
+// 	return "fake-vpc"
+// }
+
+// func (*AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error) {
+
+// 	return nil, nil
+// }
+// func (*AwsClient) BeignCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
+// 	return nil, nil
+// }
+
+// func (*AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *eks.DeleteNodegroupInput) (*eks.DeleteNodegroupOutput, error) {
+// 	return nil, nil
+// }
+
+// func (*AwsClient) BeginDeleteManagedCluster(ctx context.Context, parameter *eks.DeleteClusterInput) (*eks.DeleteClusterOutput, error) {
+// 	return nil, nil
+// }
+
+// func (*AwsClient) BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error) {
+// 	return nil, nil
+// }
+
+// func (*AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error) {
+// 	return nil, nil
+// }
+
+// func (*AwsClient) DescribeCluster(ctx context.Context, parameter *eks.DescribeClusterInput) (*eks.DescribeClusterOutput, error) {
+// 	return nil, nil
+// }

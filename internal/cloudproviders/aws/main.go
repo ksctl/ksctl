@@ -203,17 +203,6 @@ func (obj *AwsProvider) GetStateForHACluster(storage types.StorageFactory) (clou
 	return payload, nil
 }
 
-func (obj *AwsProvider) NewManagedCluster(factory types.StorageFactory, i int) error {
-
-	mainStateDocument.BootstrapProvider = "managed"
-	return log.NewError(awsCtx, "not implemented")
-
-}
-
-func (obj *AwsProvider) DelManagedCluster(factory types.StorageFactory) error {
-	return log.NewError(awsCtx, "not implemented")
-}
-
 func (obj *AwsProvider) Role(resRole consts.KsctlRole) types.CloudFactory {
 
 	if !helpers.ValidateRole(resRole) {
@@ -473,8 +462,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 					FirewallID: st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetID,
-					SubnetName: st.CloudInfra.Aws.SubnetName,
+					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 				})
 			}
 
@@ -488,8 +477,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 					FirewallID: st.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetID,
-					SubnetName: st.CloudInfra.Aws.SubnetName,
+					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 				})
 			}
 
@@ -503,8 +492,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 					FirewallID: st.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetID,
-					SubnetName: st.CloudInfra.Aws.SubnetName,
+					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 				})
 			}
 
@@ -515,8 +504,8 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 				FirewallID: st.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID,
 				PublicIP:   st.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
 				PrivateIP:  st.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
-				SubnetID:   st.CloudInfra.Aws.SubnetID,
-				SubnetName: st.CloudInfra.Aws.SubnetName,
+				SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
+				SubnetName: st.CloudInfra.Aws.SubnetNames[0],
 			})
 		}
 		return v
@@ -560,4 +549,20 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 	}
 
 	return data, nil
+}
+
+func (obj *AwsProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
+
+	_read, err := storage.Read()
+	if err != nil {
+		log.Error("handled error", "catch", err)
+		return nil, err
+	}
+	log.Debug(awsCtx, "data", "read", _read)
+
+	obj.client.GetKubeConfig(awsCtx, mainStateDocument.ClusterName)
+
+	kubeconfig := _read.ClusterKubeConfig
+	log.Debug(awsCtx, "data", "kubeconfig", kubeconfig)
+	return &kubeconfig, nil
 }

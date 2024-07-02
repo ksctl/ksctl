@@ -41,13 +41,22 @@ type StateConfigurationAws struct {
 	VpcId   string `json:"vpc_id" bson:"vpc_id"`
 	VpcCidr string `json:"vpc_cidr" bson:"vpc_cidr"`
 
-	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
-	NoManagedNodes     int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
-	ManagedNodeSize    string `json:"managed_node_size" bson:"managed_node_size"`
+	IamRoleNameCN string `json:"iam_role_name" bson:"iam_role_name"`
+	IamRoleArnCN  string `json:"iam_role_arn" bson:"iam_role_arn"`
 
-	SubnetName   string `json:"subnet_name" bson:"subnet_name"`
-	SubnetID     string `json:"subnet_id" bson:"subnet_id"`
-	NetworkAclID string `json:"network_acl_id" bson:"network_acl_id"`
+	IamRoleNameWP string `json:"iam_role_name_wp" bson:"iam_role_name_wp"`
+	IamRoleArnWP  string `json:"iam_role_arn_wp" bson:"iam_role_arn_wp"`
+
+	ManagedClusterName   string `json:"managed_cluster_name" bson:"managed_cluster_name"`
+	ManagedNodeGroupName string `json:"managed_node_group_name" bson:"managed_node_group_name"`
+	NoManagedNodes       int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
+	ManagedNodeSize      string `json:"managed_node_size" bson:"managed_node_size"`
+	ManagedNodeGroupArn  string `json:"managed_node_group_arns" bson:"managed_node_group_arns"`
+	ManagedClusterArn    string `json:"managed_cluster_arn" bson:"managed_cluster_arn"`
+
+	SubnetNames  []string `json:"subnet_names" bson:"subnet_names"`
+	SubnetIDs    []string `json:"subnet_id" bson:"subnet_ids"`
+	NetworkAclID string   `json:"network_acl_id" bson:"network_acl_id"`
 
 	GatewayID    string `json:"gateway_id" bson:"gateway_id"`
 	RouteTableID string `json:"route_table_id" bson:"route_table_id"`
