@@ -31,18 +31,18 @@ func argocdStandardCICD(params applicationParams) ApplicationStack {
 	$ kubectl port-forward svc/argocd-server -n argocd 8080:443
 	and login to http://localhost:8080 with user admin and password from above
 `
-	if !params.withUI {
+	if params.noUI {
 		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/core-install.yaml", params.version)
 		postInstall = `
-https://argo-cd.readthedocs.io/en/stable/operator-manual/core/
-`
+	https://argo-cd.readthedocs.io/en/stable/operator-manual/core/
+	`
 	}
 
-	if !params.clusterAccess {
+	if params.namespaceLvlAccess {
 		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", params.version)
 		postInstall = `
-https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-availability
-`
+	https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-availability
+	`
 	}
 
 	return ApplicationStack{

@@ -246,14 +246,6 @@ func patchHelmDirectories(client *HelmClient) error {
 		}
 	}
 
-	// pathCache := []string{usr, ".cache", "helm", "repository"}
-	// cachePath, okCache := store.PresentDirectory(pathCache)
-	// if !okCache {
-	// 	if _err := store.CreateDirectory(pathCache); _err != nil {
-	// 		return _err
-	// 	}
-	// }
-
 	pathRegistry := []string{usr, ".config", "helm", "registry"}
 	_, okReg := store.PresentDirectory(pathRegistry)
 	if !okReg {
@@ -284,7 +276,6 @@ func patchHelmDirectories(client *HelmClient) error {
 		)
 	}
 	client.settings.RepositoryConfig = configPath
-	// client.settings.RepositoryCache = cachePath
 	client.settings.RegistryConfig = registryPath
 	log.Print(kubernetesCtx, "Updated the Helm configuration settings")
 
@@ -329,9 +320,9 @@ func (client *HelmClient) NewInClusterHelmClient() error {
 	return nil
 }
 
-func installHelm(client *Kubernetes, appStruct Application) error {
+func installHelm(client *Kubernetes, component *HelmHandler) error {
 
-	repoName, repoUrl, charts := appStruct.Name, appStruct.Url, appStruct.HelmConfig
+	repoName, repoUrl, charts := component.repoName, component.repoUrl, component.charts
 
 	if err := client.helmClient.
 		RepoAdd(repoName, repoUrl); err != nil {
@@ -351,9 +342,9 @@ func installHelm(client *Kubernetes, appStruct Application) error {
 	return nil
 }
 
-func deleteHelm(client *Kubernetes, appStruct Application) error {
+func deleteHelm(client *Kubernetes, component *HelmHandler) error {
 
-	charts := appStruct.HelmConfig
+	charts := component.charts
 
 	for _, chart := range charts {
 		if err := client.helmClient.

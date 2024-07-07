@@ -9,21 +9,15 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func GetApps(name string, ver string) (Application, error) {
-	if apps == nil {
-		return Application{}, ksctlErrors.ErrFailedKsctlComponent.Wrap(
-			log.NewError(kubernetesCtx, "app variable not initalized"),
-		)
+func getApp(name, ver string) (ApplicationStack, error) {
+
+	if fn, ok := appsManifest[name]; ok {
+		return fn(applicationParams{version: ver}), nil
 	}
 
-	val, present := apps[name]
-
-	if !present {
-		return Application{}, ksctlErrors.ErrFailedKsctlComponent.Wrap(
-			log.NewError(kubernetesCtx, "app not found", "name", name),
-		)
-	}
-	return val(ver), nil
+	return ApplicationStack{}, ksctlErrors.ErrFailedKsctlComponent.Wrap(
+		log.NewError(kubernetesCtx, "appStack not found", "name", name),
+	)
 }
 
 type EnumApplication string
@@ -237,28 +231,30 @@ func installApplication(client *Kubernetes, app storageTypes.Application) error 
 		return err
 	}
 
-	appStruct, err := GetApps(app.Name, app.Version)
+	appStack, err := getApp(app.Name, app.Version)
 	if err != nil {
 		return err
 	}
 
-	switch appStruct.InstallType {
+	for _, component := range appStack.components {
+		switch component.handlerType {
 
-	case InstallHelm:
-		if err := installHelm(client, appStruct); err != nil {
-			return ksctlErrors.ErrFailedKsctlComponent.Wrap(
-				log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err.Error()),
-			)
+		case ComponentTypeHelm:
+			if err := installHelm(client, component.helm); err != nil {
+				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
+					log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err.Error()),
+				)
+			}
+
+		case ComponentTypeKubectl:
+			if err := installKubectl(client, component.kubectl); err != nil {
+				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
+					log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err.Error()),
+				)
+			}
+
+			log.Box(kubernetesCtx, "App Details via kubectl", component.kubectl.metadata+"\n"+component.kubectl.postInstall)
 		}
-
-	case InstallKubectl:
-		if err := installKubectl(client, appStruct); err != nil {
-			return ksctlErrors.ErrFailedKsctlComponent.Wrap(
-				log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err.Error()),
-			)
-		}
-
-		log.Box(kubernetesCtx, "App Details via kubectl", appStruct.KubectlConfig.metadata+"\n"+appStruct.KubectlConfig.postInstall)
 	}
 
 	log.Success(kubernetesCtx, "Installed Resource", "app", app)
@@ -270,27 +266,26 @@ func deleteApplication(client *Kubernetes, app storageTypes.Application) error {
 	if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, app.Version); err != nil {
 		return err
 	}
-	appStruct, err := GetApps(app.Name, app.Version)
+	appStack, err := getApp(app.Name, app.Version)
 	if err != nil {
 		return err
 	}
 
-	switch appStruct.InstallType {
-
-	case InstallHelm:
-		if err := deleteHelm(client, appStruct); err != nil {
-			return ksctlErrors.ErrFailedKsctlComponent.Wrap(
-				log.NewError(kubernetesCtx, "App delete failed", "app", app, "Reason", err.Error()),
-			)
+	for _, component := range appStack.components {
+		switch component.handlerType {
+		case ComponentTypeHelm:
+			if err := deleteHelm(client, component.helm); err != nil {
+				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
+					log.NewError(kubernetesCtx, "App delete failed", "app", app, "Reason", err.Error()),
+				)
+			}
+		case ComponentTypeKubectl:
+			if err := deleteKubectl(client, component.kubectl); err != nil {
+				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
+					log.NewError(kubernetesCtx, "App delete failed", "app", app, "Reason", err.Error()),
+				)
+			}
 		}
-
-	case InstallKubectl:
-		if err := deleteKubectl(client, appStruct); err != nil {
-			return ksctlErrors.ErrFailedKsctlComponent.Wrap(
-				log.NewError(kubernetesCtx, "App delete failed", "app", app, "Reason", err.Error()),
-			)
-		}
-
 	}
 
 	log.Success(kubernetesCtx, "Uninstalled Resource", "app", app)
