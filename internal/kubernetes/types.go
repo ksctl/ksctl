@@ -1,7 +1,5 @@
 package kubernetes
 
-type InstallType string
-
 type HelmOptions struct {
 	chartVer        string
 	chartName       string
@@ -29,11 +27,6 @@ type HelmHandler struct {
 
 type (
 	StackComponentType uint
-)
-
-const (
-	ComponentTypeHelm    StackComponentType = iota
-	ComponentTypeKubectl StackComponentType = iota
 )
 
 type StackComponent struct {

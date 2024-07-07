@@ -18,7 +18,13 @@ const (
 	FlannelStandardStackID        string = "standard-flannel"
 	IstioStandardStackID          string = "standard-istio"
 	KubePrometheusStandardStackID string = "standard-kubeprometheus"
+	KsctlApplicationOperatorID    string = "standard-ksctlapplicationoperator"
 
 	ArgocdProductionStackID   string = "production-argocd"
 	KubeSpinProductionStackID string = "production-kubespin"
+)
+
+const (
+	ComponentTypeHelm    StackComponentType = iota
+	ComponentTypeKubectl StackComponentType = iota
 )
