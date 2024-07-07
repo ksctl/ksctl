@@ -77,3 +77,12 @@ type ApplicationStack struct {
 
 	StackNameID string
 }
+
+type (
+	applicationParams struct {
+		version       string
+		clusterAccess bool
+		namespace     string
+		withUI        bool
+	}
+)

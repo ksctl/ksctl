@@ -2,6 +2,15 @@ package kubernetes
 
 var (
 	apps map[string]func(string) Application
+
+	appsManifest map[string]func(applicationParams) ApplicationStack = map[string]func(applicationParams) ApplicationStack{
+		ArgocdStandardStackID:         argocdStandardCICD,
+		ArgoRolloutsStandardStackID:   argoRolloutsStandardCICD,
+		CiliumStandardStackID:         ciliumStandardCNI,
+		FlannelStandardStackID:        flannelStandardCNI,
+		IstioStandardStackID:          istioStandardServiceMesh,
+		KubePrometheusStandardStackID: kubePrometheusStandardMonitoring,
+	}
 )
 
 const (

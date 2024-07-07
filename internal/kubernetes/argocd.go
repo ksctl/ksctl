@@ -23,24 +23,23 @@ func argocdData(ver string) Application {
 	}
 }
 
-func argocdStandardCICD(ver string, withUI bool, clusterAccess bool) ApplicationStack {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/install.yaml", ver)
+func argocdStandardCICD(params applicationParams) ApplicationStack {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/install.yaml", params.version)
 	postInstall := `
 	Commands to execute to access Argocd
 	$ kubectl get secret -n argocd argocd-initial-admin-secret -o json | jq -r '.data.password' | base64 -d
 	$ kubectl port-forward svc/argocd-server -n argocd 8080:443
 	and login to http://localhost:8080 with user admin and password from above
 `
-	if !withUI {
-		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/core-install.yaml", ver)
+	if !params.withUI {
+		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/core-install.yaml", params.version)
 		postInstall = `
 https://argo-cd.readthedocs.io/en/stable/operator-manual/core/
 `
 	}
 
-	// TODO(dipankar): do we still need to create the namespace?
-	if !clusterAccess {
-		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", ver)
+	if !params.clusterAccess {
+		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", params.version)
 		postInstall = `
 https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-availability
 `
@@ -53,8 +52,8 @@ https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-
 					namespace:       "argocd",
 					createNamespace: true,
 					url:             url,
-					version:         ver,
-					metadata:        fmt.Sprintf("Argo CD (Ver: %s) is a declarative, GitOps continuous delivery tool for Kubernetes.", ver),
+					version:         params.version,
+					metadata:        fmt.Sprintf("Argo CD (Ver: %s) is a declarative, GitOps continuous delivery tool for Kubernetes.", params.version),
 					postInstall:     postInstall,
 				},
 				handlerType: ComponentTypeKubectl,

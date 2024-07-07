@@ -30,7 +30,7 @@ func istioData(ver string) Application {
 	}
 }
 
-func istioStandardServiceMesh(ver string) ApplicationStack {
+func istioStandardServiceMesh(params applicationParams) ApplicationStack {
 	return ApplicationStack{
 		components: []StackComponent{
 			{
@@ -40,7 +40,7 @@ func istioStandardServiceMesh(ver string) ApplicationStack {
 					charts: []HelmOptions{
 						{
 							chartName:       "istio/base",
-							chartVer:        ver,
+							chartVer:        params.version,
 							releaseName:     "istio-base",
 							namespace:       "istio-system",
 							createNamespace: true,
@@ -50,7 +50,7 @@ func istioStandardServiceMesh(ver string) ApplicationStack {
 						},
 						{
 							chartName:       "istio/istiod",
-							chartVer:        ver,
+							chartVer:        params.version,
 							releaseName:     "istiod",
 							namespace:       "istio-system",
 							createNamespace: false,

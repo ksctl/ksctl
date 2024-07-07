@@ -25,8 +25,8 @@ func argoRolloutsData(ver string) Application {
 	}
 }
 
-func argoRolloutsStandardCICD(ver string, clusterAccess bool) ApplicationStack {
-	url := fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/%s/download/install.yaml", ver)
+func argoRolloutsStandardCICD(params applicationParams) ApplicationStack {
+	url := fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/%s/download/install.yaml", params.version)
 	postInstall := `
 	Commands to execute to access Argo-Rollouts
 	$ kubectl argo rollouts version
@@ -50,8 +50,8 @@ func argoRolloutsStandardCICD(ver string, clusterAccess bool) ApplicationStack {
 					namespace:       "argo-rollouts",
 					createNamespace: true,
 					url:             url,
-					version:         ver,
-					metadata:        fmt.Sprintf("Argo Rollouts (Ver: %s) is a Kubernetes controller and set of CRDs which provide advanced deployment capabilities such as blue-green, canary, canary analysis, experimentation, and progressive delivery features to Kubernetes.", ver),
+					version:         params.version,
+					metadata:        fmt.Sprintf("Argo Rollouts (Ver: %s) is a Kubernetes controller and set of CRDs which provide advanced deployment capabilities such as blue-green, canary, canary analysis, experimentation, and progressive delivery features to Kubernetes.", params.version),
 					postInstall:     postInstall,
 				},
 				handlerType: ComponentTypeKubectl,

@@ -20,7 +20,7 @@ func ciliumData(ver string) Application {
 	}
 }
 
-func ciliumStandardCNI(ver string) ApplicationStack {
+func ciliumStandardCNI(params applicationParams) ApplicationStack {
 	return ApplicationStack{
 		components: []StackComponent{
 			{
@@ -30,7 +30,7 @@ func ciliumStandardCNI(ver string) ApplicationStack {
 					charts: []HelmOptions{
 						{
 							chartName:       "cilium/cilium",
-							chartVer:        ver,
+							chartVer:        params.version,
 							releaseName:     "cilium",
 							namespace:       "kube-system",
 							createNamespace: false,

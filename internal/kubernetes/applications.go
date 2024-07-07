@@ -9,19 +9,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-// Come up with other methods for the function pointer mapping
-func initApps() {
-	apps = map[string]func(string) Application{
-		"argo-rollouts":     argoRolloutsData,
-		"argocd":            argocdData,
-		"istio":             istioData,
-		"cilium":            ciliumData,
-		"prometheus-stack":  prometheusStackData,
-		"ksctl-application": applicationStackData,
-		"flannel":           flannelData,
-	}
-}
-
 func GetApps(name string, ver string) (Application, error) {
 	if apps == nil {
 		return Application{}, ksctlErrors.ErrFailedKsctlComponent.Wrap(

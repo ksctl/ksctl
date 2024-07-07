@@ -20,7 +20,7 @@ func prometheusStackData(ver string) Application {
 	}
 }
 
-func kubePrometheusStandardMonitoring(ver string) ApplicationStack {
+func kubePrometheusStandardMonitoring(params applicationParams) ApplicationStack {
 	return ApplicationStack{
 		components: []StackComponent{
 			{
@@ -30,7 +30,7 @@ func kubePrometheusStandardMonitoring(ver string) ApplicationStack {
 					charts: []HelmOptions{
 						{
 							chartName:       "prometheus-community/kube-prometheus-stack",
-							chartVer:        ver,
+							chartVer:        params.version,
 							releaseName:     "kube-prometheus-stack",
 							namespace:       "monitoring",
 							createNamespace: true,
