@@ -1,8 +1,6 @@
 package kubernetes
 
 var (
-	apps map[string]func(string) Application
-
 	appsManifest map[string]func(applicationParams) ApplicationStack = map[string]func(applicationParams) ApplicationStack{
 		ArgocdStandardStackID:         argocdStandardCICD,
 		ArgoRolloutsStandardStackID:   argoRolloutsStandardCICD,
@@ -23,9 +21,4 @@ const (
 
 	ArgocdProductionStackID   string = "production-argocd"
 	KubeSpinProductionStackID string = "production-kubespin"
-)
-
-const (
-	InstallKubectl = InstallType("kubectl")
-	InstallHelm    = InstallType("helm")
 )

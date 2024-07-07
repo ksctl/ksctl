@@ -19,13 +19,16 @@ func TestMain(m *testing.M) {
 
 	log = logger.NewStructuredLogger(-1, os.Stdout)
 	kubernetesCtx = context.TODO()
-	initApps()
 	m.Run()
 }
 
 func TestConsts(t *testing.T) {
-	assert.Equal(t, string(InstallHelm), "helm")
-	assert.Equal(t, string(InstallKubectl), "kubectl")
+	assert.Equal(t, string(ArgocdStandardStackID), "standard-argocd")
+	assert.Equal(t, string(ArgoRolloutsStandardStackID), "standard-argorollouts")
+	assert.Equal(t, string(CiliumStandardStackID), "standard-cilium")
+	assert.Equal(t, string(FlannelStandardStackID), "standard-flannel")
+	assert.Equal(t, string(IstioStandardStackID), "standard-istio")
+	assert.Equal(t, string(KubePrometheusStandardStackID), "standard-kubeprometheus")
 
 	assert.Equal(t, string(Cni), "cni")
 	assert.Equal(t, string(App), "app")
@@ -38,12 +41,12 @@ func TestGetApp(t *testing.T) {
 		expectedToExist bool
 	}{
 		"argocd@v1.1.1": {
-			appName:         "argocd",
+			appName:         ArgocdStandardStackID,
 			version:         "v1.1.1",
 			expectedToExist: true,
 		},
 		"cilium@latest": {
-			appName:         "cilium",
+			appName:         CiliumStandardStackID,
 			version:         "latest",
 			expectedToExist: true,
 		},
@@ -56,11 +59,11 @@ func TestGetApp(t *testing.T) {
 
 	for app, expect := range testCase {
 		_app, _ := helpers.ToApplicationTempl(kubernetesCtx, log, []string{app})
-		got, err := GetApps(_app[0].Name, _app[0].Version)
+		got, err := getApp(_app[0].Name, _app[0].Version)
 		v := err == nil // it will be true if there is no error
 		assert.Equal(t, v, expect.expectedToExist)
-		assert.Equal(t, got.Name, expect.appName)
-		assert.Equal(t, got.Version, expect.version)
+		assert.Equal(t, got.StackNameID, expect.appName)
+		// TODO: add the version testing once its there
 	}
 }
 
