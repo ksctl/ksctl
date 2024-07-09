@@ -57,7 +57,7 @@ var (
 
 func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
-	components := []string{"ksctl-application@" + manifests.KsctlApplicationStackBranchOrTagName}
+	components := []string{KsctlApplicationOperatorID + "@" + manifests.KsctlApplicationStackBranchOrTagName}
 
 	_apps, err := helpers.ToApplicationTempl(kubernetesCtx, log, components)
 	if err != nil {

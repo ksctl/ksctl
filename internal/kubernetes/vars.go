@@ -8,6 +8,7 @@ var (
 		FlannelStandardStackID:        flannelStandardCNI,
 		IstioStandardStackID:          istioStandardServiceMesh,
 		KubePrometheusStandardStackID: kubePrometheusStandardMonitoring,
+		KsctlApplicationOperatorID:    applicationStackData,
 	}
 )
 
