@@ -6,7 +6,7 @@
 package manifests
 
 const (
-	KsctlAgentAppVersion                 = "feat-ksctl-application-hybrid-client"
-	KsctlStateImportAppVersion           = "feat-ksctl-application-hybrid-client"
-	KsctlApplicationStackBranchOrTagName = "feat-ksctl-application-hybrid-client"
+	KsctlAgentAppVersion                 = "latest"
+	KsctlStateImportAppVersion           = "latest"
+	KsctlApplicationStackBranchOrTagName = "latest"
 )
