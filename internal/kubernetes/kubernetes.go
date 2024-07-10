@@ -87,8 +87,6 @@ func NewInClusterClient(parentCtx context.Context, parentLog types.LoggerFactory
 	}
 	k.inCluster = true // it helps us to identify if we are inside the cluster or not
 
-	initApps()
-
 	return k, nil
 }
 
@@ -123,8 +121,6 @@ func NewKubeconfigClient(parentCtx context.Context, parentLog types.LoggerFactor
 	if err = k.helmClient.NewKubeconfigHelmClient(kubeconfig); err != nil {
 		return
 	}
-
-	initApps()
 
 	return k, nil
 }

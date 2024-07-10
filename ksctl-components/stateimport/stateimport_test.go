@@ -66,7 +66,7 @@ func TestImport(t *testing.T) {
 	t.Run("GET request to /import", func(t *testing.T) {
 		payload := &types.StorageStateExportImport{
 			Clusters: []*storage.StorageDocument{
-				&storage.StorageDocument{},
+				{},
 			},
 		}
 
