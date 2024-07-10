@@ -328,7 +328,7 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 			return err
 		}
 
-		for k := range externalStoreEndpoint {
+		for k, _ := range externalStoreEndpoint {
 			ksctlServer.Spec.Template.Spec.Containers[0].Env = append(ksctlServer.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
 				Name: k,
 				ValueFrom: &corev1.EnvVarSource{
