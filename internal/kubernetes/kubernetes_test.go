@@ -40,12 +40,12 @@ func TestGetApp(t *testing.T) {
 		version         string
 		expectedToExist bool
 	}{
-		"argocd@v1.1.1": {
+		ArgocdStandardStackID + "@v1.1.1": {
 			appName:         ArgocdStandardStackID,
 			version:         "v1.1.1",
 			expectedToExist: true,
 		},
-		"cilium@latest": {
+		CiliumStandardStackID + "@latest": {
 			appName:         CiliumStandardStackID,
 			version:         "latest",
 			expectedToExist: true,
