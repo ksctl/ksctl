@@ -39,6 +39,17 @@ type Metadata struct {
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
 
-	Applications []string `json:"preinstalled_apps"`
-	CNIPlugin    string   `json:"cni_plugin"`
+	Applications []KsctlApp `json:"preinstalled_apps"`
+	CNIPlugin    KsctlApp   `json:"cni_plugin"`
+}
+
+type KsctlApp struct {
+	Name    string            `json:"name"`
+	Version string            `json:"version"`
+	Options map[string]string `json:"options"`
+}
+
+// TODO: do we need this and if yes how to make it work?
+func (app *KsctlApp) convertToApplicationManifestType() string {
+	return app.Name + "@" + app.Version
 }
