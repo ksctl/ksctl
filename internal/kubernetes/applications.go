@@ -9,6 +9,10 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
+func init() {
+	// WARN: it should be called first
+}
+
 func getApp(name, ver string) (ApplicationStack, error) {
 
 	if fn, ok := appsManifest[name]; ok {
