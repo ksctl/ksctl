@@ -7,7 +7,7 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func argoRolloutsStandardCICD(params metadata.ApplicationParams) metadata.ApplicationStack {
+func ArgoRolloutsStandardCICD(params metadata.ApplicationParams) metadata.ApplicationStack {
 	url := fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/%s/download/install.yaml", params.Version)
 	postInstall := `
 	Commands to execute to access Argo-Rollouts
@@ -33,6 +33,7 @@ func argoRolloutsStandardCICD(params metadata.ApplicationParams) metadata.Applic
 				PostInstall: postInstall,
 			}),
 		},
+		StkDepsIdx:  []metadata.StackComponentID{metadata.ArgorolloutsComponentID},
 		StackNameID: metadata.ArgoRolloutsStandardStackID,
 		Maintainer:  "github@dipankardas011",
 	}

@@ -30,9 +30,8 @@ func ArgocdStandardCICD(params meta.ApplicationParams) meta.ApplicationStack {
 	}
 
 	return meta.ApplicationStack{
-		Components: []meta.StackComponent{
-			// TODO(dipankar): need to find a way to map the ComponentID with the index and also for easier manipulation and edits
-			0: components.ArgoCDStandardComponent(
+		Components: map[meta.StackComponentID]meta.StackComponent{
+			meta.ArgocdComponentID: components.ArgoCDStandardComponent(
 				meta.ComponentParams{
 					Url:         url,
 					PostInstall: postInstall,
@@ -40,6 +39,7 @@ func ArgocdStandardCICD(params meta.ApplicationParams) meta.ApplicationStack {
 				},
 			),
 		},
+		StkDepsIdx:  []meta.StackComponentID{meta.ArgocdComponentID},
 		StackNameID: meta.ArgocdStandardStackID,
 		Maintainer:  "github@dipankardas011",
 	}

@@ -2,8 +2,14 @@ package stacks
 
 import "github.com/ksctl/ksctl/internal/kubernetes/metadata"
 
-func ConvertDepsFromMapToList(in metadata.ApplicationStack) (components []metadata.StackComponent) {
-	for k, v := range in.Components {
+var (
+	AppsManifests = map[metadata.StackID]func(metadata.ApplicationParams) metadata.ApplicationStack{
+		metadata.ArgocdStandardStackID:         ArgocdStandardCICD,
+		metadata.ArgoRolloutsStandardStackID:   ArgoRolloutsStandardCICD,
+		metadata.CiliumStandardStackID:         CiliumStandardCNI,
+		metadata.FlannelStandardStackID:        FlannelStandardCNI,
+		metadata.IstioStandardStackID:          IstioStandardServiceMesh,
+		metadata.KubePrometheusStandardStackID: KubePrometheusStandardMonitoring,
+		metadata.KsctlOperatorsID:              KsctlOperatorStackData,
 	}
-	return
-}
+)

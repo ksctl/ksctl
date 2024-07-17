@@ -22,7 +22,7 @@ type KubectlHandler struct {
 type HelmHandler struct {
 	RepoUrl  string
 	RepoName string
-	charts   []HelmOptions
+	Charts   []HelmOptions
 }
 
 type (
@@ -32,20 +32,20 @@ type (
 )
 
 type StackComponent struct {
-	Helm         *HelmHandler
-	Kubectl      *KubectlHandler
-	HandlerType  StackComponentType
-	Dependencies []StackComponentID
+	Helm        *HelmHandler
+	Kubectl     *KubectlHandler
+	HandlerType StackComponentType
 }
 
 // ApplicationStack TODO(dipankar): need to think of taking some sport of the application ksctl provide from the src to some json file in ver control
 //
 //	so that we can update that and no need of update of the logicial part
 type ApplicationStack struct {
-	Components []StackComponent
+	Components map[StackComponentID]StackComponent
 
-	Maintainer string
-
+	// StkDepsIdx helps you to get sequence of components, aka it acts as a key value table
+	StkDepsIdx  []StackComponentID
+	Maintainer  string
 	StackNameID StackID
 }
 
