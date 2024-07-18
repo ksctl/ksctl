@@ -40,6 +40,8 @@ type StackComponent struct {
 // ApplicationStack TODO(dipankar): need to think of taking some sport of the application ksctl provide from the src to some json file in ver control
 //
 //	so that we can update that and no need of update of the logicial part
+//
+// also add a String()
 type ApplicationStack struct {
 	Components map[StackComponentID]StackComponent
 
@@ -47,20 +49,14 @@ type ApplicationStack struct {
 	StkDepsIdx []StackComponentID
 
 	// OverridingVals helps you to override the default values of the components
-	OverridingVals map[StackComponentID]ComponentParams
+	OverridingVals ApplicationParams
 	Maintainer     string
 	StackNameID    StackID
 }
 
 type ApplicationParams struct {
-	Version            string
-	NamespaceLvlAccess bool
-	NoUI               bool
-	// namespace          string
+	StkOverriding   map[string]any
+	ComponentParams map[StackComponentID]ComponentOverriding
 }
 
-type ComponentParams struct {
-	Url         string
-	PostInstall string
-	Version     string
-}
+type ComponentOverriding map[string]any
