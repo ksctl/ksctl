@@ -44,9 +44,12 @@ type ApplicationStack struct {
 	Components map[StackComponentID]StackComponent
 
 	// StkDepsIdx helps you to get sequence of components, aka it acts as a key value table
-	StkDepsIdx  []StackComponentID
-	Maintainer  string
-	StackNameID StackID
+	StkDepsIdx []StackComponentID
+
+	// OverridingVals helps you to override the default values of the components
+	OverridingVals map[StackComponentID]ComponentParams
+	Maintainer     string
+	StackNameID    StackID
 }
 
 type ApplicationParams struct {
