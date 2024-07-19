@@ -9,11 +9,10 @@ func CiliumStandardCNI(params meta.ApplicationParams) meta.ApplicationStack {
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
 			meta.CiliumComponentID: components.CiliumStandardComponent(
-				meta.ComponentParams{
-					Version: params.Version,
-				},
+				params.ComponentParams[meta.CiliumComponentID],
 			),
 		},
+
 		StkDepsIdx:  []meta.StackComponentID{meta.CiliumComponentID},
 		StackNameID: meta.CiliumStandardStackID,
 		Maintainer:  "github@dipankardas011",

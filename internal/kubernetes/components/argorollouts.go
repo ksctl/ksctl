@@ -43,7 +43,7 @@ Commands to execute to access Argo-Rollouts
 $ kubectl argo rollouts version
 $ kubectl argo rollouts dashboard
 and open http://localhost:3100/rollouts
-		`
+`
 	}
 
 	if _namespaceInstall != nil {

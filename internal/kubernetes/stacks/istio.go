@@ -9,11 +9,10 @@ func IstioStandardServiceMesh(params meta.ApplicationParams) meta.ApplicationSta
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
 			meta.IstioComponentID: components.IstioStandardComponent(
-				meta.ComponentParams{
-					Version: params.Version,
-				},
+				params.ComponentParams[meta.IstioComponentID],
 			),
 		},
+
 		StkDepsIdx: []meta.StackComponentID{
 			meta.IstioComponentID,
 		},
