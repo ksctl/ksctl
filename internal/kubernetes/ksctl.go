@@ -55,7 +55,7 @@ var (
 	}
 )
 
-func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
+func (k *K8sClusterClient) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
 	components := []string{KsctlApplicationOperatorID + "@" + manifests.KsctlApplicationStackBranchOrTagName}
 
@@ -72,7 +72,7 @@ func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocume
 	return nil
 }
 
-func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
+func (k *K8sClusterClient) DeployAgent(client *types.KsctlClient,
 	state *storageTypes.StorageDocument,
 	externalStoreEndpoint map[string][]byte,
 	v *types.StorageStateExportImport,

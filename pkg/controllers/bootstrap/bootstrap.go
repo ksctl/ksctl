@@ -282,7 +282,7 @@ func InstallAdditionalTools(
 	return nil
 }
 
-func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctlKubernetes.Kubernetes, state *storageTypes.StorageDocument) error {
+func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctlKubernetes.K8sClusterClient, state *storageTypes.StorageDocument) error {
 
 	var (
 		exportedData         *types.StorageStateExportImport

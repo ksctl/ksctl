@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"github.com/ksctl/ksctl/internal/kubernetes/helmclient"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -51,7 +52,7 @@ func PresentOrNot(app storageTypes.Application, typeOfApp EnumApplication, state
 	return
 }
 
-func (k *Kubernetes) InstallCNI(cni storageTypes.Application, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
+func (k *K8sClusterClient) InstallCNI(cni storageTypes.Application, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
 
 	switch op {
 	case consts.OperationCreate:
@@ -128,7 +129,7 @@ advisiable to use external storage solution
 // Applications Important the sequence of the apps in the list are important
 // it executes from left to right one at a time
 // if it fails at any point of time it stop further installations
-func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
+func (k *K8sClusterClient) Applications(apps []storageTypes.Application, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
 
 	switch op {
 	case consts.OperationCreate:
@@ -225,7 +226,7 @@ func (k *Kubernetes) Applications(apps []storageTypes.Application, state *storag
 	return nil
 }
 
-func installApplication(client *Kubernetes, app storageTypes.Application) error {
+func installApplication(client *K8sClusterClient, app storageTypes.Application) error {
 
 	if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, app.Version); err != nil {
 		return err
@@ -240,7 +241,7 @@ func installApplication(client *Kubernetes, app storageTypes.Application) error 
 		switch component.handlerType {
 
 		case ComponentTypeHelm:
-			if err := installHelm(client, component.helm); err != nil {
+			if err := helmclient.installHelm(client, component.helm); err != nil {
 				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
 					log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err.Error()),
 				)
@@ -261,7 +262,7 @@ func installApplication(client *Kubernetes, app storageTypes.Application) error 
 	return nil
 }
 
-func deleteApplication(client *Kubernetes, app storageTypes.Application) error {
+func deleteApplication(client *K8sClusterClient, app storageTypes.Application) error {
 
 	if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, app.Version); err != nil {
 		return err
@@ -274,7 +275,7 @@ func deleteApplication(client *Kubernetes, app storageTypes.Application) error {
 	for _, component := range appStack.components {
 		switch component.handlerType {
 		case ComponentTypeHelm:
-			if err := deleteHelm(client, component.helm); err != nil {
+			if err := helmclient.deleteHelm(client, component.helm); err != nil {
 				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
 					log.NewError(kubernetesCtx, "App delete failed", "app", app, "Reason", err.Error()),
 				)

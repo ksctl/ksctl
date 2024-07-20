@@ -42,7 +42,7 @@ func getManifests(appUrl string) ([]string, error) {
 	return resources, nil
 }
 
-func deleteKubectl(client *Kubernetes, component *KubectlHandler) error {
+func deleteKubectl(client *K8sClusterClient, component *KubectlHandler) error {
 	resources, err := getManifests(component.url)
 	if err != nil {
 		return err
@@ -176,7 +176,7 @@ func deleteKubectl(client *Kubernetes, component *KubectlHandler) error {
 	return nil
 }
 
-func installKubectl(client *Kubernetes, component *KubectlHandler) error {
+func installKubectl(client *K8sClusterClient, component *KubectlHandler) error {
 	resources, err := getManifests(component.url)
 	if err != nil {
 		return err
