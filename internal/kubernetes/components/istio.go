@@ -6,7 +6,7 @@ import (
 )
 
 func getIstioComponentOverridings(p metadata.ComponentOverriding) (version *string, helmBaseChartOverridings map[string]interface{}, helmIstiodChartOverridings map[string]interface{}) {
-	helmBaseChartOverridings = nil // By default it is nil
+	helmBaseChartOverridings = nil // By default, it is nil
 	helmIstiodChartOverridings = nil
 
 	if p == nil {

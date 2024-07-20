@@ -9,9 +9,7 @@ func KubePrometheusStandardMonitoring(params metadata.ApplicationParams) metadat
 	return metadata.ApplicationStack{
 		Components: map[metadata.StackComponentID]metadata.StackComponent{
 			metadata.KubePrometheusComponentID: components.KubePrometheusStandardComponent(
-				metadata.ComponentParams{
-					Version: params.Version,
-				},
+				params.ComponentParams[metadata.KubePrometheusComponentID],
 			),
 		},
 		StkDepsIdx:  []metadata.StackComponentID{metadata.KubePrometheusComponentID},
