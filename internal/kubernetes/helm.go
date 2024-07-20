@@ -1,8 +1,10 @@
 package kubernetes
 
-func installHelm(client *K8sClusterClient, component *HelmHandler) error {
+import "github.com/ksctl/ksctl/internal/kubernetes/metadata"
 
-	repoName, repoUrl, charts := component.repoName, component.repoUrl, component.charts
+func installHelm(client *K8sClusterClient, component *metadata.HelmHandler) error {
+
+	repoName, repoUrl, charts := component.RepoName, component.RepoUrl, component.Charts
 
 	if err := client.helmClient.RepoAdd(repoName, repoUrl); err != nil {
 		return err
@@ -10,7 +12,14 @@ func installHelm(client *K8sClusterClient, component *HelmHandler) error {
 
 	for _, chart := range charts {
 		if err := client.helmClient.
-			InstallChart(chart.chartVer, chart.chartName, chart.namespace, chart.releaseName, chart.createNamespace, chart.args); err != nil {
+			InstallChart(
+				chart.ChartVer,
+				chart.ChartName,
+				chart.Namespace,
+				chart.ReleaseName,
+				chart.CreateNamespace,
+				chart.Args,
+			); err != nil {
 			return err
 		}
 	}
@@ -21,13 +30,16 @@ func installHelm(client *K8sClusterClient, component *HelmHandler) error {
 	return nil
 }
 
-func deleteHelm(client *K8sClusterClient, component *HelmHandler) error {
+func deleteHelm(client *K8sClusterClient, component *metadata.HelmHandler) error {
 
-	charts := component.charts
+	charts := component.Charts
 
 	for _, chart := range charts {
 		if err := client.helmClient.
-			UninstallChart(chart.namespace, chart.releaseName); err != nil {
+			UninstallChart(
+				chart.Namespace,
+				chart.ReleaseName,
+			); err != nil {
 			return err
 		}
 	}

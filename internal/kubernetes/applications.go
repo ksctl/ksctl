@@ -1,7 +1,8 @@
 package kubernetes
 
 import (
-	"github.com/ksctl/ksctl/internal/kubernetes/helmclient"
+	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
+	"github.com/ksctl/ksctl/internal/kubernetes/stacks"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -9,17 +10,6 @@ import (
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
-
-func getApp(name, ver string) (ApplicationStack, error) {
-
-	if fn, ok := appsManifest[name]; ok {
-		return fn(applicationParams{version: ver}), nil
-	}
-
-	return ApplicationStack{}, ksctlErrors.ErrFailedKsctlComponent.Wrap(
-		log.NewError(kubernetesCtx, "appStack not found", "name", name),
-	)
-}
 
 type EnumApplication string
 
@@ -228,33 +218,40 @@ func (k *K8sClusterClient) Applications(apps []storageTypes.Application, state *
 
 func installApplication(client *K8sClusterClient, app storageTypes.Application) error {
 
+	// TODO: is it even worth it as we are now using map of overridings
+	// may be we should use https://github.com/go-playground/validator, still need to conform
 	if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, app.Version); err != nil {
 		return err
 	}
 
-	appStack, err := getApp(app.Name, app.Version)
+	appStk, err := stacks.FetchKsctlStack(kubernetesCtx, log, app.Name)
 	if err != nil {
 		return err
 	}
 
-	for _, component := range appStack.components {
-		switch component.handlerType {
+	// TODO: need to get the version overriding first
+	//  Need to get the overriding from the caller
+	stkData := appStk(metadata.ApplicationParams{})
 
-		case ComponentTypeHelm:
-			if err := helmclient.installHelm(client, component.helm); err != nil {
+	for _, componentId := range stkData.StkDepsIdx {
+		component := stkData.Components[componentId]
+
+		switch component.HandlerType {
+		case metadata.ComponentTypeHelm:
+			if err := installHelm(client, component.Helm); err != nil {
 				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
 					log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err.Error()),
 				)
 			}
 
-		case ComponentTypeKubectl:
-			if err := installKubectl(client, component.kubectl); err != nil {
+		case metadata.ComponentTypeKubectl:
+			if err := installKubectl(client, component.Kubectl); err != nil {
 				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
 					log.NewError(kubernetesCtx, "App install failed", "app", app, "Reason", err.Error()),
 				)
 			}
 
-			log.Box(kubernetesCtx, "App Details via kubectl", component.kubectl.metadata+"\n"+component.kubectl.postInstall)
+			log.Box(kubernetesCtx, "App Details via kubectl", component.Kubectl.Metadata+"\n"+component.Kubectl.PostInstall)
 		}
 	}
 
@@ -267,21 +264,24 @@ func deleteApplication(client *K8sClusterClient, app storageTypes.Application) e
 	if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, app.Version); err != nil {
 		return err
 	}
-	appStack, err := getApp(app.Name, app.Version)
+	appStk, err := stacks.FetchKsctlStack(kubernetesCtx, log, app.Name)
 	if err != nil {
 		return err
 	}
+	stkData := appStk(metadata.ApplicationParams{})
 
-	for _, component := range appStack.components {
-		switch component.handlerType {
-		case ComponentTypeHelm:
-			if err := helmclient.deleteHelm(client, component.helm); err != nil {
+	for _, componentId := range stkData.StkDepsIdx {
+		component := stkData.Components[componentId]
+
+		switch component.HandlerType {
+		case metadata.ComponentTypeHelm:
+			if err := deleteHelm(client, component.Helm); err != nil {
 				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
 					log.NewError(kubernetesCtx, "App delete failed", "app", app, "Reason", err.Error()),
 				)
 			}
-		case ComponentTypeKubectl:
-			if err := deleteKubectl(client, component.kubectl); err != nil {
+		case metadata.ComponentTypeKubectl:
+			if err := deleteKubectl(client, component.Kubectl); err != nil {
 				return ksctlErrors.ErrFailedKsctlComponent.Wrap(
 					log.NewError(kubernetesCtx, "App delete failed", "app", app, "Reason", err.Error()),
 				)
