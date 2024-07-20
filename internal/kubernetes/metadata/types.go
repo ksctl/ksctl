@@ -53,7 +53,7 @@ type ApplicationStack struct {
 }
 
 type ApplicationParams struct {
-	StkOverriding   map[string]any
+	// StkOverriding   map[string]any
 	ComponentParams map[StackComponentID]ComponentOverriding
 }
 

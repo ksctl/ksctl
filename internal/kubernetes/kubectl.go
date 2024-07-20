@@ -1,10 +1,11 @@
 package kubernetes
 
 import (
-	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 

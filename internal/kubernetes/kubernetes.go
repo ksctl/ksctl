@@ -2,9 +2,10 @@ package kubernetes
 
 import (
 	"context"
+	"strings"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/helmclient"
 	"github.com/ksctl/ksctl/internal/kubernetes/k8sclient"
-	"strings"
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -17,10 +18,9 @@ import (
 
 type K8sClusterClient struct {
 	storageDriver types.StorageFactory
-	//config        *rest.Config
-	helmClient *helmclient.HelmClient
-	k8sClient  *k8sclient.K8sClient
-	inCluster  bool
+	helmClient    *helmclient.HelmClient
+	k8sClient     *k8sclient.K8sClient
+	inCluster     bool
 }
 
 var (
