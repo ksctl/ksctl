@@ -6,6 +6,7 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/stacks"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 )
@@ -209,9 +210,9 @@ func (k *K8sClusterClient) installApplication(
 	return nil
 }
 
-func (k *K8sClusterClient) deleteApplication(state *storageTypes.StorageDocument) error {
-
-	// TODO: do we actually need the app, we can use the state and remove using it
+func (k *K8sClusterClient) deleteApplication(
+	app types.KsctlApp,
+	state *storageTypes.StorageDocument) error {
 
 	stackManifest, err := getStackManifest(app, app.Overrides)
 	if err != nil {
@@ -221,6 +222,36 @@ func (k *K8sClusterClient) deleteApplication(state *storageTypes.StorageDocument
 	idxAppInState, foundInState := PresentOrNot(app, App, state)
 	if foundInState {
 		// all the things needs to be deleted
+		errorInStack := func() error {
+			for _, componentId := range stackManifest.StkDepsIdx {
+				component := stackManifest.Components[componentId]
+				_err := k.handleUninstallComponent(componentId, component)
+				if _err != nil {
+					return _err
+				}
+
+				delete(state.Addons.Apps[idxAppInState].Components, string(componentId))
+			}
+			return nil
+		}()
+		if _err := k.storageDriver.Write(state); _err != nil {
+			if errorInStack != nil {
+				return fmt.Errorf(errorInStack.Error() + " " + _err.Error())
+			}
+			return _err
+		}
+		if errorInStack != nil {
+			return errorInStack
+		}
+
+		{
+			leftSide := utilities.DeepCopySlice[storageTypes.Application](state.Addons.Apps[:idxAppInState])
+			rightSide := utilities.DeepCopySlice[storageTypes.Application](state.Addons.Apps[idxAppInState+1:])
+			state.Addons.Apps = utilities.DeepCopySlice(append(leftSide, rightSide...))
+		}
+		if _err := k.storageDriver.Write(state); _err != nil {
+			return _err
+		}
 	}
 
 	return nil
