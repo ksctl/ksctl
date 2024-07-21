@@ -1,6 +1,11 @@
 package kubernetes
 
 import (
+	"fmt"
+	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
+	"github.com/ksctl/ksctl/internal/kubernetes/stacks"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 )
@@ -36,7 +41,235 @@ func PresentOrNot(app types.KsctlApp, typeOfApp EnumApplication, state *storageT
 	return
 }
 
-//func (k *K8sClusterClient) InstallCNI(cni types.KsctlApp, state *storageTypes.StorageDocument, op consts.KsctlOperation) error {
+func (k *K8sClusterClient) CNI(
+	cni types.KsctlApp,
+	state *storageTypes.StorageDocument,
+	op consts.KsctlOperation) error {
+
+	//var handlers func(app types.KsctlApp, state *storageTypes.StorageDocument) error
+	//
+	//if op == consts.OperationCreate {
+	//	handlers = k.installApplication
+	//} else if op == consts.OperationDelete {
+	//	handlers = k.deleteApplication
+	//}
+	//
+	//err := handlers(cni, state)
+	//if err != nil {
+	//	return err
+	//}
+
+	return nil
+}
+
+func (k *K8sClusterClient) Applications(
+	apps []types.KsctlApp,
+	state *storageTypes.StorageDocument,
+	op consts.KsctlOperation) error {
+
+	var handlers func(app types.KsctlApp, state *storageTypes.StorageDocument) error
+
+	for _, app := range apps {
+		if op == consts.OperationCreate {
+			handlers = k.installApplication
+		} else if op == consts.OperationDelete {
+			handlers = k.deleteApplication
+		}
+
+		err := handlers(app, state)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getStackManifest(app types.KsctlApp, overriding map[string]map[string]any) (metadata.ApplicationStack, error) {
+	convertedOverriding := make(map[metadata.StackComponentID]metadata.ComponentOverriding)
+
+	if overriding != nil { // there are some user overriding
+		for k, v := range overriding {
+			convertedOverriding[metadata.StackComponentID(k)] = metadata.ComponentOverriding(v)
+		}
+	}
+
+	appStk, err := stacks.FetchKsctlStack(kubernetesCtx, log, app.StackName)
+	if err != nil {
+		return metadata.ApplicationStack{}, err
+	}
+
+	stackManifest := appStk(metadata.ApplicationParams{
+		ComponentParams: convertedOverriding,
+	})
+
+	return stackManifest, nil
+}
+
+func getComponentVersionOverriding(componentId string, overriding map[string]map[string]any) string {
+	if overriding == nil {
+		return ""
+	}
+
+	if _overridings, found := overriding[componentId]; found {
+		if version, safe := _overridings["version"].(string); safe {
+			return version
+		} else {
+			return ""
+		}
+	}
+	return ""
+}
+
+func (k *K8sClusterClient) installApplication(
+	app types.KsctlApp,
+	state *storageTypes.StorageDocument) error {
+
+	stackManifest, err := getStackManifest(app, app.Overrides)
+	if err != nil {
+		return err
+	}
+
+	idxAppInState, foundInState := PresentOrNot(app, App, state)
+	var (
+		errorInStack error
+	)
+	if !foundInState {
+		stateTypeStack := storageTypes.Application{
+			Name:       string(stackManifest.StackNameID),
+			Components: map[string]storageTypes.Component{},
+		}
+
+		errorInStack = func() error {
+			for _, componentId := range stackManifest.StkDepsIdx {
+				component := stackManifest.Components[componentId]
+
+				componentVersion := getComponentVersionOverriding(string(componentId), app.Overrides)
+
+				_err := k.handleInstallComponent(componentId, component)
+				if _err != nil {
+					return _err
+				}
+
+				stateTypeStack.Components[string(componentId)] = storageTypes.Component{
+					Version: componentVersion,
+				}
+			}
+			return nil
+		}()
+		state.Addons.Apps = append(state.Addons.Apps, stateTypeStack)
+	} else {
+		appInState := state.Addons.Apps[idxAppInState]
+
+		// now I need to find which component changed
+		// 1. component is not present in the state
+		// 2. version is different
+
+		errorInStack = func() error {
+			for _, componentId := range stackManifest.StkDepsIdx {
+				component := stackManifest.Components[componentId]
+				componentVersion := getComponentVersionOverriding(string(componentId), app.Overrides)
+
+				if componentInState, found := appInState.Components[string(componentId)]; !found {
+					_err := k.handleInstallComponent(componentId, component)
+					if _err != nil {
+						return _err
+					}
+					appInState.Components[string(componentId)] = storageTypes.Component{
+						Version: componentVersion,
+					}
+				} else {
+					if componentVersion != componentInState.Version {
+						// WARN: problems might occur like if the next.component had dependency on this
+						_err := k.handleUninstallComponent(componentId, component)
+						if _err != nil {
+							return _err
+						}
+						componentInState.Version = componentVersion
+					} else {
+						// already insync with latest changes
+					}
+				}
+			}
+			return nil
+		}()
+	}
+
+	if _err := k.storageDriver.Write(state); _err != nil {
+		if errorInStack != nil {
+			return fmt.Errorf(errorInStack.Error() + " " + _err.Error())
+		}
+		return _err
+	}
+
+	if errorInStack != nil {
+		return errorInStack
+	}
+
+	return nil
+}
+
+func (k *K8sClusterClient) deleteApplication(state *storageTypes.StorageDocument) error {
+
+	// TODO: do we actually need the app, we can use the state and remove using it
+
+	stackManifest, err := getStackManifest(app, app.Overrides)
+	if err != nil {
+		return err
+	}
+
+	idxAppInState, foundInState := PresentOrNot(app, App, state)
+	if foundInState {
+		// all the things needs to be deleted
+	}
+
+	return nil
+}
+
+func (k *K8sClusterClient) handleInstallComponent(
+	componentId metadata.StackComponentID,
+	component metadata.StackComponent) error {
+
+	var errorFailedToInstall = func(err error) error {
+		return ksctlErrors.ErrFailedKsctlComponent.Wrap(
+			log.NewError(kubernetesCtx, "failed to install", "component", componentId, "Reason", err.Error()),
+		)
+	}
+
+	if component.HandlerType == metadata.ComponentTypeKubectl {
+		if err := installKubectl(k, component.Kubectl); err != nil {
+			return errorFailedToInstall(err)
+		}
+	} else {
+		if err := installHelm(k, component.Helm); err != nil {
+			return errorFailedToInstall(err)
+		}
+	}
+	return nil
+}
+
+func (k *K8sClusterClient) handleUninstallComponent(
+	componentId metadata.StackComponentID,
+	component metadata.StackComponent) error {
+
+	var errorFailedToUninstall = func(err error) error {
+		return ksctlErrors.ErrFailedKsctlComponent.Wrap(
+			log.NewError(kubernetesCtx, "failed to uninstall", "component", componentId, "Reason", err.Error()),
+		)
+	}
+
+	if component.HandlerType == metadata.ComponentTypeKubectl {
+		if err := deleteKubectl(k, component.Kubectl); err != nil {
+			return errorFailedToUninstall(err)
+		}
+	} else {
+		if err := deleteHelm(k, component.Helm); err != nil {
+			return errorFailedToUninstall(err)
+		}
+	}
+	return nil
+}
+
 //
 //	switch op {
 //	case consts.OperationCreate:
@@ -255,16 +488,6 @@ func PresentOrNot(app types.KsctlApp, typeOfApp EnumApplication, state *storageT
 //	return nil
 //}
 //
-//func toKsctlApplicationType(from map[string]map[string]any) (to map[metadata.StackComponentID]metadata.ComponentOverriding) {
-//	if from == nil {
-//		return nil
-//	}
-//	to = make(map[metadata.StackComponentID]metadata.ComponentOverriding)
-//	for k, v := range from {
-//		to[metadata.StackComponentID(k)] = metadata.ComponentOverriding(v)
-//	}
-//	return
-//}
 //
 //// make sure when deleteing you pass the entire components
 //func (client *K8sClusterClient) addOrRemoveApplication(
