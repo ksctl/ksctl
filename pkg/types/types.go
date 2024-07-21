@@ -44,6 +44,6 @@ type Metadata struct {
 }
 
 type KsctlApp struct {
-	Name       string         `json:"name"`
-	Overriding map[string]any `json:"overriding"`
+	StackName string                    `json:"stackName"`
+	Overrides map[string]map[string]any `json:"overrides"`
 }

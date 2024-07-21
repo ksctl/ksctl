@@ -3,8 +3,8 @@ package metadata
 const (
 	ArgocdStandardStackID         StackID = "standard-argocd"
 	ArgoRolloutsStandardStackID   StackID = "standard-argorollouts"
-	CiliumStandardStackID         StackID = "standard-cilium"
-	FlannelStandardStackID        StackID = "standard-flannel"
+	CiliumStandardStackID         StackID = "cilium"
+	FlannelStandardStackID        StackID = "flannel"
 	IstioStandardStackID          StackID = "standard-istio"
 	KubePrometheusStandardStackID StackID = "standard-kubeprometheus"
 	KsctlOperatorsID              StackID = "standard-ksctloperator"

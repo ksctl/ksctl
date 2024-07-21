@@ -206,11 +206,11 @@ func ApplicationsInCluster(
 		return err
 	}
 
-	if len(client.Metadata.CNIPlugin) != 0 {
-		_cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{client.Metadata.CNIPlugin})
-		if err != nil {
-			return err
-		}
+	if len(client.Metadata.CNIPlugin.StackName) != 0 {
+		// _cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{client.Metadata.CNIPlugin})
+		// if err != nil {
+		// 	return err
+		// }
 
 		if err := k.InstallCNI(_cni[0], state, op); err != nil {
 			return err
@@ -243,19 +243,12 @@ func InstallAdditionalTools(
 	}
 
 	if externalCNI {
-		var cni string
-		if len(client.Metadata.CNIPlugin) == 0 {
-			cni = "flannel"
-		} else {
-			cni = client.Metadata.CNIPlugin
+		if len(client.Metadata.CNIPlugin.StackName) == 0 {
+			client.Metadata.CNIPlugin.StackName = "flannel"
+			client.Metadata.CNIPlugin.Overrides = nil
 		}
 
-		_cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{cni})
-		if err != nil {
-			return err
-		}
-
-		if err := k.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
+		if err := k.InstallCNI(client.Metadata.CNIPlugin, state, consts.OperationCreate); err != nil {
 			return err
 		}
 
@@ -267,11 +260,7 @@ func InstallAdditionalTools(
 	}
 
 	if len(client.Metadata.Applications) != 0 && externalApp {
-		_apps, err := helpers.ToApplicationTempl(controllerCtx, log, client.Metadata.Applications)
-		if err != nil {
-			return err
-		}
-		if err := k.Applications(_apps, state, consts.OperationCreate); err != nil {
+		if err := k.Applications(client.Metadata.Applications, state, consts.OperationCreate); err != nil {
 			return err
 		}
 
