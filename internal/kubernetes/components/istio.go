@@ -5,7 +5,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func getIstioComponentOverridings(p metadata.ComponentOverriding) (version *string, helmBaseChartOverridings map[string]interface{}, helmIstiodChartOverridings map[string]interface{}) {
+func getIstioComponentOverridings(p metadata.ComponentOverrides) (version *string, helmBaseChartOverridings map[string]interface{}, helmIstiodChartOverridings map[string]interface{}) {
 	helmBaseChartOverridings = nil // By default, it is nil
 	helmIstiodChartOverridings = nil
 
@@ -26,7 +26,7 @@ func getIstioComponentOverridings(p metadata.ComponentOverriding) (version *stri
 	return
 }
 
-func IstioStandardComponent(params metadata.ComponentOverriding) metadata.StackComponent {
+func IstioStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 
 	var (
 		version                    = "latest"

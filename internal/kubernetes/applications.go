@@ -88,11 +88,11 @@ func (k *K8sClusterClient) Applications(
 }
 
 func getStackManifest(app types.KsctlApp, overriding map[string]map[string]any) (metadata.ApplicationStack, error) {
-	convertedOverriding := make(map[metadata.StackComponentID]metadata.ComponentOverriding)
+	convertedOverriding := make(map[metadata.StackComponentID]metadata.ComponentOverrides)
 
 	if overriding != nil { // there are some user overriding
 		for k, v := range overriding {
-			convertedOverriding[metadata.StackComponentID(k)] = metadata.ComponentOverriding(v)
+			convertedOverriding[metadata.StackComponentID(k)] = metadata.ComponentOverrides(v)
 		}
 	}
 

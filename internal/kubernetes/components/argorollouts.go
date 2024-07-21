@@ -8,7 +8,7 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func getArgorolloutsComponentOverridings(p metadata.ComponentOverriding) (version *string, namespaceInstall *bool) {
+func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version *string, namespaceInstall *bool) {
 	if p == nil {
 		return nil, nil
 	}
@@ -24,7 +24,7 @@ func getArgorolloutsComponentOverridings(p metadata.ComponentOverriding) (versio
 	return
 }
 
-func ArgoRolloutsStandardComponent(params metadata.ComponentOverriding) metadata.StackComponent {
+func ArgoRolloutsStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 
 	var (
 		version     = "latest"

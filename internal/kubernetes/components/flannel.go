@@ -7,7 +7,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func getFlannelComponentOverridings(p metadata.ComponentOverriding) (version *string) {
+func getFlannelComponentOverridings(p metadata.ComponentOverrides) (version *string) {
 	if p == nil {
 		return nil
 	}
@@ -21,7 +21,7 @@ func getFlannelComponentOverridings(p metadata.ComponentOverriding) (version *st
 	return
 }
 
-func FlannelStandardComponent(params metadata.ComponentOverriding) metadata.StackComponent {
+func FlannelStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 
 	var (
 		version     = "latest"

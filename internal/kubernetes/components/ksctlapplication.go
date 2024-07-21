@@ -6,7 +6,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func getKsctlApplicationComponentOverridings(p metadata.ComponentOverriding) (version *string) {
+func getKsctlApplicationComponentOverridings(p metadata.ComponentOverrides) (version *string) {
 	if p == nil {
 		return nil
 	}
@@ -20,7 +20,7 @@ func getKsctlApplicationComponentOverridings(p metadata.ComponentOverriding) (ve
 	return
 }
 
-func KsctlApplicationComponent(params metadata.ComponentOverriding) metadata.StackComponent {
+func KsctlApplicationComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 	var (
 		version     = "main" // latest -> main
 		postInstall = ""

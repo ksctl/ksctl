@@ -5,7 +5,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func getKubePrometheusComponentOverridings(p metadata.ComponentOverriding) (version *string, helmKubePromChartOverridings map[string]interface{}) {
+func getKubePrometheusComponentOverridings(p metadata.ComponentOverrides) (version *string, helmKubePromChartOverridings map[string]interface{}) {
 	helmKubePromChartOverridings = nil // By default it is nil
 
 	if p == nil {
@@ -23,7 +23,7 @@ func getKubePrometheusComponentOverridings(p metadata.ComponentOverriding) (vers
 	return
 }
 
-func KubePrometheusStandardComponent(params metadata.ComponentOverriding) metadata.StackComponent {
+func KubePrometheusStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 	var (
 		version                      = "latest"
 		helmKubePromChartOverridings = map[string]any{}

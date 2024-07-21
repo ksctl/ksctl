@@ -7,7 +7,7 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func getArgocdComponentOverridings(p metadata.ComponentOverriding) (version *string, noUI *bool, namespaceInstall *bool) {
+func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *string, noUI *bool, namespaceInstall *bool) {
 	if p == nil {
 		return nil, nil, nil
 	}
@@ -24,7 +24,7 @@ func getArgocdComponentOverridings(p metadata.ComponentOverriding) (version *str
 	return
 }
 
-func ArgoCDStandardComponent(params metadata.ComponentOverriding) metadata.StackComponent {
+func ArgoCDStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 	var (
 		version     = "latest"
 		url         = ""

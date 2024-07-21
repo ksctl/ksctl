@@ -5,7 +5,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func getCiliumComponentOverridings(p metadata.ComponentOverriding) (version *string, ciliumChartOverridings map[string]any) {
+func getCiliumComponentOverridings(p metadata.ComponentOverrides) (version *string, ciliumChartOverridings map[string]any) {
 	ciliumChartOverridings = nil // By default it is nil
 
 	if p == nil {
@@ -23,7 +23,7 @@ func getCiliumComponentOverridings(p metadata.ComponentOverriding) (version *str
 	return
 }
 
-func CiliumStandardComponent(params metadata.ComponentOverriding) metadata.StackComponent {
+func CiliumStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 	var (
 		version                = "latest"
 		ciliumChartOverridings = map[string]any{}

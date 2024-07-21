@@ -23,28 +23,14 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-type Option struct {
-	// TODO(user): need to figure that out
-}
+type ComponentOverrides map[string]interface{}
 
-type ApplicationType string
-
-const (
-	TypeCNI ApplicationType = "cni"
-	TypeApp ApplicationType = "app"
-)
-
-type Component struct {
-	AppName string `json:"appName"`
-	// Version if left empty means @latest
-	Version string          `json:"version,omitempty"`
-	AppType ApplicationType `json:"appType"`
-	Options []Option        `json:"options,omitempty"`
-}
+type ComponentId string
 
 // StackSpec defines the desired state of Stack
 type StackSpec struct {
-	Components []Component `json:"components"`
+	StackName string                             `json:"stackName"`
+	Overrides map[ComponentId]ComponentOverrides `json:"overrides"`
 }
 
 // StackStatus defines the observed state of Stack
