@@ -90,7 +90,7 @@ func ConfigureCluster(client *types.KsctlClient) (bool, error) {
 		return false, err
 	}
 
-	externalCNI := client.Bootstrap.CNI(client.Metadata.CNIPlugin)
+	externalCNI := client.Bootstrap.CNI(client.Metadata.CNIPlugin.StackName)
 
 	client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
 	if client.Bootstrap == nil {
@@ -207,23 +207,13 @@ func ApplicationsInCluster(
 	}
 
 	if len(client.Metadata.CNIPlugin.StackName) != 0 {
-		// _cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{client.Metadata.CNIPlugin})
-		// if err != nil {
-		// 	return err
-		// }
-
-		if err := k.InstallCNI(_cni[0], state, op); err != nil {
+		if err := k.CNI(client.Metadata.CNIPlugin, state, op); err != nil {
 			return err
 		}
 	}
 
-	_apps, err := helpers.ToApplicationTempl(controllerCtx, log, client.Metadata.Applications)
-	if err != nil {
-		return err
-	}
-
 	if len(client.Metadata.Applications) != 0 {
-		return k.Applications(_apps, state, op)
+		return k.Applications(client.Metadata.Applications, state, op)
 	}
 	return nil
 }
@@ -248,7 +238,7 @@ func InstallAdditionalTools(
 			client.Metadata.CNIPlugin.Overrides = nil
 		}
 
-		if err := k.InstallCNI(client.Metadata.CNIPlugin, state, consts.OperationCreate); err != nil {
+		if err := k.CNI(client.Metadata.CNIPlugin, state, consts.OperationCreate); err != nil {
 			return err
 		}
 

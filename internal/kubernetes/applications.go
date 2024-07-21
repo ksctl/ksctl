@@ -51,7 +51,7 @@ func (k *K8sClusterClient) CNI(
 	var handlers func(app types.KsctlApp, typeOfApp EnumApplication, state *storageTypes.StorageDocument) error
 
 	if op == consts.OperationCreate {
-		handlers = k.installApplication
+		handlers = k.InstallApplication
 	} else if op == consts.OperationDelete {
 		handlers = k.deleteApplication
 	}
@@ -73,7 +73,7 @@ func (k *K8sClusterClient) Applications(
 
 	for _, app := range apps {
 		if op == consts.OperationCreate {
-			handlers = k.installApplication
+			handlers = k.InstallApplication
 		} else if op == consts.OperationDelete {
 			handlers = k.deleteApplication
 		}
@@ -137,7 +137,7 @@ func getComponentVersionOverriding(componentId string, overriding map[string]map
 	))
 }
 
-func (k *K8sClusterClient) installApplication(
+func (k *K8sClusterClient) InstallApplication(
 	app types.KsctlApp,
 	typeOfApp EnumApplication,
 	state *storageTypes.StorageDocument) error {
