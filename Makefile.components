@@ -143,6 +143,14 @@ build: check-controller manifests generate fmt vet ## Build manager binary.
 	cd ${WORKDIR} && \
 		go build -o bin/manager cmd/main.go
 
+.PHONY: install-controller-crds
+install-controller-crds: check-controller manifests kustomize ## Install CRDs to the K8s cluster specified in ~/.kube/config.
+	cd ${WORKDIR} && $(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
+
+.PHONY: uninstall-controller-crds
+uninstall-controller-crds: check-controller manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	cd ${WORKDIR} && $(KUSTOMIZE) build config/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+
 .PHONY: run
 run: check-controller manifests generate fmt vet ## Run a controller from your host.
 	cd ${WORKDIR} && \
