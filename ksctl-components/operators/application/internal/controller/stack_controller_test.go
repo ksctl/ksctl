@@ -62,21 +62,21 @@ var _ = Describe("Stack Controller", func() {
 					},
 					// TODO(user): Specify other spec details if needed.
 					Spec: applicationv1alpha1.StackSpec{
-						Components: []applicationv1alpha1.Component{
-							{
-								AppName: "demo",
-								Version: "demo",
-								AppType: applicationv1alpha1.TypeApp,
-							},
-							{
-								AppName: "demo1",
-								AppType: applicationv1alpha1.TypeCNI,
-							},
-							{
-								AppName: "demo2",
-								AppType: "",
-							},
-						},
+						// Components: []applicationv1alpha1.Component{
+						// 	{
+						// 		AppName: "demo",
+						// 		Version: "demo",
+						// 		AppType: applicationv1alpha1.TypeApp,
+						// 	},
+						// 	{
+						// 		AppName: "demo1",
+						// 		AppType: applicationv1alpha1.TypeCNI,
+						// 	},
+						// 	{
+						// 		AppName: "demo2",
+						// 		AppType: "",
+						// 	},
+						// },
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

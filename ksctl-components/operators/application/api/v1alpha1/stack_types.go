@@ -17,34 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
-
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// +kubebuilder:pruning:PreserveUnknownFields
-// +kubebuilder:validation:Schemaless
-type ComponentOverrides unstructured.Unstructured
-
-func (in *ComponentOverrides) DeepCopyInto(out *ComponentOverrides) {
-	if out != nil {
-		casted := unstructured.Unstructured(*in)
-		deepCopy := casted.DeepCopy()
-		out.Object = deepCopy.Object
-	}
-}
-
-type ComponentId string
 
 // StackSpec defines the desired state of Stack
 type StackSpec struct {
 	StackName string `json:"stackName"`
 
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:Schemaless
-	//+optional
-	Overrides map[ComponentId]ComponentOverrides `json:"overrides"`
+	Overrides *apiextensionsv1.JSON `json:"overrides,omitempty"`
 }
 
 // StackStatus defines the observed state of Stack

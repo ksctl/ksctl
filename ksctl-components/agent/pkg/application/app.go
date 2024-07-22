@@ -12,16 +12,10 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func toKsctlControllerCompatableForm(app []*pb.Application, appType pb.ApplicationType) (_apps []string) {
+func toKsctlControllerCompatableForm(app []*pb.Application, appType pb.ApplicationType) (_apps []types.KsctlApp) {
 	for _, app := range app {
 		if app.AppType == appType {
-			_app := ""
-			if len(app.Version) == 0 {
-				_app = app.AppName
-			} else {
-				_app = app.AppName + "@" + app.Version
-			}
-			_apps = append(_apps, _app)
+			_apps = append(_apps)
 		}
 	}
 

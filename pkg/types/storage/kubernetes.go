@@ -20,10 +20,7 @@ type Component struct {
 }
 
 func (c Component) String() string {
-	if len(c.Name) == 0 {
-		return ""
-	}
-	return fmt.Sprintf("%s@%s", c.Name, c.Version)
+	return c.Version
 }
 
 func (a Application) String() string {
@@ -33,7 +30,7 @@ func (a Application) String() string {
 	var components []string
 	for _, c := range a.Components {
 		x := ""
-		if len(c.Name) == 0 {
+		if len(c.Version) == 0 {
 			continue
 		}
 		x = c.String()

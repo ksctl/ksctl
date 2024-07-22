@@ -18,6 +18,8 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -78,14 +80,14 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		StackName: stack.Spec.StackName,
 	}
 
-	if stack.Spec.Overrides != nil {
+	_overrides := stack.Spec.Overrides.Raw
+
+	if _overrides != nil {
 		input.Overrides = make(map[string]map[string]any, 0)
-		for key, value := range stack.Spec.Overrides {
-			if converted, err := convertDataToBeConsumable(ctx, value); err != nil {
-				return ctrl.Result{}, err
-			} else {
-				input.Overrides[string(key)] = converted
-			}
+		fmt.Printf("Overrides: %#v\n", _overrides)
+		if err := json.Unmarshal(_overrides, &input.Overrides); err != nil {
+			log.Error("Unmarshal", "Reason", err)
+			return ctrl.Result{}, err
 		}
 	}
 
@@ -193,32 +195,6 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// }
 
 	return ctrl.Result{}, nil
-}
-
-func convertDataToBeConsumable(ctx context.Context, raw applicationv1alpha1.ComponentOverrides) (out map[string]any, err error) {
-	if raw.Object == nil {
-		return nil, nil
-	}
-	items := raw.Object
-	out = make(map[string]any, 0)
-	for key, unkownType := range items {
-		switch v := unkownType.(type) {
-		case map[string]interface{}:
-			out[key] = v
-		case []interface{}:
-			out[key] = v
-		case string:
-			out[key] = v
-		case int:
-			out[key] = v
-		case bool:
-			out[key] = v
-		default:
-			return nil, log.NewError(ctx, "Unknown type", "type", v)
-		}
-	}
-
-	return
 }
 
 // Helper functions to manage finalizers
