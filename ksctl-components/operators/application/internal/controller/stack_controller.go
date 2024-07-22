@@ -20,10 +20,9 @@ import (
 	"context"
 	"io"
 	"os"
-	"time"
 
+	"github.com/gookit/goutil/dump"
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -75,106 +74,151 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	log.Debug(ctx, "Debugging", "name", stack.Name, "namespace", stack.Namespace)
-	log.Debug(ctx, "stack Spec", "spec", stack.Spec)
+	input := types.KsctlApp{
+		StackName: stack.Spec.StackName,
+	}
 
-	if stack.DeletionTimestamp.IsZero() {
-		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
-
-			log.Debug(ctx, "adding finalizer", "finalizer", stackFinalizer)
-
-			stack.ObjectMeta.Finalizers = append(stack.ObjectMeta.Finalizers, stackFinalizer)
-
-			if err := r.Update(context.Background(), stack); err != nil {
+	if stack.Spec.Overrides != nil {
+		input.Overrides = make(map[string]map[string]any, 0)
+		for key, value := range stack.Spec.Overrides {
+			if converted, err := convertDataToBeConsumable(ctx, value); err != nil {
 				return ctrl.Result{}, err
-			}
-		} else {
-
-			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-			rpcClient, conn, err := NewClient(ctx)
-			defer cancel()
-
-			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
-				defer func() {
-					if err := conn.Close(); err != nil {
-						log.Error("Connection failed to close", "Reason", err)
-					}
-				}()
-			}
-
-			if err != nil {
-				log.Error("New RPC Client", "Reason", err)
-				stack.Status.ReasonOfFailure = err.Error()
-
-				if _err := r.Update(context.Background(), stack); _err != nil {
-					log.Error("update failed", "Reason", _err)
-					return ctrl.Result{}, _err
-				}
-				return ctrl.Result{
-					RequeueAfter: 30 * time.Second,
-					Requeue:      true,
-				}, err
-			}
-
-			if _err := InstallApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
-				log.Error("InstallApp", "Reason", _err)
-				stack.Status.Success = false
-				stack.Status.ReasonOfFailure = _err.Error()
-
-				if __err := r.Update(context.Background(), stack); __err != nil {
-					log.Error("update failed", "Reason", _err)
-					return ctrl.Result{}, __err
-				}
-				return ctrl.Result{}, _err
-			}
-
-			stack.Status.Success = true
-
-			if _err := r.Update(context.Background(), stack); _err != nil {
-				log.Error("update failed", "Reason", _err)
-				return ctrl.Result{}, _err
-			}
-
-			log.Success(ctx, "Install Application was successful")
-		}
-
-	} else {
-		if containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
-
-			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-			rpcClient, conn, err := NewClient(ctx)
-			defer cancel()
-			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
-				defer func() {
-					if err := conn.Close(); err != nil {
-						log.Error("Connection failed to close", "Reason", err)
-					}
-				}()
-			}
-
-			if err != nil {
-				log.Error("New RPC Client", "Reason", err)
-				return ctrl.Result{
-					RequeueAfter: 30 * time.Second,
-					Requeue:      true,
-				}, err
-			}
-
-			if _err := DeleteApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
-				log.Error("UninstallApp", "Reason", _err)
-				return ctrl.Result{}, _err
-			}
-
-			log.Success(ctx, "Uninstall Application was successful")
-
-			stack.ObjectMeta.Finalizers = removeString(stack.ObjectMeta.Finalizers, stackFinalizer)
-			if err := r.Update(context.Background(), stack); err != nil {
-				return ctrl.Result{}, err
+			} else {
+				input.Overrides[string(key)] = converted
 			}
 		}
 	}
 
+	println("=============")
+	dump.Println(input)
+	println("=============")
+
+	log.Debug(ctx, "Debugging", "name", stack.Name, "namespace", stack.Namespace)
+	log.Debug(ctx, "stack Spec", "spec", stack.Spec)
+
+	// if stack.DeletionTimestamp.IsZero() {
+	// 	if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
+	//
+	// 		log.Debug(ctx, "adding finalizer", "finalizer", stackFinalizer)
+	//
+	// 		stack.ObjectMeta.Finalizers = append(stack.ObjectMeta.Finalizers, stackFinalizer)
+	//
+	// 		if err := r.Update(context.Background(), stack); err != nil {
+	// 			return ctrl.Result{}, err
+	// 		}
+	// 	} else {
+	//
+	// 		ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	// 		rpcClient, conn, err := NewClient(ctx)
+	// 		defer cancel()
+	//
+	// 		if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
+	// 			defer func() {
+	// 				if err := conn.Close(); err != nil {
+	// 					log.Error("Connection failed to close", "Reason", err)
+	// 				}
+	// 			}()
+	// 		}
+	//
+	// 		if err != nil {
+	// 			log.Error("New RPC Client", "Reason", err)
+	// 			stack.Status.ReasonOfFailure = err.Error()
+	//
+	// 			if _err := r.Update(context.Background(), stack); _err != nil {
+	// 				log.Error("update failed", "Reason", _err)
+	// 				return ctrl.Result{}, _err
+	// 			}
+	// 			return ctrl.Result{
+	// 				RequeueAfter: 30 * time.Second,
+	// 				Requeue:      true,
+	// 			}, err
+	// 		}
+	//
+	// 		if _err := InstallApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
+	// 			log.Error("InstallApp", "Reason", _err)
+	// 			stack.Status.Success = false
+	// 			stack.Status.ReasonOfFailure = _err.Error()
+	//
+	// 			if __err := r.Update(context.Background(), stack); __err != nil {
+	// 				log.Error("update failed", "Reason", _err)
+	// 				return ctrl.Result{}, __err
+	// 			}
+	// 			return ctrl.Result{}, _err
+	// 		}
+	//
+	// 		stack.Status.Success = true
+	//
+	// 		if _err := r.Update(context.Background(), stack); _err != nil {
+	// 			log.Error("update failed", "Reason", _err)
+	// 			return ctrl.Result{}, _err
+	// 		}
+	//
+	// 		log.Success(ctx, "Install Application was successful")
+	// 	}
+	//
+	// } else {
+	// 	if containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
+	//
+	// 		ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	// 		rpcClient, conn, err := NewClient(ctx)
+	// 		defer cancel()
+	// 		if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
+	// 			defer func() {
+	// 				if err := conn.Close(); err != nil {
+	// 					log.Error("Connection failed to close", "Reason", err)
+	// 				}
+	// 			}()
+	// 		}
+	//
+	// 		if err != nil {
+	// 			log.Error("New RPC Client", "Reason", err)
+	// 			return ctrl.Result{
+	// 				RequeueAfter: 30 * time.Second,
+	// 				Requeue:      true,
+	// 			}, err
+	// 		}
+	//
+	// 		if _err := DeleteApps(ctx, rpcClient, stack.Spec.Components); _err != nil {
+	// 			log.Error("UninstallApp", "Reason", _err)
+	// 			return ctrl.Result{}, _err
+	// 		}
+	//
+	// 		log.Success(ctx, "Uninstall Application was successful")
+	//
+	// 		stack.ObjectMeta.Finalizers = removeString(stack.ObjectMeta.Finalizers, stackFinalizer)
+	// 		if err := r.Update(context.Background(), stack); err != nil {
+	// 			return ctrl.Result{}, err
+	// 		}
+	// 	}
+	// }
+
 	return ctrl.Result{}, nil
+}
+
+func convertDataToBeConsumable(ctx context.Context, raw applicationv1alpha1.ComponentOverrides) (out map[string]any, err error) {
+	if raw.Object == nil {
+		return nil, nil
+	}
+	items := raw.Object
+	out = make(map[string]any, 0)
+	for key, unkownType := range items {
+		switch v := unkownType.(type) {
+		case map[string]interface{}:
+			out[key] = v
+		case []interface{}:
+			out[key] = v
+		case string:
+			out[key] = v
+		case int:
+			out[key] = v
+		case bool:
+			out[key] = v
+		default:
+			return nil, log.NewError(ctx, "Unknown type", "type", v)
+		}
+	}
+
+	return
 }
 
 // Helper functions to manage finalizers

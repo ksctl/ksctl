@@ -18,18 +18,32 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-type ComponentOverrides map[string]interface{}
+// +kubebuilder:pruning:PreserveUnknownFields
+// +kubebuilder:validation:Schemaless
+type ComponentOverrides unstructured.Unstructured
+
+func (in *ComponentOverrides) DeepCopyInto(out *ComponentOverrides) {
+	if out != nil {
+		casted := unstructured.Unstructured(*in)
+		deepCopy := casted.DeepCopy()
+		out.Object = deepCopy.Object
+	}
+}
 
 type ComponentId string
 
 // StackSpec defines the desired state of Stack
 type StackSpec struct {
-	StackName string                             `json:"stackName"`
+	StackName string `json:"stackName"`
+
+	//+kubebuilder:pruning:PreserveUnknownFields
+	//+kubebuilder:validation:Schemaless
+	//+optional
 	Overrides map[ComponentId]ComponentOverrides `json:"overrides"`
 }
 
