@@ -21,9 +21,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ApplicationType string
+
+const (
+	TypeCNI ApplicationType = "cni"
+	TypeApp ApplicationType = "app"
+)
+
 // StackSpec defines the desired state of Stack
 type StackSpec struct {
-	StackName string `json:"stackName"`
+	StackName string          `json:"stackName"`
+	AppType   ApplicationType `json:"appType"`
 
 	Overrides *apiextensionsv1.JSON `json:"overrides,omitempty"`
 }

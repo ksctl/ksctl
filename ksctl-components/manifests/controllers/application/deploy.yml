@@ -38,11 +38,14 @@ spec:
           spec:
             description: StackSpec defines the desired state of Stack
             properties:
+              appType:
+                type: string
               overrides:
                 x-kubernetes-preserve-unknown-fields: true
               stackName:
                 type: string
             required:
+            - appType
             - stackName
             type: object
           status:

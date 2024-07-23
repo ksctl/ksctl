@@ -80,10 +80,12 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		StackName: stack.Spec.StackName,
 	}
 
+	// TODO: Make sure the appType to the grpc call as it is a stack based property what is the app type in future we should next be able to determinate the app type from the stackID instead of asking the user may be a map will work or some indexing as well
+
 	_overrides := stack.Spec.Overrides.Raw
 
 	if _overrides != nil {
-		input.Overrides = make(map[string]map[string]any, 0)
+		input.Overrides = make(map[string]map[string]any)
 		fmt.Printf("Overrides: %#v\n", _overrides)
 		if err := json.Unmarshal(_overrides, &input.Overrides); err != nil {
 			log.Error("Unmarshal", "Reason", err)

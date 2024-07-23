@@ -12,8 +12,8 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func toKsctlControllerCompatableForm(app []*pb.Application, appType pb.ApplicationType) (_apps []types.KsctlApp) {
-	for _, app := range app {
+func toKsctlControllerCompatableForm(apps []*pb.Application, appType pb.ApplicationType) (_apps []types.KsctlApp) {
+	for _, app := range apps {
 		if app.AppType == appType {
 			_apps = append(_apps)
 		}
