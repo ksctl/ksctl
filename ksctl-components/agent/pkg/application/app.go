@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 
 	ksctlHelpers "github.com/ksctl/ksctl/pkg/helpers"
@@ -12,10 +13,14 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func toKsctlControllerCompatableForm(apps []*pb.Application, appType pb.ApplicationType) (_apps []types.KsctlApp) {
+func toKsctlControllerCompatableForm(apps []*pb.Application, appType pb.ApplicationType) (_apps []types.KsctlApp, err error) {
 	for _, app := range apps {
 		if app.AppType == appType {
-			_apps = append(_apps)
+			_app := types.KsctlApp{}
+			if _err := json.Unmarshal(app.AppStackInfo, &_app); _err != nil {
+				return nil, _err
+			}
+			_apps = append(_apps, _app)
 		}
 	}
 
@@ -32,10 +37,19 @@ func Handler(ctx context.Context, log types.LoggerFactory, in *pb.ReqApplication
 	client.Metadata.Region = os.Getenv("KSCTL_REGION")
 	client.Metadata.StateLocation = consts.StoreK8s
 
-	if v := toKsctlControllerCompatableForm(in.Apps, pb.ApplicationType_APP); len(v) != 0 {
+	v, err := toKsctlControllerCompatableForm(in.Apps, pb.ApplicationType_APP)
+	if err != nil {
+		return err
+	}
+	if len(v) != 0 {
 		client.Metadata.Applications = v
 	}
-	if v := toKsctlControllerCompatableForm(in.Apps, pb.ApplicationType_CNI); len(v) != 0 {
+
+	v, err = toKsctlControllerCompatableForm(in.Apps, pb.ApplicationType_CNI)
+	if err != nil {
+		return err
+	}
+	if len(v) != 0 {
 		client.Metadata.CNIPlugin = v[0]
 	}
 

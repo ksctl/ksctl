@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -60,23 +61,20 @@ var _ = Describe("Stack Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
 					Spec: applicationv1alpha1.StackSpec{
-						// Components: []applicationv1alpha1.Component{
-						// 	{
-						// 		AppName: "demo",
-						// 		Version: "demo",
-						// 		AppType: applicationv1alpha1.TypeApp,
-						// 	},
-						// 	{
-						// 		AppName: "demo1",
-						// 		AppType: applicationv1alpha1.TypeCNI,
-						// 	},
-						// 	{
-						// 		AppName: "demo2",
-						// 		AppType: "",
-						// 	},
-						// },
+						Stacks: []applicationv1alpha1.StackObj{
+							{
+								StackName: "demo-on-simple",
+								AppType:   applicationv1alpha1.TypeApp,
+							},
+							{
+								StackName: "demo-on-helm-overrides",
+								AppType:   applicationv1alpha1.TypeApp,
+								Overrides: &v1.JSON{
+									Raw: []byte(`{"istio-component":{"version":"v0.0.1"},"abcd":{"version":"latest","helmValues":{"enableX": "true"}}}`),
+								},
+							},
+						},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

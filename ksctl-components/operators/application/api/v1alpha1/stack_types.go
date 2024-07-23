@@ -28,12 +28,16 @@ const (
 	TypeApp ApplicationType = "app"
 )
 
-// StackSpec defines the desired state of Stack
-type StackSpec struct {
-	StackName string          `json:"stackName"`
+type StackObj struct {
+	StackName string          `json:"stackId"`
 	AppType   ApplicationType `json:"appType"`
 
 	Overrides *apiextensionsv1.JSON `json:"overrides,omitempty"`
+}
+
+// StackSpec defines the desired state of Stack
+type StackSpec struct {
+	Stacks []StackObj `json:"stacks"`
 }
 
 // StackStatus defines the observed state of Stack
@@ -41,6 +45,8 @@ type StackStatus struct {
 	Success         bool   `json:"success"`
 	ReasonOfFailure string `json:"reasonOfFailure,omitempty"`
 }
+
+// TODO: need to update the kind as `StackCollection`
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
