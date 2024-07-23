@@ -6,16 +6,17 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: stack-sample-1
 spec:
-  stackName: stack-sample-name
-  appType: app
-  overrides:
-    istio-component:
-      version: v1.9.0
-      helmIstiodChartOverridings:
-        xyz: abcd
-      helmBaseChartOverridings:
-        defaultRevision: true
-    standard-argocd:
-      version: v2.0.0
-      noUI: true
-      namespaceInstall: true
+  stacks:
+  - stackName: stack-sample-name
+    appType: app
+    overrides:
+      istio-component:
+        version: v1.9.0
+        helmIstiodChartOverridings:
+          xyz: abcd
+        helmBaseChartOverridings:
+          defaultRevision: true
+      standard-argocd:
+        version: v2.0.0
+        noUI: true
+        namespaceInstall: true
