@@ -22,6 +22,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gookit/goutil/dump"
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -76,7 +77,9 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	log.Debug(ctx, "Debugging", "name", stack.Name, "namespace", stack.Namespace)
-	log.Debug(ctx, "stack Spec", "spec", stack.Spec)
+	log.Debug(ctx, "stack Spec", "spec", stack.Spec.Stacks)
+
+	dump.Println(stack.Spec.Stacks)
 
 	if stack.DeletionTimestamp.IsZero() {
 		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
