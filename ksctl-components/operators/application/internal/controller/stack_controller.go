@@ -22,7 +22,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gookit/goutil/dump"
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -48,7 +47,8 @@ const stackFinalizer = "ksctl.com/stack-finalizer"
 // StackReconciler reconciles a Stack object
 type StackReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme      *runtime.Scheme
+	agentClient KsctlAgent
 }
 
 //+kubebuilder:rbac:groups=application.ksctl.com,resources=stacks,verbs=get;list;watch;create;update;patch;delete
@@ -79,7 +79,29 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	log.Debug(ctx, "Debugging", "name", stack.Name, "namespace", stack.Namespace)
 	log.Debug(ctx, "stack Spec", "spec", stack.Spec.Stacks)
 
-	dump.Println(stack.Spec.Stacks)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	defer cancel()
+
+	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); !ok {
+		var err error
+		r.agentClient, err = NewKsctlAgentClient(ctx)
+		if err != nil {
+			log.Error("New RPC Client", "Reason", err)
+
+			return ctrl.Result{
+				RequeueAfter: time.Minute,
+				Requeue:      true,
+			}, err
+		}
+	} else {
+		r.agentClient, _ = NewKsctlAgentClientTesting(ctx)
+	}
+
+	defer func() {
+		if err := r.agentClient.Close(); err != nil {
+			log.Error("Connection failed to close", "Reason", err)
+		}
+	}()
 
 	if stack.DeletionTimestamp.IsZero() {
 		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
@@ -93,33 +115,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}
 		} else {
 
-			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-			rpcClient, conn, err := NewClient(ctx)
-			defer cancel()
-
-			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
-				defer func() {
-					if err := conn.Close(); err != nil {
-						log.Error("Connection failed to close", "Reason", err)
-					}
-				}()
-			}
-
-			if err != nil {
-				log.Error("New RPC Client", "Reason", err)
-				stack.Status.ReasonOfFailure = err.Error()
-
-				if _err := r.Update(context.Background(), stack); _err != nil {
-					log.Error("update failed", "Reason", _err)
-					return ctrl.Result{}, _err
-				}
-				return ctrl.Result{
-					RequeueAfter: 30 * time.Second,
-					Requeue:      true,
-				}, err
-			}
-
-			if _err := InstallApps(ctx, rpcClient, stack.Spec); _err != nil {
+			if _err := r.agentClient.InstallApps(stack.Spec); _err != nil {
 				log.Error("InstallApp", "Reason", _err)
 				stack.Status.Success = false
 				stack.Status.ReasonOfFailure = _err.Error()
@@ -144,26 +140,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	} else {
 		if containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
 
-			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-			rpcClient, conn, err := NewClient(ctx)
-			defer cancel()
-			if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
-				defer func() {
-					if err := conn.Close(); err != nil {
-						log.Error("Connection failed to close", "Reason", err)
-					}
-				}()
-			}
-
-			if err != nil {
-				log.Error("New RPC Client", "Reason", err)
-				return ctrl.Result{
-					RequeueAfter: 30 * time.Second,
-					Requeue:      true,
-				}, err
-			}
-
-			if _err := DeleteApps(ctx, rpcClient, stack.Spec); _err != nil {
+			if _err := r.agentClient.UninstallApps(stack.Spec); _err != nil {
 				log.Error("UninstallApp", "Reason", _err)
 				return ctrl.Result{}, _err
 			}
