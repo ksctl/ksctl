@@ -6,7 +6,7 @@
 package manifests
 
 const (
-	KsctlAgentAppVersion                 = "feat-app-version"
-	KsctlStateImportAppVersion           = "feat-app-version"
-	KsctlApplicationStackBranchOrTagName = "feat-app-version-overriding" // NOTE: it is the branch name
+	KsctlAgentAppVersion                 = "latest"
+	KsctlStateImportAppVersion           = "latest"
+	KsctlApplicationStackBranchOrTagName = "latest" // NOTE: it is the branch name
 )

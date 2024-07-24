@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: ghcr.io/ksctl/ksctl-application-controller
-  newTag: feat-app-version-overriding
+  newTag: latest

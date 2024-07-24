@@ -4,9 +4,9 @@ metadata:
   name: stack-sample-1
 spec:
   stacks:
-  - stackId: standard-argocd
+  - stackId: standard-istio
     appType: app
     overrides:
-      standard-argocd:
+      istio:
         version: latest
         # noUI: true
