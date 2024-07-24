@@ -2,11 +2,12 @@ package helmclient
 
 import (
 	"context"
+	"os"
+
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
-	"os"
 )
 
 type HelmClient struct {
@@ -24,7 +25,7 @@ func NewKubeconfigHelmClient(ctx context.Context, log types.LoggerFactory, kubec
 	client.log = log
 	client.ctx = ctx
 	if err := patchHelmDirectories(ctx, log, client); err != nil {
-		return
+		return nil, err
 	}
 
 	client.actionConfig = new(action.Configuration)
