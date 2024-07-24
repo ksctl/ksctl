@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
@@ -26,13 +27,15 @@ func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *stri
 
 func ArgoCDStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 	var (
-		version     = "latest"
+		version     = "stable"
 		url         = ""
 		postInstall = ""
 	)
 	_version, _noUI, _namespaceInstall := getArgocdComponentOverridings(params)
 	if _version != nil {
-		version = *_version
+		if *_version != "latest" {
+			version = *_version
+		}
 	}
 
 	defaultVals := func() {
@@ -50,16 +53,16 @@ and login to http://localhost:8080 with user admin and password from above
 			defaultVals()
 		} else {
 			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/core-install.yaml", version)
-			postInstall = `
-https://argo-cd.readthedocs.io/en/stable/operator-manual/core/
-`
+			postInstall = fmt.Sprintf(`
+https://argo-cd.readthedocs.io/en/%s/operator-manual/core/
+`, version)
 		}
 	} else if _namespaceInstall != nil {
 		if *_namespaceInstall {
 			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", version)
-			postInstall = `
-https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-availability
-`
+			postInstall = fmt.Sprintf(`
+https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-availability
+`, version)
 		} else {
 			defaultVals()
 		}
