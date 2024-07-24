@@ -61,7 +61,7 @@ const (
 	initialNicDeletionWaiterTime   = time.Second * 30
 	instanceInitialTerminationTime = time.Second * 200
 	managedClusterActiveWaiter     = time.Minute * 10
-	managedNodeGroupActiveWaiter   = time.Minute * 4
+	managedNodeGroupActiveWaiter   = time.Minute * 10
 )
 
 func ProvideClient() AwsGo {
@@ -822,7 +822,7 @@ func (awsclient *AwsClient) BeignCreateNodeGroup(ctx context.Context, paramter *
 	describeNodeGroup := eks.DescribeNodegroupInput{
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
 	}
-	err = waiter.Wait(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
+	_, err = waiter.WaitForOutput(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
 	if err != nil {
 		return resp, err
 	}
@@ -845,7 +845,7 @@ func (awsclient *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter 
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
 	}
 
-	err = waiter.Wait(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
+	_, err = waiter.WaitForOutput(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
 	if err != nil {
 		return nil, err
 	}

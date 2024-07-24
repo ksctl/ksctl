@@ -1,0 +1,7 @@
+{
+	"cluster_name": "test-e2e-aws",
+	"ha_cluster": false,
+	"region": "ap-south-1",
+	"cloud_provider": "aws",
+	"storage_type": "store-local"
+}

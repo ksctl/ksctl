@@ -103,9 +103,9 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 		log.Print(awsCtx, "skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 	} else {
 
-		if len(mainStateDocument.CloudInfra.Aws.IamRoleArnWP) == 0 {
+		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameCN) == 0 {
 			iamParameter := iam.CreateRoleInput{
-				RoleName:                 aws.String(mainStateDocument.ClusterName + "-controlplane" + "role"),
+				RoleName:                 aws.String("ksctl" + name + "-cp" + "role"),
 				AssumeRolePolicyDocument: aws.String(assumeClusterRolePolicyDocument),
 			}
 			iamRespCp, err := obj.client.BeginCreateIAM(awsCtx, "controlplane", &iamParameter)
@@ -162,9 +162,9 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	if len(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName) != 0 {
 		log.Print(awsCtx, "skipped already created EKS nodegroup", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
 	} else {
-		if len(mainStateDocument.CloudInfra.Aws.IamRoleArnWP) == 0 {
+		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameWP) == 0 {
 			iamParameter := iam.CreateRoleInput{
-				RoleName:                 aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-worker" + "role"),
+				RoleName:                 aws.String("ksctl-" + mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-worker" + "role"),
 				AssumeRolePolicyDocument: aws.String(assumeWorkerNodeRolePolicyDocument),
 			}
 			iamRespWp, err := obj.client.BeginCreateIAM(awsCtx, "worker", &iamParameter)
@@ -223,7 +223,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Azure.B.IsCompleted = true
+	mainStateDocument.CloudInfra.Aws.B.IsCompleted = true
 
 	mainStateDocument.ClusterKubeConfig = kubeconfig
 
