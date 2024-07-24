@@ -105,7 +105,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 
 		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameCN) == 0 {
 			iamParameter := iam.CreateRoleInput{
-				RoleName:                 aws.String("ksctl" + name + "-cp" + "role"),
+				RoleName:                 aws.String("ksctl-" + name + "-cp" + "role"),
 				AssumeRolePolicyDocument: aws.String(assumeClusterRolePolicyDocument),
 			}
 			iamRespCp, err := obj.client.BeginCreateIAM(awsCtx, "controlplane", &iamParameter)
