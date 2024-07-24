@@ -119,6 +119,8 @@ docker-buildx-controller: check-controller ## Build and push docker image for th
 
 .PHONY: build-installer
 build-installer: check-controller manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
+	@echo "Building installer for ${CONTROLLER} with controller image ${CONTROLLER_IMG}"
+	@echo "make sure the controller image tag is correctly set using IMG_TAG_VERSION"
 	cd ${WORKDIR}/config/manager && $(KUSTOMIZE) edit set image controller=${CONTROLLER_IMG}
 	$(KUSTOMIZE) build ${WORKDIR}/config/default > ksctl-components/manifests/controllers/${CONTROLLER}/deploy.yml
 
