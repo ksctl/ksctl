@@ -64,12 +64,12 @@ var _ = Describe("Stack Controller", func() {
 					Spec: applicationv1alpha1.StackSpec{
 						Stacks: []applicationv1alpha1.StackObj{
 							{
-								StackName: "demo-on-simple",
-								AppType:   applicationv1alpha1.TypeApp,
+								StackId: "demo-on-simple",
+								AppType: applicationv1alpha1.TypeApp,
 							},
 							{
-								StackName: "demo-on-helm-overrides",
-								AppType:   applicationv1alpha1.TypeApp,
+								StackId: "demo-on-helm-overrides",
+								AppType: applicationv1alpha1.TypeApp,
 								Overrides: &v1.JSON{
 									Raw: []byte(`{"istio-component":{"version":"v0.0.1"},"abcd":{"version":"latest","helmValues":{"enableX": "true"}}}`),
 								},

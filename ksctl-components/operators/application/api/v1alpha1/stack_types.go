@@ -29,8 +29,8 @@ const (
 )
 
 type StackObj struct {
-	StackName string          `json:"stackId"`
-	AppType   ApplicationType `json:"appType"`
+	StackId string          `json:"stackId"`
+	AppType ApplicationType `json:"appType"`
 
 	Overrides *apiextensionsv1.JSON `json:"overrides,omitempty"`
 }

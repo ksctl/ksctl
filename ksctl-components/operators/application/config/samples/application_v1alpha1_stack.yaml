@@ -20,3 +20,17 @@ spec:
         version: v2.0.0
         noUI: true
         namespaceInstall: true
+---
+
+apiVersion: application.ksctl.com/v1alpha1
+kind: Stack
+metadata:
+  name: stack-sample-1
+spec:
+  stacks:
+  - stackId: standard-argocd
+    appType: app
+    overrides:
+      standard-argocd:
+        version: latest
+        # noUI: true

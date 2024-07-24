@@ -1,6 +1,6 @@
 {
 	"cluster_name": "test-e2e-local",
-	"kubernetes_version": "1.30.0",
+	"kubernetes_version": "1.27.1",
 	"ha_cluster": false,
 	"cloud_provider": "local",
 	"storage_type": "store-local",

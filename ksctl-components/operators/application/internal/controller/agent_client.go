@@ -44,7 +44,7 @@ func appHandler(
 
 	for _, stack := range apps.Stacks {
 		ksctlApplicationData := types.KsctlApp{
-			StackName: stack.StackName,
+			StackName: stack.StackId,
 		}
 
 		_overrides := stack.Overrides.Raw
