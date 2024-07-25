@@ -19,6 +19,7 @@ func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 		if len(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName) == 0 {
 			log.Print(awsCtx, "Skipping deleting EKS node-group.")
 		} else {
+			log.Print(awsCtx, "Deleting the EKS node-group", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
 			nodeParameter := eks.DeleteNodegroupInput{
 				ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
 				NodegroupName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName),
@@ -40,6 +41,7 @@ func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 			}
 		}
 
+		log.Print(awsCtx, "Deleting the EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 		clusterPerimeter := eks.DeleteClusterInput{
 			Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
 		}
@@ -98,7 +100,6 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	vmType := <-obj.chVMType
 
 	iamRoleControlPlane := fmt.Sprintf("ksctl-%s-cp-role", name)
-	iamRoleWorkerPlane := fmt.Sprintf("ksctl-%s-wp-role", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 
 	log.Print(awsCtx, "Creating a new EKS cluster.", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 
@@ -160,6 +161,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 			return err
 		}
 	}
+	iamRoleWorkerPlane := fmt.Sprintf("ksctl-%s-wp-role", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 
 	if len(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName) != 0 {
 		log.Print(awsCtx, "skipped already created EKS nodegroup", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
@@ -195,13 +197,12 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 			CapacityType:  eks_types.CapacityTypesOnDemand,
 
 			InstanceTypes: []string{vmType},
-			// TODO ADD  DISK SIZE OPTION
-			DiskSize: aws.Int32(30),
+			DiskSize:      aws.Int32(30),
 
 			ScalingConfig: &eks_types.NodegroupScalingConfig{
-				DesiredSize: aws.Int32(2),
-				MaxSize:     aws.Int32(2), // TODO(praful): need to use the no of Workernodes from the user input
-				MinSize:     aws.Int32(2),
+				DesiredSize: aws.Int32(int32(noOfNode)),
+				MaxSize:     aws.Int32(int32(noOfNode)),
+				MinSize:     aws.Int32(int32(noOfNode)),
 			},
 		}
 		log.Print(awsCtx, "creating the EKS nodegroup")

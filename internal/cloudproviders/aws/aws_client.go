@@ -38,13 +38,13 @@ clusters:
 contexts:
 - context:
     cluster: {{.ClusterName}}
-    user: aws
-  name: aws
-current-context: aws
+    user: {{.ClusterName}}
+  name: {{.ClusterName}}
+current-context: {{.ClusterName}}
 kind: Config
 preferences: {}
 users:
-- name: aws
+- name: {{.ClusterName}}
   user:
     token: {{.Token}}
 `
@@ -792,7 +792,6 @@ func (client *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.Creat
 	if err != nil {
 		return nil, err
 	}
-	dump.NewWithOptions(dump.SkipPrivate()).Println("resp==>", resp)
 
 	mainStateDocument.CloudInfra.Aws.ManagedClusterName = *resp.Cluster.Name
 	mainStateDocument.CloudInfra.Aws.ManagedClusterArn = *resp.Cluster.Arn
@@ -800,10 +799,7 @@ func (client *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.Creat
 		return nil, err
 	}
 
-	waiter := eks.NewClusterActiveWaiter(client.eksClient, func(options *eks.ClusterActiveWaiterOptions) {
-		options.MinDelay.Minutes()
-		options.MaxDelay.Minutes()
-	})
+	waiter := eks.NewClusterActiveWaiter(client.eksClient)
 
 	describeCluster := eks.DescribeClusterInput{
 		Name: resp.Cluster.Name,
@@ -821,7 +817,6 @@ func (client *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks
 	if err != nil {
 		return nil, err
 	}
-	dump.NewWithOptions(dump.SkipPrivate()).Println("resp==>", resp)
 	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = *resp.Nodegroup.NodegroupName
 	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = *resp.Nodegroup.NodegroupArn
 	if err := client.storage.Write(mainStateDocument); err != nil {
@@ -834,7 +829,6 @@ func (client *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks
 		NodegroupName: resp.Nodegroup.NodegroupName,
 		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
 	}
-	dump.NewWithOptions(dump.SkipPrivate()).Println("describeNodeGrp==>", describeNodeGroup)
 	xxxx, err := waiter.WaitForOutput(ctx, describeNodeGroup, managedNodeGroupActiveWaiter)
 	// TODO: should we use this if we are going to use WaitForOutput eks.DescribeNodegroupOutput
 	if err != nil {
@@ -852,10 +846,7 @@ func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *ek
 		return nil, err
 	}
 
-	waiter := eks.NewNodegroupDeletedWaiter(client.eksClient, func(options *eks.NodegroupDeletedWaiterOptions) {
-		options.MinDelay.Minutes()
-		options.MaxDelay.Minutes()
-	})
+	waiter := eks.NewNodegroupDeletedWaiter(client.eksClient)
 
 	describeNodeGroup := eks.DescribeNodegroupInput{
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
@@ -876,10 +867,7 @@ func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, paramete
 		return nil, err
 	}
 
-	waiter := eks.NewClusterDeletedWaiter(client.eksClient, func(options *eks.ClusterDeletedWaiterOptions) {
-		options.MaxDelay.Minutes()
-		options.MaxDelay.Minutes()
-	})
+	waiter := eks.NewClusterDeletedWaiter(client.eksClient)
 
 	describeCluster := eks.DescribeClusterInput{
 		Name: aws.String(*resp.Cluster.Name),
