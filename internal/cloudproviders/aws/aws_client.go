@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/gookit/goutil/dump"
 	"net/http"
 	"os"
 	"sort"
@@ -791,6 +792,13 @@ func (client *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.Creat
 	if err != nil {
 		return nil, err
 	}
+	dump.NewWithOptions(dump.SkipPrivate()).Println("resp==>", resp)
+
+	mainStateDocument.CloudInfra.Aws.ManagedClusterName = *resp.Cluster.Name
+	mainStateDocument.CloudInfra.Aws.ManagedClusterArn = *resp.Cluster.Arn
+	if err := client.storage.Write(mainStateDocument); err != nil {
+		return nil, err
+	}
 
 	waiter := eks.NewClusterActiveWaiter(client.eksClient, func(options *eks.ClusterActiveWaiterOptions) {
 		options.MinDelay.Minutes()
@@ -800,11 +808,11 @@ func (client *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.Creat
 	describeCluster := eks.DescribeClusterInput{
 		Name: resp.Cluster.Name,
 	}
-	_, err = waiter.WaitForOutput(ctx, &describeCluster, managedClusterActiveWaiter)
+	xxxx, err := waiter.WaitForOutput(ctx, &describeCluster, managedClusterActiveWaiter)
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println(dresp) // FIXME(praful): do we need this?? and also are we expecting resp to have info??
+	dump.NewWithOptions(dump.SkipPrivate()).Println(xxxx.Cluster)
 	return resp, nil
 }
 
@@ -813,19 +821,27 @@ func (client *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks
 	if err != nil {
 		return nil, err
 	}
-
-	waiter := eks.NewNodegroupActiveWaiter(client.eksClient, func(options *eks.NodegroupActiveWaiterOptions) {
-		options.MinDelay.Minutes()
-		options.MaxDelay.Minutes()
-	})
-
-	describeNodeGroup := eks.DescribeNodegroupInput{
-		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
+	dump.NewWithOptions(dump.SkipPrivate()).Println("resp==>", resp)
+	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = *resp.Nodegroup.NodegroupName
+	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = *resp.Nodegroup.NodegroupArn
+	if err := client.storage.Write(mainStateDocument); err != nil {
+		return nil, err
 	}
-	_, err = waiter.WaitForOutput(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
+
+	waiter := eks.NewNodegroupActiveWaiter(client.eksClient)
+
+	describeNodeGroup := &eks.DescribeNodegroupInput{
+		NodegroupName: resp.Nodegroup.NodegroupName,
+		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+	}
+	dump.NewWithOptions(dump.SkipPrivate()).Println("describeNodeGrp==>", describeNodeGroup)
+	xxxx, err := waiter.WaitForOutput(ctx, describeNodeGroup, managedNodeGroupActiveWaiter)
+	// TODO: should we use this if we are going to use WaitForOutput eks.DescribeNodegroupOutput
 	if err != nil {
 		return nil, err
 	}
+	dump.NewWithOptions(dump.SkipPrivate()).Println("xxxx==>", xxxx)
+
 	return resp, nil
 }
 
