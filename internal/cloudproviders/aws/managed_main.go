@@ -95,9 +95,12 @@ func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 
 func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode int) error {
 	name := <-obj.chResName
-	vmtype := <-obj.chVMType
+	vmType := <-obj.chVMType
 
-	log.Debug(awsCtx, "Creating a new EKS cluster.", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	iamRoleControlPlane := fmt.Sprintf("ksctl-%s-cp-role", name)
+	iamRoleWorkerPlane := fmt.Sprintf("ksctl-%s-wp-role", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+
+	log.Print(awsCtx, "Creating a new EKS cluster.", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 
 	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) != 0 {
 		log.Print(awsCtx, "skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
@@ -105,7 +108,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 
 		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameCN) == 0 {
 			iamParameter := iam.CreateRoleInput{
-				RoleName:                 aws.String("ksctl-" + name + "-cp" + "role"),
+				RoleName:                 aws.String(iamRoleControlPlane),
 				AssumeRolePolicyDocument: aws.String(assumeClusterRolePolicyDocument),
 			}
 			iamRespCp, err := obj.client.BeginCreateIAM(awsCtx, "controlplane", &iamParameter)
@@ -145,12 +148,11 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 			Version: aws.String(obj.metadata.k8sVersion),
 		}
 
+		log.Print(awsCtx, "creating the EKS Controlplane")
 		clusterResp, err := obj.client.BeginCreateEKS(awsCtx, &parameter)
 		if err != nil {
 			return err
 		}
-
-		fmt.Println(clusterResp)
 
 		mainStateDocument.CloudInfra.Aws.ManagedClusterName = *clusterResp.Cluster.Name
 		err = storage.Write(mainStateDocument)
@@ -164,7 +166,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	} else {
 		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameWP) == 0 {
 			iamParameter := iam.CreateRoleInput{
-				RoleName:                 aws.String("ksctl-" + mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-worker" + "role"),
+				RoleName:                 aws.String(iamRoleWorkerPlane),
 				AssumeRolePolicyDocument: aws.String(assumeWorkerNodeRolePolicyDocument),
 			}
 			iamRespWp, err := obj.client.BeginCreateIAM(awsCtx, "worker", &iamParameter)
@@ -184,25 +186,27 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 			log.Print(awsCtx, "skipped already created ROLE EKS Worker ", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
 		}
 
+		eksNodeGroupName := mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-nodegroup"
 		nodegroup := eks.CreateNodegroupInput{
 			ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
 			NodeRole:      aws.String(mainStateDocument.CloudInfra.Aws.IamRoleArnWP),
-			NodegroupName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-nodegroup"),
+			NodegroupName: aws.String(eksNodeGroupName),
 			Subnets:       mainStateDocument.CloudInfra.Aws.SubnetIDs,
 			CapacityType:  eks_types.CapacityTypesOnDemand,
 
-			InstanceTypes: []string{vmtype},
+			InstanceTypes: []string{vmType},
 			// TODO ADD  DISK SIZE OPTION
 			DiskSize: aws.Int32(30),
 
 			ScalingConfig: &eks_types.NodegroupScalingConfig{
 				DesiredSize: aws.Int32(2),
-				MaxSize:     aws.Int32(2),
+				MaxSize:     aws.Int32(2), // TODO(praful): need to use the no of Workernodes from the user input
 				MinSize:     aws.Int32(2),
 			},
 		}
+		log.Print(awsCtx, "creating the EKS nodegroup")
 
-		nodeResp, err := obj.client.BeignCreateNodeGroup(awsCtx, &nodegroup)
+		nodeResp, err := obj.client.BeginCreateNodeGroup(awsCtx, &nodegroup)
 		if err != nil {
 			return err
 		}

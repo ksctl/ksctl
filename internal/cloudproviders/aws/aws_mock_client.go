@@ -300,7 +300,7 @@ package aws
 
 // 	return nil, nil
 // }
-// func (*AwsClient) BeignCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
+// func (*AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
 // 	return nil, nil
 // }
 
