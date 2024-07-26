@@ -63,7 +63,9 @@ const (
 	initialNicDeletionWaiterTime   = time.Second * 30
 	instanceInitialTerminationTime = time.Second * 200
 	managedClusterActiveWaiter     = time.Minute * 15
+	managedClusterDeletionWaiter   = time.Minute * 10
 	managedNodeGroupActiveWaiter   = time.Minute * 10
+	managedNodeGroupDeletionWaiter = time.Minute * 15
 )
 
 func ProvideClient() AwsGo {
@@ -846,6 +848,11 @@ func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *ek
 	if err != nil {
 		return nil, err
 	}
+	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = ""
+	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = ""
+	if err := client.storage.Write(mainStateDocument); err != nil {
+		return nil, err
+	}
 
 	waiter := eks.NewNodegroupDeletedWaiter(client.eksClient)
 
@@ -853,7 +860,7 @@ func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *ek
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
 	}
 
-	_, err = waiter.WaitForOutput(ctx, &describeNodeGroup, managedNodeGroupActiveWaiter)
+	_, err = waiter.WaitForOutput(ctx, &describeNodeGroup, managedNodeGroupDeletionWaiter)
 	if err != nil {
 		return nil, err
 	}
@@ -867,6 +874,11 @@ func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, paramete
 	if err != nil {
 		return nil, err
 	}
+	mainStateDocument.CloudInfra.Aws.ManagedClusterName = ""
+	mainStateDocument.CloudInfra.Aws.ManagedClusterArn = ""
+	if err := client.storage.Write(mainStateDocument); err != nil {
+		return nil, err
+	}
 
 	waiter := eks.NewClusterDeletedWaiter(client.eksClient)
 
@@ -874,7 +886,7 @@ func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, paramete
 		Name: aws.String(*resp.Cluster.Name),
 	}
 
-	_, err = waiter.WaitForOutput(ctx, &describeCluster, managedClusterActiveWaiter)
+	_, err = waiter.WaitForOutput(ctx, &describeCluster, managedClusterDeletionWaiter)
 	if err != nil {
 		return nil, err
 	}
