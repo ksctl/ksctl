@@ -49,9 +49,9 @@ and open http://localhost:3100/rollouts
 	if _namespaceInstall != nil {
 		if *_namespaceInstall {
 			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", version)
-			postInstall = `
-https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#non-high-availability
-`
+			postInstall = fmt.Sprintf(`
+https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-availability
+`, version)
 
 		} else {
 			defaultVals()

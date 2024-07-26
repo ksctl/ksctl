@@ -30,9 +30,7 @@ func FlannelStandardComponent(params metadata.ComponentOverrides) metadata.Stack
 	)
 	_version := getFlannelComponentOverridings(params)
 	if _version != nil {
-		if *_version != "stable" {
-			version = *_version
-		}
+		version = *_version
 	}
 
 	defaultVals := func() {
