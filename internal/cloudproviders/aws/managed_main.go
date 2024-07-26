@@ -231,6 +231,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 	mainStateDocument.CloudInfra.Aws.B.IsCompleted = true
 
 	mainStateDocument.ClusterKubeConfig = kubeconfig
+	mainStateDocument.ClusterKubeConfigContext = mainStateDocument.CloudInfra.Aws.ManagedClusterName
 
 	if err := storage.Write(mainStateDocument); err != nil {
 		return err
