@@ -39,13 +39,13 @@ clusters:
 contexts:
 - context:
     cluster: {{.ClusterName}}
-    user: {{.ClusterName}}
+    user: aws
   name: {{.ClusterName}}
 current-context: {{.ClusterName}}
 kind: Config
 preferences: {}
 users:
-- name: {{.ClusterName}}
+- name: aws
   user:
     token: {{.Token}}
 `
