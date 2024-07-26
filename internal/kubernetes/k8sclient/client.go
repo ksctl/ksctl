@@ -11,7 +11,7 @@ type K8sClient struct {
 	apiextensionsClient *clientset.Clientset
 }
 
-func New(c *rest.Config) (k *K8sClient, err error) {
+func NewK8sClient(c *rest.Config) (k *K8sClient, err error) {
 	k = new(K8sClient)
 	k.apiextensionsClient, err = clientset.NewForConfig(c)
 	if err != nil {

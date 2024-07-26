@@ -73,7 +73,7 @@ func NewInClusterClient(
 		return
 	}
 
-	k.k8sClient, err = k8sclient.New(config)
+	k.k8sClient, err = k8sclient.NewK8sClient(config)
 	if err != nil {
 		return
 	}
@@ -112,7 +112,7 @@ func NewKubeconfigClient(
 		return
 	}
 
-	k.k8sClient, err = k8sclient.New(config)
+	k.k8sClient, err = k8sclient.NewK8sClient(config)
 	if err != nil {
 		return
 	}
