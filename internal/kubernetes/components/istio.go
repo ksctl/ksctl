@@ -58,18 +58,18 @@ func IstioStandardComponent(params metadata.ComponentOverrides) metadata.StackCo
 		Helm: &metadata.HelmHandler{
 			RepoUrl:  "https://istio-release.storage.googleapis.com/charts",
 			RepoName: "istio",
-			Charts: []metadata.HelmOptions{
+			Charts: []metadata.ChartOptions{
 				{
-					ChartName:       "istio/base",
-					ChartVer:        version,
+					Name:            "istio/base",
+					Version:         version,
 					ReleaseName:     "istio-base",
 					Namespace:       "istio-system",
 					CreateNamespace: true,
 					Args:            helmBaseChartOverridings,
 				},
 				{
-					ChartName:       "istio/istiod",
-					ChartVer:        version,
+					Name:            "istio/istiod",
+					Version:         version,
 					ReleaseName:     "istiod",
 					Namespace:       "istio-system",
 					CreateNamespace: false,

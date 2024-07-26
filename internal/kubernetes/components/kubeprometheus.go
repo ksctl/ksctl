@@ -44,10 +44,10 @@ func KubePrometheusStandardComponent(params metadata.ComponentOverrides) metadat
 		Helm: &metadata.HelmHandler{
 			RepoUrl:  "https://prometheus-community.github.io/helm-charts",
 			RepoName: "prometheus-community",
-			Charts: []metadata.HelmOptions{
+			Charts: []metadata.ChartOptions{
 				{
-					ChartName:       "prometheus-community/kube-prometheus-stack",
-					ChartVer:        version,
+					Name:            "prometheus-community/kube-prometheus-stack",
+					Version:         version,
 					ReleaseName:     "kube-prometheus-stack",
 					Namespace:       "monitoring",
 					CreateNamespace: true,

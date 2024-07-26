@@ -13,8 +13,8 @@ func installHelm(client *K8sClusterClient, component *metadata.HelmHandler) erro
 	for _, chart := range charts {
 		if err := client.helmClient.
 			InstallChart(
-				chart.ChartVer,
-				chart.ChartName,
+				chart.Version,
+				chart.Name,
 				chart.Namespace,
 				chart.ReleaseName,
 				chart.CreateNamespace,

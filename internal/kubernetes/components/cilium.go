@@ -45,10 +45,10 @@ func CiliumStandardComponent(params metadata.ComponentOverrides) metadata.StackC
 		Helm: &metadata.HelmHandler{
 			RepoName: "cilium",
 			RepoUrl:  "https://helm.cilium.io/",
-			Charts: []metadata.HelmOptions{
+			Charts: []metadata.ChartOptions{
 				{
-					ChartName:       "cilium/cilium",
-					ChartVer:        version,
+					Name:            "cilium/cilium",
+					Version:         version,
 					ReleaseName:     "cilium",
 					Namespace:       "kube-system",
 					CreateNamespace: false,

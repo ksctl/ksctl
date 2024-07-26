@@ -1,8 +1,8 @@
 package metadata
 
-type HelmOptions struct {
-	ChartVer        string
-	ChartName       string
+type ChartOptions struct {
+	Version         string
+	Name            string
 	ReleaseName     string
 	Namespace       string
 	CreateNamespace bool
@@ -22,7 +22,7 @@ type KubectlHandler struct {
 type HelmHandler struct {
 	RepoUrl  string
 	RepoName string
-	Charts   []HelmOptions
+	Charts   []ChartOptions
 }
 
 type (
