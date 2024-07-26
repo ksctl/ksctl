@@ -7,13 +7,14 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/gookit/goutil/dump"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/gookit/goutil/dump"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
@@ -970,6 +971,7 @@ func (client *AwsClient) GetKubeConfig(ctx context.Context, clusterName string) 
 	if err != nil {
 		return "", err
 	}
+
 	preSignClient := sts.NewPresignClient(client.stsClient)
 	tokenRetriver := NewSTSTokenRetriver(preSignClient)
 	token := tokenRetriver.GetToken(context.Background(), clusterName, *client.config)

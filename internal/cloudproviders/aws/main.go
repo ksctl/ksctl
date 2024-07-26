@@ -553,16 +553,16 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 
 func (obj *AwsProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
 
-	_read, err := storage.Read()
-	if err != nil {
-		log.Error("handled error", "catch", err)
-		return nil, err
-	}
-	log.Debug(awsCtx, "data", "read", _read)
+	// _read, err := storage.Read()
+	// if err != nil {
+	// 	log.Error("handled error", "catch", err)
+	// 	return nil, err
+	// }
+	// log.Debug(awsCtx, "data", "read", _read)
 
-	obj.client.GetKubeConfig(awsCtx, mainStateDocument.ClusterName)
+	obj.client.GetKubeConfig(awsCtx, mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 
-	kubeconfig := _read.ClusterKubeConfig
+	kubeconfig := mainStateDocument.ClusterKubeConfig
 	log.Debug(awsCtx, "data", "kubeconfig", kubeconfig)
 	return &kubeconfig, nil
 }

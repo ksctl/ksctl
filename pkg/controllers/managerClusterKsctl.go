@@ -129,6 +129,11 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 
 	case consts.CloudAws:
 		client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, stateDocument, awsPkg.ProvideClient)
+		if err != nil {
+			break
+		}
+
+		err = cloudController.InitCloud(client, stateDocument, consts.OperationGet)
 
 	case consts.CloudLocal:
 		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, stateDocument, localPkg.ProvideClient)
