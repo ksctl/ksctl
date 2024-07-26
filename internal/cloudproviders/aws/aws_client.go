@@ -854,7 +854,11 @@ func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *ek
 		return nil, err
 	}
 
-	waiter := eks.NewNodegroupDeletedWaiter(client.eksClient)
+	waiter := eks.NewNodegroupDeletedWaiter(client.eksClient, func(ndwo *eks.NodegroupDeletedWaiterOptions) {
+		ndwo.LogWaitAttempts = true
+		ndwo.MinDelay = 15 * time.Second
+		ndwo.MaxDelay = 30 * time.Second
+	})
 
 	describeNodeGroup := eks.DescribeNodegroupInput{
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
@@ -880,7 +884,11 @@ func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, paramete
 		return nil, err
 	}
 
-	waiter := eks.NewClusterDeletedWaiter(client.eksClient)
+	waiter := eks.NewClusterDeletedWaiter(client.eksClient, func(cdwo *eks.ClusterDeletedWaiterOptions) {
+		cdwo.LogWaitAttempts = true
+		cdwo.MinDelay = 15 * time.Second
+		cdwo.MaxDelay = 30 * time.Second
+	})
 
 	describeCluster := eks.DescribeClusterInput{
 		Name: aws.String(*resp.Cluster.Name),
