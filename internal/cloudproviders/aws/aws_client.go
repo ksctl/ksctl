@@ -14,8 +14,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/gookit/goutil/dump"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -807,11 +805,10 @@ func (client *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.Creat
 	describeCluster := eks.DescribeClusterInput{
 		Name: resp.Cluster.Name,
 	}
-	xxxx, err := waiter.WaitForOutput(ctx, &describeCluster, managedClusterActiveWaiter)
+	err = waiter.Wait(ctx, &describeCluster, managedClusterActiveWaiter)
 	if err != nil {
 		return nil, err
 	}
-	dump.NewWithOptions(dump.SkipPrivate()).Println(xxxx.Cluster)
 	return resp, nil
 }
 
@@ -832,12 +829,10 @@ func (client *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks
 		NodegroupName: resp.Nodegroup.NodegroupName,
 		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
 	}
-	xxxx, err := waiter.WaitForOutput(ctx, describeNodeGroup, managedNodeGroupActiveWaiter)
-	// TODO: should we use this if we are going to use WaitForOutput eks.DescribeNodegroupOutput
+	err = waiter.Wait(ctx, describeNodeGroup, managedNodeGroupActiveWaiter)
 	if err != nil {
 		return nil, err
 	}
-	dump.NewWithOptions(dump.SkipPrivate()).Println("xxxx==>", xxxx)
 
 	return resp, nil
 }
@@ -846,11 +841,6 @@ func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *ek
 
 	resp, err := client.eksClient.DeleteNodegroup(ctx, parameter)
 	if err != nil {
-		return nil, err
-	}
-	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = ""
-	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = ""
-	if err := client.storage.Write(mainStateDocument); err != nil {
 		return nil, err
 	}
 
@@ -862,9 +852,10 @@ func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *ek
 
 	describeNodeGroup := eks.DescribeNodegroupInput{
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
+		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
 	}
 
-	_, err = waiter.WaitForOutput(ctx, &describeNodeGroup, managedNodeGroupDeletionWaiter)
+	err = waiter.Wait(ctx, &describeNodeGroup, managedNodeGroupDeletionWaiter)
 	if err != nil {
 		return nil, err
 	}
@@ -878,11 +869,6 @@ func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, paramete
 	if err != nil {
 		return nil, err
 	}
-	mainStateDocument.CloudInfra.Aws.ManagedClusterName = ""
-	mainStateDocument.CloudInfra.Aws.ManagedClusterArn = ""
-	if err := client.storage.Write(mainStateDocument); err != nil {
-		return nil, err
-	}
 
 	waiter := eks.NewClusterDeletedWaiter(client.eksClient, func(cdwo *eks.ClusterDeletedWaiterOptions) {
 		cdwo.LogWaitAttempts = true
@@ -894,7 +880,7 @@ func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, paramete
 		Name: aws.String(*resp.Cluster.Name),
 	}
 
-	_, err = waiter.WaitForOutput(ctx, &describeCluster, managedClusterDeletionWaiter)
+	err = waiter.Wait(ctx, &describeCluster, managedClusterDeletionWaiter)
 	if err != nil {
 		return nil, err
 	}
