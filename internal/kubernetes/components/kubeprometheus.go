@@ -15,9 +15,13 @@ func getKubePrometheusComponentOverridings(p metadata.ComponentOverrides) (versi
 	for k, v := range p {
 		switch k {
 		case "version":
-			version = utilities.Ptr(v.(string))
+			if v, ok := v.(string); ok {
+				version = utilities.Ptr(v)
+			}
 		case "helmKubePromChartOverridings":
-			helmKubePromChartOverridings = v.(map[string]interface{})
+			if v, ok := v.(map[string]interface{}); ok {
+				helmKubePromChartOverridings = v
+			}
 		}
 	}
 	return

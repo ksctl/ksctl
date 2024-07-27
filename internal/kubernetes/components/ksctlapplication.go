@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
@@ -14,7 +15,9 @@ func getKsctlApplicationComponentOverridings(p metadata.ComponentOverrides) (ver
 	for k, v := range p {
 		switch k {
 		case "version":
-			version = utilities.Ptr(v.(string))
+			if v, ok := v.(string); ok {
+				version = utilities.Ptr(v)
+			}
 		}
 	}
 	return

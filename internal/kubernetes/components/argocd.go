@@ -15,11 +15,17 @@ func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *stri
 	for k, v := range p {
 		switch k {
 		case "version":
-			version = utilities.Ptr(v.(string))
+			if v, ok := v.(string); ok {
+				version = utilities.Ptr(v)
+			}
 		case "noUI":
-			noUI = utilities.Ptr(v.(bool))
+			if v, ok := v.(bool); ok {
+				noUI = utilities.Ptr(v)
+			}
 		case "namespaceInstall":
-			namespaceInstall = utilities.Ptr(v.(bool))
+			if v, ok := v.(bool); ok {
+				namespaceInstall = utilities.Ptr(v)
+			}
 		}
 	}
 	return

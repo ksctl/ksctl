@@ -15,9 +15,13 @@ func getCiliumComponentOverridings(p metadata.ComponentOverrides) (version *stri
 	for k, v := range p {
 		switch k {
 		case "version":
-			version = utilities.Ptr(v.(string))
+			if v, ok := v.(string); ok {
+				version = utilities.Ptr(v)
+			}
 		case "ciliumChartOverridings":
-			ciliumChartOverridings = v.(map[string]any)
+			if v, ok := v.(map[string]any); ok {
+				ciliumChartOverridings = v
+			}
 		}
 	}
 	return

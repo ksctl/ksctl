@@ -16,11 +16,17 @@ func getIstioComponentOverridings(p metadata.ComponentOverrides) (version *strin
 	for k, v := range p {
 		switch k {
 		case "version":
-			version = utilities.Ptr(v.(string))
+			if v, ok := v.(string); ok {
+				version = utilities.Ptr(v)
+			}
 		case "helmBaseChartOverridings":
-			helmBaseChartOverridings = v.(map[string]interface{})
+			if v, ok := v.(map[string]interface{}); ok {
+				helmBaseChartOverridings = v
+			}
 		case "helmIstiodChartOverridings":
-			helmIstiodChartOverridings = v.(map[string]interface{})
+			if v, ok := v.(map[string]interface{}); ok {
+				helmIstiodChartOverridings = v
+			}
 		}
 	}
 	return

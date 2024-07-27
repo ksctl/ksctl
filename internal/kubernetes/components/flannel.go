@@ -15,7 +15,9 @@ func getFlannelComponentOverridings(p metadata.ComponentOverrides) (version *str
 	for k, v := range p {
 		switch k {
 		case "version":
-			version = utilities.Ptr(v.(string))
+			if v, ok := v.(string); ok {
+				version = utilities.Ptr(v)
+			}
 		}
 	}
 	return
