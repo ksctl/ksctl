@@ -173,8 +173,23 @@ func transferData(kubeconfig,
 		func() (err error) {
 			resHttp, err = client.Do(req)
 			if err != nil {
+				body, _err := io.ReadAll(resHttp.Body)
+				if _err != nil {
+					return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+						log.NewError(kubernetesCtx, "failed to read response from failed http conn",
+							"ReasonBody", _err,
+							"ReasonConn", err,
+							"statuscode", resHttp.StatusCode,
+						),
+					)
+				}
+
 				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
-					log.NewError(kubernetesCtx, "failed to connect", "Reason", err))
+					log.NewError(kubernetesCtx, "failed to connect",
+						"Reason", err,
+						"body", string(body),
+					),
+				)
 			}
 			return nil
 		},
