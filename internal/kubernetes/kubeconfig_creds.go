@@ -17,10 +17,17 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func httpClient(caCert, clientCert, clientKey []byte) (*tls.Config, error) {
+func httpClient(isTokenBased bool, caCert, clientCert, clientKey []byte) (*tls.Config, error) {
 
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
+
+	if isTokenBased {
+		tlsConfig := &tls.Config{
+			RootCAs: caCertPool,
+		}
+		return tlsConfig, nil
+	}
 
 	cert, err := tls.X509KeyPair(clientCert, clientKey)
 	if err != nil {
@@ -84,7 +91,12 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 				log.NewError(kubernetesCtx, "failed to get the token", "Reason", "token is empty"),
 			)
 		}
-		return kubeapiURL, nil, &token, nil
+		tlsConf, _err := httpClient(true, cluster.CertificateAuthorityData, nil, nil)
+		if _err != nil {
+			return "", nil, nil, _err
+		}
+
+		return kubeapiURL, tlsConf, &token, nil
 
 	} else {
 		usr := config.AuthInfos[authContext]
@@ -98,7 +110,7 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 			)
 		}
 
-		tlsConf, _err := httpClient(caCert, clientCert, clientKey)
+		tlsConf, _err := httpClient(false, caCert, clientCert, clientKey)
 		if _err != nil {
 			return "", nil, nil, _err
 		}
@@ -132,34 +144,10 @@ func transferData(kubeconfig,
 
 	var (
 		resHttp *http.Response
-		req     *http.Request
-		client  *http.Client
 	)
 
-	if token != nil {
-		// use the token
-		req, err = http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
-		if err != nil {
-			return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
-				log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err),
-			)
-		}
-
-		client = &http.Client{Timeout: 1 * time.Minute}
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
-	} else {
-		tr := &http.Transport{
-			TLSClientConfig: tlsConf,
-		}
-
-		req, err = http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
-		if err != nil {
-			return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
-				log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err),
-			)
-		}
-
-		client = &http.Client{Transport: tr, Timeout: 1 * time.Minute}
+	tr := &http.Transport{
+		TLSClientConfig: tlsConf,
 	}
 
 	expoBackoff := helpers.NewBackOff(
@@ -171,23 +159,25 @@ func transferData(kubeconfig,
 		kubernetesCtx,
 		log,
 		func() (err error) {
+
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
+			if err != nil {
+				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+					log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err),
+				)
+			}
+
+			if token != nil {
+				req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+			}
+
+			client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
+
 			resHttp, err = client.Do(req)
 			if err != nil {
-				body, _err := io.ReadAll(resHttp.Body)
-				if _err != nil {
-					return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
-						log.NewError(kubernetesCtx, "failed to read response from failed http conn",
-							"ReasonBody", _err,
-							"ReasonConn", err,
-							"statuscode", resHttp.StatusCode,
-						),
-					)
-				}
-
 				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
 					log.NewError(kubernetesCtx, "failed to connect",
 						"Reason", err,
-						"body", string(body),
 					),
 				)
 			}
