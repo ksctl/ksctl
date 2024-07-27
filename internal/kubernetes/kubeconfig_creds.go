@@ -36,11 +36,11 @@ func httpClient(caCert, clientCert, clientKey []byte) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, tlsConf *tls.Config, err error) {
+func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, tlsConf *tls.Config, token *string, err error) {
 
 	config, err := clientcmd.Load([]byte(kubeconfig))
 	if err != nil {
-		return "", nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+		return "", nil, nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
 			log.NewError(kubernetesCtx, "failed deserializes the contents into Config object", "Reason", err),
 		)
 	}
@@ -69,31 +69,41 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 	}
 
 	if !isPresent {
-		return "", nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+		return "", nil, nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
 			log.NewError(kubernetesCtx, "failed to find the context", "contextName", clusterContextName),
 		)
 	}
 
 	cluster := config.Clusters[clusterContext]
+	kubeapiURL := cluster.Server
+
 	if authContext == "aws" {
-		// it is the aws provider
 		token := config.AuthInfos[authContext].Token
-		// we need to use this in Header `Authorization: Bearer <token>`
+		if len(token) == 0 {
+			return "", nil, nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+				log.NewError(kubernetesCtx, "failed to get the token", "Reason", "token is empty"),
+			)
+		}
+		return kubeapiURL, nil, &token, nil
 
 	} else {
 		usr := config.AuthInfos[authContext]
 
-		kubeapiURL := cluster.Server
 		caCert := cluster.CertificateAuthorityData
-		clientCert := usr.ClientCertificateData // these needs to be dynamic
+		clientCert := usr.ClientCertificateData
 		clientKey := usr.ClientKeyData
+		if len(caCert) == 0 || len(clientCert) == 0 || len(clientKey) == 0 {
+			return "", nil, nil, ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+				log.NewError(kubernetesCtx, "failed to get the tls certs", "Reason", "one of the tls certs is empty"),
+			)
+		}
 
 		tlsConf, _err := httpClient(caCert, clientCert, clientKey)
 		if _err != nil {
-			return "", nil, _err
+			return "", nil, nil, _err
 		}
 
-		return kubeapiURL, tlsConf, nil
+		return kubeapiURL, tlsConf, nil, nil
 	}
 }
 
@@ -104,7 +114,7 @@ func transferData(kubeconfig,
 	podPort int,
 	v *types.StorageStateExportImport) error {
 
-	url, tlsConf, err := ExtractURLAndTLSCerts(kubeconfig, clusterContextName)
+	url, tlsConf, token, err := ExtractURLAndTLSCerts(kubeconfig, clusterContextName)
 	if err != nil {
 		return err
 	}
@@ -120,8 +130,36 @@ func transferData(kubeconfig,
 
 	log.Debug(kubernetesCtx, "full url for state transfer", "url", url)
 
-	tr := &http.Transport{
-		TLSClientConfig: tlsConf,
+	var (
+		resHttp *http.Response
+		req     *http.Request
+		client  *http.Client
+	)
+
+	if token != nil {
+		// use the token
+		req, err = http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
+		if err != nil {
+			return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+				log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err),
+			)
+		}
+
+		client = &http.Client{Timeout: 1 * time.Minute}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+	} else {
+		tr := &http.Transport{
+			TLSClientConfig: tlsConf,
+		}
+
+		req, err = http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
+		if err != nil {
+			return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
+				log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", err),
+			)
+		}
+
+		client = &http.Client{Transport: tr, Timeout: 1 * time.Minute}
 	}
 
 	expoBackoff := helpers.NewBackOff(
@@ -129,21 +167,10 @@ func transferData(kubeconfig,
 		1,
 		int(consts.CounterMaxWatchRetryCount),
 	)
-	var (
-		resHttp *http.Response
-	)
 	_err := expoBackoff.Run(
 		kubernetesCtx,
 		log,
 		func() (err error) {
-			req, _err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(out))
-			if _err != nil {
-				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
-					log.NewError(kubernetesCtx, "failed, client could not create request", "Reason", _err),
-				)
-			}
-			client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
-
 			resHttp, err = client.Do(req)
 			if err != nil {
 				return ksctlErrors.ErrFailedConnectingKubernetesCluster.Wrap(
