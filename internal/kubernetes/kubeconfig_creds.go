@@ -75,18 +75,26 @@ func ExtractURLAndTLSCerts(kubeconfig, clusterContextName string) (url string, t
 	}
 
 	cluster := config.Clusters[clusterContext]
-	usr := config.AuthInfos[authContext]
+	if authContext == "aws" {
+		// it is the aws provider
+		token := config.AuthInfos[authContext].Token
+		// we need to use this in Header `Authorization: Bearer <token>`
 
-	kubeapiURL := cluster.Server
-	caCert := cluster.CertificateAuthorityData
-	clientCert := usr.ClientCertificateData
-	clientKey := usr.ClientKeyData
+	} else {
+		usr := config.AuthInfos[authContext]
 
-	tlsConf, _err := httpClient(caCert, clientCert, clientKey)
-	if _err != nil {
-		return "", nil, _err
+		kubeapiURL := cluster.Server
+		caCert := cluster.CertificateAuthorityData
+		clientCert := usr.ClientCertificateData // these needs to be dynamic
+		clientKey := usr.ClientKeyData
+
+		tlsConf, _err := httpClient(caCert, clientCert, clientKey)
+		if _err != nil {
+			return "", nil, _err
+		}
+
+		return kubeapiURL, tlsConf, nil
 	}
-	return kubeapiURL, tlsConf, nil
 }
 
 func transferData(kubeconfig,
