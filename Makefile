@@ -194,6 +194,10 @@ mock_aws_ha: golang-test ## Aws HA mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws -bench=BenchmarkAwsTestingHA -benchtime=1x -cover -v
 
+.PHONY: mock-aws-managed
+mock_aws_managed: golang-test ## Aws managed mock test
+	cd test/ && \
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
 
 .PHONY: mock-local-managed
 mock_local_managed: golang-test ## Local managed mock test
