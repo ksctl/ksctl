@@ -35,6 +35,7 @@ func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
 			mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = ""
 			mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = ""
 			mainStateDocument.CloudInfra.Aws.NoManagedNodes = 0
+			mainStateDocument.CloudInfra.Aws.ManagedNodeSize = ""
 			err = storage.Write(mainStateDocument)
 			if err != nil {
 				return err
@@ -101,10 +102,10 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 
 	iamRoleControlPlane := fmt.Sprintf("ksctl-%s-cp-role", name)
 
-	log.Print(awsCtx, "Creating a new EKS cluster.", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	log.Print(awsCtx, "Creating a new EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 
 	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) != 0 {
-		log.Print(awsCtx, "skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+		log.Print(awsCtx, "skipped already created EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
 	} else {
 
 		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameCN) == 0 {
@@ -148,6 +149,8 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 			},
 			Version: aws.String(obj.metadata.k8sVersion),
 		}
+		mainStateDocument.CloudInfra.Aws.B.KubernetesVer = obj.metadata.k8sVersion
+		mainStateDocument.BootstrapProvider = "managed"
 
 		log.Print(awsCtx, "creating the EKS Controlplane")
 		clusterResp, err := obj.client.BeginCreateEKS(awsCtx, &parameter)
@@ -189,6 +192,9 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 		}
 
 		eksNodeGroupName := mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-nodegroup"
+		mainStateDocument.CloudInfra.Aws.ManagedNodeSize = vmType
+		mainStateDocument.CloudInfra.Aws.NoManagedNodes = noOfNode
+
 		nodegroup := eks.CreateNodegroupInput{
 			ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
 			NodeRole:      aws.String(mainStateDocument.CloudInfra.Aws.IamRoleArnWP),

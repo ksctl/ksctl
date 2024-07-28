@@ -291,7 +291,6 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = make([]string, no)
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes = make([]string, no)
 		} else {
@@ -303,7 +302,6 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs, "")
-					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs, "")
 					mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes = append(mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes, "")
 				}
@@ -312,7 +310,6 @@ func (obj *AwsProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, se
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[:newLen]
-				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.DiskNames[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[:newLen]
 				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[:newLen]
 			}
@@ -360,7 +357,6 @@ func (obj *AwsProvider) NoOfControlPlane(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs = make([]string, no)
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.DiskNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes = make([]string, no)
 		}
@@ -406,7 +402,6 @@ func (obj *AwsProvider) NoOfDataStore(no int, setter bool) (int, error) {
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs = make([]string, no)
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.DiskNames = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs = make([]string, no)
 			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes = make([]string, no)
 		}
@@ -523,11 +518,12 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 				DS:            convertToAllClusterDataType(v, consts.RoleDs),
 				LB:            convertToAllClusterDataType(v, consts.RoleLb)[0],
 
-				NoWP:         len(v.CloudInfra.Aws.InfoWorkerPlanes.HostNames),
-				NoCP:         len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
-				NoDS:         len(v.CloudInfra.Aws.InfoDatabase.HostNames),
-				NoMgt:        v.CloudInfra.Aws.NoManagedNodes,
-				ManagedK8sID: "", //TODO(praful): need to add it once EKS is added
+				NoWP:  len(v.CloudInfra.Aws.InfoWorkerPlanes.HostNames),
+				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
+				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.HostNames),
+				NoMgt: v.CloudInfra.Aws.NoManagedNodes,
+				// TODO: need to add managed nodes size
+				ManagedK8sID: v.CloudInfra.Aws.ManagedClusterArn,
 				NetworkID:    v.CloudInfra.Aws.VpcId,
 				NetworkName:  v.CloudInfra.Aws.VpcName,
 				SSHKeyID:     v.CloudInfra.Aws.B.SSHID,
