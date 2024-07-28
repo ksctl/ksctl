@@ -31,13 +31,16 @@ func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *stri
 	return
 }
 
-func ArgoCDStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	var (
-		version     = "stable"
-		url         = ""
-		postInstall = ""
-	)
-	_version, _noUI, _namespaceInstall := getArgocdComponentOverridings(params)
+func setArgocdComponentOverridings(p metadata.ComponentOverrides) (
+	version string,
+	url string,
+	postInstall string,
+) {
+	version = "stable"
+	url = ""
+	postInstall = ""
+
+	_version, _noUI, _namespaceInstall := getArgocdComponentOverridings(p)
 	if _version != nil {
 		if *_version != "latest" {
 			version = *_version
@@ -75,6 +78,12 @@ https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-avai
 	} else {
 		defaultVals()
 	}
+
+	return
+}
+
+func ArgoCDStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+	version, url, postInstall := setArgocdComponentOverridings(params)
 
 	return metadata.StackComponent{
 		Kubectl: &metadata.KubectlHandler{

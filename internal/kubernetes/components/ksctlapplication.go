@@ -23,14 +23,14 @@ func getKsctlApplicationComponentOverridings(p metadata.ComponentOverrides) (ver
 	return
 }
 
-func KsctlApplicationComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	var (
-		version     = "main" // latest -> main
-		postInstall = ""
-		url         = ""
-	)
+func setKsctlApplicationComponentOverridings(p metadata.ComponentOverrides) (
+	version string,
+	url string,
+	postInstall string,
+) {
+	version = "main"
 
-	_version := getKsctlApplicationComponentOverridings(params)
+	_version := getKsctlApplicationComponentOverridings(p)
 	if _version != nil {
 		if *_version != "latest" {
 			version = *_version
@@ -39,6 +39,12 @@ func KsctlApplicationComponent(params metadata.ComponentOverrides) metadata.Stac
 
 	postInstall = "As the controller and the crd are installed just need to apply application to be installed"
 	url = fmt.Sprintf("https://raw.githubusercontent.com/ksctl/ksctl/%s/ksctl-components/manifests/controllers/application/deploy.yml", version)
+
+	return
+}
+
+func KsctlApplicationComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+	version, url, postInstall := setKsctlApplicationComponentOverridings(params)
 
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,

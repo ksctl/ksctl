@@ -28,13 +28,15 @@ func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version
 	return
 }
 
-func ArgoRolloutsStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+func setArgorolloutsComponentOverridings(params metadata.ComponentOverrides) (
+	version string,
+	url string,
+	postInstall string,
+) {
+	version = "latest"
+	url = ""
+	postInstall = ""
 
-	var (
-		version     = "latest"
-		url         = ""
-		postInstall = ""
-	)
 	_version, _namespaceInstall := getArgorolloutsComponentOverridings(params)
 	if _version != nil {
 		version = *_version
@@ -63,6 +65,11 @@ https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-avai
 	} else {
 		defaultVals()
 	}
+	return
+}
+
+func ArgoRolloutsStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+	version, url, postInstall := setArgorolloutsComponentOverridings(params)
 
 	return metadata.StackComponent{
 		Kubectl: &metadata.KubectlHandler{

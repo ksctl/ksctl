@@ -32,15 +32,16 @@ func getIstioComponentOverridings(p metadata.ComponentOverrides) (version *strin
 	return
 }
 
-func IstioStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+func setIsitoComponentOverridings(p metadata.ComponentOverrides) (
+	version string,
+	helmBaseChartOverridings map[string]any,
+	helmIstiodChartOverridings map[string]any,
+) {
+	version = "latest"
+	helmBaseChartOverridings = map[string]any{}
+	helmIstiodChartOverridings = map[string]any{}
 
-	var (
-		version                    = "latest"
-		helmBaseChartOverridings   = map[string]any{}
-		helmIstiodChartOverridings = map[string]any{}
-	)
-
-	_version, _helmBaseChartOverridings, _helmIstiodChartOverridings := getIstioComponentOverridings(params)
+	_version, _helmBaseChartOverridings, _helmIstiodChartOverridings := getIstioComponentOverridings(p)
 
 	if _version != nil {
 		version = *_version
@@ -59,6 +60,12 @@ func IstioStandardComponent(params metadata.ComponentOverrides) metadata.StackCo
 	} else {
 		helmIstiodChartOverridings = nil
 	}
+	return
+}
+
+func IstioStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+
+	version, helmBaseChartOverridings, helmIstiodChartOverridings := setIsitoComponentOverridings(params)
 
 	return metadata.StackComponent{
 		Helm: &metadata.HelmHandler{

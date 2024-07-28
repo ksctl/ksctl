@@ -27,13 +27,14 @@ func getKubePrometheusComponentOverridings(p metadata.ComponentOverrides) (versi
 	return
 }
 
-func KubePrometheusStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	var (
-		version                      = "latest"
-		helmKubePromChartOverridings = map[string]any{}
-	)
+func setKubePrometheusComponentOverridings(p metadata.ComponentOverrides) (
+	version string,
+	helmKubePromChartOverridings map[string]any,
+) {
+	version = "latest"
+	helmKubePromChartOverridings = map[string]any{}
 
-	_version, _helmKubePromChartOverridings := getKubePrometheusComponentOverridings(params)
+	_version, _helmKubePromChartOverridings := getKubePrometheusComponentOverridings(p)
 	if _version != nil {
 		version = *_version
 	}
@@ -43,6 +44,13 @@ func KubePrometheusStandardComponent(params metadata.ComponentOverrides) metadat
 	} else {
 		helmKubePromChartOverridings = nil
 	}
+
+	return
+}
+
+func KubePrometheusStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+
+	version, helmKubePromChartOverridings := setKubePrometheusComponentOverridings(params)
 
 	return metadata.StackComponent{
 		Helm: &metadata.HelmHandler{

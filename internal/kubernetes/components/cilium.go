@@ -27,13 +27,14 @@ func getCiliumComponentOverridings(p metadata.ComponentOverrides) (version *stri
 	return
 }
 
-func CiliumStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	var (
-		version                = "latest"
-		ciliumChartOverridings = map[string]any{}
-	)
+func setCiliumComponentOverridings(p metadata.ComponentOverrides) (
+	version string,
+	ciliumChartOverridings map[string]any,
+) {
+	version = "latest"
+	ciliumChartOverridings = map[string]any{}
 
-	_version, _ciliumChartOverridings := getCiliumComponentOverridings(params)
+	_version, _ciliumChartOverridings := getCiliumComponentOverridings(p)
 
 	if _version != nil {
 		version = *_version
@@ -44,6 +45,11 @@ func CiliumStandardComponent(params metadata.ComponentOverrides) metadata.StackC
 	} else {
 		ciliumChartOverridings = nil
 	}
+	return
+}
+
+func CiliumStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+	version, ciliumChartOverridings := setCiliumComponentOverridings(params)
 
 	return metadata.StackComponent{
 		Helm: &metadata.HelmHandler{

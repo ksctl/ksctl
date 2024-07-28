@@ -23,14 +23,16 @@ func getFlannelComponentOverridings(p metadata.ComponentOverrides) (version *str
 	return
 }
 
-func FlannelStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+func setFlannelComponentOverridings(p metadata.ComponentOverrides) (
+	version string,
+	url string,
+	postInstall string,
+) {
+	version = "latest"
+	url = ""
+	postInstall = ""
 
-	var (
-		version     = "latest"
-		url         = ""
-		postInstall = ""
-	)
-	_version := getFlannelComponentOverridings(params)
+	_version := getFlannelComponentOverridings(p)
 	if _version != nil {
 		version = *_version
 	}
@@ -41,7 +43,12 @@ func FlannelStandardComponent(params metadata.ComponentOverrides) metadata.Stack
 	}
 
 	defaultVals()
+	return
+}
 
+func FlannelStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+
+	version, url, postInstall := setFlannelComponentOverridings(params)
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
