@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"os"
 	"sort"
@@ -912,7 +911,6 @@ func (client *AwsClient) BeginCreateIAM(ctx context.Context, node string, parame
 			return nil, err
 		}
 	case "worker":
-		fmt.Println("AmazonEKSWorkerNodePolicy")
 		policyArn := []string{"arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy", "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy", "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"}
 		for _, policy := range policyArn {
 			attachWorkerPolicyInput := &iam.AttachRolePolicyInput{
@@ -951,7 +949,7 @@ func (p *customHTTPPresignerV4) PresignHTTP(
 	}
 	return p.client.PresignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
 }
-func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cfg aws.Config) string {
+func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cfg aws.Config) (string, error) {
 	out, err := s.PresignClient.PresignGetCallerIdentity(ctx, &sts.GetCallerIdentityInput{}, func(opt *sts.PresignOptions) {
 		k8sHeader := "x-k8s-aws-id"
 		opt.Presigner = newCustomHTTPPresignerV4(opt.Presigner, map[string]string{
@@ -960,25 +958,32 @@ func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cf
 		})
 	})
 	if err != nil {
-		panic(err)
+		return "", ksctlErrors.ErrKubeconfigOperations.Wrap(
+			log.NewError(ctx,
+				"unable to generate sst token for kubeconfig to auth with aws eks",
+				"err", err),
+		)
 	}
 	tokenPrefix := "k8s-aws-v1."
-	token := fmt.Sprintf("%s%s", tokenPrefix, base64.RawURLEncoding.EncodeToString([]byte(out.URL))) //RawURLEncoding
-	return token
-
+	token := tokenPrefix + base64.RawURLEncoding.EncodeToString([]byte(out.URL))
+	return token, nil
 }
 
 func (client *AwsClient) GetKubeConfig(ctx context.Context, clusterName string) (string, error) {
 	clusterData, err := client.eksClient.DescribeCluster(ctx, &eks.DescribeClusterInput{
 		Name: aws.String(clusterName),
 	})
+
 	if err != nil {
 		return "", err
 	}
 
 	preSignClient := sts.NewPresignClient(client.stsClient)
 	tokenRetriver := NewSTSTokenRetriver(preSignClient)
-	token := tokenRetriver.GetToken(context.Background(), clusterName, *client.config)
+	token, errToken := tokenRetriver.GetToken(context.Background(), clusterName, *client.config)
+	if errToken != nil {
+		return "", errToken
+	}
 
 	data := KubeConfigData{
 		ClusterEndpoint:          *clusterData.Cluster.Endpoint,
@@ -989,15 +994,17 @@ func (client *AwsClient) GetKubeConfig(ctx context.Context, clusterName string) 
 
 	tmpl, err := template.New("kubeconfig").Parse(kubeconfigTemplate)
 	if err != nil {
-		fmt.Println("Error creating template:", err)
-		os.Exit(1)
+		return "", ksctlErrors.ErrInternal.Wrap(
+			log.NewError(ctx, "failed to create kubeconfig templ", "err", err),
+		)
 	}
 
 	var kubeconfig bytes.Buffer
 	err = tmpl.Execute(&kubeconfig, data)
 	if err != nil {
-		fmt.Println("Error executing template:", err)
-		os.Exit(1)
+		return "", ksctlErrors.ErrInternal.Wrap(
+			log.NewError(ctx, "failed to generate kubeconfig", "err", err),
+		)
 	}
 
 	return kubeconfig.String(), nil
