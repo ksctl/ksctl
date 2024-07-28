@@ -169,37 +169,37 @@ mock_all: golang-test ## All Mock tests
 	cd test/ && \
 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws,testing_civo,testing_azure,testing_local -bench=. -benchtime=1x -cover -v
 
-.PHONY: mock-civo-ha
+.PHONY: mock_civo_ha
 mock_civo_ha: golang-test ## Civo HA mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_civo -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
 
-.PHONY: mock-civo-managed
+.PHONY: mock_civo_managed
 mock_civo_managed: golang-test ## Civo managed mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_civo -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
 
-.PHONY: mock-azure-managed
+.PHONY: mock_azure_managed
 mock_azure_managed: golang-test ## Azure managed mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_azure -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
 
-.PHONY: mock-azure-ha
+.PHONY: mock_azure_ha
 mock_azure_ha: golang-test ## Azure HA mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_azure -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
 
-.PHONY: mock-aws-ha
+.PHONY: mock_aws_ha
 mock_aws_ha: golang-test ## Aws HA mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws -bench=BenchmarkAwsTestingHA -benchtime=1x -cover -v
 
-.PHONY: mock-aws-managed
+.PHONY: mock_aws_managed
 mock_aws_managed: golang-test ## Aws managed mock test
 	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
+ 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws -bench=BenchmarkAwsTestingManaged -benchtime=1x -cover -v
 
-.PHONY: mock-local-managed
+.PHONY: mock_local_managed
 mock_local_managed: golang-test ## Local managed mock test
 	cd test/ && \
  		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_local -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
