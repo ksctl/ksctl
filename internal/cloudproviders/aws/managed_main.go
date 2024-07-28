@@ -188,7 +188,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 
 			log.Success(awsCtx, "created the EKS worker role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
 		} else {
-			log.Print(awsCtx, "skipped already created ROLE EKS Worker ", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
+			log.Print(awsCtx, "skipped already created ROLE EKS Worker", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
 		}
 
 		eksNodeGroupName := mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-nodegroup"
