@@ -40,12 +40,13 @@ type StateConfigurationAws struct {
 	IamRoleNameWP string `json:"iam_role_name_wp" bson:"iam_role_name_wp"`
 	IamRoleArnWP  string `json:"iam_role_arn_wp" bson:"iam_role_arn_wp"`
 
-	ManagedClusterName   string `json:"managed_cluster_name" bson:"managed_cluster_name"`
-	ManagedNodeGroupName string `json:"managed_node_group_name" bson:"managed_node_group_name"`
-	NoManagedNodes       int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
-	ManagedNodeSize      string `json:"managed_node_size" bson:"managed_node_size"`
-	ManagedNodeGroupArn  string `json:"managed_node_group_arns" bson:"managed_node_group_arns"`
-	ManagedClusterArn    string `json:"managed_cluster_arn" bson:"managed_cluster_arn"`
+	ManagedClusterName     string `json:"managed_cluster_name" bson:"managed_cluster_name"`
+	ManagedNodeGroupName   string `json:"managed_node_group_name" bson:"managed_node_group_name"`
+	NoManagedNodes         int    `json:"no_managed_nodes" bson:"no_managed_nodes"`
+	ManagedNodeSize        string `json:"managed_node_size" bson:"managed_node_size"`
+	ManagedNodeGroupArn    string `json:"managed_node_group_arns" bson:"managed_node_group_arns"`
+	ManagedClusterArn      string `json:"managed_cluster_arn" bson:"managed_cluster_arn"`
+	ManagedNodeGroupVmSize string `json:"managed_node_group_vm_size" bson:"managed_node_group_vm_size"`
 
 	SubnetNames  []string `json:"subnet_names" bson:"subnet_names"`
 	SubnetIDs    []string `json:"subnet_id" bson:"subnet_ids"`

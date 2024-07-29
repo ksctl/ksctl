@@ -217,7 +217,7 @@ func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode
 		if err != nil {
 			return err
 		}
-
+		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupVmSize = vmType
 		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = *nodeResp.Nodegroup.NodegroupName
 		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = *nodeResp.Nodegroup.NodegroupArn
 

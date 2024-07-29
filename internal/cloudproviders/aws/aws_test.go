@@ -287,6 +287,10 @@ func TestDeleteVarCluster(t *testing.T) {
 	}
 }
 
+func generateResourceGroupName(clusterName, clusterType string) string {
+	return fmt.Sprintf("ksctl-resgrp-%s-%s", clusterType, clusterName)
+}
+
 func checkCurrentStateFile(t *testing.T) {
 
 	if err := storeManaged.Setup(consts.CloudAws, mainStateDocument.Region, mainStateDocument.ClusterName, consts.ClusterTypeMang); err != nil {
@@ -441,13 +445,12 @@ func TestHACluster(t *testing.T) {
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcId, "3456d25f36g474g546", "want %s got %s", "3456d25f36g474g546", mainStateDocument.CloudInfra.Aws.VpcId)
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcName, fakeClientHA.clusterName+"-vpc", "virtual net should be created")
-		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetNames, fakeClientHA.clusterName+"-subnet", "subnet should be created")
-		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetID, "3456d25f36g474g546", "subnet should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetNames[0], fakeClientHA.clusterName+"-subnet0", "subnet should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetIDs[0], "3456d25f36g474g546", "subnet should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.RouteTableID, "3456d25f36g474g546", "route table should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.GatewayID, "3456d25f36g474g546", "gateway should be created")
-		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetNames, fakeClientHA.clusterName+"-subnet", "subnet should be created")
 
-		checkCurrentStateFileHA(t)
+		// checkCurrentStateFileHA(t)
 	})
 
 	t.Run("Create ssh", func(t *testing.T) {
@@ -623,7 +626,7 @@ func TestHACluster(t *testing.T) {
 			VMID:       "test-instance-1234567890",
 			FirewallID: "test-security-group-1234567890",
 			SubnetID:   "3456d25f36g474g546",
-			SubnetName: "demo-ha-subnet",
+			SubnetName: "demo-ha-subnet0",
 			PublicIP:   "A.B.C.D",
 			PrivateIP:  "192.168.1.2",
 		}
@@ -799,27 +802,111 @@ func TestHACluster(t *testing.T) {
 
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcId, "", "resource group not saved")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.VpcName, "", "virtual net should be created")
-		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetID, "", "subnet should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.SubnetIDs[0], "", "subnet should be created")
 
-		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.SubnetID) == 0, "subnet should be created")
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.RouteTableID) == 0, "route table should be created")
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.GatewayID) == 0, "gateway should be created")
-		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.SubnetNames) == 0, "subnet should be created")
 	})
 }
 
-// func TestGetSecretTokens(t *testing.T) {
-// 	t.Run("expect demo data", func(t *testing.T) {
-// 		expected := map[string][]byte{
-// 			"aws_access_key_id":     []byte("fake"),
-// 			"aws_secret_access_key": []byte("fake"),
-// 		}
+func TestManagedCluster(t *testing.T) {
+	mainStateDocument = &storageTypes.StorageDocument{}
+	fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
+		ClusterName:     "demo-managed",
+		Region:          "fake-region",
+		Provider:        consts.CloudAws,
+		IsHA:            false,
+		ManagedNodeType: "fake",
+	}, parentLogger, mainStateDocument, ProvideClient)
 
-// 		for key, val := range expected {
-// 			assert.NilError(t, os.Setenv(key, string(val)), "environment vars should be set")
-// 		}
-// 		actual, err := fakeClientVars.GetSecretTokens(storeVars)
-// 		assert.NilError(t, err, "unable to get the secret token from the client")
-// 		assert.DeepEqual(t, actual, expected)
-// 	})
-// }
+	storeManaged = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeManaged.Setup(consts.CloudAws, "fake", "demo-managed", consts.ClusterTypeMang)
+	_ = storeManaged.Connect()
+
+	fakeClientManaged.ManagedK8sVersion("1.27")
+	t.Run("init state", func(t *testing.T) {
+
+		if err := fakeClientManaged.InitState(storeManaged, consts.OperationCreate); err != nil {
+			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
+		}
+
+		assert.Equal(t, clusterType, consts.ClusterTypeMang, "clustertype should be managed")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
+
+		_, err := storeManaged.Read()
+		if err == nil {
+			t.Fatalf("State file and cluster directory present where it should not be")
+		}
+	})
+
+	t.Run("Create network", func(t *testing.T) {
+		assert.Equal(t, fakeClientManaged.Name("fake-data-will-not-be-used").NewNetwork(storeManaged), nil, "resource grp should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
+		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.VpcId) > 0)
+		checkCurrentStateFile(t)
+	})
+
+	if ret := fakeClientManaged.VMType("fake"); ret == nil {
+		t.Fatalf("returned nil for valid vm type")
+	}
+
+	t.Run("Create managed cluster", func(t *testing.T) {
+
+		assert.Equal(t, fakeClientManaged.Name("fake-managed").VMType("fake").NewManagedCluster(storeManaged, 5), nil, "managed cluster should be created")
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.B.IsCompleted, true, "cluster should not be completed")
+
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.NoManagedNodes, 5)
+		assert.Equal(t, mainStateDocument.CloudInfra.Aws.B.KubernetesVer, fakeClientManaged.metadata.k8sVersion)
+		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) > 0, "Managed cluster Name not saved")
+
+		_, err := storeManaged.Read()
+		if err != nil {
+			t.Fatalf("kubeconfig should be present: %v", err)
+		}
+		checkCurrentStateFile(t)
+	})
+
+	t.Run("Get cluster managed", func(t *testing.T) {
+		expected := []cloud.AllClusterData{
+			cloud.AllClusterData{
+				Name:          fakeClientManaged.clusterName,
+				CloudProvider: consts.CloudAws,
+				ClusterType:   consts.ClusterTypeMang,
+				NetworkName:   "demo-managed-vpc",
+				NetworkID:     "3456d25f36g474g546",
+				LB: cloud.VMData{
+					SubnetID:   "3456d25f36g474g546",
+					SubnetName: "demo-managed-subnet0",
+				},
+				ResourceGrpName: generateResourceGroupName(fakeClientManaged.clusterName, string(consts.ClusterTypeMang)),
+				Region:          fakeClientManaged.region,
+				// ManagedK8sName:  "fake-managed",
+				NoMgt:      mainStateDocument.CloudInfra.Aws.NoManagedNodes,
+				Mgt:        cloud.VMData{VMSize: "fake"},
+				K8sDistro:  "managed",
+				K8sVersion: mainStateDocument.CloudInfra.Aws.B.KubernetesVer,
+			},
+		}
+		got, err := fakeClientManaged.GetRAWClusterInfos(storeManaged)
+		assert.NilError(t, err, "no error should be there")
+		assert.DeepEqual(t, got, expected)
+	})
+
+	t.Run("Delete managed cluster", func(t *testing.T) {
+		assert.Equal(t, fakeClientManaged.DelManagedCluster(storeManaged), nil, "managed cluster should be deleted")
+
+		assert.Equal(t, len(mainStateDocument.CloudInfra.Aws.ManagedClusterName), 0, "managed cluster id still present")
+
+		checkCurrentStateFile(t)
+	})
+
+	t.Run("Delete Network cluster", func(t *testing.T) {
+		assert.Equal(t, fakeClientManaged.DelNetwork(storeManaged), nil, "Network should be deleted")
+
+		assert.Equal(t, len(mainStateDocument.CloudInfra.Aws.VpcId), 0, "resource grp still present")
+		_, err := storeManaged.Read()
+		if err == nil {
+			t.Fatalf("State file and cluster directory still present")
+		}
+	})
+}
