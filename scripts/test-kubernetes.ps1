@@ -15,5 +15,4 @@ Write-Output "|   Testing (internal\kubernetes)"
 Write-Output "--------------------------------------------"
 
 Set-Location kubernetes
-go test . -v && Set-Location -
-
+go test ./... -v && Set-Location -
