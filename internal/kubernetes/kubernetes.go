@@ -56,7 +56,37 @@ func (k *K8sClusterClient) DeleteWorkerNodes(nodeName string) error {
 	return nil
 }
 
+// ////////////////////
+type K8sClient interface{}
+
+type HelmClient interface{}
+
 func NewInClusterClient(
+	parentCtx context.Context,
+	parentLog types.LoggerFactory,
+	storage types.StorageFactory,
+	k8s K8sClient,
+	helm HelmClient,
+) (k *K8sClusterClient, err error) {
+	if k8s == nil && helm == nil {
+		return newInClusterClientWithConfig(parentCtx, parentLog, storage, &k8sclient.K8sClient{}, &helmclient.HelmClient{})
+	}
+	return newInClusterClientWithConfig(parentCtx, parentLog, storage, k8s, helm)
+}
+
+func newInClusterClientWithConfig(
+	parentCtx context.Context,
+	parentLog types.LoggerFactory,
+	storage types.StorageFactory,
+	k8s K8sClient,
+	helm HelmClient,
+) (k *K8sClusterClient, err error) {
+	return
+}
+
+//////////////////////
+
+func NewInClusterClientWithConfig(
 	parentCtx context.Context,
 	parentLog types.LoggerFactory,
 	storage types.StorageFactory) (k *K8sClusterClient, err error) {
