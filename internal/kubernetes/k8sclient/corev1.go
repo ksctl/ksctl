@@ -3,8 +3,9 @@ package k8sclient
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/types"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 

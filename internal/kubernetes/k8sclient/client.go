@@ -1,3 +1,5 @@
+//go:build !testing_k8sclient
+
 package k8sclient
 
 import (
@@ -5,11 +7,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
-
-type K8sClient struct {
-	clientset           *kubernetes.Clientset
-	apiextensionsClient *clientset.Clientset
-}
 
 func NewK8sClient(c *rest.Config) (k *K8sClient, err error) {
 	k = new(K8sClient)

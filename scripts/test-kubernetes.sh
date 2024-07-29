@@ -8,4 +8,4 @@ echo "|   Testing (internal/kubernetes)"
 echo "--------------------------------------------"
 
 cd kubernetes
-GOTEST_PALETTE="red,yellow,green" $EXEC ./... -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC -tags testing_k8sclient ./... -v && cd -
