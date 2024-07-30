@@ -1,22 +1,22 @@
-package kubernetes_test
+package kubernetes
 
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/internal/kubernetes"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 var (
-	ksctlK8sClient *kubernetes.K8sClusterClient
+	ksctlK8sClient *K8sClusterClient
 	parentCtx      context.Context
 	dir            = filepath.Join(os.TempDir(), "ksctl-kubernetes-test")
 	parentLogger   = logger.NewStructuredLogger(-1, os.Stdout)
@@ -45,21 +45,25 @@ func TestMain(m *testing.M) {
 
 func TestInitClient(t *testing.T) {
 	var err error
-	ksctlK8sClient, err = kubernetes.NewInClusterClient(
+	ksctlK8sClient, err = NewInClusterClient(
 		parentCtx,
 		parentLogger,
 		storeVars,
 		true,
+		&k8sClientMock{},
+		&helmClientMock{},
 	)
 	if err != nil {
 		t.Error(err)
 	}
-	ksctlK8sClient, err = kubernetes.NewKubeconfigClient(
+	ksctlK8sClient, err = NewKubeconfigClient(
 		parentCtx,
 		parentLogger,
 		storeVars,
 		"",
 		true,
+		&k8sClientMock{},
+		&helmClientMock{},
 	)
 	if err != nil {
 		t.Error(err)
@@ -67,51 +71,59 @@ func TestInitClient(t *testing.T) {
 }
 
 func TestInstallApps(t *testing.T) {
-	if err := ksctlK8sClient.Applications(
-		[]types.KsctlApp{
-			{
-				StackName: string(metadata.ArgocdStandardStackID),
+	t.Run("InstallArgoCD", func(t *testing.T) {
+		if err := ksctlK8sClient.Applications(
+			[]types.KsctlApp{
+				{
+					StackName: string(metadata.ArgocdStandardStackID),
+				},
 			},
-		},
-		stateDocument,
-		consts.OperationCreate,
-	); err != nil {
-		t.Error(err)
-	}
+			stateDocument,
+			consts.OperationCreate,
+		); err != nil {
+			t.Error(err)
+		}
+	})
 
-	if err := ksctlK8sClient.CNI(
-		types.KsctlApp{
-			StackName: string(metadata.CiliumStandardStackID),
-		},
-		stateDocument,
-		consts.OperationCreate,
-	); err != nil {
-		t.Error(err)
-	}
+	t.Run("InstallCilium", func(t *testing.T) {
+		if err := ksctlK8sClient.CNI(
+			types.KsctlApp{
+				StackName: string(metadata.CiliumStandardStackID),
+			},
+			stateDocument,
+			consts.OperationCreate,
+		); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestUnInstallApps(t *testing.T) {
-	if err := ksctlK8sClient.Applications(
-		[]types.KsctlApp{
-			{
-				StackName: string(metadata.ArgocdStandardStackID),
+	t.Run("UnInstallArgoCD", func(t *testing.T) {
+		if err := ksctlK8sClient.Applications(
+			[]types.KsctlApp{
+				{
+					StackName: string(metadata.ArgocdStandardStackID),
+				},
 			},
-		},
-		stateDocument,
-		consts.OperationDelete,
-	); err != nil {
-		t.Error(err)
-	}
+			stateDocument,
+			consts.OperationDelete,
+		); err != nil {
+			t.Error(err)
+		}
+	})
 
-	if err := ksctlK8sClient.CNI(
-		types.KsctlApp{
-			StackName: string(metadata.CiliumStandardStackID),
-		},
-		stateDocument,
-		consts.OperationDelete,
-	); err != nil {
-		t.Error(err)
-	}
+	t.Run("UnInstallCilium", func(t *testing.T) {
+		if err := ksctlK8sClient.CNI(
+			types.KsctlApp{
+				StackName: string(metadata.CiliumStandardStackID),
+			},
+			stateDocument,
+			consts.OperationDelete,
+		); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestDeleteWorkerNodes(t *testing.T) {

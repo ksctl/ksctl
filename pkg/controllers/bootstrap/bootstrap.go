@@ -183,7 +183,7 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 
 func DelWorkerPlanes(client *types.KsctlClient, kubeconfig string, hostnames []string) error {
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig, false)
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig, false, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func ApplicationsInCluster(
 	state *storageTypes.StorageDocument,
 	op consts.KsctlOperation) error {
 
-	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage, false)
+	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage, false, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func InstallAdditionalTools(
 		return nil
 	}
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig, false)
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig, false, nil, nil)
 	if err != nil {
 		return err
 	}

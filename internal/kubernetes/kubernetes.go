@@ -2,10 +2,11 @@ package kubernetes
 
 import (
 	"context"
+	"strings"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
-	"strings"
 
 	"github.com/ksctl/ksctl/internal/kubernetes/helmclient"
 	"github.com/ksctl/ksctl/internal/kubernetes/k8sclient"
@@ -60,6 +61,8 @@ func NewInClusterClient(
 	parentLog types.LoggerFactory,
 	storage types.StorageFactory,
 	useMock bool,
+	k8sClient K8sClient,
+	helmClient HelmClient,
 ) (k *K8sClusterClient, err error) {
 
 	kubernetesCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, "kubernetes-client")
@@ -89,8 +92,8 @@ func NewInClusterClient(
 			return
 		}
 	} else {
-		k.k8sClient = &k8sClientMock{}
-		k.helmClient = &helmClientMock{}
+		k.k8sClient = k8sClient
+		k.helmClient = helmClient
 	}
 	k.inCluster = true // it helps us to identify if we are inside the cluster or not
 
@@ -103,6 +106,8 @@ func NewKubeconfigClient(
 	storage types.StorageFactory,
 	kubeconfig string,
 	useMock bool,
+	k8sClient K8sClient,
+	helmClient HelmClient,
 ) (k *K8sClusterClient, err error) {
 
 	kubernetesCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, "kubernetes-client")
@@ -139,8 +144,8 @@ func NewKubeconfigClient(
 			return
 		}
 	} else {
-		k.k8sClient = &k8sClientMock{}
-		k.helmClient = &helmClientMock{}
+		k.k8sClient = k8sClient
+		k.helmClient = helmClient
 	}
 
 	return k, nil
