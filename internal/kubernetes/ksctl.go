@@ -53,7 +53,7 @@ var (
 	}
 )
 
-func (k *K8sClusterClient) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
+func (k *K8sClusterClient) DeployRequiredControllers(state *storageTypes.StorageDocument) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
 	apps := types.KsctlApp{
 		StackName: string(metadata.KsctlOperatorsID),

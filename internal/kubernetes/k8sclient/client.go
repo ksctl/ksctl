@@ -1,5 +1,3 @@
-//go:build !testing_k8sclient
-
 package k8sclient
 
 import (

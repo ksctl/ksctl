@@ -183,7 +183,7 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 
 func DelWorkerPlanes(client *types.KsctlClient, kubeconfig string, hostnames []string) error {
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig)
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig, false)
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func ApplicationsInCluster(
 	state *storageTypes.StorageDocument,
 	op consts.KsctlOperation) error {
 
-	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage)
+	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage, false)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func InstallAdditionalTools(
 		return nil
 	}
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig)
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig, false)
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctl
 		return err
 	}
 
-	if err := kubernetesClient.DeployRequiredControllers(state, isExternalStore); err != nil {
+	if err := kubernetesClient.DeployRequiredControllers(state); err != nil {
 		return err
 	}
 
