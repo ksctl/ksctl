@@ -67,7 +67,7 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 		}
 	}()
 
-	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin)) {
+	if !helpers.ValidCNIPlugin(consts.KsctlValidCNIPlugin(client.Metadata.CNIPlugin.StackName)) {
 		err := log.NewError(controllerCtx, "invalid CNI plugin")
 		log.Error("handled error", "catch", err)
 		return err

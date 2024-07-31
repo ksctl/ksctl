@@ -17,9 +17,15 @@ help: ## Display this help.
 ##@ Builder and Generator (Core)
 
 .PHONY: gen-proto-agent
-gen-proto-agent: ## generate protobuf for ksctl agent
+gen-proto-agent: check_protoc ## generate protobuf for ksctl agent
 	@echo "generating new helpers"
 	protoc --proto_path=api/agent/proto api/agent/proto/*.proto --go_out=api/gen/agent --go-grpc_out=api/gen/agent
+
+.PHONY: check_protoc
+check_protoc:
+	@whereis protoc || (echo "Please install protoc" && exit 1)
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 
 .PHONY: docker-push-state-import
 docker-push-state-import: ## Push docker image for ksctl state-import

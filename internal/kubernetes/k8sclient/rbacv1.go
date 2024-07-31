@@ -1,7 +1,9 @@
-package kubernetes
+package k8sclient
 
 import (
 	"context"
+
+	"github.com/ksctl/ksctl/pkg/types"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -9,7 +11,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k *Kubernetes) clusterRoleApply(o *rbacv1.ClusterRole) error {
+func (k *K8sClient) ClusterRoleApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.ClusterRole) error {
 
 	_, err := k.clientset.
 		RbacV1().
@@ -23,19 +28,22 @@ func (k *Kubernetes) clusterRoleApply(o *rbacv1.ClusterRole) error {
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "clusterrole apply failed", "Reason", err),
+					log.NewError(ctx, "clusterrole apply failed", "Reason", err),
 				)
 			}
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "clusterrole apply failed", "Reason", err),
+				log.NewError(ctx, "clusterrole apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) clusterRoleDelete(o *rbacv1.ClusterRole) error {
+func (k *K8sClient) ClusterRoleDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.ClusterRole) error {
 
 	err := k.clientset.
 		RbacV1().
@@ -43,13 +51,16 @@ func (k *Kubernetes) clusterRoleDelete(o *rbacv1.ClusterRole) error {
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "clusterrole delete failed", "Reason", err),
+			log.NewError(ctx, "clusterrole delete failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) clusterRoleBindingDelete(o *rbacv1.ClusterRoleBinding) error {
+func (k *K8sClient) ClusterRoleBindingDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.ClusterRoleBinding) error {
 
 	err := k.clientset.
 		RbacV1().
@@ -57,13 +68,16 @@ func (k *Kubernetes) clusterRoleBindingDelete(o *rbacv1.ClusterRoleBinding) erro
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "clusterrolebinding delete failed", "Reason", err),
+			log.NewError(ctx, "clusterrolebinding delete failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) clusterRoleBindingApply(o *rbacv1.ClusterRoleBinding) error {
+func (k *K8sClient) ClusterRoleBindingApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.ClusterRoleBinding) error {
 
 	_, err := k.clientset.
 		RbacV1().
@@ -77,19 +91,22 @@ func (k *Kubernetes) clusterRoleBindingApply(o *rbacv1.ClusterRoleBinding) error
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "clusterrolebinding apply failed", "Reason", err),
+					log.NewError(ctx, "clusterrolebinding apply failed", "Reason", err),
 				)
 			}
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "clusterrolebinding apply failed", "Reason", err),
+				log.NewError(ctx, "clusterrolebinding apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) roleDelete(o *rbacv1.Role) error {
+func (k *K8sClient) RoleDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.Role) error {
 
 	err := k.clientset.
 		RbacV1().
@@ -97,13 +114,16 @@ func (k *Kubernetes) roleDelete(o *rbacv1.Role) error {
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "role delete failed", "Reason", err),
+			log.NewError(ctx, "role delete failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) roleApply(o *rbacv1.Role) error {
+func (k *K8sClient) RoleApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.Role) error {
 
 	ns := o.Namespace
 	_, err := k.clientset.
@@ -118,19 +138,22 @@ func (k *Kubernetes) roleApply(o *rbacv1.Role) error {
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "role apply failed", "Reason", err),
+					log.NewError(ctx, "role apply failed", "Reason", err),
 				)
 			}
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "role apply failed", "Reason", err),
+				log.NewError(ctx, "role apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) roleBindingApply(o *rbacv1.RoleBinding) error {
+func (k *K8sClient) RoleBindingApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.RoleBinding) error {
 	ns := o.Namespace
 
 	_, err := k.clientset.
@@ -145,19 +168,22 @@ func (k *Kubernetes) roleBindingApply(o *rbacv1.RoleBinding) error {
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "rolebinding apply failed", "Reason", err),
+					log.NewError(ctx, "rolebinding apply failed", "Reason", err),
 				)
 			}
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "rolebinding apply failed", "Reason", err),
+				log.NewError(ctx, "rolebinding apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) roleBindingDelete(o *rbacv1.RoleBinding) error {
+func (k *K8sClient) RoleBindingDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *rbacv1.RoleBinding) error {
 	ns := o.Namespace
 
 	err := k.clientset.
@@ -166,7 +192,7 @@ func (k *Kubernetes) roleBindingDelete(o *rbacv1.RoleBinding) error {
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "rolebinding delete failed", "Reason", err),
+			log.NewError(ctx, "rolebinding delete failed", "Reason", err),
 		)
 	}
 	return nil

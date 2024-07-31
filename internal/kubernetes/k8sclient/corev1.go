@@ -1,9 +1,11 @@
-package kubernetes
+package k8sclient
 
 import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 
@@ -15,7 +17,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k *Kubernetes) configMapApply(o *corev1.ConfigMap) error {
+func (k *K8sClient) ConfigMapApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.ConfigMap) error {
 	ns := o.Namespace
 
 	_, err := k.clientset.
@@ -32,20 +37,23 @@ func (k *Kubernetes) configMapApply(o *corev1.ConfigMap) error {
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "configmap apply failed", "Reason", err),
+					log.NewError(ctx, "configmap apply failed", "Reason", err),
 				)
 			}
 
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "configmap apply failed", "Reason", err),
+				log.NewError(ctx, "configmap apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) configMapDelete(o *corev1.ConfigMap) error {
+func (k *K8sClient) ConfigMapDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.ConfigMap) error {
 
 	ns := o.Namespace
 	err := k.clientset.
@@ -55,13 +63,16 @@ func (k *Kubernetes) configMapDelete(o *corev1.ConfigMap) error {
 
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "configmap delete failed", "Reason", err),
+			log.NewError(ctx, "configmap delete failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) serviceDelete(o *corev1.Service) error {
+func (k *K8sClient) ServiceDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.Service) error {
 
 	ns := o.Namespace
 	err := k.clientset.
@@ -71,13 +82,16 @@ func (k *Kubernetes) serviceDelete(o *corev1.Service) error {
 
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "service delete failed", "Reason", err),
+			log.NewError(ctx, "service delete failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) serviceApply(o *corev1.Service) error {
+func (k *K8sClient) ServiceApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.Service) error {
 
 	ns := o.Namespace
 	_, err := k.clientset.
@@ -93,20 +107,23 @@ func (k *Kubernetes) serviceApply(o *corev1.Service) error {
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "service apply failed", "Reason", err),
+					log.NewError(ctx, "service apply failed", "Reason", err),
 				)
 			}
 
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "service apply failed", "Reason", err),
+				log.NewError(ctx, "service apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) namespaceCreate(ns *corev1.Namespace) error {
+func (k *K8sClient) NamespaceCreate(
+	ctx context.Context,
+	log types.LoggerFactory,
+	ns *corev1.Namespace) error {
 
 	if _, err := k.clientset.
 		CoreV1().
@@ -119,19 +136,22 @@ func (k *Kubernetes) namespaceCreate(ns *corev1.Namespace) error {
 				Update(context.Background(), ns, metav1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "namespace create failed", "Reason", err),
+					log.NewError(ctx, "namespace create failed", "Reason", err),
 				)
 			}
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "namespace create failed", "Reason", err),
+				log.NewError(ctx, "namespace create failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) namespaceDelete(ns *corev1.Namespace, wait bool) error {
+func (k *K8sClient) NamespaceDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	ns *corev1.Namespace, wait bool) error {
 
 	if err := k.clientset.
 		CoreV1().
@@ -143,7 +163,7 @@ func (k *Kubernetes) namespaceDelete(ns *corev1.Namespace, wait bool) error {
 			}(),
 		}); err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "namespace delete failed", "Reason", err),
+			log.NewError(ctx, "namespace delete failed", "Reason", err),
 		)
 	}
 
@@ -156,7 +176,7 @@ func (k *Kubernetes) namespaceDelete(ns *corev1.Namespace, wait bool) error {
 		errStat error
 	)
 	_err := expoBackoff.Run(
-		kubernetesCtx,
+		ctx,
 		log,
 		func() (err error) {
 
@@ -171,11 +191,11 @@ func (k *Kubernetes) namespaceDelete(ns *corev1.Namespace, wait bool) error {
 		},
 		func(err error) (errW error, escalateErr bool) {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "Failed to get namespace", "namespace", ns.Name, "err", err),
+				log.NewError(ctx, "Failed to get namespace", "namespace", ns.Name, "err", err),
 			), true
 		},
 		func() error {
-			log.Success(kubernetesCtx, "Namespace is completely deleted", "namespace", ns)
+			log.Success(ctx, "Namespace is completely deleted", "namespace", ns)
 			return nil
 		},
 		fmt.Sprintf("Namespace still deleting: %s", ns.Name),
@@ -186,7 +206,10 @@ func (k *Kubernetes) namespaceDelete(ns *corev1.Namespace, wait bool) error {
 	return nil
 }
 
-func (k *Kubernetes) secretDelete(o *corev1.Secret) error {
+func (k *K8sClient) SecretDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.Secret) error {
 
 	err := k.clientset.
 		CoreV1().
@@ -195,13 +218,16 @@ func (k *Kubernetes) secretDelete(o *corev1.Secret) error {
 
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "secret delete failed", "Reason", err),
+			log.NewError(ctx, "secret delete failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) secretApply(o *corev1.Secret) error {
+func (k *K8sClient) SecretApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.Secret) error {
 	ns := o.Namespace
 
 	_, err := k.clientset.
@@ -218,20 +244,23 @@ func (k *Kubernetes) secretApply(o *corev1.Secret) error {
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "secret apply failed", "Reason", err),
+					log.NewError(ctx, "secret apply failed", "Reason", err),
 				)
 			}
 
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "secret apply failed", "Reason", err),
+				log.NewError(ctx, "secret apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) podReadyWait(name, namespace string) error {
+func (k *K8sClient) PodReadyWait(
+	ctx context.Context,
+	log types.LoggerFactory,
+	name, namespace string) error {
 
 	expoBackoff := helpers.NewBackOff(
 		5*time.Second,
@@ -242,7 +271,7 @@ func (k *Kubernetes) podReadyWait(name, namespace string) error {
 		status *corev1.Pod
 	)
 	_err := expoBackoff.Run(
-		kubernetesCtx,
+		ctx,
 		log,
 		func() (err error) {
 			status, err = k.clientset.
@@ -251,7 +280,7 @@ func (k *Kubernetes) podReadyWait(name, namespace string) error {
 				Get(context.Background(), name, metav1.GetOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "failed to get", "Reason", err))
+					log.NewError(ctx, "failed to get", "Reason", err))
 			}
 			return nil
 		},
@@ -260,11 +289,11 @@ func (k *Kubernetes) podReadyWait(name, namespace string) error {
 		},
 		func(err error) (errW error, escalateErr bool) {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "pod get failed", "Reason", err),
+				log.NewError(ctx, "pod get failed", "Reason", err),
 			), true
 		},
 		func() error {
-			log.Success(kubernetesCtx, "pod is running", "name", name)
+			log.Success(ctx, "pod is running", "name", name)
 			return nil
 		},
 		fmt.Sprintf("pod is not ready %s", name),
@@ -275,7 +304,10 @@ func (k *Kubernetes) podReadyWait(name, namespace string) error {
 	return nil
 }
 
-func (k *Kubernetes) PodApply(o *corev1.Pod) error {
+func (k *K8sClient) PodApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.Pod) error {
 	ns := o.Namespace
 
 	_, err := k.clientset.
@@ -292,20 +324,23 @@ func (k *Kubernetes) PodApply(o *corev1.Pod) error {
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "pod apply failed", "Reason", err),
+					log.NewError(ctx, "pod apply failed", "Reason", err),
 				)
 			}
 
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "pod apply failed", "Reason", err),
+				log.NewError(ctx, "pod apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) PodDelete(o *corev1.Pod) error {
+func (k *K8sClient) PodDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.Pod) error {
 
 	err := k.clientset.
 		CoreV1().
@@ -314,13 +349,16 @@ func (k *Kubernetes) PodDelete(o *corev1.Pod) error {
 
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "pod delete failed", "Reason", err),
+			log.NewError(ctx, "pod delete failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) serviceAccountDelete(o *corev1.ServiceAccount) error {
+func (k *K8sClient) ServiceAccountDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.ServiceAccount) error {
 
 	err := k.clientset.
 		CoreV1().
@@ -328,13 +366,16 @@ func (k *Kubernetes) serviceAccountDelete(o *corev1.ServiceAccount) error {
 		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "serviceaccount apply failed", "Reason", err),
+			log.NewError(ctx, "serviceaccount apply failed", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (k *Kubernetes) serviceAccountApply(o *corev1.ServiceAccount) error {
+func (k *K8sClient) ServiceAccountApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *corev1.ServiceAccount) error {
 	ns := o.Namespace
 
 	_, err := k.clientset.
@@ -349,19 +390,21 @@ func (k *Kubernetes) serviceAccountApply(o *corev1.ServiceAccount) error {
 				Update(context.Background(), o, metav1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "serviceaccount apply failed", "Reason", err),
+					log.NewError(ctx, "serviceaccount apply failed", "Reason", err),
 				)
 			}
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "serviceaccount apply failed", "Reason", err),
+				log.NewError(ctx, "serviceaccount apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) nodesList() (*corev1.NodeList, error) {
+func (k *K8sClient) NodesList(
+	ctx context.Context,
+	log types.LoggerFactory) (*corev1.NodeList, error) {
 	v, err := k.clientset.
 		CoreV1().
 		Nodes().
@@ -369,21 +412,24 @@ func (k *Kubernetes) nodesList() (*corev1.NodeList, error) {
 	if err != nil {
 		return nil,
 			ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "list nodes failed", "Reason", err),
+				log.NewError(ctx, "list nodes failed", "Reason", err),
 			)
 	}
 
 	return v, nil
 }
 
-func (k *Kubernetes) nodeDelete(nodeName string) error {
+func (k *K8sClient) NodeDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	nodeName string) error {
 	err := k.clientset.
 		CoreV1().
 		Nodes().
 		Delete(context.Background(), nodeName, metav1.DeleteOptions{})
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "node delete failed", "Reason", err),
+			log.NewError(ctx, "node delete failed", "Reason", err),
 		)
 	}
 	return nil

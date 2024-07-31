@@ -458,9 +458,15 @@ func CreateManagedCluster(client *types.KsctlClient) (bool, bool, error) {
 
 	managedClient = managedClient.VMType(client.Metadata.ManagedNodeType)
 
-	externalApps := managedClient.Application(client.Metadata.Applications)
+	externalApps := managedClient.Application(
+		func() (apps []string) {
+			for _, ss := range client.Metadata.Applications {
+				apps = append(apps, ss.StackName)
+			}
+			return apps
+		}())
 
-	externalCNI := managedClient.CNI(client.Metadata.CNIPlugin)
+	externalCNI := managedClient.CNI(client.Metadata.CNIPlugin.StackName)
 
 	managedClient = managedClient.ManagedK8sVersion(client.Metadata.K8sVersion)
 

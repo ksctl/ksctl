@@ -2,7 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
-
+	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/ksctl-components/manifests"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -12,8 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -21,14 +19,14 @@ import (
 )
 
 const (
-	KSCTL_SYS_NAMESPACE       = "ksctl"
-	KSCTL_SERVICE_ACC         = "ksctl-sa"
-	KSCTL_AGENT_CLUSTER_ROLE  = "ksctl-agent-crole"
-	KSCTL_AGENT_CRBINDING     = "ksctl-agent-croleb"
-	KSCTL_AGENT_NAME          = "ksctl-agent"
-	KSCTL_AGENT_SERVICE       = "agent"
-	KSCTL_STATE_IMPORTER_NAME = "ksctl-state-importer"
-	KSCTL_EXT_STORE_SECRET    = "ksctl-ext-store"
+	KsctlSysNamespace      = "ksctl"
+	KsctlServiceAcc        = "ksctl-sa"
+	KsctlAgentClusterRole  = "ksctl-agent-crole"
+	KsctlAgentCrbinding    = "ksctl-agent-croleb"
+	KsctlAgentName         = "ksctl-agent"
+	KsctlAgentService      = "agent"
+	KsctlStateImporterName = "ksctl-state-importer"
+	KsctlExtStoreSecret    = "ksctl-ext-store"
 )
 
 var (
@@ -55,15 +53,18 @@ var (
 	}
 )
 
-func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocument, isExternalStore bool) error {
+func (k *K8sClusterClient) DeployRequiredControllers(state *storageTypes.StorageDocument) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
-	components := []string{KsctlApplicationOperatorID + "@" + manifests.KsctlApplicationStackBranchOrTagName}
-
-	_apps, err := helpers.ToApplicationTempl(kubernetesCtx, log, components)
-	if err != nil {
-		return err
+	apps := types.KsctlApp{
+		StackName: string(metadata.KsctlOperatorsID),
+		Overrides: map[string]map[string]any{
+			string(metadata.KsctlApplicationComponentID): {
+				"version": manifests.KsctlApplicationStackBranchOrTagName,
+			},
+		},
 	}
-	err = k.Applications(_apps, state, consts.OperationCreate)
+
+	err := k.InstallApplication(apps, App, state)
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,7 @@ func (k *Kubernetes) DeployRequiredControllers(state *storageTypes.StorageDocume
 	return nil
 }
 
-func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
+func (k *K8sClusterClient) DeployAgent(client *types.KsctlClient,
 	state *storageTypes.StorageDocument,
 	externalStoreEndpoint map[string][]byte,
 	v *types.StorageStateExportImport,
@@ -80,28 +81,35 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 
 	log.Print(kubernetesCtx, "Started to configure Cluster to add Ksctl specific storage")
 
-	log.Print(kubernetesCtx, "creating ksctl namespace", "name", KSCTL_SYS_NAMESPACE)
-	if err := k.namespaceCreate(&corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: KSCTL_SYS_NAMESPACE},
-	}); err != nil {
+	log.Print(kubernetesCtx, "creating ksctl namespace", "name", KsctlSysNamespace)
+	if err := k.k8sClient.NamespaceCreate(
+		kubernetesCtx,
+		log,
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: KsctlSysNamespace},
+		}); err != nil {
 		return err
 	}
 
 	serviceAccConfig := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      KSCTL_SERVICE_ACC,
-			Namespace: KSCTL_SYS_NAMESPACE,
+			Name:      KsctlServiceAcc,
+			Namespace: KsctlSysNamespace,
 			Labels:    labelsForKsctl,
 		},
 	}
 	log.Print(kubernetesCtx, "creating service account for ksctl agent", "name", serviceAccConfig.Name)
-	if err := k.serviceAccountApply(serviceAccConfig); err != nil {
+	if err := k.k8sClient.ServiceAccountApply(
+		kubernetesCtx,
+		log,
+		serviceAccConfig,
+	); err != nil {
 		return err
 	}
 
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   KSCTL_AGENT_CLUSTER_ROLE,
+			Name:   KsctlAgentClusterRole,
 			Labels: labelsForKsctl,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -114,20 +122,23 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 	}
 
 	log.Print(kubernetesCtx, "creating clusterrole", "name", clusterRole.Name)
-	if err := k.clusterRoleApply(clusterRole); err != nil {
+	if err := k.k8sClient.ClusterRoleApply(
+		kubernetesCtx,
+		log,
+		clusterRole); err != nil {
 		return err
 	}
 
 	clusterRoleBind := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   KSCTL_AGENT_CRBINDING,
+			Name:   KsctlAgentCrbinding,
 			Labels: labelsForKsctl,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				Name:      serviceAccConfig.ObjectMeta.Name,
-				Namespace: KSCTL_SYS_NAMESPACE,
+				Namespace: KsctlSysNamespace,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -138,7 +149,10 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 	}
 
 	log.Print(kubernetesCtx, "creating clusterrolebinding", "name", clusterRoleBind.Name)
-	if err := k.clusterRoleBindingApply(clusterRoleBind); err != nil {
+	if err := k.k8sClient.ClusterRoleBindingApply(
+		kubernetesCtx,
+		log,
+		clusterRoleBind); err != nil {
 		return err
 	}
 
@@ -146,8 +160,8 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 
 		var ksctlStateImporter *corev1.Pod = &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      KSCTL_STATE_IMPORTER_NAME,
-				Namespace: KSCTL_SYS_NAMESPACE,
+				Name:      KsctlStateImporterName,
+				Namespace: KsctlSysNamespace,
 			},
 			Spec: corev1.PodSpec{
 				RestartPolicy:      corev1.RestartPolicyAlways,
@@ -173,7 +187,7 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
 									Path: "/healthz",
-									Port: intstr.FromInt(8080),
+									Port: intstr.FromInt32(8080),
 								},
 							},
 							InitialDelaySeconds: 5,
@@ -194,11 +208,17 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 		}
 
 		log.Print(kubernetesCtx, "creating ksctl state transfer pod", "name", ksctlStateImporter.Name)
-		if err := k.PodApply(ksctlStateImporter); err != nil {
+		if err := k.k8sClient.PodApply(
+			kubernetesCtx,
+			log,
+			ksctlStateImporter); err != nil {
 			return err
 		}
 
-		if err := k.podReadyWait(ksctlStateImporter.Name, ksctlStateImporter.Namespace); err != nil {
+		if err := k.k8sClient.PodReadyWait(
+			kubernetesCtx,
+			log,
+			ksctlStateImporter.Name, ksctlStateImporter.Namespace); err != nil {
 			return err
 		}
 
@@ -218,7 +238,10 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 		}
 
 		log.Print(kubernetesCtx, "destroying the state importer", "name", ksctlStateImporter.Name)
-		if err := k.PodDelete(ksctlStateImporter); err != nil {
+		if err := k.k8sClient.PodDelete(
+			kubernetesCtx,
+			log,
+			ksctlStateImporter); err != nil {
 			return err
 		}
 	}
@@ -229,9 +252,9 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 	agentSelector["scope"] = "agent"
 	var ksctlServer *appsv1.Deployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      KSCTL_AGENT_NAME,
+			Name:      KsctlAgentName,
 			Labels:    agentSelector,
-			Namespace: KSCTL_SYS_NAMESPACE,
+			Namespace: KsctlSysNamespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -315,16 +338,19 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 
 		secretExt := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      KSCTL_EXT_STORE_SECRET,
+				Name:      KsctlExtStoreSecret,
 				Labels:    labelsForKsctl,
-				Namespace: KSCTL_SYS_NAMESPACE,
+				Namespace: KsctlSysNamespace,
 			},
 			Data: externalStoreEndpoint,
 		}
 
 		log.Print(kubernetesCtx, "creating external store secrets for ksctl agent", "name", secretExt.Name)
 
-		if err := k.secretApply(secretExt); err != nil {
+		if err := k.k8sClient.SecretApply(
+			kubernetesCtx,
+			log,
+			secretExt); err != nil {
 			return err
 		}
 
@@ -344,15 +370,18 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 	}
 
 	log.Print(kubernetesCtx, "creating ksctl agent deployment", "name", ksctlServer.Name)
-	if err := k.deploymentApply(ksctlServer); err != nil {
+	if err := k.k8sClient.DeploymentApply(
+		kubernetesCtx,
+		log,
+		ksctlServer); err != nil {
 		return err
 	}
 
 	var serverService *corev1.Service = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      KSCTL_AGENT_SERVICE,
+			Name:      KsctlAgentService,
 			Labels:    labelsForKsctl,
-			Namespace: KSCTL_SYS_NAMESPACE,
+			Namespace: KsctlSysNamespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: agentSelector,
@@ -362,7 +391,7 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 			Ports: []corev1.ServicePort{
 				{
 					Port:       8080,
-					TargetPort: intstr.FromInt(8080),
+					TargetPort: intstr.FromInt32(8080),
 					Protocol:   corev1.ProtocolTCP,
 				},
 			},
@@ -370,11 +399,17 @@ func (k *Kubernetes) DeployAgent(client *types.KsctlClient,
 	}
 
 	log.Print(kubernetesCtx, "creating ksctl agent service", "name", serverService.Name)
-	if err := k.serviceApply(serverService); err != nil {
+	if err := k.k8sClient.ServiceApply(
+		kubernetesCtx,
+		log,
+		serverService); err != nil {
 		return err
 	}
 
-	if err := k.deploymentReadyWait(ksctlServer.Name, ksctlServer.Namespace); err != nil {
+	if err := k.k8sClient.DeploymentReadyWait(
+		kubernetesCtx,
+		log,
+		ksctlServer.Name, ksctlServer.Namespace); err != nil {
 		return err
 	}
 

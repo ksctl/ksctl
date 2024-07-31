@@ -8,5 +8,5 @@ package manifests
 const (
 	KsctlAgentAppVersion                 = "latest"
 	KsctlStateImportAppVersion           = "latest"
-	KsctlApplicationStackBranchOrTagName = "latest"
+	KsctlApplicationStackBranchOrTagName = "latest" // NOTE: it is the branch name
 )

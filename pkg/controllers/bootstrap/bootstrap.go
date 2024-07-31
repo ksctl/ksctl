@@ -90,7 +90,7 @@ func ConfigureCluster(client *types.KsctlClient) (bool, error) {
 		return false, err
 	}
 
-	externalCNI := client.Bootstrap.CNI(client.Metadata.CNIPlugin)
+	externalCNI := client.Bootstrap.CNI(client.Metadata.CNIPlugin.StackName)
 
 	client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
 	if client.Bootstrap == nil {
@@ -183,7 +183,7 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 
 func DelWorkerPlanes(client *types.KsctlClient, kubeconfig string, hostnames []string) error {
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig)
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig, false, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -201,29 +201,19 @@ func ApplicationsInCluster(
 	state *storageTypes.StorageDocument,
 	op consts.KsctlOperation) error {
 
-	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage)
+	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage, false, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	if len(client.Metadata.CNIPlugin) != 0 {
-		_cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{client.Metadata.CNIPlugin})
-		if err != nil {
+	if len(client.Metadata.CNIPlugin.StackName) != 0 {
+		if err := k.CNI(client.Metadata.CNIPlugin, state, op); err != nil {
 			return err
 		}
-
-		if err := k.InstallCNI(_cni[0], state, op); err != nil {
-			return err
-		}
-	}
-
-	_apps, err := helpers.ToApplicationTempl(controllerCtx, log, client.Metadata.Applications)
-	if err != nil {
-		return err
 	}
 
 	if len(client.Metadata.Applications) != 0 {
-		return k.Applications(_apps, state, op)
+		return k.Applications(client.Metadata.Applications, state, op)
 	}
 	return nil
 }
@@ -237,25 +227,18 @@ func InstallAdditionalTools(
 		return nil
 	}
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig)
+	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig, false, nil, nil)
 	if err != nil {
 		return err
 	}
 
 	if externalCNI {
-		var cni string
-		if len(client.Metadata.CNIPlugin) == 0 {
-			cni = "flannel"
-		} else {
-			cni = client.Metadata.CNIPlugin
+		if len(client.Metadata.CNIPlugin.StackName) == 0 {
+			client.Metadata.CNIPlugin.StackName = "flannel"
+			client.Metadata.CNIPlugin.Overrides = nil
 		}
 
-		_cni, err := helpers.ToApplicationTempl(controllerCtx, log, []string{cni})
-		if err != nil {
-			return err
-		}
-
-		if err := k.InstallCNI(_cni[0], state, consts.OperationCreate); err != nil {
+		if err := k.CNI(client.Metadata.CNIPlugin, state, consts.OperationCreate); err != nil {
 			return err
 		}
 
@@ -267,11 +250,7 @@ func InstallAdditionalTools(
 	}
 
 	if len(client.Metadata.Applications) != 0 && externalApp {
-		_apps, err := helpers.ToApplicationTempl(controllerCtx, log, client.Metadata.Applications)
-		if err != nil {
-			return err
-		}
-		if err := k.Applications(_apps, state, consts.OperationCreate); err != nil {
+		if err := k.Applications(client.Metadata.Applications, state, consts.OperationCreate); err != nil {
 			return err
 		}
 
@@ -282,7 +261,7 @@ func InstallAdditionalTools(
 	return nil
 }
 
-func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctlKubernetes.Kubernetes, state *storageTypes.StorageDocument) error {
+func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctlKubernetes.K8sClusterClient, state *storageTypes.StorageDocument) error {
 
 	var (
 		exportedData         *types.StorageStateExportImport
@@ -329,7 +308,7 @@ func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctl
 		return err
 	}
 
-	if err := kubernetesClient.DeployRequiredControllers(state, isExternalStore); err != nil {
+	if err := kubernetesClient.DeployRequiredControllers(state); err != nil {
 		return err
 	}
 
