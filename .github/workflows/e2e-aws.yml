@@ -47,7 +47,6 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          echo -e "\033[1;34m@@@\033[0m \033[1;35mFeature in Progress!\033[0m \033[1;34m@@@\033[0m"
           ksctl-e2e-amd64 -op create -file aws/create.json
           ksctl-e2e-amd64 -op info -file aws/info.json
 
@@ -77,7 +76,7 @@ jobs:
           echo -e "\033[1;34m@@@\033[0m \033[1;35mManaged Cluster\033[0m \033[1;34m@@@\033[0m"
           ksctl-e2e-amd64 -op switch -file aws/switch.json
           tree ~/.ksctl/state
-          jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ XXYYZZ/state.json
+          jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ ap-south-1/state.json
           sleep 5s
           kubectl get nodes -owide
 
@@ -149,7 +148,6 @@ jobs:
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          echo -e "\033[1;34m@@@\033[0m \033[1;35mFeature in Progress!\033[0m \033[1;34m@@@\033[0m"
           ksctl-e2e-amd64 -op delete -file aws/delete.json
 
       - name: delete (ha k3s)
