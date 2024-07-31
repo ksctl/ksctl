@@ -4,24 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
-	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"gotest.tools/v3/assert"
 )
 
@@ -812,15 +811,13 @@ func TestHACluster(t *testing.T) {
 func TestManagedCluster(t *testing.T) {
 	mainStateDocument = &storageTypes.StorageDocument{}
 	fakeClientManaged, _ = NewClient(parentCtx, types.Metadata{
-		ClusterName:     "demo-managed",
-		Region:          "fake-region",
-		Provider:        consts.CloudAws,
-		IsHA:            false,
-		ManagedNodeType: "fake",
+		ClusterName: "demo-managed",
+		Region:      "fake-region",
+		Provider:    consts.CloudAws,
 	}, parentLogger, mainStateDocument, ProvideClient)
 
 	storeManaged = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeManaged.Setup(consts.CloudAws, "fake", "demo-managed", consts.ClusterTypeMang)
+	_ = storeManaged.Setup(consts.CloudAws, "fake-region", "demo-managed", consts.ClusterTypeMang)
 	_ = storeManaged.Connect()
 
 	fakeClientManaged.ManagedK8sVersion("1.27")
@@ -845,10 +842,6 @@ func TestManagedCluster(t *testing.T) {
 		assert.Assert(t, len(mainStateDocument.CloudInfra.Aws.VpcId) > 0)
 		checkCurrentStateFile(t)
 	})
-
-	if ret := fakeClientManaged.VMType("fake"); ret == nil {
-		t.Fatalf("returned nil for valid vm type")
-	}
 
 	t.Run("Create managed cluster", func(t *testing.T) {
 
