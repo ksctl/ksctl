@@ -529,7 +529,9 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
 				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.HostNames),
 				NoMgt: v.CloudInfra.Aws.NoManagedNodes,
-				// TODO: need to add managed nodes size
+				Mgt: cloudcontrolres.VMData{
+					VMSize: v.CloudInfra.Aws.ManagedNodeSize,
+				},
 				ManagedK8sID: v.CloudInfra.Aws.ManagedClusterArn,
 				NetworkID:    v.CloudInfra.Aws.VpcId,
 				NetworkName:  v.CloudInfra.Aws.VpcName,
