@@ -312,10 +312,6 @@ func TestDeleteVarCluster(t *testing.T) {
 	}
 }
 
-func generateResourceGroupName(clusterName, clusterType string) string {
-	return fmt.Sprintf("ksctl-resgrp-%s-%s", clusterType, clusterName)
-}
-
 func checkCurrentStateFile(t *testing.T) {
 
 	if err := storeManaged.Setup(consts.CloudAws, mainStateDocument.Region, mainStateDocument.ClusterName, consts.ClusterTypeMang); err != nil {
@@ -475,7 +471,7 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.RouteTableID, "3456d25f36g474g546", "route table should be created")
 		assert.Equal(t, mainStateDocument.CloudInfra.Aws.GatewayID, "3456d25f36g474g546", "gateway should be created")
 
-		// checkCurrentStateFileHA(t)
+		checkCurrentStateFileHA(t)
 	})
 
 	t.Run("Create ssh", func(t *testing.T) {
@@ -897,8 +893,7 @@ func TestManagedCluster(t *testing.T) {
 					SubnetID:   "3456d25f36g474g546",
 					SubnetName: "demo-managed-subnet0",
 				},
-				Region: fakeClientManaged.region,
-				// ManagedK8sName:  "fake-managed",
+				Region:     fakeClientManaged.region,
 				NoMgt:      mainStateDocument.CloudInfra.Aws.NoManagedNodes,
 				Mgt:        cloud.VMData{VMSize: "fake"},
 				K8sDistro:  "managed",
