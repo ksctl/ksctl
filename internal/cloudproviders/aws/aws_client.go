@@ -1050,18 +1050,6 @@ func (client *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.Dele
 }
 
 func (client *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) {
-	parameter := &eks.DescribeAddonVersionsInput{}
-	addonresp, err := client.eksClient.DescribeAddonVersions(context.TODO(), parameter)
-	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(err)
-	}
-
-	addons := make(map[string]struct{})
-	for _, addon := range addonresp.Addons {
-		if addon.AddonName != nil {
-			addons[*addon.AddonName] = struct{}{}
-		}
-	}
 
 	input := &eks.DescribeAddonVersionsInput{
 		AddonName:         aws.String("vpc-cni"),
@@ -1070,27 +1058,25 @@ func (client *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) 
 
 	resp, err := client.eksClient.DescribeAddonVersions(ctx, input)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(err)
+		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
+			log.NewError(awsCtx, "Error Describing Addon Versions", "Reason", err),
+		)
 	}
 
-	Versions := make(map[string]struct{})
+	versions := make(map[string]struct{})
 	for _, addon := range resp.Addons {
 		for _, addonVersion := range addon.AddonVersions {
 			for _, k8sVersion := range addonVersion.Compatibilities {
 				if k8sVersion.ClusterVersion != nil {
-					Versions[*k8sVersion.ClusterVersion] = struct{}{}
+					versions[*k8sVersion.ClusterVersion] = struct{}{}
 				}
 			}
 		}
 	}
 
-	return mapToSlice(Versions), nil
-}
-
-func mapToSlice(m map[string]struct{}) []string {
 	var s []string
-	for k := range m {
+	for k := range versions {
 		s = append(s, k)
 	}
-	return s
+	return s, nil
 }

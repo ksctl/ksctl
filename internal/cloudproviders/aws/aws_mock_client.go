@@ -5,7 +5,6 @@ package aws
 import (
 	"context"
 
-	// clusterType "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	eksTypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	iamTypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/smithy-go/middleware"
@@ -369,4 +368,8 @@ func (mock *AwsClient) DescribeCluster(ctx context.Context, parameter *eks.Descr
 
 func (mock *AwsClient) GetKubeConfig(ctx context.Context, cluster string) (string, error) {
 	return "fake-kubeconfig", nil
+}
+
+func (mock *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) {
+	return []string{"1.30", "1.29"}, nil
 }

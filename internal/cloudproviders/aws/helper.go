@@ -79,7 +79,7 @@ func isValidK8sVersion(obj *AwsProvider, version string) error {
 		}
 	}
 
-	return ksctlErrors.ErrInvalidK8sVersion.Wrap(
+	return ksctlErrors.ErrInvalidVersion.Wrap(
 		log.NewError(awsCtx, "invalid k8s version", "validVersions", validVersions),
 	)
 }
