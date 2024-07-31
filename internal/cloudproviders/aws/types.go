@@ -121,6 +121,8 @@ type AwsGo interface {
 
 	GetKubeConfig(ctx context.Context, cluster string) (string, error)
 
+	ListK8sVersions(ctx context.Context) ([]string, error)
+
 	SetRegion(string)
 	SetVpc(string) string
 }

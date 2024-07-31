@@ -34,7 +34,14 @@ func (obj *AwsProvider) IsPresent(storage types.StorageFactory) error {
 }
 
 func (obj *AwsProvider) ManagedK8sVersion(ver string) types.CloudFactory {
-	// TODO for ManagedCluster EKS
+	log.Debug(awsCtx, "Printing", "K8sVersion", ver)
+	if err := isValidK8sVersion(obj, ver); err != nil {
+		log.Error("Managed k8s version", err.Error())
+		return nil
+	}
+
+	obj.metadata.k8sVersion = ver
+
 	return obj
 }
 
