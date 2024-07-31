@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"testing"
+
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-	"os"
-	"path/filepath"
-	"strconv"
-	"testing"
 
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -206,6 +207,31 @@ func TestValidRegion(t *testing.T) {
 			t.Fatalf("Input region :`%s`. expected `%v` but got `%v`", key, val, err)
 		}
 	}
+}
+
+func TestK8sVersion(t *testing.T) {
+	forTesting := []string{
+		"1.30",
+		"1.29",
+		"1.28",
+	}
+
+	for i := 0; i < len(forTesting); i++ {
+		var ver string = forTesting[i]
+		if i < 2 {
+			if ret := fakeClientVars.ManagedK8sVersion(ver); ret == nil {
+				t.Fatalf("returned nil for valid version")
+			}
+			if ver != fakeClientVars.metadata.k8sVersion {
+				t.Fatalf("set value is not equal to input value")
+			}
+		} else {
+			if ret := fakeClientVars.ManagedK8sVersion(ver); ret != nil {
+				t.Fatalf("returned interface for invalid version")
+			}
+		}
+	}
+
 }
 
 func TestResName(t *testing.T) {
