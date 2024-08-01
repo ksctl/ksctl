@@ -98,10 +98,11 @@ jobs:
     needs: ["create-infra"]
     secrets: inherit
 
-  civo-e2e:
-    uses: ./.github/workflows/e2e-civo.yml
-    needs: ["create-infra"]
-    secrets: inherit
+  # deprecated: civo
+  # civo-e2e:
+  #   uses: ./.github/workflows/e2e-civo.yml
+  #   needs: ["create-infra"]
+  #   secrets: inherit
 
   azure-e2e:
     uses: ./.github/workflows/e2e-azure.yml
@@ -209,11 +210,10 @@ jobs:
           set -xe
           local_status=$(echo "${{ needs.local-e2e.result }}")
           azure_status=$(echo "${{ needs.azure-e2e.result }}")
-          civo_status=$(echo "${{ needs.civo-e2e.result }}")
           aws_status=$(echo "${{ needs.aws-e2e.result }}")
           infra_status=$(echo "${{ needs.destroy_infra.result }}")
 
-          if [[ $local_status == "failure" || $azure_status == "failure" || $civo_status == "failure" || $aws_status == "failure" || $infra_status == "failure" ]]; then
+          if [[ $local_status == "failure" || $azure_status == "failure" || $aws_status == "failure" || $infra_status == "failure" ]]; then
             SUMMARY='### FAILURE :warning:'
 
             if [[ $local_status == "failure" ]]; then
@@ -222,10 +222,6 @@ jobs:
 
             if [[ $azure_status == "failure" ]]; then
               SUMMARY+='\n- Azure'
-            fi
-
-            if [[ $civo_status == "failure" ]]; then
-              SUMMARY+='\n- Civo'
             fi
 
             if [[ $aws_status == "failure" ]]; then
