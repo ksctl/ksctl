@@ -1,6 +1,6 @@
 {
 	"cluster_name": "test-e2e-aws",
-	"region": "ap-south-1",
+	"region": "eu-central-1",
 	"cloud_provider": "aws",
 	"storage_type": "store-local"
 }

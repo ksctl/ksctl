@@ -76,7 +76,7 @@ jobs:
           echo -e "\033[1;34m@@@\033[0m \033[1;35mManaged Cluster\033[0m \033[1;34m@@@\033[0m"
           ksctl-e2e-amd64 -op switch -file aws/switch.json
           tree ~/.ksctl/state
-          jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ ap-south-1/state.json
+          jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ eu-central-1/state.json
           sleep 5s
           kubectl get nodes -owide
 
