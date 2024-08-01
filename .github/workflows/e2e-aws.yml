@@ -50,6 +50,16 @@ jobs:
           ksctl-e2e-amd64 -op create -file aws/create.json
           ksctl-e2e-amd64 -op info -file aws/info.json
 
+      - name: switch aws eks
+        if: steps.changes.outputs.paths == 'true'
+        run: |
+          echo -e "\033[1;34m@@@\033[0m \033[1;35mManaged Cluster\033[0m \033[1;34m@@@\033[0m"
+          ksctl-e2e-amd64 -op switch -file aws/switch.json
+          tree ~/.ksctl/state
+          jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ eu-central-1/state.json
+          sleep 5s
+          kubectl get nodes -owide
+
       - name: create (k3s ha)
         if: steps.changes.outputs.paths == 'true'
         run: |
@@ -70,16 +80,9 @@ jobs:
           set -xe
           ksctl-e2e-amd64 -op get -file aws/get.json
 
-      - name: switch
+      - name: switch self managed cluster
         if: steps.changes.outputs.paths == 'true'
         run: |
-          echo -e "\033[1;34m@@@\033[0m \033[1;35mManaged Cluster\033[0m \033[1;34m@@@\033[0m"
-          ksctl-e2e-amd64 -op switch -file aws/switch.json
-          tree ~/.ksctl/state
-          jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ eu-central-1/state.json
-          sleep 5s
-          kubectl get nodes -owide
-
           echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
           ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
           tree ~/.ksctl/state

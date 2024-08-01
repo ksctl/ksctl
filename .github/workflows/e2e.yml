@@ -116,7 +116,7 @@ jobs:
 
   destroy_infra:
     if: always()
-    needs: [local-e2e, azure-e2e, civo-e2e, aws-e2e]
+    needs: [local-e2e, azure-e2e, aws-e2e]
 
     env:
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
@@ -203,7 +203,7 @@ jobs:
       GITHUB_RUN: ${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}
 
     if: always()
-    needs: [local-e2e, azure-e2e, civo-e2e, aws-e2e, destroy_infra]
+    needs: [local-e2e, azure-e2e, aws-e2e, destroy_infra]
     steps:
       - name: Discord
         run: |
@@ -227,7 +227,7 @@ jobs:
             if [[ $aws_status == "failure" ]]; then
               SUMMARY+='\n- AWS'
             fi
-          
+
             if [[ $infra_status == "failure" ]]; then
               SUMMARY+='\n- INFRA'
             fi
@@ -247,4 +247,3 @@ jobs:
               -d "{\"embeds\": [{ \"title\": \"${DISCORD_TITLE}\", \"description\": \"${SUMMARY}\", \"url\": \"${GITHUB_RUN}\", \"color\": $GREEN, \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\", \"footer\": {\"text\": \"no bots were harmed\"}, \"author\": {\"name\": \"github actions\" } }]}" \
               $DISCORD_WEBHOOK_URL
           fi
-

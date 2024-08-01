@@ -954,7 +954,7 @@ func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cf
 		k8sHeader := "x-k8s-aws-id"
 		opt.Presigner = newCustomHTTPPresignerV4(opt.Presigner, map[string]string{
 			k8sHeader:       clusterName,
-			"X-Amz-Expires": "3600",
+			"X-Amz-Expires": "60",
 		})
 	})
 	if err != nil {
