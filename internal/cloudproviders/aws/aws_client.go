@@ -964,6 +964,7 @@ func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cf
 				"err", err),
 		)
 	}
+
 	tokenPrefix := "k8s-aws-v1."
 	token := tokenPrefix + base64.RawURLEncoding.EncodeToString([]byte(out.URL))
 	return token, nil
