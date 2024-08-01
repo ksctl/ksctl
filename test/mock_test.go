@@ -80,6 +80,23 @@ func BenchmarkAwsTestingHA(b *testing.B) {
 	}
 }
 
+func BenchmarkAwsTestingManaged(b *testing.B) {
+	if err := InitCore(); err != nil {
+		b.Fatalf("failed to start core: %v", err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		if err := AwsTestingManaged(); err != nil {
+			b.Fatalf("failed, err: %v", err)
+		}
+	}
+
+	fmt.Println("Cleanup..")
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
+}
+
 func BenchmarkAzureTestingManaged(b *testing.B) {
 	if err := InitCore(); err != nil {
 		b.Fatalf("failed to start core: %v", err)

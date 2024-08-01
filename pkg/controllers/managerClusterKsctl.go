@@ -129,6 +129,11 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 
 	case consts.CloudAws:
 		client.Cloud, err = awsPkg.NewClient(controllerCtx, client.Metadata, log, stateDocument, awsPkg.ProvideClient)
+		if err != nil {
+			break
+		}
+
+		err = cloudController.InitCloud(client, stateDocument, consts.OperationGet)
 
 	case consts.CloudLocal:
 		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, stateDocument, localPkg.ProvideClient)
@@ -145,17 +150,23 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 		return nil, err
 	}
 
-	read, err := client.Storage.Read()
+	kubeconfig, err := client.Cloud.GetKubeconfig(client.Storage)
 	if err != nil {
 		log.Error("handled error", "catch", err)
 		return nil, err
+	} else {
+		if kubeconfig == nil {
+			err = ksctlErrors.ErrKubeconfigOperations.Wrap(
+				manager.log.NewError(
+					controllerCtx, "Problem in kubeconfig get"),
+			)
+
+			log.Error("Kubeconfig we got is nil")
+			return nil, err
+		}
 	}
-	log.Debug(controllerCtx, "data", "read", read)
 
-	kubeconfig := read.ClusterKubeConfig
-	log.Debug(controllerCtx, "data", "kubeconfig", kubeconfig)
-
-	path, err := helpers.WriteKubeConfig(controllerCtx, kubeconfig)
+	path, err := helpers.WriteKubeConfig(controllerCtx, *kubeconfig)
 	log.Debug(controllerCtx, "data", "kubeconfigPath", path)
 
 	if err != nil {
@@ -165,7 +176,7 @@ func (manager *ManagerClusterKsctl) SwitchCluster() (*string, error) {
 
 	printKubeConfig(manager.log, path)
 
-	return &kubeconfig, nil
+	return kubeconfig, nil
 }
 
 func (manager *ManagerClusterKsctl) clusterDataHelper(

@@ -2,22 +2,22 @@ name: Regression Test Aws
 on:
   push:
     paths:
-      - 'internal/cloudproviders/aws/**'
-      - 'internal/storage/**'
-      - 'pkg/helpers/**'
-      - 'pkg/logger/**'
-      - 'go.mod'
-      - 'go.sum'
-    branches: [ main ]
+      - "internal/cloudproviders/aws/**"
+      - "internal/storage/**"
+      - "pkg/helpers/**"
+      - "pkg/logger/**"
+      - "go.mod"
+      - "go.sum"
+    branches: [main]
   pull_request:
-    types: [ labeled, opened, synchronize, reopened ]
+    types: [labeled, opened, synchronize, reopened]
     paths:
-    - 'internal/cloudproviders/aws/**'
-    - 'internal/storage/**'
-    - 'pkg/helpers/**'
-    - 'pkg/logger/**'
-    - 'go.mod'
-    - 'go.sum'
+      - "internal/cloudproviders/aws/**"
+      - "internal/storage/**"
+      - "pkg/helpers/**"
+      - "pkg/logger/**"
+      - "go.mod"
+      - "go.sum"
 
 jobs:
   unit-test:
@@ -80,12 +80,11 @@ jobs:
         working-directory: test
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          # go test -tags testing_aws -bench=BenchmarkAwsTestingManaged -benchtime=1x -cover -v
+          go test -tags testing_aws -bench=BenchmarkAwsTestingManaged -benchtime=1x -cover -v
           go test -tags testing_aws -bench=BenchmarkAwsTestingHA -benchtime=1x -cover -v
 
       - name: integration testing
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
-          # make mock_aws_managed
+          make mock_aws_managed
           make mock_aws_ha
-

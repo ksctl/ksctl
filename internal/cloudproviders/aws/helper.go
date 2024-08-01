@@ -66,3 +66,20 @@ func loadStateHelper(storage types.StorageFactory) error {
 	}(raw)
 	return nil
 }
+
+func isValidK8sVersion(obj *AwsProvider, version string) error {
+	validVersions, err := obj.client.ListK8sVersions(awsCtx)
+	if err != nil {
+		return err
+	}
+
+	for _, ver := range validVersions {
+		if ver == version {
+			return nil
+		}
+	}
+
+	return ksctlErrors.ErrInvalidVersion.Wrap(
+		log.NewError(awsCtx, "invalid k8s version", "validVersions", validVersions),
+	)
+}

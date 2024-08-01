@@ -139,6 +139,16 @@ func ExecuteHARun() error {
 	return nil
 }
 
+func AwsTestingManaged() error {
+	cli.Metadata.Region = "fake-region"
+	cli.Metadata.Provider = consts.CloudAws
+	cli.Metadata.ManagedNodeType = "fake"
+	cli.Metadata.NoMP = 2
+	cli.Metadata.K8sVersion = "1.30"
+
+	return ExecuteManagedRun()
+}
+
 func AzureTestingManaged() error {
 	cli.Metadata.Region = "fake"
 	cli.Metadata.Provider = consts.CloudAzure

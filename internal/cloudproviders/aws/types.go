@@ -4,7 +4,11 @@ import (
 	"context"
 	"sync"
 
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
@@ -18,6 +22,26 @@ type metadata struct {
 	noDS int
 
 	k8sVersion string
+}
+
+type StsPresignClientInteface interface {
+	PresignGetCallerIdentity(ctx context.Context, input *sts.GetCallerIdentityInput, options ...func(*sts.PresignOptions)) (*v4.PresignedHTTPRequest, error)
+}
+
+type STSTokenRetriever struct {
+	PresignClient StsPresignClientInteface
+}
+
+type customHTTPPresignerV4 struct {
+	client  sts.HTTPPresignerV4
+	headers map[string]string
+}
+
+type KubeConfigData struct {
+	ClusterEndpoint          string
+	CertificateAuthorityData string
+	ClusterName              string
+	Token                    string
 }
 
 type AwsProvider struct {
@@ -83,7 +107,21 @@ type AwsGo interface {
 	InstanceInitialWaiter(ctx context.Context, instanceInput string) error
 
 	ModifyVpcAttribute(ctx context.Context) error
-	ModifySubnetAttribute(ctx context.Context) error
+	ModifySubnetAttribute(ctx context.Context, i int) error
+
+	BeginCreateEKS(ctx context.Context, parameter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error)
+	BeginCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error)
+
+	BeginDeleteNodeGroup(ctx context.Context, parameter *eks.DeleteNodegroupInput) (*eks.DeleteNodegroupOutput, error)
+	BeginDeleteManagedCluster(ctx context.Context, parameter *eks.DeleteClusterInput) (*eks.DeleteClusterOutput, error)
+	DescribeCluster(ctx context.Context, parameter *eks.DescribeClusterInput) (*eks.DescribeClusterOutput, error)
+
+	BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error)
+	BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput, node string) (*iam.DeleteRoleOutput, error)
+
+	GetKubeConfig(ctx context.Context, cluster string) (string, error)
+
+	ListK8sVersions(ctx context.Context) ([]string, error)
 
 	SetRegion(string)
 	SetVpc(string) string

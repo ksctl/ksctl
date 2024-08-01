@@ -4,10 +4,17 @@ package aws
 
 import (
 	"context"
+
+	eksTypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
+	iamTypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/smithy-go/middleware"
+	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 )
 
 func ProvideClient() AwsGo {
@@ -22,11 +29,11 @@ func (*AwsClient) AuthorizeSecurityGroupIngress(ctx context.Context, parameter e
 	return nil
 }
 
-func (*AwsClient) AuthorizeSecurityGroupEgress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupEgressInput) error {
+func (mock *AwsClient) AuthorizeSecurityGroupEgress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupEgressInput) error {
 	return nil
 }
 
-func (*AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.CreateNetworkInterfaceInput) (*ec2.CreateNetworkInterfaceOutput, error) {
+func (mock *AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.CreateNetworkInterfaceInput) (*ec2.CreateNetworkInterfaceOutput, error) {
 
 	nic := &ec2.CreateNetworkInterfaceOutput{
 		NetworkInterface: &types.NetworkInterface{
@@ -44,7 +51,7 @@ func (*AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.CreateNetwo
 
 }
 
-func (awsgoclient *AwsClient) BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
+func (mock *AwsClient) BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
 	subnet := &ec2.CreateSubnetOutput{
 		Subnet: &types.Subnet{
 			SubnetId: aws.String("3456d25f36g474g546"),
@@ -60,7 +67,7 @@ func (awsgoclient *AwsClient) BeginCreateSubNet(context context.Context, subnetN
 	return subnet, nil
 }
 
-func (*AwsClient) BeginCreateVM(ctx context.Context, parameter *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
+func (mock *AwsClient) BeginCreateVM(ctx context.Context, parameter *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
 
 	instances := &ec2.RunInstancesOutput{
 		Instances: []types.Instance{
@@ -79,7 +86,7 @@ func (*AwsClient) BeginCreateVM(ctx context.Context, parameter *ec2.RunInstances
 	return instances, nil
 }
 
-func (*AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
+func (mock *AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
 
 	routeTable := &ec2.CreateRouteTableOutput{
 		RouteTable: &types.RouteTable{
@@ -107,7 +114,7 @@ func (*AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayI
 	return routeTable, createInternetGateway, nil
 }
 
-func (awsclient *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
+func (mock *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
 	vpc := &ec2.CreateVpcOutput{
 		Vpc: &types.Vpc{
 			VpcId: aws.String("3456d25f36g474g546"),
@@ -122,7 +129,7 @@ func (awsclient *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.C
 	return vpc, nil
 }
 
-func (*AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+func (mock *AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
 	mainStateDocument.CloudInfra.Aws.VpcId = ""
 
@@ -136,46 +143,54 @@ func (*AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.Storage
 
 }
 
-func (*AwsClient) BeginDeleteNIC(nicID string) error {
+func (mock *AwsClient) BeginDeleteNIC(nicID string) error {
 
 	return nil
 }
 
-func (*AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
+func (mock *AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
 	return "ami-1234567890", nil
 }
 
-func (*AwsClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error {
+func (mock *AwsClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error {
 
 	return nil
 }
 
-func (*AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
+func (mock *AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
 	return &ec2.DescribeAvailabilityZonesOutput{
 		AvailabilityZones: []types.AvailabilityZone{
 			{
 				ZoneName: aws.String("us-east-1a"),
 			},
+			{
+				ZoneName: aws.String("us-east-1b"),
+			},
+			{
+				ZoneName: aws.String("us-east-1c"),
+			},
 		},
 	}, nil
 }
 
-func (*AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
+func (mock *AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
 
-	mainStateDocument.CloudInfra.Aws.SubnetID = ""
-	mainStateDocument.CloudInfra.Aws.SubnetName = ""
+	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
+		mainStateDocument.CloudInfra.Aws.SubnetIDs[i] = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+		if err := storage.Write(mainStateDocument); err != nil {
+			return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+		}
+
+		log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetNames)
+
 	}
-
-	log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetName)
 
 	return nil
 
 }
 
-func (*AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error) {
+func (mock *AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error) {
 
 	naclresp := &ec2.CreateNetworkAclOutput{
 		NetworkAcl: &types.NetworkAcl{
@@ -192,7 +207,7 @@ func (*AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec2.Creat
 	return naclresp, nil
 }
 
-func (*AwsClient) BeginCreateSecurityGroup(ctx context.Context, parameter ec2.CreateSecurityGroupInput) (*ec2.CreateSecurityGroupOutput, error) {
+func (mock *AwsClient) BeginCreateSecurityGroup(ctx context.Context, parameter ec2.CreateSecurityGroupInput) (*ec2.CreateSecurityGroupOutput, error) {
 
 	securitygroup := &ec2.CreateSecurityGroupOutput{
 		GroupId: aws.String("test-security-group-1234567890"),
@@ -201,11 +216,11 @@ func (*AwsClient) BeginCreateSecurityGroup(ctx context.Context, parameter ec2.Cr
 	return securitygroup, nil
 }
 
-func (*AwsClient) BeginDeleteVM(vmname string) error {
+func (mock *AwsClient) BeginDeleteVM(vmname string) error {
 	return nil
 }
 
-func (*AwsClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+func (mock *AwsClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
 
 	mainStateDocument.CloudInfra.Aws.GatewayID = ""
 	mainStateDocument.CloudInfra.Aws.RouteTableID = ""
@@ -218,11 +233,11 @@ func (*AwsClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.Sto
 	return nil
 }
 
-func (*AwsClient) CreateSSHKey() error {
+func (mock *AwsClient) CreateSSHKey() error {
 	return nil
 }
 
-func (*AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
+func (mock *AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
 
 	instanceinforesponse := &ec2.DescribeInstancesOutput{
 		Reservations: []types.Reservation{
@@ -243,20 +258,20 @@ func (*AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) 
 	return instanceinforesponse, nil
 }
 
-func (*AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
+func (mock *AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
 
 	return nil
 }
 
-func (*AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID string) error {
+func (mock *AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID string) error {
 	return nil
 }
 
-func (*AwsClient) InitClient(storage ksctlTypes.StorageFactory) error {
+func (mock *AwsClient) InitClient(storage ksctlTypes.StorageFactory) error {
 	return nil
 }
 
-func (*AwsClient) ImportKeyPair(ctx context.Context, keypair *ec2.ImportKeyPairInput) error {
+func (mock *AwsClient) ImportKeyPair(ctx context.Context, keypair *ec2.ImportKeyPairInput) error {
 
 	return nil
 }
@@ -266,7 +281,7 @@ func (awsclient *AwsClient) ListLocations() ([]string, error) {
 	return []string{"fake-region"}, nil
 }
 
-func (*AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
+func (mock *AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
 	return ec2.DescribeInstanceTypesOutput{
 		InstanceTypes: []types.InstanceTypeInfo{
 			{
@@ -276,17 +291,85 @@ func (*AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
 	}, nil
 }
 
-func (*AwsClient) ModifyVpcAttribute(ctx context.Context) error {
+func (mock *AwsClient) ModifyVpcAttribute(ctx context.Context) error {
 	return nil
 }
 
-func (*AwsClient) ModifySubnetAttribute(ctx context.Context) error {
+func (mock *AwsClient) ModifySubnetAttribute(ctx context.Context, i int) error {
 	return nil
 }
-func (a *AwsClient) SetRegion(string) {
-	a.region = "fake-region"
+func (mock *AwsClient) SetRegion(string) {
+	mock.region = "fake-region"
 }
 
-func (*AwsClient) SetVpc(string) string {
+func (mock *AwsClient) SetVpc(string) string {
 	return "fake-vpc"
+}
+
+func (mock *AwsClient) InitState(storage ksctlTypes.StorageFactory) error {
+	return nil
+}
+
+func (mock *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error) {
+	return &eks.CreateClusterOutput{
+		Cluster: &eksTypes.Cluster{
+			Name: aws.String("test-cluster"),
+		},
+	}, nil
+}
+func (mock *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
+	return &eks.CreateNodegroupOutput{
+		Nodegroup: &eksTypes.Nodegroup{
+			NodegroupName: aws.String("test-nodegroup"),
+			NodegroupArn:  aws.String("arn:aws:eks:us-west-2:1234567890:nodegroup/test-cluster/test-nodegroup"),
+		},
+	}, nil
+}
+
+func (mock *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *eks.DeleteNodegroupInput) (*eks.DeleteNodegroupOutput, error) {
+	return &eks.DeleteNodegroupOutput{
+		Nodegroup: &eksTypes.Nodegroup{
+			NodegroupName: aws.String("test-nodegroup"),
+		},
+	}, nil
+}
+
+func (mock *AwsClient) BeginDeleteManagedCluster(ctx context.Context, parameter *eks.DeleteClusterInput) (*eks.DeleteClusterOutput, error) {
+	return &eks.DeleteClusterOutput{
+		Cluster: &eksTypes.Cluster{
+			Name: aws.String("test-cluster"),
+		},
+	}, nil
+}
+
+func (mock *AwsClient) BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error) {
+	return &iam.CreateRoleOutput{
+		Role: &iamTypes.Role{
+			RoleName: aws.String("test-role"),
+			Arn:      aws.String("arn:aws:iam::1234567890:role/test-role"),
+		},
+	}, nil
+}
+
+func (mock *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput, role string) (*iam.DeleteRoleOutput, error) {
+	return &iam.DeleteRoleOutput{
+		ResultMetadata: middleware.Metadata{},
+	}, nil
+
+}
+
+func (mock *AwsClient) DescribeCluster(ctx context.Context, parameter *eks.DescribeClusterInput) (*eks.DescribeClusterOutput, error) {
+	return &eks.DescribeClusterOutput{
+		Cluster: &eksTypes.Cluster{
+			Name: aws.String("test-cluster"),
+		},
+	}, nil
+}
+
+func (mock *AwsClient) GetKubeConfig(ctx context.Context, cluster string) (string, error) {
+	return "fake-kubeconfig", nil
+}
+
+func (mock *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) {
+	return []string{"1.30", "1.29"}, nil
 }

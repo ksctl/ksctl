@@ -112,7 +112,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 
 	interfaceparameter := &ec2.CreateNetworkInterfaceInput{
 		Description: aws.String("network interface"),
-		SubnetId:    aws.String(mainStateDocument.CloudInfra.Aws.SubnetID),
+		SubnetId:    aws.String(mainStateDocument.CloudInfra.Aws.SubnetIDs[0]),
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceType("network-interface"),

@@ -579,3 +579,16 @@ func (obj *CivoProvider) IsPresent(storage types.StorageFactory) error {
 	}
 	return isPresent(storage, consts.ClusterTypeMang, obj.clusterName, obj.region)
 }
+
+func (obj *CivoProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
+	_read, err := storage.Read()
+	if err != nil {
+		log.Error("handled error", "catch", err)
+		return nil, err
+	}
+	log.Debug(civoCtx, "data", "read", _read)
+
+	kubeconfig := _read.ClusterKubeConfig
+	log.Debug(civoCtx, "data", "kubeconfig", kubeconfig)
+	return &kubeconfig, nil
+}
