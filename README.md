@@ -1,78 +1,38 @@
-# Ksctl: Cloud Agnostic Kubernetes Management tool
+![CoverPage Social Media](./img/cover.svg)
 
-![CoverPage Social Media](./img/ksctl-cover.png)
+# Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
-<h4 align="center">
-    <a href="https://discord.com/invite/kubesimplify">Discord</a> |
-    <a href="https://docs.ksctl.com/">Website</a><br/><br/>
-    <a href="https://docs.ksctl.com/docs/intro">Intro</a> |
-    <a href="https://docs.ksctl.com/docs/contributions">Contribute</a> |
-    <a href="https://docs.ksctl.com/docs/roadmap">Roadmap</a><br/><br/>
-</h4>
-<br>
-<div align="center">
-    <a href="https://pkg.go.dev/github.com/ksctl/ksctl"><img src="https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg" alt="Go Reference"></a>
-   <img src="https://img.shields.io/github/issues/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/issues-pr/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/issues-pr-closed-raw/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/forks/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/stars/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/contributors/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/last-commit/ksctl/ksctl?style=for-the-badge" />
-   <br>
+It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks. 
 
-   [![ci-test-go](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml)
-  [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
-  [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469)
-</div>
+It is currently in **Beta Phase**, but it is already a valuable tool for developers who want to manage Kubernetes clusters.
+
+### So far what have we achieved?
+Cluster creation, deletion, getting cluster info, accessing it. It uses cloud providers managed offerrings For Example: AKS, EKS, etc. not just that we also have self-managed kubernetes cluster support where you can pick and choose between different bootstrap tools like k3s or kubeadm. And now we are moving towards the next phase of the project where we will be adding more features like cluster scaling, cluster upgrade, production grade apps, and many more.
+
+See [the FAQ](#) for more details about how ksctl is different from alternatives.
 
 
-# Project Scope
+[![Go Report Card](https://goreportcard.com/badge/github.com/ksctl/ksctl)](https://goreportcard.com/report/github.com/ksctl/ksctl) [![](https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg)](https://pkg.go.dev/github.com/ksctl/ksctl) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469) [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
 
-Many cloud providers offer their flavor of Kubernetes. Each provider has its unique CLI tool which is used to create and manage clusters on that particular cloud. When working in a multi-cloud environment, it can get difficult to create and manage so many clusters using CLI from each cloud provider. ksctl is a **single CLI tool** that can interact with a multitude of cloud providers, making it easy for you to **manage multi-cloud clusters, with just a single CLI tool**
+![](https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/issues/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/forks/ksctl/ksctl?style=for-the-badge) 
 
-# Purpose
 
-The ksctl project by kubesimplify is a Cloud Agnostic Kubernetes Management tool that helps developers and administrators manage Kubernetes clusters running on different environment
-
-It provides a simple and intuitive interface for performing common tasks such as creating, deleting, and managing Kubernetes resources. ksctl is designed to be easy to use, even for developers who are new to Kubernetes.
-
-Here are some of the specific features of ksctl:
-
-- It provides a simple and intuitive interface for managing Kubernetes clusters.
-- It is designed to be efficient and can perform tasks quickly and without the need for additional tools.
-- It is a powerful tool that can be used to perform a wide range of tasks.
-- It is currently under development, but it is already a valuable tool for developers who want to manage Kubernetes clusters.
-
-## Repositories
+## All Repositories under (Ksctl Org)
 Repo | Description
 -|-
 [Ksctl](https://github.com/ksctl/ksctl) | It provides the core components aka the internals of ksctl features
 [Ksctl CLI](https://github.com/ksctl/cli) | It uses the ksctl repo to make a CLI tool
 [Ksctl Docs](https://github.com/ksctl/docs) | It's for documentation purpose and to host the ksctl website
 
-# Prerequisites
-
-- Go (if building from source)
-- Docker (if going to use Local provider)
-
-# Supported Platforms
-
-Platform | Status
---|--
-Linux | `OK`
-macOS | `OK`
-Windows | `OK`
-
-# Getting Started guide
+## Getting Started guide
 
 [Getting Started guide](https://docs.ksctl.com/docs/getting-started/)
 
-# Usage
+## Usage
 
 Please refer to the [CLI Reference guide](https://docs.ksctl.com/docs/reference/cli/)
-# Contribution Guidelines
+
+## Contribution Guidelines
 Please refer to our [contribution guide](https://docs.ksctl.com/docs/contribution-guidelines/) if you wish to contribute to the project :smile:
 
 [![GitHub repo Good Issues for newbies](https://img.shields.io/github/issues/ksctl/ksctl/good%20first%20issue?style=flat&logo=github&logoColor=green&label=Good%20First%20issues)](https://github.com/ksctl/ksctl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) [![GitHub Help Wanted issues](https://img.shields.io/github/issues/ksctl/ksctl/help%20wanted?style=flat&logo=github&logoColor=b545d1&label=%22Help%20Wanted%22%20issues)](https://github.com/ksctl/ksctl/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) [![GitHub Help Wanted PRs](https://img.shields.io/github/issues-pr/ksctl/ksctl/help%20wanted?style=flat&logo=github&logoColor=b545d1&label=%22Help%20Wanted%22%20PRs)](https://github.com/ksctl/ksctl/pulls?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) [![GitHub repo Issues](https://img.shields.io/github/issues/ksctl/ksctl?style=flat&logo=github&logoColor=red&label=Issues)](https://github.com/ksctl/ksctl/issues?q=is%3Aopen)
@@ -81,5 +41,5 @@ Please refer to our [contribution guide](https://docs.ksctl.com/docs/contributio
 [Link to Contributors](https://github.com/ksctl/ksctl/graphs/contributors)
 
 <a href="https://github.com/ksctl/ksctl/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ksctl/ksctl" />
+	<img src="https://contrib.rocks/image?repo=ksctl/ksctl" />
 </a>
