@@ -2,30 +2,10 @@
 
 # Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
-<h4 align="center">
-    <a href="https://discord.com/invite/kubesimplify">Discord</a> |
-    <a href="https://docs.ksctl.com/">Website</a><br/><br/>
-    <a href="https://docs.ksctl.com/docs/intro">Intro</a> |
-    <a href="https://docs.ksctl.com/docs/contributions">Contribute</a> |
-    <a href="https://docs.ksctl.com/docs/roadmap">Roadmap</a><br/><br/>
-</h4>
-<br>
-<div align="center">
-    <a href="https://pkg.go.dev/github.com/ksctl/ksctl"><img src="https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg" alt="Go Reference"></a>
-   <img src="https://img.shields.io/github/issues/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/issues-pr/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/issues-pr-closed-raw/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/forks/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/stars/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/contributors/ksctl/ksctl?style=for-the-badge" />
-   <img src="https://img.shields.io/github/last-commit/ksctl/ksctl?style=for-the-badge" />
-   <br>
 
-   [![ci-test-go](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml/badge.svg)](https://github.com/ksctl/ksctl/actions/workflows/go-fmt.yaml)
-  [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
-  [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469)
-</div>
+<a href="https://pkg.go.dev/github.com/ksctl/ksctl"><img src="https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg" alt="Go Reference"></a> [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469) [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
+
+![](https://img.shields.io/github/last-commit/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/issues/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/issues-pr/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/issues-pr-closed-raw/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/forks/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/stars/ksctl/ksctl?style=for-the-badge)
 
 
 # Project Scope
@@ -81,5 +61,5 @@ Please refer to our [contribution guide](https://docs.ksctl.com/docs/contributio
 [Link to Contributors](https://github.com/ksctl/ksctl/graphs/contributors)
 
 <a href="https://github.com/ksctl/ksctl/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ksctl/ksctl" />
+	<img src="https://contrib.rocks/image?repo=ksctl/ksctl" />
 </a>
