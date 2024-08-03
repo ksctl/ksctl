@@ -559,7 +559,12 @@ func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clou
 func (obj *AwsProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
 
 	if !obj.haCluster {
-		obj.client.GetKubeConfig(awsCtx, mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+		kubeconfig, err := obj.client.GetKubeConfig(awsCtx, mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+		if err != nil {
+			return nil, err
+		}
+		log.Debug(awsCtx, "data", "kubeconfig", kubeconfig)
+		return &kubeconfig, nil
 	}
 
 	kubeconfig := mainStateDocument.ClusterKubeConfig
