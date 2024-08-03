@@ -1,6 +1,6 @@
-# Ksctl: Cloud Agnostic Kubernetes Management tool
+![CoverPage Social Media](./img/cover.svg)
 
-![CoverPage Social Media](./img/ksctl-cover.png)
+# Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
 <h4 align="center">
     <a href="https://discord.com/invite/kubesimplify">Discord</a> |
