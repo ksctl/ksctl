@@ -39,6 +39,11 @@ type Metadata struct {
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
 
-	Applications []string `json:"preinstalled_apps"`
-	CNIPlugin    string   `json:"cni_plugin"`
+	Applications []KsctlApp `json:"preinstalled_apps"`
+	CNIPlugin    KsctlApp   `json:"cni_plugin"`
+}
+
+type KsctlApp struct {
+	StackName string                    `json:"stack_name"`
+	Overrides map[string]map[string]any `json:"overrides"`
 }

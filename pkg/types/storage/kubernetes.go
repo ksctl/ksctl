@@ -1,6 +1,9 @@
 package storage
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type KubernetesAddons struct {
 	Apps []Application `json:"apps" bson:"apps"`
@@ -8,13 +11,31 @@ type KubernetesAddons struct {
 }
 
 type Application struct {
-	Name    string `json:"name" bson:"name"`
+	Name       string               `json:"name" bson:"name"`
+	Components map[string]Component `json:"components" bson:"components"`
+}
+
+type Component struct {
 	Version string `json:"version" bson:"version"`
+}
+
+func (c Component) String() string {
+	return c.Version
 }
 
 func (a Application) String() string {
 	if len(a.Name) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%s@%s", a.Name, a.Version)
+	var components []string
+	for _, c := range a.Components {
+		x := ""
+		if len(c.Version) == 0 {
+			continue
+		}
+		x = c.String()
+		components = append(components, x)
+	}
+
+	return fmt.Sprintf("%s::[%s]", a.Name, strings.Join(components, ","))
 }

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
+
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -16,18 +18,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-type KubectlOptions struct {
-	createNamespace bool
-	postInstall     string
-	metadata        string
-	// Namespace Only specify if createNamespace is true
-	namespace string
-}
+func getManifests(appUrl string) ([]string, error) {
 
-func getManifests(app Application) ([]string, error) {
-
-	// Get the manifest
-	resp, err := http.Get(app.Url)
+	resp, err := http.Get(appUrl)
 	if err != nil {
 		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
 			log.NewError(kubernetesCtx, "failed to get manifests", "Reason", err),
@@ -42,7 +35,6 @@ func getManifests(app Application) ([]string, error) {
 		)
 	}
 
-	// Split the manifest into individual storage
 	resources := strings.Split(string(body), "---")
 	if err := apiextensionsv1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
@@ -52,8 +44,8 @@ func getManifests(app Application) ([]string, error) {
 	return resources, nil
 }
 
-func deleteKubectl(client *Kubernetes, appStruct Application) error {
-	resources, err := getManifests(appStruct)
+func deleteKubectl(client *K8sClusterClient, component *metadata.KubectlHandler) error {
+	resources, err := getManifests(component.Url)
 	if err != nil {
 		return err
 	}
@@ -73,95 +65,95 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 		switch o := obj.(type) {
 
 		case *apiextensionsv1.CustomResourceDefinition:
-			errRes = client.apiExtensionsDelete(o)
+			errRes = client.k8sClient.ApiExtensionsDelete(kubernetesCtx, log, o)
 
 		case *corev1.Namespace:
 			log.Print(kubernetesCtx, "Namespace", "name", o.Name)
-			errRes = client.namespaceDelete(o, false)
+			errRes = client.k8sClient.NamespaceDelete(kubernetesCtx, log, o, false)
 
 		case *appsv1.DaemonSet:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Daemonset", "name", o.Name)
-			errRes = client.daemonsetDelete(o)
+			errRes = client.k8sClient.DaemonsetDelete(kubernetesCtx, log, o)
 
 		case *appsv1.Deployment:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Deployment", "name", o.Name)
-			errRes = client.deploymentDelete(o)
+			errRes = client.k8sClient.DeploymentDelete(kubernetesCtx, log, o)
 
 		case *corev1.Service:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Service", "name", o.Name)
-			errRes = client.serviceDelete(o)
+			errRes = client.k8sClient.ServiceDelete(kubernetesCtx, log, o)
 
 		case *corev1.ServiceAccount:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ServiceAccount", "name", o.Name)
-			errRes = client.serviceAccountDelete(o)
+			errRes = client.k8sClient.ServiceAccountDelete(kubernetesCtx, log, o)
 
 		case *corev1.ConfigMap:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ConfigMap", "name", o.Name)
-			errRes = client.configMapDelete(o)
+			errRes = client.k8sClient.ConfigMapDelete(kubernetesCtx, log, o)
 
 		case *corev1.Secret:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Secret", "name", o.Name)
-			errRes = client.secretDelete(o)
+			errRes = client.k8sClient.SecretDelete(kubernetesCtx, log, o)
 
 		case *appsv1.StatefulSet:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "StatefulSet", "name", o.Name)
-			errRes = client.statefulSetDelete(o)
+			errRes = client.k8sClient.StatefulSetDelete(kubernetesCtx, log, o)
 
 		case *rbacv1.ClusterRole:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ClusterRole", "name", o.Name)
-			errRes = client.clusterRoleDelete(o)
+			errRes = client.k8sClient.ClusterRoleDelete(kubernetesCtx, log, o)
 
 		case *rbacv1.ClusterRoleBinding:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ClusterRoleBinding", "name", o.Name)
-			errRes = client.clusterRoleBindingDelete(o)
+			errRes = client.k8sClient.ClusterRoleBindingDelete(kubernetesCtx, log, o)
 
 		case *rbacv1.Role:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Role", "name", o.Name)
-			errRes = client.roleDelete(o)
+			errRes = client.k8sClient.RoleDelete(kubernetesCtx, log, o)
 
 		case *rbacv1.RoleBinding:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "RoleBinding", "name", o.Name)
-			errRes = client.roleBindingDelete(o)
+			errRes = client.k8sClient.RoleBindingDelete(kubernetesCtx, log, o)
 
 		case *networkingv1.NetworkPolicy:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "NetworkPolicy", "name", o.Name)
-			errRes = client.netPolicyDelete(o)
+			errRes = client.k8sClient.NetPolicyDelete(kubernetesCtx, log, o)
 
 		default:
 			errRes = ksctlErrors.ErrFailedKubernetesClient.Wrap(
@@ -174,10 +166,10 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 		}
 	}
 
-	if appStruct.KubectlConfig.createNamespace {
-		if err := client.namespaceDelete(&corev1.Namespace{
+	if component.CreateNamespace {
+		if err := client.k8sClient.NamespaceDelete(kubernetesCtx, log, &corev1.Namespace{
 			ObjectMeta: v1.ObjectMeta{
-				Name: appStruct.KubectlConfig.namespace,
+				Name: component.Namespace,
 			}}, true); err != nil {
 			return err
 		}
@@ -186,16 +178,16 @@ func deleteKubectl(client *Kubernetes, appStruct Application) error {
 	return nil
 }
 
-func installKubectl(client *Kubernetes, appStruct Application) error {
-	resources, err := getManifests(appStruct)
+func installKubectl(client *K8sClusterClient, component *metadata.KubectlHandler) error {
+	resources, err := getManifests(component.Url)
 	if err != nil {
 		return err
 	}
 
-	if appStruct.KubectlConfig.createNamespace {
-		if err := client.namespaceCreate(&corev1.Namespace{
+	if component.CreateNamespace {
+		if err := client.k8sClient.NamespaceCreate(kubernetesCtx, log, &corev1.Namespace{
 			ObjectMeta: v1.ObjectMeta{
-				Name: appStruct.KubectlConfig.namespace,
+				Name: component.Namespace,
 			}}); err != nil {
 			return err
 		}
@@ -216,95 +208,95 @@ func installKubectl(client *Kubernetes, appStruct Application) error {
 		switch o := obj.(type) {
 
 		case *apiextensionsv1.CustomResourceDefinition:
-			errRes = client.apiExtensionsApply(o)
+			errRes = client.k8sClient.ApiExtensionsApply(kubernetesCtx, log, o)
 
 		case *corev1.Namespace:
 			log.Print(kubernetesCtx, "Namespace", "name", o.Name)
-			errRes = client.namespaceCreate(o)
+			errRes = client.k8sClient.NamespaceCreate(kubernetesCtx, log, o)
 
 		case *appsv1.DaemonSet:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Daemonset", "name", o.Name)
-			errRes = client.daemonsetApply(o)
+			errRes = client.k8sClient.DaemonsetApply(kubernetesCtx, log, o)
 
 		case *appsv1.Deployment:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Deployment", "name", o.Name)
-			errRes = client.deploymentApply(o)
+			errRes = client.k8sClient.DeploymentApply(kubernetesCtx, log, o)
 
 		case *corev1.Service:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Service", "name", o.Name)
-			errRes = client.serviceApply(o)
+			errRes = client.k8sClient.ServiceApply(kubernetesCtx, log, o)
 
 		case *corev1.ServiceAccount:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ServiceAccount", "name", o.Name)
-			errRes = client.serviceAccountApply(o)
+			errRes = client.k8sClient.ServiceAccountApply(kubernetesCtx, log, o)
 
 		case *corev1.ConfigMap:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ConfigMap", "name", o.Name)
-			errRes = client.configMapApply(o)
+			errRes = client.k8sClient.ConfigMapApply(kubernetesCtx, log, o)
 
 		case *corev1.Secret:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Secret", "name", o.Name)
-			errRes = client.secretApply(o)
+			errRes = client.k8sClient.SecretApply(kubernetesCtx, log, o)
 
 		case *appsv1.StatefulSet:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "StatefulSet", "name", o.Name)
-			errRes = client.statefulSetApply(o)
+			errRes = client.k8sClient.StatefulSetApply(kubernetesCtx, log, o)
 
 		case *rbacv1.ClusterRole:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ClusterRole", "name", o.Name)
-			errRes = client.clusterRoleApply(o)
+			errRes = client.k8sClient.ClusterRoleApply(kubernetesCtx, log, o)
 
 		case *rbacv1.ClusterRoleBinding:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "ClusterRoleBinding", "name", o.Name)
-			errRes = client.clusterRoleBindingApply(o)
+			errRes = client.k8sClient.ClusterRoleBindingApply(kubernetesCtx, log, o)
 
 		case *rbacv1.Role:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "Role", "name", o.Name)
-			errRes = client.roleApply(o)
+			errRes = client.k8sClient.RoleApply(kubernetesCtx, log, o)
 
 		case *rbacv1.RoleBinding:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "RoleBinding", "name", o.Name)
-			errRes = client.roleBindingApply(o)
+			errRes = client.k8sClient.RoleBindingApply(kubernetesCtx, log, o)
 
 		case *networkingv1.NetworkPolicy:
-			if appStruct.KubectlConfig.createNamespace {
-				o.Namespace = appStruct.KubectlConfig.namespace
+			if component.CreateNamespace {
+				o.Namespace = component.Namespace
 			}
 			log.Print(kubernetesCtx, "NetworkPolicy", "name", o.Name)
-			errRes = client.netPolicyApply(o)
+			errRes = client.k8sClient.NetPolicyApply(kubernetesCtx, log, o)
 
 		default:
 			errRes = ksctlErrors.ErrFailedKubernetesClient.Wrap(

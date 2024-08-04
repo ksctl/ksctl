@@ -37,9 +37,8 @@ message ResScale {
 }
 
 message Application {
-  string appName = 1;
-  ApplicationType appType = 2;
-  string version = 3;
+  ApplicationType appType = 1;
+  bytes appStackInfo = 2;
 }
 
 message ReqApplication {

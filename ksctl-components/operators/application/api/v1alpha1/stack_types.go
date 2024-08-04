@@ -17,15 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-type Option struct {
-	// TODO(user): need to figure that out
-}
 
 type ApplicationType string
 
@@ -34,17 +28,16 @@ const (
 	TypeApp ApplicationType = "app"
 )
 
-type Component struct {
-	AppName string `json:"appName"`
-	// Version if left empty means @latest
-	Version string          `json:"version,omitempty"`
+type StackObj struct {
+	StackId string          `json:"stackId"`
 	AppType ApplicationType `json:"appType"`
-	Options []Option        `json:"options,omitempty"`
+
+	Overrides *apiextensionsv1.JSON `json:"overrides,omitempty"`
 }
 
 // StackSpec defines the desired state of Stack
 type StackSpec struct {
-	Components []Component `json:"components"`
+	Stacks []StackObj `json:"stacks"`
 }
 
 // StackStatus defines the observed state of Stack
@@ -52,6 +45,8 @@ type StackStatus struct {
 	Success         bool   `json:"success"`
 	ReasonOfFailure string `json:"reasonOfFailure,omitempty"`
 }
+
+// TODO: need to update the kind as `StackCollection`
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status

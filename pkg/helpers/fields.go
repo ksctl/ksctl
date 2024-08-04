@@ -7,8 +7,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -149,32 +147,32 @@ func IsValidKsctlComponentVersion(ctx context.Context, log types.LoggerFactory, 
 	return nil
 }
 
-func ToApplicationTempl(ctx context.Context,
-	log types.LoggerFactory,
-	apps []string) ([]storageTypes.Application, error) {
-
-	_apps := make([]storageTypes.Application, 0)
-	for _, app := range apps {
-
-		temp := strings.Split(app, "@")
-
-		if len(temp) > 2 || len(app) == 0 {
-			return nil, ksctlErrors.ErrInvalidKsctlComponentVersion.Wrap(
-				log.NewError(ctx, "invalid format for application should be APP_NAME@VERSION", "app", app),
-			)
-		}
-		if len(temp) == 1 {
-			// version was not specified
-			_apps = append(_apps, storageTypes.Application{
-				Name:    temp[0],
-				Version: "latest",
-			})
-		} else {
-			_apps = append(_apps, storageTypes.Application{
-				Name:    temp[0],
-				Version: temp[1],
-			})
-		}
-	}
-	return _apps, nil
-}
+//func ToApplicationTempl(ctx context.Context,
+//	log types.LoggerFactory,
+//	apps []string) ([]storageTypes.Application, error) {
+//
+//	_apps := make([]storageTypes.Application, 0)
+//	for _, app := range apps {
+//
+//		temp := strings.Split(app, "@")
+//
+//		if len(temp) > 2 || len(app) == 0 {
+//			return nil, ksctlErrors.ErrInvalidKsctlComponentVersion.Wrap(
+//				log.NewError(ctx, "invalid format for application should be APP_NAME@VERSION", "app", app),
+//			)
+//		}
+//		if len(temp) == 1 {
+//			// version was not specified
+//			_apps = append(_apps, storageTypes.Application{
+//				Name:    temp[0],
+//				Version: "latest",
+//			})
+//		} else {
+//			_apps = append(_apps, storageTypes.Application{
+//				Name:    temp[0],
+//				Version: temp[1],
+//			})
+//		}
+//	}
+//	return _apps, nil
+//}

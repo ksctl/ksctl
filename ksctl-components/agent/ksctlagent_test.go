@@ -77,10 +77,9 @@ func TestApplication(t *testing.T) {
 		res, err := client.Application(agentCtx, &pb.ReqApplication{
 			Operation: pb.ApplicationOperation_CREATE,
 			Apps: []*pb.Application{
-				&pb.Application{
-					AppName: "istio",
-					AppType: pb.ApplicationType_APP,
-					Version: "23e2w",
+				{
+					AppType:      pb.ApplicationType_APP,
+					AppStackInfo: []byte(`{"stackId":"hello"}`),
 				},
 			},
 		})

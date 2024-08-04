@@ -652,7 +652,7 @@ func TestHACluster(t *testing.T) {
 			PrivateIP:  "192.168.1.2",
 		}
 		expected := []cloud.AllClusterData{
-			cloud.AllClusterData{
+			{
 				Name:          fakeClientHA.clusterName,
 				Region:        fakeClientHA.region,
 				CloudProvider: consts.CloudAws,

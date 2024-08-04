@@ -2,17 +2,32 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 
-	"github.com/ksctl/ksctl/api/gen/agent/pb"
+	"github.com/gookit/goutil/dump"
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/types"
+
+	"github.com/ksctl/ksctl/api/gen/agent/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, error) {
+type KsctlAgent interface {
+	InstallApps(apps applicationv1alpha1.StackSpec) error
+	UninstallApps(apps applicationv1alpha1.StackSpec) error
+	Close() error
+}
+
+type KsctlAgentClient struct {
+	ctx           context.Context
+	ksctlAgentUrl string
+	client        pb.KsctlAgentClient
+	conn          *grpc.ClientConn
+}
+
+func NewKsctlAgentClient(ctx context.Context) (*KsctlAgentClient, error) {
 	ksctlAgentUrl := os.Getenv("KSCTL_AGENT_URL")
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -20,36 +35,67 @@ func NewClient(ctx context.Context) (pb.KsctlAgentClient, *grpc.ClientConn, erro
 
 	conn, err := grpc.DialContext(ctx, ksctlAgentUrl, opts...)
 	if err != nil {
-		return nil, conn, err
+		return nil, err
 	}
 
-	return pb.NewKsctlAgentClient(conn), conn, nil
+	return &KsctlAgentClient{
+		ctx:           ctx,
+		ksctlAgentUrl: ksctlAgentUrl,
+		client:        pb.NewKsctlAgentClient(conn),
+		conn:          conn,
+	}, nil
 }
 
-func appHandler(ctx context.Context, client pb.KsctlAgentClient, apps []applicationv1alpha1.Component, operation pb.ApplicationOperation) error {
-	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); ok {
-		return nil
-	}
+func (c *KsctlAgentClient) Close() error {
+	return c.conn.Close()
+}
+
+func (c *KsctlAgentClient) convertToClientType(apps applicationv1alpha1.StackSpec) ([]*pb.Application, error) {
 	_apps := make([]*pb.Application, 0)
-	for _, app := range apps {
+
+	for _, stack := range apps.Stacks {
+		ksctlApplicationData := types.KsctlApp{
+			StackName: stack.StackId,
+		}
+
+		_overrides := stack.Overrides.Raw
+		if _overrides != nil {
+			ksctlApplicationData.Overrides = make(map[string]map[string]any)
+			if err := json.Unmarshal(_overrides, &ksctlApplicationData.Overrides); err != nil {
+				log.Error("Unmarshal", "Reason", err)
+				return nil, err
+			}
+		}
+		var appType pb.ApplicationType
+		switch stack.AppType {
+		case applicationv1alpha1.TypeApp:
+			appType = pb.ApplicationType_APP
+		case applicationv1alpha1.TypeCNI:
+			appType = pb.ApplicationType_CNI
+		default:
+			appType = pb.ApplicationType_APP
+		}
+
+		raw_app, err := json.Marshal(ksctlApplicationData)
+		if err != nil {
+			return nil, err
+		}
 		_apps = append(_apps, &pb.Application{
-			AppName: app.AppName,
-			Version: app.Version,
-			AppType: func() pb.ApplicationType {
-				switch app.AppType {
-				case applicationv1alpha1.TypeCNI:
-					return pb.ApplicationType_CNI
-				case applicationv1alpha1.TypeApp:
-					return pb.ApplicationType_APP
-				default: // default is app
-					return pb.ApplicationType_APP
-				}
-			}(),
+			AppType:      appType,
+			AppStackInfo: raw_app,
 		})
 	}
+	return _apps, nil
+}
 
-	_, err := client.Application(ctx, &pb.ReqApplication{
-		Operation: operation,
+func (c *KsctlAgentClient) InstallApps(apps applicationv1alpha1.StackSpec) error {
+	_apps, err := c.convertToClientType(apps)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.client.Application(c.ctx, &pb.ReqApplication{
+		Operation: pb.ApplicationOperation_CREATE,
 		Apps:      _apps,
 	})
 	if err != nil {
@@ -58,10 +104,89 @@ func appHandler(ctx context.Context, client pb.KsctlAgentClient, apps []applicat
 	return nil
 }
 
-func InstallApps(ctx context.Context, client pb.KsctlAgentClient, apps []applicationv1alpha1.Component) error {
-	return appHandler(ctx, client, apps, pb.ApplicationOperation_CREATE)
+func (c *KsctlAgentClient) UninstallApps(apps applicationv1alpha1.StackSpec) error {
+	_apps, err := c.convertToClientType(apps)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.client.Application(c.ctx, &pb.ReqApplication{
+		Operation: pb.ApplicationOperation_DELETE,
+		Apps:      _apps,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func DeleteApps(ctx context.Context, client pb.KsctlAgentClient, apps []applicationv1alpha1.Component) error {
-	return appHandler(ctx, client, apps, pb.ApplicationOperation_DELETE)
+type KsctlAgentClientMock struct{}
+
+func NewKsctlAgentClientTesting(_ context.Context) (*KsctlAgentClientMock, error) {
+	return &KsctlAgentClientMock{}, nil
+}
+
+func (c *KsctlAgentClientMock) Close() error {
+	return nil
+}
+
+func (c *KsctlAgentClientMock) convertToClientType(apps applicationv1alpha1.StackSpec) ([]*pb.Application, error) {
+	_apps := make([]*pb.Application, 0)
+
+	for _, stack := range apps.Stacks {
+		ksctlApplicationData := types.KsctlApp{
+			StackName: stack.StackId,
+		}
+
+		_overrides := stack.Overrides.Raw
+		if _overrides != nil {
+			ksctlApplicationData.Overrides = make(map[string]map[string]any)
+			if err := json.Unmarshal(_overrides, &ksctlApplicationData.Overrides); err != nil {
+				log.Error("Unmarshal", "Reason", err)
+				return nil, err
+			}
+		}
+		var appType pb.ApplicationType
+		switch stack.AppType {
+		case applicationv1alpha1.TypeApp:
+			appType = pb.ApplicationType_APP
+		case applicationv1alpha1.TypeCNI:
+			appType = pb.ApplicationType_CNI
+		default:
+			appType = pb.ApplicationType_APP
+		}
+
+		raw_app, err := json.Marshal(ksctlApplicationData)
+		if err != nil {
+			return nil, err
+		}
+		dump.Println(string(raw_app))
+		_apps = append(_apps, &pb.Application{
+			AppType:      appType,
+			AppStackInfo: raw_app,
+		})
+	}
+	return _apps, nil
+}
+
+func (c *KsctlAgentClientMock) InstallApps(apps applicationv1alpha1.StackSpec) error {
+	_apps, err := c.convertToClientType(apps)
+	if err != nil {
+		return err
+	}
+
+	dump.Println(_apps)
+
+	return nil
+}
+
+func (c *KsctlAgentClientMock) UninstallApps(apps applicationv1alpha1.StackSpec) error {
+	_apps, err := c.convertToClientType(apps)
+	if err != nil {
+		return err
+	}
+
+	dump.Println(_apps)
+
+	return nil
 }

@@ -1,7 +1,9 @@
-package kubernetes
+package k8sclient
 
 import (
 	"context"
+
+	"github.com/ksctl/ksctl/pkg/types"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -9,7 +11,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k *Kubernetes) apiExtensionsApply(o *apiextensionsv1.CustomResourceDefinition) error {
+func (k *K8sClient) ApiExtensionsApply(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *apiextensionsv1.CustomResourceDefinition) error {
 
 	_, err := k.apiextensionsClient.
 		ApiextensionsV1().
@@ -23,19 +28,22 @@ func (k *Kubernetes) apiExtensionsApply(o *apiextensionsv1.CustomResourceDefinit
 				Update(context.Background(), o, v1.UpdateOptions{})
 			if err != nil {
 				return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-					log.NewError(kubernetesCtx, "apiExtension apply failed", "Reason", err),
+					log.NewError(ctx, "apiExtension apply failed", "Reason", err),
 				)
 			}
 		} else {
 			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "apiExtension apply failed", "Reason", err),
+				log.NewError(ctx, "apiExtension apply failed", "Reason", err),
 			)
 		}
 	}
 	return nil
 }
 
-func (k *Kubernetes) apiExtensionsDelete(o *apiextensionsv1.CustomResourceDefinition) error {
+func (k *K8sClient) ApiExtensionsDelete(
+	ctx context.Context,
+	log types.LoggerFactory,
+	o *apiextensionsv1.CustomResourceDefinition) error {
 
 	err := k.apiextensionsClient.
 		ApiextensionsV1().
@@ -43,7 +51,7 @@ func (k *Kubernetes) apiExtensionsDelete(o *apiextensionsv1.CustomResourceDefini
 		Delete(context.Background(), o.Name, v1.DeleteOptions{})
 	if err != nil {
 		return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "apiExtension delete failed", "Reason", err),
+			log.NewError(ctx, "apiExtension delete failed", "Reason", err),
 		)
 	}
 	return nil
