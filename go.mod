@@ -26,8 +26,8 @@ require (
 	github.com/fatih/color v1.17.0
 	github.com/goccy/go-json v0.10.2
 	github.com/gookit/goutil v0.6.15
-	github.com/onsi/ginkgo/v2 v2.17.3
-	github.com/onsi/gomega v1.33.1
+	github.com/onsi/ginkgo/v2 v2.19.1
+	github.com/onsi/gomega v1.34.0
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.15.0
 	golang.org/x/crypto v0.24.0
@@ -88,7 +88,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
-	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.20.2 // indirect
