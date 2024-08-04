@@ -2,6 +2,10 @@
 
 # Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
+
+**Status: `Technical Preview`**
+
+
 It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks. 
 
 It is currently in **Beta Phase**, but it is already a valuable tool for developers who want to manage Kubernetes clusters.
