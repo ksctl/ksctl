@@ -8,7 +8,7 @@
 
 It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks. 
 
-It is currently in **Beta Phase**, but it is already a valuable tool for developers who want to manage Kubernetes clusters.
+It is already a valuable tool for developers who want to manage Kubernetes clusters using our CLI.
 
 ### So far what have we achieved?
 Cluster creation, deletion, getting cluster info, accessing it. It uses cloud providers managed offerrings For Example: AKS, EKS, etc. not just that we also have self-managed kubernetes cluster support where you can pick and choose between different bootstrap tools like k3s or kubeadm. And now we are moving towards the next phase of the project where we will be adding more features like cluster scaling, cluster upgrade, production grade apps, and many more.
