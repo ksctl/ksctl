@@ -4,15 +4,24 @@ on:
     inputs:
       image_tag:
         description: 'version tag for docker images'
-        default: 'latest'
+        default: 'main'
         required: true
         type: string
+      image_suffix:
+        description: 'image suffix for docker images for example ghcr.io/ksctl/ksctl-agent/pr-1234:{{github.sha}}'
+        default: 'null'
+        type: string
+
   workflow_call:
     inputs:
       image_tag:
         description: 'version tag for docker images'
         default: 'latest'
         required: true
+        type: string
+      image_suffix:
+        description: 'image suffix for docker images for example ghcr.io/ksctl/ksctl-agent/pr-1234:{{github.sha}}'
+        default: 'null'
         type: string
 
 jobs:
@@ -36,7 +45,11 @@ jobs:
 
       - name: build and push ksctl stateimporter
         run: |
-          make docker-buildx-stateimport IMG_TAG_VERSION=${{ inputs.image_tag }} || exit 1
+          if [ "${{ inputs.image_suffix }}" == "null" ]; then
+            make docker-buildx-stateimport IMG_TAG_VERSION=${{ inputs.image_tag }} || exit 1
+          else
+            make docker-buildx-stateimport IMG_TAG_VERSION=${{ inputs.image_tag }} IMG_SUFFIX=${{ inputs.image_suffix }} || exit 1
+          fi
 
   ksctl-agent:
     runs-on: ubuntu-latest
@@ -58,7 +71,11 @@ jobs:
 
       - name: build and push ksctl agent
         run: |
-          make docker-buildx-agent IMG_TAG_VERSION=${{ inputs.image_tag }} || exit 1
+          if [ "${{ inputs.image_suffix }}" == "null" ]; then
+            make docker-buildx-agent IMG_TAG_VERSION=${{ inputs.image_tag }} || exit 1
+          else
+            make docker-buildx-agent IMG_TAG_VERSION=${{ inputs.image_tag }} IMG_SUFFIX=${{ inputs.image_suffix }} || exit 1
+          fi
 
   ksctl-application-controller:
     runs-on: ubuntu-latest
@@ -80,5 +97,9 @@ jobs:
 
       - name: build and push ksctl controller application
         run: |
-          make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ inputs.image_tag }} || exit 1
+          if [ "${{ inputs.image_suffix }}" == "null" ]; then
+            make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ inputs.image_tag }} || exit 1
+          else
+            make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ inputs.image_tag }} IMG_SUFFIX=${{ inputs.image_suffix }} || exit 1
+          fi
 
