@@ -4,11 +4,14 @@ CURR_TIME = $(shell date +%s)
 
 IMG_TAG_VERSION ?= latest
 
+# So user will do make CONTROLLER_IMG_SUFFIX="/pr-1234"
+IMG_SUFFIX ?=
+
 include Makefile.components
 
-KSCTL_AGENT_IMG ?= ghcr.io/ksctl/ksctl-agent:${IMG_TAG_VERSION}
+KSCTL_AGENT_IMG ?= ghcr.io/ksctl/ksctl-agent${IMG_SUFFIX}:${IMG_TAG_VERSION}
 
-KSCTL_STATE_IMPORTER_IMG ?= ghcr.io/ksctl/ksctl-stateimport:${IMG_TAG_VERSION}
+KSCTL_STATE_IMPORTER_IMG ?= ghcr.io/ksctl/ksctl-stateimport${IMG_SUFFIX}:${IMG_TAG_VERSION}
 
 .PHONY: help
 help: ## Display this help.

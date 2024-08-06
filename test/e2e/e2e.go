@@ -20,30 +20,36 @@ var (
 
 func main() {
 	ctx = context.WithValue(
-		context.Background(),
-		consts.KsctlContextUserID,
-		"e2e",
-	)
-	ctx = context.WithValue(
-		ctx,
+		context.WithValue(
+			context.Background(),
+			consts.KsctlContextUserID,
+			"e2e",
+		),
 		consts.KsctlModuleNameKey,
 		"e2e",
 	)
-	// ctx = context.WithValue(
-	// 	ctx,
-	// 	consts.KsctlCustomDirLoc,
-	// 	fmt.Sprintf("%s ksctl-e2e", os.TempDir()),
-	// )
 
 	timer := time.Now()
 
 	flags := os.Getenv("E2E_FLAGS")
-	rFlags := strings.Split(flags, ",")
+	rFlags := strings.Split(flags, ";")
 
 	verbosityLevel := 0
 
 	if slices.Contains[[]string, string](rFlags, "debug") {
 		verbosityLevel = -1
+	}
+
+	for _, _flags := range rFlags {
+		if strings.HasPrefix(_flags, "core_component_overridings=") {
+			v := strings.TrimPrefix(_flags, "core_component_overridings=")
+
+			ctx = context.WithValue(
+				ctx,
+				consts.KsctlComponentOverrides,
+				v,
+			)
+		}
 	}
 
 	l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
