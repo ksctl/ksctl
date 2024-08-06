@@ -128,7 +128,7 @@ func getComponentVersionOverriding(componentId string, overriding map[string]map
 				))
 			}
 		} else {
-			return "latest", nil // NOTE(maintainers)!: here is the code which specifies the version of the component to latest
+			return "", nil
 		}
 	}
 	return "", ksctlErrors.ErrNoMatchingRecordsFound.Wrap(log.NewError(

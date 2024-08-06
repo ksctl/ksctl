@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
@@ -18,24 +19,75 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func getManifests(appUrl string) ([]string, error) {
-
-	resp, err := http.Get(appUrl)
+func httpGet(uri string) ([]byte, error) {
+	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
 			log.NewError(kubernetesCtx, "failed to get manifests", "Reason", err),
 		)
 	}
+
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
+	if resp.StatusCode != http.StatusOK {
 		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
-			log.NewError(kubernetesCtx, "failed to ready manifests", "Reason", err),
+			log.NewError(kubernetesCtx, "failed to get manifests", "Got StatusCode", resp.StatusCode),
 		)
 	}
 
-	resources := strings.Split(string(body), "---")
+	r_body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "failed to read the manifests", "Reason", err),
+		)
+	}
+
+	return r_body, nil
+}
+
+func fileGet(path string) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "failed to open the manifest location", "Reason", err),
+		)
+	}
+
+	defer f.Close()
+
+	r_body, err := io.ReadAll(f)
+	if err != nil {
+		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(kubernetesCtx, "failed to read the manifests", "Reason", err),
+		)
+	}
+
+	return r_body, nil
+}
+
+func Http(uri string) (string, error) {
+	var v []byte
+	var err error
+	if strings.HasPrefix(uri, "uri:::") {
+		v, err = httpGet(strings.TrimPrefix(uri, "uri:::"))
+	} else if strings.HasPrefix(uri, "file:::") {
+		v, err = fileGet(strings.TrimPrefix(uri, "file:::"))
+	} else {
+		v, err = httpGet(uri)
+	}
+	if err == nil {
+		return string(v), nil
+	}
+	return "", err
+}
+
+func getManifests(appUrl string) ([]string, error) {
+	body, err := Http(appUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	resources := strings.Split(body, "---")
 	if err := apiextensionsv1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
 			log.NewError(kubernetesCtx, "failed to add apiextensionv1 to the scheme", "Reason", err),

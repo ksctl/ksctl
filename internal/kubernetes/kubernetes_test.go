@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ksctl/ksctl/commons"
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -135,9 +136,95 @@ func TestDeleteWorkerNodes(t *testing.T) {
 }
 
 func TestDeployRequiredControllers(t *testing.T) {
-	if err := ksctlK8sClient.DeployRequiredControllers(
-		stateDocument,
-	); err != nil {
-		t.Error(err)
+
+	tc := []struct {
+		ver    string
+		suffix string
+	}{
+		{"main", ""}, // by default
+		{"v0.1.1", ""},
+		{"f14cd9094b2160c40ef8734e90141df81c22999e", "/pr-134"},
+	}
+
+	for _, tt := range tc {
+		t.Run(fmt.Sprintf("Deploy Required Controllers: ver %s and prefix %s", tt.ver, tt.suffix), func(t *testing.T) {
+			commons.OCIVersion = tt.ver
+			commons.OCIImgSuffix = tt.suffix
+
+			var _app types.KsctlApp
+			var ctx context.Context
+
+			loc := filepath.Join(os.TempDir(), "deploy.yml")
+
+			if tt.suffix != "" {
+				_app = types.KsctlApp{
+					StackName: string(metadata.KsctlOperatorsID),
+					Overrides: map[string]map[string]any{
+						string(metadata.KsctlApplicationComponentID): {
+							"url":     "file:::" + loc,
+							"version": tt.ver,
+						},
+					},
+				}
+				ctx = context.WithValue(parentCtx, consts.KsctlComponentOverrides, "application=file:::"+loc)
+
+				data := []byte(`
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+data:
+  key: value
+`)
+				if err := os.WriteFile(loc, data, 0644); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Remove(loc); err != nil {
+						t.Fatal(err)
+					}
+				})
+			} else {
+
+				_app = types.KsctlApp{
+					StackName: string(metadata.KsctlOperatorsID),
+					Overrides: map[string]map[string]any{
+						string(metadata.KsctlApplicationComponentID): {
+							"version": tt.ver,
+						},
+					},
+				}
+				ctx = parentCtx
+			}
+
+			_client, err := NewInClusterClient(
+				ctx,
+				parentLogger,
+				storeVars,
+				true,
+				&k8sClientMock{},
+				&helmClientMock{},
+			)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if err := _client.DeployRequiredControllers(
+				stateDocument,
+			); err != nil {
+				t.Error(err)
+			}
+
+			// need to uninstall the ksctl operator
+			if err := _client.Applications(
+				[]types.KsctlApp{
+					_app,
+				},
+				stateDocument,
+				consts.OperationDelete,
+			); err != nil {
+				t.Error(err)
+			}
+		})
 	}
 }
