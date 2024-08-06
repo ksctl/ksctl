@@ -216,6 +216,7 @@ func TestIsValidVersion(t *testing.T) {
 		"feat":             true,
 		"feat234":          true,
 		"fix234":           true,
+		"f14cd9094b2160c40ef8734e90141df81c22999e": true,
 	}
 
 	for ver, expected := range testCases {

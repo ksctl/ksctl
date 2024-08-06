@@ -9,10 +9,11 @@ import (
 
 func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val string, isPresent bool) {
 	var contextVars = [...]string{
-		consts.KsctlTestFlagKey:   `true`,
-		consts.KsctlModuleNameKey: `^[\w-]+$`,
-		consts.KsctlContextUserID: `^[\w-]+$`,
-		consts.KsctlCustomDirLoc:  `^[\w-:~\\/\s]+$`,
+		consts.KsctlTestFlagKey:        `true`,
+		consts.KsctlModuleNameKey:      `^[\w-]+$`,
+		consts.KsctlContextUserID:      `^[\w-]+$`,
+		consts.KsctlCustomDirLoc:       `^[\w-:~\\/\s]+$`,
+		consts.KsctlComponentOverrides: `^([\w]+=[\w-:\.~\\/\s]+)+(,[\w]+=[\w-:\.~\\/\s]+)*$`,
 	}
 	_val := ctx.Value(key)
 	if _val == nil {
