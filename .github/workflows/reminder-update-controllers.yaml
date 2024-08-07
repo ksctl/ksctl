@@ -1,0 +1,35 @@
+name: Reminder to update controllers build installer
+on:
+  pull_request:
+    types: [ labeled, opened, synchronize, reopened ]
+    paths:
+    - 'ksctl-components/operators/**'
+
+jobs:
+  reminder-pr-comment:
+    runs-on: ubuntu-latest
+    if: |
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') ||
+        github.event.label.name == 'pr/lgtm'
+      )
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Reminder 🗓️
+            Final few consistency checks before we can merge this PR
+            Make sure you have ran the following command to update the controllers in the installer:
+            \`\`\`shell
+            make generate CONTROLLER=application
+            make manifests CONTROLLER=application
+            make build-installer CONTROLLER=application IMG_TAG_VERSION=main
+            \`\`\`
+            Please make sure you've read our [contributing guide](CONTRIBUTING.md) ✨`
+            })
+

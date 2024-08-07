@@ -53,13 +53,40 @@ func TestIsContextPresent(t *testing.T) {
 			key:      consts.KsctlContextUserID,
 			expected: false,
 		},
+		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlComponentOverrides, ""),
+			key:      consts.KsctlComponentOverrides,
+			expected: false,
+		},
+		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlComponentOverrides, "application=/tmp/acdcd.yaml"),
+			key:      consts.KsctlComponentOverrides,
+			expected: true,
+		},
+		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlComponentOverrides, "application=/tmp/acdcd.yaml,"),
+			key:      consts.KsctlComponentOverrides,
+			expected: false,
+		},
+		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlComponentOverrides, "application=/tmp/acdcd.yaml,23e"),
+			key:      consts.KsctlComponentOverrides,
+			expected: false,
+		},
+		{
+			ctx:      context.WithValue(ppCtx, consts.KsctlComponentOverrides, `application=C:\\cd\cdacdcd.yaml,nice=cdsccds`),
+			key:      consts.KsctlComponentOverrides,
+			expected: true,
+		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(fmt.Sprintf("test case on, %#v", tt.ctx), func(t *testing.T) {
 			v, got := IsContextPresent(tt.ctx, tt.key)
 			assert.Equal(t, got, tt.expected)
-			assert.Equal(t, v, tt.ctx.Value(tt.key))
+			if tt.expected {
+				assert.Equal(t, v, tt.ctx.Value(tt.key))
+			}
 		})
 	}
 }

@@ -2,8 +2,12 @@ package kubernetes
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/ksctl/ksctl/commons"
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
-	"github.com/ksctl/ksctl/ksctl-components/manifests"
+	"github.com/ksctl/ksctl/pkg/helpers"
+	"github.com/ksctl/ksctl/pkg/helpers/consts"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -55,13 +59,35 @@ var (
 
 func (k *K8sClusterClient) DeployRequiredControllers(state *storageTypes.StorageDocument) error {
 	log.Print(kubernetesCtx, "Started adding kubernetes ksctl specific controllers")
-	apps := types.KsctlApp{
-		StackName: string(metadata.KsctlOperatorsID),
-		Overrides: map[string]map[string]any{
-			string(metadata.KsctlApplicationComponentID): {
-				"version": manifests.KsctlApplicationStackBranchOrTagName,
+
+	gotVersion := commons.GetOCIVersion()
+
+	var apps types.KsctlApp
+
+	if v, ok := helpers.IsContextPresent(kubernetesCtx, consts.KsctlComponentOverrides); !ok {
+		apps = types.KsctlApp{
+			StackName: string(metadata.KsctlOperatorsID),
+			Overrides: map[string]map[string]any{
+				string(metadata.KsctlApplicationComponentID): {
+					"version": gotVersion,
+				},
 			},
-		},
+		}
+	} else {
+		for _, _v := range strings.Split(v, ",") {
+			if strings.HasPrefix(_v, "application=") {
+				apps = types.KsctlApp{
+					StackName: string(metadata.KsctlOperatorsID),
+					Overrides: map[string]map[string]any{
+						string(metadata.KsctlApplicationComponentID): {
+							"version": gotVersion,
+							"uri":     strings.TrimPrefix(_v, "application="),
+						},
+					},
+				}
+				break
+			}
+		}
 	}
 
 	err := k.InstallApplication(apps, App, state)
@@ -157,7 +183,6 @@ func (k *K8sClusterClient) DeployAgent(client *types.KsctlClient,
 	}
 
 	if !isExternalStore {
-
 		var ksctlStateImporter *corev1.Pod = &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      KsctlStateImporterName,
@@ -168,8 +193,10 @@ func (k *K8sClusterClient) DeployAgent(client *types.KsctlClient,
 				ServiceAccountName: serviceAccConfig.ObjectMeta.Name,
 				Containers: []corev1.Container{
 					{
-						Name:            "ksctl-stateimport",
-						Image:           "ghcr.io/ksctl/ksctl-stateimport:" + manifests.KsctlStateImportAppVersion,
+						Name: "ksctl-stateimport",
+						Image: fmt.Sprintf(
+							"ghcr.io/ksctl/ksctl-stateimport%s:%s",
+							commons.GetOCIImgSuffix(), commons.GetOCIVersion()),
 						ImagePullPolicy: corev1.PullAlways,
 						Ports: []corev1.ContainerPort{
 							{
@@ -267,15 +294,17 @@ func (k *K8sClusterClient) DeployAgent(client *types.KsctlClient,
 				},
 				Spec: corev1.PodSpec{
 					Tolerations:       tolerations,
-					PriorityClassName: "system-cluster-critical", // WARN: not sure if its okay
+					PriorityClassName: "system-cluster-critical",
 
 					// Affinity:      affinity,
 					RestartPolicy:      corev1.RestartPolicyAlways,
 					ServiceAccountName: serviceAccConfig.ObjectMeta.Name,
 					Containers: []corev1.Container{
 						{
-							Name:            "ksctl-agent",
-							Image:           "ghcr.io/ksctl/ksctl-agent:" + manifests.KsctlAgentAppVersion,
+							Name: "ksctl-agent",
+							Image: fmt.Sprintf(
+								"ghcr.io/ksctl/ksctl-agent%s:%s",
+								commons.GetOCIImgSuffix(), commons.GetOCIVersion()),
 							ImagePullPolicy: corev1.PullAlways,
 							Ports: []corev1.ContainerPort{
 								{

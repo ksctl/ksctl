@@ -114,10 +114,11 @@ const (
 type KsctlContextKeyType int
 
 const (
-	KsctlTestFlagKey   KsctlContextKeyType = iota
-	KsctlModuleNameKey KsctlContextKeyType = iota
-	KsctlCustomDirLoc  KsctlContextKeyType = iota
-	KsctlContextUserID KsctlContextKeyType = iota
+	KsctlTestFlagKey        KsctlContextKeyType = iota
+	KsctlModuleNameKey      KsctlContextKeyType = iota
+	KsctlCustomDirLoc       KsctlContextKeyType = iota
+	KsctlContextUserID      KsctlContextKeyType = iota
+	KsctlComponentOverrides KsctlContextKeyType = iota
 )
 
 const (
