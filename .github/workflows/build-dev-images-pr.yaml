@@ -20,8 +20,8 @@ jobs:
   ksctl-component-images-build:
     if: |
       (
-        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') ||
-        github.event.label.name == 'pr/lgtm'
+        contains(github.event.pull_request.labels.*.name, 'pr/build-dev-images') ||
+        github.event.label.name == 'pr/build-dev-images'
       )
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
@@ -37,8 +37,8 @@ jobs:
     needs: ["ksctl-component-images-build"]
     if: |
       (
-        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') ||
-        github.event.label.name == 'pr/lgtm'
+        contains(github.event.pull_request.labels.*.name, 'pr/build-dev-images') ||
+        github.event.label.name == 'pr/build-dev-images'
       )
     permissions:
       contents: write

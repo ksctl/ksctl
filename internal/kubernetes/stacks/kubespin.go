@@ -1,6 +1,7 @@
 package stacks
 
 import (
+	"github.com/ksctl/ksctl/internal/kubernetes/components"
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
@@ -8,27 +9,13 @@ func KubespinProductionApp(params metadata.ApplicationParams) metadata.Applicati
 	return metadata.ApplicationStack{
 		Maintainer:  "github@dipankardas011",
 		StackNameID: metadata.KubeSpinProductionStackID,
+		Components: map[metadata.StackComponentID]metadata.StackComponent{
+			metadata.CertManagerComponentID: components.CertManagerComponent(params.ComponentParams[metadata.CertManagerComponentID]),
+		},
+		StkDepsIdx: []metadata.StackComponentID{
+			metadata.CertManagerComponentID,
+		},
 		// components: []kubernetes.StackComponent{
-		// 	{
-		// 		kubectl: &kubernetes.KubectlHandler{
-		// 			createNamespace: false,
-		// 			url:             fmt.Sprintf("https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.crds.yaml"),
-		// 			version:         ver,
-		// 			metadata:        `TODO`,
-		// 			postInstall:     `TODO`,
-		// 		},
-		// 		handlerType: kubernetes.ComponentTypeKubectl,
-		// 	},
-		// 	{
-		// 		kubectl: &kubernetes.KubectlHandler{
-		// 			createNamespace: false,
-		// 			url:             fmt.Sprintf("https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml"),
-		// 			version:         ver,
-		// 			metadata:        `TODO`,
-		// 			postInstall:     `TODO`,
-		// 		},
-		// 		handlerType: kubernetes.ComponentTypeKubectl,
-		// 	},
 		// 	{
 		// 		helm: &kubernetes.HelmHandler{
 		// 			repoUrl:  "http://kwasm.sh/kwasm-operator/",

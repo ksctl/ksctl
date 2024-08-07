@@ -2,6 +2,7 @@ package stacks
 
 import (
 	"context"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -15,6 +16,7 @@ var appsManifests = map[metadata.StackID]func(metadata.ApplicationParams) metada
 	metadata.IstioStandardStackID:          IstioStandardServiceMesh,
 	metadata.KubePrometheusStandardStackID: KubePrometheusStandardMonitoring,
 	metadata.KsctlOperatorsID:              KsctlOperatorStackData,
+	metadata.KubeSpinProductionStackID:     KubespinProductionApp,
 }
 
 func FetchKsctlStack(ctx context.Context, log types.LoggerFactory, stkID string) (func(metadata.ApplicationParams) metadata.ApplicationStack, error) {
