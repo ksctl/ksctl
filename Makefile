@@ -41,18 +41,18 @@ docker-push-agent: ## Push docker image for ksctl agent
 PLATFORMS ?= linux/arm64,linux/amd64
 .PHONY: docker-buildx-agent
 docker-buildx-agent: ## docker build agent
-		- $(CONTAINER_TOOL) buildx create --name project-v3-builder || exit 1
-		$(CONTAINER_TOOL) buildx use project-v3-builder || exit 1
-		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_AGENT_IMG} -f build/agent/Dockerfile . || exit 1
-		 - $(CONTAINER_TOOL) buildx rm project-v3-builder || exit 1
+		- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+		$(CONTAINER_TOOL) buildx use project-v3-builder
+		$(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_AGENT_IMG} -f build/agent/Dockerfile .
+		- $(CONTAINER_TOOL) buildx rm project-v3-builder
 
 PLATFORMS ?= linux/arm64,linux/amd64
 .PHONY: docker-buildx-stateimport
 docker-buildx-stateimport: ## docker build stateimport
-		- $(CONTAINER_TOOL) buildx create --name project-v3-builder || exit 1
-		$(CONTAINER_TOOL) buildx use project-v3-builder || exit 1
-		- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_STATE_IMPORTER_IMG} -f build/stateimport/Dockerfile . || exit 1
-		 - $(CONTAINER_TOOL) buildx rm project-v3-builder || exit 1
+		- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+		$(CONTAINER_TOOL) buildx use project-v3-builder
+		$(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_STATE_IMPORTER_IMG} -f build/stateimport/Dockerfile .
+		- $(CONTAINER_TOOL) buildx rm project-v3-builder
 
 .PHONY: docker-build-agent
 docker-build-agent: ## docker build agent

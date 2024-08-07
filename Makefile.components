@@ -114,9 +114,9 @@ docker-push-controller:check-controller  ## Push docker image for ksctl controll
 PLATFORMS ?= linux/arm64,linux/amd64
 .PHONY: docker-buildx-controller
 docker-buildx-controller: check-controller ## Build and push docker image for the manager for cross-platform support
-	- $(CONTAINER_TOOL) buildx create --name project-v3-builder || exit 1
-	$(CONTAINER_TOOL) buildx use project-v3-builder || exit 1
-	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --build-arg="TARGET_CONTROLLER=${CONTROLLER}" --tag ${CONTROLLER_IMG} -f build/controllers/Dockerfile . || exit 1
+	- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+	$(CONTAINER_TOOL) buildx use project-v3-builder
+	$(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --build-arg="TARGET_CONTROLLER=${CONTROLLER}" --tag ${CONTROLLER_IMG} -f build/controllers/Dockerfile .
 	- $(CONTAINER_TOOL) buildx rm project-v3-builder
 
 

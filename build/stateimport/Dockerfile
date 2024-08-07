@@ -15,7 +15,7 @@ COPY go.sum go.sum
 COPY pkg/ /app/pkg/
 COPY internal/ /app/internal/
 COPY ksctl-components/stateimport/ /app/ksctl-components/stateimport/
-COPY ksctl-components/manifests/versions.go /app/ksctl-components/manifests/versions.go
+COPY commons/ /app/commons/
 
 RUN go mod download
 
