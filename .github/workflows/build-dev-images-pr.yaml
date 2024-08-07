@@ -26,8 +26,8 @@ jobs:
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
     with:
-      image_tag: ${{ env.COMMIT_SHA }}
-      image_suffix: ${{ env.TESTING_OCI_ARTIFACT_SUFFIX }}
+      image_tag: "${{ github.event.pull_request.head.sha }}"
+      image_suffix: "/pr-${{ github.event.pull_request.number }}"
     permissions:
       packages: write
       contents: read
