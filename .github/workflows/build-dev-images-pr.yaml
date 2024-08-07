@@ -69,7 +69,7 @@ jobs:
             
             cd test/e2e
             go build -v -ldflags="-X 'github.com/ksctl/ksctl/commons.OCIVersion=${COMMIT_SHA}' -X 'github.com/ksctl/ksctl/commons.OCIImgSuffix=${TESTING_OCI_ARTIFACT_SUFFIX}'" .
-            export E2E_FLAGS="debug;core_component_overridings=application=file:::/tmp/aaaa.yaml" ## you can eliminate the debug
+            export E2E_FLAGS="debug;core_component_overridings=application=file:::/tmp/ksctl-manifest.yaml" ## you can eliminate the debug
             ./e2e -op create -file local/create.json
             ./e2e -op switch -file local/switch.json
             ./e2e -op delete -file local/delete.json
