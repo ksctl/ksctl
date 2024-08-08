@@ -9,6 +9,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/getter"
+	helmReg "helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -20,41 +21,68 @@ import (
 	"k8s.io/client-go/restmapper"
 )
 
+// FIXME: need to see how to make it work
+func (c *HelmClient) PullChartFromOCI(chartName, ociURL string) error {
+
+	reg, err := helmReg.NewClient()
+	if err != nil {
+		return ksctlErrors.ErrFailedHelmClient.Wrap(
+			c.log.NewError(c.ctx, "failed to create a new client", "Reason", err),
+		)
+	}
+
+	clientInstall := action.NewInstall(c.actionConfig)
+	clientInstall.SetRegistryClient(reg)
+
+	if err != nil {
+		return ksctlErrors.ErrFailedHelmClient.Wrap(
+			c.log.NewError(c.ctx, "failed to pull the chart", "Reason", err),
+		)
+	}
+
+	return nil
+}
+
 func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 
-	repoEntry := repo.Entry{
-		Name: repoName,
-		URL:  repoUrl,
-	}
+	if helmReg.IsOCI(repoUrl) {
+		return c.PullChartFromOCI(repoName, repoUrl)
+	} else {
 
-	r, err := repo.NewChartRepository(&repoEntry, getter.All(c.settings))
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "constructs ChartRepository", "Reason", err),
-		)
-	}
-	_, err = r.DownloadIndexFile()
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "failed to download the chart", "Reason", err),
-		)
-	}
+		repoEntry := repo.Entry{
+			Name: repoName,
+			URL:  repoUrl,
+		}
 
-	existingRepositoryFile, err := repo.LoadFile(c.settings.RepositoryConfig)
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "failed to load the chart", "Reason", err),
-		)
-	}
-
-	if !existingRepositoryFile.Has(repoEntry.Name) {
-		existingRepositoryFile.Add(&repoEntry)
-
-		err = existingRepositoryFile.WriteFile(c.settings.RepositoryConfig, 0644)
+		r, err := repo.NewChartRepository(&repoEntry, getter.All(c.settings))
 		if err != nil {
 			return ksctlErrors.ErrFailedHelmClient.Wrap(
-				c.log.NewError(c.ctx, "failed to write the chart", "Reason", err),
+				c.log.NewError(c.ctx, "constructs ChartRepository", "Reason", err),
 			)
+		}
+		_, err = r.DownloadIndexFile()
+		if err != nil {
+			return ksctlErrors.ErrFailedHelmClient.Wrap(
+				c.log.NewError(c.ctx, "failed to download the chart", "Reason", err),
+			)
+		}
+
+		existingRepositoryFile, err := repo.LoadFile(c.settings.RepositoryConfig)
+		if err != nil {
+			return ksctlErrors.ErrFailedHelmClient.Wrap(
+				c.log.NewError(c.ctx, "failed to load the chart", "Reason", err),
+			)
+		}
+
+		if !existingRepositoryFile.Has(repoEntry.Name) {
+			existingRepositoryFile.Add(&repoEntry)
+
+			err = existingRepositoryFile.WriteFile(c.settings.RepositoryConfig, 0644)
+			if err != nil {
+				return ksctlErrors.ErrFailedHelmClient.Wrap(
+					c.log.NewError(c.ctx, "failed to write the chart", "Reason", err),
+				)
+			}
 		}
 	}
 

@@ -23,7 +23,7 @@ func getSpinkubeComponentOverridings(p metadata.ComponentOverrides) (version *st
 	return
 }
 
-func setSpinkubeComponentOverridings(p metadata.ComponentOverrides) (
+func setSpinkubeComponentOverridings(p metadata.ComponentOverrides, theThing string) (
 	version string,
 	url string,
 	postInstall string,
@@ -44,7 +44,7 @@ func setSpinkubeComponentOverridings(p metadata.ComponentOverrides) (
 	}
 
 	defaultVals := func() {
-		url = fmt.Sprintf("https://github.com/spinkube/spin-operator/releases/download/%s/spin-operator.crds.yaml", version)
+		url = fmt.Sprintf("https://github.com/spinkube/spin-operator/releases/download/%s/%s", version, theThing)
 		postInstall = "https://www.spinkube.dev/docs/topics/"
 	}
 
@@ -52,13 +52,37 @@ func setSpinkubeComponentOverridings(p metadata.ComponentOverrides) (
 	return
 }
 
-func SpinkubeStandardComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+func SpinkubeOperatorCrdComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 
-	version, url, postInstall, err := setSpinkubeComponentOverridings(params)
+	version, url, postInstall, err := setSpinkubeComponentOverridings(params, "spin-operator.shim-executor.yaml")
 	if err != nil {
 		return metadata.StackComponent{}, err
 	}
 
+	return spinkubeReturnHelper(version, url, postInstall)
+}
+
+func SpinkubeOperatorRuntimeClassComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+
+	version, url, postInstall, err := setSpinkubeComponentOverridings(params, "spin-operator.runtime-class.yaml")
+	if err != nil {
+		return metadata.StackComponent{}, err
+	}
+
+	return spinkubeReturnHelper(version, url, postInstall)
+}
+
+func SpinkubeOperatorShimExecComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+
+	version, url, postInstall, err := setSpinkubeComponentOverridings(params, "spin-operator.shim-executor.yaml")
+	if err != nil {
+		return metadata.StackComponent{}, err
+	}
+
+	return spinkubeReturnHelper(version, url, postInstall)
+}
+
+func spinkubeReturnHelper(version, url, postInstall string) (metadata.StackComponent, error) {
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
@@ -69,4 +93,81 @@ func SpinkubeStandardComponent(params metadata.ComponentOverrides) (metadata.Sta
 			PostInstall:     postInstall,
 		},
 	}, nil
+}
+
+// handlerType: kubernetes.ComponentTypeHelm,
+//
+//	helm:        &kubernetes.HelmHandler{
+//		// Not sure how it is interepreseted
+//		//helm install spin-operator \
+//		//--namespace spin-operator \
+//		//--create-namespace \
+//		//--version 0.2.0 \
+//		//--wait \
+//		//oci://ghcr.io/spinkube/charts/spin-operator
+//	},
+
+func SpinOperatorComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+
+	version, helmOverride := setSpinOperatorComponentOverridings(params)
+
+	return metadata.StackComponent{
+		HandlerType: metadata.ComponentTypeHelm,
+		Helm: &metadata.HelmHandler{
+			RepoUrl:  "oci://ghcr.io/spinkube/charts/spin-operator",
+			RepoName: "",
+			Charts: []metadata.ChartOptions{
+				{
+					Name:            "spinkube/spin-operator",
+					Version:         version,
+					ReleaseName:     "spin-operator",
+					Namespace:       "spin-operator",
+					CreateNamespace: true,
+					Args:            helmOverride,
+				},
+			},
+		},
+	}, nil
+}
+
+func getSpinkubeOperatorComponentOverridings(p metadata.ComponentOverrides) (version *string, helmOperatorChartOverridings map[string]interface{}) {
+	helmOperatorChartOverridings = nil // By default, it is nil
+
+	if p == nil {
+		return nil, nil
+	}
+
+	for k, v := range p {
+		switch k {
+		case "version":
+			if v, ok := v.(string); ok {
+				version = utilities.Ptr(v)
+			}
+		case "helmOperatorChartOverridings":
+			if v, ok := v.(map[string]interface{}); ok {
+				helmOperatorChartOverridings = v
+			}
+		}
+	}
+	return
+}
+
+func setSpinOperatorComponentOverridings(p metadata.ComponentOverrides) (
+	version string,
+	helmOperatorChartOverridings map[string]any,
+) {
+	version = "latest"
+	helmOperatorChartOverridings = map[string]any{}
+
+	_version, _helmOperatorChartOverridings := getSpinkubeOperatorComponentOverridings(p)
+
+	if _version != nil {
+		version = *_version
+	}
+
+	if _helmOperatorChartOverridings != nil {
+		helmOperatorChartOverridings = _helmOperatorChartOverridings
+	}
+
+	return
 }
