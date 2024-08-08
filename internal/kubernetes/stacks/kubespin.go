@@ -10,31 +10,18 @@ func KubespinProductionApp(params metadata.ApplicationParams) metadata.Applicati
 		Maintainer:  "github@dipankardas011",
 		StackNameID: metadata.KubeSpinProductionStackID,
 		Components: map[metadata.StackComponentID]metadata.StackComponent{
-			metadata.CertManagerComponentID: components.CertManagerComponent(params.ComponentParams[metadata.CertManagerComponentID]),
+			metadata.CertManagerComponentID: components.CertManagerComponent(
+				params.ComponentParams[metadata.CertManagerComponentID],
+			),
+			metadata.KwasmOperatorComponentID: components.KwasmOperatorComponent(
+				params.ComponentParams[metadata.KwasmOperatorComponentID],
+			),
 		},
 		StkDepsIdx: []metadata.StackComponentID{
 			metadata.CertManagerComponentID,
+			metadata.KwasmOperatorComponentID,
 		},
 		// components: []kubernetes.StackComponent{
-		// 	{
-		// 		helm: &kubernetes.HelmHandler{
-		// 			repoUrl:  "http://kwasm.sh/kwasm-operator/",
-		// 			repoName: "kwasm",
-		// 			charts: []kubernetes.HelmOptions{
-		// 				{
-		// 					chartName:       "kwasm/kwasm-operator",
-		// 					chartVer:        ver,
-		// 					releaseName:     "kwasm-operator",
-		// 					namespace:       "kwasm",
-		// 					createNamespace: true,
-		// 					args: map[string]interface{}{
-		// 						"kwasmOperator.installerImage": "ghcr.io/spinkube/containerd-shim-spin/node-installer:v0.15.0",
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 		handlerType: kubernetes.ComponentTypeHelm,
-		// 	},
 		// 	{
 		// 		handlerType: kubernetes.ComponentTypeKubectl,
 		// 		kubectl: &kubernetes.KubectlHandler{

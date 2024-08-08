@@ -1,20 +1,31 @@
 package components
 
 import (
+	"slices"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func getCertManagerComponentOverridings(p metadata.ComponentOverrides) (version *string, gateway_apiEnable *bool) {
+func getCertManagerComponentOverridings(p metadata.ComponentOverrides) (
+	version *string,
+	gateway_apiEnable *bool,
+	certmanagerChartOverridings map[string]any,
+) {
 	if p == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
+	certmanagerChartOverridings = nil
 
 	for k, v := range p {
 		switch k {
 		case "version":
 			if v, ok := v.(string); ok {
 				version = utilities.Ptr(v)
+			}
+		case "certmanagerChartOverridings":
+			if v, ok := v.(map[string]any); ok {
+				certmanagerChartOverridings = v
 			}
 		case "gatewayapiEnable":
 			if v, ok := v.(bool); ok {
@@ -34,16 +45,27 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 		"crds.enabled": true,
 	}
 
-	_version, _gateway_apiEnable := getCertManagerComponentOverridings(params)
+	_version, _gateway_apiEnable, _certmanagerChartOverridings := getCertManagerComponentOverridings(params)
 
 	if _version != nil {
 		version = *_version
 	}
 
+	if _certmanagerChartOverridings != nil {
+		overridings = utilities.DeepCopyMap(_certmanagerChartOverridings)
+		overridings["crds.enabled"] = true
+	}
+
 	if _gateway_apiEnable != nil {
 		if *_gateway_apiEnable {
-			overridings["extraArgs"] = []string{
-				"--enable-gateway-api",
+			if v, ok := overridings["extraArgs"]; ok {
+				if v, ok := v.([]string); ok {
+					if ok := slices.Contains[[]string, string](v, "--enable-gateway-api"); !ok {
+						overridings["extraArgs"] = append(v, "--enable-gateway-api")
+					}
+				}
+			} else {
+				overridings["extraArgs"] = []string{"--enable-gateway-api"}
 			}
 		}
 	}

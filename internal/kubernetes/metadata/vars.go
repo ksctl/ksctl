@@ -22,6 +22,7 @@ const (
 	FlannelComponentID          StackComponentID = "flannel"
 	KubePrometheusComponentID   StackComponentID = "kube-prometheus"
 	KsctlApplicationComponentID StackComponentID = "ksctl-application-operator"
+	KwasmOperatorComponentID    StackComponentID = "kwasm-operator"
 )
 
 const (
