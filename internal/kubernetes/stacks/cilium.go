@@ -5,7 +5,7 @@ import (
 	meta "github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func CiliumStandardCNI(params meta.ApplicationParams) meta.ApplicationStack {
+func CiliumStandardCNI(params meta.ApplicationParams) (meta.ApplicationStack, error) {
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
 			meta.CiliumComponentID: components.CiliumStandardComponent(
@@ -16,5 +16,5 @@ func CiliumStandardCNI(params meta.ApplicationParams) meta.ApplicationStack {
 		StkDepsIdx:  []meta.StackComponentID{meta.CiliumComponentID},
 		StackNameID: meta.CiliumStandardStackID,
 		Maintainer:  "github@dipankardas011",
-	}
+	}, nil
 }

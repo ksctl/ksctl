@@ -5,7 +5,7 @@ import (
 	meta "github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func IstioStandardServiceMesh(params meta.ApplicationParams) meta.ApplicationStack {
+func IstioStandardServiceMesh(params meta.ApplicationParams) (meta.ApplicationStack, error) {
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
 			meta.IstioComponentID: components.IstioStandardComponent(
@@ -18,5 +18,5 @@ func IstioStandardServiceMesh(params meta.ApplicationParams) meta.ApplicationSta
 		},
 		Maintainer:  "github:dipankardas011",
 		StackNameID: meta.IstioStandardStackID,
-	}
+	}, nil
 }

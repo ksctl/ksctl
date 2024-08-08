@@ -5,17 +5,25 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func KubespinProductionApp(params metadata.ApplicationParams) metadata.ApplicationStack {
+func SpinkubeProductionApp(params metadata.ApplicationParams) (metadata.ApplicationStack, error) {
+
+	certManagerComponent, err := components.CertManagerComponent(
+		params.ComponentParams[metadata.CertManagerComponentID],
+	)
+	if err != nil {
+		return metadata.ApplicationStack{}, err
+	}
+
+	kwasmOperatorComponent, err := components.KwasmOperatorComponent(
+		params.ComponentParams[metadata.KwasmOperatorComponentID],
+	)
+
 	return metadata.ApplicationStack{
 		Maintainer:  "github@dipankardas011",
-		StackNameID: metadata.KubeSpinProductionStackID,
+		StackNameID: metadata.SpinKubeProductionStackID,
 		Components: map[metadata.StackComponentID]metadata.StackComponent{
-			metadata.CertManagerComponentID: components.CertManagerComponent(
-				params.ComponentParams[metadata.CertManagerComponentID],
-			),
-			metadata.KwasmOperatorComponentID: components.KwasmOperatorComponent(
-				params.ComponentParams[metadata.KwasmOperatorComponentID],
-			),
+			metadata.CertManagerComponentID:   certManagerComponent,
+			metadata.KwasmOperatorComponentID: kwasmOperatorComponent,
 		},
 		StkDepsIdx: []metadata.StackComponentID{
 			metadata.CertManagerComponentID,
@@ -70,5 +78,5 @@ func KubespinProductionApp(params metadata.ApplicationParams) metadata.Applicati
 		// 	//kubectl delete -f https://github.com/spinkube/spin-operator/releases/download/v0.2.0/spin-operator.runtime-class.yaml
 		// 	//kubectl delete -f https://github.com/spinkube/spin-operator/releases/download/v0.2.0/spin-operator.crds.yaml
 		// },
-	}
+	}, nil
 }

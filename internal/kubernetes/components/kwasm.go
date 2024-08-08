@@ -53,7 +53,7 @@ func setKwasmOperatorComponentOverridings(params metadata.ComponentOverrides) (
 	return
 }
 
-func KwasmOperatorComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+func KwasmOperatorComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 	version, kwasmOperatorChartOverridings := setKwasmOperatorComponentOverridings(params)
 
 	return metadata.StackComponent{
@@ -71,5 +71,5 @@ func KwasmOperatorComponent(params metadata.ComponentOverrides) metadata.StackCo
 				},
 			},
 		},
-	}
+	}, nil
 }

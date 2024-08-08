@@ -10,7 +10,7 @@ const (
 	KsctlOperatorsID              StackID = "standard-ksctloperator"
 
 	ArgocdProductionStackID   StackID = "production-argocd"
-	KubeSpinProductionStackID StackID = "production-kubespin"
+	SpinKubeProductionStackID StackID = "production-spinkube"
 )
 
 const (

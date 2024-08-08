@@ -5,7 +5,7 @@ import (
 	meta "github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func FlannelStandardCNI(params meta.ApplicationParams) meta.ApplicationStack {
+func FlannelStandardCNI(params meta.ApplicationParams) (meta.ApplicationStack, error) {
 
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
@@ -16,5 +16,5 @@ func FlannelStandardCNI(params meta.ApplicationParams) meta.ApplicationStack {
 		StkDepsIdx:  []meta.StackComponentID{meta.FlannelComponentID},
 		Maintainer:  "github:dipankardas011",
 		StackNameID: meta.FlannelStandardStackID,
-	}
+	}, nil
 }

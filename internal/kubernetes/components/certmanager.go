@@ -39,8 +39,14 @@ func getCertManagerComponentOverridings(p metadata.ComponentOverrides) (
 func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 	version string,
 	overridings map[string]any,
+	err error,
 ) {
-	version = "latest"
+
+	version, err = utilities.GetLatestRepoRelease("cert-manager", "cert-manager")
+	if err != nil {
+		return
+	}
+
 	overridings = map[string]any{
 		"crds.enabled": true,
 	}
@@ -73,8 +79,11 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 	return
 }
 
-func CertManagerComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	version, overridings := setCertManagerComponentOverridings(params)
+func CertManagerComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+	version, overridings, err := setCertManagerComponentOverridings(params)
+	if err != nil {
+		return metadata.StackComponent{}, err
+	}
 
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeHelm,
@@ -92,5 +101,5 @@ func CertManagerComponent(params metadata.ComponentOverrides) metadata.StackComp
 				},
 			},
 		},
-	}
+	}, nil
 }

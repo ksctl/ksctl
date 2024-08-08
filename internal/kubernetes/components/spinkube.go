@@ -7,7 +7,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 )
 
-func getKubespinComponentOverridings(p metadata.ComponentOverrides) (version *string) {
+func getSpinkubeComponentOverridings(p metadata.ComponentOverrides) (version *string) {
 	if p == nil {
 		return nil
 	}
@@ -23,16 +23,22 @@ func getKubespinComponentOverridings(p metadata.ComponentOverrides) (version *st
 	return
 }
 
-func setKubespinComponentOverridings(p metadata.ComponentOverrides) (
+func setSpinkubeComponentOverridings(p metadata.ComponentOverrides) (
 	version string,
 	url string,
 	postInstall string,
+	err error,
 ) {
-	version = "latest"
+
+	version, err = utilities.GetLatestRepoRelease("spinkube", "spin-operator")
+	if err != nil {
+		return
+	}
+
 	url = ""
 	postInstall = ""
 
-	_version := getKubespinComponentOverridings(p)
+	_version := getSpinkubeComponentOverridings(p)
 	if _version != nil {
 		version = *_version
 	}
@@ -46,17 +52,21 @@ func setKubespinComponentOverridings(p metadata.ComponentOverrides) (
 	return
 }
 
-func KubespinStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+func SpinkubeStandardComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 
-	version, url, postInstall := setKubespinComponentOverridings(params)
+	version, url, postInstall, err := setSpinkubeComponentOverridings(params)
+	if err != nil {
+		return metadata.StackComponent{}, err
+	}
+
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
 			Url:             url,
 			Version:         version,
 			CreateNamespace: false,
-			Metadata:        fmt.Sprintf("Flannel (Ver: %s) is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.", version),
+			Metadata:        fmt.Sprintf("KubeSpin (ver: %s) is an open source project that streamlines developing, deploying and operating WebAssembly workloads in Kubernetes - resulting in delivering smaller, more portable applications and incredible compute performance benefits", version),
 			PostInstall:     postInstall,
 		},
-	}
+	}, nil
 }
