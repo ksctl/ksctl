@@ -5,7 +5,7 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func KsctlOperatorStackData(params metadata.ApplicationParams) metadata.ApplicationStack {
+func KsctlOperatorStackData(params metadata.ApplicationParams) (metadata.ApplicationStack, error) {
 
 	return metadata.ApplicationStack{
 		StackNameID: metadata.KsctlOperatorsID,
@@ -18,5 +18,5 @@ func KsctlOperatorStackData(params metadata.ApplicationParams) metadata.Applicat
 		StkDepsIdx: []metadata.StackComponentID{
 			metadata.KsctlApplicationComponentID,
 		},
-	}
+	}, nil
 }

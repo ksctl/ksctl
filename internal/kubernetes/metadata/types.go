@@ -7,6 +7,7 @@ type ChartOptions struct {
 	Namespace       string
 	CreateNamespace bool
 	Args            map[string]interface{}
+	ChartRef        string // only use it for oci:// based charts
 }
 
 type KubectlHandler struct {

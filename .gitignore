@@ -5,3 +5,6 @@ dist
 website/package-lock.json
 website/yarn.lock
 .vscode
+**/*.out
+**/kubeconfig
+

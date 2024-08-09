@@ -10,18 +10,30 @@ const (
 	KsctlOperatorsID              StackID = "standard-ksctloperator"
 
 	ArgocdProductionStackID   StackID = "production-argocd"
-	KubeSpinProductionStackID StackID = "production-kubespin"
+	SpinKubeProductionStackID StackID = "production-spinkube"
 )
 
 const (
-	ArgocdComponentID           StackComponentID = "argocd"
-	CertManagerComponentID      StackComponentID = "cert-manager"
-	ArgorolloutsComponentID     StackComponentID = "argorollouts"
-	CiliumComponentID           StackComponentID = "cilium"
-	IstioComponentID            StackComponentID = "istio"
-	FlannelComponentID          StackComponentID = "flannel"
-	KubePrometheusComponentID   StackComponentID = "kube-prometheus"
+	ArgocdComponentID       StackComponentID = "argocd"
+	ArgorolloutsComponentID StackComponentID = "argorollouts"
+
+	CiliumComponentID  StackComponentID = "cilium"
+	FlannelComponentID StackComponentID = "flannel"
+
+	CertManagerComponentID StackComponentID = "cert-manager"
+
+	IstioComponentID StackComponentID = "istio"
+
+	KubePrometheusComponentID StackComponentID = "kube-prometheus"
+
 	KsctlApplicationComponentID StackComponentID = "ksctl-application-operator"
+
+	KwasmOperatorComponentID StackComponentID = "kwasm-operator"
+
+	SpinkubeOperatorCrdComponentID StackComponentID = "spinkube-operator-crd"
+	SpinKubeOperatorRuntimeClassID StackComponentID = "spinkube-operator-runtime-class"
+	SpinKubeOperatorShimExecutorID StackComponentID = "spinkube-operator-shim-executor"
+	SpinKubeOperatorComponentID    StackComponentID = "spinkube-operator"
 )
 
 const (

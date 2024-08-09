@@ -15,7 +15,7 @@ func TestStackIDConstants(t *testing.T) {
 	assert.DeepEqual(t, "standard-kubeprometheus", string(KubePrometheusStandardStackID))
 	assert.DeepEqual(t, "standard-ksctloperator", string(KsctlOperatorsID))
 	assert.DeepEqual(t, "production-argocd", string(ArgocdProductionStackID))
-	assert.DeepEqual(t, "production-kubespin", string(KubeSpinProductionStackID))
+	assert.DeepEqual(t, "production-kubespin", string(SpinKubeProductionStackID))
 }
 
 func TestStackComponentIDConstants(t *testing.T) {

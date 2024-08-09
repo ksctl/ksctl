@@ -64,8 +64,9 @@ var _ = Describe("Stack Controller", func() {
 					Spec: applicationv1alpha1.StackSpec{
 						Stacks: []applicationv1alpha1.StackObj{
 							{
-								StackId: "demo-on-simple",
-								AppType: applicationv1alpha1.TypeApp,
+								StackId:   "demo-on-simple",
+								AppType:   applicationv1alpha1.TypeApp,
+								Overrides: nil,
 							},
 							{
 								StackId: "demo-on-helm-overrides",
@@ -77,6 +78,7 @@ var _ = Describe("Stack Controller", func() {
 						},
 					},
 				}
+
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})

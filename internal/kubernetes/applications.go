@@ -102,11 +102,9 @@ func getStackManifest(app types.KsctlApp, overriding map[string]map[string]any) 
 		return metadata.ApplicationStack{}, err
 	}
 
-	stackManifest := appStk(metadata.ApplicationParams{
+	return appStk(metadata.ApplicationParams{
 		ComponentParams: convertedOverriding,
 	})
-
-	return stackManifest, nil
 }
 
 func getComponentVersionOverriding(componentId string, overriding map[string]map[string]any) (string, error) {

@@ -5,7 +5,7 @@ import (
 	meta "github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func ArgocdStandardCICD(params meta.ApplicationParams) meta.ApplicationStack {
+func ArgocdStandardCICD(params meta.ApplicationParams) (meta.ApplicationStack, error) {
 
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
@@ -17,7 +17,7 @@ func ArgocdStandardCICD(params meta.ApplicationParams) meta.ApplicationStack {
 		StkDepsIdx:  []meta.StackComponentID{meta.ArgocdComponentID},
 		StackNameID: meta.ArgocdStandardStackID,
 		Maintainer:  "github@dipankardas011",
-	}
+	}, nil
 }
 
 // NOTE: always check the compatability
