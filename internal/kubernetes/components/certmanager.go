@@ -48,7 +48,9 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 	}
 
 	overridings = map[string]any{
-		"crds.enabled": true,
+		"crds": map[string]any{
+			"enabled": "true",
+		},
 	}
 
 	_version, _gateway_apiEnable, _certmanagerChartOverridings := getCertManagerComponentOverridings(params)
@@ -59,7 +61,7 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 
 	if _certmanagerChartOverridings != nil {
 		overridings = utilities.DeepCopyMap(_certmanagerChartOverridings)
-		overridings["crds.enabled"] = true
+		overridings["crds"] = map[string]any{"enabled": "true"}
 	}
 
 	if _gateway_apiEnable != nil {

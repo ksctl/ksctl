@@ -35,7 +35,9 @@ func setKwasmOperatorComponentOverridings(params metadata.ComponentOverrides) (
 ) {
 	version = "latest"
 	overridings = map[string]any{
-		"kwasmOperator.installerImage": "ghcr.io/spinkube/containerd-shim-spin/node-installer:v0.15.0",
+		"kwasmOperator": map[string]any{
+			"installerImage": "ghcr.io/spinkube/containerd-shim-spin/node-installer:v0.15.1",
+		},
 	}
 
 	_version, _kwasmOperatorChartOverridings := getKwasmOperatorComponentOverridings(params)
@@ -47,7 +49,10 @@ func setKwasmOperatorComponentOverridings(params metadata.ComponentOverrides) (
 	if _kwasmOperatorChartOverridings != nil {
 		overridings = utilities.DeepCopyMap(_kwasmOperatorChartOverridings)
 
-		overridings["kwasmOperator.installerImage"] = "ghcr.io/spinkube/containerd-shim-spin/node-installer:v0.15.0"
+		overridings["kwasmOperator"] = map[string]any{
+			"installerImage": "ghcr.io/spinkube/containerd-shim-spin/node-installer:v0.15.1",
+		}
+
 	}
 
 	return

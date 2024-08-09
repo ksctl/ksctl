@@ -54,7 +54,7 @@ func setSpinkubeComponentOverridings(p metadata.ComponentOverrides, theThing str
 
 func SpinkubeOperatorCrdComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 
-	version, url, postInstall, err := setSpinkubeComponentOverridings(params, "spin-operator.shim-executor.yaml")
+	version, url, postInstall, err := setSpinkubeComponentOverridings(params, "spin-operator.crds.yaml")
 	if err != nil {
 		return metadata.StackComponent{}, err
 	}
