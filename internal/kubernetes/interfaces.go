@@ -54,8 +54,8 @@ type K8sClient interface {
 }
 
 type HelmClient interface {
-	InstallChart(chartVer string, chartName string, namespace string, releaseName string, createNamespace bool, arguments map[string]interface{}) error
+	InstallChart(chartRef, chartVer, chartName, namespace, releaseName string, createNamespace bool, arguments map[string]interface{}) error
 	ListInstalledCharts() error
-	RepoAdd(repoName string, repoUrl string) error
-	UninstallChart(namespace string, releaseName string) error
+	RepoAdd(repoName, repoUrl string) error
+	UninstallChart(namespace, releaseName string) error
 }

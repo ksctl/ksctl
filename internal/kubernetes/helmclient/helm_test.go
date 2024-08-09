@@ -54,11 +54,8 @@ func TestHelmOciInstall(t *testing.T) {
 	chartVer := "6.4.1"
 	releaseNamespace := "xyz"
 
-	if err := helmClient.PullOCIChart(chartRef, chartVer); err != nil {
-		t.Fatal(err)
-	}
-
 	if err := helmClient.InstallChart(
+		chartRef,
 		chartVer,
 		chartRef,
 		releaseNamespace,

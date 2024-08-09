@@ -2,6 +2,7 @@ package helmclient
 
 import (
 	"fmt"
+	"helm.sh/helm/v3/pkg/registry"
 	"time"
 
 	"github.com/fatih/color"
@@ -9,7 +10,6 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/getter"
-	helmReg "helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -23,7 +23,8 @@ import (
 
 func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 
-	if helmReg.IsOCI(repoUrl) {
+	if len(repoUrl) == 0 || len(repoName) == 0 {
+		c.log.Print(c.ctx, "Skip repoAdd due to repo Url being empty, will be trying out oci://")
 		return nil
 	} else {
 
@@ -83,10 +84,6 @@ func (c *HelmClient) UninstallChart(namespace, releaseName string) error {
 	return nil
 }
 
-func (c *HelmClient) PullOCIChart(chartRef, chartVer string) error {
-	return c.runPull(chartRef, chartVer)
-}
-
 // TODO: need to have a upgrade and rollbacks
 func (c *HelmClient) UpdateChart() error {
 	return nil
@@ -96,7 +93,20 @@ func (c *HelmClient) RollbackChart() error {
 	return nil
 }
 
-func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName string, createNamespace bool, arguments map[string]interface{}) error {
+func (c *HelmClient) InstallChart(
+	chartRef,
+	chartVer,
+	chartName,
+	namespace,
+	releaseName string,
+	createNamespace bool,
+	arguments map[string]interface{}) error {
+
+	if len(chartRef) != 0 && registry.IsOCI(chartRef) {
+		if errOciPull := c.runPull(chartRef, chartVer); errOciPull != nil {
+			return errOciPull
+		}
+	}
 
 	clientInstall := action.NewInstall(c.actionConfig)
 

@@ -95,18 +95,6 @@ func spinkubeReturnHelper(version, url, postInstall string) (metadata.StackCompo
 	}, nil
 }
 
-// handlerType: kubernetes.ComponentTypeHelm,
-//
-//	helm:        &kubernetes.HelmHandler{
-//		// Not sure how it is interepreseted
-//		//helm install spin-operator \
-//		//--namespace spin-operator \
-//		//--create-namespace \
-//		//--version 0.2.0 \
-//		//--wait \
-//		//oci://ghcr.io/spinkube/charts/spin-operator
-//	},
-
 func SpinOperatorComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 
 	version, helmOverride := setSpinOperatorComponentOverridings(params)
@@ -114,8 +102,6 @@ func SpinOperatorComponent(params metadata.ComponentOverrides) (metadata.StackCo
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeHelm,
 		Helm: &metadata.HelmHandler{
-			RepoUrl:  "oci://ghcr.io/spinkube/charts/spin-operator",
-			RepoName: "",
 			Charts: []metadata.ChartOptions{
 				{
 					Name:            "spinkube/spin-operator",
@@ -124,6 +110,7 @@ func SpinOperatorComponent(params metadata.ComponentOverrides) (metadata.StackCo
 					Namespace:       "spin-operator",
 					CreateNamespace: true,
 					Args:            helmOverride,
+					ChartRef:        "oci://ghcr.io/spinkube/charts/spin-operator",
 				},
 			},
 		},
