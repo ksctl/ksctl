@@ -9,7 +9,7 @@ import (
 )
 
 func GetLatestRepoRelease(org, repo string) (string, error) {
-	resp, err := HandleHTTPCall("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", org, repo), 5, nil, nil)
+	resp, err := HandleHTTPCall("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", org, repo), 5*time.Second, nil, nil)
 	if err != nil {
 		return "", err
 	}
@@ -31,7 +31,7 @@ func GetLatestRepoRelease(org, repo string) (string, error) {
 }
 
 func GetAllRepoReleases(org, repo string) ([]string, error) {
-	resp, err := HandleHTTPCall("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", org, repo), 5, nil, nil)
+	resp, err := HandleHTTPCall("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", org, repo), 5*time.Second, nil, nil)
 	if err != nil {
 		return nil, err
 	}

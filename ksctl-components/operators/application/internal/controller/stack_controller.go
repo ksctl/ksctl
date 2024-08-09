@@ -82,6 +82,8 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 
+	itIsTestEnv := false
+
 	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); !ok {
 		var err error
 		r.agentClient, err = NewKsctlAgentClient(ctx)
@@ -94,6 +96,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}, err
 		}
 	} else {
+		itIsTestEnv = true
 		r.agentClient, _ = NewKsctlAgentClientTesting(ctx)
 	}
 
@@ -104,7 +107,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}()
 
 	if stack.DeletionTimestamp.IsZero() {
-		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
+		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) && !itIsTestEnv {
 
 			log.Debug(ctx, "adding finalizer", "finalizer", stackFinalizer)
 
