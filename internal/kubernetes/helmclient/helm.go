@@ -21,32 +21,10 @@ import (
 	"k8s.io/client-go/restmapper"
 )
 
-// FIXME: need to see how to make it work
-func (c *HelmClient) PullChartFromOCI(chartName, ociURL string) error {
-
-	reg, err := helmReg.NewClient()
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "failed to create a new client", "Reason", err),
-		)
-	}
-
-	clientInstall := action.NewInstall(c.actionConfig)
-	clientInstall.SetRegistryClient(reg)
-
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "failed to pull the chart", "Reason", err),
-		)
-	}
-
-	return nil
-}
-
 func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 
 	if helmReg.IsOCI(repoUrl) {
-		return c.PullChartFromOCI(repoName, repoUrl)
+		return nil
 	} else {
 
 		repoEntry := repo.Entry{
@@ -105,6 +83,19 @@ func (c *HelmClient) UninstallChart(namespace, releaseName string) error {
 	return nil
 }
 
+func (c *HelmClient) PullOCIChart(chartRef, chartVer string) error {
+	return c.runPull(chartRef, chartVer)
+}
+
+// TODO: need to have a upgrade and rollbacks
+func (c *HelmClient) UpdateChart() error {
+	return nil
+}
+
+func (c *HelmClient) RollbackChart() error {
+	return nil
+}
+
 func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName string, createNamespace bool, arguments map[string]interface{}) error {
 
 	clientInstall := action.NewInstall(c.actionConfig)
@@ -122,6 +113,21 @@ func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName st
 
 	clientInstall.Wait = true
 	clientInstall.Timeout = 5 * time.Minute
+
+	//////
+	// registryClient, err := newRegistryClientTLS(
+	// 	c.settings,
+	// 	c.log.ExternalLogHandlerf,
+	// 	clientInstall.CertFile,
+	// 	clientInstall.KeyFile,
+	// 	clientInstall.CaFile,
+	// 	clientInstall.InsecureSkipTLSverify,
+	// 	clientInstall.PlainHTTP)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to created registry client: %w", err)
+	// }
+	// clientInstall.SetRegistryClient(registryClient)
+	/////
 
 	chartPath, err := clientInstall.ChartPathOptions.
 		LocateChart(chartName, c.settings)
