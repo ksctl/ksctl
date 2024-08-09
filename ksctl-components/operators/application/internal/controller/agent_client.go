@@ -57,15 +57,17 @@ func (c *KsctlAgentClient) convertToClientType(apps applicationv1alpha1.StackSpe
 		ksctlApplicationData := types.KsctlApp{
 			StackName: stack.StackId,
 		}
-
-		_overrides := stack.Overrides.Raw
-		if _overrides != nil {
-			ksctlApplicationData.Overrides = make(map[string]map[string]any)
-			if err := json.Unmarshal(_overrides, &ksctlApplicationData.Overrides); err != nil {
-				log.Error("Unmarshal", "Reason", err)
-				return nil, err
+		if stack.Overrides != nil {
+			_overrides := stack.Overrides.Raw
+			if _overrides != nil {
+				ksctlApplicationData.Overrides = make(map[string]map[string]any)
+				if err := json.Unmarshal(_overrides, &ksctlApplicationData.Overrides); err != nil {
+					log.Error("Unmarshal", "Reason", err)
+					return nil, err
+				}
 			}
 		}
+
 		var appType pb.ApplicationType
 		switch stack.AppType {
 		case applicationv1alpha1.TypeApp:
