@@ -36,6 +36,9 @@ Repo | Description
 
 Please refer to the [CLI Reference guide](https://docs.ksctl.com/docs/reference/cli/)
 
+## 🙏 Sponsoring
+If you like this project and would like to provide financial help, here's our [sponsoring page](https://github.com/sponsors/ksctl). Thanks a lot for considering it !
+
 ## Contribution Guidelines
 Please refer to our [contribution guide](https://docs.ksctl.com/docs/contribution-guidelines/) if you wish to contribute to the project :smile:
 
