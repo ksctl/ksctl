@@ -140,9 +140,13 @@ func (k *K8sClusterClient) DeployAgent(client *types.KsctlClient,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
-				APIGroups: []string{"*"},
+				APIGroups: []string{"*", ""},
 				Resources: []string{"*"},
 				Verbs:     []string{"*"},
+			},
+			{
+				NonResourceURLs: []string{"*"},
+				Verbs:           []string{"*"},
 			},
 		},
 	}
