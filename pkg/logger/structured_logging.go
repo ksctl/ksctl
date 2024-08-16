@@ -91,7 +91,7 @@ func NewStructuredLogger(verbose int, out io.Writer) *StructuredLog {
 	return &StructuredLog{logger: newLogger(out, ve)}
 }
 
-func formGroups(ctx context.Context, v ...any) (format string, vals []any) {
+func formGroups(v ...any) (format string, vals []any) {
 	if len(v) == 0 {
 		return "", nil
 	}
@@ -121,8 +121,8 @@ func formGroups(ctx context.Context, v ...any) (format string, vals []any) {
 	return
 }
 
-func (l *StructuredLog) logErrorf(ctx context.Context, msg string, args ...any) error {
-	format, _args := formGroups(ctx, args...)
+func (l *StructuredLog) logErrorf(msg string, args ...any) error {
+	format, _args := formGroups(args...)
 
 	var errMsg error
 	if _args == nil {
@@ -168,7 +168,7 @@ func (l *StructuredLog) Error(msg string, args ...any) {
 
 func (l *StructuredLog) NewError(ctx context.Context, format string, args ...any) error {
 	args = append([]any{"component", getPackageName(ctx)}, args...)
-	return l.logErrorf(ctx, format, args...)
+	return l.logErrorf(format, args...)
 }
 
 func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
