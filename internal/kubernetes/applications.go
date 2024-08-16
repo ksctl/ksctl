@@ -57,9 +57,21 @@ func (k *K8sClusterClient) CNI(
 		handlers = k.deleteApplication
 	}
 
+	if op == consts.OperationDelete {
+		if err := k.AppPerformPostUninstall(cni, state); err != nil {
+			return err
+		}
+	}
+
 	err := handlers(cni, Cni, state)
 	if err != nil {
 		return err
+	}
+
+	if op == consts.OperationCreate {
+		if err := k.AppPerformPostInstall(cni, state); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -79,9 +91,21 @@ func (k *K8sClusterClient) Applications(
 			handlers = k.deleteApplication
 		}
 
+		if op == consts.OperationDelete {
+			if err := k.AppPerformPostUninstall(app, state); err != nil {
+				return err
+			}
+		}
+
 		err := handlers(app, App, state)
 		if err != nil {
 			return err
+		}
+
+		if op == consts.OperationCreate {
+			if err := k.AppPerformPostInstall(app, state); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -102,11 +126,9 @@ func getStackManifest(app types.KsctlApp, overriding map[string]map[string]any) 
 		return metadata.ApplicationStack{}, err
 	}
 
-	stackManifest := appStk(metadata.ApplicationParams{
+	return appStk(metadata.ApplicationParams{
 		ComponentParams: convertedOverriding,
 	})
-
-	return stackManifest, nil
 }
 
 func getComponentVersionOverriding(componentId string, overriding map[string]map[string]any) (string, error) {
@@ -338,7 +360,9 @@ func (k *K8sClusterClient) deleteApplication(
 	idxAppInState, foundInState := PresentOrNot(app, typeOfApp, state)
 	if foundInState {
 		errorInStack := func() error {
-			for _, componentId := range stackManifest.StkDepsIdx {
+			for idx := len(stackManifest.StkDepsIdx) - 1; idx >= 0; idx-- {
+				componentId := stackManifest.StkDepsIdx[idx]
+
 				component := stackManifest.Components[componentId]
 				_err := k.handleUninstallComponent(componentId, component)
 				if _err != nil {

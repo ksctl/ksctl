@@ -8,6 +8,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
+	nodev1 "k8s.io/api/node/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -36,6 +37,7 @@ type K8sClient interface {
 	NetPolicyDelete(ctx context.Context, log types.LoggerFactory, o *netv1.NetworkPolicy) error
 	NodeDelete(ctx context.Context, log types.LoggerFactory, nodeName string) error
 	NodesList(ctx context.Context, log types.LoggerFactory) (*corev1.NodeList, error)
+	NodeUpdate(ctx context.Context, log types.LoggerFactory, node *corev1.Node) (*corev1.Node, error)
 	PodApply(ctx context.Context, log types.LoggerFactory, o *corev1.Pod) error
 	PodDelete(ctx context.Context, log types.LoggerFactory, o *corev1.Pod) error
 	PodReadyWait(ctx context.Context, log types.LoggerFactory, name string, namespace string) error
@@ -51,11 +53,13 @@ type K8sClient interface {
 	ServiceDelete(ctx context.Context, log types.LoggerFactory, o *corev1.Service) error
 	StatefulSetApply(ctx context.Context, log types.LoggerFactory, o *appsv1.StatefulSet) error
 	StatefulSetDelete(ctx context.Context, log types.LoggerFactory, o *appsv1.StatefulSet) error
+	RuntimeApply(ctx context.Context, log types.LoggerFactory, o *nodev1.RuntimeClass) error
+	RuntimeDelete(ctx context.Context, log types.LoggerFactory, resName string) error
 }
 
 type HelmClient interface {
-	InstallChart(chartVer string, chartName string, namespace string, releaseName string, createNamespace bool, arguments map[string]interface{}) error
+	InstallChart(chartRef, chartVer, chartName, namespace, releaseName string, createNamespace bool, arguments map[string]interface{}) error
 	ListInstalledCharts() error
-	RepoAdd(repoName string, repoUrl string) error
-	UninstallChart(namespace string, releaseName string) error
+	RepoAdd(repoName, repoUrl string) error
+	UninstallChart(namespace, releaseName string) error
 }

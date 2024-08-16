@@ -8,12 +8,25 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	v1 "k8s.io/api/node/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type k8sClientMock struct{}
+
+func (k k8sClientMock) RuntimeApply(ctx context.Context, log types.LoggerFactory, o *v1.RuntimeClass) error {
+	return nil
+}
+
+func (k k8sClientMock) RuntimeDelete(ctx context.Context, log types.LoggerFactory, resName string) error {
+	return nil
+}
+
+func (k k8sClientMock) NodeUpdate(ctx context.Context, log types.LoggerFactory, node *corev1.Node) (*corev1.Node, error) {
+	return node, nil
+}
 
 func (k k8sClientMock) ApiExtensionsApply(ctx context.Context, log types.LoggerFactory, o *apiextensionsv1.CustomResourceDefinition) error {
 	return nil

@@ -419,6 +419,23 @@ func (k *K8sClient) NodesList(
 	return v, nil
 }
 
+func (k *K8sClient) NodeUpdate(
+	ctx context.Context,
+	log types.LoggerFactory,
+	node *corev1.Node,
+) (*corev1.Node, error) {
+	v, err := k.clientset.
+		CoreV1().
+		Nodes().
+		Update(context.Background(), node, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
+			log.NewError(ctx, "node delete failed", "Reason", err),
+		)
+	}
+	return v, nil
+}
+
 func (k *K8sClient) NodeDelete(
 	ctx context.Context,
 	log types.LoggerFactory,
