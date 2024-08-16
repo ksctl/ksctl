@@ -63,9 +63,9 @@ spec:
                 type: string
               success:
                 type: boolean
-            required:
-            - success
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

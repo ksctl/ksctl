@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"slices"
 	"time"
 
 	applicationv1alpha1 "github.com/ksctl/ksctl/ksctl-components/operators/application/api/v1alpha1"
@@ -65,8 +66,15 @@ type StackReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
 func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-app-stack-controller")
-	ctx = context.WithValue(ctx, consts.KsctlContextUserID, "ksctl-app-stack-controller")
+	ctx = context.WithValue(
+		context.WithValue(
+			ctx,
+			consts.KsctlModuleNameKey,
+			"ksctl-app-stack-controller",
+		),
+		consts.KsctlContextUserID,
+		"ksctl-app-stack-controller",
+	)
 
 	log.Debug(ctx, "Triggered Reconciliation")
 
@@ -79,14 +87,22 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	log.Debug(ctx, "Debugging", "name", stack.Name, "namespace", stack.Namespace)
 	log.Debug(ctx, "stack Spec", "spec", stack.Spec.Stacks)
 
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	log.Debug(ctx, "Spec Status Fields", "name", stack.Name, "namespace", stack.Namespace, "Status", stack.Status, "Finalizers", stack.ObjectMeta.Finalizers)
+	if !stack.Status.Success && len(stack.Status.ReasonOfFailure) != 0 {
+		log.Debug(ctx, "Reconciliation failed", "Reason", stack.Status.ReasonOfFailure, "WaitForNextReconciliation", "5m")
+		return ctrl.Result{}, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
 	defer cancel()
+
+	itIsTestEnv := false
 
 	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); !ok {
 		var err error
 		r.agentClient, err = NewKsctlAgentClient(ctx)
 		if err != nil {
-			log.Error("New RPC Client", "Reason", err)
+			log.Error("Failed to create rpc conn", "Reason", err, "RequestingRequeue in", "1m")
 
 			return ctrl.Result{
 				RequeueAfter: time.Minute,
@@ -94,6 +110,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}, err
 		}
 	} else {
+		itIsTestEnv = true
 		r.agentClient, _ = NewKsctlAgentClientTesting(ctx)
 	}
 
@@ -104,13 +121,13 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}()
 
 	if stack.DeletionTimestamp.IsZero() {
-		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) {
+		if !containsString(stack.ObjectMeta.Finalizers, stackFinalizer) && !itIsTestEnv {
 
 			log.Debug(ctx, "adding finalizer", "finalizer", stackFinalizer)
 
 			stack.ObjectMeta.Finalizers = append(stack.ObjectMeta.Finalizers, stackFinalizer)
 
-			if err := r.Update(context.Background(), stack); err != nil {
+			if err := r.Update(ctx, stack); err != nil { // Use the correct context
 				return ctrl.Result{}, err
 			}
 		} else {
@@ -120,7 +137,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				stack.Status.Success = false
 				stack.Status.ReasonOfFailure = _err.Error()
 
-				if __err := r.Update(context.Background(), stack); __err != nil {
+				if __err := r.Update(ctx, stack); __err != nil { // Use the correct context
 					log.Error("update failed", "Reason", _err)
 					return ctrl.Result{}, __err
 				}
@@ -129,7 +146,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 			stack.Status.Success = true
 
-			if _err := r.Update(context.Background(), stack); _err != nil {
+			if _err := r.Update(ctx, stack); _err != nil { // Use the correct context
 				log.Error("update failed", "Reason", _err)
 				return ctrl.Result{}, _err
 			}
@@ -148,23 +165,17 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			log.Success(ctx, "Uninstall Application was successful")
 
 			stack.ObjectMeta.Finalizers = removeString(stack.ObjectMeta.Finalizers, stackFinalizer)
-			if err := r.Update(context.Background(), stack); err != nil {
+			if err := r.Update(ctx, stack); err != nil { // Use the correct context
 				return ctrl.Result{}, err
 			}
 		}
 	}
-
 	return ctrl.Result{}, nil
 }
 
 // Helper functions to manage finalizers
 func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains[[]string, string](slice, s)
 }
 
 func removeString(slice []string, s string) (result []string) {
