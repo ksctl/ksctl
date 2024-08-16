@@ -2,11 +2,12 @@ package stacks
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestFetchKsctlStackWithValidStackID(t *testing.T) {

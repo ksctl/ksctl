@@ -1,3 +1,5 @@
+//go:build !testing_k8s_manifest
+
 package kubernetes
 
 import (
