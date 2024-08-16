@@ -13,4 +13,4 @@ GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v cni_test.go 
 GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v name_test.go fields.go
 GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v storage_test.go fields.go
 GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v role_test.go fields.go
-GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC ./... -v && cd -

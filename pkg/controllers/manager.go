@@ -6,6 +6,8 @@ import (
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 
+	"github.com/ksctl/ksctl/poller"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
@@ -26,6 +28,16 @@ var (
 type managerInfo struct {
 	log    types.LoggerFactory
 	client *types.KsctlClient
+}
+
+func (manager *managerInfo) startPoller(ctx context.Context) error {
+	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); !ok {
+		poller.InitSharedGithubReleasePoller()
+	} else {
+		poller.InitSharedGithubReleaseFakePoller(nil)
+	}
+
+	return nil
 }
 
 func (manager *managerInfo) initStorage(ctx context.Context) error {

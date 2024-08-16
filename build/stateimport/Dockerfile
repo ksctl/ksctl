@@ -13,6 +13,7 @@ COPY go.mod go.mod
 COPY go.sum go.sum
 
 COPY pkg/ /app/pkg/
+COPY poller/ poller/
 COPY internal/ /app/internal/
 COPY ksctl-components/stateimport/ /app/ksctl-components/stateimport/
 COPY commons/ /app/commons/

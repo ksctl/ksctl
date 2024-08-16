@@ -55,6 +55,7 @@ func ExecuteKsctlSpecificRun() error {
 	if err != nil {
 		return err
 	}
+
 	if _, err := controller.SwitchCluster(); err != nil {
 		return err
 	}

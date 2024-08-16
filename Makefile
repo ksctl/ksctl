@@ -103,10 +103,16 @@ unit_test_local: golang-test ## local unit test case
 		/bin/bash test-local.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_kubernetes_apps
-unit_test_kubernetes_apps: golang-test ## azure unit test case
+unit_test_kubernetes_apps: golang-test ## ksctl Kubernetes pkg unit test case
 	@echo "Unit Tests"
 	cd scripts/ && \
 		/bin/bash test-kubernetes.sh $(GO_TEST_COLOR)
+
+.PHONY: unit_test_poller
+unit_test_poller: golang-test ## poller unit test case
+	@echo "Unit Tests"
+	cd scripts/ && \
+		/bin/bash test-poller.sh $(GO_TEST_COLOR)
 
 .PHONY: unit_test_azure
 unit_test_azure: golang-test ## azure unit test case
