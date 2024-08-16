@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 EXEC=$1
 
 cd ../pkg/ || exit 1
@@ -15,7 +17,7 @@ GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v name_test.go
 GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v storage_test.go fields.go
 GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v distro_test.go fields.go
 GOTEST_PALETTE="red,yellow,green" $EXEC -fuzz=Fuzz -fuzztime 10s -v role_test.go fields.go
-GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
+GOTEST_PALETTE="red,yellow,green" $EXEC ./... -v && cd -
 
 echo "-----------------------------------"
 echo "|   Testing (pkg/logger)"
@@ -24,7 +26,16 @@ echo "-----------------------------------"
 cd logger/
 GOTEST_PALETTE="red,yellow,green" $EXEC . -v -timeout 10s && cd -
 
-cd ../internal
+cd ..
+
+echo "-----------------------------------"
+echo "|   Testing (poller)"
+echo "-----------------------------------"
+
+cd poller/
+GOTEST_PALETTE="red,yellow,green" $EXEC ./... -v && cd -
+
+cd internal/
 
 echo "--------------------------------------------"
 echo "|   Testing (internal/k8sdistros/k3s)"
@@ -85,7 +96,6 @@ cd storage/external/mongodb/
 GOTEST_PALETTE="red,yellow,green" $EXEC . -v && cd -
 
 cd ..
-
 
 echo "-------------------------------------------------"
 echo "|   Testing (ksctl-components/agent)"

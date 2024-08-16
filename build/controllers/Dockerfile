@@ -21,6 +21,7 @@ COPY ksctl-components/operators/$TARGET_CONTROLLER/api/ ksctl-components/operato
 COPY ksctl-components/operators/$TARGET_CONTROLLER/internal/controller/ ksctl-components/operators/$TARGET_CONTROLLER/internal/controller/
 COPY api/gen/agent/pb/ api/gen/agent/pb/
 COPY pkg/ pkg/
+COPY poller/ poller/
 COPY internal/storage/ internal/storage
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command

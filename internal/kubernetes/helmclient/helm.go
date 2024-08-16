@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"helm.sh/helm/v3/pkg/registry"
+
 	"github.com/fatih/color"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"helm.sh/helm/v3/pkg/action"
@@ -22,39 +24,45 @@ import (
 
 func (c *HelmClient) RepoAdd(repoName, repoUrl string) error {
 
-	repoEntry := repo.Entry{
-		Name: repoName,
-		URL:  repoUrl,
-	}
+	if len(repoUrl) == 0 || len(repoName) == 0 {
+		c.log.Print(c.ctx, "Skip repoAdd due to repo Url being empty, will be trying out oci://")
+		return nil
+	} else {
 
-	r, err := repo.NewChartRepository(&repoEntry, getter.All(c.settings))
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "constructs ChartRepository", "Reason", err),
-		)
-	}
-	_, err = r.DownloadIndexFile()
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "failed to download the chart", "Reason", err),
-		)
-	}
+		repoEntry := repo.Entry{
+			Name: repoName,
+			URL:  repoUrl,
+		}
 
-	existingRepositoryFile, err := repo.LoadFile(c.settings.RepositoryConfig)
-	if err != nil {
-		return ksctlErrors.ErrFailedHelmClient.Wrap(
-			c.log.NewError(c.ctx, "failed to load the chart", "Reason", err),
-		)
-	}
-
-	if !existingRepositoryFile.Has(repoEntry.Name) {
-		existingRepositoryFile.Add(&repoEntry)
-
-		err = existingRepositoryFile.WriteFile(c.settings.RepositoryConfig, 0644)
+		r, err := repo.NewChartRepository(&repoEntry, getter.All(c.settings))
 		if err != nil {
 			return ksctlErrors.ErrFailedHelmClient.Wrap(
-				c.log.NewError(c.ctx, "failed to write the chart", "Reason", err),
+				c.log.NewError(c.ctx, "constructs ChartRepository", "Reason", err),
 			)
+		}
+		_, err = r.DownloadIndexFile()
+		if err != nil {
+			return ksctlErrors.ErrFailedHelmClient.Wrap(
+				c.log.NewError(c.ctx, "failed to download the chart", "Reason", err),
+			)
+		}
+
+		existingRepositoryFile, err := repo.LoadFile(c.settings.RepositoryConfig)
+		if err != nil {
+			return ksctlErrors.ErrFailedHelmClient.Wrap(
+				c.log.NewError(c.ctx, "failed to load the chart", "Reason", err),
+			)
+		}
+
+		if !existingRepositoryFile.Has(repoEntry.Name) {
+			existingRepositoryFile.Add(&repoEntry)
+
+			err = existingRepositoryFile.WriteFile(c.settings.RepositoryConfig, 0644)
+			if err != nil {
+				return ksctlErrors.ErrFailedHelmClient.Wrap(
+					c.log.NewError(c.ctx, "failed to write the chart", "Reason", err),
+				)
+			}
 		}
 	}
 
@@ -77,7 +85,29 @@ func (c *HelmClient) UninstallChart(namespace, releaseName string) error {
 	return nil
 }
 
-func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName string, createNamespace bool, arguments map[string]interface{}) error {
+// TODO: need to have a upgrade and rollbacks
+func (c *HelmClient) UpdateChart() error {
+	return nil
+}
+
+func (c *HelmClient) RollbackChart() error {
+	return nil
+}
+
+func (c *HelmClient) InstallChart(
+	chartRef,
+	chartVer,
+	chartName,
+	namespace,
+	releaseName string,
+	createNamespace bool,
+	arguments map[string]interface{}) error {
+
+	if len(chartRef) != 0 && registry.IsOCI(chartRef) {
+		if errOciPull := c.runPull(chartRef, chartVer); errOciPull != nil {
+			return errOciPull
+		}
+	}
 
 	clientInstall := action.NewInstall(c.actionConfig)
 
@@ -88,12 +118,31 @@ func (c *HelmClient) InstallChart(chartVer, chartName, namespace, releaseName st
 
 	clientInstall.ChartPathOptions.Version = chartVer
 	clientInstall.ReleaseName = releaseName
-	clientInstall.Namespace = namespace
+	clientInstall.Namespace = namespace // FIXME: this is not working
+	c.settings.SetNamespace(namespace)
+	if c.settings.Namespace() != clientInstall.Namespace {
+		panic(fmt.Sprintf("Namespace mismatch: %s != %s", c.settings.Namespace(), clientInstall.Namespace))
+	}
 
 	clientInstall.CreateNamespace = createNamespace
 
 	clientInstall.Wait = true
 	clientInstall.Timeout = 5 * time.Minute
+
+	//////
+	// registryClient, err := newRegistryClientTLS(
+	// 	c.settings,
+	// 	c.log.ExternalLogHandlerf,
+	// 	clientInstall.CertFile,
+	// 	clientInstall.KeyFile,
+	// 	clientInstall.CaFile,
+	// 	clientInstall.InsecureSkipTLSverify,
+	// 	clientInstall.PlainHTTP)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to created registry client: %w", err)
+	// }
+	// clientInstall.SetRegistryClient(registryClient)
+	/////
 
 	chartPath, err := clientInstall.ChartPathOptions.
 		LocateChart(chartName, c.settings)

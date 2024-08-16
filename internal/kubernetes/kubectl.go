@@ -1,23 +1,75 @@
 package kubernetes
 
 import (
-	"io"
-	"net/http"
-	"os"
-	"strings"
-
+	"bytes"
+	"fmt"
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
-
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-
+	"gopkg.in/yaml.v3"
+	"io"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	nodev1 "k8s.io/api/node/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8sYaml "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/restmapper"
+	"net/http"
+	"os"
+	"strings"
 )
+
+func (k *K8sClusterClient) getDynamicClientFromManifest(manifest []byte) (dynamic.ResourceInterface, *unstructured.Unstructured, error) {
+
+	dynamicClient, err := dynamic.NewForConfig(k.c)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating dynamic client: %w", err)
+	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(k.c)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create discovery client: %v", err)
+	}
+
+	groupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get API group resources: %v", err)
+	}
+	restMapper := restmapper.NewDiscoveryRESTMapper(groupResources)
+
+	obj := new(unstructured.Unstructured)
+	decoder := k8sYaml.NewYAMLOrJSONDecoder(bytes.NewReader(manifest), 4096)
+	if err := decoder.Decode(&obj); err != nil {
+		return nil, nil, fmt.Errorf("error decoding manifest: %w", err)
+	}
+
+	gvk := obj.GroupVersionKind()
+
+	mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get REST mapping: %v", err)
+	}
+
+	namespace := obj.GetNamespace()
+	if namespace == "" {
+		namespace = "default" // default namespace if not specified
+	}
+
+	var dri dynamic.ResourceInterface
+	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
+		dri = dynamicClient.Resource(mapping.Resource).Namespace(namespace)
+	} else {
+		dri = dynamicClient.Resource(mapping.Resource)
+	}
+
+	return dri, obj, nil
+}
 
 func httpGet(uri string) ([]byte, error) {
 	resp, err := http.Get(uri)
@@ -75,10 +127,34 @@ func Http(uri string) (string, error) {
 	} else {
 		v, err = httpGet(uri)
 	}
-	if err == nil {
-		return string(v), nil
+	if err != nil {
+		return "", err
 	}
-	return "", err
+	return string(v), nil
+}
+
+func splitYAMLDocuments(content string) ([]string, error) {
+	decoder := yaml.NewDecoder(strings.NewReader(content))
+	var documents []string
+
+	for {
+		var doc interface{}
+		err := decoder.Decode(&doc)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+
+		docBytes, err := yaml.Marshal(doc)
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, string(docBytes))
+	}
+
+	return documents, nil
 }
 
 func getManifests(appUrl string) ([]string, error) {
@@ -87,13 +163,12 @@ func getManifests(appUrl string) ([]string, error) {
 		return nil, err
 	}
 
-	resources := strings.Split(body, "---")
 	if err := apiextensionsv1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, ksctlErrors.ErrFailedKubernetesClient.Wrap(
 			log.NewError(kubernetesCtx, "failed to add apiextensionv1 to the scheme", "Reason", err),
 		)
 	}
-	return resources, nil
+	return splitYAMLDocuments(body)
 }
 
 func deleteKubectl(client *K8sClusterClient, component *metadata.KubectlHandler) error {
@@ -107,9 +182,17 @@ func deleteKubectl(client *K8sClusterClient, component *metadata.KubectlHandler)
 
 		obj, _, err := decUnstructured([]byte(resource), nil, nil)
 		if err != nil {
-			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err),
-			)
+			log.Warn(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err)
+
+			if c, o, err := client.getDynamicClientFromManifest([]byte(resource)); err != nil {
+				return err
+			} else {
+				err := c.Delete(kubernetesCtx, o.GetName(), metav1.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+				continue
+			}
 		}
 
 		var errRes error
@@ -172,6 +255,10 @@ func deleteKubectl(client *K8sClusterClient, component *metadata.KubectlHandler)
 			log.Print(kubernetesCtx, "StatefulSet", "name", o.Name)
 			errRes = client.k8sClient.StatefulSetDelete(kubernetesCtx, log, o)
 
+		case *nodev1.RuntimeClass:
+			log.Print(kubernetesCtx, "RuntimeClass", "name", o.Name)
+			errRes = client.k8sClient.RuntimeDelete(kubernetesCtx, log, o.Name)
+
 		case *rbacv1.ClusterRole:
 			if component.CreateNamespace {
 				o.Namespace = component.Namespace
@@ -220,7 +307,7 @@ func deleteKubectl(client *K8sClusterClient, component *metadata.KubectlHandler)
 
 	if component.CreateNamespace {
 		if err := client.k8sClient.NamespaceDelete(kubernetesCtx, log, &corev1.Namespace{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: component.Namespace,
 			}}, true); err != nil {
 			return err
@@ -238,7 +325,7 @@ func installKubectl(client *K8sClusterClient, component *metadata.KubectlHandler
 
 	if component.CreateNamespace {
 		if err := client.k8sClient.NamespaceCreate(kubernetesCtx, log, &corev1.Namespace{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: component.Namespace,
 			}}); err != nil {
 			return err
@@ -250,9 +337,17 @@ func installKubectl(client *K8sClusterClient, component *metadata.KubectlHandler
 
 		obj, _, err := decUnstructured([]byte(resource), nil, nil)
 		if err != nil {
-			return ksctlErrors.ErrFailedKubernetesClient.Wrap(
-				log.NewError(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err),
-			)
+			log.Warn(kubernetesCtx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err)
+
+			if c, o, err := client.getDynamicClientFromManifest([]byte(resource)); err != nil {
+				return err
+			} else {
+				_, err := c.Create(kubernetesCtx, o, metav1.CreateOptions{})
+				if err != nil {
+					return err
+				}
+				continue
+			}
 		}
 
 		var errRes error
@@ -307,6 +402,10 @@ func installKubectl(client *K8sClusterClient, component *metadata.KubectlHandler
 			}
 			log.Print(kubernetesCtx, "Secret", "name", o.Name)
 			errRes = client.k8sClient.SecretApply(kubernetesCtx, log, o)
+
+		case *nodev1.RuntimeClass:
+			log.Print(kubernetesCtx, "RuntimeClass", "name", o.Name)
+			errRes = client.k8sClient.RuntimeApply(kubernetesCtx, log, o)
 
 		case *appsv1.StatefulSet:
 			if component.CreateNamespace {

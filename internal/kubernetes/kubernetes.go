@@ -21,6 +21,7 @@ type K8sClusterClient struct {
 	helmClient    HelmClient
 	k8sClient     K8sClient
 	inCluster     bool
+	c             *rest.Config
 }
 
 var (
@@ -84,6 +85,8 @@ func NewInClusterClient(
 			return
 		}
 
+		k.c = config
+
 		k.helmClient, err = helmclient.NewInClusterHelmClient(
 			kubernetesCtx,
 			log,
@@ -134,6 +137,7 @@ func NewKubeconfigClient(
 		if err != nil {
 			return
 		}
+		k.c = config
 
 		k.helmClient, err = helmclient.NewKubeconfigHelmClient(
 			kubernetesCtx,

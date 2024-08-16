@@ -45,7 +45,7 @@ var _ = Describe("Stack Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		stack := &applicationv1alpha1.Stack{}
 		log = logger.NewStructuredLogger(
@@ -64,8 +64,9 @@ var _ = Describe("Stack Controller", func() {
 					Spec: applicationv1alpha1.StackSpec{
 						Stacks: []applicationv1alpha1.StackObj{
 							{
-								StackId: "demo-on-simple",
-								AppType: applicationv1alpha1.TypeApp,
+								StackId:   "demo-on-simple",
+								AppType:   applicationv1alpha1.TypeApp,
+								Overrides: nil,
 							},
 							{
 								StackId: "demo-on-helm-overrides",
@@ -74,16 +75,45 @@ var _ = Describe("Stack Controller", func() {
 									Raw: []byte(`{"istio-component":{"version":"v0.0.1"},"abcd":{"version":"latest","helmValues":{"enableX": "true"}}}`),
 								},
 							},
+							{
+								StackId: "demo-on-overrides",
+								AppType: applicationv1alpha1.TypeCNI,
+							},
 						},
 					},
 				}
+
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &applicationv1alpha1.Stack{}
+			resource := &applicationv1alpha1.Stack{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      resourceName,
+					Namespace: "default",
+				},
+				Spec: applicationv1alpha1.StackSpec{
+					Stacks: []applicationv1alpha1.StackObj{
+						{
+							StackId:   "demo-on-simple",
+							AppType:   applicationv1alpha1.TypeApp,
+							Overrides: nil,
+						},
+						{
+							StackId: "demo-on-helm-overrides",
+							AppType: applicationv1alpha1.TypeApp,
+							Overrides: &v1.JSON{
+								Raw: []byte(`{"istio-component":{"version":"v0.0.1"},"abcd":{"version":"latest","helmValues":{"enableX": "true"}}}`),
+							},
+						},
+						{
+							StackId: "demo-on-overrides",
+							AppType: applicationv1alpha1.TypeCNI,
+						},
+					},
+				},
+			}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 

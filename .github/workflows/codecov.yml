@@ -3,6 +3,7 @@ on:
   push:
     paths:
     - 'internal/**'
+    - 'poller/**'
     - 'pkg/**'
     branches:
     - main
@@ -10,6 +11,7 @@ on:
     paths:
     - 'internal/**'
     - 'pkg/**'
+    - 'poller/**'
     branches:
     - main
     types: [ labeled, opened, synchronize, reopened ]
@@ -54,7 +56,17 @@ jobs:
     - name: Run coverage (K8S_DISTRIBUTION)
       working-directory: internal/k8sdistros
       run: |
-        go test -race -coverprofile=../../../coverage-k8s.out -covermode=atomic -v
+        go test -race -coverprofile=../../coverage-k8s.out -covermode=atomic -v
+
+    - name: Run coverage (KSCTL KUBERNETES)
+      working-directory: internal/kubernetes
+      run: |
+        go test -race -coverprofile=../../coverage-ksctl-kubernetes.out -covermode=atomic -v
+
+    - name: Run coverage (KSCTL POLLER)
+      working-directory: poller
+      run: |
+        go test -race -coverprofile=../coverage-poller.out -covermode=atomic -v
 
     - name: Run coverage (CIVO)
       working-directory: internal/cloudproviders/civo

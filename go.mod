@@ -34,6 +34,7 @@ require (
 	golang.org/x/term v0.21.0
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.1
+	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.1
 	helm.sh/helm/v3 v3.14.4
 	k8s.io/api v0.30.1
@@ -196,7 +197,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.30.1 // indirect
 	k8s.io/cli-runtime v0.29.0 // indirect
 	k8s.io/component-base v0.30.1 // indirect

@@ -42,7 +42,7 @@ type StackSpec struct {
 
 // StackStatus defines the observed state of Stack
 type StackStatus struct {
-	Success         bool   `json:"success"`
+	Success         bool   `json:"success,omitempty"`
 	ReasonOfFailure string `json:"reasonOfFailure,omitempty"`
 }
 
@@ -56,7 +56,7 @@ type Stack struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StackSpec   `json:"spec,omitempty"`
+	Spec   StackSpec   `json:"spec"`
 	Status StackStatus `json:"status,omitempty"`
 }
 

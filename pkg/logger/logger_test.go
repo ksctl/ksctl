@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"testing"
@@ -84,7 +85,51 @@ func TestPrintersStructured(t *testing.T) {
 	})
 
 	t.Run("external", func(t *testing.T) {
-		sL.ExternalLogHandler(dummyCtx, consts.LogSuccess, "cdcc")
-		sL.ExternalLogHandlerf(dummyCtx, consts.LogSuccess, "cdcc: %v", nil)
+		for _, logType := range []consts.CustomExternalLogLevel{
+			consts.LogSuccess, consts.LogError, consts.LogWarning, consts.LogNote,
+		} {
+			sL.ExternalLogHandler(dummyCtx, logType, "cdcc")
+			sL.ExternalLogHandlerf(dummyCtx, logType, "cdcc: %v", nil)
+		}
 	})
+}
+
+func TestFormGroupsHandlesEmptyInput(t *testing.T) {
+	format, vals := formGroups()
+	assert.Equal(t, "", format)
+	assert.Nil(t, vals)
+}
+
+func TestFormGroupsHandlesSingleKeyValuePair(t *testing.T) {
+	format, vals := formGroups("key", "value")
+	assert.Equal(t, "key=%v", format)
+	assert.Equal(t, []any{"value"}, vals)
+}
+
+func TestFormGroupsHandlesMultipleKeyValuePairs(t *testing.T) {
+	format, vals := formGroups("key1", "value1", "key2", "value2")
+	assert.Equal(t, "key1=%v key2=%v", format)
+	assert.Equal(t, []any{"value1", "value2"}, vals)
+}
+
+func TestFormGroupsHandlesExtraValues(t *testing.T) {
+	format, vals := formGroups("key1", "value1", "key2")
+	assert.Equal(t, "key1=%v !!EXTRA:%v", format)
+	assert.Equal(t, []any{"value1", "key2"}, vals)
+}
+
+func TestFormGroupsHandlesStructValues(t *testing.T) {
+	type TestStruct struct {
+		Field string
+	}
+	format, vals := formGroups("key", TestStruct{Field: "value"})
+	assert.Equal(t, "key=%#v", format)
+	assert.Equal(t, []any{TestStruct{Field: "value"}}, vals)
+}
+
+func TestFormGroupsHandlesErrorValues(t *testing.T) {
+	err := fmt.Errorf("test error")
+	format, vals := formGroups("key", err)
+	assert.Equal(t, "key=%v", format)
+	assert.Equal(t, []any{err}, vals)
 }

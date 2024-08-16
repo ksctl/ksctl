@@ -35,8 +35,12 @@ func NewManagerClusterKsctl(ctx context.Context, log types.LoggerFactory, client
 	manager.log = log
 	manager.client = client
 
-	err := manager.initStorage(controllerCtx)
-	if err != nil {
+	if err := manager.initStorage(controllerCtx); err != nil {
+		log.Error("handled error", "catch", err)
+		return nil, err
+	}
+
+	if err := manager.startPoller(controllerCtx); err != nil {
 		log.Error("handled error", "catch", err)
 		return nil, err
 	}

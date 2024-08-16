@@ -21,7 +21,7 @@ go test -fuzz=Fuzz -fuzztime 10s -v name_test.go fields.go
 go test -fuzz=Fuzz -fuzztime 10s -v storage_test.go fields.go
 go test -fuzz=Fuzz -fuzztime 10s -v distro_test.go fields.go
 go test -fuzz=Fuzz -fuzztime 10s -v role_test.go fields.go
-go test . -v && Set-Location -
+go test ./... -v && Set-Location -
 
 Write-Output "-----------------------------------"
 Write-Output "|   Testing (pkg/logger)"
@@ -30,7 +30,17 @@ Write-Output "-----------------------------------"
 Set-Location logger
 go test . -v && Set-Location -
 
-Set-Location .\..\internal
+Set-Location .\..\
+
+Write-Output "-----------------------------------"
+Write-Output "|   Testing (poller)"
+Write-Output "-----------------------------------"
+
+Set-Location poller
+go test ./... -v && Set-Location -
+
+
+Set-Location .\internal
 
 Write-Output "--------------------------------------------"
 Write-Output "|   Testing (internal/k8sdistros/k3s)"
