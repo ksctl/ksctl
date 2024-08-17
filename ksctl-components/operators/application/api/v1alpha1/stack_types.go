@@ -22,10 +22,14 @@ import (
 )
 
 type ApplicationType string
+type StackStatusCode string
 
 const (
 	TypeCNI ApplicationType = "cni"
 	TypeApp ApplicationType = "app"
+
+	Success StackStatusCode = "success"
+	Failure StackStatusCode = "failure"
 )
 
 type StackObj struct {
@@ -42,8 +46,8 @@ type StackSpec struct {
 
 // StackStatus defines the observed state of Stack
 type StackStatus struct {
-	Success         bool   `json:"success,omitempty"`
-	ReasonOfFailure string `json:"reasonOfFailure,omitempty"`
+	StatusCode      StackStatusCode `json:"statusCode,omitempty"`
+	ReasonOfFailure string          `json:"reasonOfFailure,omitempty"`
 }
 
 // TODO: need to update the kind as `StackCollection`
