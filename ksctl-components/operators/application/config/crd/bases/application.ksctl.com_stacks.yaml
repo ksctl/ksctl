@@ -61,8 +61,8 @@ spec:
             properties:
               reasonOfFailure:
                 type: string
-              success:
-                type: boolean
+              statusCode:
+                type: string
             type: object
         required:
         - spec

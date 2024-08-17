@@ -88,7 +88,7 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	log.Debug(ctx, "stack Spec", "spec", stack.Spec.Stacks)
 
 	log.Debug(ctx, "Spec Status Fields", "name", stack.Name, "namespace", stack.Namespace, "Status", stack.Status, "Finalizers", stack.ObjectMeta.Finalizers)
-	if !stack.Status.Success && len(stack.Status.ReasonOfFailure) != 0 {
+	if stack.Status.StatusCode == applicationv1alpha1.Failure {
 		log.Debug(ctx, "Reconciliation failed", "Reason", stack.Status.ReasonOfFailure, "WaitForNextReconciliation", "5m")
 		return ctrl.Result{}, nil
 	}
@@ -134,19 +134,19 @@ func (r *StackReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 			if _err := r.agentClient.InstallApps(stack.Spec); _err != nil {
 				log.Error("InstallApp", "Reason", _err)
-				stack.Status.Success = false
+				stack.Status.StatusCode = applicationv1alpha1.Failure
 				stack.Status.ReasonOfFailure = _err.Error()
 
-				if __err := r.Update(ctx, stack); __err != nil { // Use the correct context
+				if __err := r.Status().Update(ctx, stack); __err != nil { // Use the correct context
 					log.Error("update failed", "Reason", _err)
 					return ctrl.Result{}, __err
 				}
 				return ctrl.Result{}, _err
 			}
 
-			stack.Status.Success = true
+			stack.Status.StatusCode = applicationv1alpha1.Success
 
-			if _err := r.Update(ctx, stack); _err != nil { // Use the correct context
+			if _err := r.Status().Update(ctx, stack); _err != nil { // Use the correct context
 				log.Error("update failed", "Reason", _err)
 				return ctrl.Result{}, _err
 			}
