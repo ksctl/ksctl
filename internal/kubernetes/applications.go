@@ -58,7 +58,7 @@ func (k *K8sClusterClient) CNI(
 	}
 
 	if op == consts.OperationDelete {
-		if err := k.AppPerformPostUninstall(cni, state); err != nil {
+		if err := k.AppPerformPreUninstall(cni, state); err != nil {
 			return err
 		}
 	}
@@ -92,7 +92,7 @@ func (k *K8sClusterClient) Applications(
 		}
 
 		if op == consts.OperationDelete {
-			if err := k.AppPerformPostUninstall(app, state); err != nil {
+			if err := k.AppPerformPreUninstall(app, state); err != nil {
 				return err
 			}
 		}

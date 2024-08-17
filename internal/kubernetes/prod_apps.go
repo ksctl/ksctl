@@ -9,14 +9,14 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func (k *K8sClusterClient) AppPerformPostUninstall(
+func (k *K8sClusterClient) AppPerformPreUninstall(
 	apps types.KsctlApp,
 	state *storageTypes.StorageDocument,
 ) error {
 	if strings.HasPrefix(apps.StackName, "production-") {
 		switch apps.StackName {
-		case string(metadata.SpinKubeProductionStackID):
-			return k.spinKubePreUninstall()
+		case string(metadata.SpinKubeProductionStackID), string(metadata.WasmEdgeKwasmProductionStackID):
+			return k.kwasmBasedWasmPreUninstall()
 		}
 	}
 
@@ -30,15 +30,15 @@ func (k *K8sClusterClient) AppPerformPostInstall(
 
 	if strings.HasPrefix(apps.StackName, "production-") {
 		switch apps.StackName {
-		case string(metadata.SpinKubeProductionStackID):
-			return k.spinKubePostInstall()
+		case string(metadata.SpinKubeProductionStackID), string(metadata.WasmEdgeKwasmProductionStackID):
+			return k.kwasmBasedWasmPostInstall()
 		}
 	}
 
 	return nil
 }
 
-func (k *K8sClusterClient) spinKubePostInstall() error {
+func (k *K8sClusterClient) kwasmBasedWasmPostInstall() error {
 	nodes, err := k.k8sClient.NodesList(kubernetesCtx, log)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (k *K8sClusterClient) spinKubePostInstall() error {
 	return nil
 }
 
-func (k *K8sClusterClient) spinKubePreUninstall() error {
+func (k *K8sClusterClient) kwasmBasedWasmPreUninstall() error {
 	nodes, err := k.k8sClient.NodesList(kubernetesCtx, log)
 	if err != nil {
 		return err
