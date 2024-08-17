@@ -16,6 +16,7 @@ func TestStackIDConstants(t *testing.T) {
 	assert.DeepEqual(t, "standard-ksctloperator", string(KsctlOperatorsID))
 	assert.DeepEqual(t, "production-argocd", string(ArgocdProductionStackID))
 	assert.DeepEqual(t, "production-spinkube", string(SpinKubeProductionStackID))
+	assert.DeepEqual(t, "production-wasmedge-kwasm", string(WasmEdgeKwasmProductionStackID))
 }
 
 func TestStackComponentIDConstants(t *testing.T) {
@@ -32,6 +33,7 @@ func TestStackComponentIDConstants(t *testing.T) {
 	assert.DeepEqual(t, "spinkube-operator-runtime-class", string(SpinKubeOperatorRuntimeClassID))
 	assert.DeepEqual(t, "spinkube-operator-shim-executor", string(SpinKubeOperatorShimExecutorID))
 	assert.DeepEqual(t, "spinkube-operator", string(SpinKubeOperatorComponentID))
+	assert.DeepEqual(t, "kwasm-wasmedge-runtime-class", string(KwasmRuntimeClassWasmedgeID))
 }
 
 func TestStackComponentTypeConstants(t *testing.T) {

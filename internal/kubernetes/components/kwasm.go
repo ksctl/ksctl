@@ -51,6 +51,18 @@ func setKwasmOperatorComponentOverridings(params metadata.ComponentOverrides) (
 	return
 }
 
+func KwasmWasmedgeComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+	return metadata.StackComponent{
+		HandlerType: metadata.ComponentTypeKubectl,
+		Kubectl: &metadata.KubectlHandler{
+			CreateNamespace: false,
+			Version:         "latest",
+			Url:             "https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml",
+			Metadata:        "It applies the runtime class for kwasm for wasmedge",
+		},
+	}, nil
+}
+
 func KwasmOperatorComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 	version, kwasmOperatorChartOverridings, err := setKwasmOperatorComponentOverridings(params)
 	if err != nil {

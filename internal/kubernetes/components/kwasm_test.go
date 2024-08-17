@@ -30,6 +30,17 @@ func TestSetKwasmOperatorComponentOverridings_WithOverrides(t *testing.T) {
 	assert.NotNil(t, overridings)
 }
 
+func TestKwasmWasmedgeComponent(t *testing.T) {
+	params := metadata.ComponentOverrides{}
+	component, err := KwasmWasmedgeComponent(params)
+
+	assert.NoError(t, err)
+	assert.Equal(t, metadata.ComponentTypeKubectl, component.HandlerType)
+	assert.NotNil(t, component.Kubectl)
+	assert.Equal(t, "latest", component.Kubectl.Version)
+	assert.Equal(t, "https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml", component.Kubectl.Url)
+}
+
 func TestKwasmWithSpinKube(t *testing.T) {
 	params := metadata.ComponentOverrides{
 		"version": "v1.2.3",
