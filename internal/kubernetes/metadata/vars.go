@@ -31,7 +31,7 @@ const (
 
 	KwasmOperatorComponentID StackComponentID = "kwasm-operator"
 
-	KwasmOperatorRuntimeClassID StackComponentID = "kwasm-operator-runtime-class"
+	KwasmRuntimeClassWasmedgeID StackComponentID = "kwasm-wasmedge-runtime-class"
 
 	SpinkubeOperatorCrdComponentID StackComponentID = "spinkube-operator-crd"
 	SpinKubeOperatorRuntimeClassID StackComponentID = "spinkube-operator-runtime-class"
