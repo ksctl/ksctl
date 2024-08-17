@@ -576,7 +576,6 @@ func (db *Store) GetOneOrMoreClusters(filter map[consts.KsctlSearchFilter]string
 			}
 
 			clustersInfo[consts.KsctlClusterType(clusterType)] = append(clustersInfo[consts.KsctlClusterType(clusterType)], v...)
-			log.Debug(storeCtx, "storage.local.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
 		}
 	}
 
@@ -595,7 +594,6 @@ func getClustersInfo(locs []string) ([]*storageTypes.StorageDocument, error) {
 		}
 		data = append(data, v)
 	}
-	log.Debug(storeCtx, "storage.local.getClustersInfo", "data", data)
 
 	return data, nil
 }

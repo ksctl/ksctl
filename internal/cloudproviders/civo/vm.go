@@ -273,8 +273,6 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 		<-done
 	}
 
-	log.Debug(civoCtx, "Printing", "cloudState", mainStateDocument)
-
 	return errCreateVM
 }
 

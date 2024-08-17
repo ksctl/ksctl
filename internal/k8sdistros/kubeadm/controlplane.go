@@ -154,7 +154,6 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			mainStateDocument.ClusterKubeConfigContext = contextName
-			log.Debug(kubeadmCtx, "Printing", "kubeconfig", kubeconfig)
 
 			if err := storage.Write(mainStateDocument); err != nil {
 				return err

@@ -543,7 +543,6 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 			c.Close(context.Background())
 
 			clustersInfo[consts.KsctlClusterType(clusterType)] = append(clustersInfo[consts.KsctlClusterType(clusterType)], clusters...)
-			log.Debug(storeCtx, "storage.external.mongodb.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
 		}
 	}
 

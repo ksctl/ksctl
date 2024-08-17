@@ -24,7 +24,6 @@ func (*CivoProvider) GetStateFile(types.StorageFactory) (string, error) {
 		)
 	}
 
-	log.Debug(civoCtx, "Printing", "cloudstate", string(cloudstate))
 	return string(cloudstate), nil
 }
 
@@ -586,9 +585,7 @@ func (obj *CivoProvider) GetKubeconfig(storage types.StorageFactory) (*string, e
 		log.Error("handled error", "catch", err)
 		return nil, err
 	}
-	log.Debug(civoCtx, "data", "read", _read)
 
 	kubeconfig := _read.ClusterKubeConfig
-	log.Debug(civoCtx, "data", "kubeconfig", kubeconfig)
 	return &kubeconfig, nil
 }

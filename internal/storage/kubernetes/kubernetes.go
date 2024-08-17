@@ -545,7 +545,6 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 			clusters := storageIdx[cloud+" "+clusterType]
 
 			clustersInfo[consts.KsctlClusterType(clusterType)] = append(clustersInfo[consts.KsctlClusterType(clusterType)], clusters...)
-			log.Debug(storeCtx, "storage.kubernetes.GetOneOrMoreClusters", "clusterInfo", clustersInfo)
 		}
 	}
 

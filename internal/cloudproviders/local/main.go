@@ -20,7 +20,6 @@ func (*LocalProvider) GetStateFile(types.StorageFactory) (string, error) {
 			log.NewError(localCtx, "failed to serialize the state", "Reason", err),
 		)
 	}
-	log.Debug(localCtx, "Printing", "cloudState", cloudstate)
 	return string(cloudstate), nil
 }
 
@@ -150,10 +149,8 @@ func (obj *LocalProvider) GetKubeconfig(storage types.StorageFactory) (*string, 
 		log.Error("handled error", "catch", err)
 		return nil, err
 	}
-	log.Debug(localCtx, "data", "read", _read)
 
 	kubeconfig := _read.ClusterKubeConfig
-	log.Debug(localCtx, "data", "kubeconfig", kubeconfig)
 	return &kubeconfig, nil
 }
 

@@ -127,7 +127,6 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) 
 			mainStateDocument.ClusterKubeConfig = kubeconfig
 			mainStateDocument.ClusterKubeConfigContext = contextName
 
-			log.Debug(k3sCtx, "Printing", "kubeconfig", kubeconfig)
 			err = storage.Write(mainStateDocument)
 			if err != nil {
 				return err
