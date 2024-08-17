@@ -21,7 +21,6 @@ func (*AzureProvider) GetStateFile(types.StorageFactory) (string, error) {
 			log.NewError(azureCtx, "failed to serialize the state", "Reason", err),
 		)
 	}
-	log.Debug(azureCtx, "Printing", "cloudstate", cloudstate)
 	return string(cloudstate), nil
 }
 
@@ -603,9 +602,7 @@ func (obj *AzureProvider) GetKubeconfig(storage types.StorageFactory) (*string, 
 		log.Error("handled error", "catch", err)
 		return nil, err
 	}
-	log.Debug(azureCtx, "data", "read", _read)
 
 	kubeconfig := _read.ClusterKubeConfig
-	log.Debug(azureCtx, "data", "kubeconfig", kubeconfig)
 	return &kubeconfig, nil
 }

@@ -354,8 +354,6 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		return errCreateVM
 	}
 
-	log.Debug(awsCtx, "Printing", "mainStateDocument", mainStateDocument)
-
 	log.Success(awsCtx, "Created the vm", "name", name)
 	return nil
 }

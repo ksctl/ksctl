@@ -70,8 +70,6 @@ func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState,
 		return err
 	}
 
-	log.Debug(bootstrapCtx, "Printing", "k3sState", mainStateDocument)
-
 	log.Success(bootstrapCtx, "Initialized state from Cloud")
 	return nil
 }

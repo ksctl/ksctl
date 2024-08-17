@@ -434,9 +434,8 @@ func (obj *AwsProvider) GetStateFile(factory types.StorageFactory) (string, erro
 			log.NewError(awsCtx, "failed to serialize the state", "Reason", err),
 		)
 	}
-	log.Debug(awsCtx, "Printing", "cloudstate", cloudstate)
-	return string(cloudstate), nil
 
+	return string(cloudstate), nil
 }
 
 func (obj *AwsProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
@@ -563,11 +562,9 @@ func (obj *AwsProvider) GetKubeconfig(storage types.StorageFactory) (*string, er
 		if err != nil {
 			return nil, err
 		}
-		log.Debug(awsCtx, "data", "kubeconfig", kubeconfig)
 		return &kubeconfig, nil
 	}
 
 	kubeconfig := mainStateDocument.ClusterKubeConfig
-	log.Debug(awsCtx, "data", "kubeconfig", kubeconfig)
 	return &kubeconfig, nil
 }

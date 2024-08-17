@@ -101,8 +101,6 @@ func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
 		return err
 	}
 
-	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
-
 	return nil
 }
 
@@ -321,7 +319,6 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 	if errCreateVM != nil {
 		return errCreateVM
 	}
-	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 
 	log.Success(azureCtx, "Created virtual machine", "name", name)
 	return nil
@@ -384,7 +381,6 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage types.StorageF
 		return errDelete
 	}
 
-	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 	log.Success(azureCtx, "Deleted disk", "name", diskName)
 	return nil
 }
@@ -489,7 +485,6 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.Stor
 		return errCreatePub
 	}
 
-	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 	log.Success(azureCtx, "Created public IP address", "name", publicIPName)
 	return nil
 }
@@ -562,7 +557,6 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage types.Stor
 		return errDelPub
 	}
 
-	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 	log.Success(azureCtx, "Deleted the pub IP", "name", publicIP)
 	return nil
 }
@@ -683,7 +677,6 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage ty
 	if errCreatenic != nil {
 		return errCreatenic
 	}
-	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 
 	log.Success(azureCtx, "Created network interface", "name", nicName)
 	return nil
@@ -754,7 +747,6 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage ty
 	if errDelnic != nil {
 		return errDelnic
 	}
-	log.Debug(azureCtx, "Printing", "mainStateDocument", mainStateDocument)
 
 	log.Success(azureCtx, "Deleted the network interface", "name", interfaceName)
 
