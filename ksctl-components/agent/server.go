@@ -55,15 +55,21 @@ func (s *server) LoadBalancer(ctx context.Context, in *pb.ReqLB) (*pb.ResLB, err
 func (s *server) Application(ctx context.Context, in *pb.ReqApplication) (*pb.ResApplication, error) {
 	log.Debug(agentCtx, "Request", "ReqApplication", in)
 	if len(in.Apps) == 0 {
-		return nil, status.Error(codes.Unimplemented, "invalid argument, cannot contain empty apps")
+		stat, estat := status.Newf(
+			codes.InvalidArgument,
+			"invalid argument, cannot contain empty apps",
+		).WithDetails(in)
+		if estat != nil {
+			return nil, estat
+		}
+		return nil, stat.Err()
 	}
-	// FIXME: important the agentCtx is used instead of ctx
-	// Reason: the context from the unit test were not transfarable
 
 	if err := application.Handler(agentCtx, log, in); err != nil {
 		log.Error("Handler", "Reason", err)
-		return &pb.ResApplication{FailedApps: []string{err.Error()}}, status.Error(codes.Canceled, "invalid returned from manager")
+		return nil, err
 	}
+
 	if _, ok := ksctlHelpers.IsContextPresent(agentCtx, consts.KsctlTestFlagKey); ok {
 		return &pb.ResApplication{FailedApps: []string{"none"}}, nil
 	}
