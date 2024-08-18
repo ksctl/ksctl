@@ -10,6 +10,12 @@ import (
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
+func getLatestVersionHAProxy() (string, error) {
+	// currently no method to get the latest LTS version of HAProxy
+	// Refer: https://haproxy.debian.net/#distribution=Ubuntu&release=jammy&version=3.0
+	return "3.0", nil
+}
+
 func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
 	log.Note(bootstrapCtx, "configuring Loadbalancer")
 	p.mu.Lock()
@@ -18,8 +24,13 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
 
 	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes)
 
-	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
-		scriptConfigureLoadbalancer(controlPlaneIPs)).
+	haProxyVer, err := getLatestVersionHAProxy()
+	if err != nil {
+		return err
+	}
+
+	err = sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
+		scriptConfigureLoadbalancer(haProxyVer, controlPlaneIPs)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
 		FastMode(true).SSHExecute()
 	if err != nil {
@@ -30,19 +41,19 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
 	return nil
 }
 
-func scriptConfigureLoadbalancer(controlPlaneIPs []string) types.ScriptCollection {
+func scriptConfigureLoadbalancer(haProxyVer string, controlPlaneIPs []string) types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
 	// HA proxy repo https://haproxy.debian.net/
 	collection.Append(types.Script{
 		Name:       "Install haproxy",
 		CanRetry:   true,
 		MaxRetries: 9,
-		ShellScript: `
+		ShellScript: fmt.Sprintf(`
 sudo DEBIAN_FRONTEND=noninteractive apt update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends software-properties-common -y
-sudo DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:vbernat/haproxy-2.8 -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get install haproxy=2.8.\* -y
-`,
+sudo DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:vbernat/haproxy-%s -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install haproxy=%s.\* -y
+`, haProxyVer, haProxyVer),
 		ScriptExecutor: consts.LinuxBash,
 	})
 
