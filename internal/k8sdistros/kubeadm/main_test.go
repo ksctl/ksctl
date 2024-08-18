@@ -1,4 +1,4 @@
-package k3s
+package kubeadm
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"testing"
 
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
@@ -21,20 +22,46 @@ import (
 var (
 	storeHA types.StorageFactory
 
-	fakeClient         *K3s
-	dir                = filepath.Join(os.TempDir(), "ksctl-k3s-test")
+	fakeClient         *Kubeadm
+	dir                = filepath.Join(os.TempDir(), "ksctl-kubeadm-test")
 	fakeStateFromCloud cloudControlRes.CloudResourceState
-
-	parentCtx    context.Context
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentCtx          context.Context
+	parentLogger       types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
+
+func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.StorageDocument) *Kubeadm {
+	kubeadmCtx = parentCtx
+	log = parentLogger
+
+	mainStateDocument = state
+	mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
+	var err error
+	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(parentCtx, parentLogger, x.PrivateIPv4DataStores)
+	if err != nil {
+		return nil
+	}
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes = x.IPv4ControlPlanes
+	mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes = x.PrivateIPv4ControlPlanes
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores = x.IPv4DataStores
+	mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores = x.PrivateIPv4DataStores
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes = x.IPv4WorkerPlanes
+
+	mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer = x.IPv4LoadBalancer
+	mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
+	mainStateDocument.K8sBootstrap.B.SSHInfo = x.SSHState
+
+	return &Kubeadm{mu: &sync.Mutex{}}
+}
 
 func initPoller() {
 	poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
 		vers := []string{"v0.0.1"}
 
-		if org == "k3s-io" && repo == "k3s" {
-			vers = append(vers, "v1.30.3+k3s1")
+		if org == "kubernetes" && repo == "kubernetes" {
+			vers = append(vers, "v1.31.0")
 		}
 
 		sort.Slice(vers, func(i, j int) bool {
@@ -91,7 +118,6 @@ func TestMain(m *testing.M) {
 
 	initPoller()
 	initClients()
-
 	exitVal := m.Run()
 
 	fmt.Println("Cleanup..")

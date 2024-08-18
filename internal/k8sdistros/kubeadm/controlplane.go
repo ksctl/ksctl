@@ -159,7 +159,6 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 				return err
 			}
 		}
-
 	}
 	log.Success(kubeadmCtx, "configured ControlPlane", "number", strconv.Itoa(idx))
 
