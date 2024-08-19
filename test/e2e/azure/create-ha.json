@@ -1,6 +1,5 @@
 {
 	"cluster_name": "test-e2e-ha-azure",
-	"kubernetes_version": "1.27.1",
 	"region": "eastus2",
 	"ha_cluster": true,
 	"cloud_provider": "azure",
