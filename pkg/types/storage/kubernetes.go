@@ -31,7 +31,8 @@ func (a Application) String() string {
 	for _, c := range a.Components {
 		x := ""
 		if len(c.Version) == 0 {
-			continue
+			c.Version = "latest"
+			// continue
 		}
 		x = c.String()
 		components = append(components, x)

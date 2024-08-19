@@ -64,6 +64,8 @@ type AllClusterData struct {
 	NoDS            int
 	NoMgt           int
 	K8sVersion      string
+	EtcdVersion     string
+	HAProxyVersion  string
 	Apps            []string
 	Cni             string
 }
