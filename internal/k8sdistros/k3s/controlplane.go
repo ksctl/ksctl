@@ -14,13 +14,14 @@ import (
 func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
 
 	var script types.ScriptCollection
+	mainStateDocument.K8sBootstrap.K3s.K3sVersion = k3s.K3sVer
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(
 			mainStateDocument.K8sBootstrap.B.CACert,
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
 			mainStateDocument.K8sBootstrap.B.EtcdKey,
-			k3s.K3sVer,
+			mainStateDocument.K8sBootstrap.K3s.K3sVersion,
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
 			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer)
@@ -29,7 +30,7 @@ func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.S
 			mainStateDocument.K8sBootstrap.B.CACert,
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
 			mainStateDocument.K8sBootstrap.B.EtcdKey,
-			k3s.K3sVer,
+			mainStateDocument.K8sBootstrap.K3s.K3sVersion,
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
 			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer)
@@ -84,7 +85,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) 
 				mainStateDocument.K8sBootstrap.B.CACert,
 				mainStateDocument.K8sBootstrap.B.EtcdCert,
 				mainStateDocument.K8sBootstrap.B.EtcdKey,
-				k3s.K3sVer,
+				mainStateDocument.K8sBootstrap.K3s.K3sVersion,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
 				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
@@ -94,7 +95,7 @@ func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) 
 				mainStateDocument.K8sBootstrap.B.CACert,
 				mainStateDocument.K8sBootstrap.B.EtcdCert,
 				mainStateDocument.K8sBootstrap.B.EtcdKey,
-				k3s.K3sVer,
+				mainStateDocument.K8sBootstrap.K3s.K3sVersion,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
 				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,

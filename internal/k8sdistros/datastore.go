@@ -21,7 +21,7 @@ func getLatestVersionEtcd() (string, error) {
 	return latestVersion[0], nil
 }
 
-func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error {
+func (p *PreBootstrap) ConfigureDataStore(no int, store types.StorageFactory) error {
 	p.mu.Lock()
 	idx := no
 	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
@@ -45,6 +45,11 @@ func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error 
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute()
 	if err != nil {
+		return err
+	}
+
+	mainStateDocument.K8sBootstrap.B.EtcdVersion = etcdVer
+	if err := store.Write(mainStateDocument); err != nil {
 		return err
 	}
 

@@ -16,7 +16,7 @@ func getLatestVersionHAProxy() (string, error) {
 	return "3.0", nil
 }
 
-func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
+func (p *PreBootstrap) ConfigureLoadbalancer(store types.StorageFactory) error {
 	log.Note(bootstrapCtx, "configuring Loadbalancer")
 	p.mu.Lock()
 	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
@@ -34,6 +34,11 @@ func (p *PreBootstrap) ConfigureLoadbalancer(_ types.StorageFactory) error {
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
 		FastMode(true).SSHExecute()
 	if err != nil {
+		return err
+	}
+
+	mainStateDocument.K8sBootstrap.B.HAProxyVersion = haProxyVer
+	if err := store.Write(mainStateDocument); err != nil {
 		return err
 	}
 

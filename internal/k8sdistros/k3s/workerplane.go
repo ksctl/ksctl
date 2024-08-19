@@ -19,7 +19,11 @@ func (k3s *K3s) JoinWorkerplane(no int, _ types.StorageFactory) error {
 	log.Note(k3sCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
-		scriptWP(k3s.K3sVer, mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer, mainStateDocument.K8sBootstrap.K3s.K3sToken)).
+		scriptWP(
+			mainStateDocument.K8sBootstrap.K3s.K3sVersion,
+			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
+			mainStateDocument.K8sBootstrap.K3s.K3sToken,
+		)).
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute()
 	if err != nil {

@@ -13,8 +13,10 @@ import (
 
 func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
 
+	mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion = kubeadm.KubeadmVer
+
 	installKubeadmTools := scriptTransferEtcdCerts(
-		scriptInstallKubeadmAndOtherTools(kubeadm.KubeadmVer),
+		scriptInstallKubeadmAndOtherTools(mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion),
 		mainStateDocument.K8sBootstrap.B.CACert,
 		mainStateDocument.K8sBootstrap.B.EtcdCert,
 		mainStateDocument.K8sBootstrap.B.EtcdKey)
@@ -104,7 +106,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int, storage types.StorageFactory
 	} else {
 
 		installKubeadmTools := scriptTransferEtcdCerts(
-			scriptInstallKubeadmAndOtherTools(p.KubeadmVer),
+			scriptInstallKubeadmAndOtherTools(mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion),
 			mainStateDocument.K8sBootstrap.B.CACert,
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
 			mainStateDocument.K8sBootstrap.B.EtcdKey)
