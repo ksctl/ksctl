@@ -441,7 +441,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion, "1.31", "should be equal")
+	assert.Equal(t, mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion, "v1.31", "should be equal")
 
 	for no := 0; no < noWP; no++ {
 		err := fakeClient.JoinWorkerplane(no, storeHA)

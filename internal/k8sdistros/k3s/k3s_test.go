@@ -58,7 +58,7 @@ func TestK3sDistro_Version(t *testing.T) {
 			t.Fatalf("Expected for %s as %v but got %v", ver, expected, got)
 		} else {
 			if err == nil {
-				if len(v) == 0 {
+				if len(ver) == 0 {
 					assert.Equal(t, v, "v1.30.3+k3s1", "it should be equal")
 				} else {
 					assert.Equal(t, v, convertK3sVersion(ver), "it should be equal")
