@@ -104,7 +104,7 @@ func initClients() {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewClientHelper(fakeStateFromCloud, &storageTypes.StorageDocument{})
+	fakeClient = NewClientHelper(fakeStateFromCloud, mainState)
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}

@@ -336,7 +336,7 @@ func checkCurrentStateFile(t *testing.T) {
 func TestOverallScriptsCreation(t *testing.T) {
 	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
 
-	fakeClient.K8sVersion("1.27.1")
+	fakeClient.K8sVersion("")
 
 	checkCurrentStateFile(t)
 
@@ -350,6 +350,8 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Controlplane unable to operate %v", err)
 		}
 	}
+
+	assert.Equal(t, mainStateDocument.K8sBootstrap.K3s.K3sVersion, "v1.30.3+k3s1", "should be equal")
 
 	for no := 0; no < noWP; no++ {
 		err := fakeClient.JoinWorkerplane(no, storeHA)

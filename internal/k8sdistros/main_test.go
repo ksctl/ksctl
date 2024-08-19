@@ -77,7 +77,7 @@ func initClients() {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewPreBootStrap(parentCtx, parentLogger, &storageTypes.StorageDocument{})
+	fakeClient = NewPreBootStrap(parentCtx, parentLogger, mainState)
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
@@ -111,10 +111,14 @@ func TestOverallScriptsCreation(t *testing.T) {
 		t.Fatalf("Configure Datastore unable to operate %v", err)
 	}
 
+	assert.Equal(t, mainStateDocument.K8sBootstrap.B.HAProxyVersion, "3.0", "should be equal")
+
 	for no := 0; no < noDS; no++ {
 		err := fakeClient.ConfigureDataStore(no, storeHA)
 		if err != nil {
 			t.Fatalf("Configure Datastore unable to operate %v", err)
 		}
 	}
+
+	assert.Equal(t, mainStateDocument.K8sBootstrap.B.EtcdVersion, "v3.5.15", "should be equal")
 }
