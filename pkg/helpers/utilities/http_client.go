@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sort"
 	"time"
+
+	"golang.org/x/mod/semver"
 )
 
 func extractReleases(io io.Reader) ([]string, error) {
@@ -24,8 +26,11 @@ func extractReleases(io io.Reader) ([]string, error) {
 	}
 
 	sort.Slice(releases, func(i, j int) bool {
-		return releases[i].TagName > releases[j].TagName
-		// return releases[i].PublishedAt.After(releases[j].PublishedAt) || releases[i].TagName > releases[j].TagName
+		cmp := semver.Compare(releases[i].TagName, releases[j].TagName)
+		if cmp != 0 {
+			return cmp > 0
+		}
+		return releases[i].PublishedAt.After(releases[j].PublishedAt)
 	})
 
 	tags := make([]string, 0, len(releases))
