@@ -1,24 +1,25 @@
-package az_pkg_test_test
+package az_pkg_test
 
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/ksctl/ksctl/internal/cloudproviders/azure"
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/types"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 var (
-	fakeClientHA *azure.AzureProvider
+	fakeClientHA types.CloudFactory
 	storeHA      types.StorageFactory
 
-	fakeClientManaged *azure.AzureProvider
+	fakeClientManaged types.CloudFactory
 	storeManaged      types.StorageFactory
 
 	fakeClientVars *azure.AzureProvider
@@ -26,7 +27,7 @@ var (
 	parentCtx      context.Context
 	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 
-	dir = filepath.Join(os.TempDir(), "ksctl-azure-test")
+	dir = filepath.Join(os.TempDir(), "ksctl-azure-pkg-test")
 )
 
 func TestMain(m *testing.M) {
@@ -51,4 +52,8 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(exitVal)
+}
+
+func genResourceGroup(clusterName string, clusterType string) string {
+	return fmt.Sprintf("ksctl-resgrp-%s-%s", clusterType, clusterName)
 }
