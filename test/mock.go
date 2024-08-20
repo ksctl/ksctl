@@ -190,7 +190,6 @@ func CivoTestingHAKubeadm() error {
 	cli.Metadata.NoCP = 5
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
-	cli.Metadata.K8sVersion = "1.28"
 
 	return ExecuteHARun()
 }
@@ -209,7 +208,6 @@ func CivoTestingHAK3s() error {
 	cli.Metadata.NoCP = 5
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
-	cli.Metadata.K8sVersion = "1.27.4"
 
 	return ExecuteHARun()
 }
@@ -228,7 +226,6 @@ func AzureTestingHAKubeadm() error {
 	cli.Metadata.NoCP = 3
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
-	cli.Metadata.K8sVersion = "1.28"
 
 	return ExecuteHARun()
 }
@@ -247,7 +244,6 @@ func AzureTestingHAK3s() error {
 	cli.Metadata.NoCP = 3
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
-	cli.Metadata.K8sVersion = "1.27.4"
 
 	return ExecuteHARun()
 }
@@ -265,7 +261,6 @@ func AwsTestingHA() error {
 	cli.Metadata.NoCP = 3
 	cli.Metadata.NoWP = 1
 	cli.Metadata.NoDS = 3
-	cli.Metadata.K8sVersion = "1.27.4"
 
 	return ExecuteHARun()
 }

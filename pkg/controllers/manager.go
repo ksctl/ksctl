@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"runtime/debug"
+	"sort"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 
@@ -34,7 +35,27 @@ func (manager *managerInfo) startPoller(ctx context.Context) error {
 	if _, ok := helpers.IsContextPresent(ctx, consts.KsctlTestFlagKey); !ok {
 		poller.InitSharedGithubReleasePoller()
 	} else {
-		poller.InitSharedGithubReleaseFakePoller(nil)
+		poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
+			vers := []string{"v0.0.1"}
+
+			if org == "etcd-io" && repo == "etcd" {
+				vers = append(vers, "v3.5.15")
+			}
+
+			if org == "k3s-io" && repo == "k3s" {
+				vers = append(vers, "v1.30.3+k3s1")
+			}
+
+			if org == "kubernetes" && repo == "kubernetes" {
+				vers = append(vers, "v1.31.0")
+			}
+
+			sort.Slice(vers, func(i, j int) bool {
+				return vers[i] > vers[j]
+			})
+
+			return vers, nil
+		})
 	}
 
 	return nil
