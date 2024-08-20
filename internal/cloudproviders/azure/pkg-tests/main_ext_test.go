@@ -1,4 +1,4 @@
-package az_pkg_test
+package pkg_tests_test
 
 import (
 	"context"

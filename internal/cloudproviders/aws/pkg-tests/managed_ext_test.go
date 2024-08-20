@@ -1,7 +1,7 @@
-package az_pkg_test
+package pkg_tests_test
 
 import (
-	"github.com/ksctl/ksctl/internal/cloudproviders/azure"
+	"github.com/ksctl/ksctl/internal/cloudproviders/aws"
 	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
@@ -12,29 +12,29 @@ import (
 )
 
 func TestManagedCluster(t *testing.T) {
-	mainStateDocumentManaged := &storageTypes.StorageDocument{}
 	var (
 		clusterName = "demo-managed"
-		regionCode  = "fake"
+		regionCode  = "fake-region"
 	)
-	fakeClientManaged, _ = azure.NewClient(parentCtx, types.Metadata{
+	mainStateDocumentManaged := &storageTypes.StorageDocument{}
+	fakeClientManaged, _ = aws.NewClient(parentCtx, types.Metadata{
 		ClusterName: clusterName,
 		Region:      regionCode,
-		Provider:    consts.CloudAzure,
-	}, parentLogger, mainStateDocumentManaged, azure.ProvideClient)
+		Provider:    consts.CloudAws,
+	}, parentLogger, mainStateDocumentManaged, aws.ProvideClient)
 
 	storeManaged = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeManaged.Setup(consts.CloudAzure, regionCode, clusterName, consts.ClusterTypeMang)
+	_ = storeManaged.Setup(consts.CloudAws, "fake-region", "demo-managed", consts.ClusterTypeMang)
 	_ = storeManaged.Connect()
 
-	fakeClientManaged.ManagedK8sVersion("1.27")
+	fakeClientManaged.ManagedK8sVersion("1.30")
 	t.Run("init state", func(t *testing.T) {
 
 		if err := fakeClientManaged.InitState(storeManaged, consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")
+		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeManaged.Read()
 		if err == nil {
@@ -44,18 +44,18 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("Create network", func(t *testing.T) {
 		assert.Equal(t, fakeClientManaged.Name("fake-data-will-not-be-used").NewNetwork(storeManaged), nil, "resource grp should be created")
-		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")
-		assert.Assert(t, len(mainStateDocumentManaged.CloudInfra.Azure.ResourceGroupName) > 0)
+		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
+		assert.Assert(t, len(mainStateDocumentManaged.CloudInfra.Aws.VpcId) > 0)
 	})
 
 	t.Run("Create managed cluster", func(t *testing.T) {
 
 		assert.Equal(t, fakeClientManaged.Name("fake-managed").VMType("fake").NewManagedCluster(storeManaged, 5), nil, "managed cluster should be created")
-		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Azure.B.IsCompleted, true, "cluster should not be completed")
+		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Aws.B.IsCompleted, true, "cluster should not be completed")
 
-		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Azure.NoManagedNodes, 5)
-		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Azure.B.KubernetesVer, "1.27")
-		assert.Assert(t, len(mainStateDocumentManaged.CloudInfra.Azure.ManagedClusterName) > 0, "Managed cluster Name not saved")
+		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Aws.NoManagedNodes, 5)
+		assert.Equal(t, mainStateDocumentManaged.CloudInfra.Aws.B.KubernetesVer, "1.30")
+		assert.Assert(t, len(mainStateDocumentManaged.CloudInfra.Aws.ManagedClusterName) > 0, "Managed cluster Name not saved")
 
 		_, err := storeManaged.Read()
 		if err != nil {
@@ -65,17 +65,21 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []cloud.AllClusterData{
-			{
-				Name:            clusterName,
-				CloudProvider:   consts.CloudAzure,
-				ClusterType:     consts.ClusterTypeMang,
-				ResourceGrpName: genResourceGroup(clusterName, string(consts.ClusterTypeMang)),
-				Region:          regionCode,
-				ManagedK8sName:  "fake-managed",
-				NoMgt:           mainStateDocumentManaged.CloudInfra.Azure.NoManagedNodes,
-				Mgt:             cloud.VMData{VMSize: "fake"},
-				K8sDistro:       "managed",
-				K8sVersion:      mainStateDocumentManaged.CloudInfra.Azure.B.KubernetesVer,
+			cloud.AllClusterData{
+				Name:          clusterName,
+				CloudProvider: consts.CloudAws,
+				ClusterType:   consts.ClusterTypeMang,
+				NetworkName:   "demo-managed-vpc",
+				NetworkID:     "3456d25f36g474g546",
+				LB: cloud.VMData{
+					SubnetID:   "3456d25f36g474g546",
+					SubnetName: "demo-managed-subnet0",
+				},
+				Region:     regionCode,
+				NoMgt:      mainStateDocumentManaged.CloudInfra.Aws.NoManagedNodes,
+				Mgt:        cloud.VMData{VMSize: "fake"},
+				K8sDistro:  "managed",
+				K8sVersion: mainStateDocumentManaged.CloudInfra.Aws.B.KubernetesVer,
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos(storeManaged)
@@ -86,14 +90,13 @@ func TestManagedCluster(t *testing.T) {
 	t.Run("Delete managed cluster", func(t *testing.T) {
 		assert.Equal(t, fakeClientManaged.DelManagedCluster(storeManaged), nil, "managed cluster should be deleted")
 
-		assert.Equal(t, len(mainStateDocumentManaged.CloudInfra.Azure.ManagedClusterName), 0, "managed cluster id still present")
+		assert.Equal(t, len(mainStateDocumentManaged.CloudInfra.Aws.ManagedClusterName), 0, "managed cluster id still present")
 	})
 
 	t.Run("Delete Network cluster", func(t *testing.T) {
 		assert.Equal(t, fakeClientManaged.DelNetwork(storeManaged), nil, "Network should be deleted")
 
-		assert.Equal(t, len(mainStateDocumentManaged.CloudInfra.Azure.ResourceGroupName), 0, "resource grp still present")
-		// at this moment the file is not present
+		assert.Equal(t, len(mainStateDocumentManaged.CloudInfra.Aws.VpcId), 0, "resource grp still present")
 		_, err := storeManaged.Read()
 		if err == nil {
 			t.Fatalf("State file and cluster directory still present")
