@@ -18,9 +18,8 @@ var (
 )
 
 type K3s struct {
-	K3sVer string
-	Cni    string
-	mu     *sync.Mutex
+	Cni string
+	mu  *sync.Mutex
 }
 
 func NewClient(
@@ -62,8 +61,8 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 
 func (k3s *K3s) K8sVersion(ver string) types.KubernetesBootstrap {
 	if v, err := isValidK3sVersion(ver); err == nil {
-		k3s.K3sVer = v
-		log.Debug(k3sCtx, "Printing", "k3s.K3sVer", k3s.K3sVer)
+		mainStateDocument.K8sBootstrap.K3s.K3sVersion = v
+		log.Debug(k3sCtx, "Printing", "k3s.K3sVer", v)
 		return k3s
 	} else {
 		log.Error(err.Error())

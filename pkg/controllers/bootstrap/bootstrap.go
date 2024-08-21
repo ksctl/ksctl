@@ -32,6 +32,17 @@ func Setup(client *types.KsctlClient, state *storageTypes.StorageDocument) error
 
 	client.PreBootstrap = k8sdistros.NewPreBootStrap(controllerCtx, log, state)
 
+	// Make a check if the stateDocument is present in the storage
+	if state.BootstrapProvider == consts.K8sK3s || state.BootstrapProvider == consts.K8sKubeadm {
+		switch state.BootstrapProvider {
+		case consts.K8sK3s:
+			client.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
+		case consts.K8sKubeadm:
+			client.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
+		}
+		return nil
+	}
+
 	switch client.Metadata.K8sDistro {
 	case consts.K8sK3s:
 		client.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
@@ -152,10 +163,12 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 	if err := client.Bootstrap.Setup(client.Storage, consts.OperationGet); err != nil {
 		return err
 	}
-	client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
-	if client.Bootstrap == nil {
-		return log.NewError(controllerCtx, "invalid version of self-managed k8s cluster")
-	}
+
+	// It will get from the state by default
+	// client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
+	// if client.Bootstrap == nil {
+	// 	return log.NewError(controllerCtx, "invalid version of self-managed k8s cluster")
+	// }
 	wg := &sync.WaitGroup{}
 	errChan := make(chan error, end-start)
 

@@ -22,9 +22,8 @@ var (
 )
 
 type Kubeadm struct {
-	KubeadmVer string
-	Cni        string
-	mu         *sync.Mutex
+	Cni string
+	mu  *sync.Mutex
 }
 
 func (p *Kubeadm) Setup(storage types.StorageFactory, operation consts.KsctlOperation) error {
@@ -41,8 +40,8 @@ func (p *Kubeadm) Setup(storage types.StorageFactory, operation consts.KsctlOper
 
 func (p *Kubeadm) K8sVersion(ver string) types.KubernetesBootstrap {
 	if v, err := isValidKubeadmVersion(ver); err == nil {
-		p.KubeadmVer = v
-		log.Debug(kubeadmCtx, "Printing", "kubeadm.KubeadmVersion", p.KubeadmVer)
+		mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion = v
+		log.Debug(kubeadmCtx, "Printing", "kubeadm.KubeadmVersion", v)
 		return p
 	} else {
 		log.Error(err.Error())
