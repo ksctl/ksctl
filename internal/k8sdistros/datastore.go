@@ -5,12 +5,23 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ksctl/ksctl/poller"
+
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error {
+func getLatestVersionEtcd() (string, error) {
+	latestVersion, err := poller.GetSharedPoller().Get("etcd-io", "etcd")
+	if err != nil {
+		return "", err
+	}
+
+	return latestVersion[0], nil
+}
+
+func (p *PreBootstrap) ConfigureDataStore(no int, store types.StorageFactory) error {
 	p.mu.Lock()
 	idx := no
 	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
@@ -18,8 +29,14 @@ func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error 
 
 	log.Note(bootstrapCtx, "configuring Datastore", "number", strconv.Itoa(idx))
 
-	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
+	etcdVer, err := getLatestVersionEtcd()
+	if err != nil {
+		return err
+	}
+
+	err = sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(
+			etcdVer,
 			mainStateDocument.K8sBootstrap.B.CACert,
 			mainStateDocument.K8sBootstrap.B.EtcdCert,
 			mainStateDocument.K8sBootstrap.B.EtcdKey,
@@ -28,6 +45,11 @@ func (p *PreBootstrap) ConfigureDataStore(no int, _ types.StorageFactory) error 
 		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute()
 	if err != nil {
+		return err
+	}
+
+	mainStateDocument.K8sBootstrap.B.EtcdVersion = etcdVer
+	if err := store.Write(mainStateDocument); err != nil {
 		return err
 	}
 
@@ -46,7 +68,7 @@ func getEtcdMemberIPFieldForDatastore(ips []string) string {
 	return strings.Join(tempDS, ",")
 }
 
-func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) types.ScriptCollection {
+func scriptDB(etcdLatestVer, ca, etcd, key string, privIPs []string, currIdx int) types.ScriptCollection {
 	collection := helpers.NewScriptCollection()
 
 	collection.Append(types.Script{
@@ -54,8 +76,8 @@ func scriptDB(ca, etcd, key string, privIPs []string, currIdx int) types.ScriptC
 		ScriptExecutor: consts.LinuxBash,
 		MaxRetries:     9,
 		CanRetry:       true,
-		ShellScript: `
-ETCD_VER=v3.5.10
+		ShellScript: fmt.Sprintf(`
+ETCD_VER=%s
 
 GOOGLE_URL=https://storage.googleapis.com/etcd
 GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
@@ -66,15 +88,15 @@ sudo rm -rf /tmp/etcd-download-test
 mkdir -p /tmp/etcd-download-test
 
 curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-`,
+`, etcdLatestVer),
 	})
 
 	collection.Append(types.Script{
 		Name:           "moving the downloaded binaries to specific location",
 		ScriptExecutor: consts.LinuxBash,
 		CanRetry:       false,
-		ShellScript: `
-ETCD_VER=v3.5.10
+		ShellScript: fmt.Sprintf(`
+ETCD_VER=%s
 tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
 sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
 
@@ -83,7 +105,7 @@ sudo mv -v /tmp/etcd-download-test/etcdctl /usr/local/bin
 sudo mv -v /tmp/etcd-download-test/etcdutl /usr/local/bin
 
 sudo rm -rf /tmp/etcd-download-test
-`,
+`, etcdLatestVer),
 	})
 
 	collection.Append(types.Script{

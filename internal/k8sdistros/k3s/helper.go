@@ -2,20 +2,34 @@ package k3s
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/poller"
 	"strings"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 )
 
-func isValidK3sVersion(ver string) error {
-	validVersion := []string{"1.30.1", "1.29.5", "1.29.4", "1.28.10", "1.27.4", "1.27.1", "1.26.7", "1.25.12"} // TODO: check
+func convertK3sVersion(ver string) string {
+	return fmt.Sprintf("v%s+k3s1", ver)
+}
 
+func isValidK3sVersion(ver string) (string, error) {
+
+	validVersion, err := poller.GetSharedPoller().Get("k3s-io", "k3s")
+	if err != nil {
+		return "", err
+	}
+
+	if ver == "" {
+		return validVersion[0], nil
+	}
+
+	ver = convertK3sVersion(ver)
 	for _, vver := range validVersion {
 		if vver == ver {
-			return nil
+			return vver, nil
 		}
 	}
-	return ksctlErrors.ErrInvalidVersion.Wrap(
+	return "", ksctlErrors.ErrInvalidVersion.Wrap(
 		log.NewError(k3sCtx, "invalid k3s version", "valid versions", strings.Join(validVersion, " ")),
 	)
 }

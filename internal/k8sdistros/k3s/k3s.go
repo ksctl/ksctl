@@ -2,7 +2,6 @@ package k3s
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
@@ -62,9 +61,8 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 }
 
 func (k3s *K3s) K8sVersion(ver string) types.KubernetesBootstrap {
-	if err := isValidK3sVersion(ver); err == nil {
-		// valid
-		k3s.K3sVer = fmt.Sprintf("v%s+k3s1", ver)
+	if v, err := isValidK3sVersion(ver); err == nil {
+		k3s.K3sVer = v
 		log.Debug(k3sCtx, "Printing", "k3s.K3sVer", k3s.K3sVer)
 		return k3s
 	} else {

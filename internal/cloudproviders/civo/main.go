@@ -547,8 +547,29 @@ func (obj *CivoProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]clo
 				NoDS:  len(v.CloudInfra.Civo.InfoDatabase.VMIDs),
 				NoMgt: v.CloudInfra.Civo.NoManagedNodes,
 
-				K8sDistro:  v.BootstrapProvider,
-				K8sVersion: v.CloudInfra.Civo.B.KubernetesVer,
+				K8sDistro: v.BootstrapProvider,
+				HAProxyVersion: func() string {
+					if v.ClusterType == string(consts.ClusterTypeHa) {
+						return v.K8sBootstrap.B.HAProxyVersion
+					}
+					return ""
+				}(),
+				EtcdVersion: func() string {
+					if v.ClusterType == string(consts.ClusterTypeHa) {
+						return v.K8sBootstrap.B.EtcdVersion
+					}
+					return ""
+				}(),
+				K8sVersion: func() string {
+					switch v.BootstrapProvider {
+					case consts.K8sK3s:
+						return v.K8sBootstrap.K3s.K3sVersion
+					case consts.K8sKubeadm:
+						return v.K8sBootstrap.Kubeadm.KubeadmVersion
+					default:
+						return v.CloudInfra.Civo.B.KubernetesVer
+					}
+				}(),
 				Apps: func() (_a []string) {
 					for _, a := range v.Addons.Apps {
 						_a = append(_a, a.String())

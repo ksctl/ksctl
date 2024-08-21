@@ -1,6 +1,5 @@
 {
   "cluster_name": "test-e2e-kubeadm-ha-aws",
-  "kubernetes_version": "1.29",
   "region": "us-east-1",
   "ha_cluster": true,
   "cloud_provider": "aws",

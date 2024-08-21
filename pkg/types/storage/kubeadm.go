@@ -3,10 +3,10 @@ package storage
 import "time"
 
 type StateConfigurationKubeadm struct {
-	// CertificateKey is only valid till 24 hours
+	KubeadmVersion string `json:"kubeadm_version" bson:"kubeadm_version"`
+
 	CertificateKey string `json:"certificate_key" bson:"certificate_key"`
 
-	// BootstrapToken cryptographic random string
 	BootstrapToken string `json:"bootstrap_token" bson:"bootstrap_token"`
 
 	BootstrapTokenExpireTimeUtc time.Time `json:"bootstrap_token_expire_time_utc" bson:"bootstrap_token_expire_time_utc"`

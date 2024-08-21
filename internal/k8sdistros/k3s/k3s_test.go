@@ -1,10 +1,7 @@
 package k3s
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 
@@ -12,25 +9,11 @@ import (
 
 	testHelper "github.com/ksctl/ksctl/test/helpers"
 
-	"github.com/ksctl/ksctl/pkg/logger"
-
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
 	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"gotest.tools/v3/assert"
-)
-
-var (
-	storeHA types.StorageFactory
-
-	fakeClient         *K3s
-	dir                = filepath.Join(os.TempDir(), "ksctl-k3s-test")
-	fakeStateFromCloud cloudControlRes.CloudResourceState
-
-	parentCtx    context.Context
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.StorageDocument) *K3s {
@@ -61,71 +44,26 @@ func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.S
 	return &K3s{mu: &sync.Mutex{}}
 }
 
-func TestMain(m *testing.M) {
-	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
-	parentCtx = context.WithValue(parentCtx, consts.KsctlTestFlagKey, "true")
-
-	mainState := &storageTypes.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
-	}
-	fakeStateFromCloud = cloudControlRes.CloudResourceState{
-		SSHState: cloudControlRes.SSHInfo{
-			PrivateKey: mainState.SSHKeyPair.PrivateKey,
-			UserName:   "fakeuser",
-		},
-		Metadata: cloudControlRes.Metadata{
-			ClusterName: "fake",
-			Provider:    consts.CloudAzure,
-			Region:      "fake",
-			ClusterType: consts.ClusterTypeHa,
-		},
-		// public IPs
-		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
-		IPv4DataStores:    []string{"A.B.C.3"},
-		IPv4WorkerPlanes:  []string{"A.B.C.2"},
-		IPv4LoadBalancer:  "A.B.C.1",
-
-		// Private IPs
-		PrivateIPv4ControlPlanes: []string{"192.168.X.7", "192.168.X.9", "192.168.X.10"},
-		PrivateIPv4DataStores:    []string{"192.168.5.2"},
-		PrivateIPv4LoadBalancer:  "192.168.X.1",
-	}
-
-	fakeClient = NewClientHelper(fakeStateFromCloud, &storageTypes.StorageDocument{})
-	if fakeClient == nil {
-		panic("unable to initialize")
-	}
-
-	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect()
-
-	exitVal := m.Run()
-
-	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
-		panic(err)
-	}
-
-	os.Exit(exitVal)
-}
-
 func TestK3sDistro_Version(t *testing.T) {
 	forTesting := map[string]bool{
-		"1.27.4":  true,
-		"1.26.7":  true,
-		"1.25.12": true,
-		"1.27.1":  true,
-		"1.27.0":  false,
+		"":       true,
+		"1.30.3": true,
+		"1.27":   false,
 	}
 	for ver, expected := range forTesting {
-		err := isValidK3sVersion(ver)
+		v, err := isValidK3sVersion(ver)
 		got := err == nil
 
 		if got != expected {
 			t.Fatalf("Expected for %s as %v but got %v", ver, expected, got)
+		} else {
+			if err == nil {
+				if len(ver) == 0 {
+					assert.Equal(t, v, "v1.30.3+k3s1", "it should be equal")
+				} else {
+					assert.Equal(t, v, convertK3sVersion(ver), "it should be equal")
+				}
+			}
 		}
 	}
 }
@@ -398,7 +336,7 @@ func checkCurrentStateFile(t *testing.T) {
 func TestOverallScriptsCreation(t *testing.T) {
 	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
 
-	fakeClient.K8sVersion("1.27.1")
+	fakeClient.K8sVersion("")
 
 	checkCurrentStateFile(t)
 
@@ -412,6 +350,8 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Controlplane unable to operate %v", err)
 		}
 	}
+
+	assert.Equal(t, mainStateDocument.K8sBootstrap.K3s.K3sVersion, "v1.30.3+k3s1", "should be equal")
 
 	for no := 0; no < noWP; no++ {
 		err := fakeClient.JoinWorkerplane(no, storeHA)

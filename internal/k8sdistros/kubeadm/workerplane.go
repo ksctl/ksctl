@@ -57,7 +57,7 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage types.StorageFactory) erro
 	}
 
 	script := scriptJoinWorkerplane(
-		scriptInstallKubeadmAndOtherTools(p.KubeadmVer),
+		scriptInstallKubeadmAndOtherTools(mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion),
 		mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 		mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,

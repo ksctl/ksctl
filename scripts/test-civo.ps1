@@ -15,5 +15,5 @@ Write-Output "|   Testing (internal/cloudproviders/civo)"
 Write-Output "--------------------------------------------"
 
 Set-Location cloudproviders\civo
-go test -tags testing_civo . -v && Set-Location -
+go test -tags testing_civo ./... -v && Set-Location -
 

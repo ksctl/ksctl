@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"github.com/ksctl/ksctl/poller"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
@@ -39,9 +40,8 @@ func (p *Kubeadm) Setup(storage types.StorageFactory, operation consts.KsctlOper
 }
 
 func (p *Kubeadm) K8sVersion(ver string) types.KubernetesBootstrap {
-	if err := isValidKubeadmVersion(ver); err == nil {
-		// valid
-		p.KubeadmVer = ver
+	if v, err := isValidKubeadmVersion(ver); err == nil {
+		p.KubeadmVer = v
 		log.Debug(kubeadmCtx, "Printing", "kubeadm.KubeadmVersion", p.KubeadmVer)
 		return p
 	} else {
@@ -61,15 +61,31 @@ func (p *Kubeadm) CNI(cni string) (externalCNI bool) {
 	return true // if its empty string we will install the default cni as flannel
 }
 
-func isValidKubeadmVersion(ver string) error {
-	validVersion := []string{"1.28", "1.29", "1.30"}
+func isValidKubeadmVersion(ver string) (string, error) {
+
+	validVersion, err := poller.GetSharedPoller().Get("kubernetes", "kubernetes")
+	if err != nil {
+		return "", err
+	}
+
+	for i, v := range validVersion {
+		_v := strings.Split(v, ".")
+		// v1.30.1 -> [v1, 30, 1]
+		if len(_v) == 3 {
+			validVersion[i] = fmt.Sprintf("%s.%s", _v[0], _v[1])
+		}
+	}
+
+	if ver == "" {
+		return validVersion[0], nil
+	}
 
 	for _, vver := range validVersion {
 		if vver == ver {
-			return nil
+			return vver, nil
 		}
 	}
-	return ksctlErrors.ErrInvalidVersion.Wrap(
+	return "", ksctlErrors.ErrInvalidVersion.Wrap(
 		log.NewError(kubeadmCtx, "invalid kubeadm version", "valid versions", strings.Join(validVersion, " ")),
 	)
 }
@@ -175,9 +191,9 @@ sudo apt-get update -y
 
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --yes
+curl -fsSL https://pkgs.k8s.io/core:/stable:/%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --yes
 
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update -y
 sudo apt-get install -y kubelet kubeadm kubectl

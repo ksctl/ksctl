@@ -1,128 +1,36 @@
 package kubeadm
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sync"
 	"testing"
-
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	testHelper "github.com/ksctl/ksctl/test/helpers"
 
-	"github.com/ksctl/ksctl/pkg/logger"
-
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 	"gotest.tools/v3/assert"
 )
 
-var (
-	storeHA types.StorageFactory
-
-	fakeClient         *Kubeadm
-	dir                = filepath.Join(os.TempDir(), "ksctl-kubeadm-test")
-	fakeStateFromCloud cloudControlRes.CloudResourceState
-	parentCtx          context.Context
-	parentLogger       types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
-)
-
-func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.StorageDocument) *Kubeadm {
-	kubeadmCtx = parentCtx
-	log = parentLogger
-
-	mainStateDocument = state
-	mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
-	var err error
-	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(parentCtx, parentLogger, x.PrivateIPv4DataStores)
-	if err != nil {
-		return nil
-	}
-
-	mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes = x.IPv4ControlPlanes
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes = x.PrivateIPv4ControlPlanes
-
-	mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores = x.IPv4DataStores
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores = x.PrivateIPv4DataStores
-
-	mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes = x.IPv4WorkerPlanes
-
-	mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer = x.IPv4LoadBalancer
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
-	mainStateDocument.K8sBootstrap.B.SSHInfo = x.SSHState
-
-	return &Kubeadm{mu: &sync.Mutex{}}
-}
-
-func TestMain(m *testing.M) {
-	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
-	parentCtx = context.WithValue(parentCtx, consts.KsctlTestFlagKey, "true")
-
-	mainState := &storageTypes.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
-	}
-	fakeStateFromCloud = cloudControlRes.CloudResourceState{
-		SSHState: cloudControlRes.SSHInfo{
-			PrivateKey: mainState.SSHKeyPair.PrivateKey,
-			UserName:   "fakeuser",
-		},
-		Metadata: cloudControlRes.Metadata{
-			ClusterName: "fake",
-			Provider:    consts.CloudAzure,
-			Region:      "fake",
-			ClusterType: consts.ClusterTypeHa,
-		},
-		// public IPs
-		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
-		IPv4DataStores:    []string{"A.B.C.3"},
-		IPv4WorkerPlanes:  []string{"A.B.C.2"},
-		IPv4LoadBalancer:  "A.B.C.1",
-
-		// Private IPs
-		PrivateIPv4ControlPlanes: []string{"192.168.X.7", "192.168.X.9", "192.168.X.10"},
-		PrivateIPv4DataStores:    []string{"192.168.5.2"},
-		PrivateIPv4LoadBalancer:  "192.168.X.1",
-	}
-
-	fakeClient = NewClientHelper(fakeStateFromCloud, &storageTypes.StorageDocument{})
-	if fakeClient == nil {
-		panic("unable to initialize")
-	}
-
-	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect()
-
-	exitVal := m.Run()
-
-	fmt.Println("Cleanup..")
-	if err := os.RemoveAll(dir); err != nil {
-		panic(err)
-	}
-
-	os.Exit(exitVal)
-}
-
 func TestK3sDistro_Version(t *testing.T) {
 	forTesting := map[string]bool{
-		"1.26.7": false,
-		"1.28":   true,
-		"1.29":   true,
-		"1.30":   true,
+		"":      true,
+		"v1.30": false,
+		"v1.31": true,
 	}
 	for ver, expected := range forTesting {
-		err := isValidKubeadmVersion(ver)
+		v, err := isValidKubeadmVersion(ver)
 		got := err == nil
 
 		if got != expected {
 			t.Fatalf("Expected for %s as %v but got %v", ver, expected, got)
+		}
+		if err == nil {
+			if len(ver) == 0 {
+				assert.Equal(t, v, "v1.31", "it should be equal")
+			} else {
+				assert.Equal(t, v, ver, "it should be equal")
+			}
 		}
 	}
 }
@@ -172,7 +80,7 @@ kubeadm token create --ttl 20m --description "ksctl bootstrap token"
 }
 
 func TestScriptInstallKubeadmAndOtherTools(t *testing.T) {
-	ver := "1"
+	ver := "v1.31"
 
 	testHelper.HelperTestTemplate(
 		t,
@@ -261,9 +169,9 @@ sudo apt-get update -y
 
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --yes
+curl -fsSL https://pkgs.k8s.io/core:/stable:/%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg --yes
 
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update -y
 sudo apt-get install -y kubelet kubeadm kubectl
@@ -521,7 +429,7 @@ func checkCurrentStateFile(t *testing.T) {
 
 func TestOverallScriptsCreation(t *testing.T) {
 	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
-	fakeClient.K8sVersion("1.27.1")
+	fakeClient.K8sVersion("")
 	checkCurrentStateFile(t)
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
@@ -532,6 +440,8 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Controlplane unable to operate %v", err)
 		}
 	}
+
+	assert.Equal(t, mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion, "v1.31", "should be equal")
 
 	for no := 0; no < noWP; no++ {
 		err := fakeClient.JoinWorkerplane(no, storeHA)
