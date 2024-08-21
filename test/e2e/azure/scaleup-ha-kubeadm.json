@@ -1,6 +1,5 @@
 {
 	"cluster_name": "test-e2e-kubeadm-ha-azure",
-	"kubernetes_version": "1.28",
 	"region": "centralindia",
 	"ha_cluster": true,
 	"cloud_provider": "azure",
