@@ -338,8 +338,6 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	fakeClient.K8sVersion("")
 
-	checkCurrentStateFile(t)
-
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
 
@@ -350,6 +348,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 			t.Fatalf("Configure Controlplane unable to operate %v", err)
 		}
 	}
+	checkCurrentStateFile(t)
 
 	assert.Equal(t, mainStateDocument.K8sBootstrap.K3s.K3sVersion, "v1.30.3+k3s1", "should be equal")
 
