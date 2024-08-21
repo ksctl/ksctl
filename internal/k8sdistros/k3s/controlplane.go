@@ -14,7 +14,6 @@ import (
 func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
 
 	var script types.ScriptCollection
-	mainStateDocument.K8sBootstrap.K3s.K3sVersion = k3s.K3sVer
 
 	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(

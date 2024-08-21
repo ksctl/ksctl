@@ -430,7 +430,6 @@ func checkCurrentStateFile(t *testing.T) {
 func TestOverallScriptsCreation(t *testing.T) {
 	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
 	fakeClient.K8sVersion("")
-	checkCurrentStateFile(t)
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
 	fakeClient.CNI("flannel")
@@ -441,6 +440,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 		}
 	}
 
+	checkCurrentStateFile(t)
 	assert.Equal(t, mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion, "v1.31", "should be equal")
 
 	for no := 0; no < noWP; no++ {

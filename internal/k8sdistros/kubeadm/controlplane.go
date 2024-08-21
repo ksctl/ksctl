@@ -13,8 +13,6 @@ import (
 
 func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor helpers.SSHCollection) error {
 
-	mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion = kubeadm.KubeadmVer
-
 	installKubeadmTools := scriptTransferEtcdCerts(
 		scriptInstallKubeadmAndOtherTools(mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion),
 		mainStateDocument.K8sBootstrap.B.CACert,
@@ -57,7 +55,7 @@ func configureCP_1(storage types.StorageFactory, kubeadm *Kubeadm, sshExecutor h
 	log.Print(kubeadmCtx, "Configuring K8s cluster")
 
 	configureControlPlane0 := scriptAddKubeadmControlplane0(
-		kubeadm.KubeadmVer,
+		mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion,
 		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
 		mainStateDocument.K8sBootstrap.Kubeadm.CertificateKey,
 		mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
