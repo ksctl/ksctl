@@ -3,7 +3,6 @@
 	"region": "phx1",
 	"ha_cluster": true,
 	"cloud_provider": "civo",
-	"kubernetes_distro": "kubeadm",
 	"storage_type": "store-local",
 	"desired_no_of_workerplane_nodes": 0
 }

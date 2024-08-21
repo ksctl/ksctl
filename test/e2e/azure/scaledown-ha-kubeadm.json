@@ -4,6 +4,5 @@
 	"ha_cluster": true,
 	"cloud_provider": "azure",
 	"storage_type": "store-local",
-	"kubernetes_distro": "kubeadm",
 	"desired_no_of_workerplane_nodes": 0
 }
