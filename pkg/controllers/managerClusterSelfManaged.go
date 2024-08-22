@@ -113,7 +113,6 @@ func (manager *ManagerClusterSelfManaged) CreateCluster() error {
 
 	if err := bootstrapController.InstallAdditionalTools(
 		externalCNI,
-		true,
 		client,
 		stateDocument); err != nil {
 		log.Error("handled error", "catch", err)

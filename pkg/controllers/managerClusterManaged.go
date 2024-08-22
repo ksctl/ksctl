@@ -83,7 +83,7 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 	}
 
 	// it gets supportForApps, supportForCNI, error
-	externalApp, externalCNI, cloudResErr := cloudController.CreateManagedCluster(client)
+	_, externalCNI, cloudResErr := cloudController.CreateManagedCluster(client)
 	if cloudResErr != nil {
 		log.Error("handled error", "catch", cloudResErr)
 		return cloudResErr
@@ -91,7 +91,6 @@ func (manager *ManagerClusterManaged) CreateCluster() error {
 
 	if err := bootstrapController.InstallAdditionalTools(
 		externalCNI,
-		externalApp,
 		client,
 		stateDocument); err != nil {
 

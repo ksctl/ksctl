@@ -5,6 +5,7 @@ import (
 
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"github.com/ksctl/ksctl/poller"
 )
 
 func getFlannelComponentOverridings(p metadata.ComponentOverrides) (version *string) {
@@ -27,8 +28,13 @@ func setFlannelComponentOverridings(p metadata.ComponentOverrides) (
 	version string,
 	url string,
 	postInstall string,
+	err error,
 ) {
-	version = "latest"
+	releases, err := poller.GetSharedPoller().Get("flannel-io", "flannel")
+	if err != nil {
+		return "", "", "", err
+	}
+	version = releases[0]
 	url = ""
 	postInstall = ""
 
@@ -46,9 +52,12 @@ func setFlannelComponentOverridings(p metadata.ComponentOverrides) (
 	return
 }
 
-func FlannelStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+func FlannelStandardComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+	version, url, postInstall, err := setFlannelComponentOverridings(params)
+	if err != nil {
+		return metadata.StackComponent{}, err
+	}
 
-	version, url, postInstall := setFlannelComponentOverridings(params)
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
@@ -58,5 +67,5 @@ func FlannelStandardComponent(params metadata.ComponentOverrides) metadata.Stack
 			Metadata:        fmt.Sprintf("Flannel (Ver: %s) is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.", version),
 			PostInstall:     postInstall,
 		},
-	}
+	}, nil
 }

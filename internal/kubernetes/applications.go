@@ -221,10 +221,6 @@ func (k *K8sClusterClient) InstallApplication(
 			appInState = state.Addons.Cni
 		}
 
-		// now I need to find which component changed
-		// 1. component is not present in the state
-		// 2. version is different
-
 		errorInStack = func() error {
 			for _, componentId := range stackManifest.StkDepsIdx {
 				component := stackManifest.Components[componentId]
