@@ -65,7 +65,7 @@ func TestSpinOperatorComponentOverridings_DefaultValues(t *testing.T) {
 	params := metadata.ComponentOverrides{}
 	version, helmOverride := setSpinOperatorComponentOverridings(params)
 
-	assert.Equal(t, "0.2.0", version)
+	assert.Equal(t, "v0.2.0", version)
 	assert.NotNil(t, helmOverride)
 }
 
@@ -79,7 +79,7 @@ func TestSpinOperatorComponentOverridings_WithOverrides(t *testing.T) {
 		}
 		version, helmOverride := setSpinOperatorComponentOverridings(params)
 
-		assert.Equal(t, "1.2.3", version)
+		assert.Equal(t, "v1.2.3", version)
 		assert.NotNil(t, helmOverride)
 		assert.Equal(t, "someValue", helmOverride["someKey"])
 	})

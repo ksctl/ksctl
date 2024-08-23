@@ -3,6 +3,7 @@ package components
 import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"strings"
 )
 
 func getKubePrometheusComponentOverridings(p metadata.ComponentOverrides) (version *string, helmKubePromChartOverridings map[string]interface{}) {
@@ -51,6 +52,10 @@ func setKubePrometheusComponentOverridings(p metadata.ComponentOverrides) (
 func KubePrometheusStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
 
 	version, helmKubePromChartOverridings := setKubePrometheusComponentOverridings(params)
+
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
+	}
 
 	return metadata.StackComponent{
 		Helm: &metadata.HelmHandler{

@@ -48,7 +48,6 @@ func setCiliumComponentOverridings(p metadata.ComponentOverrides) (
 	if _version != nil {
 		version = *_version
 	}
-	version = strings.TrimPrefix(version, "v")
 
 	if _ciliumChartOverridings != nil {
 		ciliumChartOverridings = _ciliumChartOverridings
@@ -62,6 +61,10 @@ func CiliumStandardComponent(params metadata.ComponentOverrides) (metadata.Stack
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	if err != nil {
 		return metadata.StackComponent{}, err
+	}
+
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
 	}
 
 	return metadata.StackComponent{

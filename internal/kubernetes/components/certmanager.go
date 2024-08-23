@@ -63,8 +63,6 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 		version = *_version
 	}
 
-	version = strings.TrimPrefix(version, "v")
-
 	if _certmanagerChartOverridings != nil {
 		utilities.CopySrcToDestPreservingDestVals(overridings, _certmanagerChartOverridings)
 	}
@@ -90,6 +88,10 @@ func CertManagerComponent(params metadata.ComponentOverrides) (metadata.StackCom
 	version, overridings, err := setCertManagerComponentOverridings(params)
 	if err != nil {
 		return metadata.StackComponent{}, err
+	}
+
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
 	}
 
 	return metadata.StackComponent{

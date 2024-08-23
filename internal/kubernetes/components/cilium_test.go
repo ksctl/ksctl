@@ -10,7 +10,7 @@ import (
 func TestCiliumComponentOverridingsWithNilParams(t *testing.T) {
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, "1.16.1", version)
+	assert.Equal(t, "v1.16.1", version)
 	assert.Nil(t, ciliumChartOverridings)
 }
 
@@ -18,7 +18,7 @@ func TestCiliumComponentOverridingsWithEmptyParams(t *testing.T) {
 	params := metadata.ComponentOverrides{}
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	assert.Nil(t, err)
-	assert.Equal(t, "1.16.1", version)
+	assert.Equal(t, "v1.16.1", version)
 	assert.Nil(t, ciliumChartOverridings)
 }
 
@@ -28,7 +28,7 @@ func TestCiliumComponentOverridingsWithVersionOnly(t *testing.T) {
 	}
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	assert.Nil(t, err)
-	assert.Equal(t, "1.0.0", version)
+	assert.Equal(t, "v1.0.0", version)
 	assert.Nil(t, ciliumChartOverridings)
 }
 
@@ -38,7 +38,7 @@ func TestCiliumComponentOverridingsWithCiliumChartOverridingsOnly(t *testing.T) 
 	}
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	assert.Nil(t, err)
-	assert.Equal(t, "1.16.1", version)
+	assert.Equal(t, "v1.16.1", version)
 	assert.NotNil(t, ciliumChartOverridings)
 	assert.Equal(t, map[string]any{"key": "value"}, ciliumChartOverridings)
 }
@@ -50,7 +50,7 @@ func TestCiliumComponentOverridingsWithVersionAndCiliumChartOverridings(t *testi
 	}
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	assert.Nil(t, err)
-	assert.Equal(t, "1.0.0", version)
+	assert.Equal(t, "v1.0.0", version)
 	assert.NotNil(t, ciliumChartOverridings)
 	assert.Equal(t, map[string]any{"key": "value"}, ciliumChartOverridings)
 }

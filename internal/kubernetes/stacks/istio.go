@@ -6,11 +6,16 @@ import (
 )
 
 func IstioStandardServiceMesh(params meta.ApplicationParams) (meta.ApplicationStack, error) {
+	v, err := components.IstioStandardComponent(
+		params.ComponentParams[meta.IstioComponentID],
+	)
+	if err != nil {
+		return meta.ApplicationStack{}, err
+	}
+
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
-			meta.IstioComponentID: components.IstioStandardComponent(
-				params.ComponentParams[meta.IstioComponentID],
-			),
+			meta.IstioComponentID: v,
 		},
 
 		StkDepsIdx: []meta.StackComponentID{
