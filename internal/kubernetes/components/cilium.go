@@ -1,6 +1,8 @@
 package components
 
 import (
+	"strings"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/poller"
@@ -37,6 +39,7 @@ func setCiliumComponentOverridings(p metadata.ComponentOverrides) (
 	if err != nil {
 		return "", nil, err
 	}
+
 	version = releases[0]
 	ciliumChartOverridings = map[string]any{}
 
@@ -45,6 +48,7 @@ func setCiliumComponentOverridings(p metadata.ComponentOverrides) (
 	if _version != nil {
 		version = *_version
 	}
+	version = strings.TrimPrefix(version, "v")
 
 	if _ciliumChartOverridings != nil {
 		ciliumChartOverridings = _ciliumChartOverridings

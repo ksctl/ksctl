@@ -175,15 +175,16 @@ func setSpinOperatorComponentOverridings(p metadata.ComponentOverrides) (
 	if err != nil {
 		return
 	}
-	version = strings.TrimPrefix(releases[0], "v")
+	version = releases[0]
 
 	helmOperatorChartOverridings = map[string]any{}
 
 	_version, _helmOperatorChartOverridings := getSpinkubeOperatorComponentOverridings(p)
 
 	if _version != nil {
-		version = strings.TrimPrefix(*_version, "v")
+		version = *_version
 	}
+	version = strings.TrimPrefix(version, "v")
 
 	if _helmOperatorChartOverridings != nil {
 		helmOperatorChartOverridings = _helmOperatorChartOverridings

@@ -11,6 +11,7 @@ func TestCertManagerComponentWithNilParams(t *testing.T) {
 	params := metadata.ComponentOverrides(nil)
 	component, err := CertManagerComponent(params)
 	assert.NoError(t, err)
+	assert.Equal(t, "1.15.3", component.Helm.Charts[0].Version)
 	assert.Equal(t, "cert-manager", component.Helm.Charts[0].ReleaseName)
 	assert.Equal(t, "cert-manager", component.Helm.Charts[0].Namespace)
 	assert.Equal(t, "https://charts.jetstack.io", component.Helm.RepoUrl)
@@ -33,7 +34,7 @@ func TestCertManagerComponentWithVersionOverride(t *testing.T) {
 	}
 	component, err := CertManagerComponent(params)
 	assert.NoError(t, err)
-	assert.Equal(t, "v1.0.0", component.Helm.Charts[0].Version)
+	assert.Equal(t, "1.0.0", component.Helm.Charts[0].Version)
 }
 
 func TestCertManagerComponentWithGatewayApiEnable(t *testing.T) {
@@ -42,6 +43,7 @@ func TestCertManagerComponentWithGatewayApiEnable(t *testing.T) {
 	}
 	component, err := CertManagerComponent(params)
 	assert.NoError(t, err)
+	assert.Equal(t, "1.15.3", component.Helm.Charts[0].Version)
 	assert.Contains(t, component.Helm.Charts[0].Args["extraArgs"], "--enable-gateway-api")
 }
 
@@ -53,6 +55,7 @@ func TestCertManagerComponentWithCertManagerChartOverridings(t *testing.T) {
 	}
 	component, err := CertManagerComponent(params)
 	assert.NoError(t, err)
+	assert.Equal(t, "1.15.3", component.Helm.Charts[0].Version)
 	assert.Equal(t, "someValue", component.Helm.Charts[0].Args["someKey"])
 
 	if v, ok := component.Helm.Charts[0].Args["crds"]; !ok {
@@ -76,7 +79,7 @@ func TestCertManagerComponentWithAllOverrides(t *testing.T) {
 	}
 	component, err := CertManagerComponent(params)
 	assert.NoError(t, err)
-	assert.Equal(t, "v1.0.0", component.Helm.Charts[0].Version)
+	assert.Equal(t, "1.0.0", component.Helm.Charts[0].Version)
 	assert.Contains(t, component.Helm.Charts[0].Args["extraArgs"], "--enable-gateway-api")
 	assert.Equal(t, "someValue", component.Helm.Charts[0].Args["someKey"])
 	if v, ok := component.Helm.Charts[0].Args["crds"]; !ok {

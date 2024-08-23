@@ -18,6 +18,15 @@ func TestMain(m *testing.M) {
 				vers = append(vers, "v0.15.1")
 			}
 		}
+		if org == "cert-manager" && repo == "cert-manager" {
+			vers = append(vers, "v1.15.3")
+		}
+		if org == "cilium" && repo == "cilium" {
+			vers = append(vers, "v1.16.1")
+		}
+		if org == "flannel-io" && repo == "flannel" {
+			vers = append(vers, "v0.25.5")
+		}
 
 		sort.Slice(vers, func(i, j int) bool {
 			return vers[i] > vers[j]
