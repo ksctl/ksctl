@@ -5,7 +5,6 @@ import (
 
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/internal/kubernetes/stacks"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
@@ -131,33 +130,11 @@ func getStackManifest(app types.KsctlApp, overriding map[string]map[string]any) 
 	})
 }
 
-func getComponentVersionOverriding(componentId string, overriding map[string]map[string]any) (string, error) {
-	if overriding == nil {
-		return "", nil
+func getComponentVersionOverriding(component metadata.StackComponent) string {
+	if component.HandlerType == metadata.ComponentTypeKubectl {
+		return component.Kubectl.Version
 	}
-
-	if _overridings, found := overriding[componentId]; found {
-		if version, ok := _overridings["version"]; ok {
-			if ver, safe := version.(string); safe {
-				if err := helpers.IsValidKsctlComponentVersion(kubernetesCtx, log, ver); err != nil {
-					return "", err
-				}
-				return ver, nil
-			} else {
-				return "", ksctlErrors.ErrInvalidUserInput.Wrap(log.NewError(
-					kubernetesCtx,
-					"version is not of type string",
-				))
-			}
-		} else {
-			return "", nil
-		}
-	}
-	return "", ksctlErrors.ErrNoMatchingRecordsFound.Wrap(log.NewError(
-		kubernetesCtx,
-		"no component found",
-		"searchComponentId", componentId,
-	))
+	return component.Helm.Charts[0].Version
 }
 
 func (k *K8sClusterClient) InstallApplication(
@@ -184,12 +161,9 @@ func (k *K8sClusterClient) InstallApplication(
 			for _, componentId := range stackManifest.StkDepsIdx {
 				component := stackManifest.Components[componentId]
 
-				componentVersion, _err := getComponentVersionOverriding(string(componentId), app.Overrides)
-				if _err != nil {
-					return _err
-				}
+				componentVersion := getComponentVersionOverriding(component)
 
-				_err = k.handleInstallComponent(componentId, component)
+				_err := k.handleInstallComponent(componentId, component)
 				if _err != nil {
 					return _err
 				}
@@ -224,13 +198,11 @@ func (k *K8sClusterClient) InstallApplication(
 		errorInStack = func() error {
 			for _, componentId := range stackManifest.StkDepsIdx {
 				component := stackManifest.Components[componentId]
-				componentVersion, _err := getComponentVersionOverriding(string(componentId), app.Overrides)
-				if _err != nil {
-					return _err
-				}
+
+				componentVersion := getComponentVersionOverriding(component)
 
 				if componentInState, found := appInState.Components[string(componentId)]; !found {
-					_err = k.handleInstallComponent(componentId, component)
+					_err := k.handleInstallComponent(componentId, component)
 					if _err != nil {
 						return _err
 					}
