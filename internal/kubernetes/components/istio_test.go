@@ -59,24 +59,24 @@ func TestIsitoComponentOverridingsWithHelmIstiodChartOverridingsOnly(t *testing.
 
 func TestIsitoComponentOverridingsWithVersionAndHelmBaseChartOverridings(t *testing.T) {
 	params := metadata.ComponentOverrides{
-		"version":                  "1.0.0",
+		"version":                  "v1.0.0",
 		"helmBaseChartOverridings": map[string]any{"key": "value"},
 	}
 	version, helmBaseChartOverridings, helmIstiodChartOverridings, err := setIsitoComponentOverridings(params)
 	assert.Nil(t, err)
-	assert.Equal(t, "1.0.0", version)
+	assert.Equal(t, "v1.0.0", version)
 	assert.Equal(t, map[string]any{"key": "value"}, helmBaseChartOverridings)
 	assert.Nil(t, helmIstiodChartOverridings)
 }
 
 func TestIsitoComponentOverridingsWithVersionAndHelmIstiodChartOverridings(t *testing.T) {
 	params := metadata.ComponentOverrides{
-		"version":                    "1.0.0",
+		"version":                    "v1.0.0",
 		"helmIstiodChartOverridings": map[string]any{"key": "value"},
 	}
 	version, helmBaseChartOverridings, helmIstiodChartOverridings, err := setIsitoComponentOverridings(params)
 	assert.Nil(t, err)
-	assert.Equal(t, "1.0.0", version)
+	assert.Equal(t, "v1.0.0", version)
 	assert.Equal(t, map[string]any{"defaultRevision": "default"}, helmBaseChartOverridings)
 	assert.Equal(t, map[string]any{"key": "value"}, helmIstiodChartOverridings)
 }
