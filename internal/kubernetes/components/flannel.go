@@ -59,7 +59,7 @@ func FlannelStandardComponent(params metadata.ComponentOverrides) (metadata.Stac
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
-			Url:             url,
+			Urls:            []string{url},
 			Version:         version,
 			CreateNamespace: false,
 			Metadata:        fmt.Sprintf("Flannel (Ver: %s) is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.", version),

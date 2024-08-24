@@ -56,7 +56,7 @@ func KwasmWasmedgeComponent(params metadata.ComponentOverrides) (metadata.StackC
 		Kubectl: &metadata.KubectlHandler{
 			CreateNamespace: false,
 			Version:         "latest",
-			Url:             "https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml",
+			Urls:            []string{"https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml"},
 			Metadata:        "It applies the runtime class for kwasm for wasmedge",
 		},
 	}, nil

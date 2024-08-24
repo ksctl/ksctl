@@ -31,7 +31,7 @@ func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version
 
 func setArgorolloutsComponentOverridings(params metadata.ComponentOverrides) (
 	version string,
-	url string,
+	url []string,
 	postInstall string,
 	err error,
 ) {
@@ -40,14 +40,18 @@ func setArgorolloutsComponentOverridings(params metadata.ComponentOverrides) (
 		return
 	}
 
-	url = ""
+	url = nil
 	postInstall = ""
 
 	_version, _namespaceInstall := getArgorolloutsComponentOverridings(params)
 	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
+	generateManifestUrl := func(ver string, path string) string {
+		return fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-rollouts/%s/%s", ver, path)
+	}
+
 	defaultVals := func() {
-		url = fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/download/%s/install.yaml", version)
+		url = []string{fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/download/%s/install.yaml", version)}
 		postInstall = `
 Commands to execute to access Argo-Rollouts
 $ kubectl argo rollouts version
@@ -58,8 +62,14 @@ and open http://localhost:3100/rollouts
 
 	if _namespaceInstall != nil {
 		if *_namespaceInstall {
-			// TODO: need to install the crd as well
-			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-rollouts/%s/manifests/namespace-install.yaml", version)
+			url = []string{
+				generateManifestUrl(version, "manifests/crds/rollout-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/experiment-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/analysis-run-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/analysis-template-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/cluster-analysis-template-crd.yaml"),
+				generateManifestUrl(version, "manifests/namespace-install.yaml"),
+			}
 			postInstall = fmt.Sprintf(`
 https://argo-rollouts.readthedocs.io/en/%v/installation/#controller-installation
 `, version)
@@ -83,7 +93,7 @@ func ArgoRolloutsStandardComponent(params metadata.ComponentOverrides) (metadata
 		Kubectl: &metadata.KubectlHandler{
 			Namespace:       "argo-rollouts",
 			CreateNamespace: true,
-			Url:             url,
+			Urls:            url,
 			Version:         version,
 			Metadata:        fmt.Sprintf("Argo Rollouts (Ver: %s) is a Kubernetes controller and set of CRDs which provide advanced deployment capabilities such as blue-green, canary, canary analysis, experimentation, and progressive delivery features to Kubernetes.", version),
 			PostInstall:     postInstall,

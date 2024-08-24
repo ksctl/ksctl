@@ -3,10 +3,14 @@ package kubernetes
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
 	"gopkg.in/yaml.v3"
-	"io"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -21,9 +25,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/restmapper"
-	"net/http"
-	"os"
-	"strings"
 )
 
 func (k *K8sClusterClient) getDynamicClientFromManifest(manifest []byte) (dynamic.ResourceInterface, *unstructured.Unstructured, error) {
@@ -172,11 +173,19 @@ func getManifests(appUrl string) ([]string, error) {
 }
 
 func deleteKubectl(client *K8sClusterClient, component *metadata.KubectlHandler) error {
-	resources, err := getManifests(component.Url)
-	if err != nil {
-		return err
+	for idx := len(component.Urls) - 1; idx >= 0; idx-- {
+		resources, err := getManifests(component.Urls[idx])
+		if err != nil {
+			return err
+		}
+		if err := individualKubectlUninstall(client, component, resources); err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
+func individualKubectlUninstall(client *K8sClusterClient, component *metadata.KubectlHandler, resources []string) error {
 	for _, resource := range resources {
 		decUnstructured := scheme.Codecs.UniversalDeserializer().Decode
 
@@ -318,11 +327,20 @@ func deleteKubectl(client *K8sClusterClient, component *metadata.KubectlHandler)
 }
 
 func installKubectl(client *K8sClusterClient, component *metadata.KubectlHandler) error {
-	resources, err := getManifests(component.Url)
-	if err != nil {
-		return err
-	}
 
+	for _, url := range component.Urls {
+		resources, err := getManifests(url)
+		if err != nil {
+			return err
+		}
+		if err := individualKubectlInstall(client, component, resources); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func individualKubectlInstall(client *K8sClusterClient, component *metadata.KubectlHandler, resources []string) error {
 	if component.CreateNamespace {
 		if err := client.k8sClient.NamespaceCreate(kubernetesCtx, log, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{

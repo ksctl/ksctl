@@ -38,7 +38,7 @@ func TestKwasmWasmedgeComponent(t *testing.T) {
 	assert.Equal(t, metadata.ComponentTypeKubectl, component.HandlerType)
 	assert.NotNil(t, component.Kubectl)
 	assert.Equal(t, "latest", component.Kubectl.Version)
-	assert.Equal(t, "https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml", component.Kubectl.Url)
+	assert.Equal(t, []string{"https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml"}, component.Kubectl.Urls)
 }
 
 func TestKwasmWithSpinKube(t *testing.T) {

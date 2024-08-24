@@ -110,7 +110,7 @@ func spinkubeReturnHelper(version, url, postInstall string) (metadata.StackCompo
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
-			Url:             url,
+			Urls:            []string{url},
 			Version:         version,
 			CreateNamespace: false,
 			Metadata:        fmt.Sprintf("KubeSpin (ver: %s) is an open source project that streamlines developing, deploying and operating WebAssembly workloads in Kubernetes - resulting in delivering smaller, more portable applications and incredible compute performance benefits", version),
