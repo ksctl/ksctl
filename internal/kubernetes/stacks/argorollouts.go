@@ -6,12 +6,16 @@ import (
 )
 
 func ArgoRolloutsStandardCICD(params metadata.ApplicationParams) (metadata.ApplicationStack, error) {
+	v, err := components.ArgoRolloutsStandardComponent(
+		params.ComponentParams[metadata.ArgorolloutsComponentID],
+	)
+	if err != nil {
+		return metadata.ApplicationStack{}, err
+	}
 
 	return metadata.ApplicationStack{
 		Components: map[metadata.StackComponentID]metadata.StackComponent{
-			metadata.ArgorolloutsComponentID: components.ArgoRolloutsStandardComponent(
-				params.ComponentParams[metadata.ArgorolloutsComponentID],
-			),
+			metadata.ArgorolloutsComponentID: v,
 		},
 
 		StkDepsIdx:  []metadata.StackComponentID{metadata.ArgorolloutsComponentID},

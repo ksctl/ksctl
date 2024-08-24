@@ -2,6 +2,7 @@ package components
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/ksctl/ksctl/poller"
 
@@ -46,7 +47,7 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 
 	releases, err := poller.GetSharedPoller().Get("cert-manager", "cert-manager")
 	if err != nil {
-		return
+		return "", nil, err
 	}
 	version = releases[0]
 
@@ -87,6 +88,10 @@ func CertManagerComponent(params metadata.ComponentOverrides) (metadata.StackCom
 	version, overridings, err := setCertManagerComponentOverridings(params)
 	if err != nil {
 		return metadata.StackComponent{}, err
+	}
+
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
 	}
 
 	return metadata.StackComponent{

@@ -3,6 +3,7 @@ package components
 import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"strings"
 )
 
 const kwasmOperatorChartOverridingsKey = "kwasmOperatorChartOverridings"
@@ -67,6 +68,10 @@ func KwasmOperatorComponent(params metadata.ComponentOverrides) (metadata.StackC
 	version, kwasmOperatorChartOverridings, err := setKwasmOperatorComponentOverridings(params)
 	if err != nil {
 		return metadata.StackComponent{}, err
+	}
+
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
 	}
 
 	return metadata.StackComponent{

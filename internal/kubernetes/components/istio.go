@@ -3,6 +3,8 @@ package components
 import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"github.com/ksctl/ksctl/poller"
+	"strings"
 )
 
 func getIstioComponentOverridings(p metadata.ComponentOverrides) (version *string, helmBaseChartOverridings map[string]interface{}, helmIstiodChartOverridings map[string]interface{}) {
@@ -36,8 +38,13 @@ func setIsitoComponentOverridings(p metadata.ComponentOverrides) (
 	version string,
 	helmBaseChartOverridings map[string]any,
 	helmIstiodChartOverridings map[string]any,
+	err error,
 ) {
-	version = "latest"
+	releases, err := poller.GetSharedPoller().Get("istio", "istio")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	version = releases[0]
 	helmBaseChartOverridings = map[string]any{}
 	helmIstiodChartOverridings = map[string]any{}
 
@@ -63,9 +70,16 @@ func setIsitoComponentOverridings(p metadata.ComponentOverrides) (
 	return
 }
 
-func IstioStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
+func IstioStandardComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 
-	version, helmBaseChartOverridings, helmIstiodChartOverridings := setIsitoComponentOverridings(params)
+	version, helmBaseChartOverridings, helmIstiodChartOverridings, err := setIsitoComponentOverridings(params)
+	if err != nil {
+		return metadata.StackComponent{}, err
+	}
+
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
+	}
 
 	return metadata.StackComponent{
 		Helm: &metadata.HelmHandler{
@@ -91,5 +105,5 @@ func IstioStandardComponent(params metadata.ComponentOverrides) metadata.StackCo
 			},
 		},
 		HandlerType: metadata.ComponentTypeHelm,
-	}
+	}, nil
 }

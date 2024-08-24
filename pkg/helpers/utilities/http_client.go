@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -25,6 +26,14 @@ func extractReleases(io io.Reader) ([]string, error) {
 		return nil, fmt.Errorf("failed to deserialize response body: %w", err)
 	}
 
+	isRepoRespectSemver := true
+	for i := range releases {
+		if !semver.IsValid(releases[i].TagName) {
+			isRepoRespectSemver = false
+			releases[i].TagName = semver.Canonical("v" + releases[i].TagName)
+		}
+	}
+
 	sort.Slice(releases, func(i, j int) bool {
 		cmp := semver.Compare(releases[i].TagName, releases[j].TagName)
 		if cmp != 0 {
@@ -37,7 +46,11 @@ func extractReleases(io io.Reader) ([]string, error) {
 
 	for _, r := range releases {
 		if !r.Draft && !r.Prerelease {
-			tags = append(tags, r.TagName)
+			v := r.TagName
+			if !isRepoRespectSemver {
+				v = strings.TrimPrefix(v, "v")
+			}
+			tags = append(tags, v)
 		}
 	}
 

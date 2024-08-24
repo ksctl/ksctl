@@ -126,6 +126,9 @@ func SpinOperatorComponent(params metadata.ComponentOverrides) (metadata.StackCo
 
 	version, helmOverride := setSpinOperatorComponentOverridings(params)
 
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
+	}
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeHelm,
 		Helm: &metadata.HelmHandler{
@@ -175,14 +178,14 @@ func setSpinOperatorComponentOverridings(p metadata.ComponentOverrides) (
 	if err != nil {
 		return
 	}
-	version = strings.TrimPrefix(releases[0], "v")
+	version = releases[0]
 
 	helmOperatorChartOverridings = map[string]any{}
 
 	_version, _helmOperatorChartOverridings := getSpinkubeOperatorComponentOverridings(p)
 
 	if _version != nil {
-		version = strings.TrimPrefix(*_version, "v")
+		version = *_version
 	}
 
 	if _helmOperatorChartOverridings != nil {

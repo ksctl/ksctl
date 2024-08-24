@@ -232,7 +232,7 @@ func ApplicationsInCluster(
 }
 
 func InstallAdditionalTools(
-	externalCNI, externalApp bool,
+	externalCNI bool,
 	client *types.KsctlClient,
 	state *storageTypes.StorageDocument) error {
 
@@ -260,14 +260,6 @@ func InstallAdditionalTools(
 
 	if err := installKsctlSpecificApps(client, k, state); err != nil {
 		return err
-	}
-
-	if len(client.Metadata.Applications) != 0 && externalApp {
-		if err := k.Applications(client.Metadata.Applications, state, consts.OperationCreate); err != nil {
-			return err
-		}
-
-		log.Success(controllerCtx, "Done with installing k8s apps")
 	}
 
 	log.Success(controllerCtx, "Done with installing additional k8s tools")

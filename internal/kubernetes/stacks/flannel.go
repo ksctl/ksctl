@@ -6,12 +6,16 @@ import (
 )
 
 func FlannelStandardCNI(params meta.ApplicationParams) (meta.ApplicationStack, error) {
+	v, err := components.FlannelStandardComponent(
+		params.ComponentParams[meta.FlannelComponentID],
+	)
+	if err != nil {
+		return meta.ApplicationStack{}, err
+	}
 
 	return meta.ApplicationStack{
 		Components: map[meta.StackComponentID]meta.StackComponent{
-			meta.FlannelComponentID: components.FlannelStandardComponent(
-				params.ComponentParams[meta.FlannelComponentID],
-			),
+			meta.FlannelComponentID: v,
 		},
 		StkDepsIdx:  []meta.StackComponentID{meta.FlannelComponentID},
 		Maintainer:  "github:dipankardas011",

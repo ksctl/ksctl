@@ -1,8 +1,11 @@
 package components
 
 import (
+	"strings"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"github.com/ksctl/ksctl/poller"
 )
 
 func getCiliumComponentOverridings(p metadata.ComponentOverrides) (version *string, ciliumChartOverridings map[string]any) {
@@ -30,8 +33,14 @@ func getCiliumComponentOverridings(p metadata.ComponentOverrides) (version *stri
 func setCiliumComponentOverridings(p metadata.ComponentOverrides) (
 	version string,
 	ciliumChartOverridings map[string]any,
+	err error,
 ) {
-	version = "latest"
+	releases, err := poller.GetSharedPoller().Get("cilium", "cilium")
+	if err != nil {
+		return "", nil, err
+	}
+
+	version = releases[0]
 	ciliumChartOverridings = map[string]any{}
 
 	_version, _ciliumChartOverridings := getCiliumComponentOverridings(p)
@@ -48,8 +57,15 @@ func setCiliumComponentOverridings(p metadata.ComponentOverrides) (
 	return
 }
 
-func CiliumStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	version, ciliumChartOverridings := setCiliumComponentOverridings(params)
+func CiliumStandardComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
+	if err != nil {
+		return metadata.StackComponent{}, err
+	}
+
+	if strings.HasPrefix(version, "v") {
+		version = strings.TrimPrefix(version, "v")
+	}
 
 	return metadata.StackComponent{
 		Helm: &metadata.HelmHandler{
@@ -67,5 +83,5 @@ func CiliumStandardComponent(params metadata.ComponentOverrides) metadata.StackC
 			},
 		},
 		HandlerType: metadata.ComponentTypeHelm,
-	}
+	}, nil
 }
