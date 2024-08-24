@@ -45,8 +45,8 @@ func TestArgocdComponentOverridingsWithNoUITrue(t *testing.T) {
 	version, url, postInstall, ns := setArgocdComponentOverridings(params)
 	assert.Equal(t, "stable", version)
 	assert.Equal(t, "argocd", ns)
-	assert.Equal(t, []string{"https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"}, url)
-	assert.Contains(t, postInstall, "Commands to execute to access Argocd")
+	assert.Equal(t, []string{"https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/core-install.yaml"}, url)
+	assert.Contains(t, postInstall, "https://argo-cd.readthedocs.io/en/stable/operator-manual/core/")
 }
 
 func TestArgocdComponentOverridingsWithNoUIFalse(t *testing.T) {
@@ -56,8 +56,8 @@ func TestArgocdComponentOverridingsWithNoUIFalse(t *testing.T) {
 	version, url, postInstall, ns := setArgocdComponentOverridings(params)
 	assert.Equal(t, "stable", version)
 	assert.Equal(t, "argocd", ns)
-	assert.Equal(t, []string{"https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/core-install.yaml"}, url)
-	assert.Contains(t, postInstall, "https://argo-cd.readthedocs.io/en/stable/operator-manual/core/")
+	assert.Equal(t, []string{"https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"}, url)
+	assert.Contains(t, postInstall, "Commands to execute to access Argocd")
 }
 
 func TestArgocdComponentOverridingsWithNamespaceInstallTrue(t *testing.T) {
@@ -96,8 +96,8 @@ func TestArgocdComponentOverridingsWithVersionAndNoUI(t *testing.T) {
 	version, url, postInstall, ns := setArgocdComponentOverridings(params)
 	assert.Equal(t, "v1.0.0", version)
 	assert.Equal(t, "argocd", ns)
-	assert.Equal(t, []string{"https://raw.githubusercontent.com/argoproj/argo-cd/v1.0.0/manifests/install.yaml"}, url)
-	assert.Contains(t, postInstall, "Commands to execute to access Argocd")
+	assert.Equal(t, []string{"https://raw.githubusercontent.com/argoproj/argo-cd/v1.0.0/manifests/core-install.yaml"}, url)
+	assert.Contains(t, postInstall, "https://argo-cd.readthedocs.io/en/v1.0.0/operator-manual/core/")
 }
 
 func TestArgocdComponentOverridingsWithVersionAndNamespaceInstall(t *testing.T) {

@@ -76,7 +76,7 @@ and login to http://localhost:8080 with user admin and password from above
 	}
 
 	if _noUI != nil {
-		if *_noUI {
+		if !*_noUI {
 			defaultVals()
 		} else {
 			url = []string{
