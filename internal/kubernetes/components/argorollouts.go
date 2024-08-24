@@ -9,9 +9,13 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version *string, namespaceInstall *bool) {
+func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (
+	version *string,
+	namespaceInstall *bool,
+	namespace *string,
+) {
 	if p == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	for k, v := range p {
@@ -24,6 +28,10 @@ func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version
 			if v, ok := v.(bool); ok {
 				namespaceInstall = utilities.Ptr(v)
 			}
+		case "namespace":
+			if v, ok := v.(string); ok {
+				namespace = utilities.Ptr(v)
+			}
 		}
 	}
 	return
@@ -33,6 +41,7 @@ func setArgorolloutsComponentOverridings(params metadata.ComponentOverrides) (
 	version string,
 	url []string,
 	postInstall string,
+	namespace string,
 	err error,
 ) {
 	releases, err := poller.GetSharedPoller().Get("argoproj", "argo-rollouts")
@@ -42,8 +51,16 @@ func setArgorolloutsComponentOverridings(params metadata.ComponentOverrides) (
 
 	url = nil
 	postInstall = ""
+	namespace = "argo-rollouts"
 
-	_version, _namespaceInstall := getArgorolloutsComponentOverridings(params)
+	_version, _namespaceInstall, _namespace := getArgorolloutsComponentOverridings(params)
+
+	if _namespace != nil {
+		if *_namespace != "argo-rollouts" {
+			namespace = *_namespace
+		}
+	}
+
 	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	generateManifestUrl := func(ver string, path string) string {
@@ -84,14 +101,14 @@ https://argo-rollouts.readthedocs.io/en/%v/installation/#controller-installation
 }
 
 func ArgoRolloutsStandardComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
-	version, url, postInstall, err := setArgorolloutsComponentOverridings(params)
+	version, url, postInstall, ns, err := setArgorolloutsComponentOverridings(params)
 	if err != nil {
 		return metadata.StackComponent{}, err
 	}
 
 	return metadata.StackComponent{
 		Kubectl: &metadata.KubectlHandler{
-			Namespace:       "argo-rollouts",
+			Namespace:       ns,
 			CreateNamespace: true,
 			Urls:            url,
 			Version:         version,

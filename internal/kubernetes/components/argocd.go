@@ -8,9 +8,14 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *string, noUI *bool, namespaceInstall *bool) {
+func getArgocdComponentOverridings(p metadata.ComponentOverrides) (
+	version *string,
+	noUI *bool,
+	namespaceInstall *bool,
+	namespace *string,
+) {
 	if p == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	for k, v := range p {
 		switch k {
@@ -26,6 +31,10 @@ func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *stri
 			if v, ok := v.(bool); ok {
 				namespaceInstall = utilities.Ptr(v)
 			}
+		case "namespace":
+			if v, ok := v.(string); ok {
+				namespace = utilities.Ptr(v)
+			}
 		}
 	}
 	return
@@ -35,11 +44,18 @@ func setArgocdComponentOverridings(p metadata.ComponentOverrides) (
 	version string,
 	url []string,
 	postInstall string,
+	namespace string,
 ) {
 	url = nil
 	postInstall = ""
+	namespace = "argocd"
 
-	_version, _noUI, _namespaceInstall := getArgocdComponentOverridings(p)
+	_version, _noUI, _namespaceInstall, _namespace := getArgocdComponentOverridings(p)
+	if _namespace != nil {
+		if *_namespace != "argocd" {
+			namespace = *_namespace
+		}
+	}
 
 	version = getVersionIfItsNotNilAndLatest(_version, "stable")
 
@@ -92,11 +108,11 @@ https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-avai
 }
 
 func ArgoCDStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	version, url, postInstall := setArgocdComponentOverridings(params)
+	version, url, postInstall, ns := setArgocdComponentOverridings(params)
 
 	return metadata.StackComponent{
 		Kubectl: &metadata.KubectlHandler{
-			Namespace:       "argocd",
+			Namespace:       ns,
 			CreateNamespace: true,
 			Urls:            url,
 			Version:         version,

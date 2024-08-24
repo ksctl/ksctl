@@ -11,8 +11,9 @@ func TestArgorolloutsComponentOverridingsWithVersionOnly(t *testing.T) {
 	params := metadata.ComponentOverrides{
 		"version": "v1.0.0",
 	}
-	version, url, postInstall, err := setArgorolloutsComponentOverridings(params)
+	version, url, postInstall, ns, err := setArgorolloutsComponentOverridings(params)
 	assert.Nil(t, err)
+	assert.Equal(t, "argo-rollouts", ns)
 	assert.Equal(t, "v1.0.0", version)
 	assert.Equal(t, []string{"https://github.com/argoproj/argo-rollouts/releases/download/v1.0.0/install.yaml"}, url)
 	assert.Contains(t, postInstall, "Commands to execute to access Argo-Rollouts")
@@ -22,8 +23,9 @@ func TestArgorolloutsComponentOverridingsWithNamespaceInstallTrueOnly(t *testing
 	params := metadata.ComponentOverrides{
 		"namespaceInstall": true,
 	}
-	version, url, postInstall, err := setArgorolloutsComponentOverridings(params)
+	version, url, postInstall, ns, err := setArgorolloutsComponentOverridings(params)
 	assert.Nil(t, err)
+	assert.Equal(t, "argo-rollouts", ns)
 	assert.Equal(t, "v1.7.2", version)
 	assert.Equal(t, []string{
 		"https://raw.githubusercontent.com/argoproj/argo-rollouts/v1.7.2/manifests/crds/rollout-crd.yaml",
@@ -39,9 +41,11 @@ func TestArgorolloutsComponentOverridingsWithNamespaceInstallTrueOnly(t *testing
 func TestArgorolloutsComponentOverridingsWithNamespaceInstallFalseOnly(t *testing.T) {
 	params := metadata.ComponentOverrides{
 		"namespaceInstall": false,
+		"namespace":        "nice",
 	}
-	version, url, postInstall, err := setArgorolloutsComponentOverridings(params)
+	version, url, postInstall, ns, err := setArgorolloutsComponentOverridings(params)
 	assert.Nil(t, err)
+	assert.Equal(t, "nice", ns)
 	assert.Equal(t, "v1.7.2", version)
 	assert.Equal(t, []string{"https://github.com/argoproj/argo-rollouts/releases/download/v1.7.2/install.yaml"}, url)
 	assert.Contains(t, postInstall, "Commands to execute to access Argo-Rollouts")
@@ -49,8 +53,9 @@ func TestArgorolloutsComponentOverridingsWithNamespaceInstallFalseOnly(t *testin
 
 func TestArgorolloutsComponentOverridingsWithEmptyParams(t *testing.T) {
 	params := metadata.ComponentOverrides{}
-	version, url, postInstall, err := setArgorolloutsComponentOverridings(params)
+	version, url, postInstall, ns, err := setArgorolloutsComponentOverridings(params)
 	assert.Nil(t, err)
+	assert.Equal(t, "argo-rollouts", ns)
 	assert.Equal(t, "v1.7.2", version)
 	assert.Equal(t, []string{"https://github.com/argoproj/argo-rollouts/releases/download/v1.7.2/install.yaml"}, url)
 	assert.Contains(t, postInstall, "Commands to execute to access Argo-Rollouts")
