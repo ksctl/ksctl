@@ -58,21 +58,11 @@ jobs:
         run: |
           make build-installer CONTROLLER=application IMG_TAG_VERSION=${{inputs.tag_name}}
 
-      - name: updates ksctl-component versions to the new tag
-        env:
-          TAG_NAME: ${{inputs.tag_name}}
-        run: |
-          set -xe
-          cd ksctl-components/manifests
-          cp -v versions.go versions.go.bkp
-          sed -i "s/\"latest\"/\"${TAG_NAME}\"/g" versions.go
-
       - name: git add
         run: |
           set -xe
           git add ksctl-components/manifests/controllers/application/deploy.yml \
-            ksctl-components/operators/application/config/manager/kustomization.yaml \
-            ksctl-components/manifests/versions.go
+            ksctl-components/operators/application/config/manager/kustomization.yaml
           git diff --staged
 
       - name: commit and push
@@ -91,15 +81,13 @@ jobs:
       - name: restore the development configurations
         run: |
           set -xe
-          make build-installer CONTROLLER=application IMG_TAG_VERSION=latest
-          mv -v ksctl-components/manifests/versions.go.bkp ksctl-components/manifests/versions.go
+          make build-installer CONTROLLER=application IMG_TAG_VERSION=main
 
       - name: git add
         run: |
           set -xe
           git add ksctl-components/manifests/controllers/application/deploy.yml \
-            ksctl-components/operators/application/config/manager/kustomization.yaml \
-            ksctl-components/manifests/versions.go
+            ksctl-components/operators/application/config/manager/kustomization.yaml
           git diff --staged
 
       - name: commit and push for restoring the dev configurations
