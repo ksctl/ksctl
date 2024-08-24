@@ -1,10 +1,11 @@
 package components
 
 import (
+	"strings"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
 	"github.com/ksctl/ksctl/poller"
-	"strings"
 )
 
 func getIstioComponentOverridings(p metadata.ComponentOverrides) (version *string, helmBaseChartOverridings map[string]interface{}, helmIstiodChartOverridings map[string]interface{}) {
@@ -44,15 +45,13 @@ func setIsitoComponentOverridings(p metadata.ComponentOverrides) (
 	if err != nil {
 		return "", nil, nil, err
 	}
-	version = releases[0]
+
 	helmBaseChartOverridings = map[string]any{}
 	helmIstiodChartOverridings = map[string]any{}
 
 	_version, _helmBaseChartOverridings, _helmIstiodChartOverridings := getIstioComponentOverridings(p)
 
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	if _helmBaseChartOverridings != nil {
 		helmBaseChartOverridings = _helmBaseChartOverridings

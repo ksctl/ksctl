@@ -14,8 +14,8 @@ type KubectlHandler struct {
 	CreateNamespace bool
 	Namespace       string
 
-	Version     string // how to get the version propogated?
-	Url         string
+	Version     string   // how to get the version propogated?
+	Urls        []string // make sure you traverse backwards to uninstall resources
 	PostInstall string
 	Metadata    string
 }

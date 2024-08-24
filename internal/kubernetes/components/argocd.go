@@ -8,9 +8,14 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *string, noUI *bool, namespaceInstall *bool) {
+func getArgocdComponentOverridings(p metadata.ComponentOverrides) (
+	version *string,
+	noUI *bool,
+	namespaceInstall *bool,
+	namespace *string,
+) {
 	if p == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	for k, v := range p {
 		switch k {
@@ -26,6 +31,10 @@ func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *stri
 			if v, ok := v.(bool); ok {
 				namespaceInstall = utilities.Ptr(v)
 			}
+		case "namespace":
+			if v, ok := v.(string); ok {
+				namespace = utilities.Ptr(v)
+			}
 		}
 	}
 	return
@@ -33,22 +42,31 @@ func getArgocdComponentOverridings(p metadata.ComponentOverrides) (version *stri
 
 func setArgocdComponentOverridings(p metadata.ComponentOverrides) (
 	version string,
-	url string,
+	url []string,
 	postInstall string,
+	namespace string,
 ) {
-	version = "stable"
-	url = ""
+	url = nil
 	postInstall = ""
+	namespace = "argocd"
 
-	_version, _noUI, _namespaceInstall := getArgocdComponentOverridings(p)
-	if _version != nil {
-		if *_version != "latest" {
-			version = *_version
+	_version, _noUI, _namespaceInstall, _namespace := getArgocdComponentOverridings(p)
+	if _namespace != nil {
+		if *_namespace != "argocd" {
+			namespace = *_namespace
 		}
 	}
 
+	version = getVersionIfItsNotNilAndLatest(_version, "stable")
+
+	generateManifestUrl := func(ver string, path string) string {
+		return fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/%s", ver, path)
+	}
+
 	defaultVals := func() {
-		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/install.yaml", version)
+		url = []string{
+			generateManifestUrl(version, "manifests/install.yaml"),
+		}
 		postInstall = `
 Commands to execute to access Argocd
 $ kubectl get secret -n argocd argocd-initial-admin-secret -o json | jq -r '.data.password' | base64 -d
@@ -61,14 +79,21 @@ and login to http://localhost:8080 with user admin and password from above
 		if *_noUI {
 			defaultVals()
 		} else {
-			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/core-install.yaml", version)
+			url = []string{
+				generateManifestUrl(version, "manifests/core-install.yaml"),
+			}
 			postInstall = fmt.Sprintf(`
 https://argo-cd.readthedocs.io/en/%s/operator-manual/core/
 `, version)
 		}
 	} else if _namespaceInstall != nil {
 		if *_namespaceInstall {
-			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", version)
+			url = []string{
+				generateManifestUrl(version, "manifests/crds/application-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/appproject-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/applicationset-crd.yaml"),
+				generateManifestUrl(version, "manifests/namespace-install.yaml"),
+			}
 			postInstall = fmt.Sprintf(`
 https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-availability
 `, version)
@@ -83,13 +108,13 @@ https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-avai
 }
 
 func ArgoCDStandardComponent(params metadata.ComponentOverrides) metadata.StackComponent {
-	version, url, postInstall := setArgocdComponentOverridings(params)
+	version, url, postInstall, ns := setArgocdComponentOverridings(params)
 
 	return metadata.StackComponent{
 		Kubectl: &metadata.KubectlHandler{
-			Namespace:       "argocd",
+			Namespace:       ns,
 			CreateNamespace: true,
-			Url:             url,
+			Urls:            url,
 			Version:         version,
 			Metadata:        fmt.Sprintf("Argo CD (Ver: %s) is a declarative, GitOps continuous delivery tool for Kubernetes.", version),
 			PostInstall:     postInstall,

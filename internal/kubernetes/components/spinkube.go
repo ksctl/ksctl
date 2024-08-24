@@ -61,14 +61,11 @@ func setSpinkubeComponentOverridings(p metadata.ComponentOverrides, theThing str
 	if err != nil {
 		return
 	}
-	version = releases[0]
 	url = ""
 	postInstall = ""
 
 	_version := getSpinkubeComponentOverridings(p)
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	defaultVals := func() {
 		url = fmt.Sprintf("https://github.com/spinkube/spin-operator/releases/download/%s/%s", version, theThing)
@@ -113,7 +110,7 @@ func spinkubeReturnHelper(version, url, postInstall string) (metadata.StackCompo
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
-			Url:             url,
+			Urls:            []string{url},
 			Version:         version,
 			CreateNamespace: false,
 			Metadata:        fmt.Sprintf("KubeSpin (ver: %s) is an open source project that streamlines developing, deploying and operating WebAssembly workloads in Kubernetes - resulting in delivering smaller, more portable applications and incredible compute performance benefits", version),
@@ -178,15 +175,12 @@ func setSpinOperatorComponentOverridings(p metadata.ComponentOverrides) (
 	if err != nil {
 		return
 	}
-	version = releases[0]
 
 	helmOperatorChartOverridings = map[string]any{}
 
 	_version, _helmOperatorChartOverridings := getSpinkubeOperatorComponentOverridings(p)
 
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	if _helmOperatorChartOverridings != nil {
 		helmOperatorChartOverridings = _helmOperatorChartOverridings

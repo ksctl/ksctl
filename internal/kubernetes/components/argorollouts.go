@@ -9,9 +9,13 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version *string, namespaceInstall *bool) {
+func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (
+	version *string,
+	namespaceInstall *bool,
+	namespace *string,
+) {
 	if p == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	for k, v := range p {
@@ -24,6 +28,10 @@ func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version
 			if v, ok := v.(bool); ok {
 				namespaceInstall = utilities.Ptr(v)
 			}
+		case "namespace":
+			if v, ok := v.(string); ok {
+				namespace = utilities.Ptr(v)
+			}
 		}
 	}
 	return
@@ -31,25 +39,36 @@ func getArgorolloutsComponentOverridings(p metadata.ComponentOverrides) (version
 
 func setArgorolloutsComponentOverridings(params metadata.ComponentOverrides) (
 	version string,
-	url string,
+	url []string,
 	postInstall string,
+	namespace string,
 	err error,
 ) {
 	releases, err := poller.GetSharedPoller().Get("argoproj", "argo-rollouts")
 	if err != nil {
 		return
 	}
-	version = releases[0]
-	url = ""
-	postInstall = ""
 
-	_version, _namespaceInstall := getArgorolloutsComponentOverridings(params)
-	if _version != nil {
-		version = *_version
+	url = nil
+	postInstall = ""
+	namespace = "argo-rollouts"
+
+	_version, _namespaceInstall, _namespace := getArgorolloutsComponentOverridings(params)
+
+	if _namespace != nil {
+		if *_namespace != "argo-rollouts" {
+			namespace = *_namespace
+		}
+	}
+
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
+
+	generateManifestUrl := func(ver string, path string) string {
+		return fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-rollouts/%s/%s", ver, path)
 	}
 
 	defaultVals := func() {
-		url = fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/%s/download/install.yaml", version)
+		url = []string{fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/download/%s/install.yaml", version)}
 		postInstall = `
 Commands to execute to access Argo-Rollouts
 $ kubectl argo rollouts version
@@ -60,9 +79,16 @@ and open http://localhost:3100/rollouts
 
 	if _namespaceInstall != nil {
 		if *_namespaceInstall {
-			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", version)
+			url = []string{
+				generateManifestUrl(version, "manifests/crds/rollout-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/experiment-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/analysis-run-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/analysis-template-crd.yaml"),
+				generateManifestUrl(version, "manifests/crds/cluster-analysis-template-crd.yaml"),
+				generateManifestUrl(version, "manifests/namespace-install.yaml"),
+			}
 			postInstall = fmt.Sprintf(`
-https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-availability
+https://argo-rollouts.readthedocs.io/en/%v/installation/#controller-installation
 `, version)
 
 		} else {
@@ -75,16 +101,16 @@ https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-avai
 }
 
 func ArgoRolloutsStandardComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
-	version, url, postInstall, err := setArgorolloutsComponentOverridings(params)
+	version, url, postInstall, ns, err := setArgorolloutsComponentOverridings(params)
 	if err != nil {
 		return metadata.StackComponent{}, err
 	}
 
 	return metadata.StackComponent{
 		Kubectl: &metadata.KubectlHandler{
-			Namespace:       "argo-rollouts",
+			Namespace:       ns,
 			CreateNamespace: true,
-			Url:             url,
+			Urls:            url,
 			Version:         version,
 			Metadata:        fmt.Sprintf("Argo Rollouts (Ver: %s) is a Kubernetes controller and set of CRDs which provide advanced deployment capabilities such as blue-green, canary, canary analysis, experimentation, and progressive delivery features to Kubernetes.", version),
 			PostInstall:     postInstall,

@@ -40,14 +40,11 @@ func setCiliumComponentOverridings(p metadata.ComponentOverrides) (
 		return "", nil, err
 	}
 
-	version = releases[0]
 	ciliumChartOverridings = map[string]any{}
 
 	_version, _ciliumChartOverridings := getCiliumComponentOverridings(p)
 
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	if _ciliumChartOverridings != nil {
 		ciliumChartOverridings = _ciliumChartOverridings

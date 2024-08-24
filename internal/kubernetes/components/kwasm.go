@@ -1,9 +1,10 @@
 package components
 
 import (
+	"strings"
+
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"strings"
 )
 
 const kwasmOperatorChartOverridingsKey = "kwasmOperatorChartOverridings"
@@ -37,13 +38,10 @@ func setKwasmOperatorComponentOverridings(params metadata.ComponentOverrides) (
 	overridings map[string]any,
 	err error,
 ) {
-	version = "latest"
 
 	_version, _kwasmOperatorChartOverridings := getKwasmOperatorComponentOverridings(params)
 
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, "latest")
 
 	if _kwasmOperatorChartOverridings != nil {
 		overridings = utilities.DeepCopyMap(_kwasmOperatorChartOverridings)
@@ -58,7 +56,7 @@ func KwasmWasmedgeComponent(params metadata.ComponentOverrides) (metadata.StackC
 		Kubectl: &metadata.KubectlHandler{
 			CreateNamespace: false,
 			Version:         "latest",
-			Url:             "https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml",
+			Urls:            []string{"https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml"},
 			Metadata:        "It applies the runtime class for kwasm for wasmedge",
 		},
 	}, nil

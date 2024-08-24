@@ -57,7 +57,7 @@ func KsctlApplicationComponent(params metadata.ComponentOverrides) metadata.Stac
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
-			Url:             url,
+			Urls:            []string{url},
 			CreateNamespace: false,
 			Metadata:        fmt.Sprintf("Ksctl Application controller (Ver: %s)", version),
 			PostInstall:     postInstall,
