@@ -36,16 +36,12 @@ func setArgocdComponentOverridings(p metadata.ComponentOverrides) (
 	url string,
 	postInstall string,
 ) {
-	version = "stable"
 	url = ""
 	postInstall = ""
 
 	_version, _noUI, _namespaceInstall := getArgocdComponentOverridings(p)
-	if _version != nil {
-		if *_version != "latest" {
-			version = *_version
-		}
-	}
+
+	version = getVersionIfItsNotNilAndLatest(_version, "stable")
 
 	defaultVals := func() {
 		url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/install.yaml", version)

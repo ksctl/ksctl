@@ -39,17 +39,15 @@ func setArgorolloutsComponentOverridings(params metadata.ComponentOverrides) (
 	if err != nil {
 		return
 	}
-	version = releases[0]
+
 	url = ""
 	postInstall = ""
 
 	_version, _namespaceInstall := getArgorolloutsComponentOverridings(params)
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	defaultVals := func() {
-		url = fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/%s/download/install.yaml", version)
+		url = fmt.Sprintf("https://github.com/argoproj/argo-rollouts/releases/download/%s/install.yaml", version)
 		postInstall = `
 Commands to execute to access Argo-Rollouts
 $ kubectl argo rollouts version
@@ -60,9 +58,10 @@ and open http://localhost:3100/rollouts
 
 	if _namespaceInstall != nil {
 		if *_namespaceInstall {
-			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-cd/%s/manifests/namespace-install.yaml", version)
+			// TODO: need to install the crd as well
+			url = fmt.Sprintf("https://raw.githubusercontent.com/argoproj/argo-rollouts/%s/manifests/namespace-install.yaml", version)
 			postInstall = fmt.Sprintf(`
-https://argo-cd.readthedocs.io/en/%s/operator-manual/installation/#non-high-availability
+https://argo-rollouts.readthedocs.io/en/%v/installation/#controller-installation
 `, version)
 
 		} else {

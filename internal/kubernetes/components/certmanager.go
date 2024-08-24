@@ -49,7 +49,6 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 	if err != nil {
 		return "", nil, err
 	}
-	version = releases[0]
 
 	overridings = map[string]any{
 		"crds": map[string]any{
@@ -59,9 +58,7 @@ func setCertManagerComponentOverridings(params metadata.ComponentOverrides) (
 
 	_version, _gateway_apiEnable, _certmanagerChartOverridings := getCertManagerComponentOverridings(params)
 
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	if _certmanagerChartOverridings != nil {
 		utilities.CopySrcToDestPreservingDestVals(overridings, _certmanagerChartOverridings)

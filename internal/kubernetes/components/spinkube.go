@@ -61,14 +61,11 @@ func setSpinkubeComponentOverridings(p metadata.ComponentOverrides, theThing str
 	if err != nil {
 		return
 	}
-	version = releases[0]
 	url = ""
 	postInstall = ""
 
 	_version := getSpinkubeComponentOverridings(p)
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	defaultVals := func() {
 		url = fmt.Sprintf("https://github.com/spinkube/spin-operator/releases/download/%s/%s", version, theThing)
@@ -178,15 +175,12 @@ func setSpinOperatorComponentOverridings(p metadata.ComponentOverrides) (
 	if err != nil {
 		return
 	}
-	version = releases[0]
 
 	helmOperatorChartOverridings = map[string]any{}
 
 	_version, _helmOperatorChartOverridings := getSpinkubeOperatorComponentOverridings(p)
 
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	if _helmOperatorChartOverridings != nil {
 		helmOperatorChartOverridings = _helmOperatorChartOverridings

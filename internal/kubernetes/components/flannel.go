@@ -34,17 +34,15 @@ func setFlannelComponentOverridings(p metadata.ComponentOverrides) (
 	if err != nil {
 		return "", "", "", err
 	}
-	version = releases[0]
+
 	url = ""
 	postInstall = ""
 
 	_version := getFlannelComponentOverridings(p)
-	if _version != nil {
-		version = *_version
-	}
+	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	defaultVals := func() {
-		url = fmt.Sprintf("https://github.com/flannel-io/flannel/releases/%s/download/kube-flannel.yml", version)
+		url = fmt.Sprintf("https://github.com/flannel-io/flannel/releases/download/%s/kube-flannel.yml", version)
 		postInstall = "https://github.com/flannel-io/flannel"
 	}
 
