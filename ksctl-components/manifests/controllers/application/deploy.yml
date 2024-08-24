@@ -342,7 +342,7 @@ spec:
           value: agent.ksctl.svc.cluster.local:8080
         - name: LOG_LEVEL
           value: DEBUG
-        image: ghcr.io/ksctl/ksctl-application-controller:main
+        image: ghcr.io/ksctl/ksctl-application-controller:v1.2.6
         livenessProbe:
           httpGet:
             path: /healthz
