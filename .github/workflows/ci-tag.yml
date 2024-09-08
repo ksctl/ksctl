@@ -45,8 +45,8 @@ jobs:
           chmod 400 ~/.ssh/id_ed25519.pub
           cat <<EOF > ~/.gitconfig
           [user]
-            name = Dipankar Das
-            email = 65275144+dipankardas011@users.noreply.github.com
+            name = "github-actions[bot]"
+            email = "41898282+github-actions[bot]@users.noreply.github.com"
             signingkey = ~/.ssh/id_ed25519.pub
           [gpg]
             format = ssh
@@ -68,7 +68,7 @@ jobs:
       - name: commit and push
         run: |
           set -xe
-          git commit -sS -m "release(artifacts): Updated the ksctl-component versions"
+          git commit -sS -m "chore(components): Updated the ksctl-component versions"
           git show HEAD
           git push
 
@@ -93,7 +93,7 @@ jobs:
       - name: commit and push for restoring the dev configurations
         run: |
           set -xe
-          git commit -sS -m "[skip ci]!: Restored the Development ksctl-component versions"
+          git commit -sS -m "chore!: [skip ci] Restored the Development ksctl-component versions"
           git push
 
       - name: get the artifacts
