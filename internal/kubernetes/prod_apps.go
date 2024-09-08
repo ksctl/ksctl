@@ -15,7 +15,7 @@ func (k *K8sClusterClient) AppPerformPreUninstall(
 ) error {
 	if strings.HasPrefix(apps.StackName, "production-") {
 		switch apps.StackName {
-		case string(metadata.SpinKubeProductionStackID), string(metadata.WasmEdgeKwasmProductionStackID):
+		case string(metadata.SpinKubeProductionStackID), string(metadata.KwasmProductionStackID):
 			return k.kwasmBasedWasmPreUninstall()
 		}
 	}
@@ -30,7 +30,7 @@ func (k *K8sClusterClient) AppPerformPostInstall(
 
 	if strings.HasPrefix(apps.StackName, "production-") {
 		switch apps.StackName {
-		case string(metadata.SpinKubeProductionStackID), string(metadata.WasmEdgeKwasmProductionStackID):
+		case string(metadata.SpinKubeProductionStackID), string(metadata.KwasmProductionStackID):
 			return k.kwasmBasedWasmPostInstall()
 		}
 	}

@@ -32,7 +32,7 @@ func TestSetKwasmOperatorComponentOverridings_WithOverrides(t *testing.T) {
 
 func TestKwasmWasmedgeComponent(t *testing.T) {
 	params := metadata.ComponentOverrides{}
-	component, err := KwasmWasmedgeComponent(params)
+	component, err := KwasmComponent(params)
 
 	assert.NoError(t, err)
 	assert.Equal(t, metadata.ComponentTypeKubectl, component.HandlerType)

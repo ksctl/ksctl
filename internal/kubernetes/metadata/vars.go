@@ -9,9 +9,9 @@ const (
 	KubePrometheusStandardStackID StackID = "standard-kubeprometheus"
 	KsctlOperatorsID              StackID = "standard-ksctloperator"
 
-	ArgocdProductionStackID        StackID = "production-argocd"
-	SpinKubeProductionStackID      StackID = "production-spinkube"
-	WasmEdgeKwasmProductionStackID StackID = "production-wasmedge-kwasm"
+	ArgocdProductionStackID   StackID = "production-argocd"
+	SpinKubeProductionStackID StackID = "production-spinkube"
+	KwasmProductionStackID    StackID = "production-kwasm"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 
 	KwasmOperatorComponentID StackComponentID = "kwasm-operator"
 
-	KwasmRuntimeClassWasmedgeID StackComponentID = "kwasm-wasmedge-runtime-class"
+	KwasmRuntimeClassID StackComponentID = "kwasm-runtime-class"
 
 	SpinkubeOperatorCrdComponentID StackComponentID = "spinkube-operator-crd"
 	SpinKubeOperatorRuntimeClassID StackComponentID = "spinkube-operator-runtime-class"

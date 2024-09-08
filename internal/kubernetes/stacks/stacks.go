@@ -9,15 +9,15 @@ import (
 )
 
 var appsManifests = map[metadata.StackID]func(metadata.ApplicationParams) (metadata.ApplicationStack, error){
-	metadata.ArgocdStandardStackID:          ArgocdStandardCICD,
-	metadata.ArgoRolloutsStandardStackID:    ArgoRolloutsStandardCICD,
-	metadata.CiliumStandardStackID:          CiliumStandardCNI,
-	metadata.FlannelStandardStackID:         FlannelStandardCNI,
-	metadata.IstioStandardStackID:           IstioStandardServiceMesh,
-	metadata.KubePrometheusStandardStackID:  KubePrometheusStandardMonitoring,
-	metadata.KsctlOperatorsID:               KsctlOperatorStackData,
-	metadata.SpinKubeProductionStackID:      SpinkubeProductionApp,
-	metadata.WasmEdgeKwasmProductionStackID: KwasmWasmedgeProductionApp,
+	metadata.ArgocdStandardStackID:         ArgocdStandardCICD,
+	metadata.ArgoRolloutsStandardStackID:   ArgoRolloutsStandardCICD,
+	metadata.CiliumStandardStackID:         CiliumStandardCNI,
+	metadata.FlannelStandardStackID:        FlannelStandardCNI,
+	metadata.IstioStandardStackID:          IstioStandardServiceMesh,
+	metadata.KubePrometheusStandardStackID: KubePrometheusStandardMonitoring,
+	metadata.KsctlOperatorsID:              KsctlOperatorStackData,
+	metadata.SpinKubeProductionStackID:     SpinkubeProductionApp,
+	metadata.KwasmProductionStackID:        KwasmProductionApp,
 }
 
 func FetchKsctlStack(ctx context.Context, log types.LoggerFactory, stkID string) (func(metadata.ApplicationParams) (metadata.ApplicationStack, error), error) {
