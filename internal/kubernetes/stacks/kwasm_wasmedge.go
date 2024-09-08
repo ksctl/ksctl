@@ -5,7 +5,7 @@ import (
 	"github.com/ksctl/ksctl/internal/kubernetes/metadata"
 )
 
-func KwasmWasmedgeProductionApp(params metadata.ApplicationParams) (metadata.ApplicationStack, error) {
+func KwasmProductionApp(params metadata.ApplicationParams) (metadata.ApplicationStack, error) {
 
 	kwasmOperatorComponent, err := components.KwasmOperatorComponent(
 		params.ComponentParams[metadata.KwasmOperatorComponentID],
@@ -14,8 +14,8 @@ func KwasmWasmedgeProductionApp(params metadata.ApplicationParams) (metadata.App
 		return metadata.ApplicationStack{}, err
 	}
 
-	wasmedgeKwasmComponent, err := components.KwasmWasmedgeComponent(
-		params.ComponentParams[metadata.KwasmRuntimeClassWasmedgeID],
+	wasmedgeKwasmComponent, err := components.KwasmComponent(
+		params.ComponentParams[metadata.KwasmRuntimeClassID],
 	)
 	if err != nil {
 		return metadata.ApplicationStack{}, err
@@ -23,14 +23,14 @@ func KwasmWasmedgeProductionApp(params metadata.ApplicationParams) (metadata.App
 
 	return metadata.ApplicationStack{
 		Maintainer:  "github@dipankardas011",
-		StackNameID: metadata.WasmEdgeKwasmProductionStackID,
+		StackNameID: metadata.KwasmProductionStackID,
 		Components: map[metadata.StackComponentID]metadata.StackComponent{
-			metadata.KwasmOperatorComponentID:    kwasmOperatorComponent,
-			metadata.KwasmRuntimeClassWasmedgeID: wasmedgeKwasmComponent,
+			metadata.KwasmOperatorComponentID: kwasmOperatorComponent,
+			metadata.KwasmRuntimeClassID:      wasmedgeKwasmComponent,
 		},
 		StkDepsIdx: []metadata.StackComponentID{
 			metadata.KwasmOperatorComponentID,
-			metadata.KwasmRuntimeClassWasmedgeID,
+			metadata.KwasmRuntimeClassID,
 		},
 	}, nil
 }

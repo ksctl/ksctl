@@ -50,14 +50,14 @@ func setKwasmOperatorComponentOverridings(params metadata.ComponentOverrides) (
 	return
 }
 
-func KwasmWasmedgeComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
+func KwasmComponent(params metadata.ComponentOverrides) (metadata.StackComponent, error) {
 	return metadata.StackComponent{
 		HandlerType: metadata.ComponentTypeKubectl,
 		Kubectl: &metadata.KubectlHandler{
 			CreateNamespace: false,
 			Version:         "latest",
 			Urls:            []string{"https://raw.githubusercontent.com/ksctl/components/main/wasm/kwasm/runtimeclass.yml"},
-			Metadata:        "It applies the runtime class for kwasm for wasmedge",
+			Metadata:        "It applies the runtime class for kwasm currently wasmedge and wasmtime",
 		},
 	}, nil
 }
