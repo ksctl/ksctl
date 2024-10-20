@@ -3,17 +3,34 @@
 # Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
 
-**Status: `Technical Preview`**
-
-
 It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks. 
 
-It is already a valuable tool for developers who want to manage Kubernetes clusters using our CLI.
+It is already a valuable tool for developers who want to manage Kubernetes clusters using our CLI. And Get started with Kubernetes with the woring about the infrastructure and other configurations just run `ksctl create` and your cluster is ready to be used be it a local cluster or a cloud provider managed cluster. It makes the developers skip the cluster setup step as well as day 0 work. Soon we will work on day 1 operations and so on 🙂
 
 ### So far what have we achieved?
-Cluster creation, deletion, getting cluster info, accessing it. It uses cloud providers managed offerrings For Example: AKS, EKS, etc. not just that we also have self-managed kubernetes cluster support where you can pick and choose between different bootstrap tools like k3s or kubeadm. And now we are moving towards the next phase of the project where we will be adding more features like cluster scaling, cluster upgrade, production grade apps, and many more.
+* Cluster Operations
+  * Create
+  * Delete
+  * Get Cluster infra details
+  * Storage of state in not just local system but also mongodb
+  * Manually Scaleup and Scaledown using the CLI interface
+  * Switch Between Clusters
+  * Wasm, application stack deployment
+* Type Of Cluster
+  * Self-Managed HA Cluster
+    * K3s
+    * Kubeadm
+  * Cloud Managed Cluster
+    * AKS
+    * EKS
+    * Civo K3s
+* Lifecycle
+  * You can now deploy wasm workloads using our Ksctl application stack
+  * Initial Prototype of Production Ready Stack (**InProgress**)
+  * Etcd Diaster Management (**TBD**)
+  * import any cluster (**TBD**)
 
-See [the FAQ](#) for more details about how ksctl is different from alternatives.
+So It helps you to Avoid using Aws, Azure cli and just create and manage the cluster using a single CLI interface
 
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/ksctl/ksctl)](https://goreportcard.com/report/github.com/ksctl/ksctl) [![](https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg)](https://pkg.go.dev/github.com/ksctl/ksctl) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469) [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
