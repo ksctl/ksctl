@@ -5,7 +5,10 @@
 
 It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks. 
 
-It is already a valuable tool for developers who want to manage Kubernetes clusters using our CLI. And Get started with Kubernetes with the woring about the infrastructure and other configurations just run `ksctl create` and your cluster is ready to be used be it a local cluster or a cloud provider managed cluster. It makes the developers skip the cluster setup step as well as day 0 work. Soon we will work on day 1 operations and so on 🙂
+It is already a valuable tool for developers who want to manage Kubernetes clusters using our CLI. And Get started with Kubernetes without thinking about the infrastructure & configurations. Just run `ksctl create` and your cluster is ready to be used be it a local cluster or a cloud provider managed cluster. It makes the developers skip the cluster setup step as well as day 0 work. Soon we will work on day 1 operations and so on 🙂
+
+So It helps you to avoid using Aws, Azure cli and just create and manage the cluster using a single CLI interface
+
 
 ### So far what have we achieved?
 * Cluster Operations
@@ -26,11 +29,11 @@ It is already a valuable tool for developers who want to manage Kubernetes clust
     * Civo K3s
 * Lifecycle
   * You can now deploy wasm workloads using our Ksctl application stack
+  * Common Application Stack Deployment. Example are Argocd, Argorollouts,Kube-Prometheus,etc
   * Initial Prototype of Production Ready Stack (**InProgress**)
   * Etcd Diaster Management (**TBD**)
   * import any cluster (**TBD**)
-
-So It helps you to Avoid using Aws, Azure cli and just create and manage the cluster using a single CLI interface
+  * Improved Monitoring of clusters (**In Roadmap**) to make the cluster even more easy to use for someone new to K8s ecosystem
 
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/ksctl/ksctl)](https://goreportcard.com/report/github.com/ksctl/ksctl) [![](https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg)](https://pkg.go.dev/github.com/ksctl/ksctl) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469) [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
