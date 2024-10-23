@@ -9,13 +9,12 @@ import (
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
 )
 
 // NOTE: here we might need to define another ctx var for each function
 // make sure that is passed instead of azureCtx
 
-func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
+func (obj *AzureProvider) DelVM(index int) error {
 	role := <-obj.chRole
 	indexNo := index
 
@@ -75,7 +74,7 @@ func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
 				mainStateDocument.CloudInfra.Azure.InfoDatabase.VMSizes[indexNo] = ""
 			}
 
-			if err := storage.Write(mainStateDocument); err != nil {
+			if err := obj.storage.Write(mainStateDocument); err != nil {
 				errDel = err
 				return
 			}
@@ -89,22 +88,22 @@ func (obj *AzureProvider) DelVM(storage types.StorageFactory, index int) error {
 
 	}
 
-	if err := obj.DeleteDisk(azureCtx, storage, indexNo, role); err != nil {
+	if err := obj.DeleteDisk(azureCtx, indexNo, role); err != nil {
 		return err
 	}
 
-	if err := obj.DeleteNetworkInterface(azureCtx, storage, indexNo, role); err != nil {
+	if err := obj.DeleteNetworkInterface(azureCtx, indexNo, role); err != nil {
 		return err
 	}
 
-	if err := obj.DeletePublicIP(azureCtx, storage, indexNo, role); err != nil {
+	if err := obj.DeletePublicIP(azureCtx, indexNo, role); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
+func (obj *AzureProvider) NewVM(index int) error {
 	name := <-obj.chResName
 	indexNo := index
 	role := <-obj.chRole
@@ -117,7 +116,7 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 	diskName := name + "-disk"
 	log.Debug(azureCtx, "Printing", "pubIPName", pubIPName, "NICName", nicName, "diskName", diskName)
 
-	if err := obj.CreatePublicIP(azureCtx, storage, pubIPName, indexNo, role); err != nil {
+	if err := obj.CreatePublicIP(azureCtx, pubIPName, indexNo, role); err != nil {
 		return err
 	}
 
@@ -141,7 +140,7 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	log.Debug(azureCtx, "Printing", "PubIP_id", pubIPID, "NsgID", nsgID)
 
-	if err := obj.CreateNetworkInterface(azureCtx, storage, nicName, mainStateDocument.CloudInfra.Azure.SubnetID, pubIPID, nsgID, indexNo, role); err != nil {
+	if err := obj.CreateNetworkInterface(azureCtx, nicName, mainStateDocument.CloudInfra.Azure.SubnetID, pubIPID, nsgID, indexNo, role); err != nil {
 		return err
 	}
 
@@ -259,7 +258,7 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.Names[indexNo] = name
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.VMSizes[indexNo] = name
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errCreateVM = err
 			return
 		}
@@ -309,7 +308,7 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.Hostnames[indexNo] = *resp.Properties.OSProfile.ComputerName
 		}
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errCreateVM = err
 			return
 		}
@@ -324,7 +323,7 @@ func (obj *AzureProvider) NewVM(storage types.StorageFactory, index int) error {
 	return nil
 }
 
-func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeleteDisk(ctx context.Context, index int, role consts.KsctlRole) error {
 	diskName := ""
 	switch role {
 	case consts.RoleWp:
@@ -371,7 +370,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage types.StorageF
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.DiskNames[index] = ""
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errDelete = err
 			return
 		}
@@ -385,7 +384,7 @@ func (obj *AzureProvider) DeleteDisk(ctx context.Context, storage types.StorageF
 	return nil
 }
 
-func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.StorageFactory, publicIPName string, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) CreatePublicIP(ctx context.Context, publicIPName string, index int, role consts.KsctlRole) error {
 
 	publicIP := ""
 	switch role {
@@ -436,7 +435,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.Stor
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPNames[index] = publicIPName
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errCreate = err
 			return
 		}
@@ -475,7 +474,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.Stor
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPs[index] = *resp.Properties.IPAddress
 		}
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errCreatePub = err
 			return
 		}
@@ -489,7 +488,7 @@ func (obj *AzureProvider) CreatePublicIP(ctx context.Context, storage types.Stor
 	return nil
 }
 
-func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeletePublicIP(ctx context.Context, index int, role consts.KsctlRole) error {
 
 	publicIP := ""
 	switch role {
@@ -547,7 +546,7 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage types.Stor
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPIDs[index] = ""
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PublicIPs[index] = ""
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errDelPub = err
 			return
 		}
@@ -561,8 +560,8 @@ func (obj *AzureProvider) DeletePublicIP(ctx context.Context, storage types.Stor
 	return nil
 }
 
-func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage types.StorageFactory,
-	nicName string, subnetID string, publicIPID string, networkSecurityGroupID string, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, nicName string,
+	subnetID string, publicIPID string, networkSecurityGroupID string, index int, role consts.KsctlRole) error {
 
 	interfaceName := ""
 	switch role {
@@ -628,7 +627,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage ty
 		case consts.RoleDs:
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceNames[index] = nicName
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errCreate = err
 			return
 		}
@@ -668,7 +667,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage ty
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs[index] = *resp.Properties.IPConfigurations[0].Properties.PrivateIPAddress
 		}
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errCreatenic = err
 			return
 		}
@@ -682,7 +681,7 @@ func (obj *AzureProvider) CreateNetworkInterface(ctx context.Context, storage ty
 	return nil
 }
 
-func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage types.StorageFactory, index int, role consts.KsctlRole) error {
+func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, index int, role consts.KsctlRole) error {
 	interfaceName := ""
 	switch role {
 	case consts.RoleWp:
@@ -738,7 +737,7 @@ func (obj *AzureProvider) DeleteNetworkInterface(ctx context.Context, storage ty
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkInterfaceIDs[index] = ""
 			mainStateDocument.CloudInfra.Azure.InfoDatabase.PrivateIPs[index] = ""
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			errDelnic = err
 			return
 		}

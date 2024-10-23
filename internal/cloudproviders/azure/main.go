@@ -14,7 +14,7 @@ import (
 	cloudcontrolres "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
-func (*AzureProvider) GetStateFile(types.StorageFactory) (string, error) {
+func (*AzureProvider) GetStateFile() (string, error) {
 	cloudstate, err := json.Marshal(mainStateDocument)
 	if err != nil {
 		return "", ksctlErrors.ErrInternal.Wrap(
@@ -41,7 +41,7 @@ func (obj *AzureProvider) ManagedK8sVersion(ver string) types.CloudFactory {
 	return obj
 }
 
-func (*AzureProvider) GetStateForHACluster(storage types.StorageFactory) (cloudcontrolres.CloudResourceState, error) {
+func (obj *AzureProvider) GetStateForHACluster() (cloudcontrolres.CloudResourceState, error) {
 	payload := cloudcontrolres.CloudResourceState{
 		SSHState: cloudcontrolres.SSHInfo{
 			PrivateKey: mainStateDocument.SSHKeyPair.PrivateKey,
@@ -189,6 +189,7 @@ func NewClient(
 	meta types.Metadata,
 	parentLogger types.LoggerFactory,
 	state *storageTypes.StorageDocument,
+	storage types.StorageFactory,
 	ClientOption func() AzureGo) (*AzureProvider, error) {
 
 	log = parentLogger
@@ -203,7 +204,8 @@ func NewClient(
 		metadata: metadata{
 			k8sVersion: meta.K8sVersion,
 		},
-		client: ClientOption(),
+		storage: storage,
+		client:  ClientOption(),
 	}
 
 	log.Debug(azureCtx, "Printing", "AzureProvider", obj)
@@ -373,7 +375,7 @@ func (obj *AzureProvider) NoOfDataStore(no int, setter bool) (int, error) {
 	)
 }
 
-func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, setter bool) (int, error) {
+func (obj *AzureProvider) NoOfWorkerPlane(no int, setter bool) (int, error) {
 	log.Debug(azureCtx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {
 		// delete operation
@@ -445,7 +447,7 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 			}
 		}
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			return -1, err
 		}
 
@@ -458,11 +460,11 @@ func (obj *AzureProvider) NoOfWorkerPlane(storage types.StorageFactory, no int, 
 	)
 }
 
-func (obj *AzureProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudcontrolres.AllClusterData, error) {
+func (obj *AzureProvider) GetRAWClusterInfos() ([]cloudcontrolres.AllClusterData, error) {
 
 	var data []cloudcontrolres.AllClusterData
 
-	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+	clusters, err := obj.storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudAzure),
 		consts.ClusterType: "",
 	})
@@ -609,16 +611,16 @@ func isPresent(storage types.StorageFactory, ksctlClusterType consts.KsctlCluste
 	return nil
 }
 
-func (obj *AzureProvider) IsPresent(storage types.StorageFactory) error {
+func (obj *AzureProvider) IsPresent() error {
 
 	if obj.haCluster {
-		return isPresent(storage, consts.ClusterTypeHa, obj.clusterName, obj.region)
+		return isPresent(obj.storage, consts.ClusterTypeHa, obj.clusterName, obj.region)
 	}
-	return isPresent(storage, consts.ClusterTypeMang, obj.clusterName, obj.region)
+	return isPresent(obj.storage, consts.ClusterTypeMang, obj.clusterName, obj.region)
 }
 
-func (obj *AzureProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
-	_read, err := storage.Read()
+func (obj *AzureProvider) GetKubeconfig() (*string, error) {
+	_read, err := obj.storage.Read()
 	if err != nil {
 		log.Error("handled error", "catch", err)
 		return nil, err

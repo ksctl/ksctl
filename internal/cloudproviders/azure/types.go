@@ -2,6 +2,8 @@ package azure
 
 import (
 	"context"
+	"sync"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
@@ -9,7 +11,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/types"
-	"sync"
 )
 
 type metadata struct {
@@ -39,6 +40,8 @@ type AzureProvider struct {
 	mu sync.Mutex
 
 	client AzureGo
+
+	storage types.StorageFactory
 }
 
 type AzureGo interface {
