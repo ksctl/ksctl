@@ -70,7 +70,7 @@ func (obj *AzureProvider) GetStateForHACluster() (cloudcontrolres.CloudResourceS
 	return payload, nil
 }
 
-func (obj *AzureProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
+func (obj *AzureProvider) InitState(operation consts.KsctlOperation) error {
 
 	switch obj.haCluster {
 	case false:
@@ -85,7 +85,7 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 
 	obj.resourceGroup = generateResourceGroupName(obj.clusterName, string(clusterType))
 
-	errLoadState := loadStateHelper(storage)
+	errLoadState := loadStateHelper(obj.storage)
 	switch operation {
 	case consts.OperationCreate:
 		if errLoadState == nil && mainStateDocument.CloudInfra.Azure.B.IsCompleted {
@@ -125,7 +125,7 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 		)
 	}
 
-	if err := obj.client.InitClient(storage); err != nil {
+	if err := obj.client.InitClient(obj.storage); err != nil {
 		return err
 	}
 
@@ -141,7 +141,7 @@ func (obj *AzureProvider) InitState(storage types.StorageFactory, operation cons
 	return nil
 }
 
-func (cloud *AzureProvider) Credential(storage types.StorageFactory) error {
+func (cloud *AzureProvider) Credential() error {
 
 	log.Print(azureCtx, "Enter your SUBSCRIPTION ID")
 	skey, err := helpers.UserInputCredentials(azureCtx, log)
@@ -177,7 +177,7 @@ func (cloud *AzureProvider) Credential(storage types.StorageFactory) error {
 		},
 	}
 
-	if err := storage.WriteCredentials(consts.CloudAzure, apiStore); err != nil {
+	if err := cloud.storage.WriteCredentials(consts.CloudAzure, apiStore); err != nil {
 		return err
 	}
 

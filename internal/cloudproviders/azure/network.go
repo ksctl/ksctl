@@ -6,10 +6,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AzureProvider) NewNetwork(storage types.StorageFactory) error {
+func (obj *AzureProvider) NewNetwork() error {
 	<-obj.chResName
 
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) != 0 {
@@ -32,7 +31,7 @@ func (obj *AzureProvider) NewNetwork(storage types.StorageFactory) error {
 
 		mainStateDocument.CloudInfra.Azure.ResourceGroupName = *resourceGroup.Name
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			return err
 		}
 		log.Success(azureCtx, "created the resource group", "name", *resourceGroup.Name)
@@ -41,11 +40,11 @@ func (obj *AzureProvider) NewNetwork(storage types.StorageFactory) error {
 		virtNet := obj.clusterName + "-vnet"
 		subNet := obj.clusterName + "-subnet"
 
-		if err := obj.CreateVirtualNetwork(azureCtx, storage, virtNet); err != nil {
+		if err := obj.CreateVirtualNetwork(azureCtx, virtNet); err != nil {
 			return err
 		}
 
-		if err := obj.CreateSubnet(azureCtx, storage, subNet); err != nil {
+		if err := obj.CreateSubnet(azureCtx, subNet); err != nil {
 			return err
 		}
 	}
@@ -53,7 +52,7 @@ func (obj *AzureProvider) NewNetwork(storage types.StorageFactory) error {
 	return nil
 }
 
-func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage types.StorageFactory, resName string) error {
+func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, resName string) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.VirtualNetworkName) != 0 {
 		log.Print(azureCtx, "skipped virtualNetwork already created", "name", mainStateDocument.CloudInfra.Azure.VirtualNetworkName)
@@ -80,7 +79,7 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage type
 	}
 	mainStateDocument.CloudInfra.Azure.VirtualNetworkName = resName
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 	log.Print(azureCtx, "creating virtual network...", "name", resName)
@@ -90,14 +89,14 @@ func (obj *AzureProvider) CreateVirtualNetwork(ctx context.Context, storage type
 		return err
 	}
 	mainStateDocument.CloudInfra.Azure.VirtualNetworkID = *resp.ID
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 	log.Success(azureCtx, "Created virtual network", "name", *resp.Name)
 	return nil
 }
 
-func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage types.StorageFactory, subnetName string) error {
+func (obj *AzureProvider) CreateSubnet(ctx context.Context, subnetName string) error {
 
 	if len(mainStateDocument.CloudInfra.Azure.SubnetName) != 0 {
 		log.Print(azureCtx, "skipped subnet already created", "name", mainStateDocument.CloudInfra.Azure.VirtualNetworkName)
@@ -118,7 +117,7 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage types.Storag
 		return err
 	}
 	mainStateDocument.CloudInfra.Azure.SubnetName = subnetName
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
@@ -130,25 +129,25 @@ func (obj *AzureProvider) CreateSubnet(ctx context.Context, storage types.Storag
 		return err
 	}
 	mainStateDocument.CloudInfra.Azure.SubnetID = *resp.ID
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 	log.Success(azureCtx, "Created subnet", "name", *resp.Name)
 	return nil
 }
 
-func (obj *AzureProvider) DelNetwork(storage types.StorageFactory) error {
+func (obj *AzureProvider) DelNetwork() error {
 
 	if len(mainStateDocument.CloudInfra.Azure.ResourceGroupName) == 0 {
 		log.Print(azureCtx, "skipped already deleted the resource group")
 		return nil
 	} else {
 		if obj.haCluster {
-			if err := obj.DeleteSubnet(azureCtx, storage); err != nil {
+			if err := obj.DeleteSubnet(azureCtx); err != nil {
 				return err
 			}
 
-			if err := obj.DeleteVirtualNetwork(azureCtx, storage); err != nil {
+			if err := obj.DeleteVirtualNetwork(azureCtx); err != nil {
 				return err
 			}
 		}
@@ -167,16 +166,16 @@ func (obj *AzureProvider) DelNetwork(storage types.StorageFactory) error {
 		log.Debug(azureCtx, "Printing", "resourceGrpName", rgname)
 
 		mainStateDocument.CloudInfra.Azure.ResourceGroupName = ""
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := obj.storage.Write(mainStateDocument); err != nil {
 			return err
 		}
 		log.Success(azureCtx, "deleted the resource group", "name", rgname)
 	}
 
-	return storage.DeleteCluster()
+	return obj.storage.DeleteCluster()
 }
 
-func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage types.StorageFactory) error {
+func (obj *AzureProvider) DeleteSubnet(ctx context.Context) error {
 
 	subnet := mainStateDocument.CloudInfra.Azure.SubnetName
 	log.Debug(azureCtx, "Printing", "subnetName", subnet)
@@ -198,7 +197,7 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage types.Storag
 	mainStateDocument.CloudInfra.Azure.SubnetName = ""
 	mainStateDocument.CloudInfra.Azure.SubnetID = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
@@ -206,7 +205,7 @@ func (obj *AzureProvider) DeleteSubnet(ctx context.Context, storage types.Storag
 	return nil
 }
 
-func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage types.StorageFactory) error {
+func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context) error {
 
 	vnet := mainStateDocument.CloudInfra.Azure.VirtualNetworkName
 	log.Debug(azureCtx, "Printing", "virtNetName", vnet)
@@ -227,7 +226,7 @@ func (obj *AzureProvider) DeleteVirtualNetwork(ctx context.Context, storage type
 
 	mainStateDocument.CloudInfra.Azure.VirtualNetworkID = ""
 	mainStateDocument.CloudInfra.Azure.VirtualNetworkName = ""
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 

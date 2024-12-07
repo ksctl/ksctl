@@ -5,10 +5,9 @@ import (
 
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error {
+func (obj *AzureProvider) DelManagedCluster() error {
 	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) == 0 {
 		log.Print(azureCtx, "skipped already deleted AKS cluster")
 		return nil
@@ -29,10 +28,10 @@ func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error 
 
 	mainStateDocument.CloudInfra.Azure.ManagedClusterName = ""
 	mainStateDocument.CloudInfra.Azure.ManagedNodeSize = ""
-	return storage.Write(mainStateDocument)
+	return obj.storage.Write(mainStateDocument)
 }
 
-func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
+func (obj *AzureProvider) NewManagedCluster(noOfNodes int) error {
 	name := <-obj.chResName
 	vmtype := <-obj.chVMType
 
@@ -89,7 +88,7 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 	mainStateDocument.CloudInfra.Azure.ManagedClusterName = name
 	mainStateDocument.CloudInfra.Azure.ManagedNodeSize = vmtype
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
@@ -111,7 +110,7 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 	mainStateDocument.ClusterKubeConfig = kubeconfigStr
 	mainStateDocument.ClusterKubeConfigContext = *resp.Name
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 

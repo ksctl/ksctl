@@ -4,10 +4,9 @@ import (
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
+func (obj *AzureProvider) CreateUploadSSHKeyPair() error {
 	name := <-obj.chResName
 	log.Debug(azureCtx, "Printing", "name", name)
 
@@ -20,7 +19,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 	if err != nil {
 		return err
 	}
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
@@ -41,7 +40,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 	mainStateDocument.CloudInfra.Azure.B.SSHKeyName = name
 	mainStateDocument.CloudInfra.Azure.B.SSHUser = "azureuser"
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 	log.Success(azureCtx, "created the ssh key pair", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
@@ -49,7 +48,7 @@ func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) e
 	return nil
 }
 
-func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
+func (obj *AzureProvider) DelSSHKeyPair() error {
 
 	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) == 0 {
 		log.Print(azureCtx, "skipped ssh key already deleted", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
@@ -65,7 +64,7 @@ func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
 	mainStateDocument.CloudInfra.Azure.B.SSHKeyName = ""
 	mainStateDocument.CloudInfra.Azure.B.SSHUser = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 

@@ -1,15 +1,13 @@
 package azure
 
 import (
-	"github.com/ksctl/ksctl/pkg/helpers"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/helpers/consts"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
+func (obj *AzureProvider) DelFirewall() error {
 	role := <-obj.chRole
 
 	log.Debug(azureCtx, "Printing", "role", role)
@@ -56,7 +54,7 @@ func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = ""
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
@@ -65,7 +63,7 @@ func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
 	return nil
 }
 
-func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
+func (obj *AzureProvider) NewFirewall() error {
 	name := <-obj.chResName
 	role := <-obj.chRole
 
@@ -126,7 +124,7 @@ func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = name
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
@@ -147,7 +145,7 @@ func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
 		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID = *resp.ID
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := obj.storage.Write(mainStateDocument); err != nil {
 		return err
 	}
 
