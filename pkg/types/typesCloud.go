@@ -12,50 +12,50 @@ import (
 
 type CloudFactory interface {
 	// NewVM create VirtualMachine with index for storing its state
-	NewVM(StorageFactory, int) error
+	NewVM(int) error
 
 	// DelVM delete VirtualMachine with index for storing its state
-	DelVM(StorageFactory, int) error
+	DelVM(int) error
 
 	// NewFirewall create Firewall
-	NewFirewall(StorageFactory) error
+	NewFirewall() error
 
 	// DelFirewall delete Firewall
-	DelFirewall(StorageFactory) error
+	DelFirewall() error
 
 	// NewNetwork create Network
-	NewNetwork(StorageFactory) error
+	NewNetwork() error
 
 	// DelNetwork delete Network
-	DelNetwork(StorageFactory) error
+	DelNetwork() error
 
 	// Credential
-	Credential(StorageFactory) error
+	Credential() error
 
 	// InitState is used to initalize the state of that partular cloud provider
 	// its internal state and cloud provider's client
 	// NOTE: multiple mode of OPERATIONS
-	InitState(StorageFactory, consts.KsctlOperation) error
+	InitState(consts.KsctlOperation) error
 
 	// CreateUploadSSHKeyPair create SSH keypair in the host machine and then upload pub key
 	// and store the path of private key, username, etc.. wrt to specific cloud provider
-	CreateUploadSSHKeyPair(StorageFactory) error
+	CreateUploadSSHKeyPair() error
 
 	// DelSSHKeyPair delete SSH keypair from the Cloud provider
-	DelSSHKeyPair(StorageFactory) error
+	DelSSHKeyPair() error
 
 	// GetStateForHACluster used to get the state info for transfer it to kubernetes distro
 	// for further configurations
-	GetStateForHACluster(StorageFactory) (cloud.CloudResourceState, error)
+	GetStateForHACluster() (cloud.CloudResourceState, error)
 
 	// NewManagedCluster creates managed kubernetes from cloud offering
 	// it requires the no of nodes to be created
-	NewManagedCluster(StorageFactory, int) error
+	NewManagedCluster(int) error
 
 	// DelManagedCluster deletes managed kubernetes from cloud offering
-	DelManagedCluster(StorageFactory) error
+	DelManagedCluster() error
 
-	GetRAWClusterInfos(storage StorageFactory) ([]cloud.AllClusterData, error)
+	GetRAWClusterInfos() ([]cloud.AllClusterData, error)
 
 	// Name sets the name for the resource you want to operate
 	Name(string) CloudFactory
@@ -81,7 +81,7 @@ type CloudFactory interface {
 	// NoOfWorkerPlane if setter is enabled it writes the new no of workerplane to be used
 	// if getter is enabled it returns the current no of workerplane
 	// its imp function for (shrinking, scaling)
-	NoOfWorkerPlane(StorageFactory, int, bool) (int, error)
+	NoOfWorkerPlane(int, bool) (int, error)
 
 	// NoOfControlPlane Getter and setter
 	// setter to store no of controlplane nodes
@@ -99,7 +99,7 @@ type CloudFactory interface {
 	// it's used for the universal kubernetes for deletion of nodes which have to scale down
 	GetHostNameAllWorkerNode() []string
 
-	IsPresent(StorageFactory) error
+	IsPresent() error
 
-	GetKubeconfig(StorageFactory) (*string, error)
+	GetKubeconfig() (*string, error)
 }
