@@ -1,7 +1,0 @@
-{
-	"cluster_name": "test-e2e-azure",
-	"ha_cluster": false,
-	"region": "eastus",
-	"cloud_provider": "azure",
-	"storage_type": "store-local"
-}

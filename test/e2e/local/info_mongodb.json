@@ -1,6 +1,0 @@
-{
-	"cluster_name": "test-e2e-local",
-	"cloud_provider": "local",
-	"storage_type": "external-store-mongodb"
-}
-

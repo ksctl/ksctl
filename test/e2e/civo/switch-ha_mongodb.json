@@ -1,7 +1,0 @@
-{
-	"cluster_name": "test-e2e-ha-civo",
-	"region": "fra1",
-	"ha_cluster": true,
-	"storage_type": "external-store-mongodb",
-	"cloud_provider": "civo"
-}
