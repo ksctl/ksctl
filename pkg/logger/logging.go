@@ -1,9 +1,26 @@
 package logger
 
 import (
-	"strings"
-
+	"github.com/fatih/color"
 	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"strings"
+)
+
+type CustomExternalLogLevel string
+type LogClusterDetail uint
+
+var (
+	LogWarning = CustomExternalLogLevel(color.HiYellowString("WARN"))
+	LogError   = CustomExternalLogLevel(color.HiRedString("ERR"))
+	LogInfo    = CustomExternalLogLevel(color.HiBlueString("INFO"))
+	LogNote    = CustomExternalLogLevel(color.CyanString("NOTE"))
+	LogSuccess = CustomExternalLogLevel(color.HiGreenString("PASS"))
+	LogDebug   = CustomExternalLogLevel(color.WhiteString("DEBUG"))
+)
+
+const (
+	LoggingGetClusters LogClusterDetail = iota
+	LoggingInfoCluster LogClusterDetail = iota
 )
 
 func addLineTerminationForLongStrings(str string) string {
