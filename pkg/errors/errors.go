@@ -2,10 +2,6 @@ package errors
 
 import "fmt"
 
-package errors
-
-import "fmt"
-
 // Usage
 //err := NewError(ErrNilCredentials)
 //
@@ -19,7 +15,6 @@ import "fmt"
 //if IsTimeout(err) {
 //// handle timeout
 //}
-
 
 type ErrorCode int
 
