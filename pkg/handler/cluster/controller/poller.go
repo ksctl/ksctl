@@ -1,10 +1,8 @@
-package provisioner
+package controller
 
 import (
-	"context"
 	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/validation"
 	"runtime/debug"
 	"sort"
@@ -20,19 +18,8 @@ import (
 	"github.com/ksctl/ksctl/pkg/consts"
 )
 
-var (
-	controllerCtx context.Context
-
-	stateDocument *statefile.StorageDocument
-)
-
-type managerInfo struct {
-	log    logger.Logger
-	client *Client
-}
-
-func (manager *managerInfo) startPoller(ctx context.Context) error {
-	if _, ok := config.IsContextPresent(ctx, consts.KsctlTestFlagKey); !ok {
+func (manager *Controller) StartPoller() error {
+	if _, ok := config.IsContextPresent(manager.ctx, consts.KsctlTestFlagKey); !ok {
 		poller.InitSharedGithubReleasePoller()
 	} else {
 		poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
@@ -61,46 +48,34 @@ func (manager *managerInfo) startPoller(ctx context.Context) error {
 	return nil
 }
 
-func (manager *managerInfo) initStorage(ctx context.Context) error {
-	if !validation.ValidateStorage(manager.client.Metadata.StateLocation) {
+func (manager *Controller) InitStorage(p *Client) error {
+	if !validation.ValidateStorage(p.Metadata.StateLocation) {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidStorageProvider,
-			manager.log.NewError(
-				controllerCtx, "Problem in validation", "storage", manager.client.Metadata.StateLocation,
+			manager.l.NewError(
+				manager.ctx, "Problem in validation", "storage", p.Metadata.StateLocation,
 			),
 		)
 	}
-	switch manager.client.Metadata.StateLocation {
+	switch p.Metadata.StateLocation {
 	case consts.StoreLocal:
-		manager.client.Storage = localstate.NewClient(ctx, manager.log)
+		p.Storage = localstate.NewClient(manager.ctx, manager.l)
 	case consts.StoreExtMongo:
-		manager.client.Storage = externalmongostate.NewClient(ctx, manager.log)
+		p.Storage = externalmongostate.NewClient(manager.ctx, manager.l)
 	case consts.StoreK8s:
-		manager.client.Storage = kubernetesstate.NewClient(ctx, manager.log)
+		p.Storage = kubernetesstate.NewClient(manager.ctx, manager.l)
 	}
 
-	if err := manager.client.Storage.Connect(); err != nil {
+	if err := p.Storage.Connect(); err != nil {
 		return err
 	}
-	manager.log.Debug(ctx, "initialized storageFactory")
+	manager.l.Debug(manager.ctx, "initialized storageFactory")
 	return nil
 }
 
-func panicCatcher(log logger.Logger) {
+func (_ *Controller) PanicCatcher(log logger.Logger) {
 	if r := recover(); r != nil {
 		log.Error("Failed to recover stack trace", "error", r)
 		debug.PrintStack()
 	}
-}
-
-func (manager *managerInfo) setupConfigurations() error {
-
-	if err := manager.validationFields(manager.client.Metadata); err != nil {
-		return err
-	}
-
-	if err := validation.IsValidName(controllerCtx, manager.log, manager.client.Metadata.ClusterName); err != nil {
-		return err
-	}
-	return nil
 }

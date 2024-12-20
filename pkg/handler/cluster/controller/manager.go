@@ -1,9 +1,11 @@
-package provisioner
+package controller
 
 import (
+	"context"
 	"github.com/ksctl/ksctl/pkg/bootstrap"
 	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/providers"
 	"github.com/ksctl/ksctl/pkg/storage"
 )
@@ -47,7 +49,20 @@ type Metadata struct {
 	//CNIPlugin    KsctlApp   `json:"cni_plugin"`
 }
 
-//type KsctlApp struct {
-//	StackName string                    `json:"stack_name"`
-//	Overrides map[string]map[string]any `json:"overrides"`
-//}
+//	type KsctlApp struct {
+//		StackName string                    `json:"stack_name"`
+//		Overrides map[string]map[string]any `json:"overrides"`
+//	}
+
+type Controller struct {
+	l   logger.Logger
+	ctx context.Context
+}
+
+func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
+	b := new(Controller)
+	b.l = l
+	b.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "pkg/handler/cluster/controller")
+
+	return b
+}

@@ -3,29 +3,24 @@ Based on the codebase, here's a suggested restructuring to make it more organize
 
 ```
 pkg/handler/
-├── factory.go          # Factory interface and methods for creating handlers
-├── types.go           # Common types and interfaces used across handlers
-├── manager/           # Core manager functionality
-│   ├── base.go       # Base manager struct with common functionality
-│   ├── validator.go  # Common validation logic
-│   └── poller.go     # Shared polling functionality
-├── cluster/          # Cluster management handlers
-│   ├── types.go      # Cluster-specific types
-│   ├── managed/      # Managed cluster operations
-│   │   ├── create.go
-│   │   └── delete.go
-│   ├── selfmanaged/  # Self-managed cluster operations
-│   │   ├── create.go
-│   │   ├── delete.go
-│   │   └── nodes.go
-│   └── common/       # Shared cluster operations
-│       ├── switch.go
-│       ├── info.go
-│       └── creds.go
-└── applications/     # Application management handlers
-    ├── types.go
-    ├── install.go
-    └── remove.go
+├── applications/
+│   └── kubernetes/        # Kubernetes-specific app management
+│       ├── manager.go
+│       └── operations.go
+├── cluster/
+│   ├── managed/          # Managed cluster operations
+│   │   ├── manager.go    # Manager implementation
+│   │   └── operations.go # Create/Delete operations
+│   ├── selfmanaged/      # Self-managed cluster operations
+│   │   ├── manager.go
+│   │   └── operations.go
+│   └── common/           # Shared cluster functionality
+│       ├── kubeconfig.go
+│       └── manager.go
+└── provisioner/          # Core provisioning functionality
+    ├── types.go          # Shared types and interfaces
+    ├── manager.go        # Base manager implementation
+    └── validator.go      # Common validation logic
 ```
 
 Key improvements:
