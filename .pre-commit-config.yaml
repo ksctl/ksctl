@@ -1,0 +1,9 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: add-license
+        name: Add License Headers
+        entry: addlicense
+        language: system
+        types: [go]
+        args: [ "-c", "ksctl" ]
