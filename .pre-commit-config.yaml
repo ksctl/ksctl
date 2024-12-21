@@ -6,4 +6,4 @@ repos:
         entry: addlicense
         language: system
         types: [go]
-        args: [ "-c", "ksctl" ]
+        args: [ "-c", "Ksctl Authors" ]

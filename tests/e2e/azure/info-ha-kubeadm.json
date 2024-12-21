@@ -1,0 +1,6 @@
+{
+	"cluster_name": "test-e2e-kubeadm-ha-azure",
+	"region": "centralindia",
+	"cloud_provider": "azure",
+	"storage_type": "store-local"
+}

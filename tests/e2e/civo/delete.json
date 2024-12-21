@@ -1,0 +1,7 @@
+{
+	"cluster_name": "test-e2e-civo",
+	"ha_cluster": false,
+	"region": "lon1",
+	"cloud_provider": "civo",
+	"storage_type": "store-local"
+}

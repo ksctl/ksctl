@@ -1,0 +1,8 @@
+{
+	"cluster_name": "test-e2e-kubeadm-ha-civo",
+	"region": "phx1",
+	"ha_cluster": true,
+	"cloud_provider": "civo",
+	"storage_type": "store-local",
+	"desired_no_of_workerplane_nodes": 0
+}
