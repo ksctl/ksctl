@@ -17,15 +17,19 @@ package ssh
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/waiter"
+	"golang.org/x/crypto/ssh"
 	"io"
+	mrand "math/rand"
 	"net"
 	"os/exec"
 	"strings"
@@ -43,7 +47,7 @@ type RemoteConnection interface {
 	IPv4(ip string) RemoteConnection
 }
 
-type SSHPayload struct {
+type SSH struct {
 	UserName   string
 	Privatekey string
 	PublicIP   string
@@ -56,69 +60,69 @@ type SSHPayload struct {
 	log      logger.Logger
 }
 
-func NewSSHExecutor(ctx context.Context, log types.LoggerFactory, mainStateDocument *storageTypes.StorageDocument) *SSHPayload {
-	sshExecutor := &SSHPayload{
+func NewSSHExecutor(ctx context.Context, log logger.Logger, stateDocument *statefile.StorageDocument) *SSH {
+	sshExecutor := &SSH{
 		ctx: ctx,
 		log: log,
 	}
-	sshExecutor.PrivateKey(mainStateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
-	sshExecutor.Username(mainStateDocument.K8sBootstrap.B.SSHInfo.UserName)
+	sshExecutor.PrivateKey(stateDocument.K8sBootstrap.B.SSHInfo.PrivateKey)
+	sshExecutor.Username(stateDocument.K8sBootstrap.B.SSHInfo.UserName)
 	return sshExecutor
 }
 
-func (sshPayload *SSHPayload) Username(s string) {
-	sshPayload.UserName = s
+func (client *SSH) Username(s string) {
+	client.UserName = s
 }
 
-func (sshPayload *SSHPayload) PrivateKey(s string) {
-	sshPayload.Privatekey = s
+func (client *SSH) PrivateKey(s string) {
+	client.Privatekey = s
 }
 
-func (sshPayload *SSHPayload) GetOutput() []string {
-	out := make([]string, len(sshPayload.Output))
-	copy(out, sshPayload.Output)
-	sshPayload.Output = nil
+func (client *SSH) GetOutput() []string {
+	out := make([]string, len(client.Output))
+	copy(out, client.Output)
+	client.Output = nil
 	return out
 }
 
-func (sshPayload *SSHPayload) IPv4(ip string) SSHCollection {
-	sshPayload.PublicIP = ip
-	return sshPayload
+func (client *SSH) IPv4(ip string) RemoteConnection {
+	client.PublicIP = ip
+	return client
 }
 
-func (sshPayload *SSHPayload) Flag(execMethod consts.KsctlUtilsConsts) SSHCollection {
+func (client *SSH) Flag(execMethod consts.KsctlUtilsConsts) RemoteConnection {
 	if execMethod == consts.UtilExecWithOutput || execMethod == consts.UtilExecWithoutOutput {
-		sshPayload.flag = execMethod
-		return sshPayload
+		client.flag = execMethod
+		return client
 	}
 	return nil
 }
 
-func (sshPayload *SSHPayload) Script(s types.ScriptCollection) SSHCollection {
-	sshPayload.script = s
-	return sshPayload
+func (client *SSH) Script(s ExecutionPipeline) RemoteConnection {
+	client.script = s
+	return client
 }
 
-func (sshPayload *SSHPayload) FastMode(mode bool) SSHCollection {
-	sshPayload.fastMode = mode
-	return sshPayload
+func (client *SSH) FastMode(mode bool) RemoteConnection {
+	client.fastMode = mode
+	return client
 }
 
-func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdout string, stderr string, err error) {
+func (client *SSH) ExecuteScript(conn *ssh.Client, script string) (stdout string, stderr string, err error) {
 
-	if _, ok := IsContextPresent(sshExec.ctx, consts.KsctlTestFlagKey); ok {
+	if _, ok := config.IsContextPresent(client.ctx, consts.KsctlTestFlagKey); ok {
 		return "stdout", "stderr", nil
 	}
 
-	expoBackoff := NewBackOff(
+	expoBackoff := waiter.NewWaiter(
 		5*time.Second,
 		1,
 		int(consts.CounterMaxNetworkSessionRetry),
 	)
 
 	_err := expoBackoff.Run(
-		sshExec.ctx,
-		sshExec.log,
+		client.ctx,
+		client.log,
 		func() (err error) {
 			stdout, stderr, err = func() (_stdout, _stderr string, _err error) {
 				var _session *ssh.Session
@@ -128,7 +132,9 @@ func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdou
 					return
 				}
 
-				defer _session.Close()
+				defer func(_session *ssh.Session) {
+					_ = _session.Close()
+				}(_session)
 
 				_bout := new(strings.Builder)
 				_berr := new(strings.Builder)
@@ -148,25 +154,26 @@ func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdou
 			return true
 		},
 		func(err error) (errW error, escalateErr bool) {
-			missingStatusErr := &ssh.ExitMissingError{}
-			channelErr := &ssh.OpenChannelError{}
+			missingStatusErr := new(ssh.ExitMissingError)
+			channelErr := new(ssh.OpenChannelError)
 
 			if errors.As(err, &missingStatusErr) {
-				sshExec.log.Warn(sshExec.ctx, "Retrying! Missing error code but exited", "Reason", err)
+				client.log.Warn(client.ctx, "Retrying! Missing error code but exited", "Reason", err)
 				return nil, false
 			} else if errors.As(err, &channelErr) {
-				sshExec.log.Warn(sshExec.ctx, "Retrying! Facing some channel open issues", "Reason", err)
+				client.log.Warn(client.ctx, "Retrying! Facing some channel open issues", "Reason", err)
 				return nil, false
 			} else {
-				return ksctlErrors.ErrSSHExec.Wrap(
-					sshExec.log.NewError(sshExec.ctx, err.Error()),
+				return ksctlErrors.WrapError(
+					ksctlErrors.ErrSSHExec,
+					client.log.NewError(client.ctx, err.Error()),
 				), true
 			}
 		},
 		func() error {
 			return nil
 		},
-		"Retrying, failed in ssh execution",
+		"Retrying, failed in client execution",
 	)
 	if _err != nil {
 		err = _err
@@ -175,20 +182,20 @@ func (sshExec *SSHPayload) ExecuteScript(conn *ssh.Client, script string) (stdou
 	return
 }
 
-func (sshPayload *SSHPayload) SSHExecute() error {
+func (client *SSH) SSHExecute() error {
 
-	privateKeyBytes := []byte(sshPayload.Privatekey)
+	privateKeyBytes := []byte(client.Privatekey)
 
 	// create signer
-	signer, err := signerFromPem(sshPayload.ctx, sshPayload.log, privateKeyBytes)
+	signer, err := signerFromPem(client.ctx, client.log, privateKeyBytes)
 	if err != nil {
 		return err
 	}
 
-	sshPayload.log.Debug(sshPayload.ctx, "SSH into", "sshAddr", fmt.Sprintf("%s@%s", sshPayload.UserName, sshPayload.PublicIP))
+	client.log.Debug(client.ctx, "SSH into", "sshAddr", fmt.Sprintf("%s@%s", client.UserName, client.PublicIP))
 
-	config := &ssh.ClientConfig{
-		User: sshPayload.UserName,
+	c := &ssh.ClientConfig{
+		User: client.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
@@ -203,29 +210,32 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 				gotFingerprint := ssh.FingerprintSHA256(remoteSvrHostKey)
 				keyType := remoteSvrHostKey.Type()
 				if keyType == ssh.KeyAlgoRSA || keyType == ssh.KeyAlgoED25519 {
-					recvFingerprint, err := returnServerPublicKeys(sshPayload.PublicIP, keyType)
+					recvFingerprint, err := returnServerPublicKeys(client.PublicIP, keyType)
 					if err != nil {
-						return ksctlErrors.ErrSSHExec.Wrap(
-							sshPayload.log.NewError(
-								sshPayload.ctx,
+						return ksctlErrors.WrapError(
+							ksctlErrors.ErrSSHExec,
+							client.log.NewError(
+								client.ctx,
 								"failed to fetch server public keys",
 								err,
 							),
 						)
 					}
 					if recvFingerprint != gotFingerprint {
-						return ksctlErrors.ErrSSHExec.Wrap(
-							sshPayload.log.NewError(sshPayload.ctx, "mismatch of SSH fingerprint"),
+						return ksctlErrors.WrapError(
+							ksctlErrors.ErrSSHExec,
+							client.log.NewError(client.ctx, "mismatch of SSH fingerprint"),
 						)
 					}
 					return nil
 				}
-				return ksctlErrors.ErrSSHExec.Wrap(
-					sshPayload.log.NewError(sshPayload.ctx, "unsupported key type", "keyType", keyType),
+				return ksctlErrors.WrapError(
+					ksctlErrors.ErrSSHExec,
+					client.log.NewError(client.ctx, "unsupported key type", "keyType", keyType),
 				)
 			})}
 
-	if !sshPayload.fastMode {
+	if !client.fastMode {
 		time.Sleep(consts.DurationSSHPause)
 	}
 
@@ -234,26 +244,27 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 	t0 := 5 * time.Second
 	multT := 2
 	maxRT := int(consts.CounterMaxRetryCount)
-	if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
+	if _, ok := config.IsContextPresent(client.ctx, consts.KsctlTestFlagKey); ok {
 		t0 = time.Second
 		multT = 1
 		maxRT = 3
 	}
 
-	expoBackoff := NewBackOff(
+	expoBackoff := waiter.NewWaiter(
 		t0,
 		multT,
 		maxRT,
 	)
 
 	_err := expoBackoff.Run(
-		sshPayload.ctx,
-		sshPayload.log,
+		client.ctx,
+		client.log,
 		func() (err error) {
-			conn, err = ssh.Dial("tcp", sshPayload.PublicIP+":22", config)
+			conn, err = ssh.Dial("tcp", client.PublicIP+":22", c)
 			if err != nil {
-				return ksctlErrors.ErrSSHExec.Wrap(
-					sshPayload.log.NewError(sshPayload.ctx, "failed to get", "Reason", err))
+				return ksctlErrors.WrapError(
+					ksctlErrors.ErrSSHExec,
+					client.log.NewError(client.ctx, "failed to get", "Reason", err))
 			}
 			return nil
 		},
@@ -262,33 +273,35 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 		},
 		nil,
 		func() error {
-			sshPayload.log.Note(sshPayload.ctx, "ssh tcp conn dial was successful")
+			client.log.Note(client.ctx, "client tcp conn dial was successful")
 			return nil
 		},
-		"Retrying, failed to establish ssh tcp conn dial",
+		"Retrying, failed to establish client tcp conn dial",
 	)
 	if _err != nil {
-		if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
-			sshPayload.log.Note(sshPayload.ctx, "skipping the test for the ssh connection error", "Err", _err)
+		if _, ok := config.IsContextPresent(client.ctx, consts.KsctlTestFlagKey); ok {
+			client.log.Note(client.ctx, "skipping the test for the client connection error", "Err", _err)
 		} else {
 			return _err
 		}
 	}
 
-	sshPayload.log.Debug(sshPayload.ctx, "Printing", "bashScript", sshPayload.script)
-	sshPayload.log.Print(sshPayload.ctx, "Exec Scripts")
+	client.log.Debug(client.ctx, "Printing", "bashScript", client.script)
+	client.log.Print(client.ctx, "Exec Scripts")
 
-	if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); !ok {
-		defer conn.Close()
+	if _, ok := config.IsContextPresent(client.ctx, consts.KsctlTestFlagKey); !ok {
+		defer func(conn *ssh.Client) {
+			_ = conn.Close()
+		}(conn)
 	}
 
-	scripts := sshPayload.script
+	scripts := client.script
 
 	for !scripts.IsCompleted() {
 		script := scripts.NextScript()
 
-		sshPayload.log.Print(sshPayload.ctx, "Executing Sub-Script", "name", script.Name)
-		sshPayload.log.Debug(sshPayload.ctx, "Script To Exec", script.ShellScript)
+		client.log.Print(client.ctx, "Executing Sub-Script", "name", script.Name)
+		client.log.Debug(client.ctx, "Script To Exec", script.ShellScript)
 		success := false
 		var scriptFailureReason error
 		var stdout, stderr string
@@ -298,20 +311,20 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 			retries := uint8(0)
 
 			for retries < script.MaxRetries {
-				stdout, stderr, err = sshPayload.ExecuteScript(conn, script.ShellScript)
+				stdout, stderr, err = client.ExecuteScript(conn, script.ShellScript)
 				// adding some choas //
-				if _, ok := IsContextPresent(sshPayload.ctx, consts.KsctlTestFlagKey); ok {
+				if _, ok := config.IsContextPresent(client.ctx, consts.KsctlTestFlagKey); ok {
 					if retries+1 < script.MaxRetries {
-						err = sshPayload.log.NewError(sshPayload.ctx, "creating a fake choas error")
+						err = client.log.NewError(client.ctx, "creating a fake choas error")
 					}
 				}
 				/////////////////////
 				if err != nil {
-					sshPayload.log.Warn(sshPayload.ctx, "Failure in executing script", "retryCount", retries)
-					scriptFailureReason = sshPayload.log.NewError(sshPayload.ctx, "Execute Failure", "stderr", stderr, "Reason", err)
+					client.log.Warn(client.ctx, "Failure in executing script", "retryCount", retries)
+					scriptFailureReason = client.log.NewError(client.ctx, "Execute Failure", "stderr", stderr, "Reason", err)
 					<-time.After(time.Duration(mrand.Intn(2)+1) * time.Second)
 				} else {
-					sshPayload.log.Debug(sshPayload.ctx, "ssh outputs", "stdout", stdout)
+					client.log.Debug(client.ctx, "client outputs", "stdout", stdout)
 					success = true
 					break
 				}
@@ -319,46 +332,51 @@ func (sshPayload *SSHPayload) SSHExecute() error {
 			}
 
 		} else {
-			stdout, stderr, err = sshPayload.ExecuteScript(conn, script.ShellScript)
+			stdout, stderr, err = client.ExecuteScript(conn, script.ShellScript)
 			if err != nil {
-				scriptFailureReason = sshPayload.log.NewError(sshPayload.ctx, "Failure in executing script", "Reason", err, "stderr", stderr)
+				scriptFailureReason = client.log.NewError(client.ctx, "Failure in executing script", "Reason", err, "stderr", stderr)
 			} else {
 				success = true
-				sshPayload.log.Debug(sshPayload.ctx, "ssh outputs", "stdout", stdout)
+				client.log.Debug(client.ctx, "client outputs", "stdout", stdout)
 			}
 		}
 
 		if !success {
-			return ksctlErrors.ErrSSHExec.Wrap(scriptFailureReason)
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrSSHExec,
+				scriptFailureReason)
 		}
-		if sshPayload.flag == consts.UtilExecWithOutput {
-			sshPayload.Output = append(sshPayload.Output, stdout)
+		if client.flag == consts.UtilExecWithOutput {
+			client.Output = append(client.Output, stdout)
 		}
 	}
 
-	sshPayload.log.Success(sshPayload.ctx, "Successful in executing the script")
+	client.log.Success(client.ctx, "Successful in executing the script")
 
 	return nil
 }
 
-func signerFromPem(ctx context.Context, log types.LoggerFactory, pemBytes []byte) (ssh.Signer, error) {
+func signerFromPem(ctx context.Context, log logger.Logger, pemBytes []byte) (ssh.Signer, error) {
 
 	// read pem block
 	pemBlock, _ := pem.Decode(pemBytes)
 	if pemBlock == nil {
-		return nil, ksctlErrors.ErrSSHExec.Wrap(
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrSSHExec,
 			log.NewError(ctx, "pem decode failed, no key found"),
 		)
 	}
 	if x509.IsEncryptedPEMBlock(pemBlock) {
-		return nil, ksctlErrors.ErrSSHExec.Wrap(
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrSSHExec,
 			log.NewError(ctx, "pem file is encrypted"),
 		)
 	}
 
 	signer, err := ssh.ParsePrivateKey(pemBytes)
 	if err != nil {
-		return nil, ksctlErrors.ErrSSHExec.Wrap(
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrSSHExec,
 			log.NewError(ctx, "parsing plain private key failed", "Reason", err),
 		)
 	}

@@ -18,12 +18,12 @@
 <!-- Add detailed information about implementation -->
 ### What Changed
 <!-- List the key changes in this PR -->
-- 
+-
 -
 
 ### Why These Changes
 <!-- Explain the reasoning behind these changes -->
-- 
+-
 -
 
 ### How to Test
@@ -36,8 +36,8 @@
 
 ### 📋 Sub-Tasks
 <!-- List any sub-tasks or milestones -->
-- [ ] 
-- [ ] 
+- [ ]
+- [ ]
 
 ## 🔍 Review Checklist
 <!-- Mark the items you've completed -->

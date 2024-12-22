@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"math/big"
 	"net"
@@ -41,7 +42,8 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 		if val := net.ParseIP(string(ip)); val != nil {
 			validIPAddresses = append(validIPAddresses, val)
 		} else {
-			return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+			return "", "", "", ksctlErrors.WrapError(
+				ksctlErrors.ErrFailedGenerateCertificates,
 				log.NewError(ctx, "invalid ip address", "ip", ip),
 			)
 		}
@@ -63,14 +65,16 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "rsa gen key failed", "Reason", err),
 		)
 	}
 
 	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
 	if err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "ca create certificate failed", "Reason", err),
 		)
 	}
@@ -80,7 +84,8 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 		Type:  "CERTIFICATE",
 		Bytes: caBytes,
 	}); err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "ca certificate pem encode failed", "Reason", err),
 		)
 	}
@@ -93,7 +98,8 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
 	}); err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "ca privatekey pem encode failed", "Reason", err),
 		)
 	}
@@ -113,13 +119,15 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 	}
 	certPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "ca privatekey gen key failed", "Reason", err),
 		)
 	}
 	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &certPrivKey.PublicKey, caPrivKey)
 	if err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "ca certificate gen key failed", "Reason", err),
 		)
 	}
@@ -129,7 +137,8 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 		Type:  "CERTIFICATE",
 		Bytes: certBytes,
 	}); err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "client certificate pem encode failed", "Reason", err),
 		)
 	}
@@ -139,7 +148,8 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
 	}); err != nil {
-		return "", "", "", ksctlErrors.ErrFailedGenerateCertificates.Wrap(
+		return "", "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedGenerateCertificates,
 			log.NewError(ctx, "client key pem encode failed", "Reason", err),
 		)
 	}

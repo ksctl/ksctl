@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"gotest.tools/v3/assert"
 	"os"
@@ -222,13 +223,19 @@ func FuzzValidateStorage(f *testing.F) {
 		}
 	})
 }
+
+var (
+	dummyCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
+	log      = logger.NewStructuredLogger(-1, os.Stdout)
+)
+
 func TestIsValidClusterName(t *testing.T) {
 	assert.Check(t, nil == IsValidName(dummyCtx, log, "demo"), "Returns false for valid cluster name")
 	assert.Check(
 		t,
 		func() bool {
 			err := IsValidName(dummyCtx, log, "Dem-o234")
-			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+			return err != nil && ksctlErrors.IsInvalidResourceName(err)
 		}(),
 		"Returns True for invalid cluster name")
 	assert.Check(t, nil == IsValidName(dummyCtx, log, "d-234"), "Returns false for valid cluster name")
@@ -236,35 +243,35 @@ func TestIsValidClusterName(t *testing.T) {
 		t,
 		func() bool {
 			err := IsValidName(dummyCtx, log, "234")
-			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+			return err != nil && ksctlErrors.IsInvalidResourceName(err)
 		}(),
 		"Returns true for invalid cluster name")
 	assert.Check(
 		t,
 		func() bool {
 			err := IsValidName(dummyCtx, log, "-2342")
-			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+			return err != nil && ksctlErrors.IsInvalidResourceName(err)
 		}(),
 		"Returns True for invalid cluster name")
 	assert.Check(
 		t,
 		func() bool {
 			err := IsValidName(dummyCtx, log, "demo-")
-			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+			return err != nil && ksctlErrors.IsInvalidResourceName(err)
 		}(),
 		"Returns True for invalid cluster name")
 	assert.Check(
 		t,
 		func() bool {
 			err := IsValidName(dummyCtx, log, "dscdscsd-#$#$#")
-			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+			return err != nil && ksctlErrors.IsInvalidResourceName(err)
 		}(),
 		"Returns True for invalid cluster name")
 	assert.Check(
 		t,
 		func() bool {
 			err := IsValidName(dummyCtx, log, "dds@#$#$#ds@#$#$#ds@#$#$#ds@#$#$#ds@#$#$#s@#$#$wefe#")
-			return err != nil && ksctlErrors.ErrInvalidResourceName.Is(err)
+			return err != nil && ksctlErrors.IsInvalidResourceName(err)
 		}(),
 		"Returns True for invalid cluster name")
 }
@@ -292,7 +299,7 @@ func TestIsValidVersion(t *testing.T) {
 
 	for ver, expected := range testCases {
 		err := IsValidKsctlComponentVersion(dummyCtx, log, ver)
-		var got bool = err == nil
+		got := err == nil
 		assert.Equal(t, got, expected, fmt.Sprintf("Ver: %s, got: %v, expected: %v", ver, got, expected))
 	}
 }

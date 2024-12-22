@@ -17,6 +17,7 @@ package github
 import (
 	"encoding/json"
 	"fmt"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"io"
 	"net/http"
 	"sort"
@@ -37,7 +38,10 @@ func ExtractReleases(io io.Reader) ([]string, error) {
 	var releases []ReleaseInfo
 
 	if err := json.NewDecoder(io).Decode(&releases); err != nil {
-		return nil, fmt.Errorf("failed to deserialize response body: %w", err)
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInternal,
+			"failed to deserialize response body: %v", err,
+		)
 	}
 
 	isRepoRespectSemver := true
@@ -84,18 +88,26 @@ func HttpGetAllStableGithubReleases(org, repo string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Failed to get the latest version from the Github API. Status code: %d", resp.StatusCode)
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInternal,
+			"Failed to get the latest version from the Github API. Status code: %d", resp.StatusCode,
+		)
 	}
 
-	v, err := extractReleases(resp.Body)
+	v, err := ExtractReleases(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to extract the releases: %w", err)
+		return nil, err
 	}
 	if len(v) == 0 {
-		return nil, fmt.Errorf("Unable to get any releases. Not Even prerelease, most probabilty release are not there or in draft")
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInternal,
+			"Unable to get any releases. Not Even prerelease, most probabilty release are not there or in draft",
+		)
 	}
 	return v, nil
 }

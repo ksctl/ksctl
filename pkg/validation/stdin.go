@@ -17,6 +17,7 @@ package validation
 import (
 	"context"
 	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"golang.org/x/term"
 	"os"
@@ -105,20 +106,23 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 }
 
-func IsValidName(ctx context.Context, log types.LoggerFactory, name string) error {
+func IsValidName(ctx context.Context, log logger.Logger, name string) error {
 	if len(name) > 50 {
-		return ksctlErrors.ErrInvalidResourceName.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidResourceName,
 			log.NewError(ctx, "name is too long", "name", name),
 		)
 	}
 	matched, err := regexp.MatchString(`(^[a-z])([-a-z0-9])*([a-z0-9]$)`, name)
 	if err != nil {
-		return ksctlErrors.ErrUnknown.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
 			log.NewError(ctx, "failed to compile the regex", "Reason", err),
 		)
 	}
 	if !matched {
-		return ksctlErrors.ErrInvalidResourceName.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidResourceName,
 			log.NewError(ctx, "invalid name", "expectedToBePattern", `(^[a-z])([-a-z0-9])*([a-z0-9]$)`),
 		)
 	}
@@ -126,7 +130,7 @@ func IsValidName(ctx context.Context, log types.LoggerFactory, name string) erro
 	return nil
 }
 
-func IsValidKsctlComponentVersion(ctx context.Context, log types.LoggerFactory, ver string) error {
+func IsValidKsctlComponentVersion(ctx context.Context, log logger.Logger, ver string) error {
 	if ver == "latest" ||
 		ver == "stable" ||
 		strings.HasPrefix(ver, "feature") ||
@@ -142,25 +146,29 @@ func IsValidKsctlComponentVersion(ctx context.Context, log types.LoggerFactory, 
 	commitShaPattern := `^\b[0-9a-f]{40}\b$`
 	matchStringWithoutVPrefix, err := regexp.MatchString(patternWithoutVPrefix, ver)
 	if err != nil {
-		return ksctlErrors.ErrUnknown.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
 			log.NewError(ctx, "failed to compile the regex", "Reason", err),
 		)
 	}
 	matchStringWithVPrefix, err := regexp.MatchString(patternWithVPrefix, ver)
 	if err != nil {
-		return ksctlErrors.ErrUnknown.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
 			log.NewError(ctx, "failed to compile the regex", "Reason", err),
 		)
 	}
 	matchCommitSha, err := regexp.MatchString(commitShaPattern, ver)
 	if err != nil {
-		return ksctlErrors.ErrUnknown.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
 			log.NewError(ctx, "failed to compile the regex", "Reason", err),
 		)
 	}
 
 	if !matchStringWithoutVPrefix && !matchStringWithVPrefix && !matchCommitSha {
-		return ksctlErrors.ErrInvalidKsctlComponentVersion.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidKsctlComponentVersion,
 			log.NewError(ctx, "invalid version", "version", ver),
 		)
 	}

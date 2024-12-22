@@ -17,9 +17,16 @@ package waiter
 import (
 	"context"
 	"errors"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/logger"
 	"gotest.tools/v3/assert"
+	"os"
 	"testing"
 	"time"
+)
+
+var (
+	log logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestWaiterRun_SuccessOnFirstAttempt(t *testing.T) {
@@ -106,7 +113,7 @@ func TestWaiterRun_ContextCancellation(t *testing.T) {
 	}()
 
 	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
-	assert.Assert(t, err != nil && ksctlErrors.ErrContextCancelled.Is(err))
+	assert.Assert(t, err != nil && ksctlErrors.IsContextCancelled(err))
 
 	assert.Equal(t, context.Canceled, ctx.Err())
 }
@@ -133,5 +140,5 @@ func TestWaiterRun_MaxRetriesExceeded(t *testing.T) {
 	backOff := NewWaiter(1*time.Second, 1, 3)
 
 	err := backOff.Run(ctx, log, executeFunc, isSuccessful, errorFunc, successFunc, "Waiting message")
-	assert.Assert(t, err != nil && ksctlErrors.ErrTimeOut.Is(err))
+	assert.Assert(t, err != nil && ksctlErrors.IsTimeout(err))
 }

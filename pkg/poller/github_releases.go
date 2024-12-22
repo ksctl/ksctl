@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"github.com/ksctl/ksctl/pkg/github"
 )
 
 type status struct {
@@ -39,7 +39,7 @@ const (
 	delimiter = "/"
 )
 
-var DefaultHttpCaller = utilities.HttpGetAllStableGithubReleases
+var DefaultHttpCaller = github.HttpGetAllStableGithubReleases
 var DefaultPollerDuration = 30 * time.Minute
 
 func NewGithubReleasePoller(t time.Duration, httpCaller func(string, string) ([]string, error)) *GithubReleasePoller {
@@ -73,23 +73,23 @@ func (gh *GithubReleasePoller) handleRefresh() {
 	}
 }
 
-func (p *GithubReleasePoller) getSubscribedRepos() []string {
-	p.rwm.RLock()
-	defer p.rwm.RUnlock()
+func (gh *GithubReleasePoller) getSubscribedRepos() []string {
+	gh.rwm.RLock()
+	defer gh.rwm.RUnlock()
 
 	var repos []string
-	for k, _ := range p.cache {
+	for k, _ := range gh.cache {
 		repos = append(repos, k)
 	}
 
 	return repos
 }
 
-func (p *GithubReleasePoller) getReleases(org, repo string) (status, bool) {
-	p.rwm.RLock()
-	defer p.rwm.RUnlock()
+func (gh *GithubReleasePoller) getReleases(org, repo string) (status, bool) {
+	gh.rwm.RLock()
+	defer gh.rwm.RUnlock()
 
-	v, ok := p.cache[org+delimiter+repo]
+	v, ok := gh.cache[org+delimiter+repo]
 	return v, ok
 }
 
@@ -108,7 +108,7 @@ func (gh *GithubReleasePoller) subscribe(repo string) {
 	if err != nil {
 		s = status{
 			releases: nil,
-			err:      fmt.Errorf("Latest call failed, can contain stale data: %w", err),
+			err:      fmt.Errorf("latest call failed, can contain stale data: %w", err),
 		}
 	} else {
 		s = status{
@@ -119,17 +119,17 @@ func (gh *GithubReleasePoller) subscribe(repo string) {
 	gh.setReleases(_repo[0], _repo[1], s)
 }
 
-func (p *GithubReleasePoller) Get(org, repo string) ([]string, error) {
-	v, ok := p.getReleases(org, repo) // get from cache
+func (gh *GithubReleasePoller) Get(org, repo string) ([]string, error) {
+	v, ok := gh.getReleases(org, repo) // get from cache
 	if ok {
 		return v.releases, v.err
 	}
 
-	p.subscribe(org + delimiter + repo)
-	v, ok = p.getReleases(org, repo)
+	gh.subscribe(org + delimiter + repo)
+	v, ok = gh.getReleases(org, repo)
 	if ok {
 		return v.releases, v.err
 	} else {
-		return nil, fmt.Errorf("Failed to store the release in poller")
+		return nil, fmt.Errorf("failed to store the release in poller")
 	}
 }

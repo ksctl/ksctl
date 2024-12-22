@@ -16,7 +16,7 @@ package logger
 
 import (
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
+	"github.com/ksctl/ksctl/pkg/utilities"
 	"strings"
 )
 

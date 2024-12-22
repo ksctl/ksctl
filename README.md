@@ -3,7 +3,7 @@
 # Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
 
-It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks. 
+It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks.
 
 It is already a valuable tool for developers who want to manage Kubernetes clusters using our CLI. And Get started with Kubernetes without thinking about the infrastructure & configurations. Just run `ksctl create` and your cluster is ready to be used be it a local cluster or a cloud provider managed cluster. It makes the developers skip the cluster setup step as well as day 0 work. Soon we will work on day 1 operations and so on 🙂
 
@@ -38,15 +38,15 @@ So It helps you to avoid using Aws, Azure cli and just create and manage the clu
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/ksctl/ksctl)](https://goreportcard.com/report/github.com/ksctl/ksctl) [![](https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg)](https://pkg.go.dev/github.com/ksctl/ksctl) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469) [![codecov](https://codecov.io/gh/ksctl/ksctl/branch/main/graph/badge.svg?token=QM61IOCPKC)](https://codecov.io/gh/ksctl/ksctl)
 
-![](https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/issues/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/forks/ksctl/ksctl?style=for-the-badge) 
+![](https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/issues/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/forks/ksctl/ksctl?style=for-the-badge)
 
 
 ## All Repositories under (Ksctl Org)
-Repo | Description
--|-
-[Ksctl](https://github.com/ksctl/ksctl) | It provides the core components aka the internals of ksctl features
-[Ksctl CLI](https://github.com/ksctl/cli) | It uses the ksctl repo to make a CLI tool
-[Ksctl Docs](https://github.com/ksctl/docs) | It's for documentation purpose and to host the ksctl website
+| Repo                                        | Description                                                         |
+|---------------------------------------------|---------------------------------------------------------------------|
+| [Ksctl](https://github.com/ksctl/ksctl)     | It provides the core components aka the internals of ksctl features |
+| [Ksctl CLI](https://github.com/ksctl/cli)   | It uses the ksctl repo to make a CLI tool                           |
+| [Ksctl Docs](https://github.com/ksctl/docs) | It's for documentation purpose and to host the ksctl website        |
 
 ## Getting Started guide
 

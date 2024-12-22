@@ -20,6 +20,7 @@ import (
 	"github.com/gookit/goutil/dump"
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"gotest.tools/v3/assert"
 	"os"
 	"path/filepath"
@@ -29,7 +30,7 @@ import (
 var (
 	dir                        = filepath.Join(os.TempDir(), "ksctl-k3s-test")
 	log          logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
-	mainStateDoc               = &storageTypes.StorageDocument{}
+	mainStateDoc               = new(statefile.StorageDocument)
 	dummyCtx                   = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
 )
 
@@ -43,12 +44,12 @@ func TestCreateSSHKeyPair(t *testing.T) {
 
 func TestSSHExecute(t *testing.T) {
 
-	var sshTest SSHCollection = &SSHPayload{
+	var sshTest RemoteConnection = &SSH{
 		ctx: dummyCtx,
 		log: log,
 	}
-	testSimulator := NewScriptCollection()
-	testSimulator.Append(types.Script{
+	testSimulator := NewExecutionPipeline()
+	testSimulator.Append(Script{
 		Name:           "test",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -56,7 +57,7 @@ func TestSSHExecute(t *testing.T) {
 cat /etc/os-releases
 `,
 	})
-	testSimulator.Append(types.Script{
+	testSimulator.Append(Script{
 		Name:           "testhaving retry",
 		CanRetry:       true,
 		MaxRetries:     3,
@@ -80,15 +81,7 @@ suao apt install ...
 }
 
 func TestScriptCollection(t *testing.T) {
-	var scripts *Scripts = func() *Scripts {
-		o := NewScriptCollection()
-		switch v := o.(type) {
-		case *Scripts:
-			return v
-		default:
-			return nil
-		}
-	}()
+	scripts := NewExecutionPipeline()
 
 	t.Run("init state test", func(t *testing.T) {
 		assert.Equal(t, scripts.currIdx, -1, "must be initialized with -1")
@@ -98,7 +91,7 @@ func TestScriptCollection(t *testing.T) {
 	})
 
 	t.Run("append scripts", func(t *testing.T) {
-		datas := []types.Script{
+		datas := []Script{
 			{
 				ScriptExecutor: consts.LinuxBash,
 				CanRetry:       false,
@@ -128,7 +121,7 @@ func TestScriptCollection(t *testing.T) {
 	t.Run("get script", func(t *testing.T) {
 		v := scripts.NextScript()
 
-		expected := &types.Script{
+		expected := &Script{
 			ScriptExecutor: consts.LinuxBash,
 			CanRetry:       false,
 			Name:           "test",

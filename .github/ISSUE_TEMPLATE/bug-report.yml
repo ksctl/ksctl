@@ -8,11 +8,11 @@ body:
     attributes:
       value: |
         # 🔍 Bug Report
-        
-        Thank you for taking the time to report a bug! Your feedback helps make our project better. 
-        
+
+        Thank you for taking the time to report a bug! Your feedback helps make our project better.
+
         > 💡 Before submitting, please search existing issues to avoid duplicates.
-        
+
         Please fill out the information below as detailed as possible.
 
   - type: input
@@ -53,7 +53,7 @@ body:
       description: "What happened instead?"
       placeholder: |
         Describe what actually happened. If you have error messages or screenshots, please include them here.
-        
+
         ```
         Include any error messages or logs here
         ```
@@ -111,5 +111,5 @@ body:
       value: |
         ---
         👥 Our maintainers will review your bug report and get back to you as soon as possible.
-        
+
         ⭐ Thank you for contributing to make our project better!

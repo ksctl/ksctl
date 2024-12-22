@@ -38,7 +38,7 @@ const (
         "Principal": { "Service": "eks.amazonaws.com" },
        "Action": "sts:AssumeRole"
     }
-}                    
+}
   `
 
 	assumeWorkerNodeRolePolicyDocument = `{

@@ -16,6 +16,7 @@ package waiter
 
 import (
 	"context"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"time"
 )
@@ -69,7 +70,8 @@ func (b *Waiter) Run(
 		case <-ctx.Done():
 			log.Print(ctx, "Operation cancelled during backoff")
 			if ctx.Err() != nil {
-				return ksctlErrors.ErrContextCancelled.Wrap(
+				return ksctlErrors.WrapError(
+					ksctlErrors.ErrContextCancelled,
 					log.NewError(ctx, "backoff termination", "Reason", ctx.Err()),
 				)
 			}
@@ -80,12 +82,14 @@ func (b *Waiter) Run(
 	}
 
 	if storePrevErr != nil {
-		return ksctlErrors.ErrTimeOut.Wrap(
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
 			log.NewError(ctx, "Max backoff retries reached", "Reason", storePrevErr),
 		)
 	}
 
-	return ksctlErrors.ErrTimeOut.Wrap(
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrTimeOut,
 		log.NewError(ctx, "Max backoff retries reached"),
 	)
 }

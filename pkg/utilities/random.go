@@ -16,6 +16,7 @@ package utilities
 
 import (
 	"crypto/rand"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"math/big"
 )
 
@@ -25,7 +26,7 @@ func GenRandomString(length int) (string, error) {
 	for i := 0; i < length; i++ {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
-			return "", ksctlErrors.ErrUnknown.Wrap(err)
+			return "", ksctlErrors.WrapError(ksctlErrors.ErrUnknown, err)
 		}
 		ret[i] = letters[num.Int64()]
 	}

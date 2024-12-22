@@ -48,5 +48,3 @@ export E2E_FLAGS="debug;core_component_overridings=application=file:::/tmp/ksctl
 ./e2e -op switch -file local/switch.json
 ./e2e -op delete -file local/delete.json
 ```
-
-

@@ -8,11 +8,11 @@ body:
     attributes:
       value: |
         # 🌟 New Feature Proposal
-        
+
         Thank you for proposing a new feature! Your ideas help make our project better.
-        
+
         > 💡 Before submitting, please check if a similar feature has been proposed.
-        
+
         Let's explore your innovative idea together! 🚀
 
   - type: input
@@ -44,7 +44,7 @@ body:
         - How users will interact with it
         - Any technical requirements
         - Expected behavior
-        
+
         You can use code examples:
         ```bash
         # Example usage
@@ -139,7 +139,7 @@ body:
       value: |
         ---
         ### 🙏 Thank you for your contribution!
-        
+
         Our maintainers will review your proposal and provide feedback soon.
-        
+
         > 💪 Want to implement this feature? Let us know in the comments!

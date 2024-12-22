@@ -59,4 +59,3 @@
 - 'pkg/controllers/*'
 - 'pkg/controllers/**/*'
 - 'pkg/types/**'
-

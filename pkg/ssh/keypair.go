@@ -20,14 +20,19 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"golang.org/x/crypto/ssh"
 )
 
 // generatePrivateKey creates a RSA Private Key of specified byte size
-func generatePrivateKey(ctx context.Context, log types.LoggerFactory, bitSize int) (*rsa.PrivateKey, error) {
+func generatePrivateKey(ctx context.Context, log logger.Logger, bitSize int) (*rsa.PrivateKey, error) {
 	// Private Key generation
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
-		return nil, ksctlErrors.ErrSSHExec.Wrap(
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrSSHExec,
 			log.NewError(ctx, "failed to generate key", "Reason", err),
 		)
 	}
@@ -35,7 +40,8 @@ func generatePrivateKey(ctx context.Context, log types.LoggerFactory, bitSize in
 	// Validate Private Key
 	err = privateKey.Validate()
 	if err != nil {
-		return nil, ksctlErrors.ErrSSHExec.Wrap(
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrSSHExec,
 			log.NewError(ctx, "failed to validate key", "Reason", err),
 		)
 	}
@@ -45,7 +51,7 @@ func generatePrivateKey(ctx context.Context, log types.LoggerFactory, bitSize in
 }
 
 // encodePrivateKeyToPEM encodes Private Key from RSA to PEM format
-func encodePrivateKeyToPEM(log types.LoggerFactory, privateKey *rsa.PrivateKey) []byte {
+func encodePrivateKeyToPEM(_ logger.Logger, privateKey *rsa.PrivateKey) []byte {
 	// Get ASN.1 DER format
 	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
 
@@ -64,10 +70,11 @@ func encodePrivateKeyToPEM(log types.LoggerFactory, privateKey *rsa.PrivateKey) 
 
 // generatePublicKey take a rsa.PublicKey and return bytes suitable for writing to .pub file
 // returns in the format "ssh-rsa ..."
-func generatePublicKey(ctx context.Context, log types.LoggerFactory, privatekey *rsa.PublicKey) ([]byte, error) {
+func generatePublicKey(ctx context.Context, log logger.Logger, privatekey *rsa.PublicKey) ([]byte, error) {
 	publicRsaKey, err := ssh.NewPublicKey(privatekey)
 	if err != nil {
-		return nil, ksctlErrors.ErrSSHExec.Wrap(
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrSSHExec,
 			log.NewError(ctx, "failed to create public key for given private key", "Reason", err),
 		)
 	}
@@ -78,7 +85,7 @@ func generatePublicKey(ctx context.Context, log types.LoggerFactory, privatekey 
 	return pubKeyBytes, nil
 }
 
-func CreateSSHKeyPair(ctx context.Context, log types.LoggerFactory, state *storageTypes.StorageDocument) error {
+func CreateSSHKeyPair(ctx context.Context, log logger.Logger, state *statefile.StorageDocument) error {
 
 	bitSize := 4096
 

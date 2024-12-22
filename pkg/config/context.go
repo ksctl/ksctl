@@ -18,7 +18,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
 func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val string, isPresent bool) {

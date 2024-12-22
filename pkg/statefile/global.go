@@ -15,7 +15,7 @@
 package statefile
 
 import (
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/consts"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

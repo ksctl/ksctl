@@ -36,7 +36,7 @@ func CopySrcToDestPreservingDestVals[K comparable, V any](dest, src map[K]V) {
 			destMap, destOk := any(destVal).(map[K]V)
 
 			if srcOk && destOk {
-				CopySrcToDestPreservingDestVals(destMap, srcMap)
+				CopySrcToDestPreservingDestVals[K, V](destMap, srcMap)
 				dest[key] = any(destMap).(V)
 			} else if reflect.TypeOf(srcVal).Kind() == reflect.Slice && reflect.TypeOf(destVal).Kind() == reflect.Slice {
 				mergedSlice := deduplicateAndMergeSlices(destVal, srcVal)

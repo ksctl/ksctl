@@ -87,4 +87,3 @@
 - name: display the status
   ansible.builtin.debug:
     msg: "{{ gh_runner_svc_stat.stdout }}"
-

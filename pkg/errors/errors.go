@@ -16,20 +16,6 @@ package errors
 
 import "fmt"
 
-// Usage
-//err := NewError(ErrNilCredentials)
-//
-//// Wrap an existing error
-//err = WrapError(ErrTimeOut, someError)
-//
-//// Create a formatted error
-//err = WrapErrorf(ErrInvalidUserInput, "invalid input: %s", input)
-//
-//// Check error types
-//if IsTimeout(err) {
-//// handle timeout
-//}
-
 type ErrorCode int
 
 const (
@@ -297,9 +283,4 @@ func IsFailedGenerateCertificates(err error) bool {
 
 func IsFailedConnectingKubernetesCluster(err error) bool {
 	return codeForError(err) == ErrFailedConnectingKubernetesCluster
-}
-
-func IsKsctlError(err error) bool {
-	_, ok := err.(KsctlError)
-	return ok
 }

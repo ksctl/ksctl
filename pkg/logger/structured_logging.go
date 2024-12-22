@@ -23,9 +23,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	cloudController "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
 type StructuredLog struct {
@@ -44,16 +42,16 @@ func getPackageName(ctx context.Context) string {
 	}
 }
 
-func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType consts.CustomExternalLogLevel, message string) {
+func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType CustomExternalLogLevel, message string) {
 	_m := ""
 	switch msgType {
-	case consts.LogDebug:
+	case LogDebug:
 		_m = "DEBUG"
-	case consts.LogError:
+	case LogError:
 		_m = "ERROR"
-	case consts.LogSuccess:
+	case LogSuccess:
 		_m = "SUCCESS"
-	case consts.LogWarning:
+	case LogWarning:
 		_m = "WARN"
 	default:
 		_m = "INFO"
@@ -61,16 +59,16 @@ func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType consts.C
 	l.logger.Info(message, "component", getPackageName(ctx), "msgType", _m)
 }
 
-func (l *StructuredLog) ExternalLogHandlerf(ctx context.Context, msgType consts.CustomExternalLogLevel, format string, args ...interface{}) {
+func (l *StructuredLog) ExternalLogHandlerf(ctx context.Context, msgType CustomExternalLogLevel, format string, args ...interface{}) {
 	_m := ""
 	switch msgType {
-	case consts.LogDebug:
+	case LogDebug:
 		_m = "DEBUG"
-	case consts.LogError:
+	case LogError:
 		_m = "ERROR"
-	case consts.LogSuccess:
+	case LogSuccess:
 		_m = "SUCCESS"
-	case consts.LogWarning:
+	case LogWarning:
 		_m = "WARN"
 	default:
 		_m = "INFO"
@@ -192,10 +190,9 @@ func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
 	l.logger.Warn(msg, args...)
 }
 
-func (l *StructuredLog) Table(ctx context.Context, operation consts.LogClusterDetail, data []cloudController.AllClusterData) {
+func (l *StructuredLog) Table(ctx context.Context, operation LogClusterDetail, data []ClusterDataForLogging) {
 
-	if operation == consts.LoggingGetClusters {
-
+	if operation == LoggingGetClusters {
 		for _, _data := range data {
 			l.Success(ctx, "Get clusters",
 				"Name", _data.Name,
@@ -215,7 +212,6 @@ func (l *StructuredLog) Table(ctx context.Context, operation consts.LogClusterDe
 			"Command", "$ ksctl switch ...",
 		)
 	}
-
 }
 
 func (l *StructuredLog) Box(ctx context.Context, title string, lines string) {

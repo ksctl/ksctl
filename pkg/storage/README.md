@@ -25,5 +25,3 @@ func ExportEndpoint() string
 
 this can be used for the setup of the state to the cluster (ksctl or non-Ksctl) cluster
 with external store
-
-

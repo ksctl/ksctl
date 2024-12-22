@@ -8,11 +8,11 @@ body:
     attributes:
       value: |
         # ✨ Enhancement Proposal
-        
+
         Thank you for helping improve our project! Your ideas and suggestions are valuable to us.
-        
+
         > 💡 Before submitting, please check if a similar enhancement has been proposed.
-        
+
         Let's hear about your amazing idea! 🚀
 
   - type: input
@@ -60,7 +60,7 @@ body:
         - Required changes to existing features
         - Any new interfaces or APIs
         - Performance considerations
-        
+
         You can use diagrams or code examples:
         ```yaml
         example:
@@ -122,7 +122,7 @@ body:
       value: |
         ---
         ### 🙏 Thank you for your contribution!
-        
+
         Your enhancement proposal will be reviewed by our maintainers. We'll discuss the implementation details and feasibility together.
-        
+
         > ⭐ Don't forget to star the repository if you haven't already!
