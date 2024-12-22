@@ -16,6 +16,8 @@ package controller
 
 import (
 	"context"
+	"runtime/debug"
+
 	"github.com/ksctl/ksctl/pkg/bootstrap"
 	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/pkg/consts"
@@ -79,4 +81,15 @@ func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
 	b.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "pkg/handler/cluster/controller")
 
 	return b
+}
+
+// PanicCatcher This function is intended to be used by the Cli and used once thus getting required information for developers to debug
+//
+//	Please use it in the main function of the cli or the server
+func (c *Controller) PanicCatcher(log logger.Logger) {
+	if r := recover(); r != nil {
+		log.Error("Failed to recover stack trace", "error", r)
+		log.Print(c.ctx, "Controller Information", "context", c.ctx)
+		debug.PrintStack()
+	}
 }
