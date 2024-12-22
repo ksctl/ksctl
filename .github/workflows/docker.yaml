@@ -102,4 +102,3 @@ jobs:
           else
             make docker-buildx-controller CONTROLLER=application IMG_TAG_VERSION=${{ inputs.image_tag }} IMG_SUFFIX=${{ inputs.image_suffix }} || exit 1
           fi
-

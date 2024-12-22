@@ -86,4 +86,3 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
           make mock_local_managed
-

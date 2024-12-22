@@ -31,7 +31,7 @@ jobs:
     permissions:
       packages: write
       contents: read
-  
+
   welcome:
     runs-on: ubuntu-latest
     needs: ["ksctl-component-images-build"]
@@ -66,7 +66,7 @@ jobs:
             # first need to generate the application controller installer
             # make sure you don't push it to the PR
             make build-installer CONTROLLER="application" CUSTOM_LOCATION_GEN_CONTROLLER_MANIFEST="/tmp/ksctl-manifest.yaml" IMG_SUFFIX="${TESTING_OCI_ARTIFACT_SUFFIX}" IMG_TAG_VERSION="${COMMIT_SHA}"
-            
+
             cd test/e2e
             go build -v -ldflags="-X 'github.com/ksctl/ksctl/commons.OCIVersion=${COMMIT_SHA}' -X 'github.com/ksctl/ksctl/commons.OCIImgSuffix=${TESTING_OCI_ARTIFACT_SUFFIX}'" .
             export E2E_FLAGS="debug;core_component_overridings=application=file:::/tmp/ksctl-manifest.yaml" ## you can eliminate the debug

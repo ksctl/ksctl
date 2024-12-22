@@ -90,4 +90,3 @@ jobs:
         run: |
           make mock_azure_managed
           make mock_azure_ha
-

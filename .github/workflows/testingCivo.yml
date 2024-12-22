@@ -88,4 +88,3 @@ jobs:
         run: |
           make mock_civo_managed
           make mock_civo_ha
-

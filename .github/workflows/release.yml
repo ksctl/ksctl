@@ -1,10 +1,10 @@
 name: release-on-tag-push
- 
+
 on:
   push:
     tags:
       - 'v*'
- 
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
-     
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
