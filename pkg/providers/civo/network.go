@@ -16,56 +16,55 @@ package civo
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/waiter"
 	"time"
 
 	"github.com/civo/civogo"
-	"github.com/ksctl/ksctl/pkg/helpers"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
-func (obj *CivoProvider) NewNetwork(storage types.StorageFactory) error {
-	name := <-obj.chResName
+func (p *Provider) NewNetwork() error {
+	name := <-p.chResName
 
-	log.Debug(civoCtx, "Printing", "Name", name)
+	p.l.Debug(p.ctx, "Printing", "Name", name)
 
-	if len(mainStateDocument.CloudInfra.Civo.NetworkID) != 0 {
-		log.Print(civoCtx, "skipped network creation found", "networkID", mainStateDocument.CloudInfra.Civo.NetworkID)
+	if len(p.state.CloudInfra.Civo.NetworkID) != 0 {
+		p.l.Print(p.ctx, "skipped network creation found", "networkID", p.state.CloudInfra.Civo.NetworkID)
 		return nil
 	}
 
-	res, err := obj.client.CreateNetwork(name)
+	res, err := p.client.CreateNetwork(name)
 	if err != nil {
 		return err
 	}
-	mainStateDocument.CloudInfra.Civo.NetworkID = res.ID
+	p.state.CloudInfra.Civo.NetworkID = res.ID
 
-	net, err := obj.client.GetNetwork(res.ID)
+	net, err := p.client.GetNetwork(res.ID)
 	if err != nil {
 		return err
 	}
-	mainStateDocument.CloudInfra.Civo.NetworkCIDR = net.CIDR
+	p.state.CloudInfra.Civo.NetworkCIDR = net.CIDR
 
-	log.Debug(civoCtx, "Printing", "networkID", res.ID)
-	log.Debug(civoCtx, "Printing", "networkCIDR", net.CIDR)
-	log.Success(civoCtx, "Created network", "name", name)
+	p.l.Debug(p.ctx, "Printing", "networkID", res.ID)
+	p.l.Debug(p.ctx, "Printing", "networkCIDR", net.CIDR)
+	p.l.Success(p.ctx, "Created network", "name", name)
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	expoBackoff := helpers.NewBackOff(
+	expoBackoff := waiter.NewWaiter(
 		10*time.Second,
 		2,
 		int(consts.CounterMaxWatchRetryCount),
 	)
 	var netInst *civogo.Network
 	_err := expoBackoff.Run(
-		civoCtx,
-		log,
+		p.ctx,
+		p.l,
 		func() (err error) {
-			netInst, err = obj.client.GetNetwork(res.ID)
+			netInst, err = p.client.GetNetwork(res.ID)
 			return err
 		},
 		func() bool {
@@ -73,7 +72,7 @@ func (obj *CivoProvider) NewNetwork(storage types.StorageFactory) error {
 		},
 		nil,
 		func() error {
-			log.Print(civoCtx, "network ready", "name", name)
+			p.l.Print(p.ctx, "network ready", "name", name)
 			return nil
 		},
 		fmt.Sprintf("Waiting for the network %s to be ready", name),
@@ -84,24 +83,24 @@ func (obj *CivoProvider) NewNetwork(storage types.StorageFactory) error {
 	return nil
 }
 
-func (obj *CivoProvider) DelNetwork(storage types.StorageFactory) error {
+func (p *Provider) DelNetwork() error {
 
-	if len(mainStateDocument.CloudInfra.Civo.NetworkID) == 0 {
-		log.Print(civoCtx, "skipped network already deleted")
+	if len(p.state.CloudInfra.Civo.NetworkID) == 0 {
+		p.l.Print(p.ctx, "skipped network already deleted")
 		return nil
 	}
-	netId := mainStateDocument.CloudInfra.Civo.NetworkID
+	netId := p.state.CloudInfra.Civo.NetworkID
 
-	expoBackoff := helpers.NewBackOff(
+	expoBackoff := waiter.NewWaiter(
 		5*time.Second,
 		2,
 		int(consts.CounterMaxWatchRetryCount),
 	)
 	_err := expoBackoff.Run(
-		civoCtx,
-		log,
+		p.ctx,
+		p.l,
 		func() (err error) {
-			_, err = obj.client.DeleteNetwork(mainStateDocument.CloudInfra.Civo.NetworkID)
+			_, err = p.client.DeleteNetwork(p.state.CloudInfra.Civo.NetworkID)
 			return err
 		},
 		func() bool {
@@ -109,16 +108,16 @@ func (obj *CivoProvider) DelNetwork(storage types.StorageFactory) error {
 		},
 		nil,
 		func() error {
-			mainStateDocument.CloudInfra.Civo.NetworkID = ""
-			return storage.Write(mainStateDocument)
+			p.state.CloudInfra.Civo.NetworkID = ""
+			return p.store.Write(p.state)
 		},
-		fmt.Sprintf("Waiting for the network %s to be deleted", mainStateDocument.CloudInfra.Civo.NetworkID),
+		fmt.Sprintf("Waiting for the network %s to be deleted", p.state.CloudInfra.Civo.NetworkID),
 	)
 	if _err != nil {
 		return _err
 	}
 
-	log.Success(civoCtx, "Deleted network", "networkID", netId)
+	p.l.Success(p.ctx, "Deleted network", "networkID", netId)
 
-	return storage.DeleteCluster()
+	return p.store.DeleteCluster()
 }

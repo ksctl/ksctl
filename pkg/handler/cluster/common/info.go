@@ -42,7 +42,7 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 			err = append(err,
 				ksctlErrors.WrapError(
 					ksctlErrors.ErrInvalidResourceName,
-					kc.l.NewError(kc.ctx, "clustername is needed for cluster info details"),
+					kc.l.NewError(kc.ctx, "cluster name is needed for cluster info details"),
 				),
 			)
 		}

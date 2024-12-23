@@ -18,12 +18,11 @@ package civo
 
 import (
 	"github.com/civo/civogo"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
 	"time"
 )
 
-func ProvideClient() CivoGo {
+func ProvideClient() CloudSDK {
 	return &CivoClient{}
 }
 
@@ -229,7 +228,7 @@ func (client *CivoClient) DeleteInstance(id string) (*civogo.SimpleResponse, err
 	}, nil
 }
 
-func (client *CivoClient) InitClient(factory types.StorageFactory, region string) (err error) {
+func (client *CivoClient) InitClient(_ *Provider, region string) (err error) {
 	client.client, err = civogo.NewFakeClient()
 	if err != nil {
 		return

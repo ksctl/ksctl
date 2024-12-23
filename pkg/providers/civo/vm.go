@@ -16,19 +16,18 @@ package civo
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/waiter"
 	"time"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
 	"github.com/civo/civogo"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	"github.com/ksctl/ksctl/pkg/types"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
-func (obj *CivoProvider) foundStateVM(storage types.StorageFactory, idx int, creationMode bool, role consts.KsctlRole, name string) error {
+func (p *Provider) foundStateVM(idx int, creationMode bool, role consts.KsctlRole, name string) error {
 
 	var instID string = ""
 	var pubIP string = ""
@@ -36,21 +35,21 @@ func (obj *CivoProvider) foundStateVM(storage types.StorageFactory, idx int, cre
 	switch role {
 	case consts.RoleCp:
 
-		instID = mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs[idx]
-		pubIP = mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs[idx]
-		pvIP = mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs[idx]
+		instID = p.state.CloudInfra.Civo.InfoControlPlanes.VMIDs[idx]
+		pubIP = p.state.CloudInfra.Civo.InfoControlPlanes.PublicIPs[idx]
+		pvIP = p.state.CloudInfra.Civo.InfoControlPlanes.PrivateIPs[idx]
 	case consts.RoleWp:
-		instID = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[idx]
-		pubIP = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[idx]
-		pvIP = mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[idx]
+		instID = p.state.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[idx]
+		pubIP = p.state.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[idx]
+		pvIP = p.state.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[idx]
 	case consts.RoleDs:
-		instID = mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs[idx]
-		pubIP = mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs[idx]
-		pvIP = mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs[idx]
+		instID = p.state.CloudInfra.Civo.InfoDatabase.VMIDs[idx]
+		pubIP = p.state.CloudInfra.Civo.InfoDatabase.PublicIPs[idx]
+		pvIP = p.state.CloudInfra.Civo.InfoDatabase.PrivateIPs[idx]
 	case consts.RoleLb:
-		instID = mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMID
-		pubIP = mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP
-		pvIP = mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP
+		instID = p.state.CloudInfra.Civo.InfoLoadBalancer.VMID
+		pubIP = p.state.CloudInfra.Civo.InfoLoadBalancer.PublicIP
+		pvIP = p.state.CloudInfra.Civo.InfoLoadBalancer.PrivateIP
 	}
 
 	if creationMode {
@@ -58,54 +57,54 @@ func (obj *CivoProvider) foundStateVM(storage types.StorageFactory, idx int, cre
 		if len(instID) != 0 {
 			// instance id present
 			if len(pubIP) != 0 && len(pvIP) != 0 {
-				log.Print(civoCtx, "skipped vm found", "id", instID)
+				p.l.Print(p.ctx, "skipped vm found", "id", instID)
 				return nil
 			} else {
 				// either one or > 1 info are absent
-				err := watchInstance(obj, storage, instID, idx, role, name)
+				err := p.watchInstance(instID, idx, role, name)
 				return err
 			}
 		}
-		return ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
-			log.NewError(civoCtx, "vm not found"),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrNoMatchingRecordsFound,
+			p.l.NewError(p.ctx, "vm not found"),
 		)
 
 	} else {
 		// deletion mode
 		if len(instID) != 0 {
 			// need to delete
-			log.Print(civoCtx, "Deleting the VM")
+			p.l.Print(p.ctx, "Deleting the VM")
 			return nil
 		}
 		// already deleted
-		return ksctlErrors.ErrNoMatchingRecordsFound
-
+		return ksctlErrors.NewError(ksctlErrors.ErrNoMatchingRecordsFound)
 	}
 }
 
-func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
+func (p *Provider) NewVM(index int) error {
 
-	name := <-obj.chResName
+	name := <-p.chResName
 	indexNo := index
-	role := <-obj.chRole
-	vmtype := <-obj.chVMType
+	role := <-p.chRole
+	vmtype := <-p.chVMType
 
-	log.Debug(civoCtx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
+	p.l.Debug(p.ctx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
-	if err := obj.foundStateVM(storage, indexNo, true, role, name); err == nil {
+	if err := p.foundStateVM(indexNo, true, role, name); err == nil {
 		return nil
 	} else {
-		if !ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
 			return err
 		}
 	}
 
 	publicIP := "create"
-	if !obj.metadata.public {
+	if !p.public {
 		publicIP = "none"
 	}
 
-	diskImg, err := obj.client.GetDiskImageByName("ubuntu-focal")
+	diskImg, err := p.client.GetDiskImageByName("ubuntu-focal")
 	if err != nil {
 		return err
 	}
@@ -114,41 +113,41 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 
 	switch role {
 	case consts.RoleCp:
-		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDControlPlanes
+		firewallID = p.state.CloudInfra.Civo.FirewallIDControlPlanes
 	case consts.RoleWp:
-		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDWorkerNodes
+		firewallID = p.state.CloudInfra.Civo.FirewallIDWorkerNodes
 	case consts.RoleDs:
-		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDDatabaseNodes
+		firewallID = p.state.CloudInfra.Civo.FirewallIDDatabaseNodes
 	case consts.RoleLb:
-		firewallID = mainStateDocument.CloudInfra.Civo.FirewallIDLoadBalancer
+		firewallID = p.state.CloudInfra.Civo.FirewallIDLoadBalancer
 	}
 
-	networkID := mainStateDocument.CloudInfra.Civo.NetworkID
+	networkID := p.state.CloudInfra.Civo.NetworkID
 
-	initScript, err := helpers.GenerateInitScriptForVM(name)
+	initScript, err := providers.CloudInitScript(name)
 	if err != nil {
 		return err
 	}
-	log.Debug(civoCtx, "initscript", "script", initScript)
+	p.l.Debug(p.ctx, "initscript", "script", initScript)
 
 	instanceConfig := &civogo.InstanceConfig{
 		Hostname:         name,
-		InitialUser:      mainStateDocument.CloudInfra.Civo.B.SSHUser,
-		Region:           obj.region,
+		InitialUser:      p.state.CloudInfra.Civo.B.SSHUser,
+		Region:           p.Region,
 		FirewallID:       firewallID,
 		Size:             vmtype,
 		TemplateID:       diskImg.ID,
 		NetworkID:        networkID,
-		SSHKeyID:         mainStateDocument.CloudInfra.Civo.B.SSHID,
+		SSHKeyID:         p.state.CloudInfra.Civo.B.SSHID,
 		PublicIPRequired: publicIP,
 		Script:           initScript,
 	}
 
-	log.Debug(civoCtx, "Printing", "instanceConfig", instanceConfig)
-	log.Print(civoCtx, "Creating vm", "name", name)
+	p.l.Debug(p.ctx, "Printing", "instanceConfig", instanceConfig)
+	p.l.Print(p.ctx, "Creating vm", "name", name)
 
 	var inst *civogo.Instance
-	inst, err = obj.client.CreateInstance(instanceConfig)
+	inst, err = p.client.CreateInstance(instanceConfig)
 	if err != nil {
 		return err
 	}
@@ -157,38 +156,38 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 	var errCreateVM error
 
 	go func() {
-		obj.mu.Lock()
+		p.mu.Lock()
 
 		switch role {
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs[indexNo] = inst.ID
-			mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMSizes[indexNo] = vmtype
+			p.state.CloudInfra.Civo.InfoControlPlanes.VMIDs[indexNo] = inst.ID
+			p.state.CloudInfra.Civo.InfoControlPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[indexNo] = inst.ID
-			mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
+			p.state.CloudInfra.Civo.InfoWorkerPlanes.VMIDs[indexNo] = inst.ID
+			p.state.CloudInfra.Civo.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMIDs[indexNo] = inst.ID
-			mainStateDocument.CloudInfra.Civo.InfoDatabase.VMSizes[indexNo] = vmtype
+			p.state.CloudInfra.Civo.InfoDatabase.VMIDs[indexNo] = inst.ID
+			p.state.CloudInfra.Civo.InfoDatabase.VMSizes[indexNo] = vmtype
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMID = inst.ID
-			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMSize = vmtype
+			p.state.CloudInfra.Civo.InfoLoadBalancer.VMID = inst.ID
+			p.state.CloudInfra.Civo.InfoLoadBalancer.VMSize = vmtype
 		}
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			errCreateVM = err
-			obj.mu.Unlock()
+			p.mu.Unlock()
 			close(done)
 			return
 		}
-		obj.mu.Unlock()
+		p.mu.Unlock()
 
-		if err := watchInstance(obj, storage, inst.ID, indexNo, role, name); err != nil {
+		if err := p.watchInstance(inst.ID, indexNo, role, name); err != nil {
 			errCreateVM = err
 			close(done)
 			return
 		}
 
-		log.Success(civoCtx, "Created vm", "vmName", name)
+		p.l.Success(p.ctx, "Created vm", "vmName", name)
 
 		close(done)
 	}()
@@ -198,16 +197,16 @@ func (obj *CivoProvider) NewVM(storage types.StorageFactory, index int) error {
 	return errCreateVM
 }
 
-func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
+func (p *Provider) DelVM(index int) error {
 
 	indexNo := index
-	role := <-obj.chRole
+	role := <-p.chRole
 
-	log.Debug(civoCtx, "Printing", "role", role, "indexNo", indexNo)
+	p.l.Debug(p.ctx, "Printing", "role", role, "indexNo", indexNo)
 
-	if err := obj.foundStateVM(storage, indexNo, false, role, ""); err != nil {
-		if ksctlErrors.ErrNoMatchingRecordsFound.Is(err) {
-			log.Success(civoCtx, "skipped already deleted vm")
+	if err := p.foundStateVM(indexNo, false, role, ""); err != nil {
+		if ksctlErrors.IsNoMatchingRecordsFound(err) {
+			p.l.Success(p.ctx, "skipped already deleted vm")
 		}
 	}
 
@@ -217,28 +216,28 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 
 	switch role {
 	case consts.RoleCp, consts.RoleWp, consts.RoleDs:
-		var vmState *storageTypes.CivoStateVMs
+		var vmState *statefile.CivoStateVMs
 		switch role {
 		case consts.RoleCp:
-			vmState = &mainStateDocument.CloudInfra.Civo.InfoControlPlanes
+			vmState = &p.state.CloudInfra.Civo.InfoControlPlanes
 		case consts.RoleWp:
-			vmState = &mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes
+			vmState = &p.state.CloudInfra.Civo.InfoWorkerPlanes
 		case consts.RoleDs:
-			vmState = &mainStateDocument.CloudInfra.Civo.InfoDatabase
+			vmState = &p.state.CloudInfra.Civo.InfoDatabase
 		}
 		instID = vmState.VMIDs[indexNo]
-		log.Debug(civoCtx, "Printing", "instID", instID)
+		p.l.Debug(p.ctx, "Printing", "instID", instID)
 
 		go func() {
 			defer close(done)
-			_, err := obj.client.DeleteInstance(instID)
+			_, err := p.client.DeleteInstance(instID)
 			if err != nil {
 				errCreateVM = err
 				return
 			}
 
-			obj.mu.Lock()
-			defer obj.mu.Unlock()
+			p.mu.Lock()
+			defer p.mu.Unlock()
 
 			vmState.VMIDs[indexNo] = ""
 			vmState.PublicIPs[indexNo] = ""
@@ -246,13 +245,13 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 			vmState.Hostnames[indexNo] = ""
 			vmState.VMSizes[indexNo] = ""
 
-			if err := storage.Write(mainStateDocument); err != nil {
+			if err := p.store.Write(p.state); err != nil {
 				errCreateVM = err
 				return
 			}
 
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success(civoCtx, "Deleted vm", "id", instID)
+			p.l.Success(p.ctx, "Deleted vm", "id", instID)
 		}()
 
 		<-done
@@ -260,29 +259,29 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 	case consts.RoleLb:
 		go func() {
 			defer close(done)
-			instID = mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMID
-			log.Debug(civoCtx, "Printing", "instID", instID)
+			instID = p.state.CloudInfra.Civo.InfoLoadBalancer.VMID
+			p.l.Debug(p.ctx, "Printing", "instID", instID)
 
-			_, err := obj.client.DeleteInstance(instID)
+			_, err := p.client.DeleteInstance(instID)
 			if err != nil {
 				errCreateVM = err
 				return
 			}
-			obj.mu.Lock()
-			defer obj.mu.Unlock()
-			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMID = ""
-			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP = ""
-			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP = ""
-			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.HostName = ""
-			mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.VMSize = ""
+			p.mu.Lock()
+			defer p.mu.Unlock()
+			p.state.CloudInfra.Civo.InfoLoadBalancer.VMID = ""
+			p.state.CloudInfra.Civo.InfoLoadBalancer.PublicIP = ""
+			p.state.CloudInfra.Civo.InfoLoadBalancer.PrivateIP = ""
+			p.state.CloudInfra.Civo.InfoLoadBalancer.HostName = ""
+			p.state.CloudInfra.Civo.InfoLoadBalancer.VMSize = ""
 
-			if err := storage.Write(mainStateDocument); err != nil {
+			if err := p.store.Write(p.state); err != nil {
 				errCreateVM = err
 				close(done)
 				return
 			}
 			time.Sleep(2 * time.Second) // NOTE: to make sure the instances gets time to be deleted
-			log.Success(civoCtx, "Deleted vm", "id", instID)
+			p.l.Success(p.ctx, "Deleted vm", "id", instID)
 		}()
 		<-done
 	}
@@ -290,9 +289,9 @@ func (obj *CivoProvider) DelVM(storage types.StorageFactory, index int) error {
 	return errCreateVM
 }
 
-func watchInstance(obj *CivoProvider, storage types.StorageFactory, instID string, idx int, role consts.KsctlRole, name string) error {
+func (p *Provider) watchInstance(instID string, idx int, role consts.KsctlRole, name string) error {
 
-	expoBackoff := helpers.NewBackOff(
+	expoBackoff := waiter.NewWaiter(
 		10*time.Second,
 		2,
 		2*int(consts.CounterMaxWatchRetryCount),
@@ -300,10 +299,10 @@ func watchInstance(obj *CivoProvider, storage types.StorageFactory, instID strin
 
 	var getInst *civogo.Instance
 	_err := expoBackoff.Run(
-		civoCtx,
-		log,
+		p.ctx,
+		p.l,
 		func() (err error) {
-			getInst, err = obj.client.GetInstance(instID)
+			getInst, err = p.client.GetInstance(instID)
 			return err
 		},
 		func() bool {
@@ -315,38 +314,38 @@ func watchInstance(obj *CivoProvider, storage types.StorageFactory, instID strin
 			pvIP := getInst.PrivateIP
 			hostNam := getInst.Hostname
 
-			obj.mu.Lock()
-			defer obj.mu.Unlock()
+			p.mu.Lock()
+			defer p.mu.Unlock()
 			// critical section
 			switch role {
 			case consts.RoleCp:
-				mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PublicIPs[idx] = pubIP
-				mainStateDocument.CloudInfra.Civo.InfoControlPlanes.PrivateIPs[idx] = pvIP
-				mainStateDocument.CloudInfra.Civo.InfoControlPlanes.Hostnames[idx] = hostNam
-				if len(mainStateDocument.CloudInfra.Civo.InfoControlPlanes.VMIDs) == idx+1 && len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs) == 0 {
+				p.state.CloudInfra.Civo.InfoControlPlanes.PublicIPs[idx] = pubIP
+				p.state.CloudInfra.Civo.InfoControlPlanes.PrivateIPs[idx] = pvIP
+				p.state.CloudInfra.Civo.InfoControlPlanes.Hostnames[idx] = hostNam
+				if len(p.state.CloudInfra.Civo.InfoControlPlanes.VMIDs) == idx+1 && len(p.state.CloudInfra.Civo.InfoWorkerPlanes.VMIDs) == 0 {
 					// no wp set so it is the final cloud provisioning
-					mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
+					p.state.CloudInfra.Civo.B.IsCompleted = true
 				}
 			case consts.RoleWp:
-				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[idx] = pubIP
-				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[idx] = pvIP
-				mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.Hostnames[idx] = hostNam
+				p.state.CloudInfra.Civo.InfoWorkerPlanes.PublicIPs[idx] = pubIP
+				p.state.CloudInfra.Civo.InfoWorkerPlanes.PrivateIPs[idx] = pvIP
+				p.state.CloudInfra.Civo.InfoWorkerPlanes.Hostnames[idx] = hostNam
 
 				// make it isComplete when the workernode [idx -1] == len of it
-				if len(mainStateDocument.CloudInfra.Civo.InfoWorkerPlanes.VMIDs) == idx+1 {
-					mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
+				if len(p.state.CloudInfra.Civo.InfoWorkerPlanes.VMIDs) == idx+1 {
+					p.state.CloudInfra.Civo.B.IsCompleted = true
 				}
 			case consts.RoleDs:
-				mainStateDocument.CloudInfra.Civo.InfoDatabase.PublicIPs[idx] = pubIP
-				mainStateDocument.CloudInfra.Civo.InfoDatabase.PrivateIPs[idx] = pvIP
-				mainStateDocument.CloudInfra.Civo.InfoDatabase.Hostnames[idx] = hostNam
+				p.state.CloudInfra.Civo.InfoDatabase.PublicIPs[idx] = pubIP
+				p.state.CloudInfra.Civo.InfoDatabase.PrivateIPs[idx] = pvIP
+				p.state.CloudInfra.Civo.InfoDatabase.Hostnames[idx] = hostNam
 			case consts.RoleLb:
-				mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PublicIP = pubIP
-				mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.PrivateIP = pvIP
-				mainStateDocument.CloudInfra.Civo.InfoLoadBalancer.HostName = hostNam
+				p.state.CloudInfra.Civo.InfoLoadBalancer.PublicIP = pubIP
+				p.state.CloudInfra.Civo.InfoLoadBalancer.PrivateIP = pvIP
+				p.state.CloudInfra.Civo.InfoLoadBalancer.HostName = hostNam
 			}
 
-			return storage.Write(mainStateDocument)
+			return p.store.Write(p.state)
 		},
 		fmt.Sprintf("waiting for vm %s to be ready", name),
 	)

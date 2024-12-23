@@ -15,52 +15,51 @@
 package civo
 
 import (
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"os"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 )
 
-func fetchAPIKey(storage types.StorageFactory) (string, error) {
+func (p *Provider) fetchAPIKey() (string, error) {
 
 	civoToken := os.Getenv("CIVO_TOKEN")
 	if civoToken != "" {
 		return civoToken, nil
 	}
-	log.Debug(civoCtx, "environment vars not set: `CIVO_TOKEN`")
+	p.l.Debug(p.ctx, "environment vars not set: `CIVO_TOKEN`")
 
-	credentials, err := storage.ReadCredentials(consts.CloudCivo)
+	credentials, err := p.store.ReadCredentials(consts.CloudCivo)
 	if err != nil {
 		return "", err
 	}
 	if credentials.Civo == nil {
-		return "", ksctlErrors.ErrNilCredentials.Wrap(
-			log.NewError(civoCtx, "no credentials was found"),
+		return "", ksctlErrors.WrapError(
+			ksctlErrors.ErrNilCredentials,
+			p.l.NewError(p.ctx, "no credentials was found"),
 		)
 	}
 	return credentials.Civo.Token, nil
 }
 
-func loadStateHelper(storage types.StorageFactory) error {
-	raw, err := storage.Read()
+func (p *Provider) loadStateHelper() error {
+	raw, err := p.store.Read()
 	if err != nil {
 		return err
 	}
-	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
+	*p.state = func(x *statefile.StorageDocument) statefile.StorageDocument {
 		return *x
 	}(raw)
 	return nil
 }
 
-func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
-	vers, err := obj.client.ListAvailableKubernetesVersions()
+func getValidK8sVersionClient(p *Provider) ([]string, error) {
+	vers, err := p.client.ListAvailableKubernetesVersions()
 	if err != nil {
 		return nil, err
 	}
-	log.Debug(civoCtx, "Printing", "ListAvailableKubernetesVersions", vers)
+	p.l.Debug(p.ctx, "Printing", "ListAvailableKubernetesVersions", vers)
 	var val []string
 	for _, ver := range vers {
 		if ver.ClusterType == string(consts.K8sK3s) {
@@ -70,12 +69,12 @@ func getValidK8sVersionClient(obj *CivoProvider) ([]string, error) {
 	return val, nil
 }
 
-func getValidRegionsClient(obj *CivoProvider) ([]string, error) {
-	regions, err := obj.client.ListRegions()
+func getValidRegionsClient(p *Provider) ([]string, error) {
+	regions, err := p.client.ListRegions()
 	if err != nil {
 		return nil, err
 	}
-	log.Debug(civoCtx, "Printing", "ListRegions", regions)
+	p.l.Debug(p.ctx, "Printing", "ListRegions", regions)
 	var val []string
 	for _, region := range regions {
 		val = append(val, region.Code)
@@ -83,12 +82,12 @@ func getValidRegionsClient(obj *CivoProvider) ([]string, error) {
 	return val, nil
 }
 
-func getValidVMSizesClient(obj *CivoProvider) ([]string, error) {
-	nodeSizes, err := obj.client.ListInstanceSizes()
+func getValidVMSizesClient(p *Provider) ([]string, error) {
+	nodeSizes, err := p.client.ListInstanceSizes()
 	if err != nil {
 		return nil, err
 	}
-	log.Debug(civoCtx, "Printing", "ListInstanceSizes", nodeSizes)
+	p.l.Debug(p.ctx, "Printing", "ListInstanceSizes", nodeSizes)
 	var val []string
 	for _, region := range nodeSizes {
 		val = append(val, region.Name)
@@ -96,17 +95,17 @@ func getValidVMSizesClient(obj *CivoProvider) ([]string, error) {
 	return val, nil
 }
 
-func validationOfArguments(obj *CivoProvider) error {
+func validationOfArguments(p *Provider) error {
 
-	if err := isValidRegion(obj, obj.region); err != nil {
+	if err := isValidRegion(p, p.Region); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func isValidK8sVersion(obj *CivoProvider, ver string) error {
-	valver, err := getValidK8sVersionClient(obj)
+func isValidK8sVersion(p *Provider, ver string) error {
+	valver, err := getValidK8sVersionClient(p)
 	if err != nil {
 		return err
 	}
@@ -115,13 +114,14 @@ func isValidK8sVersion(obj *CivoProvider, ver string) error {
 			return nil
 		}
 	}
-	return ksctlErrors.ErrInvalidVersion.Wrap(
-		log.NewError(civoCtx, "invalid k8s version", "ValidManagedK8sVersions", valver),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidVersion,
+		p.l.NewError(p.ctx, "invalid k8s version", "ValidManagedK8sVersions", valver),
 	)
 }
 
-func isValidRegion(obj *CivoProvider, reg string) error {
-	validFromClient, err := getValidRegionsClient(obj)
+func isValidRegion(p *Provider, reg string) error {
+	validFromClient, err := getValidRegionsClient(p)
 	if err != nil {
 		return err
 	}
@@ -130,13 +130,14 @@ func isValidRegion(obj *CivoProvider, reg string) error {
 			return nil
 		}
 	}
-	return ksctlErrors.ErrInvalidCloudRegion.Wrap(
-		log.NewError(civoCtx, "invalid region", "ValidRegion", validFromClient),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidCloudRegion,
+		p.l.NewError(p.ctx, "invalid region", "ValidRegion", validFromClient),
 	)
 }
 
-func isValidVMSize(obj *CivoProvider, size string) error {
-	validFromClient, err := getValidVMSizesClient(obj)
+func isValidVMSize(p *Provider, size string) error {
+	validFromClient, err := getValidVMSizesClient(p)
 	if err != nil {
 		return err
 	}
@@ -145,7 +146,8 @@ func isValidVMSize(obj *CivoProvider, size string) error {
 			return nil
 		}
 	}
-	return ksctlErrors.ErrInvalidCloudVMSize.Wrap(
-		log.NewError(civoCtx, "invalid Virtual Machine size", "ValidVMSize", validFromClient),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidCloudVMSize,
+		p.l.NewError(p.ctx, "invalid Virtual Machine size", "ValidVMSize", validFromClient),
 	)
 }

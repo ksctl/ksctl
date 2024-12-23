@@ -16,19 +16,17 @@ package civo
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/waiter"
 	"time"
-
-	"github.com/ksctl/ksctl/pkg/helpers"
 
 	"github.com/civo/civogo"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
-func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id string, name string) error {
+func (p *Provider) watchManagedCluster(id string, name string) error {
 
-	expoBackoff := helpers.NewBackOff(
+	expoBackoff := waiter.NewWaiter(
 		10*time.Second,
 		2,
 		2*int(consts.CounterMaxWatchRetryCount),
@@ -36,10 +34,10 @@ func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id str
 
 	var clusterDS *civogo.KubernetesCluster
 	_err := expoBackoff.Run(
-		civoCtx,
-		log,
+		p.ctx,
+		p.l,
 		func() (err error) {
-			clusterDS, err = obj.client.GetKubernetesCluster(id)
+			clusterDS, err = p.client.GetKubernetesCluster(id)
 			return err
 		},
 		func() bool {
@@ -47,11 +45,11 @@ func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id str
 		},
 		nil,
 		func() error {
-			log.Print(civoCtx, "cluster ready", "name", name)
-			mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
-			mainStateDocument.ClusterKubeConfig = clusterDS.KubeConfig
-			mainStateDocument.ClusterKubeConfigContext = name
-			return storage.Write(mainStateDocument)
+			p.l.Print(p.ctx, "cluster ready", "name", name)
+			p.state.CloudInfra.Civo.B.IsCompleted = true
+			p.state.ClusterKubeConfig = clusterDS.KubeConfig
+			p.state.ClusterKubeConfigContext = name
+			return p.store.Write(p.state)
 		},
 		fmt.Sprintf("Waiting for managed cluster %s to be ready", id),
 	)
@@ -62,17 +60,17 @@ func watchManagedCluster(obj *CivoProvider, storage types.StorageFactory, id str
 	return nil
 }
 
-func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
+func (p *Provider) NewManagedCluster(noOfNodes int) error {
 
-	name := <-obj.chResName
-	vmtype := <-obj.chVMType
+	name := <-p.chResName
+	vmtype := <-p.chVMType
 
-	log.Debug(civoCtx, "Printing", "name", name, "vmtype", vmtype)
+	p.l.Debug(p.ctx, "Printing", "name", name, "vmtype", vmtype)
 
-	if len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) != 0 {
-		log.Print(civoCtx, "skipped managed cluster creation found", "id", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
+	if len(p.state.CloudInfra.Civo.ManagedClusterID) != 0 {
+		p.l.Print(p.ctx, "skipped managed cluster creation found", "id", p.state.CloudInfra.Civo.ManagedClusterID)
 
-		if err := watchManagedCluster(obj, storage, mainStateDocument.CloudInfra.Civo.ManagedClusterID, name); err != nil {
+		if err := p.watchManagedCluster(p.state.CloudInfra.Civo.ManagedClusterID, name); err != nil {
 			return err
 		}
 
@@ -80,51 +78,51 @@ func (obj *CivoProvider) NewManagedCluster(storage types.StorageFactory, noOfNod
 	}
 
 	configK8s := &civogo.KubernetesClusterConfig{
-		KubernetesVersion: obj.metadata.k8sVersion,
+		KubernetesVersion: p.K8sVersion,
 		Name:              name,
-		Region:            obj.region,
+		Region:            p.Region,
 		NumTargetNodes:    noOfNodes,
 		TargetNodesSize:   vmtype,
-		NetworkID:         mainStateDocument.CloudInfra.Civo.NetworkID,
-		Applications:      obj.metadata.apps, // make the use of application and cni via some method
-		CNIPlugin:         obj.metadata.cni,  // make it use install application in the civo
+		NetworkID:         p.state.CloudInfra.Civo.NetworkID,
+		Applications:      p.apps, // make the use of application and cni via some method
+		CNIPlugin:         p.cni,  // make it use install application in the civo
 	}
-	log.Debug(civoCtx, "Printing", "configManagedK8s", configK8s)
+	p.l.Debug(p.ctx, "Printing", "configManagedK8s", configK8s)
 
-	resp, err := obj.client.NewKubernetesClusters(configK8s)
+	resp, err := p.client.NewKubernetesClusters(configK8s)
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Civo.NoManagedNodes = noOfNodes
-	mainStateDocument.BootstrapProvider = "managed"
-	mainStateDocument.CloudInfra.Civo.ManagedNodeSize = vmtype
-	mainStateDocument.CloudInfra.Civo.B.KubernetesVer = obj.metadata.k8sVersion
-	mainStateDocument.CloudInfra.Civo.ManagedClusterID = resp.ID
+	p.state.CloudInfra.Civo.NoManagedNodes = noOfNodes
+	p.state.BootstrapProvider = "managed"
+	p.state.CloudInfra.Civo.ManagedNodeSize = vmtype
+	p.state.CloudInfra.Civo.B.KubernetesVer = p.K8sVersion
+	p.state.CloudInfra.Civo.ManagedClusterID = resp.ID
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	if err := watchManagedCluster(obj, storage, resp.ID, name); err != nil {
+	if err := p.watchManagedCluster(resp.ID, name); err != nil {
 		return err
 	}
-	log.Success(civoCtx, "Created Managed cluster", "clusterID", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
+	p.l.Success(p.ctx, "Created Managed cluster", "clusterID", p.state.CloudInfra.Civo.ManagedClusterID)
 	return nil
 }
 
-func (obj *CivoProvider) DelManagedCluster(storage types.StorageFactory) error {
-	if len(mainStateDocument.CloudInfra.Civo.ManagedClusterID) == 0 {
-		log.Print(civoCtx, "skipped network deletion found", "id", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
+func (p *Provider) DelManagedCluster() error {
+	if len(p.state.CloudInfra.Civo.ManagedClusterID) == 0 {
+		p.l.Print(p.ctx, "skipped network deletion found", "id", p.state.CloudInfra.Civo.ManagedClusterID)
 		return nil
 	}
-	_, err := obj.client.DeleteKubernetesCluster(mainStateDocument.CloudInfra.Civo.ManagedClusterID)
+	_, err := p.client.DeleteKubernetesCluster(p.state.CloudInfra.Civo.ManagedClusterID)
 	if err != nil {
 		return err
 	}
-	log.Success(civoCtx, "Deleted Managed cluster", "clusterID", mainStateDocument.CloudInfra.Civo.ManagedClusterID)
-	mainStateDocument.CloudInfra.Civo.ManagedClusterID = ""
-	mainStateDocument.CloudInfra.Civo.ManagedNodeSize = ""
+	p.l.Success(p.ctx, "Deleted Managed cluster", "clusterID", p.state.CloudInfra.Civo.ManagedClusterID)
+	p.state.CloudInfra.Civo.ManagedClusterID = ""
+	p.state.CloudInfra.Civo.ManagedNodeSize = ""
 
-	return storage.Write(mainStateDocument)
+	return p.store.Write(p.state)
 }

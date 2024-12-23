@@ -17,30 +17,30 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"sync"
 	"time"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	awsPkg "github.com/ksctl/ksctl/internal/cloudproviders/aws"
-	azurePkg "github.com/ksctl/ksctl/internal/cloudproviders/azure"
-	civoPkg "github.com/ksctl/ksctl/internal/cloudproviders/civo"
-	localPkg "github.com/ksctl/ksctl/internal/cloudproviders/local"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	awsPkg "github.com/ksctl/ksctl/pkg/providers/aws"
+	azurePkg "github.com/ksctl/ksctl/pkg/providers/azure"
+	civoPkg "github.com/ksctl/ksctl/pkg/providers/civo"
+	localPkg "github.com/ksctl/ksctl/pkg/providers/local"
 )
 
 var (
-	log           types.LoggerFactory
-	controllerCtx context.Context
+// log           logger.Logger
+// controllerCtx context.Context
 )
 
-func InitLogger(ctx context.Context, _log types.LoggerFactory) {
+func InitLogger(ctx context.Context, _log logger.Logger) {
 	log = _log
 	controllerCtx = ctx
 }
 
-func InitCloud(client *types.KsctlClient, state *storageTypes.StorageDocument, operation consts.KsctlOperation) error {
+func InitCloud(client *controller.Client, state *statefile.StorageDocument, operation consts.KsctlOperation) error {
 
 	var err error
 	switch client.Metadata.Provider {

@@ -14,66 +14,63 @@
 
 package civo
 
-import (
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/types"
-)
+import "github.com/ksctl/ksctl/pkg/ssh"
 
-func (obj *CivoProvider) DelSSHKeyPair(storage types.StorageFactory) error {
-	if len(mainStateDocument.CloudInfra.Civo.B.SSHID) == 0 {
-		log.Print(civoCtx, "skipped ssh keypair already deleted")
+func (p *Provider) DelSSHKeyPair() error {
+	if len(p.state.CloudInfra.Civo.B.SSHID) == 0 {
+		p.l.Print(p.ctx, "skipped ssh keypair already deleted")
 		return nil
 	}
 
-	_, err := obj.client.DeleteSSHKey(mainStateDocument.CloudInfra.Civo.B.SSHID)
+	_, err := p.client.DeleteSSHKey(p.state.CloudInfra.Civo.B.SSHID)
 	if err != nil {
 		return err
 	}
 
-	log.Success(civoCtx, "ssh keypair deleted", "sshID", mainStateDocument.CloudInfra.Civo.B.SSHID)
+	p.l.Success(p.ctx, "ssh keypair deleted", "sshID", p.state.CloudInfra.Civo.B.SSHID)
 
-	mainStateDocument.CloudInfra.Civo.B.SSHID = ""
-	mainStateDocument.CloudInfra.Civo.B.SSHUser = ""
-	mainStateDocument.SSHKeyPair.PrivateKey, mainStateDocument.SSHKeyPair.PrivateKey = "", ""
+	p.state.CloudInfra.Civo.B.SSHID = ""
+	p.state.CloudInfra.Civo.B.SSHUser = ""
+	p.state.SSHKeyPair.PrivateKey, p.state.SSHKeyPair.PrivateKey = "", ""
 
-	return storage.Write(mainStateDocument)
+	return p.store.Write(p.state)
 }
 
-func (obj *CivoProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
-	name := <-obj.chResName
+func (p *Provider) CreateUploadSSHKeyPair() error {
+	name := <-p.chResName
 
-	if len(mainStateDocument.CloudInfra.Civo.B.SSHID) != 0 {
-		log.Print(civoCtx, "skipped ssh keypair already uploaded")
+	if len(p.state.CloudInfra.Civo.B.SSHID) != 0 {
+		p.l.Print(p.ctx, "skipped ssh keypair already uploaded")
 		return nil
 	}
 
-	err := helpers.CreateSSHKeyPair(civoCtx, log, mainStateDocument)
+	err := ssh.CreateSSHKeyPair(p.ctx, p.l, p.state)
 	if err != nil {
 		return err
 	}
-	log.Debug(civoCtx, "Printing", "keypair", mainStateDocument.SSHKeyPair.PublicKey)
+	p.l.Debug(p.ctx, "Printing", "keypair", p.state.SSHKeyPair.PublicKey)
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	if err := obj.uploadSSH(storage, name, mainStateDocument.SSHKeyPair.PublicKey); err != nil {
+	if err := p.uploadSSH(name, p.state.SSHKeyPair.PublicKey); err != nil {
 		return err
 	}
-	log.Success(civoCtx, "ssh keypair created and uploaded", "sshKeyPairName", name)
+	p.l.Success(p.ctx, "ssh keypair created and uploaded", "sshKeyPairName", name)
 	return nil
 }
 
-func (obj *CivoProvider) uploadSSH(storage types.StorageFactory, resName, pubKey string) error {
-	sshResp, err := obj.client.NewSSHKey(resName, pubKey)
+func (p *Provider) uploadSSH(resName, pubKey string) error {
+	sshResp, err := p.client.NewSSHKey(resName, pubKey)
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Civo.B.SSHID = sshResp.ID
-	mainStateDocument.CloudInfra.Civo.B.SSHUser = "root"
+	p.state.CloudInfra.Civo.B.SSHID = sshResp.ID
+	p.state.CloudInfra.Civo.B.SSHUser = "root"
 
-	log.Debug(civoCtx, "Printing", "mainStateDocument.CloudInfra.Civo.B.SSHID", mainStateDocument.CloudInfra.Civo.B.SSHID, "mainStateDocument.CloudInfra.Civo.B.SSHUser", mainStateDocument.CloudInfra.Civo.B.SSHUser)
+	p.l.Debug(p.ctx, "Printing", "p.state.CloudInfra.Civo.B.SSHID", p.state.CloudInfra.Civo.B.SSHID, "p.state.CloudInfra.Civo.B.SSHUser", p.state.CloudInfra.Civo.B.SSHUser)
 
-	return storage.Write(mainStateDocument)
+	return p.store.Write(p.state)
 }

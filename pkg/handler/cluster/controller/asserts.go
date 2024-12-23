@@ -17,9 +17,9 @@ package controller
 import "github.com/ksctl/ksctl/pkg/consts"
 
 func (cc *Controller) IsLocalProvider(c *Client) bool {
-	return cc.Metadata.Provider == consts.CloudLocal
+	return c.Metadata.Provider == consts.CloudLocal
 }
 
 func (cc *Controller) IsHA(c *Client) bool {
-	return cc.Metadata.IsHA
+	return c.Metadata.IsHA
 }

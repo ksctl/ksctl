@@ -17,14 +17,14 @@ package civo
 import (
 	"errors"
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/providers"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/civo/civogo"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"gotest.tools/v3/assert"
 )
 
@@ -39,42 +39,42 @@ func TestCivoProvider_InitState(t *testing.T) {
 
 	t.Run("Create state", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
+		if err := fakeClientVars.InitState(consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, clusterType, consts.ClusterTypeHa, "clustertype should be managed")
-		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, false, "cluster should not be completed")
-		assert.Equal(t, fakeClientVars.Name("fake").NewNetwork(storeVars), nil, "Network should be created")
-		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, false, "cluster should not be completed")
+		assert.Equal(t, fakeClientVars.clusterType, consts.ClusterTypeHa, "clustertype should be managed")
+		assert.Equal(t, fakeClientVars.state.CloudInfra.Civo.B.IsCompleted, false, "cluster should not be completed")
+		assert.Equal(t, fakeClientVars.Name("fake").NewNetwork(), nil, "Network should be created")
+		assert.Equal(t, fakeClientVars.state.CloudInfra.Civo.B.IsCompleted, false, "cluster should not be completed")
 	})
 
 	t.Run("Try to resume", func(t *testing.T) {
-		mainStateDocument.CloudInfra.Civo.B.IsCompleted = true
-		assert.Equal(t, mainStateDocument.CloudInfra.Civo.B.IsCompleted, true, "cluster should not be completed")
+		fakeClientVars.state.CloudInfra.Civo.B.IsCompleted = true
+		assert.Equal(t, fakeClientVars.state.CloudInfra.Civo.B.IsCompleted, true, "cluster should not be completed")
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationCreate); err != nil {
+		if err := fakeClientVars.InitState(consts.OperationCreate); err != nil {
 			t.Fatalf("Unable to resume state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Get request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationGet); err != nil {
+		if err := fakeClientVars.InitState(consts.OperationGet); err != nil {
 			t.Fatalf("Unable to get state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Delete request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, consts.OperationDelete); err != nil {
+		if err := fakeClientVars.InitState(consts.OperationDelete); err != nil {
 			t.Fatalf("Unable to Delete state, Reason: %v", err)
 		}
 	})
 
 	t.Run("try to Trigger Invalid request", func(t *testing.T) {
 
-		if err := fakeClientVars.InitState(storeVars, "test"); err == nil {
+		if err := fakeClientVars.InitState("test"); err == nil {
 			t.Fatalf("Expected error but not got: %v", err)
 		}
 	})
@@ -90,7 +90,7 @@ func TestFetchAPIKey(t *testing.T) {
 		if err := os.Setenv(data[0], data[1]); err != nil {
 			t.Fatalf("unable to set env vars")
 		}
-		token, err := fetchAPIKey(storeVars)
+		token, err := fakeClientVars.fetchAPIKey()
 		if len(data[2]) == 0 {
 			if err == nil {
 				t.Fatalf("It should fail")
@@ -120,7 +120,7 @@ func TestApplications(t *testing.T) {
 		if retApps := fakeClientVars.Application(_apps); retApps {
 			t.Fatalf("application shouldn't be external flag")
 		}
-		assert.Equal(t, fakeClientVars.metadata.apps, setVal, fmt.Sprintf("apps dont match Expected `%s` but got `%s`", setVal, fakeClientVars.metadata.apps))
+		assert.Equal(t, fakeClientVars.apps, setVal, fmt.Sprintf("apps dont match Expected `%s` but got `%s`", setVal, fakeClientVars.apps))
 	}
 }
 
@@ -129,12 +129,12 @@ func TestCivoProvider_NoOfControlPlane(t *testing.T) {
 	var err error
 
 	no, err = fakeClientVars.NoOfControlPlane(-1, false)
-	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
+	if no != -1 || err == nil || !ksctlErrors.IsInvalidNoOfControlplane(err) {
 		t.Fatalf("Getter failed on unintalized controlplanes array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(1, true)
-	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfControlplane.Is(err)) {
+	if err == nil || !ksctlErrors.IsInvalidNoOfControlplane(err) {
 		t.Fatalf("setter should fail on when no < 3 controlplanes provided_no: %d", 1)
 	}
 
@@ -154,12 +154,12 @@ func TestCivoProvider_NoOfDataStore(t *testing.T) {
 	var err error
 
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
-	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
+	if no != -1 || err == nil || !ksctlErrors.IsInvalidNoOfDatastore(err) {
 		t.Fatalf("Getter failed on unintalized datastore array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(0, true)
-	if err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfDatastore.Is(err)) {
+	if err == nil || !ksctlErrors.IsInvalidNoOfDatastore(err) {
 		t.Fatalf("setter should fail on when no < 3 datastore provided_no: %d", 1)
 	}
 
@@ -178,32 +178,32 @@ func TestCivoProvider_NoOfWorkerPlane(t *testing.T) {
 	var no int
 	var err error
 
-	no, err = fakeClientVars.NoOfWorkerPlane(storeVars, -1, false)
-	if no != -1 || err == nil || (err != nil && !ksctlErrors.ErrInvalidNoOfWorkerplane.Is(err)) {
+	no, err = fakeClientVars.NoOfWorkerPlane(-1, false)
+	if no != -1 || err == nil || !ksctlErrors.IsInvalidNoOfWorkerplane(err) {
 		t.Fatalf("Getter failed on unintalized workerplane array got no: %d and err: %v", no, err)
 	}
 
-	_, err = fakeClientVars.NoOfWorkerPlane(storeVars, 2, true)
+	_, err = fakeClientVars.NoOfWorkerPlane(2, true)
 	if err != nil {
 		t.Fatalf("setter should not fail on when no >= 0 workerplane provided_no: %d, err: %v", 2, err)
 	}
 
-	_, err = fakeClientVars.NoOfWorkerPlane(storeVars, 2, true)
+	_, err = fakeClientVars.NoOfWorkerPlane(2, true)
 	if err != nil {
 		t.Fatalf("setter should return nil when no changes happen workerplane err: %v", err)
 	}
 
-	_, err = fakeClientVars.NoOfWorkerPlane(storeVars, 3, true)
+	_, err = fakeClientVars.NoOfWorkerPlane(3, true)
 	if err != nil {
 		t.Fatalf("setter should return nil when upscaling changes happen workerplane err: %v", err)
 	}
 
-	_, err = fakeClientVars.NoOfWorkerPlane(storeVars, 1, true)
+	_, err = fakeClientVars.NoOfWorkerPlane(1, true)
 	if err != nil {
 		t.Fatalf("setter should return nil when upscaling changes happen workerplane err: %v", err)
 	}
 
-	no, err = fakeClientVars.NoOfWorkerPlane(storeVars, -1, false)
+	no, err = fakeClientVars.NoOfWorkerPlane(-1, false)
 	if no != 1 {
 		t.Fatalf("Getter failed to get updated no of workerplane array got no: %d and err: %v", no, err)
 	}
@@ -257,7 +257,7 @@ func TestVMType(t *testing.T) {
 }
 
 func TestVisibility(t *testing.T) {
-	if fakeClientVars.Visibility(true); !fakeClientVars.metadata.public {
+	if fakeClientVars.Visibility(true); !fakeClientVars.public {
 		t.Fatalf("Visibility setting not working")
 	}
 }
@@ -285,12 +285,12 @@ func TestK8sVersion(t *testing.T) {
 	}
 
 	for i := 0; i < len(forTesting); i++ {
-		var ver string = forTesting[i]
+		var ver = forTesting[i]
 		if i < 2 {
 			if ret := fakeClientVars.ManagedK8sVersion(ver); ret == nil {
 				t.Fatalf("returned nil for valid version")
 			}
-			if ver+"-k3s1" != fakeClientVars.metadata.k8sVersion {
+			if ver+"-k3s1" != fakeClientVars.K8sVersion {
 				t.Fatalf("set value is not equal to input value")
 			}
 		} else {
@@ -303,7 +303,7 @@ func TestK8sVersion(t *testing.T) {
 	if ret := fakeClientVars.ManagedK8sVersion(""); ret == nil {
 		t.Fatalf("returned nil for valid version")
 	}
-	if "1.26.4-k3s1" != fakeClientVars.metadata.k8sVersion {
+	if "1.26.4-k3s1" != fakeClientVars.K8sVersion {
 		t.Fatalf("set value is not equal to input value")
 	}
 }
@@ -323,7 +323,7 @@ func TestCni(t *testing.T) {
 }
 
 func TestFirewallRules(t *testing.T) {
-	_rules := []helpers.FirewallRule{
+	_rules := []providers.FirewallRule{
 		{
 			Description: "nice",
 			Name:        "hello",
