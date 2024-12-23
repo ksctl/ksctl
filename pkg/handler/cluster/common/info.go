@@ -17,61 +17,65 @@ package common
 import (
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/providers/aws"
+	"github.com/ksctl/ksctl/pkg/providers/azure"
+	"github.com/ksctl/ksctl/pkg/providers/civo"
+	"github.com/ksctl/ksctl/pkg/providers/local"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func (kc *Controller) clusterDataHelper(operation consts.LogClusterDetail) ([]cloudControllerResource.AllClusterData, error) {
-
-	client := kc.client
-	log := kc.log
-	defer panicCatcher(log)
-
-	if err := kc.validationFields(client.Metadata); err != nil {
-		log.Error("handled error", "catch", err)
+func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]logger.ClusterDataForLogging, error) {
+	if err := kc.b.ValidateMetadata(kc.p); err != nil {
+		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
-	if client.Metadata.Provider == consts.CloudLocal {
-		client.Metadata.Region = "LOCAL"
+	if kc.b.IsLocalProvider(kc.p) {
+		kc.p.Metadata.Region = "LOCAL"
 	}
 
-	if operation == consts.LoggingInfoCluster {
+	if operation == logger.LoggingInfoCluster {
 		var err []error
-		if len(client.Metadata.ClusterName) == 0 {
+		if len(kc.p.Metadata.ClusterName) == 0 {
 			err = append(err,
-				ksctlErrors.ErrInvalidResourceName.Wrap(
-					log.NewError(controllerCtx, "clustername is needed for cluster info details"),
+				ksctlErrors.WrapError(
+					ksctlErrors.ErrInvalidResourceName,
+					kc.l.NewError(kc.ctx, "clustername is needed for cluster info details"),
 				),
 			)
 		}
-		if len(client.Metadata.Region) == 0 {
+		if len(kc.p.Metadata.Region) == 0 {
 			err = append(err,
-				ksctlErrors.ErrInvalidCloudRegion.Wrap(
-					log.NewError(controllerCtx, "region is needed for cluster info details"),
+				ksctlErrors.WrapError(
+					ksctlErrors.ErrInvalidCloudRegion,
+					kc.l.NewError(kc.ctx, "region is needed for cluster info details"),
 				),
 			)
 		}
 		if len(err) != 0 {
-			_err := ksctlErrors.ErrInvalidUserInput.Wrap(
-				log.NewError(controllerCtx, "Failure", "reason", err),
+			_err := ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				kc.l.NewError(kc.ctx, "Failure", "reason", err),
 			)
 
-			log.Error("Failure", "reason", _err)
+			kc.l.Error("Failure", "reason", _err)
 
 			return nil, _err
 		}
 	}
 
 	defer func() {
-		if err := client.Storage.Kill(); err != nil {
-			log.Error("StorageClass Kill failed", "reason", err)
+		if err := kc.p.Storage.Kill(); err != nil {
+			kc.l.Error("StorageClass Kill failed", "reason", err)
 		}
 	}()
 
-	log.Note(controllerCtx, "Filter", "cloudProvider", string(client.Metadata.Provider))
+	kc.l.Note(kc.ctx, "Filter", "cloudProvider", string(kc.p.Metadata.Provider))
 
 	var (
-		cloudMapper = map[consts.KsctlCloud]types.CloudFactory{
+		cloudMapper = map[consts.KsctlCloud]providers.Cloud{
 			consts.CloudCivo:  nil,
 			consts.CloudAzure: nil,
 			consts.CloudAws:   nil,
@@ -80,55 +84,57 @@ func (kc *Controller) clusterDataHelper(operation consts.LogClusterDetail) ([]cl
 	)
 
 	var err error
-	switch client.Metadata.Provider {
+	switch kc.p.Metadata.Provider {
 	case consts.CloudCivo:
-		cloudMapper[consts.CloudCivo], err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
+		cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, civo.ProvideClient)
 
 	case consts.CloudAzure:
-		cloudMapper[consts.CloudAzure], err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
+		cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, azure.ProvideClient)
 
 	case consts.CloudAws:
-		cloudMapper[consts.CloudAws], err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
+		cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, aws.ProvideClient)
 
 	case consts.CloudLocal:
-		cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+		cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, local.ProvideClient)
 
 	default:
 		switch operation {
-		case consts.LoggingGetClusters:
-			if client.Metadata.Provider != consts.CloudAll {
-				err = ksctlErrors.ErrInvalidCloudProvider.Wrap(
-					kc.log.NewError(
-						controllerCtx, "", "cloud", client.Metadata.Provider,
+		case logger.LoggingGetClusters:
+			if kc.p.Metadata.Provider != consts.CloudAll {
+				err = ksctlErrors.WrapError(
+					ksctlErrors.ErrInvalidCloudProvider,
+					kc.l.NewError(
+						kc.ctx, "", "cloud", kc.p.Metadata.Provider,
 					),
 				)
 			} else {
-				cloudMapper[consts.CloudCivo], err = civoPkg.NewClient(controllerCtx, client.Metadata, log, nil, civoPkg.ProvideClient)
+				cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, civoPkg.ProvideClient)
 				if err != nil {
-					log.Error("handled error", "catch", err)
+					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
-				cloudMapper[consts.CloudAzure], err = azurePkg.NewClient(controllerCtx, client.Metadata, log, nil, azurePkg.ProvideClient)
+				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, azure.ProvideClient)
 				if err != nil {
-					log.Error("handled error", "catch", err)
+					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
-				cloudMapper[consts.CloudAws], err = awsPkg.NewClient(controllerCtx, client.Metadata, log, nil, awsPkg.ProvideClient)
+				cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, aws.ProvideClient)
 				if err != nil {
-					log.Error("handled error", "catch", err)
+					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
-				cloudMapper[consts.CloudLocal], err = localPkg.NewClient(controllerCtx, client.Metadata, log, nil, localPkg.ProvideClient)
+				cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, local.ProvideClient)
 				if err != nil {
-					log.Error("handled error", "catch", err)
+					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
 			}
 
-		case consts.LoggingInfoCluster:
-			err = ksctlErrors.ErrInvalidCloudProvider.Wrap(
-				kc.log.NewError(
-					controllerCtx, "", "cloud", client.Metadata.Provider,
+		case logger.LoggingInfoCluster:
+			err = ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidCloudProvider,
+				kc.l.NewError(
+					kc.ctx, "", "cloud", kc.p.Metadata.Provider,
 				),
 			)
 		}
@@ -136,35 +142,36 @@ func (kc *Controller) clusterDataHelper(operation consts.LogClusterDetail) ([]cl
 	}
 
 	if err != nil {
-		log.Error("handled error", "catch", err)
+		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
-	var printerTable []cloudControllerResource.AllClusterData
+	var printerTable []logger.ClusterDataForLogging
 	for _, v := range cloudMapper {
 		if v == nil {
 			continue
 		}
-		data, err := v.GetRAWClusterInfos(client.Storage)
+		data, err := v.GetRAWClusterInfos()
 		if err != nil {
-			log.Error("handled error", "catch", err)
+			kc.l.Error("handled error", "catch", err)
 			return nil, err
 		}
 
-		if operation == consts.LoggingInfoCluster {
+		if operation == logger.LoggingInfoCluster {
 			// as the info will not have all as cloud provider this loop will only run once
 			for _, _data := range data {
-				if _data.Name != kc.client.Metadata.ClusterName ||
-					_data.Region != kc.client.Metadata.Region {
+				if _data.Name != kc.p.Metadata.ClusterName ||
+					_data.Region != kc.p.Metadata.Region {
 					continue
 				} else {
 					printerTable = append(printerTable, _data)
 					return printerTable, nil
 				}
 			}
-			return nil, ksctlErrors.ErrNoMatchingRecordsFound.Wrap(
-				log.NewError(controllerCtx, "No state is present",
-					"name", kc.client.Metadata.ClusterName),
+			return nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrNoMatchingRecordsFound,
+				kc.l.NewError(kc.ctx, "No state is present",
+					"name", kc.p.Metadata.ClusterName),
 			)
 		}
 
@@ -175,30 +182,30 @@ func (kc *Controller) clusterDataHelper(operation consts.LogClusterDetail) ([]cl
 
 func (kc *Controller) GetCluster() error {
 	v, err := kc.clusterDataHelper(
-		consts.LoggingGetClusters,
+		logger.LoggingGetClusters,
 	)
 	if err != nil {
 		return err
 	}
 
-	kc.log.Table(controllerCtx, consts.LoggingGetClusters, v)
+	kc.l.Table(kc.ctx, logger.LoggingGetClusters, v)
 
-	kc.log.Success(controllerCtx, "successfully get clusters")
+	kc.l.Success(kc.ctx, "successfully get clusters")
 
 	return nil
 }
 
-func (kc *Controller) InfoCluster() (*cloudControllerResource.AllClusterData, error) {
+func (kc *Controller) InfoCluster() (*logger.ClusterDataForLogging, error) {
 	v, err := kc.clusterDataHelper(
-		consts.LoggingInfoCluster,
+		logger.LoggingInfoCluster,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	kc.log.Table(controllerCtx, consts.LoggingInfoCluster, v)
+	kc.l.Table(kc.ctx, logger.LoggingInfoCluster, v)
 
-	kc.log.Success(controllerCtx, "successfully cluster info")
+	kc.l.Success(kc.ctx, "successfully cluster info")
 
-	return utilities.Ptr[cloudControllerResource.AllClusterData](v[0]), nil
+	return utilities.Ptr[logger.ClusterDataForLogging](v[0]), nil
 }

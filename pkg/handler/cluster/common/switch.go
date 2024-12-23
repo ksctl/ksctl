@@ -15,16 +15,16 @@
 package common
 
 import (
+	"github.com/ksctl/ksctl/cli"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/providers/aws"
 	"github.com/ksctl/ksctl/pkg/providers/azure"
 	"github.com/ksctl/ksctl/pkg/providers/civo"
+	"github.com/ksctl/ksctl/pkg/providers/local"
 )
 
 func (kc *Controller) Switch() (*string, error) {
-	defer kc.b.PanicCatcher(kc.l)
-
 	if kc.b.IsLocalProvider(kc.p) {
 		kc.p.Metadata.Region = "LOCAL"
 	}
@@ -67,45 +67,46 @@ func (kc *Controller) Switch() (*string, error) {
 		err = cloudController.InitCloud(client, stateDocument, consts.OperationGet)
 
 	case consts.CloudLocal:
-		client.Cloud, err = localPkg.NewClient(controllerCtx, client.Metadata, log, stateDocument, localPkg.ProvideClient)
+		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.p.Metadata, kc.l, kc.s, local.ProvideClient)
 
 	}
 
 	if err != nil {
-		log.Error("handled error", "catch", err)
+		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
-	if err := client.Cloud.IsPresent(client.Storage); err != nil {
-		log.Error("handled error", "catch", err)
+	if err := kc.p.Cloud.IsPresent(); err != nil {
+		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
-	kubeconfig, err := client.Cloud.GetKubeconfig(client.Storage)
+	kubeconfig, err := kc.p.Cloud.GetKubeconfig()
 	if err != nil {
-		log.Error("handled error", "catch", err)
+		kc.l.Error("handled error", "catch", err)
 		return nil, err
-	} else {
-		if kubeconfig == nil {
-			err = ksctlErrors.ErrKubeconfigOperations.Wrap(
-				manager.log.NewError(
-					controllerCtx, "Problem in kubeconfig get"),
-			)
-
-			log.Error("Kubeconfig we got is nil")
-			return nil, err
-		}
 	}
 
-	path, err := helpers.WriteKubeConfig(controllerCtx, *kubeconfig)
-	log.Debug(controllerCtx, "data", "kubeconfigPath", path)
+	if kubeconfig == nil {
+		err = ksctlErrors.WrapError(
+			ksctlErrors.ErrKubeconfigOperations,
+			kc.l.NewError(
+				kc.ctx, "Problem in kubeconfig get"),
+		)
+
+		kc.l.Error("Kubeconfig we got is nil")
+		return nil, err
+	}
+
+	path, err := cli.WriteKubeConfig(kc.ctx, *kubeconfig)
+	kc.l.Debug(kc.ctx, "data", "kubeconfigPath", path)
 
 	if err != nil {
-		log.Error("handled error", "catch", err)
+		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
-	printKubeConfig(manager.log, path)
+	printKubeConfig(kc.l, path)
 
 	return kubeconfig, nil
 }

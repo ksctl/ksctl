@@ -14,7 +14,27 @@
 
 package providers
 
-import "github.com/ksctl/ksctl/pkg/consts"
+import (
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+)
+
+type CloudResourceState struct {
+	SSHUserName       string
+	SSHPrivateKey     string
+	IPv4ControlPlanes []string
+	IPv4WorkerPlanes  []string
+	IPv4DataStores    []string
+	IPv4LoadBalancer  string
+
+	PrivateIPv4ControlPlanes []string
+	PrivateIPv4DataStores    []string
+	PrivateIPv4LoadBalancer  string
+	ClusterName              string
+	Region                   string
+	ClusterType              consts.KsctlClusterType
+	Provider                 consts.KsctlCloud
+}
 
 type Cloud interface {
 	NewVM(int) error
@@ -37,13 +57,13 @@ type Cloud interface {
 
 	DelSSHKeyPair() error
 
-	GetStateForHACluster() (cloud.CloudResourceState, error)
+	GetStateForHACluster() (CloudResourceState, error)
 
 	NewManagedCluster(int) error
 
 	DelManagedCluster() error
 
-	GetRAWClusterInfos() ([]cloud.AllClusterData, error)
+	GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error)
 
 	Name(string) Cloud
 

@@ -86,10 +86,10 @@ func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
 // PanicCatcher This function is intended to be used by the Cli and used once thus getting required information for developers to debug
 //
 //	Please use it in the main function of the cli or the server
-func (c *Controller) PanicCatcher(log logger.Logger) {
+func (cc *Controller) PanicCatcher(log logger.Logger) {
 	if r := recover(); r != nil {
 		log.Error("Failed to recover stack trace", "error", r)
-		log.Print(c.ctx, "Controller Information", "context", c.ctx)
+		log.Print(cc.ctx, "Controller Information", "context", cc.ctx)
 		debug.PrintStack()
 	}
 }

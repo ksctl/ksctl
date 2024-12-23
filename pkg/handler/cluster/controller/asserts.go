@@ -16,10 +16,10 @@ package controller
 
 import "github.com/ksctl/ksctl/pkg/consts"
 
-func (manager *Controller) IsLocalProvider(c *Client) bool {
-	return c.Metadata.Provider == consts.CloudLocal
+func (cc *Controller) IsLocalProvider(c *Client) bool {
+	return cc.Metadata.Provider == consts.CloudLocal
 }
 
-func (manager *Controller) IsHA(c *Client) bool {
-	return c.Metadata.IsHA
+func (cc *Controller) IsHA(c *Client) bool {
+	return cc.Metadata.IsHA
 }

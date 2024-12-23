@@ -16,9 +16,7 @@ package controller
 
 import (
 	"github.com/ksctl/ksctl/pkg/config"
-	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/validation"
-	"runtime/debug"
 	"sort"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
@@ -32,8 +30,8 @@ import (
 	"github.com/ksctl/ksctl/pkg/consts"
 )
 
-func (manager *Controller) StartPoller() error {
-	if _, ok := config.IsContextPresent(manager.ctx, consts.KsctlTestFlagKey); !ok {
+func (cc *Controller) StartPoller() error {
+	if _, ok := config.IsContextPresent(cc.ctx, consts.KsctlTestFlagKey); !ok {
 		poller.InitSharedGithubReleasePoller()
 	} else {
 		poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
@@ -62,34 +60,27 @@ func (manager *Controller) StartPoller() error {
 	return nil
 }
 
-func (manager *Controller) InitStorage(p *Client) error {
+func (cc *Controller) InitStorage(p *Client) error {
 	if !validation.ValidateStorage(p.Metadata.StateLocation) {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidStorageProvider,
-			manager.l.NewError(
-				manager.ctx, "Problem in validation", "storage", p.Metadata.StateLocation,
+			cc.l.NewError(
+				cc.ctx, "Problem in validation", "storage", p.Metadata.StateLocation,
 			),
 		)
 	}
 	switch p.Metadata.StateLocation {
 	case consts.StoreLocal:
-		p.Storage = localstate.NewClient(manager.ctx, manager.l)
+		p.Storage = localstate.NewClient(cc.ctx, cc.l)
 	case consts.StoreExtMongo:
-		p.Storage = externalmongostate.NewClient(manager.ctx, manager.l)
+		p.Storage = externalmongostate.NewClient(cc.ctx, cc.l)
 	case consts.StoreK8s:
-		p.Storage = kubernetesstate.NewClient(manager.ctx, manager.l)
+		p.Storage = kubernetesstate.NewClient(cc.ctx, cc.l)
 	}
 
 	if err := p.Storage.Connect(); err != nil {
 		return err
 	}
-	manager.l.Debug(manager.ctx, "initialized storageFactory")
+	cc.l.Debug(cc.ctx, "initialized storageFactory")
 	return nil
-}
-
-func (_ *Controller) PanicCatcher(log logger.Logger) {
-	if r := recover(); r != nil {
-		log.Error("Failed to recover stack trace", "error", r)
-		debug.PrintStack()
-	}
 }

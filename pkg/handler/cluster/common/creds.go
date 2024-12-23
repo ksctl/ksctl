@@ -23,8 +23,6 @@ import (
 )
 
 func (kc *Controller) Credentials() error {
-	defer kc.b.PanicCatcher(kc.l)
-
 	// TODO(dipankardas011): Pass the the kc.p.Storage
 	var err error
 	switch kc.p.Metadata.Provider {
