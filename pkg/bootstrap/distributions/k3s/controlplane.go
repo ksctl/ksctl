@@ -19,38 +19,37 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/ssh"
 )
 
 // NOTE: configureCP_1 is not meant for concurrency
-func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.SSHCollection) error {
+func (p *K3s) configureCP_1(sshExecutor ssh.RemoteConnection) error {
 
-	var script types.ScriptCollection
+	var script ssh.ExecutionPipeline
 
-	if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
+	if consts.KsctlValidCNIPlugin(p.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(
-			mainStateDocument.K8sBootstrap.B.CACert,
-			mainStateDocument.K8sBootstrap.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.B.EtcdKey,
-			mainStateDocument.K8sBootstrap.K3s.K3sVersion,
-			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
-			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer)
+			p.state.K8sBootstrap.B.CACert,
+			p.state.K8sBootstrap.B.EtcdCert,
+			p.state.K8sBootstrap.B.EtcdKey,
+			p.state.K8sBootstrap.K3s.K3sVersion,
+			p.state.K8sBootstrap.B.PrivateIPs.DataStores,
+			p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
+			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer)
 	} else {
 		script = scriptCP_1(
-			mainStateDocument.K8sBootstrap.B.CACert,
-			mainStateDocument.K8sBootstrap.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.B.EtcdKey,
-			mainStateDocument.K8sBootstrap.K3s.K3sVersion,
-			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-			mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
-			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer)
+			p.state.K8sBootstrap.B.CACert,
+			p.state.K8sBootstrap.B.EtcdCert,
+			p.state.K8sBootstrap.B.EtcdKey,
+			p.state.K8sBootstrap.K3s.K3sVersion,
+			p.state.K8sBootstrap.B.PrivateIPs.DataStores,
+			p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
+			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer)
 	}
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
-		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
+		IPv4(p.state.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		FastMode(true).SSHExecute()
 	if err != nil {
 		return err
@@ -58,103 +57,103 @@ func configureCP_1(storage types.StorageFactory, k3s *K3s, sshExecutor helpers.S
 
 	// K3stoken
 	err = sshExecutor.Flag(consts.UtilExecWithOutput).Script(scriptForK3sToken()).
-		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
+		IPv4(p.state.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 		SSHExecute()
 	if err != nil {
 		return err
 	}
 
-	log.Debug(k3sCtx, "fetching k3s token")
+	p.l.Debug(p.ctx, "fetching k3s token")
 
-	mainStateDocument.K8sBootstrap.K3s.K3sToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
+	p.state.K8sBootstrap.K3s.K3sToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	log.Debug(k3sCtx, "Printing", "k3sToken", mainStateDocument.K8sBootstrap.K3s.K3sToken)
+	p.l.Debug(p.ctx, "Printing", "k3sToken", p.state.K8sBootstrap.K3s.K3sToken)
 
-	err = storage.Write(mainStateDocument)
+	err = p.store.Write(p.state)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (k3s *K3s) ConfigureControlPlane(noOfCP int, storage types.StorageFactory) error {
-	k3s.mu.Lock()
+func (p *K3s) ConfigureControlPlane(noOfCP int) error {
+	p.mu.Lock()
 	idx := noOfCP
-	sshExecutor := helpers.NewSSHExecutor(k3sCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
-	k3s.mu.Unlock()
+	sshExecutor := ssh.NewSSHExecutor(p.ctx, p.l, p.state) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	p.mu.Unlock()
 
-	log.Note(k3sCtx, "configuring ControlPlane", "number", strconv.Itoa(idx))
+	p.l.Note(p.ctx, "configuring ControlPlane", "number", strconv.Itoa(idx))
 	if idx == 0 {
-		err := configureCP_1(storage, k3s, sshExecutor)
+		err := p.configureCP_1(sshExecutor)
 		if err != nil {
 			return err
 		}
 	} else {
 
-		var script types.ScriptCollection
+		var script ssh.ExecutionPipeline
 
-		if consts.KsctlValidCNIPlugin(k3s.Cni) == consts.CNINone {
+		if consts.KsctlValidCNIPlugin(p.Cni) == consts.CNINone {
 			script = scriptCP_NWithoutCNI(
-				mainStateDocument.K8sBootstrap.B.CACert,
-				mainStateDocument.K8sBootstrap.B.EtcdCert,
-				mainStateDocument.K8sBootstrap.B.EtcdKey,
-				mainStateDocument.K8sBootstrap.K3s.K3sVersion,
-				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
-				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
-				mainStateDocument.K8sBootstrap.K3s.K3sToken)
+				p.state.K8sBootstrap.B.CACert,
+				p.state.K8sBootstrap.B.EtcdCert,
+				p.state.K8sBootstrap.B.EtcdKey,
+				p.state.K8sBootstrap.K3s.K3sVersion,
+				p.state.K8sBootstrap.B.PrivateIPs.DataStores,
+				p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
+				p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
+				p.state.K8sBootstrap.K3s.K3sToken)
 		} else {
 			script = scriptCP_N(
-				mainStateDocument.K8sBootstrap.B.CACert,
-				mainStateDocument.K8sBootstrap.B.EtcdCert,
-				mainStateDocument.K8sBootstrap.B.EtcdKey,
-				mainStateDocument.K8sBootstrap.K3s.K3sVersion,
-				mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
-				mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer,
-				mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
-				mainStateDocument.K8sBootstrap.K3s.K3sToken)
+				p.state.K8sBootstrap.B.CACert,
+				p.state.K8sBootstrap.B.EtcdCert,
+				p.state.K8sBootstrap.B.EtcdKey,
+				p.state.K8sBootstrap.K3s.K3sVersion,
+				p.state.K8sBootstrap.B.PrivateIPs.DataStores,
+				p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
+				p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
+				p.state.K8sBootstrap.K3s.K3sToken)
 		}
 
 		err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
-			IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
+			IPv4(p.state.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
 			FastMode(true).SSHExecute()
 		if err != nil {
 			return err
 		}
 
-		if idx+1 == len(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes) {
+		if idx+1 == len(p.state.K8sBootstrap.B.PublicIPs.ControlPlanes) {
 
-			log.Debug(k3sCtx, "fetching kubeconfig")
+			p.l.Debug(p.ctx, "fetching kubeconfig")
 			err = sshExecutor.Flag(consts.UtilExecWithOutput).Script(scriptKUBECONFIG()).
-				IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
+				IPv4(p.state.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 				FastMode(true).SSHExecute()
 			if err != nil {
 				return err
 			}
 			// as only a single case where it is getting invoked we actually don't need locks
 
-			contextName := mainStateDocument.ClusterName + "-" + mainStateDocument.Region + "-" + string(mainStateDocument.ClusterType) + "-" + string(mainStateDocument.InfraProvider) + "-ksctl"
+			contextName := p.state.ClusterName + "-" + p.state.Region + "-" + string(p.state.ClusterType) + "-" + string(p.state.InfraProvider) + "-ksctl"
 			kubeconfig := sshExecutor.GetOutput()[0]
-			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
+			kubeconfig = strings.Replace(kubeconfig, "127.0.0.1", p.state.K8sBootstrap.B.PublicIPs.LoadBalancer, 1)
 			kubeconfig = strings.Replace(kubeconfig, "default", contextName, -1)
 
-			mainStateDocument.ClusterKubeConfig = kubeconfig
-			mainStateDocument.ClusterKubeConfigContext = contextName
+			p.state.ClusterKubeConfig = kubeconfig
+			p.state.ClusterKubeConfigContext = contextName
 
-			err = storage.Write(mainStateDocument)
+			err = p.store.Write(p.state)
 			if err != nil {
 				return err
 			}
 		}
 
 	}
-	log.Success(k3sCtx, "configured ControlPlane", "number", strconv.Itoa(idx))
+	p.l.Success(p.ctx, "configured ControlPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }
 
-func getScriptForEtcdCerts(ca, etcd, key string) types.Script {
-	return types.Script{
+func getScriptForEtcdCerts(ca, etcd, key string) ssh.Script {
+	return ssh.Script{
 		Name:           "store etcd certificates",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -179,15 +178,15 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 }
 
 func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIPlb, privIplb string) types.ScriptCollection {
+	pubIPlb, privIplb string) ssh.ExecutionPipeline {
 
-	collection := helpers.NewScriptCollection()
+	collection := ssh.NewExecutionPipeline()
 
 	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "Start K3s Controlplane-[0] without CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -219,15 +218,15 @@ sudo ./control-setup.sh &>> ksctl.log
 }
 
 func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
-	privateIPLb string) types.ScriptCollection {
+	privateIPLb string) ssh.ExecutionPipeline {
 
-	collection := helpers.NewScriptCollection()
+	collection := ssh.NewExecutionPipeline()
 
 	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "Start K3s Controlplane-[0] with CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -254,10 +253,10 @@ sudo ./control-setup.sh &>> ksctl.log
 	return collection
 }
 
-func scriptForK3sToken() types.ScriptCollection {
+func scriptForK3sToken() ssh.ExecutionPipeline {
 
-	collection := helpers.NewScriptCollection()
-	collection.Append(types.Script{
+	collection := ssh.NewExecutionPipeline()
+	collection.Append(ssh.Script{
 		Name:           "Get k3s server token",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -270,15 +269,15 @@ sudo cat /var/lib/rancher/k3s/server/token
 }
 
 func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) types.ScriptCollection {
+	pubIplb, privateIPlb, token string) ssh.ExecutionPipeline {
 
-	collection := helpers.NewScriptCollection()
+	collection := ssh.NewExecutionPipeline()
 
 	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "Start K3s Controlplane-[1..N] with CNI",
 		MaxRetries:     9,
 		CanRetry:       true,
@@ -308,15 +307,15 @@ sudo ./control-setupN.sh &>> ksctl.log
 }
 
 func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) types.ScriptCollection {
+	pubIplb, privateIPlb, token string) ssh.ExecutionPipeline {
 
-	collection := helpers.NewScriptCollection()
+	collection := ssh.NewExecutionPipeline()
 
 	collection.Append(getScriptForEtcdCerts(ca, etcd, key))
 
 	dbEndpoint := getEtcdMemberIPFieldForControlplane(privateEtcdIps)
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "Start K3s Controlplane-[1..N] without CNI",
 		MaxRetries:     9,
 		CanRetry:       true,

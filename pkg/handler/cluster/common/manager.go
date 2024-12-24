@@ -39,8 +39,6 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 	cc.s = new(statefile.StorageDocument)
 	cc.l = log
 
-	defer cc.b.PanicCatcher(log)
-
 	if err := cc.b.ValidateMetadata(controllerPayload); err != nil {
 		return nil, err
 	}

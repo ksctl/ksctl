@@ -17,31 +17,31 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 	"os"
 	"path/filepath"
 	"sort"
 	"testing"
 
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/types"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-	"github.com/ksctl/ksctl/poller"
+	"github.com/ksctl/ksctl/pkg/poller"
+	localstate "github.com/ksctl/ksctl/pkg/storage/host"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	storeHA types.StorageFactory
+	storeHA storage.Storage
 
 	fakeClient         *PreBootstrap
 	dir                = filepath.Join(os.TempDir(), "ksctl-bootstrap-test")
-	fakeStateFromCloud cloudControlRes.CloudResourceState
+	fakeStateFromCloud providers.CloudResourceState
 
 	parentCtx    context.Context
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func initPoller() {
@@ -63,22 +63,18 @@ func initClients() {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
 	parentCtx = context.WithValue(parentCtx, consts.KsctlTestFlagKey, "true")
 
-	mainState := &storageTypes.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
-		log.Error(err.Error())
+	mainState := &statefile.StorageDocument{}
+	if err := ssh.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
+		parentLogger.Error(err.Error())
 		os.Exit(1)
 	}
-	fakeStateFromCloud = cloudControlRes.CloudResourceState{
-		SSHState: cloudControlRes.SSHInfo{
-			PrivateKey: mainState.SSHKeyPair.PrivateKey,
-			UserName:   "fakeuser",
-		},
-		Metadata: cloudControlRes.Metadata{
-			ClusterName: "fake",
-			Provider:    consts.CloudAzure,
-			Region:      "fake",
-			ClusterType: consts.ClusterTypeHa,
-		},
+	fakeStateFromCloud = providers.CloudResourceState{
+		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
+		SSHUserName:   "fakeuser",
+		ClusterName:   "fake",
+		Provider:      consts.CloudAzure,
+		Region:        "fake",
+		ClusterType:   consts.ClusterTypeHa,
 		// public IPs
 		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
 		IPv4DataStores:    []string{"A.B.C.3"},
@@ -91,7 +87,7 @@ func initClients() {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
-	fakeClient = NewPreBootStrap(parentCtx, parentLogger, mainState)
+	fakeClient = NewPreBootStrap(parentCtx, parentLogger, mainState, storeHA)
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
@@ -117,22 +113,22 @@ func TestMain(m *testing.M) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.Setup(fakeStateFromCloud, storeHA, consts.OperationCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.Setup(fakeStateFromCloud, consts.OperationCreate), nil, "should be initlize the state")
 	noDS := len(fakeStateFromCloud.IPv4DataStores)
 
-	err := fakeClient.ConfigureLoadbalancer(storeHA)
+	err := fakeClient.ConfigureLoadbalancer()
 	if err != nil {
 		t.Fatalf("Configure Datastore unable to operate %v", err)
 	}
 
-	assert.Equal(t, mainStateDocument.K8sBootstrap.B.HAProxyVersion, "3.0", "should be equal")
+	assert.Equal(t, fakeClient.state.K8sBootstrap.B.HAProxyVersion, "3.0", "should be equal")
 
 	for no := 0; no < noDS; no++ {
-		err := fakeClient.ConfigureDataStore(no, storeHA)
+		err := fakeClient.ConfigureDataStore(no)
 		if err != nil {
 			t.Fatalf("Configure Datastore unable to operate %v", err)
 		}
 	}
 
-	assert.Equal(t, mainStateDocument.K8sBootstrap.B.EtcdVersion, "v3.5.15", "should be equal")
+	assert.Equal(t, fakeClient.state.K8sBootstrap.B.EtcdVersion, "v3.5.15", "should be equal")
 }

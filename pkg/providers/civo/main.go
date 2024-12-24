@@ -173,7 +173,7 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 		)
 	}
 
-	if err := p.client.InitClient(p.store, p.Region); err != nil {
+	if err := p.client.InitClient(p, p.Region); err != nil {
 		return err
 	}
 

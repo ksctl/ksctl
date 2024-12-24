@@ -14,12 +14,15 @@
 
 package bootstrap
 
-import "github.com/ksctl/ksctl/pkg/consts"
+import (
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/providers"
+)
 
 type Bootstrap interface {
-	Setup(cloud.CloudResourceState, StorageFactory, consts.KsctlOperation) error
+	Setup(providers.CloudResourceState, consts.KsctlOperation) error
 
-	ConfigureDataStore(int, StorageFactory) error
+	ConfigureDataStore(int) error
 
-	ConfigureLoadbalancer(StorageFactory) error
+	ConfigureLoadbalancer() error
 }

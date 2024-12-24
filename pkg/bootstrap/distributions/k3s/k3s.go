@@ -18,50 +18,55 @@ import (
 	"context"
 	"sync"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-)
-
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	log               types.LoggerFactory
-	k3sCtx            context.Context
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
 type K3s struct {
+	ctx   context.Context
+	l     logger.Logger
+	state *statefile.StorageDocument
+	mu    *sync.Mutex
+	store storage.Storage
+
 	Cni string
-	mu  *sync.Mutex
 }
 
 func NewClient(
 	parentCtx context.Context,
-	parentLog types.LoggerFactory,
-	state *storageTypes.StorageDocument) *K3s {
-	k3sCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.K8sK3s))
-	log = parentLog
+	parentLog logger.Logger,
+	storage storage.Storage,
+	state *statefile.StorageDocument,
+) *K3s {
+	p := &K3s{mu: &sync.Mutex{}}
+	p.ctx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.K8sK3s))
+	p.l = parentLog
+	p.state = state
+	p.store = storage
 
-	mainStateDocument = state
-	return &K3s{mu: &sync.Mutex{}}
+	return p
 }
 
-func (k3s *K3s) Setup(storage types.StorageFactory, operation consts.KsctlOperation) error {
+func (p *K3s) Setup(operation consts.KsctlOperation) error {
 	if operation == consts.OperationCreate {
-		mainStateDocument.K8sBootstrap.K3s = &storageTypes.StateConfigurationK3s{}
-		mainStateDocument.BootstrapProvider = consts.K8sK3s
+		p.state.K8sBootstrap.K3s = &statefile.StateConfigurationK3s{}
+		p.state.BootstrapProvider = consts.K8sK3s
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 	return nil
 }
 
-func scriptKUBECONFIG() types.ScriptCollection {
-	collection := helpers.NewScriptCollection()
-	collection.Append(types.Script{
+func scriptKUBECONFIG() ssh.ExecutionPipeline {
+	collection := ssh.NewExecutionPipeline()
+	collection.Append(ssh.Script{
 		Name:           "k3s kubeconfig",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -73,27 +78,27 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 	return collection
 }
 
-func (k3s *K3s) K8sVersion(ver string) types.KubernetesBootstrap {
-	if v, err := isValidK3sVersion(ver); err == nil {
-		mainStateDocument.K8sBootstrap.K3s.K3sVersion = v
-		log.Debug(k3sCtx, "Printing", "k3s.K3sVer", v)
-		return k3s
+func (p *K3s) K8sVersion(ver string) distributions.KubernetesDistribution {
+	if v, err := p.isValidK3sVersion(ver); err == nil {
+		p.state.K8sBootstrap.K3s.K3sVersion = v
+		p.l.Debug(p.ctx, "Printing", "k3s.K3sVer", v)
+		return p
 	} else {
-		log.Error(err.Error())
+		p.l.Error(err.Error())
 		return nil
 	}
 }
 
-func (k3s *K3s) CNI(cni string) (externalCNI bool) {
-	log.Debug(k3sCtx, "Printing", "cni", cni)
+func (p *K3s) CNI(cni string) (externalCNI bool) {
+	p.l.Debug(p.ctx, "Printing", "cni", cni)
 	switch consts.KsctlValidCNIPlugin(cni) {
 	case consts.CNIFlannel, "":
-		k3s.Cni = string(consts.CNIFlannel)
+		p.Cni = string(consts.CNIFlannel)
 		return false
 
 	default:
 		// this tells us that CNI should be installed via the k8s client
-		k3s.Cni = string(consts.CNINone)
+		p.Cni = string(consts.CNINone)
 		return true
 	}
 }

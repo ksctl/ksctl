@@ -18,42 +18,41 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/ssh"
 )
 
 // JoinWorkerplane implements storage.DistroFactory.
-func (k3s *K3s) JoinWorkerplane(no int, _ types.StorageFactory) error {
-	k3s.mu.Lock()
+func (p *K3s) JoinWorkerplane(no int) error {
+	p.mu.Lock()
 	idx := no
-	sshExecutor := helpers.NewSSHExecutor(k3sCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
-	k3s.mu.Unlock()
+	sshExecutor := ssh.NewSSHExecutor(p.ctx, p.l, p.state) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	p.mu.Unlock()
 
-	log.Note(k3sCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
+	p.l.Note(p.ctx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(
-			mainStateDocument.K8sBootstrap.K3s.K3sVersion,
-			mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
-			mainStateDocument.K8sBootstrap.K3s.K3sToken,
+			p.state.K8sBootstrap.K3s.K3sVersion,
+			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
+			p.state.K8sBootstrap.K3s.K3sToken,
 		)).
-		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
+		IPv4(p.state.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute()
 	if err != nil {
 		return err
 	}
 
-	log.Success(k3sCtx, "configured WorkerPlane", "number", strconv.Itoa(idx))
+	p.l.Success(p.ctx, "configured WorkerPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }
 
-func scriptWP(ver string, privateIPlb, token string) types.ScriptCollection {
+func scriptWP(ver string, privateIPlb, token string) ssh.ExecutionPipeline {
 
-	collection := helpers.NewScriptCollection()
+	collection := ssh.NewExecutionPipeline()
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "Join the workerplane-[0..M]",
 		CanRetry:       true,
 		MaxRetries:     3,

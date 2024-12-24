@@ -16,11 +16,11 @@ package bootstrap
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/ssh"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-	testHelper "github.com/ksctl/ksctl/test/helpers"
+	"github.com/ksctl/ksctl/pkg/consts"
+	testHelper "github.com/ksctl/ksctl/tests/helpers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +40,7 @@ func TestScriptsDataStore(t *testing.T) {
 
 	testHelper.HelperTestTemplate(
 		t,
-		[]types.Script{
+		[]ssh.Script{
 			{
 				Name:           "fetch etcd binaries and cleanup",
 				ScriptExecutor: consts.LinuxBash,
@@ -153,7 +153,7 @@ sudo systemctl start etcd
 `,
 			},
 		},
-		func() types.ScriptCollection { // Adjust the signature to match your needs
+		func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 			return scriptDB("v3.5.15", ca, etcd, key, privIPs, currIdx)
 		},
 	)

@@ -16,75 +16,106 @@ package handler
 
 import (
 	"context"
+	"github.com/ksctl/ksctl/pkg/bootstrap"
+	"github.com/ksctl/ksctl/pkg/config"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/pkg/storage/mongodb"
 	"sync"
 
-	k3sPkg "github.com/ksctl/ksctl/pkg/bootstrap/k3s"
-	kubeadmPkg "github.com/ksctl/ksctl/pkg/bootstrap/kubeadm"
+	k3sPkg "github.com/ksctl/ksctl/pkg/bootstrap/distributions/k3s"
+	kubeadmPkg "github.com/ksctl/ksctl/pkg/bootstrap/distributions/kubeadm"
 	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/helpers"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/types"
 )
 
-var (
-	log           logger.Logger
-	controllerCtx context.Context
-)
-
-func InitLogger(ctx context.Context, _log types.LoggerFactory) {
-	log = _log
-	controllerCtx = ctx
+type Controller struct {
+	ctx context.Context
+	l   logger.Logger
+	p   *controller.Client
+	b   *controller.Controller
+	s   *statefile.StorageDocument
 }
 
-func Setup(client *types.KsctlClient, state *statefile.StorageDocument) error {
+func NewController(
+	ctx context.Context,
+	log logger.Logger,
+	baseController *controller.Controller,
+	state *statefile.StorageDocument,
+	operation consts.KsctlOperation,
+	controllerPayload *controller.Client,
+) (*Controller, error) {
 
-	client.PreBootstrap = k8sdistros.NewPreBootStrap(controllerCtx, log, state)
+	cc := new(Controller)
+	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "pkg/bootstrap/handler/bootstrap")
+	cc.l = log
+	cc.b = baseController
+	cc.p = controllerPayload
+	cc.s = state
+
+	err := cc.setupInterfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	return cc, nil
+}
+
+func (kc *Controller) setupInterfaces() error {
+
+	kc.p.PreBootstrap = bootstrap.NewPreBootStrap(
+		kc.ctx,
+		kc.l,
+		kc.s,
+		kc.p.Storage,
+	)
 
 	// Make a check if the stateDocument is present in the storage
-	if state.BootstrapProvider == consts.K8sK3s || state.BootstrapProvider == consts.K8sKubeadm {
-		switch state.BootstrapProvider {
+	if kc.s.BootstrapProvider == consts.K8sK3s || kc.s.BootstrapProvider == consts.K8sKubeadm {
+		switch kc.s.BootstrapProvider {
 		case consts.K8sK3s:
-			client.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
+			kc.p.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
 		case consts.K8sKubeadm:
-			client.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
+			kc.p.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
 		}
 		return nil
 	}
 
-	switch client.Metadata.K8sDistro {
+	switch kc.p.Metadata.K8sDistro {
 	case consts.K8sK3s:
-		client.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
+		kc.p.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
 	case consts.K8sKubeadm:
-		client.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
+		kc.p.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
 	default:
-		return log.NewError(controllerCtx, "Invalid k8s provider")
+		return kc.l.NewError(kc.ctx, "Invalid k8s provider")
 	}
 	return nil
 }
 
-func ConfigureCluster(client *types.KsctlClient) (bool, error) {
+func (kc *Controller) ConfigureCluster() (bool, error) {
 	waitForPre := &sync.WaitGroup{}
 
 	errChanLB := make(chan error, 1)
-	errChanDS := make(chan error, client.Metadata.NoDS)
+	errChanDS := make(chan error, kc.p.Metadata.NoDS)
 
-	waitForPre.Add(1 + client.Metadata.NoDS)
+	waitForPre.Add(1 + kc.p.Metadata.NoDS)
 
 	go func() {
 		defer waitForPre.Done()
 
-		err := client.PreBootstrap.ConfigureLoadbalancer(client.Storage)
+		err := kc.p.PreBootstrap.ConfigureLoadbalancer()
 		if err != nil {
 			errChanLB <- err
 		}
 	}()
 
-	for no := 0; no < client.Metadata.NoDS; no++ {
+	for no := 0; no < kc.p.Metadata.NoDS; no++ {
 		go func(i int) {
 			defer waitForPre.Done()
 
-			err := client.PreBootstrap.ConfigureDataStore(i, client.Storage)
+			err := kc.p.PreBootstrap.ConfigureDataStore(i)
 			if err != nil {
 				errChanDS <- err
 			}
@@ -106,43 +137,43 @@ func ConfigureCluster(client *types.KsctlClient) (bool, error) {
 		}
 	}
 
-	if err := client.Bootstrap.Setup(client.Storage, consts.OperationCreate); err != nil {
+	if err := kc.p.Bootstrap.Setup(consts.OperationCreate); err != nil {
 		return false, err
 	}
 
-	externalCNI := client.Bootstrap.CNI(client.Metadata.CNIPlugin.StackName)
+	externalCNI := kc.p.Bootstrap.CNI(kc.p.Metadata.CNIPlugin.StackName)
 
-	client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
-	if client.Bootstrap == nil {
-		return false, log.NewError(controllerCtx, "invalid version of self-managed k8s cluster")
+	kc.p.Bootstrap = kc.p.Bootstrap.K8sVersion(kc.p.Metadata.K8sVersion)
+	if kc.p.Bootstrap == nil {
+		return false, kc.l.NewError(kc.ctx, "invalid version of self-managed k8s cluster")
 	}
 
 	// wp[0,N] depends on cp[0]
-	err := client.Bootstrap.ConfigureControlPlane(0, client.Storage)
+	err := kc.p.Bootstrap.ConfigureControlPlane(0)
 	if err != nil {
 		return false, err
 	}
 
-	errChanCP := make(chan error, client.Metadata.NoCP-1)
-	errChanWP := make(chan error, client.Metadata.NoWP)
+	errChanCP := make(chan error, kc.p.Metadata.NoCP-1)
+	errChanWP := make(chan error, kc.p.Metadata.NoWP)
 
 	wg := &sync.WaitGroup{}
 
-	wg.Add(client.Metadata.NoCP - 1 + client.Metadata.NoWP)
+	wg.Add(kc.p.Metadata.NoCP - 1 + kc.p.Metadata.NoWP)
 
-	for no := 1; no < client.Metadata.NoCP; no++ {
+	for no := 1; no < kc.p.Metadata.NoCP; no++ {
 		go func(i int) {
 			defer wg.Done()
-			err := client.Bootstrap.ConfigureControlPlane(i, client.Storage)
+			err := kc.p.Bootstrap.ConfigureControlPlane(i)
 			if err != nil {
 				errChanCP <- err
 			}
 		}(no)
 	}
-	for no := 0; no < client.Metadata.NoWP; no++ {
+	for no := 0; no < kc.p.Metadata.NoWP; no++ {
 		go func(i int) {
 			defer wg.Done()
-			err := client.Bootstrap.JoinWorkerplane(i, client.Storage)
+			err := kc.p.Bootstrap.JoinWorkerplane(i)
 			if err != nil {
 				errChanWP <- err
 			}
@@ -167,17 +198,12 @@ func ConfigureCluster(client *types.KsctlClient) (bool, error) {
 	return externalCNI, nil
 }
 
-func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
+func (kc *Controller) JoinMoreWorkerPlanes(start, end int) error {
 
-	if err := client.Bootstrap.Setup(client.Storage, consts.OperationGet); err != nil {
+	if err := kc.p.Bootstrap.Setup(consts.OperationGet); err != nil {
 		return err
 	}
 
-	// It will get from the state by default
-	// client.Bootstrap = client.Bootstrap.K8sVersion(client.Metadata.K8sVersion)
-	// if client.Bootstrap == nil {
-	// 	return log.NewError(controllerCtx, "invalid version of self-managed k8s cluster")
-	// }
 	wg := &sync.WaitGroup{}
 	errChan := make(chan error, end-start)
 
@@ -185,7 +211,7 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			err := client.Bootstrap.JoinWorkerplane(i, client.Storage)
+			err := kc.p.Bootstrap.JoinWorkerplane(i)
 			if err != nil {
 				errChan <- err
 			}
@@ -203,7 +229,7 @@ func JoinMoreWorkerPlanes(client *types.KsctlClient, start, end int) error {
 	return nil
 }
 
-func DelWorkerPlanes(client *types.KsctlClient, kubeconfig string, hostnames []string) error {
+func (kc *Controller) DelWorkerPlanes(kubeconfig string, hostnames []string) error {
 
 	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig, false, nil, nil)
 	if err != nil {
@@ -218,34 +244,28 @@ func DelWorkerPlanes(client *types.KsctlClient, kubeconfig string, hostnames []s
 	return nil
 }
 
-func ApplicationsInCluster(
-	client *types.KsctlClient,
-	state *storageTypes.StorageDocument,
-	op consts.KsctlOperation) error {
+func (kc *Controller) ApplicationsInCluster(op consts.KsctlOperation) error {
 
 	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage, false, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	if len(client.Metadata.CNIPlugin.StackName) != 0 {
-		if err := k.CNI(client.Metadata.CNIPlugin, state, op); err != nil {
+	if len(kc.p.Metadata.CNIPlugin.StackName) != 0 {
+		if err := k.CNI(kc.p.Metadata.CNIPlugin, state, op); err != nil {
 			return err
 		}
 	}
 
-	if len(client.Metadata.Applications) != 0 {
+	if len(kc.p.Metadata.Applications) != 0 {
 		return k.Applications(client.Metadata.Applications, state, op)
 	}
 	return nil
 }
 
-func InstallAdditionalTools(
-	externalCNI bool,
-	client *types.KsctlClient,
-	state *storageTypes.StorageDocument) error {
+func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 
-	if _, ok := helpers.IsContextPresent(controllerCtx, consts.KsctlTestFlagKey); ok {
+	if _, ok := config.IsContextPresent(kc.ctx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
 
@@ -255,43 +275,43 @@ func InstallAdditionalTools(
 	}
 
 	if externalCNI {
-		if len(client.Metadata.CNIPlugin.StackName) == 0 {
-			client.Metadata.CNIPlugin.StackName = "flannel"
-			client.Metadata.CNIPlugin.Overrides = nil
+		if len(kc.p.Metadata.CNIPlugin.StackName) == 0 {
+			kc.p.Metadata.CNIPlugin.StackName = "flannel"
+			kc.p.Metadata.CNIPlugin.Overrides = nil
 		}
 
-		if err := k.CNI(client.Metadata.CNIPlugin, state, consts.OperationCreate); err != nil {
+		if err := k.CNI(kc.p.Metadata.CNIPlugin, kc.s, consts.OperationCreate); err != nil {
 			return err
 		}
 
-		log.Success(controllerCtx, "Done with installing k8s cni")
+		kc.l.Success(kc.ctx, "Done with installing k8s cni")
 	}
 
-	if err := installKsctlSpecificApps(client, k, state); err != nil {
+	if err := kc.installKsctlSpecificApps(k); err != nil {
 		return err
 	}
 
-	log.Success(controllerCtx, "Done with installing additional k8s tools")
+	kc.l.Success(kc.ctx, "Done with installing additional k8s tools")
 	return nil
 }
 
-func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctlKubernetes.K8sClusterClient, state *storageTypes.StorageDocument) error {
+func (kc *Controller) installKsctlSpecificApps(kubernetesClient *ksctlKubernetes.K8sClusterClient) error {
 
 	var (
-		exportedData         *types.StorageStateExportImport
+		exportedData         *storage.StateExportImport
 		externalCredEndpoint map[string][]byte
 		isExternalStore      bool
 	)
 
-	switch client.Metadata.StateLocation {
+	switch kc.p.Metadata.StateLocation {
 	case consts.StoreLocal:
 		var _err error
-		exportedData, _err = client.Storage.Export(map[consts.KsctlSearchFilter]string{
-			consts.Cloud:  string(client.Metadata.Provider),
-			consts.Name:   client.Metadata.ClusterName,
-			consts.Region: client.Metadata.Region,
+		exportedData, _err = kc.p.Storage.Export(map[consts.KsctlSearchFilter]string{
+			consts.Cloud:  string(kc.p.Metadata.Provider),
+			consts.Name:   kc.p.Metadata.ClusterName,
+			consts.Region: kc.p.Metadata.Region,
 			consts.ClusterType: func() string {
-				if !client.Metadata.IsHA {
+				if !kc.p.Metadata.IsHA {
 					return string(consts.ClusterTypeMang)
 				}
 				return string(consts.ClusterTypeHa)
@@ -304,7 +324,7 @@ func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctl
 	case consts.StoreExtMongo:
 		isExternalStore = true
 		var _err error
-		externalCredEndpoint, _err = external.HandleCreds(controllerCtx, log, consts.StoreExtMongo)
+		externalCredEndpoint, _err = handleCreds(kc.ctx, kc.l, consts.StoreExtMongo)
 		if _err != nil {
 			return _err
 		}
@@ -315,18 +335,35 @@ func installKsctlSpecificApps(client *types.KsctlClient, kubernetesClient *ksctl
 
 	if err := kubernetesClient.DeployAgent(
 		client,
-		state,
+		kc.s,
 		externalCredEndpoint,
 		exportedData,
 		isExternalStore); err != nil {
 		return err
 	}
 
-	if err := kubernetesClient.DeployRequiredControllers(state); err != nil {
+	if err := kubernetesClient.DeployRequiredControllers(kc.s); err != nil {
 		return err
 	}
 
-	log.Success(controllerCtx, "Done with installing ksctl k8s specific tools")
+	kc.l.Success(kc.ctx, "Done with installing ksctl k8s specific tools")
 
 	return nil
+}
+
+func handleCreds(ctx context.Context, log logger.Logger, store consts.KsctlStore) (map[string][]byte, error) {
+	switch store {
+	case consts.StoreLocal, consts.StoreK8s:
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidStorageProvider,
+			log.NewError(ctx, "these are not external storageProvider"),
+		)
+	case consts.StoreExtMongo:
+		return mongodb.ExportEndpoint()
+	default:
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidStorageProvider,
+			log.NewError(ctx, "invalid storage", "storage", store),
+		)
+	}
 }

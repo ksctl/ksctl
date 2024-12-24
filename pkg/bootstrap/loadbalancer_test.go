@@ -15,11 +15,11 @@
 package bootstrap
 
 import (
+	"github.com/ksctl/ksctl/pkg/ssh"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-	testHelper "github.com/ksctl/ksctl/test/helpers"
+	"github.com/ksctl/ksctl/pkg/consts"
+	testHelper "github.com/ksctl/ksctl/tests/helpers"
 )
 
 func TestScriptsLoadbalancer(t *testing.T) {
@@ -27,7 +27,7 @@ func TestScriptsLoadbalancer(t *testing.T) {
 
 	testHelper.HelperTestTemplate(
 		t,
-		[]types.Script{
+		[]ssh.Script{
 			{
 				Name:       "Install haproxy",
 				CanRetry:   true,
@@ -88,7 +88,7 @@ sudo systemctl restart haproxy
 `,
 			},
 		},
-		func() types.ScriptCollection { // Adjust the signature to match your needs
+		func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 			return scriptConfigureLoadbalancer("3.0", array)
 		},
 	)

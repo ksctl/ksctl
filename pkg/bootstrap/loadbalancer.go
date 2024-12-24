@@ -16,12 +16,10 @@ package bootstrap
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/ssh"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
 func getLatestVersionHAProxy() (string, error) {
@@ -30,13 +28,13 @@ func getLatestVersionHAProxy() (string, error) {
 	return "3.0", nil
 }
 
-func (p *PreBootstrap) ConfigureLoadbalancer(store types.StorageFactory) error {
-	log.Note(bootstrapCtx, "configuring Loadbalancer")
+func (p *PreBootstrap) ConfigureLoadbalancer() error {
+	p.l.Note(p.ctx, "configuring Loadbalancer")
 	p.mu.Lock()
-	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := ssh.NewSSHExecutor(p.ctx, p.l, p.state) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	controlPlaneIPs := utilities.DeepCopySlice[string](mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes)
+	controlPlaneIPs := utilities.DeepCopySlice[string](p.state.K8sBootstrap.B.PrivateIPs.ControlPlanes)
 
 	haProxyVer, err := getLatestVersionHAProxy()
 	if err != nil {
@@ -45,25 +43,25 @@ func (p *PreBootstrap) ConfigureLoadbalancer(store types.StorageFactory) error {
 
 	err = sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptConfigureLoadbalancer(haProxyVer, controlPlaneIPs)).
-		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer).
+		IPv4(p.state.K8sBootstrap.B.PublicIPs.LoadBalancer).
 		FastMode(true).SSHExecute()
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.K8sBootstrap.B.HAProxyVersion = haProxyVer
-	if err := store.Write(mainStateDocument); err != nil {
+	p.state.K8sBootstrap.B.HAProxyVersion = haProxyVer
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(bootstrapCtx, "configured LoadBalancer")
+	p.l.Success(p.ctx, "configured LoadBalancer")
 	return nil
 }
 
-func scriptConfigureLoadbalancer(haProxyVer string, controlPlaneIPs []string) types.ScriptCollection {
-	collection := helpers.NewScriptCollection()
+func scriptConfigureLoadbalancer(haProxyVer string, controlPlaneIPs []string) ssh.ExecutionPipeline {
+	collection := ssh.NewExecutionPipeline()
 	// HA proxy repo https://haproxy.debian.net/
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:       "Install haproxy",
 		CanRetry:   true,
 		MaxRetries: 9,
@@ -76,7 +74,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install haproxy=%s.\* -y
 		ScriptExecutor: consts.LinuxBash,
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "enable and start systemd service for haproxy",
 		CanRetry:       true,
 		MaxRetries:     3,
@@ -93,7 +91,7 @@ sudo systemctl enable haproxy
 `, index+1, controlPlaneIP, 6443)
 	}
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "create haproxy configuration",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -119,7 +117,7 @@ sudo mv haproxy.cfg /etc/haproxy/haproxy.cfg
 `, serverScript),
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "restarting haproxy",
 		CanRetry:       true,
 		MaxRetries:     3,

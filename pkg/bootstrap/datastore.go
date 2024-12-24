@@ -16,14 +16,12 @@ package bootstrap
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/poller"
+	"github.com/ksctl/ksctl/pkg/ssh"
 	"strconv"
 	"strings"
 
-	"github.com/ksctl/ksctl/poller"
-
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
 func getLatestVersionEtcd() (string, error) {
@@ -35,13 +33,13 @@ func getLatestVersionEtcd() (string, error) {
 	return latestVersion[0], nil
 }
 
-func (p *PreBootstrap) ConfigureDataStore(no int, store types.StorageFactory) error {
+func (p *PreBootstrap) ConfigureDataStore(no int) error {
 	p.mu.Lock()
 	idx := no
-	sshExecutor := helpers.NewSSHExecutor(bootstrapCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := ssh.NewSSHExecutor(p.ctx, p.l, p.state) //making sure that a new obj gets initialized for an every run thus eliminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Note(bootstrapCtx, "configuring Datastore", "number", strconv.Itoa(idx))
+	p.l.Note(p.ctx, "configuring Datastore", "number", strconv.Itoa(idx))
 
 	etcdVer, err := getLatestVersionEtcd()
 	if err != nil {
@@ -51,23 +49,23 @@ func (p *PreBootstrap) ConfigureDataStore(no int, store types.StorageFactory) er
 	err = sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptDB(
 			etcdVer,
-			mainStateDocument.K8sBootstrap.B.CACert,
-			mainStateDocument.K8sBootstrap.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.B.EtcdKey,
-			mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores,
+			p.state.K8sBootstrap.B.CACert,
+			p.state.K8sBootstrap.B.EtcdCert,
+			p.state.K8sBootstrap.B.EtcdKey,
+			p.state.K8sBootstrap.B.PrivateIPs.DataStores,
 			idx)).
-		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores[idx]).
+		IPv4(p.state.K8sBootstrap.B.PublicIPs.DataStores[idx]).
 		FastMode(true).SSHExecute()
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.K8sBootstrap.B.EtcdVersion = etcdVer
-	if err := store.Write(mainStateDocument); err != nil {
+	p.state.K8sBootstrap.B.EtcdVersion = etcdVer
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(bootstrapCtx, "configured DataStore", "number", strconv.Itoa(idx))
+	p.l.Success(p.ctx, "configured DataStore", "number", strconv.Itoa(idx))
 
 	return nil
 }
@@ -82,10 +80,10 @@ func getEtcdMemberIPFieldForDatastore(ips []string) string {
 	return strings.Join(tempDS, ",")
 }
 
-func scriptDB(etcdLatestVer, ca, etcd, key string, privIPs []string, currIdx int) types.ScriptCollection {
-	collection := helpers.NewScriptCollection()
+func scriptDB(etcdLatestVer, ca, etcd, key string, privIPs []string, currIdx int) ssh.ExecutionPipeline {
+	collection := ssh.NewExecutionPipeline()
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "fetch etcd binaries and cleanup",
 		ScriptExecutor: consts.LinuxBash,
 		MaxRetries:     9,
@@ -105,7 +103,7 @@ curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/
 `, etcdLatestVer),
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "moving the downloaded binaries to specific location",
 		ScriptExecutor: consts.LinuxBash,
 		CanRetry:       false,
@@ -122,7 +120,7 @@ sudo rm -rf /tmp/etcd-download-test
 `, etcdLatestVer),
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "store the certificate files",
 		ScriptExecutor: consts.LinuxBash,
 		CanRetry:       false,
@@ -147,7 +145,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 
 	clusterMembers := getEtcdMemberIPFieldForDatastore(privIPs)
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "configure etcd configuration file and systemd",
 		ScriptExecutor: consts.LinuxBash,
 		CanRetry:       false,
@@ -190,7 +188,7 @@ sudo mv -v etcd.service /etc/systemd/system
 `, currIdx, privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], privIPs[currIdx], clusterMembers),
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "restart the systemd and start etcd service",
 		CanRetry:       true,
 		MaxRetries:     3,

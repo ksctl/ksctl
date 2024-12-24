@@ -16,81 +16,90 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/ksctl/ksctl/pkg/certs"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/logger"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
-	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-)
-
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	log               types.LoggerFactory
-	bootstrapCtx      context.Context
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
 type PreBootstrap struct {
-	mu  *sync.Mutex
-	ctx context.Context
 	l   logger.Logger
+	ctx context.Context
+	mu  *sync.Mutex
+
+	state *statefile.StorageDocument
+	store storage.Storage
 }
 
-func NewPreBootStrap(parentCtx context.Context, parentLog types.LoggerFactory,
-	state *storageTypes.StorageDocument) *PreBootstrap {
+func NewPreBootStrap(
+	parentCtx context.Context,
+	parentLog logger.Logger,
+	state *statefile.StorageDocument,
+	store storage.Storage,
+) *PreBootstrap {
 
-	bootstrapCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, "bootstrap")
-	log = parentLog
+	p := &PreBootstrap{mu: &sync.Mutex{}}
 
-	mainStateDocument = state
-	return &PreBootstrap{mu: &sync.Mutex{}}
+	p.ctx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, "bootstrap")
+	p.l = parentLog
+	p.state = state
+	p.store = store
+
+	return p
 }
 
-func (p *PreBootstrap) Setup(cloudState cloud.CloudResourceState,
-	storage types.StorageFactory, operation consts.KsctlOperation) error {
+func (p *PreBootstrap) Setup(
+	cloudState providers.CloudResourceState,
+	operation consts.KsctlOperation,
+) error {
 
 	if operation == consts.OperationCreate {
-		mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
+		p.state.K8sBootstrap = &statefile.KubernetesBootstrapState{}
 		var err error
-		mainStateDocument.K8sBootstrap.B.CACert,
-			mainStateDocument.K8sBootstrap.B.EtcdCert,
-			mainStateDocument.K8sBootstrap.B.EtcdKey,
-			err = helpers.GenerateCerts(bootstrapCtx, log, cloudState.PrivateIPv4DataStores)
+		p.state.K8sBootstrap.B.CACert,
+			p.state.K8sBootstrap.B.EtcdCert,
+			p.state.K8sBootstrap.B.EtcdKey,
+			err = certs.GenerateCerts(p.ctx, p.l, cloudState.PrivateIPv4DataStores)
 		if err != nil {
 			return err
 		}
 	}
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes =
+	p.state.K8sBootstrap.B.PublicIPs.ControlPlanes =
 		utilities.DeepCopySlice[string](cloudState.IPv4ControlPlanes)
 
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes =
+	p.state.K8sBootstrap.B.PrivateIPs.ControlPlanes =
 		utilities.DeepCopySlice[string](cloudState.PrivateIPv4ControlPlanes)
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores =
+	p.state.K8sBootstrap.B.PublicIPs.DataStores =
 		utilities.DeepCopySlice[string](cloudState.IPv4DataStores)
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores =
+	p.state.K8sBootstrap.B.PrivateIPs.DataStores =
 		utilities.DeepCopySlice[string](cloudState.PrivateIPv4DataStores)
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes =
+	p.state.K8sBootstrap.B.PublicIPs.WorkerPlanes =
 		utilities.DeepCopySlice[string](cloudState.IPv4WorkerPlanes)
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer =
+	p.state.K8sBootstrap.B.PublicIPs.LoadBalancer =
 		cloudState.IPv4LoadBalancer
 
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer =
+	p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer =
 		cloudState.PrivateIPv4LoadBalancer
 
-	mainStateDocument.K8sBootstrap.B.SSHInfo = cloudState.SSHState
+	p.state.K8sBootstrap.B.SSHInfo = statefile.SSHInfo{
+		PrivateKey: cloudState.SSHPrivateKey,
+		UserName:   cloudState.SSHUserName,
+	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(bootstrapCtx, "Initialized state from Cloud")
+	p.l.Success(p.ctx, "Initialized state from Cloud")
 	return nil
 }

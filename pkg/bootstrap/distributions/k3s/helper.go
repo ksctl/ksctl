@@ -16,17 +16,18 @@ package k3s
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/poller"
 	"strings"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+	"github.com/ksctl/ksctl/pkg/poller"
+
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 )
 
 func convertK3sVersion(ver string) string {
 	return fmt.Sprintf("v%s+k3s1", ver)
 }
 
-func isValidK3sVersion(ver string) (string, error) {
+func (p *K3s) isValidK3sVersion(ver string) (string, error) {
 
 	validVersion, err := poller.GetSharedPoller().Get("k3s-io", "k3s")
 	if err != nil {
@@ -43,8 +44,9 @@ func isValidK3sVersion(ver string) (string, error) {
 			return vver, nil
 		}
 	}
-	return "", ksctlErrors.ErrInvalidVersion.Wrap(
-		log.NewError(k3sCtx, "invalid k3s version", "valid versions", strings.Join(validVersion, " ")),
+	return "", ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidVersion,
+		p.l.NewError(p.ctx, "invalid k3s version", "valid versions", strings.Join(validVersion, " ")),
 	)
 }
 
