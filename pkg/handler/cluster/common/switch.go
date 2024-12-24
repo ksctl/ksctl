@@ -53,21 +53,23 @@ func (kc *Controller) Switch() (*string, error) {
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudCivo:
-		kc.p.Cloud, err = civo.NewClient(kc.ctx, kc.p.Metadata, kc.l, kc.s, civo.ProvideClient)
+		kc.p.Cloud, err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, civo.ProvideClient)
 
 	case consts.CloudAzure:
-		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.p.Metadata, kc.l, kc.s, azure.ProvideClient)
+		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
 
 	case consts.CloudAws:
-		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.p.Metadata, kc.l, kc.s, aws.ProvideClient)
+		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
 		if err != nil {
 			break
 		}
 
-		err = cloudController.InitCloud(client, stateDocument, consts.OperationGet)
+		// TODO(@dipankardas011): use the NewMenthod for initializing the provider Controller
+		// NOTE: make sure that the InitCloud works for the aws only and if its is used to initialize for all the provider make sure it doesn't have any consequences
+		//err = cloudController.InitCloud(client, stateDocument, consts.OperationGet)
 
 	case consts.CloudLocal:
-		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.p.Metadata, kc.l, kc.s, local.ProvideClient)
+		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
 
 	}
 
@@ -106,7 +108,7 @@ func (kc *Controller) Switch() (*string, error) {
 		return nil, err
 	}
 
-	printKubeConfig(kc.l, path)
+	kc.printKubeConfig(path)
 
 	return kubeconfig, nil
 }

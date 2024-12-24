@@ -12,28 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package handler
 
 import (
 	"context"
 	"sync"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
+	k3sPkg "github.com/ksctl/ksctl/pkg/bootstrap/k3s"
+	kubeadmPkg "github.com/ksctl/ksctl/pkg/bootstrap/kubeadm"
+	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/helpers"
-
-	ksctlKubernetes "github.com/ksctl/ksctl/internal/kubernetes"
-
-	"github.com/ksctl/ksctl/internal/k8sdistros"
-	k3sPkg "github.com/ksctl/ksctl/internal/k8sdistros/k3s"
-	kubeadmPkg "github.com/ksctl/ksctl/internal/k8sdistros/kubeadm"
-	"github.com/ksctl/ksctl/internal/storage/external"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/types"
 )
 
 var (
-	log           types.LoggerFactory
+	log           logger.Logger
 	controllerCtx context.Context
 )
 
@@ -42,7 +37,7 @@ func InitLogger(ctx context.Context, _log types.LoggerFactory) {
 	controllerCtx = ctx
 }
 
-func Setup(client *types.KsctlClient, state *storageTypes.StorageDocument) error {
+func Setup(client *types.KsctlClient, state *statefile.StorageDocument) error {
 
 	client.PreBootstrap = k8sdistros.NewPreBootStrap(controllerCtx, log, state)
 

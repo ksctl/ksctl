@@ -61,14 +61,16 @@ type Metadata struct {
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
 
-	//Applications []KsctlApp `json:"preinstalled_apps"`
-	//CNIPlugin    KsctlApp   `json:"cni_plugin"`
+	// WARN(@dipankardas011): These 2 only used for managed cloud provider clusters and strongly discurrage its use in HA clusters
+	// as for HA cluster are need to move the management to the cluster agent or a cluster Operator
+	Applications []KsctlApp `json:"preinstalled_apps"`
+	CNIPlugin    KsctlApp   `json:"cni_plugin"`
 }
 
-//	type KsctlApp struct {
-//		StackName string                    `json:"stack_name"`
-//		Overrides map[string]map[string]any `json:"overrides"`
-//	}
+type KsctlApp struct {
+	StackName string                    `json:"stack_name"`
+	Overrides map[string]map[string]any `json:"overrides"`
+}
 
 type Controller struct {
 	l   logger.Logger

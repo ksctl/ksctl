@@ -18,6 +18,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/ksctl/ksctl/pkg/logger"
 	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 
 	"github.com/ksctl/ksctl/pkg/helpers"
@@ -32,6 +33,12 @@ var (
 	log               types.LoggerFactory
 	bootstrapCtx      context.Context
 )
+
+type PreBootstrap struct {
+	mu  *sync.Mutex
+	ctx context.Context
+	l   logger.Logger
+}
 
 func NewPreBootStrap(parentCtx context.Context, parentLog types.LoggerFactory,
 	state *storageTypes.StorageDocument) *PreBootstrap {

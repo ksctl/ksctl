@@ -23,17 +23,16 @@ import (
 )
 
 func (kc *Controller) Credentials() error {
-	// TODO(dipankardas011): Pass the the kc.p.Storage
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudCivo:
-		kc.p.Cloud, err = civo.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, civo.ProvideClient)
+		kc.p.Cloud, err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, civo.ProvideClient)
 
 	case consts.CloudAzure:
-		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, azure.ProvideClient)
+		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 
 	case consts.CloudAws:
-		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, aws.ProvideClient)
+		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
 
 	default:
 		err = ksctlErrors.WrapError(

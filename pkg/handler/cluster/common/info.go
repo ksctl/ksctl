@@ -86,16 +86,16 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudCivo:
-		cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, civo.ProvideClient)
+		cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, civo.ProvideClient)
 
 	case consts.CloudAzure:
-		cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, azure.ProvideClient)
+		cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 
 	case consts.CloudAws:
-		cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, aws.ProvideClient)
+		cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
 
 	case consts.CloudLocal:
-		cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, local.ProvideClient)
+		cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
 
 	default:
 		switch operation {
@@ -108,22 +108,22 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 					),
 				)
 			} else {
-				cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, civoPkg.ProvideClient)
+				cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, civo.ProvideClient)
 				if err != nil {
 					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
-				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, azure.ProvideClient)
+				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 				if err != nil {
 					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
-				cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, aws.ProvideClient)
+				cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
 				if err != nil {
 					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
-				cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.p.Metadata, kc.l, nil, local.ProvideClient)
+				cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
 				if err != nil {
 					kc.l.Error("handled error", "catch", err)
 					return nil, err
@@ -181,9 +181,7 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 }
 
 func (kc *Controller) GetCluster() error {
-	v, err := kc.clusterDataHelper(
-		logger.LoggingGetClusters,
-	)
+	v, err := kc.clusterDataHelper(logger.LoggingGetClusters)
 	if err != nil {
 		return err
 	}
@@ -196,9 +194,7 @@ func (kc *Controller) GetCluster() error {
 }
 
 func (kc *Controller) InfoCluster() (*logger.ClusterDataForLogging, error) {
-	v, err := kc.clusterDataHelper(
-		logger.LoggingInfoCluster,
-	)
+	v, err := kc.clusterDataHelper(logger.LoggingInfoCluster)
 	if err != nil {
 		return nil, err
 	}
