@@ -76,18 +76,38 @@ func (kc *Controller) setupInterfaces() error {
 	if kc.s.BootstrapProvider == consts.K8sK3s || kc.s.BootstrapProvider == consts.K8sKubeadm {
 		switch kc.s.BootstrapProvider {
 		case consts.K8sK3s:
-			kc.p.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
+			kc.p.Bootstrap = k3sPkg.NewClient(
+				kc.ctx,
+				kc.l,
+				kc.p.Storage,
+				kc.s,
+			)
 		case consts.K8sKubeadm:
-			kc.p.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
+			kc.p.Bootstrap = kubeadmPkg.NewClient(
+				kc.ctx,
+				kc.l,
+				kc.p.Storage,
+				kc.s,
+			)
 		}
 		return nil
 	}
 
 	switch kc.p.Metadata.K8sDistro {
 	case consts.K8sK3s:
-		kc.p.Bootstrap = k3sPkg.NewClient(controllerCtx, log, state)
+		kc.p.Bootstrap = k3sPkg.NewClient(
+			kc.ctx,
+			kc.l,
+			kc.p.Storage,
+			kc.s,
+		)
 	case consts.K8sKubeadm:
-		kc.p.Bootstrap = kubeadmPkg.NewClient(controllerCtx, log, state)
+		kc.p.Bootstrap = kubeadmPkg.NewClient(
+			kc.ctx,
+			kc.l,
+			kc.p.Storage,
+			kc.s,
+		)
 	default:
 		return kc.l.NewError(kc.ctx, "Invalid k8s provider")
 	}

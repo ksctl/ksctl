@@ -16,49 +16,48 @@ package kubeadm
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/ssh"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
-func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage types.StorageFactory) error {
+func (p *Kubeadm) JoinWorkerplane(noOfWP int) error {
 	p.mu.Lock()
 	idx := noOfWP
-	sshExecutor := helpers.NewSSHExecutor(kubeadmCtx, log, mainStateDocument) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
+	sshExecutor := ssh.NewSSHExecutor(p.ctx, p.l, p.state) //making sure that a new obj gets initialized for a every run thus eleminating possible problems with concurrency
 	p.mu.Unlock()
 
-	log.Note(kubeadmCtx, "configuring Workerplane", "number", strconv.Itoa(idx))
+	p.l.Note(p.ctx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
 	if err := func() error {
 		p.mu.Lock()
 		defer p.mu.Unlock()
-		log.Print(kubeadmCtx, "Checking validity Kubeadm Bootstrap Token")
+		p.l.Print(p.ctx, "Checking validity Kubeadm Bootstrap Token")
 
 		tN := time.Now().UTC()
-		tM := mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc
+		tM := p.state.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc
 		tDiff := tM.Sub(tN)
 
-		log.Debug(kubeadmCtx, "printing debug", "tNow", tN, "tExpire", tM, "tDiff", tDiff)
+		p.l.Debug(p.ctx, "printing debug", "tNow", tN, "tExpire", tM, "tDiff", tDiff)
 
 		// time.After means expire time is after the current time
 		if tM.After(tN) && tDiff.Minutes() > 10 {
-			log.Success(kubeadmCtx, "Valid Kubeadm Bootstrap Token")
+			p.l.Success(p.ctx, "Valid Kubeadm Bootstrap Token")
 			return nil
 		} else {
-			log.Note(kubeadmCtx, "Regenerating Kubeadm Bootstrap Token ttl is near")
+			p.l.Note(p.ctx, "Regenerating Kubeadm Bootstrap Token ttl is near")
 			timeCreationBootStrapToken := time.Now().UTC()
 			if err := sshExecutor.Flag(consts.UtilExecWithOutput).
 				Script(scriptToRenewBootStrapToken()).
-				IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
+				IPv4(p.state.K8sBootstrap.B.PublicIPs.ControlPlanes[0]).
 				SSHExecute(); err != nil {
 				return err
 			}
-			mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
-			mainStateDocument.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc = timeCreationBootStrapToken
+			p.state.K8sBootstrap.Kubeadm.BootstrapToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
+			p.state.K8sBootstrap.Kubeadm.BootstrapTokenExpireTimeUtc = timeCreationBootStrapToken
 		}
 
 		return nil
@@ -66,34 +65,34 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int, storage types.StorageFactory) erro
 		return err
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
 	script := scriptJoinWorkerplane(
-		scriptInstallKubeadmAndOtherTools(mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion),
-		mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer,
-		mainStateDocument.K8sBootstrap.Kubeadm.BootstrapToken,
-		mainStateDocument.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
+		scriptInstallKubeadmAndOtherTools(p.state.K8sBootstrap.Kubeadm.KubeadmVersion),
+		p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
+		p.state.K8sBootstrap.Kubeadm.BootstrapToken,
+		p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
 	)
-	log.Print(kubeadmCtx, "Installing Kubeadm and Joining WorkerNode to existing cluster")
+	p.l.Print(p.ctx, "Installing Kubeadm and Joining WorkerNode to existing cluster")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 		Script(script).
-		IPv4(mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
+		IPv4(p.state.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).
 		SSHExecute(); err != nil {
 		return err
 	}
 
-	log.Success(kubeadmCtx, "configured WorkerPlane", "number", strconv.Itoa(idx))
+	p.l.Success(p.ctx, "configured WorkerPlane", "number", strconv.Itoa(idx))
 
 	return nil
 }
 
-func scriptJoinWorkerplane(collection types.ScriptCollection, privateIPLb, token, cacertSHA string) types.ScriptCollection {
+func scriptJoinWorkerplane(collection ssh.ExecutionPipeline, privateIPLb, token, cacertSHA string) ssh.ExecutionPipeline {
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "Join K3s workerplane",
 		CanRetry:       true,
 		MaxRetries:     3,

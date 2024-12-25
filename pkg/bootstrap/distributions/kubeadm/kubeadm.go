@@ -17,54 +17,55 @@ package kubeadm
 import (
 	"context"
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 	"strings"
 	"sync"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-	"github.com/ksctl/ksctl/poller"
+	"github.com/ksctl/ksctl/pkg/poller"
 
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	"github.com/ksctl/ksctl/pkg/types"
-)
-
-var (
-	mainStateDocument *storageTypes.StorageDocument
-	log               types.LoggerFactory
-	kubeadmCtx        context.Context
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 )
 
 type Kubeadm struct {
+	ctx   context.Context
+	l     logger.Logger
+	state *statefile.StorageDocument
+	mu    *sync.Mutex
+	store storage.Storage
+
 	Cni string
-	mu  *sync.Mutex
 }
 
-func (p *Kubeadm) Setup(storage types.StorageFactory, operation consts.KsctlOperation) error {
+func (p *Kubeadm) Setup(operation consts.KsctlOperation) error {
 	if operation == consts.OperationCreate {
-		mainStateDocument.K8sBootstrap.Kubeadm = &storageTypes.StateConfigurationKubeadm{}
-		mainStateDocument.BootstrapProvider = consts.K8sKubeadm
+		p.state.K8sBootstrap.Kubeadm = &statefile.StateConfigurationKubeadm{}
+		p.state.BootstrapProvider = consts.K8sKubeadm
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *Kubeadm) K8sVersion(ver string) types.KubernetesBootstrap {
-	if v, err := isValidKubeadmVersion(ver); err == nil {
-		mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion = v
-		log.Debug(kubeadmCtx, "Printing", "kubeadm.KubeadmVersion", v)
+func (p *Kubeadm) K8sVersion(ver string) distributions.KubernetesDistribution {
+	if v, err := p.isValidKubeadmVersion(ver); err == nil {
+		p.state.K8sBootstrap.Kubeadm.KubeadmVersion = v
+		p.l.Debug(p.ctx, "Printing", "kubeadm.KubeadmVersion", v)
 		return p
 	} else {
-		log.Error(err.Error())
+		p.l.Error(err.Error())
 		return nil
 	}
 }
 
 func (p *Kubeadm) CNI(cni string) (externalCNI bool) {
-	log.Debug(kubeadmCtx, "Printing", "cni", cni)
+	p.l.Debug(p.ctx, "Printing", "cni", cni)
 	switch consts.KsctlValidCNIPlugin(cni) {
 	case "":
 		p.Cni = ""
@@ -74,7 +75,7 @@ func (p *Kubeadm) CNI(cni string) (externalCNI bool) {
 	return true // if its empty string we will install the default cni as flannel
 }
 
-func isValidKubeadmVersion(ver string) (string, error) {
+func (p *Kubeadm) isValidKubeadmVersion(ver string) (string, error) {
 
 	validVersion, err := poller.GetSharedPoller().Get("kubernetes", "kubernetes")
 	if err != nil {
@@ -98,25 +99,31 @@ func isValidKubeadmVersion(ver string) (string, error) {
 			return vver, nil
 		}
 	}
-	return "", ksctlErrors.ErrInvalidVersion.Wrap(
-		log.NewError(kubeadmCtx, "invalid kubeadm version", "valid versions", strings.Join(validVersion, " ")),
+	return "", ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidVersion,
+		p.l.NewError(p.ctx, "invalid kubeadm version", "valid versions", strings.Join(validVersion, " ")),
 	)
 }
 
-func NewClient(parentCtx context.Context,
-	parentLog types.LoggerFactory,
-	state *storageTypes.StorageDocument) *Kubeadm {
-	kubeadmCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.K8sKubeadm))
-	log = parentLog
+func NewClient(
+	parentCtx context.Context,
+	parentLog logger.Logger,
+	storage storage.Storage,
+	state *statefile.StorageDocument,
+) *Kubeadm {
+	p := &Kubeadm{mu: &sync.Mutex{}}
+	p.ctx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.K8sKubeadm))
+	p.l = parentLog
+	p.state = state
+	p.store = storage
 
-	mainStateDocument = state
-	return &Kubeadm{mu: &sync.Mutex{}}
+	return p
 }
 
-func scriptInstallKubeadmAndOtherTools(ver string) types.ScriptCollection {
-	collection := helpers.NewScriptCollection()
+func scriptInstallKubeadmAndOtherTools(ver string) ssh.ExecutionPipeline {
+	collection := ssh.NewExecutionPipeline()
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "disable swap and some kernel module adjustments",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -146,7 +153,7 @@ sudo sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tabl
 `,
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "install containerd",
 		CanRetry:       true,
 		MaxRetries:     3,
@@ -169,7 +176,7 @@ sudo apt-get install containerd.io -y
 `,
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "containerd config",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
@@ -180,7 +187,7 @@ sudo mv -v config.toml /etc/containerd/config.toml
 `,
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "restart containerd systemd",
 		CanRetry:       true,
 		MaxRetries:     3,
@@ -194,7 +201,7 @@ sudo systemctl restart containerd
 `,
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "install kubeadm, kubectl, kubelet",
 		CanRetry:       true,
 		MaxRetries:     9,
@@ -214,7 +221,7 @@ sudo systemctl enable kubelet
 `, ver, ver),
 	})
 
-	collection.Append(types.Script{
+	collection.Append(ssh.Script{
 		Name:           "apt mark kubenetes tool as hold",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,

@@ -16,46 +16,49 @@ package k3s
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/certs"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	testHelper "github.com/ksctl/ksctl/tests/helpers"
 	"sync"
 	"testing"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	testHelper "github.com/ksctl/ksctl/test/helpers"
-
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"gotest.tools/v3/assert"
 )
 
-func NewClientHelper(x cloudControlRes.CloudResourceState, state *storageTypes.StorageDocument) *K3s {
+func NewClientHelper(x providers.CloudResourceState, state *statefile.StorageDocument) *K3s {
 
-	k3sCtx = parentCtx
-	log = parentLogger
+	p := &K3s{mu: &sync.Mutex{}}
 
-	mainStateDocument = state
-	mainStateDocument.K8sBootstrap = &storageTypes.KubernetesBootstrapState{}
+	p.ctx = parentCtx
+	p.l = parentLogger
+
+	p.state = state
+	p.state.K8sBootstrap = &statefile.KubernetesBootstrapState{}
 	var err error
-	mainStateDocument.K8sBootstrap.B.CACert, mainStateDocument.K8sBootstrap.B.EtcdCert, mainStateDocument.K8sBootstrap.B.EtcdKey, err = helpers.GenerateCerts(parentCtx, parentLogger, x.PrivateIPv4DataStores)
+	p.state.K8sBootstrap.B.CACert, p.state.K8sBootstrap.B.EtcdCert, p.state.K8sBootstrap.B.EtcdKey, err = certs.GenerateCerts(parentCtx, parentLogger, x.PrivateIPv4DataStores)
 	if err != nil {
 		return nil
 	}
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.ControlPlanes = x.IPv4ControlPlanes
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.ControlPlanes = x.PrivateIPv4ControlPlanes
+	p.state.K8sBootstrap.B.PublicIPs.ControlPlanes = x.IPv4ControlPlanes
+	p.state.K8sBootstrap.B.PrivateIPs.ControlPlanes = x.PrivateIPv4ControlPlanes
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.DataStores = x.IPv4DataStores
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.DataStores = x.PrivateIPv4DataStores
+	p.state.K8sBootstrap.B.PublicIPs.DataStores = x.IPv4DataStores
+	p.state.K8sBootstrap.B.PrivateIPs.DataStores = x.PrivateIPv4DataStores
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.WorkerPlanes = x.IPv4WorkerPlanes
+	p.state.K8sBootstrap.B.PublicIPs.WorkerPlanes = x.IPv4WorkerPlanes
 
-	mainStateDocument.K8sBootstrap.B.PublicIPs.LoadBalancer = x.IPv4LoadBalancer
-	mainStateDocument.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
-	mainStateDocument.K8sBootstrap.B.SSHInfo = x.SSHState
+	p.state.K8sBootstrap.B.PublicIPs.LoadBalancer = x.IPv4LoadBalancer
+	p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
+	p.state.K8sBootstrap.B.SSHInfo = statefile.SSHInfo{
+		UserName:   x.SSHUserName,
+		PrivateKey: x.SSHPrivateKey,
+	}
 
-	return &K3s{mu: &sync.Mutex{}}
+	return p
 }
 
 func TestK3sDistro_Version(t *testing.T) {
@@ -65,7 +68,7 @@ func TestK3sDistro_Version(t *testing.T) {
 		"1.27":   false,
 	}
 	for ver, expected := range forTesting {
-		v, err := isValidK3sVersion(ver)
+		v, err := fakeClient.isValidK3sVersion(ver)
 		got := err == nil
 
 		if got != expected {
@@ -101,7 +104,7 @@ func TestScriptsControlplane(t *testing.T) {
 
 				testHelper.HelperTestTemplate(
 					t,
-					[]types.Script{
+					[]ssh.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[0] without CNI",
@@ -131,7 +134,7 @@ sudo ./control-setup.sh &>> ksctl.log
 `, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() types.ScriptCollection { // Adjust the signature to match your needs
+					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
 					},
 				)
@@ -143,7 +146,7 @@ sudo ./control-setup.sh &>> ksctl.log
 			for i := 0; i < len(ver); i++ {
 				testHelper.HelperTestTemplate(
 					t,
-					[]types.Script{
+					[]ssh.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[0] with CNI",
@@ -169,7 +172,7 @@ sudo ./control-setup.sh &>> ksctl.log
 `, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() types.ScriptCollection { // Adjust the signature to match your needs
+					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 						return scriptCP_1(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
 					},
 				)
@@ -185,7 +188,7 @@ sudo ./control-setup.sh &>> ksctl.log
 
 				testHelper.HelperTestTemplate(
 					t,
-					[]types.Script{
+					[]ssh.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[1..N] without CNI",
@@ -215,7 +218,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 `, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() types.ScriptCollection { // Adjust the signature to match your needs
+					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
 					},
 				)
@@ -227,7 +230,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 
 				testHelper.HelperTestTemplate(
 					t,
-					[]types.Script{
+					[]ssh.Script{
 						getScriptForEtcdCerts(ca, etcd, key),
 						{
 							Name:           "Start K3s Controlplane-[1..N] with CNI",
@@ -255,7 +258,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 `, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
-					func() types.ScriptCollection { // Adjust the signature to match your needs
+					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 						return scriptCP_N(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
 					},
 				)
@@ -266,7 +269,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 	t.Run("get k3s token", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:           "Get k3s server token",
 					CanRetry:       false,
@@ -276,7 +279,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptForK3sToken()
 			},
 		)
@@ -285,7 +288,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 	t.Run("get kubeconfig", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:           "k3s kubeconfig",
 					CanRetry:       false,
@@ -295,7 +298,7 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptKUBECONFIG()
 			},
 		)
@@ -311,7 +314,7 @@ func TestSciprWorkerplane(t *testing.T) {
 	t.Run("get kubeconfig", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:           "Join the workerplane-[0..M]",
 					CanRetry:       true,
@@ -330,7 +333,7 @@ sudo ./worker-setup.sh &>> ksctl.log
 `, ver, token, private),
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptWP(ver, private, token)
 			},
 		)
@@ -344,11 +347,11 @@ func checkCurrentStateFile(t *testing.T) {
 		t.Fatalf("Unable to access statefile")
 	}
 
-	assert.DeepEqual(t, mainStateDocument, raw)
+	assert.DeepEqual(t, fakeClient.state, raw)
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.Setup(consts.OperationCreate), nil, "should be initlize the state")
 
 	fakeClient.K8sVersion("")
 
@@ -357,17 +360,17 @@ func TestOverallScriptsCreation(t *testing.T) {
 
 	fakeClient.CNI("flannel")
 	for no := 0; no < noCP; no++ {
-		err := fakeClient.ConfigureControlPlane(no, storeHA)
+		err := fakeClient.ConfigureControlPlane(no)
 		if err != nil {
 			t.Fatalf("Configure Controlplane unable to operate %v", err)
 		}
 	}
 	checkCurrentStateFile(t)
 
-	assert.Equal(t, mainStateDocument.K8sBootstrap.K3s.K3sVersion, "v1.30.3+k3s1", "should be equal")
+	assert.Equal(t, fakeClient.state.K8sBootstrap.K3s.K3sVersion, "v1.30.3+k3s1", "should be equal")
 
 	for no := 0; no < noWP; no++ {
-		err := fakeClient.JoinWorkerplane(no, storeHA)
+		err := fakeClient.JoinWorkerplane(no)
 		if err != nil {
 			t.Fatalf("Configure Workerplane unable to operate %v", err)
 		}

@@ -16,13 +16,11 @@ package kubeadm
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	testHelper "github.com/ksctl/ksctl/tests/helpers"
 	"testing"
 
-	testHelper "github.com/ksctl/ksctl/test/helpers"
-
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
 	"gotest.tools/v3/assert"
 )
 
@@ -33,7 +31,7 @@ func TestK3sDistro_Version(t *testing.T) {
 		"v1.31": true,
 	}
 	for ver, expected := range forTesting {
-		v, err := isValidKubeadmVersion(ver)
+		v, err := fakeClient.isValidKubeadmVersion(ver)
 		got := err == nil
 
 		if got != expected {
@@ -54,7 +52,7 @@ func TestScriptGeneratebootstrapToken(t *testing.T) {
 	t.Run("scriptGeneratingBootstrapToken", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:           "generate bootstrap token",
 					CanRetry:       false,
@@ -64,7 +62,7 @@ kubeadm token generate
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptToGenerateBootStrapToken()
 			},
 		)
@@ -76,7 +74,7 @@ func TestScriptRenewbootstrapToken(t *testing.T) {
 	t.Run("scriptGeneratingBootstrapToken", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:           "renew bootstrap token",
 					CanRetry:       false,
@@ -86,7 +84,7 @@ kubeadm token create --ttl 20m --description "ksctl bootstrap token"
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptToRenewBootStrapToken()
 			},
 		)
@@ -98,7 +96,7 @@ func TestScriptInstallKubeadmAndOtherTools(t *testing.T) {
 
 	testHelper.HelperTestTemplate(
 		t,
-		[]types.Script{
+		[]ssh.Script{
 			{
 				Name:           "disable swap and some kernel module adjustments",
 				CanRetry:       false,
@@ -202,7 +200,7 @@ sudo systemctl enable kubelet
 		`,
 			},
 		},
-		func() types.ScriptCollection { // Adjust the signature to match your needs
+		func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 			return scriptInstallKubeadmAndOtherTools(ver)
 		},
 	)
@@ -213,7 +211,7 @@ func TestScriptsControlplane(t *testing.T) {
 	t.Run("scriptGetCertificateKey", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:     "fetch bootstrap certificate key",
 					CanRetry: false,
@@ -222,7 +220,7 @@ sudo kubeadm certs certificate-key
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptGetCertificateKey()
 			},
 		)
@@ -231,7 +229,7 @@ sudo kubeadm certs certificate-key
 	t.Run("scriptDiscoveryTokenCACertHash", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:     "fetch discovery token ca cert hash",
 					CanRetry: false,
@@ -240,7 +238,7 @@ sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -p
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptDiscoveryTokenCACertHash()
 			},
 		)
@@ -249,7 +247,7 @@ sudo openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -p
 	t.Run("scriptGetKubeconfig", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:     "fetch kubeconfig",
 					CanRetry: false,
@@ -258,7 +256,7 @@ sudo cat /etc/kubernetes/admin.conf
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptGetKubeconfig()
 			},
 		)
@@ -275,7 +273,7 @@ sudo cat /etc/kubernetes/admin.conf
 
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:       "store configuration for Controlplane0",
 					CanRetry:   true,
@@ -344,7 +342,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 `,
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptAddKubeadmControlplane0(ver, bootstrapToken, certificateKey, publicIPLb, privateIPLb, privateIPDs)
 			},
 		)
@@ -357,7 +355,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 		crtKey := "xxyy"
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:           "Join Controlplane [1..N]",
 					CanRetry:       true,
@@ -368,7 +366,7 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --
 `, privateIPLb, token, cacertSHA, crtKey),
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
 				return scriptJoinControlplane(privateIPLb, token, cacertSHA, crtKey)
 			},
 		)
@@ -378,7 +376,7 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --
 		ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
 		testHelper.HelperTestTemplate(
 			t,
-			[]types.Script{
+			[]ssh.Script{
 				{
 					Name:           "save etcd certificate",
 					CanRetry:       false,
@@ -402,8 +400,8 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 `, ca, etcd, key),
 				},
 			},
-			func() types.ScriptCollection { // Adjust the signature to match your needs
-				return scriptTransferEtcdCerts(helpers.NewScriptCollection(), ca, etcd, key)
+			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
+				return scriptTransferEtcdCerts(ssh.NewExecutionPipeline(), ca, etcd, key)
 			},
 		)
 	})
@@ -415,7 +413,7 @@ func TestSciprWorkerplane(t *testing.T) {
 	cacertSHA := "x2r23erd23"
 	testHelper.HelperTestTemplate(
 		t,
-		[]types.Script{
+		[]ssh.Script{
 			{
 				Name:           "Join K3s workerplane",
 				CanRetry:       true,
@@ -426,8 +424,8 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>
 `, privateIPLb, token, cacertSHA),
 			},
 		},
-		func() types.ScriptCollection { // Adjust the signature to match your needs
-			return scriptJoinWorkerplane(helpers.NewScriptCollection(), privateIPLb, token, cacertSHA)
+		func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
+			return scriptJoinWorkerplane(ssh.NewExecutionPipeline(), privateIPLb, token, cacertSHA)
 		},
 	)
 }
@@ -438,27 +436,27 @@ func checkCurrentStateFile(t *testing.T) {
 		t.Fatalf("Unable to access statefile")
 	}
 
-	assert.DeepEqual(t, mainStateDocument, raw)
+	assert.DeepEqual(t, fakeClient.state, raw)
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.Setup(storeHA, consts.OperationCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.Setup(consts.OperationCreate), nil, "should be initlize the state")
 	fakeClient.K8sVersion("")
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
 	fakeClient.CNI("flannel")
 	for no := 0; no < noCP; no++ {
-		err := fakeClient.ConfigureControlPlane(no, storeHA)
+		err := fakeClient.ConfigureControlPlane(no)
 		if err != nil {
 			t.Fatalf("Configure Controlplane unable to operate %v", err)
 		}
 	}
 
 	checkCurrentStateFile(t)
-	assert.Equal(t, mainStateDocument.K8sBootstrap.Kubeadm.KubeadmVersion, "v1.31", "should be equal")
+	assert.Equal(t, fakeClient.state.K8sBootstrap.Kubeadm.KubeadmVersion, "v1.31", "should be equal")
 
 	for no := 0; no < noWP; no++ {
-		err := fakeClient.JoinWorkerplane(no, storeHA)
+		err := fakeClient.JoinWorkerplane(no)
 		if err != nil {
 			t.Fatalf("Configure Workerplane unable to operate %v", err)
 		}

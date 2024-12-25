@@ -17,30 +17,30 @@ package k3s
 import (
 	"context"
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"os"
 	"path/filepath"
 	"sort"
 	"testing"
 
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/types"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-	"github.com/ksctl/ksctl/poller"
+	"github.com/ksctl/ksctl/pkg/poller"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/storage"
+	localstate "github.com/ksctl/ksctl/pkg/storage/host"
 )
 
 var (
-	storeHA types.StorageFactory
+	storeHA storage.Storage
 
 	fakeClient         *K3s
 	dir                = filepath.Join(os.TempDir(), "ksctl-k3s-test")
-	fakeStateFromCloud cloudControlRes.CloudResourceState
+	fakeStateFromCloud providers.CloudResourceState
 
 	parentCtx    context.Context
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func initPoller() {
@@ -63,22 +63,19 @@ func initClients() {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
 	parentCtx = context.WithValue(parentCtx, consts.KsctlTestFlagKey, "true")
 
-	mainState := &storageTypes.StorageDocument{}
-	if err := helpers.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
-		log.Error(err.Error())
+	mainState := &statefile.StorageDocument{}
+	if err := ssh.CreateSSHKeyPair(parentCtx, parentLogger, mainState); err != nil {
+		parentLogger.Error(err.Error())
 		os.Exit(1)
 	}
-	fakeStateFromCloud = cloudControlRes.CloudResourceState{
-		SSHState: cloudControlRes.SSHInfo{
-			PrivateKey: mainState.SSHKeyPair.PrivateKey,
-			UserName:   "fakeuser",
-		},
-		Metadata: cloudControlRes.Metadata{
-			ClusterName: "fake",
-			Provider:    consts.CloudAzure,
-			Region:      "fake",
-			ClusterType: consts.ClusterTypeHa,
-		},
+	fakeStateFromCloud = providers.CloudResourceState{
+		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
+		SSHUserName:   "fakeuser",
+		ClusterName:   "fake",
+		Provider:      consts.CloudAzure,
+		Region:        "fake",
+		ClusterType:   consts.ClusterTypeHa,
+
 		// public IPs
 		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},
 		IPv4DataStores:    []string{"A.B.C.3"},
