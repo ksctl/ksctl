@@ -16,13 +16,13 @@ package handler
 
 import (
 	"context"
+	"sync"
+
 	"github.com/ksctl/ksctl/pkg/bootstrap"
 	"github.com/ksctl/ksctl/pkg/config"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/storage"
 	"github.com/ksctl/ksctl/pkg/storage/mongodb"
-	"sync"
 
 	k3sPkg "github.com/ksctl/ksctl/pkg/bootstrap/distributions/k3s"
 	kubeadmPkg "github.com/ksctl/ksctl/pkg/bootstrap/distributions/kubeadm"
@@ -251,7 +251,12 @@ func (kc *Controller) JoinMoreWorkerPlanes(start, end int) error {
 
 func (kc *Controller) DelWorkerPlanes(kubeconfig string, hostnames []string) error {
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, kubeconfig, false, nil, nil)
+	k, err := NewClusterClient(
+		kc.ctx,
+		kc.l,
+		kc.p.Storage,
+		kubeconfig,
+	)
 	if err != nil {
 		return err
 	}
@@ -264,32 +269,19 @@ func (kc *Controller) DelWorkerPlanes(kubeconfig string, hostnames []string) err
 	return nil
 }
 
-func (kc *Controller) ApplicationsInCluster(op consts.KsctlOperation) error {
-
-	k, err := ksctlKubernetes.NewInClusterClient(controllerCtx, log, client.Storage, false, nil, nil)
-	if err != nil {
-		return err
-	}
-
-	if len(kc.p.Metadata.CNIPlugin.StackName) != 0 {
-		if err := k.CNI(kc.p.Metadata.CNIPlugin, state, op); err != nil {
-			return err
-		}
-	}
-
-	if len(kc.p.Metadata.Applications) != 0 {
-		return k.Applications(client.Metadata.Applications, state, op)
-	}
-	return nil
-}
-
 func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 
 	if _, ok := config.IsContextPresent(kc.ctx, consts.KsctlTestFlagKey); ok {
 		return nil
 	}
 
-	k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig, false, nil, nil)
+	k, err := NewClusterClient(
+		kc.ctx,
+		kc.l,
+		kc.p.Storage,
+		kc.s.ClusterKubeConfig,
+	)
+	//k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig, false, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -307,67 +299,7 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 		kc.l.Success(kc.ctx, "Done with installing k8s cni")
 	}
 
-	if err := kc.installKsctlSpecificApps(k); err != nil {
-		return err
-	}
-
 	kc.l.Success(kc.ctx, "Done with installing additional k8s tools")
-	return nil
-}
-
-func (kc *Controller) installKsctlSpecificApps(kubernetesClient *ksctlKubernetes.K8sClusterClient) error {
-
-	var (
-		exportedData         *storage.StateExportImport
-		externalCredEndpoint map[string][]byte
-		isExternalStore      bool
-	)
-
-	switch kc.p.Metadata.StateLocation {
-	case consts.StoreLocal:
-		var _err error
-		exportedData, _err = kc.p.Storage.Export(map[consts.KsctlSearchFilter]string{
-			consts.Cloud:  string(kc.p.Metadata.Provider),
-			consts.Name:   kc.p.Metadata.ClusterName,
-			consts.Region: kc.p.Metadata.Region,
-			consts.ClusterType: func() string {
-				if !kc.p.Metadata.IsHA {
-					return string(consts.ClusterTypeMang)
-				}
-				return string(consts.ClusterTypeHa)
-			}(),
-		})
-		if _err != nil {
-			return _err
-		}
-
-	case consts.StoreExtMongo:
-		isExternalStore = true
-		var _err error
-		externalCredEndpoint, _err = handleCreds(kc.ctx, kc.l, consts.StoreExtMongo)
-		if _err != nil {
-			return _err
-		}
-	case consts.StoreK8s:
-		// WARN: for now we are not going to transfer state if the ksctl core is already running in one cluster
-		// to a new cluster aka (k8s -> k8s)
-	}
-
-	if err := kubernetesClient.DeployAgent(
-		client,
-		kc.s,
-		externalCredEndpoint,
-		exportedData,
-		isExternalStore); err != nil {
-		return err
-	}
-
-	if err := kubernetesClient.DeployRequiredControllers(kc.s); err != nil {
-		return err
-	}
-
-	kc.l.Success(kc.ctx, "Done with installing ksctl k8s specific tools")
-
 	return nil
 }
 
