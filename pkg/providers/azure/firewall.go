@@ -15,162 +15,160 @@
 package azure
 
 import (
-	"github.com/ksctl/ksctl/pkg/helpers"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func (obj *AzureProvider) DelFirewall(storage types.StorageFactory) error {
-	role := <-obj.chRole
+func (p *Provider) DelFirewall() error {
+	role := <-p.chRole
 
-	log.Debug(azureCtx, "Printing", "role", role)
+	p.l.Debug(p.ctx, "Printing", "role", role)
 
 	nsg := ""
 	switch role {
 	case consts.RoleCp:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName
 	case consts.RoleWp:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName
 	case consts.RoleLb:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
 	}
 
 	if len(nsg) == 0 {
-		log.Print(azureCtx, "skipped firewall already deleted")
+		p.l.Print(p.ctx, "skipped firewall already deleted")
 		return nil
 	}
 
-	pollerResponse, err := obj.client.BeginDeleteSecurityGrp(nsg, nil)
+	pollerResponse, err := p.client.BeginDeleteSecurityGrp(nsg, nil)
 	if err != nil {
 		return err
 	}
-	log.Print(azureCtx, "firewall deleting...", "name", nsg)
+	p.l.Print(p.ctx, "firewall deleting...", "name", nsg)
 
-	_, err = obj.client.PollUntilDoneDelNSG(azureCtx, pollerResponse, nil)
+	_, err = p.client.PollUntilDoneDelNSG(p.ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
 	switch role {
 	case consts.RoleCp:
-		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName = ""
-		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID = ""
+		p.state.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName = ""
+		p.state.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID = ""
 	case consts.RoleWp:
-		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID = ""
-		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName = ""
+		p.state.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID = ""
+		p.state.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName = ""
 	case consts.RoleLb:
-		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID = ""
-		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName = ""
+		p.state.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID = ""
+		p.state.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName = ""
 	case consts.RoleDs:
-		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID = ""
-		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = ""
+		p.state.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID = ""
+		p.state.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = ""
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(azureCtx, "Deleted network security group", "name", nsg)
+	p.l.Success(p.ctx, "Deleted network security group", "name", nsg)
 
 	return nil
 }
 
-func (obj *AzureProvider) NewFirewall(storage types.StorageFactory) error {
-	name := <-obj.chResName
-	role := <-obj.chRole
+func (p *Provider) NewFirewall() error {
+	name := <-p.chResName
+	role := <-p.chRole
 
-	log.Debug(azureCtx, "Printing", "name", name, "role", role)
+	p.l.Debug(p.ctx, "Printing", "name", name, "role", role)
 
 	nsg := ""
 	switch role {
 	case consts.RoleCp:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName
 	case consts.RoleWp:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName
 	case consts.RoleLb:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName
 	case consts.RoleDs:
-		nsg = mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
+		nsg = p.state.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName
 	}
 	if len(nsg) != 0 {
-		log.Success(azureCtx, "skipped firewall already created", "name", nsg)
+		p.l.Success(p.ctx, "skipped firewall already created", "name", nsg)
 		return nil
 	}
-	netCidr := mainStateDocument.CloudInfra.Azure.NetCidr
-	kubernetesDistro := consts.KsctlKubernetes(mainStateDocument.BootstrapProvider)
+	netCidr := p.state.CloudInfra.Azure.NetCidr
+	kubernetesDistro := consts.KsctlKubernetes(p.state.BootstrapProvider)
 
 	var securityRules []*armnetwork.SecurityRule
 	switch role {
 	case consts.RoleCp:
-		securityRules = firewallRuleControlPlane(netCidr, kubernetesDistro)
+		securityRules = p.firewallRuleControlPlane(netCidr, kubernetesDistro)
 	case consts.RoleWp:
-		securityRules = firewallRuleWorkerPlane(netCidr, kubernetesDistro)
+		securityRules = p.firewallRuleWorkerPlane(netCidr, kubernetesDistro)
 	case consts.RoleLb:
-		securityRules = firewallRuleLoadBalancer()
+		securityRules = p.firewallRuleLoadBalancer()
 	case consts.RoleDs:
-		securityRules = firewallRuleDataStore(netCidr)
+		securityRules = p.firewallRuleDataStore(netCidr)
 	}
 
-	log.Debug(azureCtx, "Printing", "firewallrule", securityRules)
+	p.l.Debug(p.ctx, "Printing", "firewallrule", securityRules)
 
 	parameters := armnetwork.SecurityGroup{
-		Location: utilities.Ptr(obj.region),
+		Location: utilities.Ptr(p.Region),
 		Properties: &armnetwork.SecurityGroupPropertiesFormat{
 			SecurityRules: securityRules,
 		},
 	}
 
-	pollerResponse, err := obj.client.BeginCreateSecurityGrp(name, parameters, nil)
+	pollerResponse, err := p.client.BeginCreateSecurityGrp(name, parameters, nil)
 	if err != nil {
 		return err
 	}
 
 	switch role {
 	case consts.RoleCp:
-		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName = name
+		p.state.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName = name
 	case consts.RoleWp:
-		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName = name
+		p.state.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName = name
 	case consts.RoleLb:
-		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName = name
+		p.state.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName = name
 	case consts.RoleDs:
-		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = name
+		p.state.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName = name
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Print(azureCtx, "creating firewall...", "name", name)
+	p.l.Print(p.ctx, "creating firewall...", "name", name)
 
-	resp, err := obj.client.PollUntilDoneCreateNSG(azureCtx, pollerResponse, nil)
+	resp, err := p.client.PollUntilDoneCreateNSG(p.ctx, pollerResponse, nil)
 	if err != nil {
 		return err
 	}
 	switch role {
 	case consts.RoleCp:
-		mainStateDocument.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
+		p.state.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID = *resp.ID
 	case consts.RoleWp:
-		mainStateDocument.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID = *resp.ID
+		p.state.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID = *resp.ID
 	case consts.RoleLb:
-		mainStateDocument.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID = *resp.ID
+		p.state.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID = *resp.ID
 	case consts.RoleDs:
-		mainStateDocument.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID = *resp.ID
+		p.state.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID = *resp.ID
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(azureCtx, "Created network security group", "name", *resp.Name)
+	p.l.Success(p.ctx, "Created network security group", "name", *resp.Name)
 
 	return nil
 }
 
-func convertToProviderSpecific(_rules []helpers.FirewallRule) []*armnetwork.SecurityRule {
+func (p *Provider) convertToProviderSpecific(_rules []providers.FirewallRule) []*armnetwork.SecurityRule {
 	rules := []*armnetwork.SecurityRule{}
 	priority := int32(100)
 	for _, _r := range _rules {
@@ -204,11 +202,11 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule) []*armnetwork.Secu
 		case consts.FirewallActionIngress:
 			direction = armnetwork.SecurityRuleDirectionInbound
 			srcCidr = _r.Cidr
-			destCidr = mainStateDocument.CloudInfra.Azure.NetCidr
+			destCidr = p.state.CloudInfra.Azure.NetCidr
 		case consts.FirewallActionEgress:
 			direction = armnetwork.SecurityRuleDirectionOutbound
 			destCidr = _r.Cidr
-			srcCidr = mainStateDocument.CloudInfra.Azure.NetCidr
+			srcCidr = p.state.CloudInfra.Azure.NetCidr
 		default:
 			direction = armnetwork.SecurityRuleDirectionInbound
 		}
@@ -242,26 +240,26 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule) []*armnetwork.Secu
 
 }
 
-func firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
-	return convertToProviderSpecific(
-		helpers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+func (p *Provider) firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
+	return p.convertToProviderSpecific(
+		providers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
 	)
 }
 
-func firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
-	return convertToProviderSpecific(
-		helpers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+func (p *Provider) firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
+	return p.convertToProviderSpecific(
+		providers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
 	)
 }
 
-func firewallRuleLoadBalancer() (securityRules []*armnetwork.SecurityRule) {
-	return convertToProviderSpecific(
-		helpers.FirewallForLoadBalancer_BASE(),
+func (p *Provider) firewallRuleLoadBalancer() (securityRules []*armnetwork.SecurityRule) {
+	return p.convertToProviderSpecific(
+		providers.FirewallForLoadBalancer_BASE(),
 	)
 }
 
-func firewallRuleDataStore(internalNetCidr string) (securityRules []*armnetwork.SecurityRule) {
-	return convertToProviderSpecific(
-		helpers.FirewallForDataStore_BASE(internalNetCidr),
+func (p *Provider) firewallRuleDataStore(internalNetCidr string) (securityRules []*armnetwork.SecurityRule) {
+	return p.convertToProviderSpecific(
+		providers.FirewallForDataStore_BASE(internalNetCidr),
 	)
 }

@@ -17,43 +17,41 @@ package azure
 import (
 	"fmt"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
-
-	"github.com/ksctl/ksctl/pkg/types"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/statefile"
 )
 
 func generateResourceGroupName(clusterName, clusterType string) string {
 	return fmt.Sprintf("ksctl-resgrp-%s-%s", clusterType, clusterName)
 }
 
-func loadStateHelper(storage types.StorageFactory) error {
-	raw, err := storage.Read()
+func (p *Provider) loadStateHelper() error {
+	raw, err := p.store.Read()
 	if err != nil {
 		return err
 	}
-	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
+	*p.state = func(x *statefile.StorageDocument) statefile.StorageDocument {
 		return *x
 	}(raw)
 	return nil
 }
 
-func validationOfArguments(obj *AzureProvider) error {
+func (p *Provider) validationOfArguments() error {
 
-	if err := isValidRegion(obj, obj.region); err != nil {
+	if err := p.isValidRegion(p.Region); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func isValidK8sVersion(obj *AzureProvider, ver string) error {
-	res, err := obj.client.ListKubernetesVersions()
+func (p *Provider) isValidK8sVersion(ver string) error {
+	res, err := p.client.ListKubernetesVersions()
 	if err != nil {
 		return err
 	}
 
-	log.Debug(azureCtx, "Printing", "ListKubernetesVersions", res)
+	p.l.Debug(p.ctx, "Printing", "ListKubernetesVersions", res)
 
 	var vers []string
 	for _, version := range res.Values {
@@ -65,35 +63,37 @@ func isValidK8sVersion(obj *AzureProvider, ver string) error {
 		}
 	}
 
-	return ksctlErrors.ErrInvalidVersion.Wrap(
-		log.NewError(azureCtx, "invalid k8s version", "ValidManagedK8sVersions", vers),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidVersion,
+		p.l.NewError(p.ctx, "invalid k8s version", "ValidManagedK8sVersions", vers),
 	)
 }
 
-func isValidRegion(obj *AzureProvider, reg string) error {
-	validReg, err := obj.client.ListLocations()
+func (p *Provider) isValidRegion(reg string) error {
+	validReg, err := p.client.ListLocations()
 	if err != nil {
 		return err
 	}
-	log.Debug(azureCtx, "Printing", "ListLocation", validReg)
+	p.l.Debug(p.ctx, "Printing", "ListLocation", validReg)
 
 	for _, valid := range validReg {
 		if valid == reg {
 			return nil
 		}
 	}
-	return ksctlErrors.ErrInvalidCloudRegion.Wrap(
-		log.NewError(azureCtx, "Invalid region", "Valid options", validReg),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidCloudRegion,
+		p.l.NewError(p.ctx, "Invalid region", "Valid options", validReg),
 	)
 }
 
-func isValidVMSize(obj *AzureProvider, size string) error {
+func (p *Provider) isValidVMSize(size string) error {
 
-	validSize, err := obj.client.ListVMTypes()
+	validSize, err := p.client.ListVMTypes()
 	if err != nil {
 		return err
 	}
-	log.Debug(azureCtx, "Printing", "ListVMType", validSize)
+	p.l.Debug(p.ctx, "Printing", "ListVMType", validSize)
 
 	for _, valid := range validSize {
 		if valid == size {
@@ -101,7 +101,8 @@ func isValidVMSize(obj *AzureProvider, size string) error {
 		}
 	}
 
-	return ksctlErrors.ErrInvalidCloudVMSize.Wrap(
-		log.NewError(azureCtx, "Invalid vm size", "Valid options", validSize),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidCloudVMSize,
+		p.l.NewError(p.ctx, "Invalid vm size", "Valid options", validSize),
 	)
 }

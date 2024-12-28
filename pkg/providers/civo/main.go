@@ -17,14 +17,15 @@ package civo
 import (
 	"context"
 	"encoding/json"
+	"strings"
+	"sync"
+
 	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/providers"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
 	"github.com/ksctl/ksctl/pkg/validation"
-	"strings"
-	"sync"
 
 	"github.com/civo/civogo"
 	"github.com/ksctl/ksctl/pkg/consts"

@@ -18,17 +18,17 @@ package azure
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func ProvideClient() AzureGo {
+func ProvideClient() CloudSDK {
 	return &AzureClient{}
 }
 
@@ -39,7 +39,7 @@ type AzureClient struct {
 	ResourceGrp    string
 }
 
-func (mock *AzureClient) InitClient(storage types.StorageFactory) error {
+func (mock *AzureClient) InitClient(b *Provider) error {
 	mock.SubscriptionID = "XUZE"
 	mock.AzureTokenCred = nil
 	return nil

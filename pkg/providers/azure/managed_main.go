@@ -18,56 +18,55 @@ import (
 	"os"
 
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func (obj *AzureProvider) DelManagedCluster(storage types.StorageFactory) error {
-	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) == 0 {
-		log.Print(azureCtx, "skipped already deleted AKS cluster")
+func (p *Provider) DelManagedCluster() error {
+	if len(p.state.CloudInfra.Azure.ManagedClusterName) == 0 {
+		p.l.Print(p.ctx, "skipped already deleted AKS cluster")
 		return nil
 	}
 
-	pollerResp, err := obj.client.BeginDeleteAKS(mainStateDocument.CloudInfra.Azure.ManagedClusterName, nil)
+	pollerResp, err := p.client.BeginDeleteAKS(p.state.CloudInfra.Azure.ManagedClusterName, nil)
 	if err != nil {
 		return err
 	}
-	log.Print(azureCtx, "Deleting AKS cluster...", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
+	p.l.Print(p.ctx, "Deleting AKS cluster...", "name", p.state.CloudInfra.Azure.ManagedClusterName)
 
-	_, err = obj.client.PollUntilDoneDelAKS(azureCtx, pollerResp, nil)
+	_, err = p.client.PollUntilDoneDelAKS(p.ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
 
-	log.Success(azureCtx, "Deleted the AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
+	p.l.Success(p.ctx, "Deleted the AKS cluster", "name", p.state.CloudInfra.Azure.ManagedClusterName)
 
-	mainStateDocument.CloudInfra.Azure.ManagedClusterName = ""
-	mainStateDocument.CloudInfra.Azure.ManagedNodeSize = ""
-	return storage.Write(mainStateDocument)
+	p.state.CloudInfra.Azure.ManagedClusterName = ""
+	p.state.CloudInfra.Azure.ManagedNodeSize = ""
+	return p.store.Write(p.state)
 }
 
-func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNodes int) error {
-	name := <-obj.chResName
-	vmtype := <-obj.chVMType
+func (p *Provider) NewManagedCluster(noOfNodes int) error {
+	name := <-p.chResName
+	vmtype := <-p.chVMType
 
-	log.Debug(azureCtx, "Printing", "name", name, "vmtype", vmtype)
+	p.l.Debug(p.ctx, "Printing", "name", name, "vmtype", vmtype)
 
-	if len(mainStateDocument.CloudInfra.Azure.ManagedClusterName) != 0 {
-		log.Print(azureCtx, "skipped already created AKS cluster", "name", mainStateDocument.CloudInfra.Azure.ManagedClusterName)
+	if len(p.state.CloudInfra.Azure.ManagedClusterName) != 0 {
+		p.l.Print(p.ctx, "skipped already created AKS cluster", "name", p.state.CloudInfra.Azure.ManagedClusterName)
 		return nil
 	}
 
-	mainStateDocument.CloudInfra.Azure.NoManagedNodes = noOfNodes
-	mainStateDocument.CloudInfra.Azure.B.KubernetesVer = obj.metadata.k8sVersion
-	mainStateDocument.BootstrapProvider = "managed"
+	p.state.CloudInfra.Azure.NoManagedNodes = noOfNodes
+	p.state.CloudInfra.Azure.B.KubernetesVer = p.K8sVersion
+	p.state.BootstrapProvider = "managed"
 
 	parameter := armcontainerservice.ManagedCluster{
-		Location: utilities.Ptr(mainStateDocument.Region),
+		Location: utilities.Ptr(p.state.Region),
 		Properties: &armcontainerservice.ManagedClusterProperties{
 			DNSPrefix:         utilities.Ptr("aksgosdk"),
-			KubernetesVersion: utilities.Ptr(mainStateDocument.CloudInfra.Azure.B.KubernetesVer),
+			KubernetesVersion: utilities.Ptr(p.state.CloudInfra.Azure.B.KubernetesVer),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
-				NetworkPlugin: utilities.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(obj.metadata.cni)),
+				NetworkPlugin: utilities.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(p.cni)),
 			},
 			AutoUpgradeProfile: &armcontainerservice.ManagedClusterAutoUpgradeProfile{
 				NodeOSUpgradeChannel: utilities.Ptr[armcontainerservice.NodeOSUpgradeChannel](armcontainerservice.NodeOSUpgradeChannelNodeImage),
@@ -94,41 +93,41 @@ func (obj *AzureProvider) NewManagedCluster(storage types.StorageFactory, noOfNo
 		},
 	}
 
-	log.Debug(azureCtx, "Printing", "AKSConfig", parameter)
+	p.l.Debug(p.ctx, "Printing", "AKSConfig", parameter)
 
-	pollerResp, err := obj.client.BeginCreateAKS(name, parameter, nil)
+	pollerResp, err := p.client.BeginCreateAKS(name, parameter, nil)
 	if err != nil {
 		return err
 	}
-	mainStateDocument.CloudInfra.Azure.ManagedClusterName = name
-	mainStateDocument.CloudInfra.Azure.ManagedNodeSize = vmtype
+	p.state.CloudInfra.Azure.ManagedClusterName = name
+	p.state.CloudInfra.Azure.ManagedNodeSize = vmtype
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Print(azureCtx, "Creating AKS cluster...")
+	p.l.Print(p.ctx, "Creating AKS cluster...")
 
-	resp, err := obj.client.PollUntilDoneCreateAKS(azureCtx, pollerResp, nil)
+	resp, err := p.client.PollUntilDoneCreateAKS(p.ctx, pollerResp, nil)
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Azure.B.IsCompleted = true
+	p.state.CloudInfra.Azure.B.IsCompleted = true
 
-	kubeconfig, err := obj.client.ListClusterAdminCredentials(name, nil)
+	kubeconfig, err := p.client.ListClusterAdminCredentials(name, nil)
 	if err != nil {
 		return err
 	}
 	kubeconfigStr := string(kubeconfig.Kubeconfigs[0].Value)
 
-	mainStateDocument.ClusterKubeConfig = kubeconfigStr
-	mainStateDocument.ClusterKubeConfigContext = *resp.Name
+	p.state.ClusterKubeConfig = kubeconfigStr
+	p.state.ClusterKubeConfigContext = *resp.Name
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(azureCtx, "created AKS", "name", *resp.Name)
+	p.l.Success(p.ctx, "created AKS", "name", *resp.Name)
 	return nil
 }

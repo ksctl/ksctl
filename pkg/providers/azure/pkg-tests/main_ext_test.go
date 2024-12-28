@@ -21,42 +21,46 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ksctl/ksctl/internal/cloudproviders/azure"
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/types"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/providers/azure"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
+	localstate "github.com/ksctl/ksctl/pkg/storage/host"
 )
 
 var (
-	fakeClientHA types.CloudFactory
-	storeHA      types.StorageFactory
+	fakeClientHA providers.Cloud
+	storeHA      storage.Storage
 
-	fakeClientManaged types.CloudFactory
-	storeManaged      types.StorageFactory
+	fakeClientManaged providers.Cloud
+	storeManaged      storage.Storage
 
-	fakeClientVars *azure.AzureProvider
-	storeVars      types.StorageFactory
+	fakeClientVars *azure.Provider
+	storeVars      storage.Storage
 	parentCtx      context.Context
-	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentLogger   logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
+
+	stateDocumentHA      *statefile.StorageDocument // it is to make the address accessable for us in the test
+	stateDocumentManaged *statefile.StorageDocument // it is to make the address accessable for us in the test
 
 	dir = filepath.Join(os.TempDir(), "ksctl-azure-pkg-test")
 )
 
 func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
+	storeVars = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
+	_ = storeVars.Connect()
 
-	fakeClientVars, _ = azure.NewClient(parentCtx, types.Metadata{
+	fakeClientVars, _ = azure.NewClient(parentCtx, parentLogger, controller.Metadata{
 		ClusterName: "demo",
 		Region:      "fake",
 		Provider:    consts.CloudAzure,
 		IsHA:        true,
-	}, parentLogger, &storageTypes.StorageDocument{}, azure.ProvideClient)
-
-	storeVars = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
-	_ = storeVars.Connect()
+	}, &statefile.StorageDocument{}, storeVars, azure.ProvideClient)
 
 	exitVal := m.Run()
 

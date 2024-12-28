@@ -1,66 +1,17 @@
-// Copyright 2024 Ksctl Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package azure
 
 import (
 	"context"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-	"sync"
 )
 
-type metadata struct {
-	public bool
-
-	cni string
-
-	// these are used for managing the state and are the size of the arrays
-	noCP int
-	noWP int
-	noDS int
-
-	k8sVersion string
-}
-
-type AzureProvider struct {
-	clusterName   string
-	haCluster     bool
-	resourceGroup string
-	region        string
-	metadata
-
-	chResName chan string
-	chRole    chan consts.KsctlRole
-	chVMType  chan string
-
-	mu sync.Mutex
-
-	client AzureGo
-}
-
-type AzureGo interface {
-	InitClient(storage types.StorageFactory) error
-
-	SetRegion(string)
-
-	SetResourceGrp(string)
+type CloudSDK interface {
+	InitClient(b *Provider) error
 
 	ListLocations() ([]string, error)
 

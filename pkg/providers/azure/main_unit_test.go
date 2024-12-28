@@ -17,27 +17,29 @@ package azure
 import (
 	"context"
 	"fmt"
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/types"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	localstate "github.com/ksctl/ksctl/pkg/storage/host"
 )
 
 var (
-	fakeClientHA *AzureProvider
-	storeHA      types.StorageFactory
+	fakeClientHA *Provider
+	storeHA      storage.Storage
 
-	fakeClientManaged *AzureProvider
-	storeManaged      types.StorageFactory
+	fakeClientManaged *Provider
+	storeManaged      storage.Storage
 
-	fakeClientVars *AzureProvider
-	storeVars      types.StorageFactory
+	fakeClientVars *Provider
+	storeVars      storage.Storage
 	parentCtx      context.Context
-	parentLogger   types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentLogger   logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = filepath.Join(os.TempDir(), "ksctl-azure-test")
 )
@@ -45,16 +47,23 @@ var (
 func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
 
-	fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
-		ClusterName: "demo",
-		Region:      "fake",
-		Provider:    consts.CloudAzure,
-		IsHA:        true,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
-
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
 	_ = storeVars.Connect()
+
+	fakeClientVars, _ = NewClient(
+		parentCtx,
+		parentLogger,
+		controller.Metadata{
+			ClusterName: "demo",
+			Region:      "fake",
+			Provider:    consts.CloudAzure,
+			IsHA:        true,
+		},
+		&statefile.StorageDocument{},
+		storeVars,
+		ProvideClient,
+	)
 
 	exitVal := m.Run()
 

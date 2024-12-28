@@ -16,73 +16,72 @@ package azure
 
 import (
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func (obj *AzureProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
-	name := <-obj.chResName
-	log.Debug(azureCtx, "Printing", "name", name)
+func (p *Provider) CreateUploadSSHKeyPair() error {
+	name := <-p.chResName
+	p.l.Debug(p.ctx, "Printing", "name", name)
 
-	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) != 0 {
-		log.Print(azureCtx, "skipped ssh key already created", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
+	if len(p.state.CloudInfra.Azure.B.SSHKeyName) != 0 {
+		p.l.Print(p.ctx, "skipped ssh key already created", "name", p.state.CloudInfra.Azure.B.SSHKeyName)
 		return nil
 	}
 
-	err := helpers.CreateSSHKeyPair(azureCtx, log, mainStateDocument)
+	err := ssh.CreateSSHKeyPair(p.ctx, p.l, p.state)
 	if err != nil {
 		return err
 	}
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
 	parameters := armcompute.SSHPublicKeyResource{
-		Location: utilities.Ptr(obj.region),
+		Location: utilities.Ptr(p.Region),
 		Properties: &armcompute.SSHPublicKeyResourceProperties{
-			PublicKey: utilities.Ptr(mainStateDocument.SSHKeyPair.PublicKey),
+			PublicKey: utilities.Ptr(p.state.SSHKeyPair.PublicKey),
 		},
 	}
 
-	log.Debug(azureCtx, "Printing", "sshConfig", parameters)
+	p.l.Debug(p.ctx, "Printing", "sshConfig", parameters)
 
-	_, err = obj.client.CreateSSHKey(name, parameters, nil)
+	_, err = p.client.CreateSSHKey(name, parameters, nil)
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Azure.B.SSHKeyName = name
-	mainStateDocument.CloudInfra.Azure.B.SSHUser = "azureuser"
+	p.state.CloudInfra.Azure.B.SSHKeyName = name
+	p.state.CloudInfra.Azure.B.SSHUser = "azureuser"
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
-	log.Success(azureCtx, "created the ssh key pair", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
+	p.l.Success(p.ctx, "created the ssh key pair", "name", p.state.CloudInfra.Azure.B.SSHKeyName)
 
 	return nil
 }
 
-func (obj *AzureProvider) DelSSHKeyPair(storage types.StorageFactory) error {
+func (p *Provider) DelSSHKeyPair() error {
 
-	if len(mainStateDocument.CloudInfra.Azure.B.SSHKeyName) == 0 {
-		log.Print(azureCtx, "skipped ssh key already deleted", "name", mainStateDocument.CloudInfra.Azure.B.SSHKeyName)
+	if len(p.state.CloudInfra.Azure.B.SSHKeyName) == 0 {
+		p.l.Print(p.ctx, "skipped ssh key already deleted", "name", p.state.CloudInfra.Azure.B.SSHKeyName)
 		return nil
 	}
 
-	if _, err := obj.client.DeleteSSHKey(mainStateDocument.CloudInfra.Azure.B.SSHKeyName, nil); err != nil {
+	if _, err := p.client.DeleteSSHKey(p.state.CloudInfra.Azure.B.SSHKeyName, nil); err != nil {
 		return err
 	}
 
-	sshName := mainStateDocument.CloudInfra.Azure.B.SSHKeyName
+	sshName := p.state.CloudInfra.Azure.B.SSHKeyName
 
-	mainStateDocument.CloudInfra.Azure.B.SSHKeyName = ""
-	mainStateDocument.CloudInfra.Azure.B.SSHUser = ""
+	p.state.CloudInfra.Azure.B.SSHKeyName = ""
+	p.state.CloudInfra.Azure.B.SSHUser = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(azureCtx, "deleted the ssh key pair", "name", sshName)
+	p.l.Success(p.ctx, "deleted the ssh key pair", "name", sshName)
 	return nil
 }
