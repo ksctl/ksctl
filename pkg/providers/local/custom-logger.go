@@ -15,16 +15,18 @@
 package local
 
 import (
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-	klog "sigs.k8s.io/kind/pkg/log"
+	"context"
 	"sync"
+
+	"github.com/ksctl/ksctl/pkg/logger"
+	klog "sigs.k8s.io/kind/pkg/log"
 )
 
 type customLogger struct {
 	level  int32
-	Logger types.LoggerFactory
+	Logger logger.Logger
 	mu     sync.Mutex
+	ctx    context.Context
 }
 
 func (l *customLogger) Enabled() bool {
@@ -34,37 +36,37 @@ func (l *customLogger) Enabled() bool {
 func (l *customLogger) Info(message string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandler(localCtx, consts.LogInfo, message)
+	l.Logger.ExternalLogHandler(l.ctx, logger.LogInfo, message)
 }
 
 func (l *customLogger) Infof(format string, args ...any) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandlerf(localCtx, consts.LogInfo, format, args...)
+	l.Logger.ExternalLogHandlerf(l.ctx, logger.LogInfo, format, args...)
 }
 
 func (l *customLogger) Warn(message string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandler(localCtx, consts.LogWarning, message)
+	l.Logger.ExternalLogHandler(l.ctx, logger.LogWarning, message)
 }
 
 func (l *customLogger) Warnf(format string, args ...interface{}) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandlerf(localCtx, consts.LogWarning, format, args...)
+	l.Logger.ExternalLogHandlerf(l.ctx, logger.LogWarning, format, args...)
 }
 
 func (l *customLogger) Error(message string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandler(localCtx, consts.LogError, message)
+	l.Logger.ExternalLogHandler(l.ctx, logger.LogError, message)
 }
 
 func (l *customLogger) Errorf(format string, args ...interface{}) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandlerf(localCtx, consts.LogError, format, args...)
+	l.Logger.ExternalLogHandlerf(l.ctx, logger.LogError, format, args...)
 }
 
 func (l *customLogger) Enable(flag bool) {}

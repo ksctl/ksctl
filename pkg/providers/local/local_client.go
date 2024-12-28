@@ -17,24 +17,25 @@
 package local
 
 import (
-	"github.com/ksctl/ksctl/pkg/types"
-	"sigs.k8s.io/kind/pkg/cluster"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/logger"
+	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 type LocalClient struct {
-	provider *cluster.Provider
-	log      types.LoggerFactory
+	provider  *cluster.Provider
+	customLog logger.Logger
+	b         *Provider
 }
 
-func ProvideClient() LocalGo {
+func ProvideClient() KindSDK {
 	return &LocalClient{}
 }
 
-func (l *LocalClient) NewProvider(log types.LoggerFactory, _ types.StorageFactory, options ...cluster.ProviderOption) {
-	logger := &customLogger{Logger: log}
-	options = append(options, cluster.ProviderWithLogger(logger))
-	l.log = log
+func (l *LocalClient) NewProvider(b *Provider, options ...cluster.ProviderOption) {
+	options = append(options, cluster.ProviderWithLogger(&customLogger{Logger: b.l}))
+	l.b = b
 	l.provider = cluster.NewProvider(options...)
 }
 

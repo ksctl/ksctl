@@ -18,104 +18,126 @@ import (
 	"context"
 	"encoding/json"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	"github.com/ksctl/ksctl/pkg/types"
-	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
-	cloudControlRes "github.com/ksctl/ksctl/pkg/types/controllers/cloud"
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 )
 
-func (*LocalProvider) GetStateFile(types.StorageFactory) (string, error) {
-	cloudstate, err := json.Marshal(mainStateDocument)
+type Provider struct {
+	l     logger.Logger
+	ctx   context.Context
+	state *statefile.StorageDocument
+	store storage.Storage
+	controller.Metadata
+
+	cni               string
+	tempDirKubeconfig string
+
+	vmType  string
+	resName string
+
+	providers.Cloud
+
+	client KindSDK
+}
+
+func NewClient(
+	ctx context.Context,
+	l logger.Logger,
+	meta controller.Metadata,
+	state *statefile.StorageDocument,
+	storage storage.Storage,
+	ClientOption func() KindSDK,
+) (*Provider, error) {
+	p := new(Provider)
+	p.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, string(consts.CloudLocal))
+	p.state = state
+	p.Metadata = meta
+	p.l = l
+	p.client = ClientOption()
+	p.store = storage
+
+	p.l.Debug(p.ctx, "Printing", "LocalProvider", p)
+	return p, nil
+}
+
+func (p *Provider) GetStateFile() (string, error) {
+	cloudstate, err := json.Marshal(p.state)
 	if err != nil {
-		return "", ksctlErrors.ErrInternal.Wrap(
-			log.NewError(localCtx, "failed to serialize the state", "Reason", err),
+		return "", ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			p.l.NewError(p.ctx, "failed to serialize the state", "Reason", err),
 		)
 	}
 	return string(cloudstate), nil
 }
 
-func NewClient(parentCtx context.Context, meta types.Metadata, parentLogger types.LoggerFactory, state *storageTypes.StorageDocument, ClientOption func() LocalGo) (*LocalProvider, error) {
-	log = parentLogger // intentional shallow copy so that we can use the same
-	// logger to be used multiple places
-	localCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.CloudLocal))
-
-	mainStateDocument = state
-
-	obj := &LocalProvider{
-		clusterName: meta.ClusterName,
-		client:      ClientOption(),
-		region:      meta.Region,
-	}
-	obj.metadata.version = meta.K8sVersion
-
-	log.Debug(localCtx, "Printing", "localProvider", obj)
-
-	return obj, nil
-}
-
-func (cloud *LocalProvider) InitState(storage types.StorageFactory, operation consts.KsctlOperation) error {
+func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	switch operation {
 	case consts.OperationCreate:
-		if err := isPresent(storage, cloud.clusterName); err == nil {
-			return ksctlErrors.ErrDuplicateRecords.Wrap(
-				log.NewError(localCtx, "already present", "name", cloud.clusterName),
+		if err := p.isPresent(); err == nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrDuplicateRecords,
+				p.l.NewError(p.ctx, "already present", "name", p.ClusterName),
 			)
 		}
-		log.Debug(localCtx, "Fresh state!!")
+		p.l.Debug(p.ctx, "Fresh state!!")
 
-		mainStateDocument.ClusterName = cloud.clusterName
-		mainStateDocument.Region = cloud.region
-		mainStateDocument.CloudInfra = &storageTypes.InfrastructureState{Local: &storageTypes.StateConfigurationLocal{}}
-		mainStateDocument.InfraProvider = consts.CloudLocal
-		mainStateDocument.ClusterType = string(consts.ClusterTypeMang)
+		p.state.ClusterName = p.ClusterName
+		p.state.Region = p.Region
+		p.state.CloudInfra = &statefile.InfrastructureState{Local: &statefile.StateConfigurationLocal{}}
+		p.state.InfraProvider = consts.CloudLocal
+		p.state.ClusterType = string(consts.ClusterTypeMang)
 
-		mainStateDocument.CloudInfra.Local.B.KubernetesVer = cloud.metadata.version
+		p.state.CloudInfra.Local.B.KubernetesVer = p.K8sVersion
 	case consts.OperationDelete, consts.OperationGet:
-		err := loadStateHelper(storage)
+		err := p.loadStateHelper()
 		if err != nil {
 			return err
 		}
 	}
-	log.Debug(localCtx, "initialized the state")
+	p.l.Debug(p.ctx, "initialized the state")
 	return nil
 }
 
-func (cloud *LocalProvider) Name(resName string) types.CloudFactory {
-	cloud.metadata.resName = resName
-	return cloud
+func (p *Provider) Name(resName string) providers.Cloud {
+	p.resName = resName
+	return p
 }
 
-func (cloud *LocalProvider) Application(s []string) (externalApps bool) {
+func (p *Provider) Application(s []string) (externalApps bool) {
 	return true
 }
 
-func (client *LocalProvider) CNI(s string) (externalCNI bool) {
-	log.Debug(localCtx, "Printing", "cni", s)
+func (p *Provider) CNI(s string) (externalCNI bool) {
+	p.l.Debug(p.ctx, "Printing", "cni", s)
 
 	switch consts.KsctlValidCNIPlugin(s) {
 	case consts.CNIKind, "":
-		client.metadata.cni = string(consts.CNIKind)
+		p.cni = string(consts.CNIKind)
 	default:
-		client.metadata.cni = string(consts.CNINone)
+		p.cni = string(consts.CNINone)
 		return true
 	}
 
 	return false
 }
 
-func (cloud *LocalProvider) ManagedK8sVersion(ver string) types.CloudFactory {
-	log.Debug(localCtx, "Printing", "k8sVersion", ver)
-	cloud.metadata.version = ver
-	return cloud
+func (p *Provider) ManagedK8sVersion(ver string) providers.Cloud {
+	p.l.Debug(p.ctx, "Printing", "k8sVersion", ver)
+	p.K8sVersion = ver
+	return p
 }
 
-func (cloud *LocalProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]cloudControlRes.AllClusterData, error) {
+func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) {
 
-	var data []cloudControlRes.AllClusterData
-	clusters, err := storage.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
+	var data []logger.ClusterDataForLogging
+	clusters, err := p.store.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudLocal),
 		consts.ClusterType: string(consts.ClusterTypeMang),
 	})
@@ -125,21 +147,21 @@ func (cloud *LocalProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]
 
 	for K, Vs := range clusters {
 		for _, v := range Vs {
-			data = append(data, cloudControlRes.AllClusterData{
+			data = append(data, logger.ClusterDataForLogging{
 				CloudProvider: consts.CloudLocal,
 				Name:          v.ClusterName,
 				Region:        v.Region,
 				ClusterType:   K,
 
 				NoMgt: v.CloudInfra.Local.Nodes,
-				Mgt: cloudControlRes.VMData{
+				Mgt: logger.VMData{
 					VMSize: v.CloudInfra.Local.ManagedNodeSize,
 				},
 
 				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: v.CloudInfra.Local.B.KubernetesVer,
 			})
-			log.Debug(localCtx, "Printing", "cloudClusterInfoFetched", data)
+			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 
 		}
 	}
@@ -147,90 +169,22 @@ func (cloud *LocalProvider) GetRAWClusterInfos(storage types.StorageFactory) ([]
 	return data, nil
 }
 
-func (obj *LocalProvider) IsPresent(storage types.StorageFactory) error {
-
-	return isPresent(storage, obj.clusterName)
+func (p *Provider) IsPresent() error {
+	return p.isPresent()
 }
 
-func (cloud *LocalProvider) VMType(_ string) types.CloudFactory {
-	cloud.vmType = "local_machine"
-	return cloud
+func (p *Provider) VMType(_ string) providers.Cloud {
+	p.vmType = "local_machine"
+	return p
 }
 
-func (obj *LocalProvider) GetKubeconfig(storage types.StorageFactory) (*string, error) {
-	_read, err := storage.Read()
+func (p *Provider) GetKubeconfig() (*string, error) {
+	_read, err := p.store.Read()
 	if err != nil {
-		log.Error("handled error", "catch", err)
+		p.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
 	kubeconfig := _read.ClusterKubeConfig
 	return &kubeconfig, nil
-}
-
-// //// NOT IMPLEMENTED //////
-
-func (cloud *LocalProvider) Credential(_ types.StorageFactory) error {
-	return log.NewError(localCtx, "no support")
-}
-
-func (cloud *LocalProvider) Role(consts.KsctlRole) types.CloudFactory {
-	return nil
-}
-
-func (cloud *LocalProvider) Visibility(bool) types.CloudFactory {
-	return nil
-}
-
-func (*LocalProvider) GetHostNameAllWorkerNode() []string {
-	return nil
-}
-
-func (*LocalProvider) CreateUploadSSHKeyPair(state types.StorageFactory) error {
-	return nil
-
-}
-
-func (*LocalProvider) DelFirewall(state types.StorageFactory) error {
-	return nil
-}
-
-func (*LocalProvider) DelNetwork(state types.StorageFactory) error {
-	return nil
-}
-
-func (*LocalProvider) DelSSHKeyPair(state types.StorageFactory) error {
-	return nil
-}
-
-func (*LocalProvider) DelVM(types.StorageFactory, int) error {
-	return nil
-}
-
-func (*LocalProvider) GetStateForHACluster(state types.StorageFactory) (cloud.CloudResourceState, error) {
-	return cloud.CloudResourceState{}, log.NewError(localCtx, "should not be implemented")
-}
-
-func (*LocalProvider) NewFirewall(state types.StorageFactory) error {
-	return nil
-}
-
-func (*LocalProvider) NewNetwork(state types.StorageFactory) error {
-	return nil
-}
-
-func (*LocalProvider) NewVM(types.StorageFactory, int) error {
-	return nil
-}
-
-func (cloud *LocalProvider) NoOfControlPlane(int, bool) (int, error) {
-	return -1, log.NewError(localCtx, "unsupported operation")
-}
-
-func (cloud *LocalProvider) NoOfDataStore(int, bool) (int, error) {
-	return -1, log.NewError(localCtx, "unsupported operation")
-}
-
-func (cloud *LocalProvider) NoOfWorkerPlane(types.StorageFactory, int, bool) (int, error) {
-	return -1, log.NewError(localCtx, "unsupported operation")
 }

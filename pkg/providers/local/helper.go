@@ -19,18 +19,18 @@ import (
 	"os"
 	"path/filepath"
 
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	"github.com/ksctl/ksctl/pkg/statefile"
 
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlError "github.com/ksctl/ksctl/pkg/helpers/errors"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlError "github.com/ksctl/ksctl/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-func generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
+func (p *Provider) generateConfig(noWorker, noControl int, cni bool) ([]byte, error) {
 	if noWorker >= 0 && noControl == 0 {
-		return nil, ksctlError.ErrInvalidUserInput.Wrap(
-			log.NewError(localCtx, "invalid config request control node cannot be 0"),
+		return nil, ksctlError.WrapError(
+			ksctlError.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "invalid config request control node cannot be 0"),
 		)
 	}
 	var config string
@@ -60,11 +60,12 @@ nodes:
 	return []byte(config), nil
 }
 
-func configOption(noOfNodes int, cni bool) (cluster.CreateOption, error) {
+func (p *Provider) configOption(noOfNodes int, cni bool) (cluster.CreateOption, error) {
 
 	if noOfNodes < 1 {
-		return nil, ksctlError.ErrInvalidUserInput.Wrap(
-			log.NewError(localCtx, "invalid config request control node cannot be 0"),
+		return nil, ksctlError.WrapError(
+			ksctlError.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "invalid config request control node cannot be 0"),
 		)
 	}
 	if noOfNodes == 1 {
@@ -82,38 +83,39 @@ networking:
 	//control := noOfNodes / 2 // derive the math
 	control := 1
 	worker := noOfNodes - control
-	raw, err := generateConfig(worker, control, cni)
+	raw, err := p.generateConfig(worker, control, cni)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug(localCtx, "Printing", "configCluster", string(raw))
+	p.l.Debug(p.ctx, "Printing", "configCluster", string(raw))
 
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
-func isPresent(storage types.StorageFactory, clusterName string) error {
-	return storage.AlreadyCreated(consts.CloudLocal, "LOCAL", clusterName, consts.ClusterTypeMang)
+func (p *Provider) isPresent() error {
+	return p.store.AlreadyCreated(consts.CloudLocal, "LOCAL", p.ClusterName, consts.ClusterTypeMang)
 }
 
-func createNecessaryConfigs(storeDir string) (string, error) {
+func (p *Provider) createNecessaryConfigs(storeDir string) (string, error) {
 	_path := filepath.Join(storeDir, "kubeconfig")
 
 	_, err := os.Create(_path)
 	if err != nil {
-		return "", ksctlError.ErrInternal.Wrap(
-			log.NewError(localCtx, "failed to create file to store kubeconfig", "Reason", err),
+		return "", ksctlError.WrapError(
+			ksctlError.ErrInternal,
+			p.l.NewError(p.ctx, "failed to create file to store kubeconfig", "Reason", err),
 		)
 	}
 	return _path, nil
 }
 
-func loadStateHelper(storage types.StorageFactory) error {
-	raw, err := storage.Read()
+func (p *Provider) loadStateHelper() error {
+	raw, err := p.store.Read()
 	if err != nil {
 		return err
 	}
-	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
+	*p.state = func(x *statefile.StorageDocument) statefile.StorageDocument {
 		return *x
 	}(raw)
 	return nil
