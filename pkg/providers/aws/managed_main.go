@@ -19,240 +19,264 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
-	eks_types "github.com/aws/aws-sdk-go-v2/service/eks/types"
+	eksTypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AwsProvider) DelManagedCluster(storage types.StorageFactory) error {
-	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) == 0 {
-		log.Print(awsCtx, "Skipping deleting EKS cluster.")
+const (
+	assumeClusterRolePolicyDocument = `{
+    "Version": "2012-10-17",
+    "Statement": {
+        "Sid": "TrustPolicyStatementThatAllowsEC2ServiceToAssumeTheAttachedRole",
+        "Effect": "Allow",
+        "Principal": { "Service": "eks.amazonaws.com" },
+       "Action": "sts:AssumeRole"
+    }
+}`
+
+	assumeWorkerNodeRolePolicyDocument = `{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}`
+)
+
+func (p *Provider) DelManagedCluster() error {
+	if len(p.state.CloudInfra.Aws.ManagedClusterName) == 0 {
+		p.l.Print(p.ctx, "Skipping deleting EKS cluster.")
 		return nil
 	}
 
-	if len(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName) == 0 {
-		log.Print(awsCtx, "Skipping deleting EKS node-group.")
+	if len(p.state.CloudInfra.Aws.ManagedNodeGroupName) == 0 {
+		p.l.Print(p.ctx, "Skipping deleting EKS node-group.")
 	} else {
-		log.Print(awsCtx, "Deleting the EKS node-group", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
+		p.l.Print(p.ctx, "Deleting the EKS node-group", "name", p.state.CloudInfra.Aws.ManagedNodeGroupName)
 		nodeParameter := eks.DeleteNodegroupInput{
-			ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
-			NodegroupName: aws.String(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName),
+			ClusterName:   aws.String(p.state.CloudInfra.Aws.ManagedClusterName),
+			NodegroupName: aws.String(p.state.CloudInfra.Aws.ManagedNodeGroupName),
 		}
 
-		_, err := obj.client.BeginDeleteNodeGroup(awsCtx, &nodeParameter)
+		_, err := p.client.BeginDeleteNodeGroup(p.ctx, &nodeParameter)
 		if err != nil {
 			return err
 		}
 
-		log.Success(awsCtx, "Deleted the EKS node-group", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
+		p.l.Success(p.ctx, "Deleted the EKS node-group", "name", p.state.CloudInfra.Aws.ManagedNodeGroupName)
 
-		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = ""
-		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = ""
-		mainStateDocument.CloudInfra.Aws.NoManagedNodes = 0
-		mainStateDocument.CloudInfra.Aws.ManagedNodeSize = ""
-		err = storage.Write(mainStateDocument)
+		p.state.CloudInfra.Aws.ManagedNodeGroupName = ""
+		p.state.CloudInfra.Aws.ManagedNodeGroupArn = ""
+		p.state.CloudInfra.Aws.NoManagedNodes = 0
+		p.state.CloudInfra.Aws.ManagedNodeSize = ""
+		err = p.store.Write(p.state)
 		if err != nil {
 			return err
 		}
 	}
 
-	log.Print(awsCtx, "Deleting the EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	p.l.Print(p.ctx, "Deleting the EKS cluster", "name", p.state.CloudInfra.Aws.ManagedClusterName)
 	clusterPerimeter := eks.DeleteClusterInput{
-		Name: aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+		Name: aws.String(p.state.CloudInfra.Aws.ManagedClusterName),
 	}
 
-	_, err := obj.client.BeginDeleteManagedCluster(awsCtx, &clusterPerimeter)
+	_, err := p.client.BeginDeleteManagedCluster(p.ctx, &clusterPerimeter)
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Aws.ManagedClusterName = ""
-	mainStateDocument.CloudInfra.Aws.ManagedClusterArn = ""
-	err = storage.Write(mainStateDocument)
+	p.state.CloudInfra.Aws.ManagedClusterName = ""
+	p.state.CloudInfra.Aws.ManagedClusterArn = ""
+	err = p.store.Write(p.state)
 	if err != nil {
 		return err
 	}
 
 	iamParameter := iam.DeleteRoleInput{
-		RoleName: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleNameWP),
+		RoleName: aws.String(p.state.CloudInfra.Aws.IamRoleNameWP),
 	}
 
-	_, err = obj.client.BeginDeleteIAM(awsCtx, &iamParameter, "worker")
+	_, err = p.client.BeginDeleteIAM(p.ctx, &iamParameter, "worker")
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Aws.IamRoleNameWP = ""
-	mainStateDocument.CloudInfra.Aws.IamRoleArnWP = ""
-	err = storage.Write(mainStateDocument)
+	p.state.CloudInfra.Aws.IamRoleNameWP = ""
+	p.state.CloudInfra.Aws.IamRoleArnWP = ""
+	err = p.store.Write(p.state)
 	if err != nil {
 		return err
 	}
 
 	iamParameter = iam.DeleteRoleInput{
-		RoleName: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleNameCN),
+		RoleName: aws.String(p.state.CloudInfra.Aws.IamRoleNameCN),
 	}
 
-	_, err = obj.client.BeginDeleteIAM(awsCtx, &iamParameter, "controlplane")
+	_, err = p.client.BeginDeleteIAM(p.ctx, &iamParameter, "controlplane")
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Aws.IamRoleNameCN = ""
-	mainStateDocument.CloudInfra.Aws.IamRoleArnCN = ""
-	err = storage.Write(mainStateDocument)
+	p.state.CloudInfra.Aws.IamRoleNameCN = ""
+	p.state.CloudInfra.Aws.IamRoleArnCN = ""
+	err = p.store.Write(p.state)
 	if err != nil {
 		return err
 	}
 
-	log.Success(awsCtx, "Deleted the EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
-	return storage.Write(mainStateDocument)
+	p.l.Success(p.ctx, "Deleted the EKS cluster", "name", p.state.CloudInfra.Aws.ManagedClusterName)
+	return p.store.Write(p.state)
 }
 
-func (obj *AwsProvider) NewManagedCluster(storage types.StorageFactory, noOfNode int) error {
-	name := <-obj.chResName
-	vmType := <-obj.chVMType
+func (p *Provider) NewManagedCluster(noOfNode int) error {
+	name := <-p.chResName
+	vmType := <-p.chVMType
 
 	iamRoleControlPlane := fmt.Sprintf("ksctl-%s-cp-role", name)
 
-	log.Print(awsCtx, "Creating a new EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	p.l.Print(p.ctx, "Creating a new EKS cluster", "name", p.state.CloudInfra.Aws.ManagedClusterName)
 
-	if len(mainStateDocument.CloudInfra.Aws.ManagedClusterName) != 0 {
-		log.Print(awsCtx, "skipped already created EKS cluster", "name", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	if len(p.state.CloudInfra.Aws.ManagedClusterName) != 0 {
+		p.l.Print(p.ctx, "skipped already created EKS cluster", "name", p.state.CloudInfra.Aws.ManagedClusterName)
 	} else {
 
-		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameCN) == 0 {
+		if len(p.state.CloudInfra.Aws.IamRoleNameCN) == 0 {
 			iamParameter := iam.CreateRoleInput{
 				RoleName:                 aws.String(iamRoleControlPlane),
 				AssumeRolePolicyDocument: aws.String(assumeClusterRolePolicyDocument),
 			}
-			iamRespCp, err := obj.client.BeginCreateIAM(awsCtx, "controlplane", &iamParameter)
+			iamRespCp, err := p.client.BeginCreateIAM(p.ctx, "controlplane", &iamParameter)
 			if err != nil {
 				return err
 			}
 
-			mainStateDocument.CloudInfra.Aws.IamRoleNameCN = *iamRespCp.Role.RoleName
-			mainStateDocument.CloudInfra.Aws.IamRoleArnCN = *iamRespCp.Role.Arn
+			p.state.CloudInfra.Aws.IamRoleNameCN = *iamRespCp.Role.RoleName
+			p.state.CloudInfra.Aws.IamRoleArnCN = *iamRespCp.Role.Arn
 
-			err = storage.Write(mainStateDocument)
+			err = p.store.Write(p.state)
 			if err != nil {
 				return err
 			}
 
-			log.Success(awsCtx, "created the EKS controlplane role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameCN)
+			p.l.Success(p.ctx, "created the EKS controlplane role", "name", p.state.CloudInfra.Aws.IamRoleNameCN)
 		} else {
-			log.Print(awsCtx, "skipped already created EKS controlplane role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameCN)
+			p.l.Print(p.ctx, "skipped already created EKS controlplane role", "name", p.state.CloudInfra.Aws.IamRoleNameCN)
 		}
 
 		parameter := eks.CreateClusterInput{
 			Name:    aws.String(name),
-			RoleArn: aws.String(mainStateDocument.CloudInfra.Aws.IamRoleArnCN),
-			ResourcesVpcConfig: &eks_types.VpcConfigRequest{
+			RoleArn: aws.String(p.state.CloudInfra.Aws.IamRoleArnCN),
+			ResourcesVpcConfig: &eksTypes.VpcConfigRequest{
 				EndpointPrivateAccess: aws.Bool(true),
 				EndpointPublicAccess:  aws.Bool(true),
 				PublicAccessCidrs:     []string{"0.0.0.0/0"},
-				SubnetIds:             mainStateDocument.CloudInfra.Aws.SubnetIDs,
+				SubnetIds:             p.state.CloudInfra.Aws.SubnetIDs,
 			},
-			KubernetesNetworkConfig: &eks_types.KubernetesNetworkConfigRequest{
-				IpFamily: eks_types.IpFamilyIpv4,
+			KubernetesNetworkConfig: &eksTypes.KubernetesNetworkConfigRequest{
+				IpFamily: eksTypes.IpFamilyIpv4,
 			},
-			AccessConfig: &eks_types.CreateAccessConfigRequest{
-				AuthenticationMode:                      eks_types.AuthenticationModeApi,
+			AccessConfig: &eksTypes.CreateAccessConfigRequest{
+				AuthenticationMode:                      eksTypes.AuthenticationModeApi,
 				BootstrapClusterCreatorAdminPermissions: aws.Bool(true),
 			},
-			Version: aws.String(obj.metadata.k8sVersion),
+			Version: aws.String(p.K8sVersion),
 		}
-		mainStateDocument.CloudInfra.Aws.B.KubernetesVer = obj.metadata.k8sVersion
-		mainStateDocument.BootstrapProvider = "managed"
+		p.state.CloudInfra.Aws.B.KubernetesVer = p.K8sVersion
+		p.state.BootstrapProvider = "managed"
 
-		log.Print(awsCtx, "creating the EKS Controlplane")
-		clusterResp, err := obj.client.BeginCreateEKS(awsCtx, &parameter)
+		p.l.Print(p.ctx, "creating the EKS Controlplane")
+		clusterResp, err := p.client.BeginCreateEKS(p.ctx, &parameter)
 		if err != nil {
 			return err
 		}
 
-		mainStateDocument.CloudInfra.Aws.ManagedClusterName = *clusterResp.Cluster.Name
-		err = storage.Write(mainStateDocument)
+		p.state.CloudInfra.Aws.ManagedClusterName = *clusterResp.Cluster.Name
+		err = p.store.Write(p.state)
 		if err != nil {
 			return err
 		}
 	}
-	iamRoleWorkerPlane := fmt.Sprintf("ksctl-%s-wp-role", mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	iamRoleWorkerPlane := fmt.Sprintf("ksctl-%s-wp-role", p.state.CloudInfra.Aws.ManagedClusterName)
 
-	if len(mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName) != 0 {
-		log.Print(awsCtx, "skipped already created EKS nodegroup", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
+	if len(p.state.CloudInfra.Aws.ManagedNodeGroupName) != 0 {
+		p.l.Print(p.ctx, "skipped already created EKS nodegroup", "name", p.state.CloudInfra.Aws.ManagedNodeGroupName)
 	} else {
-		if len(mainStateDocument.CloudInfra.Aws.IamRoleNameWP) == 0 {
+		if len(p.state.CloudInfra.Aws.IamRoleNameWP) == 0 {
 			iamParameter := iam.CreateRoleInput{
 				RoleName:                 aws.String(iamRoleWorkerPlane),
 				AssumeRolePolicyDocument: aws.String(assumeWorkerNodeRolePolicyDocument),
 			}
-			iamRespWp, err := obj.client.BeginCreateIAM(awsCtx, "worker", &iamParameter)
+			iamRespWp, err := p.client.BeginCreateIAM(p.ctx, "worker", &iamParameter)
 			if err != nil {
 				return err
 			}
 
-			mainStateDocument.CloudInfra.Aws.IamRoleNameWP = *iamRespWp.Role.RoleName
-			mainStateDocument.CloudInfra.Aws.IamRoleArnWP = *iamRespWp.Role.Arn
-			err = storage.Write(mainStateDocument)
+			p.state.CloudInfra.Aws.IamRoleNameWP = *iamRespWp.Role.RoleName
+			p.state.CloudInfra.Aws.IamRoleArnWP = *iamRespWp.Role.Arn
+			err = p.store.Write(p.state)
 			if err != nil {
 				return err
 			}
 
-			log.Success(awsCtx, "created the EKS worker role", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
+			p.l.Success(p.ctx, "created the EKS worker role", "name", p.state.CloudInfra.Aws.IamRoleNameWP)
 		} else {
-			log.Print(awsCtx, "skipped already created ROLE EKS Worker", "name", mainStateDocument.CloudInfra.Aws.IamRoleNameWP)
+			p.l.Print(p.ctx, "skipped already created ROLE EKS Worker", "name", p.state.CloudInfra.Aws.IamRoleNameWP)
 		}
 
-		eksNodeGroupName := mainStateDocument.CloudInfra.Aws.ManagedClusterName + "-nodegroup"
-		mainStateDocument.CloudInfra.Aws.ManagedNodeSize = vmType
-		mainStateDocument.CloudInfra.Aws.NoManagedNodes = noOfNode
+		eksNodeGroupName := p.state.CloudInfra.Aws.ManagedClusterName + "-nodegroup"
+		p.state.CloudInfra.Aws.ManagedNodeSize = vmType
+		p.state.CloudInfra.Aws.NoManagedNodes = noOfNode
 
 		nodegroup := eks.CreateNodegroupInput{
-			ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
-			NodeRole:      aws.String(mainStateDocument.CloudInfra.Aws.IamRoleArnWP),
+			ClusterName:   aws.String(p.state.CloudInfra.Aws.ManagedClusterName),
+			NodeRole:      aws.String(p.state.CloudInfra.Aws.IamRoleArnWP),
 			NodegroupName: aws.String(eksNodeGroupName),
-			Subnets:       mainStateDocument.CloudInfra.Aws.SubnetIDs,
-			CapacityType:  eks_types.CapacityTypesOnDemand,
+			Subnets:       p.state.CloudInfra.Aws.SubnetIDs,
+			CapacityType:  eksTypes.CapacityTypesOnDemand,
 
 			InstanceTypes: []string{vmType},
 			DiskSize:      aws.Int32(30),
 
-			ScalingConfig: &eks_types.NodegroupScalingConfig{
+			ScalingConfig: &eksTypes.NodegroupScalingConfig{
 				DesiredSize: aws.Int32(int32(noOfNode)),
 				MaxSize:     aws.Int32(int32(noOfNode)),
 				MinSize:     aws.Int32(int32(noOfNode)),
 			},
 		}
-		log.Print(awsCtx, "creating the EKS nodegroup")
+		p.l.Print(p.ctx, "creating the EKS nodegroup")
 
-		nodeResp, err := obj.client.BeginCreateNodeGroup(awsCtx, &nodegroup)
+		nodeResp, err := p.client.BeginCreateNodeGroup(p.ctx, &nodegroup)
 		if err != nil {
 			return err
 		}
-		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupVmSize = vmType
-		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = *nodeResp.Nodegroup.NodegroupName
-		mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = *nodeResp.Nodegroup.NodegroupArn
+		p.state.CloudInfra.Aws.ManagedNodeGroupVmSize = vmType
+		p.state.CloudInfra.Aws.ManagedNodeGroupName = *nodeResp.Nodegroup.NodegroupName
+		p.state.CloudInfra.Aws.ManagedNodeGroupArn = *nodeResp.Nodegroup.NodegroupArn
 
-		err = storage.Write(mainStateDocument)
+		err = p.store.Write(p.state)
 		if err != nil {
 			return err
 		}
-		log.Success(awsCtx, "created the EKS nodegroup", "name", mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName)
+		p.l.Success(p.ctx, "created the EKS nodegroup", "name", p.state.CloudInfra.Aws.ManagedNodeGroupName)
 
 	}
 
-	kubeconfig, err := obj.client.GetKubeConfig(awsCtx, mainStateDocument.CloudInfra.Aws.ManagedClusterName)
+	kubeconfig, err := p.client.GetKubeConfig(p.ctx, p.state.CloudInfra.Aws.ManagedClusterName)
 	if err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Aws.B.IsCompleted = true
+	p.state.CloudInfra.Aws.B.IsCompleted = true
 
-	mainStateDocument.ClusterKubeConfig = kubeconfig
-	mainStateDocument.ClusterKubeConfigContext = mainStateDocument.CloudInfra.Aws.ManagedClusterName
+	p.state.ClusterKubeConfig = kubeconfig
+	p.state.ClusterKubeConfigContext = p.state.CloudInfra.Aws.ManagedClusterName
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 

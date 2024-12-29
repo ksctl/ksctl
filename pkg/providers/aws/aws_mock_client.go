@@ -22,7 +22,6 @@ import (
 	eksTypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	iamTypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/smithy-go/middleware"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -31,15 +30,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 )
 
-func ProvideClient() AwsGo {
+func ProvideClient() CloudSDK {
 	return &AwsClient{}
 }
 
 type AwsClient struct {
 	region string
+	b      *Provider
 }
 
-func (*AwsClient) AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
+func (*ZZZZ) AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
 	return nil
 }
 
@@ -143,15 +143,15 @@ func (mock *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.Create
 	return vpc, nil
 }
 
-func (mock *AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+func (mock *AwsClient) BeginDeleteVpc(ctx context.Context) error {
 
-	mainStateDocument.CloudInfra.Aws.VpcId = ""
+	mock.b.state.CloudInfra.Aws.VpcId = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+	if err := mock.b.store.Write(mock.b.state); err != nil {
+		return mock.b.l.NewError(mock.b.ctx, "Error Writing State File", "Reason", err)
 	}
 
-	log.Success(awsCtx, "deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcId)
+	mock.b.l.Success(mock.b.ctx, "deleted the vpc", "id", mock.b.state.CloudInfra.Aws.VpcId)
 
 	return nil
 
@@ -187,16 +187,16 @@ func (mock *AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOut
 	}, nil
 }
 
-func (mock *AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
+func (mock *AwsClient) BeginDeleteSubNet(ctx context.Context, subnetID string) error {
 
-	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
-		mainStateDocument.CloudInfra.Aws.SubnetIDs[i] = ""
+	for i := 0; i < len(mock.b.state.CloudInfra.Aws.SubnetIDs); i++ {
+		mock.b.state.CloudInfra.Aws.SubnetIDs[i] = ""
 
-		if err := storage.Write(mainStateDocument); err != nil {
-			return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+		if err := mock.b.store.Write(mock.b.state); err != nil {
+			return mock.b.l.NewError(mock.b.ctx, "Error Writing State File", "Reason", err)
 		}
 
-		log.Success(awsCtx, "deleted the subnet ", mainStateDocument.CloudInfra.Aws.SubnetNames)
+		mock.b.l.Success(mock.b.ctx, "deleted the subnet ", mock.b.state.CloudInfra.Aws.SubnetNames)
 
 	}
 
@@ -234,20 +234,16 @@ func (mock *AwsClient) BeginDeleteVM(vmname string) error {
 	return nil
 }
 
-func (mock *AwsClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+func (mock *AwsClient) BeginDeleteVirtNet(ctx context.Context) error {
 
-	mainStateDocument.CloudInfra.Aws.GatewayID = ""
-	mainStateDocument.CloudInfra.Aws.RouteTableID = ""
-	mainStateDocument.CloudInfra.Aws.NetworkAclID = ""
+	mock.b.state.CloudInfra.Aws.GatewayID = ""
+	mock.b.state.CloudInfra.Aws.RouteTableID = ""
+	mock.b.state.CloudInfra.Aws.NetworkAclID = ""
 
-	if err := storage.Write(mainStateDocument); err != nil {
-		return log.NewError(awsCtx, "Error Writing State File", "Reason", err)
+	if err := mock.b.store.Write(mock.b.state); err != nil {
+		return mock.b.l.NewError(mock.b.ctx, "Error Writing State File", "Reason", err)
 	}
 
-	return nil
-}
-
-func (mock *AwsClient) CreateSSHKey() error {
 	return nil
 }
 
@@ -281,7 +277,7 @@ func (mock *AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID str
 	return nil
 }
 
-func (mock *AwsClient) InitClient(storage ksctlTypes.StorageFactory) error {
+func (mock *AwsClient) InitClient(b *Provider) error {
 	return nil
 }
 
@@ -290,7 +286,7 @@ func (mock *AwsClient) ImportKeyPair(ctx context.Context, keypair *ec2.ImportKey
 	return nil
 }
 
-func (awsclient *AwsClient) ListLocations() ([]string, error) {
+func (mock *AwsClient) ListLocations() ([]string, error) {
 
 	return []string{"fake-region"}, nil
 }
@@ -310,17 +306,6 @@ func (mock *AwsClient) ModifyVpcAttribute(ctx context.Context) error {
 }
 
 func (mock *AwsClient) ModifySubnetAttribute(ctx context.Context, i int) error {
-	return nil
-}
-func (mock *AwsClient) SetRegion(string) {
-	mock.region = "fake-region"
-}
-
-func (mock *AwsClient) SetVpc(string) string {
-	return "fake-vpc"
-}
-
-func (mock *AwsClient) InitState(storage ksctlTypes.StorageFactory) error {
 	return nil
 }
 

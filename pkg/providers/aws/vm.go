@@ -15,42 +15,40 @@
 package aws
 
 import (
-	"context"
 	"encoding/base64"
 	"strconv"
+
+	"github.com/ksctl/ksctl/pkg/providers"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
-
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 )
 
-func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) error {
+func (p *Provider) DelVM(index int) error {
 
-	role := <-obj.chRole
+	role := <-p.chRole
 	indexNo := index
 
-	log.Debug(awsCtx, "Printing", "role", role, "indexNo", indexNo)
+	p.l.Debug(p.ctx, "Printing", "role", role, "indexNo", indexNo)
 
 	vmName := ""
 
 	switch role {
 	case consts.RoleCp:
-		vmName = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo]
+		vmName = p.state.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo]
 	case consts.RoleDs:
-		vmName = mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo]
+		vmName = p.state.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo]
 	case consts.RoleLb:
-		vmName = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID
+		vmName = p.state.CloudInfra.Aws.InfoLoadBalancer.InstanceID
 	case consts.RoleWp:
-		vmName = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo]
+		vmName = p.state.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo]
 	}
 
 	if len(vmName) == 0 {
-		log.Success(awsCtx, "skipped already deleted the vm")
+		p.l.Success(p.ctx, "skipped already deleted the vm")
 	} else {
 
 		var errDel error
@@ -58,36 +56,36 @@ func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) erro
 		go func() {
 			defer close(donePoll)
 
-			err := obj.client.BeginDeleteVM(vmName)
+			err := p.client.BeginDeleteVM(vmName)
 			if err != nil {
 				errDel = err
 				return
 			}
-			obj.mu.Lock()
-			defer obj.mu.Unlock()
+			p.mu.Lock()
+			defer p.mu.Unlock()
 
 			switch role {
 			case consts.RoleWp:
-				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = ""
-				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = ""
+				p.state.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = ""
+				p.state.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = ""
 			case consts.RoleCp:
-				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = ""
-				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = ""
+				p.state.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = ""
+				p.state.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = ""
 			case consts.RoleLb:
-				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = ""
-				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = ""
+				p.state.CloudInfra.Aws.InfoLoadBalancer.InstanceID = ""
+				p.state.CloudInfra.Aws.InfoLoadBalancer.VMSize = ""
 			case consts.RoleDs:
-				mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = ""
-				mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = ""
+				p.state.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = ""
+				p.state.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = ""
 			}
 
-			err = obj.DeleteNetworkInterface(awsCtx, storage, indexNo, role)
+			err = p.DeleteNetworkInterface(indexNo, role)
 			if err != nil {
 				errDel = err
 				return
 			}
 
-			if err := storage.Write(mainStateDocument); err != nil {
+			if err := p.store.Write(p.state); err != nil {
 				errDel = err
 				return
 			}
@@ -96,37 +94,37 @@ func (obj *AwsProvider) DelVM(storage ksctlTypes.StorageFactory, index int) erro
 		if errDel != nil {
 			return errDel
 		}
-		log.Success(awsCtx, "Deleted the vm", "id", vmName)
+		p.l.Success(p.ctx, "Deleted the vm", "id", vmName)
 	}
 	return nil
 }
 
-func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksctlTypes.StorageFactory, resName string, index int, role consts.KsctlRole) (string, error) {
+func (p *Provider) CreateNetworkInterface(resName string, index int, role consts.KsctlRole) (string, error) {
 
-	securitygroup, err := fetchgroupid(role)
+	securitygroup, err := p.fetchgroupid(role)
 	if err != nil {
 		return "", err
 	}
 	nicid := ""
 	switch role {
 	case consts.RoleWp:
-		nicid = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index]
+		nicid = p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index]
 	case consts.RoleCp:
-		nicid = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index]
+		nicid = p.state.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index]
 	case consts.RoleLb:
-		nicid = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId
+		nicid = p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId
 	case consts.RoleDs:
-		nicid = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index]
+		nicid = p.state.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index]
 	}
 
 	if len(nicid) != 0 {
-		log.Print(awsCtx, "skipped already created the network interface", "id", nicid)
+		p.l.Print(p.ctx, "skipped already created the network interface", "id", nicid)
 		return nicid, nil
 	}
 
 	interfaceparameter := &ec2.CreateNetworkInterfaceInput{
 		Description: aws.String("network interface"),
-		SubnetId:    aws.String(mainStateDocument.CloudInfra.Aws.SubnetIDs[0]),
+		SubnetId:    aws.String(p.state.CloudInfra.Aws.SubnetIDs[0]),
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceType("network-interface"),
@@ -143,7 +141,7 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 		},
 	}
 
-	nicresponse, err := obj.client.BeginCreateNIC(ctx, interfaceparameter)
+	nicresponse, err := p.client.BeginCreateNIC(p.ctx, interfaceparameter)
 	if err != nil {
 		return "", err
 	}
@@ -152,20 +150,20 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		obj.mu.Lock()
-		defer obj.mu.Unlock()
+		p.mu.Lock()
+		defer p.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
+			p.state.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId = *nicresponse.NetworkInterface.NetworkInterfaceId
+			p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId = *nicresponse.NetworkInterface.NetworkInterfaceId
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
+			p.state.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = *nicresponse.NetworkInterface.NetworkInterfaceId
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			errCreate = err
 		}
 	}()
@@ -173,77 +171,77 @@ func (obj *AwsProvider) CreateNetworkInterface(ctx context.Context, storage ksct
 	if errCreate != nil {
 		return "", errCreate
 	}
-	log.Success(awsCtx, "Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
+	p.l.Success(p.ctx, "Created network interface", "id", *nicresponse.NetworkInterface.NetworkInterfaceId)
 	return *nicresponse.NetworkInterface.NetworkInterfaceId, nil
 }
 
-func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) error {
-	name := <-obj.chResName
+func (p *Provider) NewVM(index int) error {
+	name := <-p.chResName
 	indexNo := index
-	role := <-obj.chRole
-	vmtype := <-obj.chVMType
+	role := <-p.chRole
+	vmtype := <-p.chVMType
 
-	log.Debug(awsCtx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
+	p.l.Debug(p.ctx, "Printing", "name", name, "indexNo", indexNo, "role", role, "vmType", vmtype)
 
 	instanceId := ""
 	instanceIp := ""
 	switch role {
 	case consts.RoleCp:
-		instanceId = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo]
-		instanceIp = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo]
+		instanceId = p.state.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo]
+		instanceIp = p.state.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo]
 	case consts.RoleDs:
-		instanceId = mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo]
-		instanceIp = mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo]
+		instanceId = p.state.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo]
+		instanceIp = p.state.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo]
 	case consts.RoleLb:
-		instanceId = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID
-		instanceIp = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP
+		instanceId = p.state.CloudInfra.Aws.InfoLoadBalancer.InstanceID
+		instanceIp = p.state.CloudInfra.Aws.InfoLoadBalancer.PublicIP
 	case consts.RoleWp:
-		instanceId = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo]
-		instanceIp = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo]
+		instanceId = p.state.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo]
+		instanceIp = p.state.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo]
 	}
 	if len(instanceId) != 0 {
 		if len(instanceIp) != 0 {
-			log.Print(awsCtx, "skipped vm already created", "name", instanceId)
+			p.l.Print(p.ctx, "skipped vm already created", "name", instanceId)
 			return nil
 		} else {
-			instance_ip, err := obj.client.DescribeInstanceState(awsCtx, instanceId)
+			instanceIp, err := p.client.DescribeInstanceState(p.ctx, instanceId)
 			if err != nil {
 				return err
 			}
 
-			publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
-			privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
+			publicip := instanceIp.Reservations[0].Instances[0].PublicIpAddress
+			privateip := instanceIp.Reservations[0].Instances[0].PrivateIpAddress
 
-			obj.mu.Lock()
-			defer obj.mu.Unlock()
+			p.mu.Lock()
+			defer p.mu.Unlock()
 
 			switch role {
 			case consts.RoleWp:
-				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
-				mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
+				p.state.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
+				p.state.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
 			case consts.RoleCp:
-				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
-				mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
+				p.state.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
+				p.state.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
 			case consts.RoleLb:
-				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
-				mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
+				p.state.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
+				p.state.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
 			case consts.RoleDs:
-				mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
-				mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
+				p.state.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
+				p.state.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
 			}
 		}
 	}
 
-	nicid, err := obj.CreateNetworkInterface(awsCtx, storage, name, indexNo, role)
+	nicid, err := p.CreateNetworkInterface(name, indexNo, role)
 	if err != nil {
 		return err
 	}
 
-	ami, err := obj.getLatestUbuntuAMI()
+	ami, err := p.getLatestUbuntuAMI()
 	if err != nil {
 		return err
 	}
-	initScript, err := helpers.GenerateInitScriptForVM(name)
+	initScript, err := providers.CloudInitScript(name)
 	if err != nil {
 		return err
 	}
@@ -254,7 +252,7 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		InstanceType: types.InstanceType(vmtype),
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
-		KeyName:      aws.String(mainStateDocument.CloudInfra.Aws.B.SSHKeyName),
+		KeyName:      aws.String(p.state.CloudInfra.Aws.B.SSHKeyName),
 
 		TagSpecifications: []types.TagSpecification{
 			{
@@ -277,7 +275,7 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		UserData: aws.String(initScriptBase64),
 	}
 
-	instanceop, err := obj.client.BeginCreateVM(awsCtx, parameter)
+	instanceop, err := p.client.BeginCreateVM(p.ctx, parameter)
 	if err != nil {
 		return err
 	}
@@ -289,28 +287,28 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 	done1 := make(chan struct{})
 	go func() {
 		defer close(done1)
-		obj.mu.Lock()
-		defer obj.mu.Unlock()
+		p.mu.Lock()
+		defer p.mu.Unlock()
 		switch role {
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = instanceId
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = vmtype
+			p.state.CloudInfra.Aws.InfoControlPlanes.InstanceIds[indexNo] = instanceId
+			p.state.CloudInfra.Aws.InfoControlPlanes.HostNames[indexNo] = name
+			p.state.CloudInfra.Aws.InfoControlPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = instanceId
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = vmtype
+			p.state.CloudInfra.Aws.InfoDatabase.InstanceIds[indexNo] = instanceId
+			p.state.CloudInfra.Aws.InfoDatabase.HostNames[indexNo] = name
+			p.state.CloudInfra.Aws.InfoDatabase.VMSizes[indexNo] = vmtype
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.InstanceID = instanceId
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.HostName = name
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.VMSize = vmtype
+			p.state.CloudInfra.Aws.InfoLoadBalancer.InstanceID = instanceId
+			p.state.CloudInfra.Aws.InfoLoadBalancer.HostName = name
+			p.state.CloudInfra.Aws.InfoLoadBalancer.VMSize = vmtype
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = instanceId
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.HostNames[indexNo] = name
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.InstanceIds[indexNo] = instanceId
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.HostNames[indexNo] = name
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
 		}
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			errCreateVM = err
 		}
 	}()
@@ -319,46 +317,46 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		return errCreateVM
 	}
 
-	log.Print(awsCtx, "creating vm", "vmName", name)
+	p.l.Print(p.ctx, "creating vm", "vmName", name)
 
 	done := make(chan struct{})
 
 	go func() {
 		defer close(done)
 
-		err = obj.client.InstanceInitialWaiter(awsCtx, instanceId)
+		err = p.client.InstanceInitialWaiter(p.ctx, instanceId)
 		if err != nil {
 			errCreateVM = err
 			return
 		}
 
-		instance_ip, err := obj.client.DescribeInstanceState(awsCtx, instanceId)
+		instanceIp, err := p.client.DescribeInstanceState(p.ctx, instanceId)
 		if err != nil {
 			errCreateVM = err
 			return
 		}
 
-		publicip := instance_ip.Reservations[0].Instances[0].PublicIpAddress
-		privateip := instance_ip.Reservations[0].Instances[0].PrivateIpAddress
+		publicip := instanceIp.Reservations[0].Instances[0].PublicIpAddress
+		privateip := instanceIp.Reservations[0].Instances[0].PrivateIpAddress
 
-		obj.mu.Lock()
-		defer obj.mu.Unlock()
+		p.mu.Lock()
+		defer p.mu.Unlock()
 
 		switch role {
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs[indexNo] = *publicip
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.PrivateIPs[indexNo] = *privateip
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
+			p.state.CloudInfra.Aws.InfoControlPlanes.PublicIPs[indexNo] = *publicip
+			p.state.CloudInfra.Aws.InfoControlPlanes.PrivateIPs[indexNo] = *privateip
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
+			p.state.CloudInfra.Aws.InfoLoadBalancer.PublicIP = *publicip
+			p.state.CloudInfra.Aws.InfoLoadBalancer.PrivateIP = *privateip
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
+			p.state.CloudInfra.Aws.InfoDatabase.PublicIPs[indexNo] = *publicip
+			p.state.CloudInfra.Aws.InfoDatabase.PrivateIPs[indexNo] = *privateip
 		}
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			errCreateVM = err
 			return
 		}
@@ -368,11 +366,11 @@ func (obj *AwsProvider) NewVM(storage ksctlTypes.StorageFactory, index int) erro
 		return errCreateVM
 	}
 
-	log.Success(awsCtx, "Created the vm", "name", name)
+	p.l.Success(p.ctx, "Created the vm", "name", name)
 	return nil
 }
 
-func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
+func (p *Provider) getLatestUbuntuAMI() (string, error) {
 	imageFilter := &ec2.DescribeImagesInput{
 		Filters: []types.Filter{
 			{
@@ -390,7 +388,7 @@ func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
 		},
 	}
 
-	resp, err := obj.client.FetchLatestAMIWithFilter(imageFilter)
+	resp, err := p.client.FetchLatestAMIWithFilter(imageFilter)
 	if err != nil {
 		return "", err
 	}
@@ -398,60 +396,61 @@ func (obj *AwsProvider) getLatestUbuntuAMI() (string, error) {
 	return resp, nil
 }
 
-func (obj *AwsProvider) DeleteNetworkInterface(ctx context.Context, storage ksctlTypes.StorageFactory, index int, role consts.KsctlRole) error {
+func (p *Provider) DeleteNetworkInterface(index int, role consts.KsctlRole) error {
 
 	interfaceName := ""
 	switch role {
 	case consts.RoleWp:
-		interfaceName = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index]
+		interfaceName = p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index]
 	case consts.RoleCp:
-		interfaceName = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index]
+		interfaceName = p.state.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index]
 	case consts.RoleLb:
-		interfaceName = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId
+		interfaceName = p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId
 	case consts.RoleDs:
-		interfaceName = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index]
+		interfaceName = p.state.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index]
 	}
 	if len(interfaceName) == 0 {
-		log.Print(awsCtx, "skipped already deleted the network interface")
+		p.l.Print(p.ctx, "skipped already deleted the network interface")
 	} else {
-		err := obj.client.BeginDeleteNIC(interfaceName)
+		err := p.client.BeginDeleteNIC(interfaceName)
 		if err != nil {
 			return err
 		}
 		switch role {
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index] = ""
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkInterfaceIDs[index] = ""
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index] = ""
+			p.state.CloudInfra.Aws.InfoControlPlanes.NetworkInterfaceIDs[index] = ""
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId = ""
+			p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkInterfaceId = ""
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = ""
+			p.state.CloudInfra.Aws.InfoDatabase.NetworkInterfaceIDs[index] = ""
 		}
-		err = storage.Write(mainStateDocument)
+		err = p.store.Write(p.state)
 		if err != nil {
 			return err
 		}
-		log.Success(awsCtx, "deleted the network interface", "id", interfaceName)
+		p.l.Success(p.ctx, "deleted the network interface", "id", interfaceName)
 	}
 
 	return nil
 }
 
-func fetchgroupid(role consts.KsctlRole) (string, error) {
+func (p *Provider) fetchgroupid(role consts.KsctlRole) (string, error) {
 	switch role {
 	case consts.RoleCp:
-		return mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs, nil
+		return p.state.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs, nil
 	case consts.RoleWp:
-		return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs, nil
+		return p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs, nil
 	case consts.RoleLb:
-		return mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID, nil
+		return p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID, nil
 	case consts.RoleDs:
-		return mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs, nil
+		return p.state.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs, nil
 
 	}
 
-	return "", ksctlErrors.ErrInvalidKsctlRole.Wrap(
-		log.NewError(awsCtx, "invalid role", "role", role),
+	return "", ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidKsctlRole,
+		p.l.NewError(p.ctx, "invalid role", "role", role),
 	)
 }

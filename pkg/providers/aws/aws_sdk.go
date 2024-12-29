@@ -16,68 +16,16 @@ package aws
 
 import (
 	"context"
-	"sync"
 
-	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
 
-type metadata struct {
-	public bool
-	cni    string
+type CloudSDK interface {
+	InitClient(b *Provider) error
 
-	noCP int
-	noWP int
-	noDS int
-
-	k8sVersion string
-}
-
-type StsPresignClientInteface interface {
-	PresignGetCallerIdentity(ctx context.Context, input *sts.GetCallerIdentityInput, options ...func(*sts.PresignOptions)) (*v4.PresignedHTTPRequest, error)
-}
-
-type STSTokenRetriever struct {
-	PresignClient StsPresignClientInteface
-}
-
-type customHTTPPresignerV4 struct {
-	client  sts.HTTPPresignerV4
-	headers map[string]string
-}
-
-type KubeConfigData struct {
-	ClusterEndpoint          string
-	CertificateAuthorityData string
-	ClusterName              string
-	Token                    string
-}
-
-type AwsProvider struct {
-	clusterName string
-	haCluster   bool
-	region      string
-	vpc         string
-	metadata    metadata
-
-	mu sync.Mutex
-
-	chResName chan string
-	chRole    chan consts.KsctlRole
-	chVMType  chan string
-
-	client AwsGo
-}
-
-type AwsGo interface {
 	AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error
-
-	InitClient(storage ksctlTypes.StorageFactory) error
 
 	ListLocations() ([]string, error)
 
@@ -89,9 +37,9 @@ type AwsGo interface {
 
 	BeginCreateSubNet(context context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error)
 
-	BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error
+	BeginDeleteVirtNet(ctx context.Context) error
 
-	BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error
+	BeginDeleteSubNet(ctx context.Context, subnetID string) error
 
 	DeleteSSHKey(ctx context.Context, name string) error
 
@@ -103,7 +51,7 @@ type AwsGo interface {
 
 	BeginDeleteNIC(nicID string) error
 
-	BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error
+	BeginDeleteVpc(ctx context.Context) error
 
 	BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error)
 
@@ -133,10 +81,7 @@ type AwsGo interface {
 	BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error)
 	BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput, node string) (*iam.DeleteRoleOutput, error)
 
-	GetKubeConfig(ctx context.Context, cluster string) (string, error)
+	GetKubeConfig(ctx context.Context, clusterName string) (string, error)
 
 	ListK8sVersions(ctx context.Context) ([]string, error)
-
-	SetRegion(string)
-	SetVpc(string) string
 }

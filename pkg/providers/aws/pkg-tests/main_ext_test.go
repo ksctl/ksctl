@@ -17,28 +17,34 @@ package pkg_tests_test
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/internal/cloudproviders/aws"
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/types"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/providers/aws"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
+	localstate "github.com/ksctl/ksctl/pkg/storage/host"
 )
 
 var (
-	fakeClientHA types.CloudFactory
-	storeHA      types.StorageFactory
+	fakeClientHA providers.Cloud
+	storeHA      storage.Storage
 
-	fakeClientManaged types.CloudFactory
-	storeManaged      types.StorageFactory
+	fakeClientManaged providers.Cloud
+	storeManaged      storage.Storage
 	parentCtx         context.Context
-	fakeClientVars    types.CloudFactory
-	storeVars         types.StorageFactory
+	fakeClientVars    providers.Cloud
+	storeVars         storage.Storage
 
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
+
+	stateDocumentHA      *statefile.StorageDocument // it is to make the address accessable for us in the test
+	stateDocumentManaged *statefile.StorageDocument // it is to make the address accessable for us in the test
 
 	dir = filepath.Join(os.TempDir(), "ksctl-aws-pkg-test")
 )
@@ -50,16 +56,23 @@ func TestMain(m *testing.M) {
 		consts.KsctlCustomDirLoc,
 		dir)
 
-	fakeClientVars, _ = aws.NewClient(parentCtx, types.Metadata{
-		ClusterName: "demo",
-		Region:      "fake-region",
-		Provider:    consts.CloudAws,
-		IsHA:        true,
-	}, parentLogger, &storageTypes.StorageDocument{}, aws.ProvideClient)
-
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeHa)
 	_ = storeVars.Connect()
+
+	fakeClientVars, _ = aws.NewClient(
+		parentCtx,
+		parentLogger,
+		controller.Metadata{
+			ClusterName: "demo",
+			Region:      "fake-region",
+			Provider:    consts.CloudAws,
+			IsHA:        true,
+		},
+		&statefile.StorageDocument{},
+		storeVars,
+		aws.ProvideClient,
+	)
 
 	exitVal := m.Run()
 

@@ -17,65 +17,64 @@ package aws
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/ssh"
 )
 
-func (obj *AwsProvider) CreateUploadSSHKeyPair(storage types.StorageFactory) error {
+func (p *Provider) CreateUploadSSHKeyPair() error {
 
-	name := <-obj.chResName
-	log.Debug(awsCtx, "Printing", "name", name)
+	name := <-p.chResName
+	p.l.Debug(p.ctx, "Printing", "name", name)
 
-	if len(mainStateDocument.CloudInfra.Aws.B.SSHKeyName) != 0 {
-		log.Success(awsCtx, "skipped ssh key already created", "name", mainStateDocument.CloudInfra.Aws.B.SSHKeyName)
+	if len(p.state.CloudInfra.Aws.B.SSHKeyName) != 0 {
+		p.l.Success(p.ctx, "skipped ssh key already created", "name", p.state.CloudInfra.Aws.B.SSHKeyName)
 		return nil
 	}
 
-	err := helpers.CreateSSHKeyPair(awsCtx, log, mainStateDocument)
+	err := ssh.CreateSSHKeyPair(p.ctx, p.l, p.state)
 	if err != nil {
 		return err
 	}
 
 	parameter := &ec2.ImportKeyPairInput{
 		KeyName:           aws.String(name),
-		PublicKeyMaterial: []byte(mainStateDocument.SSHKeyPair.PublicKey),
+		PublicKeyMaterial: []byte(p.state.SSHKeyPair.PublicKey),
 	}
 
-	if err := obj.client.ImportKeyPair(awsCtx, parameter); err != nil {
+	if err := p.client.ImportKeyPair(p.ctx, parameter); err != nil {
 		return err
 	}
 
-	mainStateDocument.CloudInfra.Aws.B.SSHKeyName = name
-	mainStateDocument.CloudInfra.Aws.B.SSHUser = "ubuntu"
+	p.state.CloudInfra.Aws.B.SSHKeyName = name
+	p.state.CloudInfra.Aws.B.SSHUser = "ubuntu"
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
-	log.Success(awsCtx, "created the ssh key pair", "name", mainStateDocument.CloudInfra.Aws.B.SSHKeyName)
+	p.l.Success(p.ctx, "created the ssh key pair", "name", p.state.CloudInfra.Aws.B.SSHKeyName)
 
 	return nil
 }
 
-func (obj *AwsProvider) DelSSHKeyPair(storage types.StorageFactory) error {
+func (p *Provider) DelSSHKeyPair() error {
 
-	if len(mainStateDocument.CloudInfra.Aws.B.SSHKeyName) == 0 {
-		log.Success(awsCtx, "skipped already deleted the ssh key", "name", mainStateDocument.CloudInfra.Aws.B.SSHKeyName)
+	if len(p.state.CloudInfra.Aws.B.SSHKeyName) == 0 {
+		p.l.Success(p.ctx, "skipped already deleted the ssh key", "name", p.state.CloudInfra.Aws.B.SSHKeyName)
 	} else {
-		err := obj.client.DeleteSSHKey(awsCtx, mainStateDocument.CloudInfra.Aws.B.SSHKeyName)
+		err := p.client.DeleteSSHKey(p.ctx, p.state.CloudInfra.Aws.B.SSHKeyName)
 		if err != nil {
 			return err
 		}
 
-		sshName := mainStateDocument.CloudInfra.Aws.B.SSHKeyName
+		sshName := p.state.CloudInfra.Aws.B.SSHKeyName
 
-		mainStateDocument.CloudInfra.Aws.B.SSHKeyName = ""
-		mainStateDocument.CloudInfra.Aws.B.SSHUser = ""
+		p.state.CloudInfra.Aws.B.SSHKeyName = ""
+		p.state.CloudInfra.Aws.B.SSHUser = ""
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			return err
 		}
 
-		log.Success(awsCtx, "deleted the ssh key pair", "name", sshName)
+		p.l.Success(p.ctx, "deleted the ssh key pair", "name", sshName)
 	}
 
 	return nil

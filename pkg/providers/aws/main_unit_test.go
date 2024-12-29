@@ -17,27 +17,30 @@ package aws
 import (
 	"context"
 	"fmt"
-	localstate "github.com/ksctl/ksctl/internal/storage/local"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/types"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
+
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/logger"
+	localstate "github.com/ksctl/ksctl/pkg/storage/host"
 )
 
 var (
-	fakeClientHA *AwsProvider
-	storeHA      types.StorageFactory
+	fakeClientHA *Provider
+	storeHA      storage.Storage
 
-	fakeClientManaged *AwsProvider
-	storeManaged      types.StorageFactory
+	fakeClientManaged *Provider
+	storeManaged      storage.Storage
 	parentCtx         context.Context
-	fakeClientVars    *AwsProvider
-	storeVars         types.StorageFactory
+	fakeClientVars    *Provider
+	storeVars         storage.Storage
 
-	parentLogger types.LoggerFactory = logger.NewStructuredLogger(-1, os.Stdout)
+	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = filepath.Join(os.TempDir(), "ksctl-aws-test")
 )
@@ -49,16 +52,22 @@ func TestMain(m *testing.M) {
 		consts.KsctlCustomDirLoc,
 		dir)
 
-	fakeClientVars, _ = NewClient(parentCtx, types.Metadata{
-		ClusterName: "demo",
-		Region:      "fake-region",
-		Provider:    consts.CloudAws,
-		IsHA:        true,
-	}, parentLogger, &storageTypes.StorageDocument{}, ProvideClient)
-
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeHa)
 	_ = storeVars.Connect()
+
+	fakeClientVars, _ = NewClient(
+		parentCtx,
+		parentLogger,
+		controller.Metadata{
+			ClusterName: "demo",
+			Region:      "fake-region",
+			Provider:    consts.CloudAws,
+			IsHA:        true,
+		},
+		&statefile.StorageDocument{},
+		storeVars,
+		ProvideClient)
 
 	exitVal := m.Run()
 

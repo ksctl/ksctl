@@ -36,9 +36,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 )
 
 const kubeconfigTemplate = `apiVersion: v1
@@ -79,23 +78,22 @@ const (
 	managedNodeGroupDeletionWaiter = time.Minute * 15
 )
 
-func ProvideClient() AwsGo {
+func ProvideClient() CloudSDK {
 	return &AwsClient{}
 }
 
 type AwsClient struct {
-	region    string
-	vpc       string
 	stsClient *sts.Client
 	ec2Client *ec2.Client
 	eksClient *eks.Client
 	config    *aws.Config
 	iam       *iam.Client
-	storage   ksctlTypes.StorageFactory
+
+	b *Provider
 }
 
-func newEC2Client(region string) (aws.Config, error) {
-	_session, err := config.LoadDefaultConfig(awsCtx,
+func (l *AwsClient) newEC2Client(region string) (aws.Config, error) {
+	_session, err := config.LoadDefaultConfig(l.b.ctx,
 		config.WithRegion(region),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
@@ -106,37 +104,41 @@ func newEC2Client(region string) (aws.Config, error) {
 		),
 	)
 	if err != nil {
-		return _session, ksctlErrors.ErrInternal.Wrap(
-			log.NewError(awsCtx, "Failed Init aws session", "Reason", err),
+		return _session, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			l.b.l.NewError(l.b.ctx, "Failed Init aws session", "Reason", err),
 		)
 	}
-	log.Success(awsCtx, "AWS Session created successfully")
+	l.b.l.Success(l.b.ctx, "AWS Session created successfully")
 	return _session, nil
 }
 
-func (client *AwsClient) AuthorizeSecurityGroupIngress(ctx context.Context,
+func (l *AwsClient) AuthorizeSecurityGroupIngress(ctx context.Context,
 	parameter ec2.AuthorizeSecurityGroupIngressInput) error {
 
-	_, err := client.ec2Client.AuthorizeSecurityGroupIngress(ctx, &parameter)
+	_, err := l.ec2Client.AuthorizeSecurityGroupIngress(ctx, &parameter)
 	if err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Authorizing Security Group Ingress", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Authorizing Security Group Ingress", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
-	resp, err := client.ec2Client.DescribeImages(awsCtx, filter)
+func (l *AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (string, error) {
+	resp, err := l.ec2Client.DescribeImages(l.b.ctx, filter)
 	if err != nil {
-		return "", ksctlErrors.ErrInternal.Wrap(
-			log.NewError(awsCtx, "failed to describe images", "Reason", err),
+		return "", ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			l.b.l.NewError(l.b.ctx, "failed to describe images", "Reason", err),
 		)
 	}
 	if len(resp.Images) == 0 {
-		return "", ksctlErrors.ErrInternal.Wrap(
-			log.NewError(awsCtx, "no images found"),
+		return "", ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			l.b.l.NewError(l.b.ctx, "no images found"),
 		)
 	}
 
@@ -155,9 +157,9 @@ func (client *AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInpu
 	for x := 0; x < 2; x++ {
 		i := savedImages[x]
 		if i.ImageOwnerAlias != nil {
-			log.Debug(awsCtx, "ownerAlias", *i.ImageOwnerAlias)
+			l.b.l.Debug(l.b.ctx, "ownerAlias", *i.ImageOwnerAlias)
 		}
-		log.Debug(awsCtx, "Printing amis", "creationdate", *i.CreationDate, "public", *i.Public, "ownerid", *i.OwnerId, "architecture", i.Architecture.Values(), "name", *i.Name, "imageid", *i.ImageId)
+		l.b.l.Debug(l.b.ctx, "Printing amis", "creationdate", *i.CreationDate, "public", *i.Public, "ownerid", *i.OwnerId, "architecture", i.Architecture.Values(), "name", *i.Name, "imageid", *i.ImageId)
 	}
 
 	selectedAMI := *savedImages[0].ImageId
@@ -175,29 +177,31 @@ func trustedSource(id string) bool {
 	return true
 }
 
-func (client *AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
-	azs, err := client.ec2Client.DescribeAvailabilityZones(awsCtx, &ec2.DescribeAvailabilityZonesInput{
+func (l *AwsClient) GetAvailabilityZones() (*ec2.DescribeAvailabilityZonesOutput, error) {
+	azs, err := l.ec2Client.DescribeAvailabilityZones(l.b.ctx, &ec2.DescribeAvailabilityZonesInput{
 		AllAvailabilityZones: aws.Bool(true),
 	})
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "failed to describe availability zones", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "failed to describe availability zones", "Reason", err),
 		)
 	}
 
 	return azs, nil
 }
 
-func (client *AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.CreateNetworkInterfaceInput) (*ec2.CreateNetworkInterfaceOutput, error) {
+func (l *AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.CreateNetworkInterfaceInput) (*ec2.CreateNetworkInterfaceOutput, error) {
 
-	nic, err := client.ec2Client.CreateNetworkInterface(ctx, parameter)
+	nic, err := l.ec2Client.CreateNetworkInterface(ctx, parameter)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Network Interface", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Network Interface", "Reason", err),
 		)
 	}
 
-	nicExistsWaiter := ec2.NewNetworkInterfaceAvailableWaiter(client.ec2Client, func(nicwaiter *ec2.NetworkInterfaceAvailableWaiterOptions) {
+	nicExistsWaiter := ec2.NewNetworkInterfaceAvailableWaiter(l.ec2Client, func(nicwaiter *ec2.NetworkInterfaceAvailableWaiterOptions) {
 		nicwaiter.MinDelay = initialNicMinDelay
 		nicwaiter.MaxDelay = initialNicMaxDelay
 	})
@@ -206,26 +210,28 @@ func (client *AwsClient) BeginCreateNIC(ctx context.Context, parameter *ec2.Crea
 		NetworkInterfaceIds: []string{*nic.NetworkInterface.NetworkInterfaceId},
 	}
 
-	err = nicExistsWaiter.Wait(awsCtx, describeNICInput, initialNicWaiterTime)
+	err = nicExistsWaiter.Wait(l.b.ctx, describeNICInput, initialNicWaiterTime)
 
 	if err != nil {
-		return nil, ksctlErrors.ErrTimeOut.Wrap(
-			log.NewError(awsCtx, "Error Waiting for Network Interface", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
+			l.b.l.NewError(l.b.ctx, "Error Waiting for Network Interface", "Reason", err),
 		)
 	}
 
 	return nic, err
 }
 
-func (client *AwsClient) BeginCreateSubNet(ctx context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
-	subnet, err := client.ec2Client.CreateSubnet(ctx, &parameter)
+func (l *AwsClient) BeginCreateSubNet(ctx context.Context, subnetName string, parameter ec2.CreateSubnetInput) (*ec2.CreateSubnetOutput, error) {
+	subnet, err := l.ec2Client.CreateSubnet(ctx, &parameter)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Subnet", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Subnet", "Reason", err),
 		)
 	}
 
-	subnetExistsWaiter := ec2.NewSubnetAvailableWaiter(client.ec2Client, func(subnetwaiter *ec2.SubnetAvailableWaiterOptions) {
+	subnetExistsWaiter := ec2.NewSubnetAvailableWaiter(l.ec2Client, func(subnetwaiter *ec2.SubnetAvailableWaiterOptions) {
 		subnetwaiter.MinDelay = initialSubnetMinDelay
 		subnetwaiter.MaxDelay = initialSubnetMaxDelay
 	})
@@ -236,75 +242,82 @@ func (client *AwsClient) BeginCreateSubNet(ctx context.Context, subnetName strin
 
 	err = subnetExistsWaiter.Wait(ctx, describeSubnetInput, initialSubnetWaiterTime)
 	if err != nil {
-		return nil, ksctlErrors.ErrTimeOut.Wrap(
-			log.NewError(awsCtx, "Error Waiting for Subnet", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
+			l.b.l.NewError(l.b.ctx, "Error Waiting for Subnet", "Reason", err),
 		)
 	}
 
 	return subnet, err
 }
 
-func (client *AwsClient) BeginCreateVM(ctx context.Context, parameter *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
+func (l *AwsClient) BeginCreateVM(ctx context.Context, parameter *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
 
-	runResult, err := client.ec2Client.RunInstances(ctx, parameter)
+	runResult, err := l.ec2Client.RunInstances(ctx, parameter)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Instance", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Instance", "Reason", err),
 		)
 	}
 
 	return runResult, err
 }
 
-func (client *AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
+func (l *AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetGatewayInput, routeTableparameter ec2.CreateRouteTableInput, vpcid string) (*ec2.CreateRouteTableOutput, *ec2.CreateInternetGatewayOutput, error) {
 
-	createInternetGateway, err := client.ec2Client.CreateInternetGateway(awsCtx, &gatewayparameter)
+	createInternetGateway, err := l.ec2Client.CreateInternetGateway(l.b.ctx, &gatewayparameter)
 	if err != nil {
-		return nil, nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Internet Gateway", "Reason", err),
+		return nil, nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Internet Gateway", "Reason", err),
 		)
 	}
 
-	_, err = client.ec2Client.AttachInternetGateway(awsCtx, &ec2.AttachInternetGatewayInput{
+	_, err = l.ec2Client.AttachInternetGateway(l.b.ctx, &ec2.AttachInternetGatewayInput{
 		InternetGatewayId: aws.String(*createInternetGateway.InternetGateway.InternetGatewayId),
 		VpcId:             aws.String(vpcid),
 	})
 	if err != nil {
-		return nil, nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Attaching Internet Gateway", "Reason", err),
+		return nil, nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Attaching Internet Gateway", "Reason", err),
 		)
 	}
 
-	mainStateDocument.CloudInfra.Aws.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
+	l.b.state.CloudInfra.Aws.GatewayID = *createInternetGateway.InternetGateway.InternetGatewayId
 
-	routeTable, err := client.ec2Client.CreateRouteTable(awsCtx, &routeTableparameter)
+	routeTable, err := l.ec2Client.CreateRouteTable(l.b.ctx, &routeTableparameter)
 	if err != nil {
-		return nil, nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Route Table", "Reason", err),
+		return nil, nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Route Table", "Reason", err),
 		)
 	}
 
-	mainStateDocument.CloudInfra.Aws.RouteTableID = *routeTable.RouteTable.RouteTableId
+	l.b.state.CloudInfra.Aws.RouteTableID = *routeTable.RouteTable.RouteTableId
 
-	_, err = client.ec2Client.CreateRoute(awsCtx, &ec2.CreateRouteInput{
+	_, err = l.ec2Client.CreateRoute(l.b.ctx, &ec2.CreateRouteInput{
 		DestinationCidrBlock: aws.String("0.0.0.0/0"),
-		GatewayId:            aws.String(mainStateDocument.CloudInfra.Aws.GatewayID),
-		RouteTableId:         aws.String(mainStateDocument.CloudInfra.Aws.RouteTableID),
+		GatewayId:            aws.String(l.b.state.CloudInfra.Aws.GatewayID),
+		RouteTableId:         aws.String(l.b.state.CloudInfra.Aws.RouteTableID),
 	})
 	if err != nil {
-		return nil, nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Route", "Reason", err),
+		return nil, nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Route", "Reason", err),
 		)
 	}
 
-	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
-		_, err = client.ec2Client.AssociateRouteTable(awsCtx, &ec2.AssociateRouteTableInput{
+	for i := 0; i < len(l.b.state.CloudInfra.Aws.SubnetIDs); i++ {
+		_, err = l.ec2Client.AssociateRouteTable(l.b.ctx, &ec2.AssociateRouteTableInput{
 			RouteTableId: aws.String(*routeTable.RouteTable.RouteTableId),
-			SubnetId:     aws.String(mainStateDocument.CloudInfra.Aws.SubnetIDs[i]),
+			SubnetId:     aws.String(l.b.state.CloudInfra.Aws.SubnetIDs[i]),
 		})
 		if err != nil {
-			return nil, nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-				log.NewError(awsCtx, "Error assiciating route table", "Reason", err),
+			return nil, nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrFailedKsctlClusterOperation,
+				l.b.l.NewError(l.b.ctx, "Error assiciating route table", "Reason", err),
 			)
 		}
 	}
@@ -312,15 +325,16 @@ func (client *AwsClient) BeginCreateVirtNet(gatewayparameter ec2.CreateInternetG
 	return routeTable, createInternetGateway, err
 }
 
-func (client *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
-	vpc, err := client.ec2Client.CreateVpc(awsCtx, &parameter)
+func (l *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.CreateVpcOutput, error) {
+	vpc, err := l.ec2Client.CreateVpc(l.b.ctx, &parameter)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating VPC", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating VPC", "Reason", err),
 		)
 	}
 
-	vpcExistsWaiter := ec2.NewVpcExistsWaiter(client.ec2Client, func(vpcwaiter *ec2.VpcExistsWaiterOptions) {
+	vpcExistsWaiter := ec2.NewVpcExistsWaiter(l.ec2Client, func(vpcwaiter *ec2.VpcExistsWaiterOptions) {
 		vpcwaiter.MinDelay = 1
 		vpcwaiter.MaxDelay = 5
 	})
@@ -329,24 +343,26 @@ func (client *AwsClient) BeginCreateVpc(parameter ec2.CreateVpcInput) (*ec2.Crea
 		VpcIds: []string{*vpc.Vpc.VpcId},
 	}
 
-	err = vpcExistsWaiter.Wait(awsCtx, describeVpcInput, initialSubnetWaiterTime)
+	err = vpcExistsWaiter.Wait(l.b.ctx, describeVpcInput, initialSubnetWaiterTime)
 	if err != nil {
-		return nil, ksctlErrors.ErrTimeOut.Wrap(
-			log.NewError(awsCtx, "Error Waiting for VPC", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
+			l.b.l.NewError(l.b.ctx, "Error Waiting for VPC", "Reason", err),
 		)
 	}
 
 	return vpc, err
 }
 
-func (client *AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+func (l *AwsClient) BeginDeleteVpc(ctx context.Context) error {
 
-	_, err := client.ec2Client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
-		VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
+	_, err := l.ec2Client.DeleteVpc(ctx, &ec2.DeleteVpcInput{
+		VpcId: aws.String(l.b.state.CloudInfra.Aws.VpcId),
 	})
 	if err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Deleting VPC", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Deleting VPC", "Reason", err),
 		)
 	}
 
@@ -354,60 +370,64 @@ func (client *AwsClient) BeginDeleteVpc(ctx context.Context, storage ksctlTypes.
 
 }
 
-func (client *AwsClient) BeginDeleteNIC(nicID string) error {
+func (l *AwsClient) BeginDeleteNIC(nicID string) error {
 	initialWater := time.Now()
 	// TODO(praful): use the helpers.Backoff
 	//  also why do we wait for the nic to be available when it is deleting
 	for {
-		nic, err := client.ec2Client.DescribeNetworkInterfaces(awsCtx, &ec2.DescribeNetworkInterfacesInput{
+		nic, err := l.ec2Client.DescribeNetworkInterfaces(l.b.ctx, &ec2.DescribeNetworkInterfacesInput{
 			NetworkInterfaceIds: []string{nicID},
 		})
 		if err != nil {
-			return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-				log.NewError(awsCtx, "Error Describing Network Interface", "Reason", err),
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrFailedKsctlClusterOperation,
+				l.b.l.NewError(l.b.ctx, "Error Describing Network Interface", "Reason", err),
 			)
 		}
 		if nic.NetworkInterfaces[0].Status == "available" {
 			break
 		}
 		if time.Since(initialWater) > initialNicDeletionWaiterTime {
-			return ksctlErrors.ErrTimeOut.Wrap(
-				log.NewError(awsCtx, "Error Waiting for Network Interface Timeout", "Reason", err),
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrTimeOut,
+				l.b.l.NewError(l.b.ctx, "Error Waiting for Network Interface Timeout", "Reason", err),
 			)
 		}
 	}
-	_, err := client.ec2Client.DeleteNetworkInterface(awsCtx, &ec2.DeleteNetworkInterfaceInput{
+	_, err := l.ec2Client.DeleteNetworkInterface(l.b.ctx, &ec2.DeleteNetworkInterfaceInput{
 		NetworkInterfaceId: aws.String(nicID),
 	})
 	if err != nil {
-		log.Success(awsCtx, "skipped already deleted the nic", "id", nicID)
+		l.b.l.Success(l.b.ctx, "skipped already deleted the nic", "id", nicID)
 		return nil
 	}
 
 	return nil
 }
 
-func (client *AwsClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error {
+func (l *AwsClient) BeginDeleteSecurityGrp(ctx context.Context, securityGrpID string) error {
 
-	_, err := client.ec2Client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{
+	_, err := l.ec2Client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{
 		GroupId: aws.String(securityGrpID),
 	})
 	if err != nil {
-		return ksctlErrors.ErrTimeOut.Wrap(
-			log.NewError(awsCtx, "Error Deleting Security Group", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
+			l.b.l.NewError(l.b.ctx, "Error Deleting Security Group", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (client *AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID string) error {
+func (l *AwsClient) BeginDeleteSubNet(ctx context.Context, subnetID string) error {
 
-	_, err := client.ec2Client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
+	_, err := l.ec2Client.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{
 		SubnetId: aws.String(subnetID),
 	})
 	if err != nil {
-		return ksctlErrors.ErrTimeOut.Wrap(
-			log.NewError(awsCtx, "Error Deleting Subnet", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
+			l.b.l.NewError(l.b.ctx, "Error Deleting Subnet", "Reason", err),
 		)
 	}
 
@@ -415,16 +435,17 @@ func (client *AwsClient) BeginDeleteSubNet(ctx context.Context, storage ksctlTyp
 
 }
 
-func (client *AwsClient) BeginDeleteVM(instanceID string) error {
+func (l *AwsClient) BeginDeleteVM(instanceID string) error {
 
-	_, err := client.ec2Client.TerminateInstances(awsCtx, &ec2.TerminateInstancesInput{InstanceIds: []string{instanceID}})
+	_, err := l.ec2Client.TerminateInstances(l.b.ctx, &ec2.TerminateInstancesInput{InstanceIds: []string{instanceID}})
 	if err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "failed to delete instance", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "failed to delete instance", "Reason", err),
 		)
 	}
 
-	ec2TerminatedWaiter := ec2.NewInstanceTerminatedWaiter(client.ec2Client, func(itwo *ec2.InstanceTerminatedWaiterOptions) {
+	ec2TerminatedWaiter := ec2.NewInstanceTerminatedWaiter(l.ec2Client, func(itwo *ec2.InstanceTerminatedWaiterOptions) {
 		itwo.MinDelay = initialInstanceMinDelay
 		itwo.MaxDelay = initialInstanceMaxDelay
 	})
@@ -433,19 +454,20 @@ func (client *AwsClient) BeginDeleteVM(instanceID string) error {
 		InstanceIds: []string{instanceID},
 	}
 
-	err = ec2TerminatedWaiter.Wait(awsCtx, describeEc2Inp, instanceInitialTerminationTime)
+	err = ec2TerminatedWaiter.Wait(l.b.ctx, describeEc2Inp, instanceInitialTerminationTime)
 	if err != nil {
-		return ksctlErrors.ErrTimeOut.Wrap(
-			log.NewError(awsCtx, "failed to wait for instance to terminate", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
+			l.b.l.NewError(l.b.ctx, "failed to wait for instance to terminate", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID string) error {
+func (l *AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID string) error {
 
-	instanceExistsWaiter := ec2.NewInstanceStatusOkWaiter(client.ec2Client, func(instancewaiter *ec2.InstanceStatusOkWaiterOptions) {
+	instanceExistsWaiter := ec2.NewInstanceStatusOkWaiter(l.ec2Client, func(instancewaiter *ec2.InstanceStatusOkWaiterOptions) {
 		instancewaiter.MinDelay = initialInstanceMinDelay
 		instancewaiter.MaxDelay = initialInstanceMaxDelay
 	})
@@ -456,24 +478,26 @@ func (client *AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID s
 
 	err := instanceExistsWaiter.Wait(ctx, describeInstanceInput, instanceInitialWaiterTime)
 	if err != nil {
-		return ksctlErrors.ErrTimeOut.Wrap(
-			log.NewError(awsCtx, "Error Waiting for Instance", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrTimeOut,
+			l.b.l.NewError(l.b.ctx, "Error Waiting for Instance", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error) {
+func (l *AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec2.CreateNetworkAclInput) (*ec2.CreateNetworkAclOutput, error) {
 
-	naclresp, err := client.ec2Client.CreateNetworkAcl(ctx, &parameter)
+	naclresp, err := l.ec2Client.CreateNetworkAcl(ctx, &parameter)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Network ACL", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Network ACL", "Reason", err),
 		)
 	}
 
-	_, err = client.ec2Client.CreateNetworkAclEntry(ctx, &ec2.CreateNetworkAclEntryInput{
+	_, err = l.ec2Client.CreateNetworkAclEntry(ctx, &ec2.CreateNetworkAclEntryInput{
 		NetworkAclId: aws.String(*naclresp.NetworkAcl.NetworkAclId),
 		RuleNumber:   aws.Int32(100),
 		Protocol:     aws.String("-1"),
@@ -482,182 +506,191 @@ func (client *AwsClient) BeginCreateNetworkAcl(ctx context.Context, parameter ec
 		Egress:       aws.Bool(true),
 	})
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Network ACL Entry", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Network ACL Entry", "Reason", err),
 		)
 	}
 
 	return naclresp, nil
 }
 
-func (client *AwsClient) BeginCreateSecurityGroup(ctx context.Context, parameter ec2.CreateSecurityGroupInput) (*ec2.CreateSecurityGroupOutput, error) {
+func (l *AwsClient) BeginCreateSecurityGroup(ctx context.Context, parameter ec2.CreateSecurityGroupInput) (*ec2.CreateSecurityGroupOutput, error) {
 
-	securitygroup, err := client.ec2Client.CreateSecurityGroup(ctx, &parameter)
+	securitygroup, err := l.ec2Client.CreateSecurityGroup(ctx, &parameter)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Creating Security Group", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Creating Security Group", "Reason", err),
 		)
 	}
 
 	return securitygroup, nil
 }
 
-func (client *AwsClient) BeginDeleteVirtNet(ctx context.Context, storage ksctlTypes.StorageFactory) error {
+func (l *AwsClient) BeginDeleteVirtNet(ctx context.Context) error {
 
-	if mainStateDocument.CloudInfra.Aws.RouteTableID == "" {
-		log.Success(awsCtx, "skipped already deleted the route table")
+	if l.b.state.CloudInfra.Aws.RouteTableID == "" {
+		l.b.l.Success(l.b.ctx, "skipped already deleted the route table")
 	} else {
-		_, err := client.ec2Client.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{
-			RouteTableId: aws.String(mainStateDocument.CloudInfra.Aws.RouteTableID),
+		_, err := l.ec2Client.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{
+			RouteTableId: aws.String(l.b.state.CloudInfra.Aws.RouteTableID),
 		})
 		if err != nil {
-			return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-				log.NewError(awsCtx, "Error Deleting Route Table", "Reason", err),
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrFailedKsctlClusterOperation,
+				l.b.l.NewError(l.b.ctx, "Error Deleting Route Table", "Reason", err),
 			)
 		}
-		log.Success(awsCtx, "deleted the route table", "id", mainStateDocument.CloudInfra.Aws.RouteTableID)
-		mainStateDocument.CloudInfra.Aws.RouteTableID = ""
-		err = storage.Write(mainStateDocument)
+		l.b.l.Success(l.b.ctx, "deleted the route table", "id", l.b.state.CloudInfra.Aws.RouteTableID)
+		l.b.state.CloudInfra.Aws.RouteTableID = ""
+		err = l.b.store.Write(l.b.state)
 		if err != nil {
 			return err
 		}
 	}
 
-	if mainStateDocument.CloudInfra.Aws.GatewayID == "" {
-		log.Success(awsCtx, "skipped already deleted the internet gateway")
+	if l.b.state.CloudInfra.Aws.GatewayID == "" {
+		l.b.l.Success(l.b.ctx, "skipped already deleted the internet gateway")
 	} else {
-		_, err := client.ec2Client.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
-			InternetGatewayId: aws.String(mainStateDocument.CloudInfra.Aws.GatewayID),
-			VpcId:             aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
+		_, err := l.ec2Client.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+			InternetGatewayId: aws.String(l.b.state.CloudInfra.Aws.GatewayID),
+			VpcId:             aws.String(l.b.state.CloudInfra.Aws.VpcId),
 		})
 
 		if err != nil {
-			return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-				log.NewError(awsCtx, "Error Detaching Internet Gateway", "Reason", err),
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrFailedKsctlClusterOperation,
+				l.b.l.NewError(l.b.ctx, "Error Detaching Internet Gateway", "Reason", err),
 			)
 		}
 
-		_, err = client.ec2Client.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{
-			InternetGatewayId: aws.String(mainStateDocument.CloudInfra.Aws.GatewayID),
+		_, err = l.ec2Client.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{
+			InternetGatewayId: aws.String(l.b.state.CloudInfra.Aws.GatewayID),
 		})
 		if err != nil {
-			return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-				log.NewError(awsCtx, "Error Deleting Internet Gateway", "Reason", err),
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrFailedKsctlClusterOperation,
+				l.b.l.NewError(l.b.ctx, "Error Deleting Internet Gateway", "Reason", err),
 			)
 		}
-		id := mainStateDocument.CloudInfra.Aws.GatewayID
-		mainStateDocument.CloudInfra.Aws.GatewayID = ""
-		err = storage.Write(mainStateDocument)
+		id := l.b.state.CloudInfra.Aws.GatewayID
+		l.b.state.CloudInfra.Aws.GatewayID = ""
+		err = l.b.store.Write(l.b.state)
 		if err != nil {
 			return err
 		}
 
-		log.Success(awsCtx, "deleted the internet gateway", "id", id)
+		l.b.l.Success(l.b.ctx, "deleted the internet gateway", "id", id)
 
 	}
 
-	if mainStateDocument.CloudInfra.Aws.NetworkAclID == "" {
+	if l.b.state.CloudInfra.Aws.NetworkAclID == "" {
 		// TODO(praful)!: resolve this empty branch
 	} else {
 
-		_, err := client.ec2Client.DeleteNetworkAcl(ctx, &ec2.DeleteNetworkAclInput{
-			NetworkAclId: aws.String(mainStateDocument.CloudInfra.Aws.NetworkAclID),
+		_, err := l.ec2Client.DeleteNetworkAcl(ctx, &ec2.DeleteNetworkAclInput{
+			NetworkAclId: aws.String(l.b.state.CloudInfra.Aws.NetworkAclID),
 		})
 
 		if err != nil {
-			return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-				log.NewError(awsCtx, "Error Deleting Network ACL", "Reason", err),
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrFailedKsctlClusterOperation,
+				l.b.l.NewError(l.b.ctx, "Error Deleting Network ACL", "Reason", err),
 			)
 		}
 
-		id := mainStateDocument.CloudInfra.Aws.NetworkAclID
-		mainStateDocument.CloudInfra.Aws.NetworkAclID = ""
-		err = storage.Write(mainStateDocument)
+		id := l.b.state.CloudInfra.Aws.NetworkAclID
+		l.b.state.CloudInfra.Aws.NetworkAclID = ""
+		err = l.b.store.Write(l.b.state)
 		if err != nil {
 			return err
 		}
-		log.Success(awsCtx, "deleted the network acl", "id", id)
+		l.b.l.Success(l.b.ctx, "deleted the network acl", "id", id)
 
 	}
 	return nil
 }
 
-func (client *AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
+func (l *AwsClient) DescribeInstanceState(ctx context.Context, instanceId string) (*ec2.DescribeInstancesOutput, error) {
 
 	instanceipinput := &ec2.DescribeInstancesInput{
 		InstanceIds: []string{instanceId},
 	}
 
-	instanceinforesponse, err := client.ec2Client.DescribeInstances(ctx, instanceipinput)
+	instanceinforesponse, err := l.ec2Client.DescribeInstances(ctx, instanceipinput)
 	if err != nil {
-		return instanceinforesponse, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Describing Instances", "Reason", err),
+		return instanceinforesponse, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Describing Instances", "Reason", err),
 		)
 	}
 
 	return instanceinforesponse, nil
 }
 
-func (client *AwsClient) AuthorizeSecurityGroupEgress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupEgressInput) error {
+func (l *AwsClient) AuthorizeSecurityGroupEgress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupEgressInput) error {
 
-	_, err := client.ec2Client.AuthorizeSecurityGroupEgress(ctx, &parameter)
+	_, err := l.ec2Client.AuthorizeSecurityGroupEgress(ctx, &parameter)
 	if err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Authorizing Security Group Egress", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Authorizing Security Group Egress", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
+func (l *AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
 
-	_, err := client.ec2Client.DeleteKeyPair(ctx, &ec2.DeleteKeyPairInput{
+	_, err := l.ec2Client.DeleteKeyPair(ctx, &ec2.DeleteKeyPairInput{
 		KeyName: aws.String(name),
 	})
 	if err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Deleting Key Pair", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Deleting Key Pair", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) InitClient(storage ksctlTypes.StorageFactory) error {
+func (l *AwsClient) InitClient(b *Provider) error {
 
-	err := client.setRequiredENVVAR(storage, awsCtx)
+	err := l.setRequiredENVVAR(l.b.ctx)
 	if err != nil {
 		return err
 	}
 
-	client.storage = storage
-	client.region = mainStateDocument.Region
-	session, err := newEC2Client(client.region)
+	l.b = b
+	session, err := l.newEC2Client(l.b.Region)
 	if err != nil {
 		return err
 	}
 
-	client.config = &session
-	client.stsClient = sts.NewFromConfig(session)
-	client.ec2Client = ec2.NewFromConfig(session)
-	client.eksClient = eks.NewFromConfig(session)
-	client.iam = iam.NewFromConfig(session)
+	l.config = &session
+	l.stsClient = sts.NewFromConfig(session)
+	l.ec2Client = ec2.NewFromConfig(session)
+	l.eksClient = eks.NewFromConfig(session)
+	l.iam = iam.NewFromConfig(session)
 	return nil
 }
 
-func (client *AwsClient) ImportKeyPair(ctx context.Context, input *ec2.ImportKeyPairInput) error {
+func (l *AwsClient) ImportKeyPair(ctx context.Context, input *ec2.ImportKeyPairInput) error {
 
-	if _, err := client.ec2Client.ImportKeyPair(ctx, input); err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Importing Key Pair", "Reason", err),
+	if _, err := l.ec2Client.ImportKeyPair(ctx, input); err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Importing Key Pair", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) setRequiredENVVAR(storage ksctlTypes.StorageFactory, _ context.Context) error {
+func (l *AwsClient) setRequiredENVVAR(_ context.Context) error {
 
 	envacesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
 	envkeysecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
@@ -676,55 +709,59 @@ func (client *AwsClient) setRequiredENVVAR(storage ksctlTypes.StorageFactory, _ 
 		msg = msg + " AWS_SECRET_ACCESS_KEY"
 	}
 
-	log.Debug(awsCtx, msg)
+	l.b.l.Debug(l.b.ctx, msg)
 
-	credentialsDocument, err := storage.ReadCredentials(consts.CloudAws)
+	credentialsDocument, err := l.b.store.ReadCredentials(consts.CloudAws)
 	if err != nil {
 		return err
 	}
 
 	if credentialsDocument.Aws == nil {
-		return ksctlErrors.ErrNilCredentials.Wrap(
-			log.NewError(awsCtx, "no entry for aws present"),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrNilCredentials,
+			l.b.l.NewError(l.b.ctx, "no entry for aws present"),
 		)
 	}
 
 	err = os.Setenv("AWS_ACCESS_KEY_ID", credentialsDocument.Aws.AccessKeyId)
 	if err != nil {
-		return ksctlErrors.ErrUnknown.Wrap(
-			log.NewError(awsCtx, "failed to set environmenet variable", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
+			l.b.l.NewError(l.b.ctx, "failed to set environmenet variable", "Reason", err),
 		)
 	}
 	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentialsDocument.Aws.SecretAccessKey)
 	if err != nil {
-		return ksctlErrors.ErrUnknown.Wrap(
-			log.NewError(awsCtx, "failed to set environmenet variable", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
+			l.b.l.NewError(l.b.ctx, "failed to set environmenet variable", "Reason", err),
 		)
 	}
 	return nil
 }
 
-func (client *AwsClient) ListLocations() ([]string, error) {
+func (l *AwsClient) ListLocations() ([]string, error) {
 
 	parameter := &ec2.DescribeRegionsInput{
 		AllRegions: aws.Bool(true),
 	}
 
-	result, err := client.ec2Client.DescribeRegions(awsCtx, parameter)
+	result, err := l.ec2Client.DescribeRegions(l.b.ctx, parameter)
 	if err != nil {
-		return nil, ksctlErrors.ErrInvalidCloudRegion.Wrap(
-			log.NewError(awsCtx, "Error Describing Regions", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidCloudRegion,
+			l.b.l.NewError(l.b.ctx, "Error Describing Regions", "Reason", err),
 		)
 	}
 
-	validRegion := []string{}
+	var validRegion []string
 	for _, region := range result.Regions {
 		validRegion = append(validRegion, *region.RegionName)
 	}
 	return validRegion, nil
 }
 
-func (client *AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
+func (l *AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {
 	var vmTypes ec2.DescribeInstanceTypesOutput
 	input := &ec2.DescribeInstanceTypesInput{
 		Filters: []types.Filter{
@@ -736,10 +773,11 @@ func (client *AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) 
 	}
 
 	for {
-		output, err := client.ec2Client.DescribeInstanceTypes(awsCtx, input)
+		output, err := l.ec2Client.DescribeInstanceTypes(l.b.ctx, input)
 		if err != nil {
-			return vmTypes, ksctlErrors.ErrInvalidCloudVMSize.Wrap(
-				log.NewError(awsCtx, "Error Describing Instance Types", "Reason", err),
+			return vmTypes, ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidCloudVMSize,
+				l.b.l.NewError(l.b.ctx, "Error Describing Instance Types", "Reason", err),
 			)
 		}
 		vmTypes.InstanceTypes = append(vmTypes.InstanceTypes, output.InstanceTypes...)
@@ -752,68 +790,58 @@ func (client *AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) 
 	return vmTypes, nil
 }
 
-func (client *AwsClient) ModifyVpcAttribute(ctx context.Context) error {
+func (l *AwsClient) ModifyVpcAttribute(ctx context.Context) error {
 
 	modifyvpcinput := &ec2.ModifyVpcAttributeInput{
-		VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
+		VpcId: aws.String(l.b.state.CloudInfra.Aws.VpcId),
 		EnableDnsHostnames: &types.AttributeBooleanValue{
 			Value: aws.Bool(true),
 		},
 	}
-	_, err := client.ec2Client.ModifyVpcAttribute(awsCtx, modifyvpcinput)
+	_, err := l.ec2Client.ModifyVpcAttribute(l.b.ctx, modifyvpcinput)
 	if err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Modifying VPC Attribute", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Modifying VPC Attribute", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) ModifySubnetAttribute(ctx context.Context, i int) error {
+func (l *AwsClient) ModifySubnetAttribute(ctx context.Context, i int) error {
 
 	modifyusbnetinput := &ec2.ModifySubnetAttributeInput{
-		SubnetId: aws.String(mainStateDocument.CloudInfra.Aws.SubnetIDs[i]),
+		SubnetId: aws.String(l.b.state.CloudInfra.Aws.SubnetIDs[i]),
 		MapPublicIpOnLaunch: &types.AttributeBooleanValue{
 			Value: aws.Bool(true),
 		},
 	}
-	_, err := client.ec2Client.ModifySubnetAttribute(awsCtx, modifyusbnetinput)
+	_, err := l.ec2Client.ModifySubnetAttribute(l.b.ctx, modifyusbnetinput)
 	if err != nil {
-		return ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Modifying Subnet Attribute", "Reason", err),
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Modifying Subnet Attribute", "Reason", err),
 		)
 	}
 
 	return nil
 }
 
-func (client *AwsClient) SetRegion(region string) {
-	client.region = region
-	log.Debug(awsCtx, "region set", "code", client.region)
-}
+func (l *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error) {
 
-func (client *AwsClient) SetVpc(vpc string) string {
-	client.vpc = vpc
-	log.Print(awsCtx, "vpc set", "name", client.vpc)
-
-	return client.vpc
-}
-
-func (client *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.CreateClusterInput) (*eks.CreateClusterOutput, error) {
-
-	resp, err := client.eksClient.CreateCluster(ctx, paramter)
+	resp, err := l.eksClient.CreateCluster(ctx, paramter)
 	if err != nil {
 		return nil, err
 	}
 
-	mainStateDocument.CloudInfra.Aws.ManagedClusterName = *resp.Cluster.Name
-	mainStateDocument.CloudInfra.Aws.ManagedClusterArn = *resp.Cluster.Arn
-	if err := client.storage.Write(mainStateDocument); err != nil {
+	l.b.state.CloudInfra.Aws.ManagedClusterName = *resp.Cluster.Name
+	l.b.state.CloudInfra.Aws.ManagedClusterArn = *resp.Cluster.Arn
+	if err := l.b.store.Write(l.b.state); err != nil {
 		return nil, err
 	}
 
-	waiter := eks.NewClusterActiveWaiter(client.eksClient)
+	waiter := eks.NewClusterActiveWaiter(l.eksClient)
 
 	describeCluster := eks.DescribeClusterInput{
 		Name: resp.Cluster.Name,
@@ -825,22 +853,22 @@ func (client *AwsClient) BeginCreateEKS(ctx context.Context, paramter *eks.Creat
 	return resp, nil
 }
 
-func (client *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
-	resp, err := client.eksClient.CreateNodegroup(ctx, paramter)
+func (l *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks.CreateNodegroupInput) (*eks.CreateNodegroupOutput, error) {
+	resp, err := l.eksClient.CreateNodegroup(ctx, paramter)
 	if err != nil {
 		return nil, err
 	}
-	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupName = *resp.Nodegroup.NodegroupName
-	mainStateDocument.CloudInfra.Aws.ManagedNodeGroupArn = *resp.Nodegroup.NodegroupArn
-	if err := client.storage.Write(mainStateDocument); err != nil {
+	l.b.state.CloudInfra.Aws.ManagedNodeGroupName = *resp.Nodegroup.NodegroupName
+	l.b.state.CloudInfra.Aws.ManagedNodeGroupArn = *resp.Nodegroup.NodegroupArn
+	if err := l.b.store.Write(l.b.state); err != nil {
 		return nil, err
 	}
 
-	waiter := eks.NewNodegroupActiveWaiter(client.eksClient)
+	waiter := eks.NewNodegroupActiveWaiter(l.eksClient)
 
 	describeNodeGroup := &eks.DescribeNodegroupInput{
 		NodegroupName: resp.Nodegroup.NodegroupName,
-		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+		ClusterName:   aws.String(l.b.state.CloudInfra.Aws.ManagedClusterName),
 	}
 	err = waiter.Wait(ctx, describeNodeGroup, managedNodeGroupActiveWaiter)
 	if err != nil {
@@ -850,21 +878,21 @@ func (client *AwsClient) BeginCreateNodeGroup(ctx context.Context, paramter *eks
 	return resp, nil
 }
 
-func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *eks.DeleteNodegroupInput) (*eks.DeleteNodegroupOutput, error) {
+func (l *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *eks.DeleteNodegroupInput) (*eks.DeleteNodegroupOutput, error) {
 
-	resp, err := client.eksClient.DeleteNodegroup(ctx, parameter)
+	resp, err := l.eksClient.DeleteNodegroup(ctx, parameter)
 	if err != nil {
 		return nil, err
 	}
 
-	waiter := eks.NewNodegroupDeletedWaiter(client.eksClient, func(ndwo *eks.NodegroupDeletedWaiterOptions) {
+	waiter := eks.NewNodegroupDeletedWaiter(l.eksClient, func(ndwo *eks.NodegroupDeletedWaiterOptions) {
 		ndwo.MinDelay = 15 * time.Second
 		ndwo.MaxDelay = 30 * time.Second
 	})
 
 	describeNodeGroup := eks.DescribeNodegroupInput{
 		NodegroupName: aws.String(*resp.Nodegroup.NodegroupName),
-		ClusterName:   aws.String(mainStateDocument.CloudInfra.Aws.ManagedClusterName),
+		ClusterName:   aws.String(l.b.state.CloudInfra.Aws.ManagedClusterName),
 	}
 
 	err = waiter.Wait(ctx, &describeNodeGroup, managedNodeGroupDeletionWaiter)
@@ -875,14 +903,14 @@ func (client *AwsClient) BeginDeleteNodeGroup(ctx context.Context, parameter *ek
 	return resp, nil
 }
 
-func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, parameter *eks.DeleteClusterInput) (*eks.DeleteClusterOutput, error) {
+func (l *AwsClient) BeginDeleteManagedCluster(ctx context.Context, parameter *eks.DeleteClusterInput) (*eks.DeleteClusterOutput, error) {
 
-	resp, err := client.eksClient.DeleteCluster(ctx, parameter)
+	resp, err := l.eksClient.DeleteCluster(ctx, parameter)
 	if err != nil {
 		return nil, err
 	}
 
-	waiter := eks.NewClusterDeletedWaiter(client.eksClient, func(cdwo *eks.ClusterDeletedWaiterOptions) {
+	waiter := eks.NewClusterDeletedWaiter(l.eksClient, func(cdwo *eks.ClusterDeletedWaiterOptions) {
 		cdwo.MinDelay = 15 * time.Second
 		cdwo.MaxDelay = 30 * time.Second
 	})
@@ -898,8 +926,8 @@ func (client *AwsClient) BeginDeleteManagedCluster(ctx context.Context, paramete
 	return resp, nil
 }
 
-func (client *AwsClient) DescribeCluster(ctx context.Context, parameter *eks.DescribeClusterInput) (*eks.DescribeClusterOutput, error) {
-	resp, err := client.eksClient.DescribeCluster(ctx, parameter)
+func (l *AwsClient) DescribeCluster(ctx context.Context, parameter *eks.DescribeClusterInput) (*eks.DescribeClusterOutput, error) {
+	resp, err := l.eksClient.DescribeCluster(ctx, parameter)
 	if err != nil {
 		return nil, err
 	}
@@ -907,8 +935,8 @@ func (client *AwsClient) DescribeCluster(ctx context.Context, parameter *eks.Des
 	return resp, nil
 }
 
-func (client *AwsClient) BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error) {
-	createRoleResp, err := client.iam.CreateRole(ctx, parameter)
+func (l *AwsClient) BeginCreateIAM(ctx context.Context, node string, parameter *iam.CreateRoleInput) (*iam.CreateRoleOutput, error) {
+	createRoleResp, err := l.iam.CreateRole(ctx, parameter)
 	if err != nil {
 		return nil, err
 	}
@@ -920,7 +948,7 @@ func (client *AwsClient) BeginCreateIAM(ctx context.Context, node string, parame
 			PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"),
 		}
 
-		_, err = client.iam.AttachRolePolicy(ctx, attachClusterPolicyInput)
+		_, err = l.iam.AttachRolePolicy(ctx, attachClusterPolicyInput)
 		if err != nil {
 			return nil, err
 		}
@@ -932,7 +960,7 @@ func (client *AwsClient) BeginCreateIAM(ctx context.Context, node string, parame
 				PolicyArn: aws.String(policy),
 			}
 
-			_, err = client.iam.AttachRolePolicy(ctx, attachWorkerPolicyInput)
+			_, err = l.iam.AttachRolePolicy(ctx, attachWorkerPolicyInput)
 			if err != nil {
 				return nil, err
 			}
@@ -963,7 +991,7 @@ func (p *customHTTPPresignerV4) PresignHTTP(
 	}
 	return p.client.PresignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
 }
-func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cfg aws.Config) (string, error) {
+func (s *STSTokenRetriever) GetToken(ctx context.Context, b *Provider, clusterName string, cfg aws.Config) (string, error) {
 	out, err := s.PresignClient.PresignGetCallerIdentity(ctx, &sts.GetCallerIdentityInput{}, func(opt *sts.PresignOptions) {
 		k8sHeader := "x-k8s-aws-id"
 		opt.Presigner = newCustomHTTPPresignerV4(opt.Presigner, map[string]string{
@@ -972,8 +1000,9 @@ func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cf
 		})
 	})
 	if err != nil {
-		return "", ksctlErrors.ErrKubeconfigOperations.Wrap(
-			log.NewError(ctx,
+		return "", ksctlErrors.WrapError(
+			ksctlErrors.ErrKubeconfigOperations,
+			b.l.NewError(ctx,
 				"unable to generate sst token for kubeconfig to auth with aws eks",
 				"err", err),
 		)
@@ -984,8 +1013,8 @@ func (s *STSTokenRetriever) GetToken(ctx context.Context, clusterName string, cf
 	return token, nil
 }
 
-func (client *AwsClient) GetKubeConfig(ctx context.Context, clusterName string) (string, error) {
-	clusterData, err := client.eksClient.DescribeCluster(ctx, &eks.DescribeClusterInput{
+func (l *AwsClient) GetKubeConfig(ctx context.Context, clusterName string) (string, error) {
+	clusterData, err := l.eksClient.DescribeCluster(ctx, &eks.DescribeClusterInput{
 		Name: aws.String(clusterName),
 	})
 
@@ -993,9 +1022,9 @@ func (client *AwsClient) GetKubeConfig(ctx context.Context, clusterName string) 
 		return "", err
 	}
 
-	preSignClient := sts.NewPresignClient(client.stsClient)
+	preSignClient := sts.NewPresignClient(l.stsClient)
 	tokenRetriver := NewSTSTokenRetriver(preSignClient)
-	token, errToken := tokenRetriver.GetToken(context.Background(), clusterName, *client.config)
+	token, errToken := tokenRetriver.GetToken(context.Background(), l.b, clusterName, *l.config)
 	if errToken != nil {
 		return "", errToken
 	}
@@ -1009,23 +1038,25 @@ func (client *AwsClient) GetKubeConfig(ctx context.Context, clusterName string) 
 
 	tmpl, err := template.New("kubeconfig").Parse(kubeconfigTemplate)
 	if err != nil {
-		return "", ksctlErrors.ErrInternal.Wrap(
-			log.NewError(ctx, "failed to create kubeconfig templ", "err", err),
+		return "", ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			l.b.l.NewError(ctx, "failed to create kubeconfig templ", "err", err),
 		)
 	}
 
 	var kubeconfig bytes.Buffer
 	err = tmpl.Execute(&kubeconfig, data)
 	if err != nil {
-		return "", ksctlErrors.ErrInternal.Wrap(
-			log.NewError(ctx, "failed to generate kubeconfig", "err", err),
+		return "", ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			l.b.l.NewError(ctx, "failed to generate kubeconfig", "err", err),
 		)
 	}
 
 	return kubeconfig.String(), nil
 }
 
-func (client *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput, node string) (*iam.DeleteRoleOutput, error) {
+func (l *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRoleInput, node string) (*iam.DeleteRoleOutput, error) {
 
 	switch node {
 	case "controlplane":
@@ -1034,7 +1065,7 @@ func (client *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.Dele
 			PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"),
 		}
 
-		_, err := client.iam.DetachRolePolicy(ctx, detachClusterPolicyInput)
+		_, err := l.iam.DetachRolePolicy(ctx, detachClusterPolicyInput)
 		if err != nil {
 			return nil, err
 		}
@@ -1048,7 +1079,7 @@ func (client *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.Dele
 				PolicyArn: aws.String(policy),
 			}
 
-			_, err := client.iam.DetachRolePolicy(ctx, detachWorkerPolicyInput)
+			_, err := l.iam.DetachRolePolicy(ctx, detachWorkerPolicyInput)
 			if err != nil {
 				return nil, err
 			}
@@ -1056,7 +1087,7 @@ func (client *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.Dele
 		}
 	}
 
-	resp, err := client.iam.DeleteRole(ctx, parameter)
+	resp, err := l.iam.DeleteRole(ctx, parameter)
 	if err != nil {
 		return nil, err
 	}
@@ -1064,17 +1095,18 @@ func (client *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.Dele
 	return resp, nil
 }
 
-func (client *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) {
+func (l *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) {
 
 	input := &eks.DescribeAddonVersionsInput{
 		AddonName:         aws.String("vpc-cni"),
 		KubernetesVersion: aws.String(""),
 	}
 
-	resp, err := client.eksClient.DescribeAddonVersions(ctx, input)
+	resp, err := l.eksClient.DescribeAddonVersions(ctx, input)
 	if err != nil {
-		return nil, ksctlErrors.ErrFailedKsctlClusterOperation.Wrap(
-			log.NewError(awsCtx, "Error Describing Addon Versions", "Reason", err),
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			l.b.l.NewError(l.b.ctx, "Error Describing Addon Versions", "Reason", err),
 		)
 	}
 

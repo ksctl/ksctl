@@ -17,131 +17,131 @@ package aws
 import (
 	"strconv"
 
+	"github.com/ksctl/ksctl/pkg/providers"
+
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/ksctl/ksctl/pkg/helpers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/helpers/utilities"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
+	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func (obj *AwsProvider) NewFirewall(storage ksctlTypes.StorageFactory) error {
+func (p *Provider) NewFirewall() error {
 
-	role := <-obj.chRole
-	name := <-obj.chResName
-	_, err := obj.CreateSecurityGroup(name, role)
+	role := <-p.chRole
+	name := <-p.chResName
+	_, err := p.CreateSecurityGroup(name, role)
 	if err != nil {
 		return err
 	}
 
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (obj *AwsProvider) DelFirewall(storage ksctlTypes.StorageFactory) error {
+func (p *Provider) DelFirewall() error {
 
-	role := <-obj.chRole
+	role := <-p.chRole
 
 	nsg := ""
 	switch role {
 	case consts.RoleCp:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs
+		nsg = p.state.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs
 	case consts.RoleWp:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs
+		nsg = p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs
 	case consts.RoleLb:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID
+		nsg = p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID
 	case consts.RoleDs:
-		nsg = mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs
+		nsg = p.state.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs
 	}
 
 	if len(nsg) == 0 {
-		log.Print(awsCtx, "skipped firewall already deleted")
+		p.l.Print(p.ctx, "skipped firewall already deleted")
 		return nil
 	} else {
-		err := obj.client.BeginDeleteSecurityGrp(awsCtx, nsg)
+		err := p.client.BeginDeleteSecurityGrp(p.ctx, nsg)
 		if err != nil {
 			return err
 		}
 
 		switch role {
 		case consts.RoleCp:
-			mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs = ""
+			p.state.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs = ""
 		case consts.RoleWp:
-			mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs = ""
+			p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs = ""
 		case consts.RoleLb:
-			mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID = ""
+			p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID = ""
 		case consts.RoleDs:
-			mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs = ""
+			p.state.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs = ""
 		}
 
-		err = storage.Write(mainStateDocument)
+		err = p.store.Write(p.state)
 		if err != nil {
 			return err
 		}
 
-		log.Success(awsCtx, "Deleted the security group", "id", nsg)
+		p.l.Success(p.ctx, "Deleted the security group", "id", nsg)
 	}
 
 	return nil
 }
 
-func (obj *AwsProvider) CreateSecurityGroup(name string, role consts.KsctlRole) (string, error) {
+func (p *Provider) CreateSecurityGroup(name string, role consts.KsctlRole) (string, error) {
 
 	SecurityGroupInput := ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(name),
 		Description: aws.String(name + "-" + string(role)),
-		VpcId:       aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
+		VpcId:       aws.String(p.state.CloudInfra.Aws.VpcId),
 	}
 
 	switch role {
 	case consts.RoleCp:
-		if mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs)
-			return mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs, nil
+		if p.state.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs != "" {
+			p.l.Success(p.ctx, "skipped already created the security group", "id", p.state.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs)
+			return p.state.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs, nil
 		}
 	case consts.RoleWp:
-		if mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs)
-			return mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs, nil
+		if p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs != "" {
+			p.l.Success(p.ctx, "skipped already created the security group", "id", p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs)
+			return p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs, nil
 		}
 	case consts.RoleLb:
-		if mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID)
-			return mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID, nil
+		if p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID != "" {
+			p.l.Success(p.ctx, "skipped already created the security group", "id", p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID)
+			return p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID, nil
 		}
 	case consts.RoleDs:
-		if mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs != "" {
-			log.Success(awsCtx, "skipped already created the security group", "id", mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs)
-			return mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs, nil
+		if p.state.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs != "" {
+			p.l.Success(p.ctx, "skipped already created the security group", "id", p.state.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs)
+			return p.state.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs, nil
 		}
 	}
 
-	kubernetesDistro := mainStateDocument.BootstrapProvider
-	netCidr := mainStateDocument.CloudInfra.Aws.VpcCidr
+	kubernetesDistro := p.state.BootstrapProvider
+	netCidr := p.state.CloudInfra.Aws.VpcCidr
 
-	SecurityGroup, err := obj.client.BeginCreateSecurityGroup(awsCtx, SecurityGroupInput)
+	SecurityGroup, err := p.client.BeginCreateSecurityGroup(p.ctx, SecurityGroupInput)
 	if err != nil {
 		return "", err
 	}
 
-	err = obj.createSecurityGroupRules(
-		consts.KsctlKubernetes(kubernetesDistro),
+	err = p.createSecurityGroupRules(
+		kubernetesDistro,
 		netCidr, role, SecurityGroup)
 	if err != nil {
 		return "", err
 	}
 
-	log.Success(awsCtx, "Created SecurityGroup", "name", name)
+	p.l.Success(p.ctx, "Created SecurityGroup", "name", name)
 
 	return *SecurityGroup.GroupId, nil
 }
 
-func (obj *AwsProvider) createSecurityGroupRules(
+func (p *Provider) createSecurityGroupRules(
 	bootstrap consts.KsctlKubernetes,
 	netCidr string,
 	role consts.KsctlRole,
@@ -153,11 +153,11 @@ func (obj *AwsProvider) createSecurityGroupRules(
 
 	switch role {
 	case consts.RoleLb:
-		mainStateDocument.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID = *SecurityGroup.GroupId
+		p.state.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleLoadBalancer(SecurityGroup.GroupId)
 
 	case consts.RoleCp:
-		mainStateDocument.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
+		p.state.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleControlPlane(
 			SecurityGroup.GroupId,
 			netCidr,
@@ -165,7 +165,7 @@ func (obj *AwsProvider) createSecurityGroupRules(
 		)
 
 	case consts.RoleWp:
-		mainStateDocument.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
+		p.state.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleWorkerPlane(
 			SecurityGroup.GroupId,
 			netCidr,
@@ -173,7 +173,7 @@ func (obj *AwsProvider) createSecurityGroupRules(
 		)
 
 	case consts.RoleDs:
-		mainStateDocument.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
+		p.state.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs = *SecurityGroup.GroupId
 		ingressrules, egressrules = firewallRuleDataStore(
 			SecurityGroup.GroupId,
 			netCidr,
@@ -181,20 +181,20 @@ func (obj *AwsProvider) createSecurityGroupRules(
 
 	}
 
-	if err := obj.client.AuthorizeSecurityGroupIngress(awsCtx, ingressrules); err != nil {
+	if err := p.client.AuthorizeSecurityGroupIngress(p.ctx, ingressrules); err != nil {
 		return err
 	}
 
-	if err := obj.client.AuthorizeSecurityGroupEgress(awsCtx, egressrules); err != nil {
+	if err := p.client.AuthorizeSecurityGroupEgress(p.ctx, egressrules); err != nil {
 		return err
 	}
 	return nil
 }
 
-func convertToProviderSpecific(_rules []helpers.FirewallRule, SgId *string) (ec2.AuthorizeSecurityGroupIngressInput, ec2.AuthorizeSecurityGroupEgressInput) {
+func convertToProviderSpecific(_rules []providers.FirewallRule, SgId *string) (ec2.AuthorizeSecurityGroupIngressInput, ec2.AuthorizeSecurityGroupEgressInput) {
 
-	ingressRules := []types.IpPermission{}
-	egressRules := []types.IpPermission{}
+	var ingressRules []types.IpPermission
+	var egressRules []types.IpPermission
 
 	for _, _r := range _rules {
 
@@ -227,7 +227,6 @@ func convertToProviderSpecific(_rules []helpers.FirewallRule, SgId *string) (ec2
 		switch _r.Direction {
 		case consts.FirewallActionIngress:
 			ingressRules = append(ingressRules, v)
-
 		case consts.FirewallActionEgress:
 			egressRules = append(egressRules, v)
 		}
@@ -249,7 +248,7 @@ func firewallRuleControlPlane(sgid *string,
 	ec2.AuthorizeSecurityGroupEgressInput) {
 
 	return convertToProviderSpecific(
-		helpers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+		providers.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
 		sgid,
 	)
 }
@@ -262,7 +261,7 @@ func firewallRuleWorkerPlane(
 	ec2.AuthorizeSecurityGroupEgressInput) {
 
 	return convertToProviderSpecific(
-		helpers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+		providers.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
 		sgid,
 	)
 }
@@ -272,7 +271,7 @@ func firewallRuleLoadBalancer(
 ) (ec2.AuthorizeSecurityGroupIngressInput,
 	ec2.AuthorizeSecurityGroupEgressInput) {
 	return convertToProviderSpecific(
-		helpers.FirewallForLoadBalancer_BASE(),
+		providers.FirewallForLoadBalancer_BASE(),
 		sgid,
 	)
 }
@@ -283,7 +282,7 @@ func firewallRuleDataStore(
 ) (ec2.AuthorizeSecurityGroupIngressInput,
 	ec2.AuthorizeSecurityGroupEgressInput) {
 	return convertToProviderSpecific(
-		helpers.FirewallForDataStore_BASE(internalNetCidr),
+		providers.FirewallForDataStore_BASE(internalNetCidr),
 		sgid,
 	)
 }

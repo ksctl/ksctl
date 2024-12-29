@@ -15,45 +15,45 @@
 package aws
 
 import (
-	"github.com/ksctl/ksctl/pkg/helpers"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/helpers/errors"
-	"github.com/ksctl/ksctl/pkg/types"
-	storageTypes "github.com/ksctl/ksctl/pkg/types/storage"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/validation"
 )
 
-func validationOfArguments(obj *AwsProvider) error {
+func (p *Provider) validationOfArguments() error {
 
-	if err := isValidRegion(obj); err != nil {
+	if err := p.isValidRegion(); err != nil {
 		return err
 	}
 
-	if err := helpers.IsValidName(awsCtx, log, obj.clusterName); err != nil {
+	if err := validation.IsValidName(p.ctx, p.l, p.ClusterName); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func isValidRegion(obj *AwsProvider) error {
+func (p *Provider) isValidRegion() error {
 
-	validReg, err := obj.client.ListLocations()
+	validReg, err := p.client.ListLocations()
 	if err != nil {
 		return err
 	}
 
 	for _, reg := range validReg {
-		if reg == obj.region {
+		if reg == p.Region {
 			return nil
 		}
 	}
 
-	return ksctlErrors.ErrInvalidCloudRegion.Wrap(
-		log.NewError(awsCtx, "region not found", "validRegions", validReg),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidCloudRegion,
+		p.l.NewError(p.ctx, "region not found", "validRegions", validReg),
 	)
 }
 
-func isValidVMSize(obj *AwsProvider, size string) error {
-	validSize, err := obj.client.ListVMTypes()
+func (p *Provider) isValidVMSize(size string) error {
+	validSize, err := p.client.ListVMTypes()
 	if err != nil {
 		return err
 	}
@@ -65,24 +65,25 @@ func isValidVMSize(obj *AwsProvider, size string) error {
 		}
 	}
 
-	return ksctlErrors.ErrInvalidCloudVMSize.Wrap(
-		log.NewError(awsCtx, "invalid vm size", "Valid options", validSize),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidCloudVMSize,
+		p.l.NewError(p.ctx, "invalid vm size", "Valid options", validSize),
 	)
 }
 
-func loadStateHelper(storage types.StorageFactory) error {
-	raw, err := storage.Read()
+func (p *Provider) loadStateHelper() error {
+	raw, err := p.store.Read()
 	if err != nil {
 		return err
 	}
-	*mainStateDocument = func(x *storageTypes.StorageDocument) storageTypes.StorageDocument {
+	*p.state = func(x *statefile.StorageDocument) statefile.StorageDocument {
 		return *x
 	}(raw)
 	return nil
 }
 
-func isValidK8sVersion(obj *AwsProvider, version string) error {
-	validVersions, err := obj.client.ListK8sVersions(awsCtx)
+func (p *Provider) isValidK8sVersion(version string) error {
+	validVersions, err := p.client.ListK8sVersions(p.ctx)
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,8 @@ func isValidK8sVersion(obj *AwsProvider, version string) error {
 		}
 	}
 
-	return ksctlErrors.ErrInvalidVersion.Wrap(
-		log.NewError(awsCtx, "invalid k8s version", "validVersions", validVersions),
+	return ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidVersion,
+		p.l.NewError(p.ctx, "invalid k8s version", "validVersions", validVersions),
 	)
 }

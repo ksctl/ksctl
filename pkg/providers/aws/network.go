@@ -15,90 +15,88 @@
 package aws
 
 import (
-	"context"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	ksctlTypes "github.com/ksctl/ksctl/pkg/types"
 )
 
-func (obj *AwsProvider) DelNetwork(storage ksctlTypes.StorageFactory) error {
+func (p *Provider) DelNetwork() error {
 
-	if len(mainStateDocument.CloudInfra.Aws.SubnetIDs) == 0 {
-		log.Print(awsCtx, "skipped already deleted the vpc", "name", mainStateDocument.CloudInfra.Aws.VpcName)
+	if len(p.state.CloudInfra.Aws.SubnetIDs) == 0 {
+		p.l.Print(p.ctx, "skipped already deleted the vpc", "name", p.state.CloudInfra.Aws.VpcName)
 	} else {
-		err := obj.DeleteSubnet(awsCtx, storage, mainStateDocument.CloudInfra.Aws.SubnetIDs)
+		err := p.DeleteSubnet(p.state.CloudInfra.Aws.SubnetIDs)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := obj.client.BeginDeleteVirtNet(awsCtx, storage)
+	err := p.client.BeginDeleteVirtNet(p.ctx)
 	if err != nil {
 		return err
 	}
 
-	if mainStateDocument.CloudInfra.Aws.VpcId == "" {
-		log.Success(awsCtx, "Deleted the vpc", "id", mainStateDocument.CloudInfra.Aws.VpcName)
+	if p.state.CloudInfra.Aws.VpcId == "" {
+		p.l.Success(p.ctx, "Deleted the vpc", "id", p.state.CloudInfra.Aws.VpcName)
 	} else {
-		err = obj.DeleteVpc(awsCtx, storage, mainStateDocument.CloudInfra.Aws.VpcId)
+		err = p.DeleteVpc()
 		if err != nil {
 			return err
 		}
 	}
 
-	log.Success(awsCtx, "Deleted the vpc", "name", mainStateDocument.CloudInfra.Aws.VpcName)
+	p.l.Success(p.ctx, "Deleted the vpc", "name", p.state.CloudInfra.Aws.VpcName)
 
-	if err := storage.DeleteCluster(); err != nil {
+	if err := p.store.DeleteCluster(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (obj *AwsProvider) DeleteSubnet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetID []string) error {
+func (p *Provider) DeleteSubnet(subnetID []string) error {
 
-	for i := 0; i < len(mainStateDocument.CloudInfra.Aws.SubnetIDs); i++ {
-		err := obj.client.BeginDeleteSubNet(ctx, storage, subnetID[i])
+	for i := 0; i < len(p.state.CloudInfra.Aws.SubnetIDs); i++ {
+		err := p.client.BeginDeleteSubNet(p.ctx, subnetID[i])
 		if err != nil {
 			return err
 		}
-		mainStateDocument.CloudInfra.Aws.SubnetIDs[i] = ""
+		p.state.CloudInfra.Aws.SubnetIDs[i] = ""
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			return err
 		}
 	}
 
-	log.Success(awsCtx, "Deleted the subnet", "id", mainStateDocument.CloudInfra.Aws.SubnetNames)
+	p.l.Success(p.ctx, "Deleted the subnet", "id", p.state.CloudInfra.Aws.SubnetNames)
 
 	return nil
 }
 
-func (obj *AwsProvider) DeleteVpc(ctx context.Context, storage ksctlTypes.StorageFactory, resName string) error {
+func (p *Provider) DeleteVpc() error {
 
-	err := obj.client.BeginDeleteVpc(ctx, storage)
+	err := p.client.BeginDeleteVpc(p.ctx)
 	if err != nil {
 		return err
 	}
-	mainStateDocument.CloudInfra.Aws.VpcId = ""
-	name := mainStateDocument.CloudInfra.Aws.VpcName
-	mainStateDocument.CloudInfra.Aws.VpcName = ""
-	if err := storage.Write(mainStateDocument); err != nil {
+	p.state.CloudInfra.Aws.VpcId = ""
+	name := p.state.CloudInfra.Aws.VpcName
+	p.state.CloudInfra.Aws.VpcName = ""
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
-	log.Success(awsCtx, "Deleted the vpc", "name", name)
+	p.l.Success(p.ctx, "Deleted the vpc", "name", name)
 	return nil
 }
 
-func (obj *AwsProvider) NewNetwork(storage ksctlTypes.StorageFactory) error {
-	<-obj.chResName
+func (p *Provider) NewNetwork() error {
+	<-p.chResName
 
-	if len(mainStateDocument.CloudInfra.Aws.VpcId) != 0 {
-		log.Print(awsCtx, "skipped already created the vpc", mainStateDocument.CloudInfra.Aws.VpcName)
+	if len(p.state.CloudInfra.Aws.VpcId) != 0 {
+		p.l.Print(p.ctx, "skipped already created the vpc", p.state.CloudInfra.Aws.VpcName)
 	} else {
 		vpcclient := ec2.CreateVpcInput{
 			CidrBlock: aws.String("172.31.0.0/16"),
@@ -108,73 +106,69 @@ func (obj *AwsProvider) NewNetwork(storage ksctlTypes.StorageFactory) error {
 					Tags: []types.Tag{
 						{
 							Key:   aws.String("Name"),
-							Value: aws.String(obj.clusterName + "-vpc"),
+							Value: aws.String(p.ClusterName + "-vpc"),
 						},
 					},
 				},
 			},
 		}
-		mainStateDocument.CloudInfra.Aws.VpcCidr = "172.31.0.0/16"
+		p.state.CloudInfra.Aws.VpcCidr = "172.31.0.0/16"
 
-		log.Debug(awsCtx, "Printing", "virtualprivatecloud", vpcclient)
+		p.l.Debug(p.ctx, "Printing", "virtualprivatecloud", vpcclient)
 
-		vpc, err := obj.client.BeginCreateVpc(vpcclient)
+		vpc, err := p.client.BeginCreateVpc(vpcclient)
 		if err != nil {
 			return err
 		}
 
-		mainStateDocument.CloudInfra.Aws.VpcId = *vpc.Vpc.VpcId
-		mainStateDocument.CloudInfra.Aws.VpcName = *vpc.Vpc.Tags[0].Value
+		p.state.CloudInfra.Aws.VpcId = *vpc.Vpc.VpcId
+		p.state.CloudInfra.Aws.VpcName = *vpc.Vpc.Tags[0].Value
 
-		if err := obj.client.ModifyVpcAttribute(awsCtx); err != nil {
+		if err := p.client.ModifyVpcAttribute(p.ctx); err != nil {
 			return err
 		}
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			return err
 		}
 
-		log.Success(awsCtx, "created the vpc", "id", *vpc.Vpc.VpcId)
+		p.l.Success(p.ctx, "created the vpc", "id", *vpc.Vpc.VpcId)
 
 	}
 
-	// if obj.haCluster {
-	virtNet := obj.clusterName + "-vnet"
-	subNet := obj.clusterName + "-subnet"
+	subNet := p.ClusterName + "-subnet"
 
-	if err := obj.CreateSubnet(awsCtx, storage, subNet); err != nil {
+	if err := p.CreateSubnet(subNet); err != nil {
 		return err
 	}
 
-	if err := obj.CreateVirtualNetwork(awsCtx, storage, virtNet); err != nil {
+	if err := p.CreateVirtualNetwork(); err != nil {
 		return err
 	}
 
-	// }
-
-	if err := storage.Write(mainStateDocument); err != nil {
+	if err := p.store.Write(p.state); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage ksctlTypes.StorageFactory, subnetName string) error {
+func (p *Provider) CreateSubnet(subnetName string) error {
 
-	zones, err := obj.client.GetAvailabilityZones()
+	zones, err := p.client.GetAvailabilityZones()
 	if err != nil {
 		return err
 	}
 
 	subnets := []string{"172.31.0.0/20", "172.31.32.0/20", "172.31.16.0/20"}
 
-	if len(mainStateDocument.CloudInfra.Aws.SubnetIDs) != 0 {
-		log.Print(awsCtx, "skipped already created the subnet", mainStateDocument.CloudInfra.Aws.SubnetIDs)
+	if len(p.state.CloudInfra.Aws.SubnetIDs) != 0 {
+		p.l.Print(p.ctx, "skipped already created the subnet", p.state.CloudInfra.Aws.SubnetIDs)
 	} else {
 		for i := 0; i < 3; i++ {
 			parameter := ec2.CreateSubnetInput{
 				CidrBlock: aws.String(subnets[i]),
-				VpcId:     aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
+				VpcId:     aws.String(p.state.CloudInfra.Aws.VpcId),
 
 				TagSpecifications: []types.TagSpecification{
 					{
@@ -182,7 +176,7 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage ksctlTypes.Sto
 						Tags: []types.Tag{
 							{
 								Key:   aws.String("Name"),
-								Value: aws.String(obj.clusterName + "-subnet" + strconv.Itoa(i)),
+								Value: aws.String(p.ClusterName + "-subnet" + strconv.Itoa(i)),
 							},
 						},
 					},
@@ -190,62 +184,62 @@ func (obj *AwsProvider) CreateSubnet(ctx context.Context, storage ksctlTypes.Sto
 				AvailabilityZone: aws.String(*zones.AvailabilityZones[i].ZoneName),
 			}
 
-			log.Print(awsCtx, "Selected availability zone", "zone", *zones.AvailabilityZones[i].ZoneName)
-			response, err := obj.client.BeginCreateSubNet(ctx, subnetName, parameter)
+			p.l.Print(p.ctx, "Selected availability zone", "zone", *zones.AvailabilityZones[i].ZoneName)
+			response, err := p.client.BeginCreateSubNet(p.ctx, subnetName, parameter)
 			if err != nil {
 				return err
 			}
 
-			mainStateDocument.CloudInfra.Aws.SubnetIDs = append(mainStateDocument.CloudInfra.Aws.SubnetIDs, *response.Subnet.SubnetId)
-			mainStateDocument.CloudInfra.Aws.SubnetNames = append(mainStateDocument.CloudInfra.Aws.SubnetNames, *response.Subnet.Tags[0].Value)
+			p.state.CloudInfra.Aws.SubnetIDs = append(p.state.CloudInfra.Aws.SubnetIDs, *response.Subnet.SubnetId)
+			p.state.CloudInfra.Aws.SubnetNames = append(p.state.CloudInfra.Aws.SubnetNames, *response.Subnet.Tags[0].Value)
 
-			if err := obj.client.ModifySubnetAttribute(ctx, i); err != nil {
+			if err := p.client.ModifySubnetAttribute(p.ctx, i); err != nil {
 				return err
 			}
 
-			if err := storage.Write(mainStateDocument); err != nil {
+			if err := p.store.Write(p.state); err != nil {
 				return err
 			}
 
-			log.Success(awsCtx, "created the subnet", "id", *response.Subnet.Tags[0].Value)
+			p.l.Success(p.ctx, "created the subnet", "id", *response.Subnet.Tags[0].Value)
 		}
 
 		naclinput := ec2.CreateNetworkAclInput{
-			VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
+			VpcId: aws.String(p.state.CloudInfra.Aws.VpcId),
 			TagSpecifications: []types.TagSpecification{
 				{
 					ResourceType: types.ResourceType("network-acl"),
 					Tags: []types.Tag{
 						{
 							Key:   aws.String("Name"),
-							Value: aws.String(obj.clusterName + "-nacl"),
+							Value: aws.String(p.ClusterName + "-nacl"),
 						},
 					},
 				},
 			},
 		}
 
-		naclresp, err := obj.client.BeginCreateNetworkAcl(ctx, naclinput)
+		naclresp, err := p.client.BeginCreateNetworkAcl(p.ctx, naclinput)
 		if err != nil {
 			return err
 		}
 
-		mainStateDocument.CloudInfra.Aws.NetworkAclID = *naclresp.NetworkAcl.NetworkAclId
+		p.state.CloudInfra.Aws.NetworkAclID = *naclresp.NetworkAcl.NetworkAclId
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			return err
 		}
 
-		log.Success(awsCtx, "created the network acl", "id", *naclresp.NetworkAcl.NetworkAclId)
+		p.l.Success(p.ctx, "created the network acl", "id", *naclresp.NetworkAcl.NetworkAclId)
 	}
 
 	return nil
 }
 
-func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage ksctlTypes.StorageFactory, resName string) error {
+func (p *Provider) CreateVirtualNetwork() error {
 
-	if len(mainStateDocument.CloudInfra.Aws.RouteTableID) != 0 {
-		log.Success(awsCtx, "skipped already created the route table ", "id", mainStateDocument.CloudInfra.Aws.RouteTableID)
+	if len(p.state.CloudInfra.Aws.RouteTableID) != 0 {
+		p.l.Success(p.ctx, "skipped already created the route table ", "id", p.state.CloudInfra.Aws.RouteTableID)
 	} else {
 		internetGateway := ec2.CreateInternetGatewayInput{
 			TagSpecifications: []types.TagSpecification{
@@ -254,7 +248,7 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage ksctlT
 					Tags: []types.Tag{
 						{
 							Key:   aws.String("Name"),
-							Value: aws.String(obj.clusterName + "-ig"),
+							Value: aws.String(p.ClusterName + "-ig"),
 						},
 					},
 				},
@@ -262,33 +256,33 @@ func (obj *AwsProvider) CreateVirtualNetwork(ctx context.Context, storage ksctlT
 		}
 
 		routeTableClient := ec2.CreateRouteTableInput{
-			VpcId: aws.String(mainStateDocument.CloudInfra.Aws.VpcId),
+			VpcId: aws.String(p.state.CloudInfra.Aws.VpcId),
 			TagSpecifications: []types.TagSpecification{
 				{
 					ResourceType: types.ResourceType("route-table"),
 					Tags: []types.Tag{
 						{
 							Key:   aws.String("Name"),
-							Value: aws.String(obj.clusterName + "-rt"),
+							Value: aws.String(p.ClusterName + "-rt"),
 						},
 					},
 				},
 			},
 		}
 
-		routeresponce, gatewayresp, err := obj.client.BeginCreateVirtNet(internetGateway, routeTableClient, mainStateDocument.CloudInfra.Aws.VpcId)
+		routeresponce, gatewayresp, err := p.client.BeginCreateVirtNet(internetGateway, routeTableClient, p.state.CloudInfra.Aws.VpcId)
 		if err != nil {
 			return err
 		}
 
-		mainStateDocument.CloudInfra.Aws.RouteTableID = *routeresponce.RouteTable.RouteTableId
-		mainStateDocument.CloudInfra.Aws.GatewayID = *gatewayresp.InternetGateway.InternetGatewayId
+		p.state.CloudInfra.Aws.RouteTableID = *routeresponce.RouteTable.RouteTableId
+		p.state.CloudInfra.Aws.GatewayID = *gatewayresp.InternetGateway.InternetGatewayId
 
-		if err := storage.Write(mainStateDocument); err != nil {
+		if err := p.store.Write(p.state); err != nil {
 			return err
 		}
-		log.Success(awsCtx, "created the internet gateway", "id", *gatewayresp.InternetGateway.InternetGatewayId)
-		log.Success(awsCtx, "created the route table", "id", *routeresponce.RouteTable.RouteTableId)
+		p.l.Success(p.ctx, "created the internet gateway", "id", *gatewayresp.InternetGateway.InternetGatewayId)
+		p.l.Success(p.ctx, "created the route table", "id", *routeresponce.RouteTable.RouteTableId)
 	}
 
 	return nil
