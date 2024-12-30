@@ -97,23 +97,22 @@ func runTests(packages []string) bool {
 }
 
 func TestUnitTest(t *testing.T) {
-	// Step 1: Get the packages
+	t.Logf("\n%s%s🧪 Running unit tests...%s\n", CYAN, BOLD, RESET)
+
 	packages := getPackagesUnitTest()
 	if len(packages) == 0 {
 		t.Errorf("%sNo packages to test.%s\n", RED, RESET)
 	}
 
-	// Step 2: Run tests for each package
 	allTestsPassed := runTests(packages)
 
-	// Step 3: Final message
 	if !allTestsPassed {
 		t.Errorf("\n%s%s🚨 Some tests failed. Check the output above for details.%s\n", RED, BOLD, RESET)
 	}
+
 	t.Logf("\n%s%s🎉 All tests passed successfully!%s\n", GREEN, BOLD, RESET)
 }
 
 func TestMain(m *testing.M) {
-	fmt.Printf("\n%s%s🧪 Running unit tests...%s\n", CYAN, BOLD, RESET)
 	os.Exit(m.Run())
 }
