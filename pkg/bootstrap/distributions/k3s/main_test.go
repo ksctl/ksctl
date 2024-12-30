@@ -17,11 +17,12 @@ package k3s
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/statefile"
 	"os"
 	"path/filepath"
 	"sort"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/statefile"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -68,6 +69,11 @@ func initClients() {
 		parentLogger.Error(err.Error())
 		os.Exit(1)
 	}
+
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
+
 	fakeStateFromCloud = provider.CloudResourceState{
 		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
 		SSHUserName:   "fakeuser",
@@ -92,10 +98,8 @@ func initClients() {
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
+	fakeClient.store = storeHA
 
-	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect()
 }
 
 func TestMain(m *testing.M) {

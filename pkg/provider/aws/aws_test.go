@@ -156,8 +156,8 @@ func TestNoOfWorkerPlane(t *testing.T) {
 
 func TestValidRegion(t *testing.T) {
 	fortesting := map[string]error{
-		"ap-south-1": nil,
-		"ap-south-2": nil,
+		"ap-south-1":  nil,
+		"fake-region": nil,
 	}
 
 	for key, val := range fortesting {

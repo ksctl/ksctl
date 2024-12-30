@@ -41,6 +41,9 @@ func checkCurrentStateFileHA(t *testing.T) {
 }
 
 func TestHACluster(t *testing.T) {
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudAws, "fake-region", "demo-ha", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
 
 	fakeClientHA, _ = NewClient(
 		parentCtx,
@@ -59,10 +62,6 @@ func TestHACluster(t *testing.T) {
 		storeHA,
 		ProvideClient,
 	)
-
-	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAws, "fake-region", "demo-ha", consts.ClusterTypeHa)
-	_ = storeHA.Connect()
 
 	fakeClientHA.NoCP = 7
 	fakeClientHA.NoDS = 5

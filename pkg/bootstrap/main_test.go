@@ -88,14 +88,15 @@ func initClients() {
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
 	}
 
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
+
 	fakeClient = NewPreBootStrap(parentCtx, parentLogger, mainState, storeHA)
 	if fakeClient == nil {
 		panic("unable to initialize")
 	}
 
-	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect()
 }
 
 func TestMain(m *testing.M) {

@@ -17,16 +17,17 @@ package kubeadm
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/certs"
-	"github.com/ksctl/ksctl/pkg/provider"
-	"github.com/ksctl/ksctl/pkg/ssh"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
 	"os"
 	"path/filepath"
 	"sort"
 	"sync"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/certs"
+	"github.com/ksctl/ksctl/pkg/provider"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -98,6 +99,10 @@ func initClients() {
 		parentLogger.Error(err.Error())
 		os.Exit(1)
 	}
+
+	storeHA = localstate.NewClient(parentCtx, parentLogger)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
+	_ = storeHA.Connect()
 	fakeStateFromCloud = provider.CloudResourceState{
 		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
 		SSHUserName:   "fakeuser",
@@ -123,9 +128,8 @@ func initClients() {
 		panic("unable to initialize")
 	}
 
-	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
-	_ = storeHA.Connect()
+	fakeClient.store = storeHA
+
 }
 
 func TestMain(m *testing.M) {

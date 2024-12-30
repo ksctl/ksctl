@@ -39,7 +39,7 @@ type AwsClient struct {
 	b      *Provider
 }
 
-func (*ZZZZ) AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
+func (*AwsClient) AuthorizeSecurityGroupIngress(ctx context.Context, parameter ec2.AuthorizeSecurityGroupIngressInput) error {
 	return nil
 }
 
@@ -278,6 +278,7 @@ func (mock *AwsClient) InstanceInitialWaiter(ctx context.Context, instanceID str
 }
 
 func (mock *AwsClient) InitClient(b *Provider) error {
+	mock.b = b
 	return nil
 }
 
@@ -288,7 +289,7 @@ func (mock *AwsClient) ImportKeyPair(ctx context.Context, keypair *ec2.ImportKey
 
 func (mock *AwsClient) ListLocations() ([]string, error) {
 
-	return []string{"fake-region"}, nil
+	return []string{"fake-region", "ap-south-1"}, nil
 }
 
 func (mock *AwsClient) ListVMTypes() (ec2.DescribeInstanceTypesOutput, error) {

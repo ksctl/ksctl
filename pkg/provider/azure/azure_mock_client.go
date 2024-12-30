@@ -35,22 +35,14 @@ func ProvideClient() CloudSDK {
 type AzureClient struct {
 	SubscriptionID string
 	AzureTokenCred azcore.TokenCredential
-	Region         string
-	ResourceGrp    string
+	b              *Provider
 }
 
 func (mock *AzureClient) InitClient(b *Provider) error {
 	mock.SubscriptionID = "XUZE"
 	mock.AzureTokenCred = nil
+	mock.b = b
 	return nil
-}
-
-func (mock *AzureClient) SetRegion(s string) {
-	mock.Region = s
-}
-
-func (mock *AzureClient) SetResourceGrp(s string) {
-	mock.ResourceGrp = s
 }
 
 func (mock *AzureClient) ListLocations() ([]string, error) {
@@ -82,7 +74,7 @@ func (mock *AzureClient) ListVMTypes() ([]string, error) {
 func (mock *AzureClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
 	return armresources.ResourceGroupsClientCreateOrUpdateResponse{
 		ResourceGroup: armresources.ResourceGroup{
-			Name: utilities.Ptr(mock.ResourceGrp),
+			Name: utilities.Ptr(mock.b.resourceGroup),
 		},
 	}, nil
 }

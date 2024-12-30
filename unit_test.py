@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import re
 
 # ANSI escape codes for colors
 class Colors:
@@ -10,13 +11,12 @@ class Colors:
     CYAN = "\033[96m"
     BOLD = "\033[1m"
 
-# Directories to exclude
-EXCLUDE_DIRS = ["cmd", "cli", "migration", "vendor"]
-
-def get_packages():
+def get_packages_unit_test():
     """
     Get the list of Go packages excluding specified directories.
     """
+    EXCLUDE_DIRS = ["cmd", "cli", "migration", "vendor"]
+
     print(f"{Colors.BLUE}{Colors.BOLD}Collecting packages...{Colors.RESET}")
     try:
         result = subprocess.run(
@@ -36,17 +36,31 @@ def get_packages():
         print(f"{Colors.RED}Error listing packages: {e.stderr}{Colors.RESET}")
         sys.exit(1)
 
+def is_cloud_provider_package(pkg):
+    """
+    Check if the package matches the pattern for `pkg/provider/{CLOUD_PROVIDER}`.
+    """
+    match = re.match(r".*/pkg/provider/([^/]+)$", pkg)
+    return match.group(1) if match else None
+
 def run_tests(packages):
     """
-    Run `go test -v` on each package.
+    Run `go test -v` on each package. If the package matches `pkg/provider/{CLOUD_PROVIDER}`,
+    include the appropriate compiler tag.
     """
     for pkg in packages:
-        print(f"\n{Colors.CYAN}Running tests for package: {pkg}{Colors.RESET}")
+        # Check if the package matches `pkg/provider/{CLOUD_PROVIDER}`
+        cloud_provider = is_cloud_provider_package(pkg)
+        if cloud_provider:
+            go_tag = f"testing_{cloud_provider.lower()}"
+            print(f"\n{Colors.CYAN}Running tests for package: {pkg} with tag: {go_tag}{Colors.RESET}")
+            command = ["go", "test", "-v", "-tags", go_tag, pkg]
+        else:
+            print(f"\n{Colors.CYAN}Running tests for package: {pkg}{Colors.RESET}")
+            command = ["go", "test", "-v", pkg]
+
         try:
-            result = subprocess.run(
-                ["go", "test", "-v", pkg],
-                check=True
-            )
+            result = subprocess.run(command, check=True)
             if result.returncode == 0:
                 print(f"{Colors.GREEN}✔ Tests passed for package: {pkg}{Colors.RESET}")
         except subprocess.CalledProcessError:
@@ -56,7 +70,7 @@ def run_tests(packages):
 
 if __name__ == "__main__":
     # Step 1: Get the packages
-    packages = get_packages()
+    packages = get_packages_unit_test()
     if not packages:
         print(f"{Colors.RED}No packages to test.{Colors.RESET}")
         sys.exit(1)
