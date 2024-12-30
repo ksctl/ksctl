@@ -155,17 +155,17 @@ func (kc *Controller) DeleteHACluster() error {
 }
 
 // AddWorkerNodes the user provides the desired no of workerplane not the no of workerplanes to be added
-func (kc *Controller) AddWorkerNodes() (int, error) {
+func (kc *Controller) AddWorkerNodes() (*providers.CloudResourceState, int, error) {
 
 	var err error
 	currWP, err := kc.p.Cloud.NoOfWorkerPlane(kc.p.Metadata.NoWP, false)
 	if err != nil {
-		return -1, err
+		return nil, -1, err
 	}
 
 	_, err = kc.p.Cloud.NoOfWorkerPlane(kc.p.Metadata.NoWP, true)
 	if err != nil {
-		return -1, err
+		return nil, -1, err
 	}
 	wg := &sync.WaitGroup{}
 
@@ -191,21 +191,26 @@ func (kc *Controller) AddWorkerNodes() (int, error) {
 
 	for err := range errChanWP {
 		if err != nil {
-			return -1, err
+			return nil, -1, err
 		}
 	}
 
-	// workerplane created
-	return currWP, nil
+	transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
+	if errState != nil {
+		kc.l.Error("handled error", "catch", errState)
+		return nil, -1, err
+	}
+
+	return &transferableInfraState, currWP, nil
 }
 
 // DelWorkerNodes uses the noWP as the desired count of workerplane which is desired
-func (kc *Controller) DelWorkerNodes() ([]string, error) {
+func (kc *Controller) DelWorkerNodes() (*providers.CloudResourceState, []string, error) {
 
 	hostnames := kc.p.Cloud.GetHostNameAllWorkerNode()
 
 	if hostnames == nil {
-		return nil, kc.l.NewError(kc.ctx, "hostname is empty")
+		return nil, nil, kc.l.NewError(kc.ctx, "hostname is empty")
 	}
 
 	currLen := len(hostnames)
@@ -213,7 +218,7 @@ func (kc *Controller) DelWorkerNodes() ([]string, error) {
 	hostnames = hostnames[desiredLen:]
 
 	if desiredLen < 0 || desiredLen > currLen {
-		return nil, kc.l.NewError(kc.ctx, "not a valid count of wp for down scaling")
+		return nil, nil, kc.l.NewError(kc.ctx, "not a valid count of wp for down scaling")
 	}
 
 	wg := &sync.WaitGroup{}
@@ -235,17 +240,22 @@ func (kc *Controller) DelWorkerNodes() ([]string, error) {
 
 	for err := range errChanWP {
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	_, err := kc.p.Cloud.NoOfWorkerPlane(desiredLen, true)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return hostnames, nil
+	transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
+	if errState != nil {
+		kc.l.Error("handled error", "catch", errState)
+		return nil, nil, err
+	}
 
+	return &transferableInfraState, hostnames, nil
 }
 
 func (kc *Controller) CreateHACluster() (*providers.CloudResourceState, error) {
