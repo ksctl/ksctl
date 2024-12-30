@@ -73,7 +73,7 @@ docker-build-state-import: ## docker build state importer
 ##@ Unit Tests (Core)
 .PHONY: unit_test_all
 unit_test_all:
-	@python unit_test.py
+	@go test -v tests/unit_test.go
 
 ##@ Mock Tests (Core)
 .PHONY: mock_all
