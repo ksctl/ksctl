@@ -1,4 +1,4 @@
-// Copyright 2024 Ksctl Authors
+// Copyright 2024 ksctl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bootstrap
+package provider
 
 import (
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/provider"
+	"fmt"
+
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-type Bootstrap interface {
-	Setup(*provider.CloudResourceState, consts.KsctlOperation) error
+func CloudInitScript(resName string) (string, error) {
 
-	ConfigureDataStore(int) error
+	postfixStr, err := utilities.GenRandomString(5)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`#!/bin/bash
+sudo hostname %s-%s
 
-	ConfigureLoadbalancer() error
+sudo cp /etc/localtime /etc/localtime.backup
+
+sudo ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+
+`, resName, postfixStr), nil
 }

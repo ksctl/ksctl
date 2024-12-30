@@ -26,7 +26,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/poller"
-	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/ssh"
 	"github.com/ksctl/ksctl/pkg/storage"
 	localstate "github.com/ksctl/ksctl/pkg/storage/host"
@@ -37,7 +37,7 @@ var (
 
 	fakeClient         *K3s
 	dir                = filepath.Join(os.TempDir(), "ksctl-k3s-test")
-	fakeStateFromCloud providers.CloudResourceState
+	fakeStateFromCloud provider.CloudResourceState
 
 	parentCtx    context.Context
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
@@ -68,7 +68,7 @@ func initClients() {
 		parentLogger.Error(err.Error())
 		os.Exit(1)
 	}
-	fakeStateFromCloud = providers.CloudResourceState{
+	fakeStateFromCloud = provider.CloudResourceState{
 		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
 		SSHUserName:   "fakeuser",
 		ClusterName:   "fake",

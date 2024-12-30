@@ -16,11 +16,12 @@ package bootstrap
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/ssh"
 	"testing"
 
+	"github.com/ksctl/ksctl/pkg/ssh"
+
 	"github.com/ksctl/ksctl/pkg/consts"
-	testHelper "github.com/ksctl/ksctl/tests/helpers"
+	testHelper "github.com/ksctl/ksctl/pkg/ssh"
 	"github.com/stretchr/testify/assert"
 )
 

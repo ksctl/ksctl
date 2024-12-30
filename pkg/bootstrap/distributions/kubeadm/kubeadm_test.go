@@ -16,9 +16,10 @@ package kubeadm
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/ssh"
-	testHelper "github.com/ksctl/ksctl/tests/helpers"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/ssh"
+	testHelper "github.com/ksctl/ksctl/pkg/ssh"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	"gotest.tools/v3/assert"

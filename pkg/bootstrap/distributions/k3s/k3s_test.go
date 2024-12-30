@@ -16,19 +16,20 @@ package k3s
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/certs"
-	"github.com/ksctl/ksctl/pkg/ssh"
-	testHelper "github.com/ksctl/ksctl/tests/helpers"
 	"sync"
 	"testing"
 
+	"github.com/ksctl/ksctl/pkg/certs"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	testHelper "github.com/ksctl/ksctl/pkg/ssh"
+
 	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"gotest.tools/v3/assert"
 )
 
-func NewClientHelper(x providers.CloudResourceState, state *statefile.StorageDocument) *K3s {
+func NewClientHelper(x provider.CloudResourceState, state *statefile.StorageDocument) *K3s {
 
 	p := &K3s{mu: &sync.Mutex{}}
 

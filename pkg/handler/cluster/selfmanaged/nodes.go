@@ -20,7 +20,7 @@ import (
 	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
 	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/consts"
-	providerHandler "github.com/ksctl/ksctl/pkg/providers/handler"
+	providerHandler "github.com/ksctl/ksctl/pkg/provider/handler"
 )
 
 func (kc *Controller) AddWorkerNodes() error {

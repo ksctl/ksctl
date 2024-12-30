@@ -16,7 +16,7 @@ package handler
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/provider"
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/bootstrap"
@@ -44,7 +44,7 @@ func NewController(
 	baseController *controller.Controller,
 	state *statefile.StorageDocument,
 	operation consts.KsctlOperation,
-	transferableInfraState *providers.CloudResourceState,
+	transferableInfraState *provider.CloudResourceState,
 	controllerPayload *controller.Client,
 ) (*Controller, error) {
 
@@ -67,7 +67,7 @@ func NewController(
 
 func (kc *Controller) setupInterfaces(
 	operation consts.KsctlOperation,
-	transferableInfraState *providers.CloudResourceState,
+	transferableInfraState *provider.CloudResourceState,
 ) error {
 
 	kc.p.PreBootstrap = bootstrap.NewPreBootStrap(

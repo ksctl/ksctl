@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ksctl/ksctl/pkg/certs"
-	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/ssh"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
@@ -39,12 +39,12 @@ var (
 
 	fakeClient         *Kubeadm
 	dir                = filepath.Join(os.TempDir(), "ksctl-kubeadm-test")
-	fakeStateFromCloud providers.CloudResourceState
+	fakeStateFromCloud provider.CloudResourceState
 	parentCtx          context.Context
 	parentLogger       logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
-func NewClientHelper(x providers.CloudResourceState, state *statefile.StorageDocument) *Kubeadm {
+func NewClientHelper(x provider.CloudResourceState, state *statefile.StorageDocument) *Kubeadm {
 	p := &Kubeadm{mu: &sync.Mutex{}}
 
 	p.ctx = parentCtx
@@ -98,7 +98,7 @@ func initClients() {
 		parentLogger.Error(err.Error())
 		os.Exit(1)
 	}
-	fakeStateFromCloud = providers.CloudResourceState{
+	fakeStateFromCloud = provider.CloudResourceState{
 		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
 		SSHUserName:   "fakeuser",
 		ClusterName:   "fake",

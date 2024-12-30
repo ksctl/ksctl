@@ -23,10 +23,10 @@ import (
 	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/providers/aws"
-	"github.com/ksctl/ksctl/pkg/providers/azure"
-	"github.com/ksctl/ksctl/pkg/providers/civo"
-	"github.com/ksctl/ksctl/pkg/providers/local"
+	"github.com/ksctl/ksctl/pkg/provider/aws"
+	"github.com/ksctl/ksctl/pkg/provider/azure"
+	"github.com/ksctl/ksctl/pkg/provider/civo"
+	"github.com/ksctl/ksctl/pkg/provider/local"
 )
 
 func (kc *Controller) Switch() (*string, error) {

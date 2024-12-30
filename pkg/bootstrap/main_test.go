@@ -22,7 +22,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/ssh"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
@@ -39,7 +39,7 @@ var (
 
 	fakeClient         *PreBootstrap
 	dir                = filepath.Join(os.TempDir(), "ksctl-bootstrap-test")
-	fakeStateFromCloud providers.CloudResourceState
+	fakeStateFromCloud provider.CloudResourceState
 
 	parentCtx    context.Context
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
@@ -69,7 +69,7 @@ func initClients() {
 		parentLogger.Error(err.Error())
 		os.Exit(1)
 	}
-	fakeStateFromCloud = providers.CloudResourceState{
+	fakeStateFromCloud = provider.CloudResourceState{
 		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
 		SSHUserName:   "fakeuser",
 		ClusterName:   "fake",

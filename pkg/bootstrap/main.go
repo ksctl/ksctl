@@ -17,7 +17,7 @@ package bootstrap
 import (
 	"context"
 	"github.com/ksctl/ksctl/pkg/certs"
-	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
 	"sync"
@@ -55,7 +55,7 @@ func NewPreBootStrap(
 }
 
 func (p *PreBootstrap) Setup(
-	cloudState *providers.CloudResourceState,
+	cloudState *provider.CloudResourceState,
 	operation consts.KsctlOperation,
 ) error {
 

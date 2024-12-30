@@ -20,7 +20,7 @@ import (
 
 	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
 
-	providerHandler "github.com/ksctl/ksctl/pkg/providers/handler"
+	providerHandler "github.com/ksctl/ksctl/pkg/provider/handler"
 )
 
 func (kc *Controller) Create() error {

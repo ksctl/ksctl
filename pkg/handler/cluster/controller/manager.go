@@ -22,12 +22,12 @@ import (
 	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/storage"
 )
 
 type Client struct {
-	Cloud providers.Cloud
+	Cloud provider.Cloud
 
 	PreBootstrap bootstrap.Bootstrap
 
