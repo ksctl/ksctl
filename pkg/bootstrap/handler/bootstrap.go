@@ -16,13 +16,12 @@ package handler
 
 import (
 	"context"
+	"github.com/ksctl/ksctl/pkg/providers"
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/bootstrap"
 	"github.com/ksctl/ksctl/pkg/config"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/storage/mongodb"
 
 	k3sPkg "github.com/ksctl/ksctl/pkg/bootstrap/distributions/k3s"
 	kubeadmPkg "github.com/ksctl/ksctl/pkg/bootstrap/distributions/kubeadm"
@@ -45,6 +44,7 @@ func NewController(
 	baseController *controller.Controller,
 	state *statefile.StorageDocument,
 	operation consts.KsctlOperation,
+	transferableInfraState *providers.CloudResourceState,
 	controllerPayload *controller.Client,
 ) (*Controller, error) {
 
@@ -55,15 +55,20 @@ func NewController(
 	cc.p = controllerPayload
 	cc.s = state
 
-	err := cc.setupInterfaces()
-	if err != nil {
-		return nil, err
+	if controllerPayload.Metadata.IsHA {
+		err := cc.setupInterfaces(operation, transferableInfraState)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return cc, nil
 }
 
-func (kc *Controller) setupInterfaces() error {
+func (kc *Controller) setupInterfaces(
+	operation consts.KsctlOperation,
+	transferableInfraState *providers.CloudResourceState,
+) error {
 
 	kc.p.PreBootstrap = bootstrap.NewPreBootStrap(
 		kc.ctx,
@@ -72,7 +77,6 @@ func (kc *Controller) setupInterfaces() error {
 		kc.p.Storage,
 	)
 
-	// Make a check if the stateDocument is present in the storage
 	if kc.s.BootstrapProvider == consts.K8sK3s || kc.s.BootstrapProvider == consts.K8sKubeadm {
 		switch kc.s.BootstrapProvider {
 		case consts.K8sK3s:
@@ -110,6 +114,11 @@ func (kc *Controller) setupInterfaces() error {
 		)
 	default:
 		return kc.l.NewError(kc.ctx, "Invalid k8s provider")
+	}
+
+	if errTransfer := kc.p.PreBootstrap.Setup(transferableInfraState, operation); errTransfer != nil {
+		kc.l.Error("handled error", "catch", errTransfer)
+		return errTransfer
 	}
 	return nil
 }
@@ -281,7 +290,6 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 		kc.p.Storage,
 		kc.s.ClusterKubeConfig,
 	)
-	//k, err := ksctlKubernetes.NewKubeconfigClient(controllerCtx, log, client.Storage, state.ClusterKubeConfig, false, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -303,19 +311,29 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 	return nil
 }
 
-func handleCreds(ctx context.Context, log logger.Logger, store consts.KsctlStore) (map[string][]byte, error) {
-	switch store {
-	case consts.StoreLocal, consts.StoreK8s:
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInvalidStorageProvider,
-			log.NewError(ctx, "these are not external storageProvider"),
-		)
-	case consts.StoreExtMongo:
-		return mongodb.ExportEndpoint()
-	default:
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInvalidStorageProvider,
-			log.NewError(ctx, "invalid storage", "storage", store),
-		)
-	}
+// TODO: we need to delete any infrastructure resources before we remove this
+// Goal: is to trigger a event in the cluster and wait for it
+// the event handler will deprovision all the resources before it is safe for us to do ahead
+// Warn: this is a deletion procedure
+func (kc *Controller) InvokeDestroyProcedure() error {
+	kc.l.Success(kc.ctx, "We need to implement the destroy procedure")
+
+	return nil
 }
+
+// func handleCreds(ctx context.Context, log logger.Logger, store consts.KsctlStore) (map[string][]byte, error) {
+// 	switch store {
+// 	case consts.StoreLocal, consts.StoreK8s:
+// 		return nil, ksctlErrors.WrapError(
+// 			ksctlErrors.ErrInvalidStorageProvider,
+// 			log.NewError(ctx, "these are not external storageProvider"),
+// 		)
+// 	case consts.StoreExtMongo:
+// 		return mongodb.ExportEndpoint()
+// 	default:
+// 		return nil, ksctlErrors.WrapError(
+// 			ksctlErrors.ErrInvalidStorageProvider,
+// 			log.NewError(ctx, "invalid storage", "storage", store),
+// 		)
+// 	}
+// }

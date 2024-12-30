@@ -20,7 +20,7 @@ import (
 )
 
 type Bootstrap interface {
-	Setup(providers.CloudResourceState, consts.KsctlOperation) error
+	Setup(*providers.CloudResourceState, consts.KsctlOperation) error
 
 	ConfigureDataStore(int) error
 

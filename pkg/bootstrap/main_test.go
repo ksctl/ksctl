@@ -17,14 +17,15 @@ package bootstrap
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/providers"
-	"github.com/ksctl/ksctl/pkg/ssh"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
 	"os"
 	"path/filepath"
 	"sort"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/providers"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -113,7 +114,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestOverallScriptsCreation(t *testing.T) {
-	assert.Equal(t, fakeClient.Setup(fakeStateFromCloud, consts.OperationCreate), nil, "should be initlize the state")
+	assert.Equal(t, fakeClient.Setup(&fakeStateFromCloud, consts.OperationCreate), nil, "should be initlize the state")
 	noDS := len(fakeStateFromCloud.IPv4DataStores)
 
 	err := fakeClient.ConfigureLoadbalancer()

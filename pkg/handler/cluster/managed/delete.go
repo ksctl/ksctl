@@ -13,3 +13,53 @@
 // limitations under the License.
 
 package managed
+
+import (
+	"github.com/ksctl/ksctl/pkg/consts"
+	providerHandler "github.com/ksctl/ksctl/pkg/providers/handler"
+)
+
+func (kc *Controller) Delete() error {
+
+	if kc.b.IsLocalProvider(kc.p) {
+		kc.p.Metadata.Region = "LOCAL"
+	}
+
+	if err := kc.p.Storage.Setup(
+		kc.p.Metadata.Provider,
+		kc.p.Metadata.Region,
+		kc.p.Metadata.ClusterName,
+		consts.ClusterTypeMang,
+	); err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	defer func() {
+		if err := kc.p.Storage.Kill(); err != nil {
+			kc.l.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+
+	kpc, err := providerHandler.NewController(
+		kc.ctx,
+		kc.l,
+		kc.b,
+		kc.s,
+		consts.OperationDelete,
+		kc.p,
+	)
+	if err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	errKpc := kpc.DeleteManagedCluster()
+	if errKpc != nil {
+		kc.l.Error("handled error", "catch", errKpc)
+		return errKpc
+	}
+
+	kc.l.Success(kc.ctx, "successfully deleted managed cluster")
+	return nil
+}

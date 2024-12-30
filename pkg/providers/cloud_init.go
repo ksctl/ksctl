@@ -14,11 +14,15 @@
 
 package providers
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ksctl/ksctl/pkg/utilities"
+)
 
 func CloudInitScript(resName string) (string, error) {
 
-	postfixStr, err := GenRandomString(5)
+	postfixStr, err := utilities.GenRandomString(5)
 	if err != nil {
 		return "", err
 	}

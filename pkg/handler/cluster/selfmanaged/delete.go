@@ -13,3 +13,94 @@
 // limitations under the License.
 
 package selfmanaged
+
+import (
+	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
+	"github.com/ksctl/ksctl/pkg/consts"
+	providerHandler "github.com/ksctl/ksctl/pkg/providers/handler"
+)
+
+func (kc *Controller) Delete() error {
+
+	if err := kc.p.Storage.Setup(
+		kc.p.Metadata.Provider,
+		kc.p.Metadata.Region,
+		kc.p.Metadata.ClusterName,
+		consts.ClusterTypeHa,
+	); err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	defer func() {
+		if err := kc.p.Storage.Kill(); err != nil {
+			kc.l.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+
+	{
+		/*
+		  Note: This will remove infrastructure created by the ksctl agent and not ksctl cli
+		  CAUTION: WIP
+		*/
+		_, err := providerHandler.NewController(
+			kc.ctx,
+			kc.l,
+			kc.b,
+			kc.s,
+			consts.OperationGet,
+			kc.p,
+		)
+		if err != nil {
+			kc.l.Error("handled error", "catch", err)
+			return err
+		}
+
+		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
+		if errState != nil {
+			kc.l.Error("handled error", "catch", errState)
+			return err
+		}
+
+		kbc, errBootstrapController := bootstrapHandler.NewController(
+			kc.ctx,
+			kc.l,
+			kc.b,
+			kc.s,
+			consts.OperationGet,
+			&transferableInfraState,
+			kc.p,
+		)
+		if errBootstrapController != nil {
+			kc.l.Error("handled error", "catch", errBootstrapController)
+			return errBootstrapController
+		}
+
+		if err := kbc.InvokeDestroyProcedure(); err != nil {
+			kc.l.Error("handled error", "catch", err)
+			return err
+		}
+	}
+
+	kpc, err := providerHandler.NewController(
+		kc.ctx,
+		kc.l,
+		kc.b,
+		kc.s,
+		consts.OperationDelete,
+		kc.p,
+	)
+	if err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	if errDelete := kpc.DeleteHACluster(); errDelete != nil {
+		kc.l.Error("handled error", "catch", errDelete)
+		return errDelete
+	}
+
+	kc.l.Success(kc.ctx, "successfully deleted ha cluster")
+
+	return nil
+}

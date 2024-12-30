@@ -15,9 +15,10 @@
 package controller
 
 import (
+	"sort"
+
 	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/validation"
-	"sort"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 

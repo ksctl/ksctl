@@ -55,7 +55,7 @@ func NewPreBootStrap(
 }
 
 func (p *PreBootstrap) Setup(
-	cloudState providers.CloudResourceState,
+	cloudState *providers.CloudResourceState,
 	operation consts.KsctlOperation,
 ) error {
 

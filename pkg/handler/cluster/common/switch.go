@@ -15,7 +15,12 @@
 package common
 
 import (
-	"github.com/ksctl/ksctl/cli"
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/providers/aws"
@@ -64,10 +69,6 @@ func (kc *Controller) Switch() (*string, error) {
 			break
 		}
 
-		// TODO(@dipankardas011): use the NewMenthod for initializing the provider Controller
-		// NOTE: make sure that the InitCloud works for the aws only and if its is used to initialize for all the provider make sure it doesn't have any consequences
-		//err = cloudController.InitCloud(client, stateDocument, consts.OperationGet)
-
 	case consts.CloudLocal:
 		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
 
@@ -76,6 +77,11 @@ func (kc *Controller) Switch() (*string, error) {
 	if err != nil {
 		kc.l.Error("handled error", "catch", err)
 		return nil, err
+	}
+
+	if errInit := kc.p.Cloud.InitState(consts.OperationGet); errInit != nil {
+		kc.l.Error("handled error", "catch", errInit)
+		return nil, errInit
 	}
 
 	if err := kc.p.Cloud.IsPresent(); err != nil {
@@ -100,7 +106,7 @@ func (kc *Controller) Switch() (*string, error) {
 		return nil, err
 	}
 
-	path, err := cli.WriteKubeConfig(kc.ctx, *kubeconfig)
+	path, err := writeKubeConfig(kc.ctx, *kubeconfig)
 	kc.l.Debug(kc.ctx, "data", "kubeconfigPath", path)
 
 	if err != nil {
@@ -111,4 +117,41 @@ func (kc *Controller) Switch() (*string, error) {
 	kc.printKubeConfig(path)
 
 	return kubeconfig, nil
+}
+
+func genOSKubeConfigPath(ctx context.Context) (string, error) {
+
+	var userLoc string
+	if v, ok := config.IsContextPresent(ctx, consts.KsctlCustomDirLoc); ok {
+		userLoc = filepath.Join(strings.Split(strings.TrimSpace(v), " ")...)
+	} else {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		userLoc = home
+	}
+
+	pathArr := []string{userLoc, ".ksctl", "kubeconfig"}
+
+	return filepath.Join(pathArr...), nil
+}
+
+func writeKubeConfig(ctx context.Context, kubeconfig string) (string, error) {
+	path, err := genOSKubeConfigPath(ctx)
+	if err != nil {
+		return "", ksctlErrors.WrapError(ksctlErrors.ErrInternal, err)
+	}
+
+	dir, _ := filepath.Split(path)
+
+	if err := os.MkdirAll(dir, 0750); err != nil {
+		return "", ksctlErrors.WrapError(ksctlErrors.ErrKubeconfigOperations, err)
+	}
+
+	if err := os.WriteFile(path, []byte(kubeconfig), 0755); err != nil {
+		return "", ksctlErrors.WrapError(ksctlErrors.ErrKubeconfigOperations, err)
+	}
+
+	return path, nil
 }

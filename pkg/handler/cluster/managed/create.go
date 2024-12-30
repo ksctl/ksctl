@@ -13,3 +13,82 @@
 // limitations under the License.
 
 package managed
+
+import (
+	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
+	"github.com/ksctl/ksctl/pkg/consts"
+	providerHandler "github.com/ksctl/ksctl/pkg/providers/handler"
+	"github.com/ksctl/ksctl/pkg/validation"
+)
+
+// TODO: Need to think how the panicCatcher should be used if not going to be used
+
+func (kc *Controller) Create() error {
+
+	if kc.b.IsLocalProvider(kc.p) {
+		kc.p.Metadata.Region = "LOCAL"
+	}
+
+	if err := kc.p.Storage.Setup(
+		kc.p.Metadata.Provider,
+		kc.p.Metadata.Region,
+		kc.p.Metadata.ClusterName,
+		consts.ClusterTypeMang,
+	); err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	defer func() {
+		if err := kc.p.Storage.Kill(); err != nil {
+			kc.l.Error("StorageClass Kill failed", "reason", err)
+		}
+	}()
+
+	if !validation.ValidCNIPlugin(consts.KsctlValidCNIPlugin(kc.p.Metadata.CNIPlugin.StackName)) {
+		err := kc.l.NewError(kc.ctx, "invalid CNI plugin")
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	kpc, err := providerHandler.NewController(
+		kc.ctx,
+		kc.l,
+		kc.b,
+		kc.s,
+		consts.OperationCreate,
+		kc.p,
+	)
+	if err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	_, externalCNI, errKpc := kpc.CreateManagedCluster()
+	if errKpc != nil {
+		kc.l.Error("handled error", "catch", errKpc)
+		return errKpc
+	}
+
+	kbc, err := bootstrapHandler.NewController(
+		kc.ctx,
+		kc.l,
+		kc.b,
+		kc.s,
+		consts.OperationCreate,
+		nil,
+		kc.p,
+	)
+	if err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	if err := kbc.InstallAdditionalTools(externalCNI); err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
+	kc.l.Success(kc.ctx, "successfully created managed cluster")
+	return nil
+}

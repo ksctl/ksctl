@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/providers"
 )
 
 func (kc *Controller) DeleteHACluster() error {
@@ -247,56 +248,56 @@ func (kc *Controller) DelWorkerNodes() ([]string, error) {
 
 }
 
-func (kc *Controller) CreateHACluster() error {
+func (kc *Controller) CreateHACluster() (*providers.CloudResourceState, error) {
 	if _, err := kc.p.Cloud.NoOfControlPlane(kc.p.Metadata.NoCP, true); err != nil {
-		return err
+		return nil, err
 	}
 
 	if _, err := kc.p.Cloud.NoOfWorkerPlane(kc.p.Metadata.NoWP, true); err != nil {
-		return err
+		return nil, err
 	}
 
 	if _, err := kc.p.Cloud.NoOfDataStore(kc.p.Metadata.NoDS, true); err != nil {
-		return err
+		return nil, err
 	}
 
 	var err error
 	err = kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-net").NewNetwork()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-ssh").CreateUploadSSHKeyPair()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-fw-lb").
 		Role(consts.RoleLb).
 		NewFirewall()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-fw-db").
 		Role(consts.RoleDs).
 		NewFirewall()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-fw-cp").
 		Role(consts.RoleCp).
 		NewFirewall()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-fw-wp").
 		Role(consts.RoleWp).
 		NewFirewall()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//////
@@ -374,23 +375,30 @@ func (kc *Controller) CreateHACluster() error {
 
 	for err := range errChanLB {
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for err := range errChanDS {
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for err := range errChanCP {
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for err := range errChanWP {
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+
+	transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
+	if errState != nil {
+		kc.l.Error("handled error", "catch", errState)
+		return nil, err
+	}
+
+	return &transferableInfraState, nil
 }
