@@ -1,0 +1,15 @@
+{
+	"cluster_name": "test-e2e-ha-azure",
+	"region": "eastus2",
+	"ha_cluster": true,
+	"cloud_provider": "azure",
+	"kubernetes_distro": "k3s",
+	"storage_type": "store-local",
+	"node_type_workerplane": "Standard_F2s",
+	"node_type_controlplane": "Standard_F2s",
+	"node_type_datastore": "Standard_F2s",
+	"node_type_loadbalancer": "Standard_F2s",
+	"desired_no_of_workerplane_nodes": 1,
+	"desired_no_of_controlplane_nodes": 3,
+	"desired_no_of_datastore_nodes": 3
+}

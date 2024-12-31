@@ -80,7 +80,7 @@ type Controller struct {
 func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
 	b := new(Controller)
 	b.l = l
-	b.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "pkg/handler/cluster/controller")
+	b.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "manager-base")
 
 	return b
 }

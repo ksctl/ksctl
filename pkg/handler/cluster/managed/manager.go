@@ -34,13 +34,17 @@ type Controller struct {
 func NewController(ctx context.Context, log logger.Logger, controllerPayload *controller.Client) (*Controller, error) {
 
 	cc := new(Controller)
-	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "pkg/handler/cluster/managed")
+	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "controller-managed")
 	cc.b = controller.NewBaseController(ctx, log)
 	cc.p = controllerPayload
 	cc.s = new(statefile.StorageDocument)
 	cc.l = log
 
 	if err := cc.b.ValidateMetadata(controllerPayload); err != nil {
+		return nil, err
+	}
+
+	if err := cc.b.ValidateName(controllerPayload.Metadata.ClusterName); err != nil {
 		return nil, err
 	}
 

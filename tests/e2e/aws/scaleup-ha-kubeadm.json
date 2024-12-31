@@ -1,0 +1,9 @@
+{
+  "cluster_name": "test-e2e-kubeadm-ha-aws",
+  "region": "us-east-1",
+  "ha_cluster": true,
+  "cloud_provider": "aws",
+  "storage_type": "store-local",
+  "node_type_workerplane": "t2.medium",
+  "desired_no_of_workerplane_nodes": 1
+}

@@ -63,7 +63,16 @@ func setCiliumComponentOverridings(p ComponentOverrides) (
 	if _ciliumChartOverridings != nil {
 		ciliumChartOverridings = _ciliumChartOverridings
 	} else {
-		ciliumChartOverridings = nil
+		ciliumChartOverridings = map[string]any{
+			"hubble": map[string]any{
+				"ui": map[string]any{
+					"enabled": true,
+				},
+				"relay": map[string]any{
+					"enabled": true,
+				},
+			},
+		}
 	}
 	return
 }

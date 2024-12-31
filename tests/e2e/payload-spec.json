@@ -1,0 +1,19 @@
+{
+	"cluster_name": "",
+	"region": "",
+	"kubernetes_version": "",
+	"ha_cluster": false,
+	"cloud_provider": "",
+	"kubernetes_distro": "",
+	"node_type_managed": "",
+	"node_type_workerplane": "",
+	"node_type_controlplane": "",
+	"node_type_datastore": "",
+	"node_type_loadbalancer": "",
+	"desired_no_of_managed_nodes": 0,
+	"desired_no_of_workerplane_nodes": 0,
+	"desired_no_of_controlplane_nodes": 0,
+	"desired_no_of_datastore_nodes": 0,
+	"preinstalled_apps": "",
+	"cni_plugin": ""
+}

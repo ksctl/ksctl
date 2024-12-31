@@ -21,6 +21,13 @@ import (
 	"github.com/ksctl/ksctl/pkg/validation"
 )
 
+func (cc *Controller) ValidateName(name string) error {
+	if err := validation.IsValidName(cc.ctx, cc.l, name); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (cc *Controller) ValidateMetadata(c *Client) error {
 	meta := c.Metadata
 	if _, ok := config.IsContextPresent(cc.ctx, consts.KsctlContextUserID); !ok {
@@ -45,10 +52,6 @@ func (cc *Controller) ValidateMetadata(c *Client) error {
 				cc.ctx, "Problem in validation", "bootstrap", meta.K8sDistro,
 			),
 		)
-	}
-
-	if err := validation.IsValidName(cc.ctx, cc.l, meta.ClusterName); err != nil {
-		return err
 	}
 
 	return nil

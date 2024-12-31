@@ -80,8 +80,8 @@ const (
 )
 
 var appsManifests = map[StackID]func(ApplicationParams) (ApplicationStack, error){
-	CiliumStandardStackID:  nil,
-	FlannelStandardStackID: nil,
+	CiliumStandardStackID:  CiliumStandardCNI,
+	FlannelStandardStackID: FlannelStandardCNI,
 }
 
 func FetchKsctlStack(ctx context.Context, log logger.Logger, stkID string) (func(ApplicationParams) (ApplicationStack, error), error) {
