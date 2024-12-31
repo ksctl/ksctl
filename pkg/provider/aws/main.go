@@ -512,6 +512,13 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 		return nil, err
 	}
 
+	subnetEvaluator := func(v []string) string {
+		if len(v) > 0 {
+			return v[0]
+		}
+		return ""
+	}
+
 	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []logger.VMData) {
 
 		switch r {
@@ -525,8 +532,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 					FirewallID: st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
-					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
+					SubnetID:   subnetEvaluator(st.CloudInfra.Aws.SubnetIDs),
+					SubnetName: subnetEvaluator(st.CloudInfra.Aws.SubnetNames),
 				})
 			}
 
@@ -540,8 +547,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 					FirewallID: st.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
-					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
+					SubnetID:   subnetEvaluator(st.CloudInfra.Aws.SubnetIDs),
+					SubnetName: subnetEvaluator(st.CloudInfra.Aws.SubnetNames),
 				})
 			}
 
@@ -555,8 +562,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 					FirewallID: st.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
 					PrivateIP:  o.PrivateIPs[i],
-					SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
-					SubnetName: st.CloudInfra.Aws.SubnetNames[0],
+					SubnetID:   subnetEvaluator(st.CloudInfra.Aws.SubnetIDs),
+					SubnetName: subnetEvaluator(st.CloudInfra.Aws.SubnetNames),
 				})
 			}
 
@@ -567,8 +574,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				FirewallID: st.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID,
 				PublicIP:   st.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
 				PrivateIP:  st.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
-				SubnetID:   st.CloudInfra.Aws.SubnetIDs[0],
-				SubnetName: st.CloudInfra.Aws.SubnetNames[0],
+				SubnetID:   subnetEvaluator(st.CloudInfra.Aws.SubnetIDs),
+				SubnetName: subnetEvaluator(st.CloudInfra.Aws.SubnetNames),
 			})
 		}
 		return v

@@ -65,6 +65,7 @@ func runTestsIntegration(packages []IntegrationTestP) bool {
 		spinner.Stop()
 		if err != nil {
 			fmt.Printf("%s✘ Tests failed for package: %+v%s\n", RED, pkg, RESET)
+			fmt.Printf("%s\n%s\n%s\n%s\n", RED, _bout.String(), _berr.String(), RESET)
 			return false
 		}
 		fmt.Printf("%s✔ Tests passed for package: %+v%s\n", GREEN, pkg, RESET)

@@ -49,9 +49,10 @@ func TestAll(t *testing.T) {
 
 // Spinner represents a spinning animation
 type Spinner struct {
-	chars  []string
-	done   chan bool
-	active bool
+	chars     []string
+	done      chan bool
+	active    bool
+	startTime time.Time
 }
 
 // NewSpinner creates a new spinner instance
@@ -74,6 +75,7 @@ func (s *Spinner) Start() {
 		return
 	}
 	s.active = true
+	s.startTime = time.Now()
 
 	go func() {
 		for i := 0; ; i = (i + 1) % len(s.chars) {
@@ -82,8 +84,9 @@ func (s *Spinner) Start() {
 				fmt.Print("\r") // Clear the spinner
 				return
 			default:
-				fmt.Printf("\r%s", s.chars[i])
-				time.Sleep(200 * time.Millisecond)
+				elapsed := time.Since(s.startTime).Round(time.Second)
+				fmt.Printf("\r%s %s", s.chars[i], elapsed)
+				time.Sleep(100 * time.Millisecond)
 			}
 		}
 	}()

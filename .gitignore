@@ -27,3 +27,5 @@ go.work.sum
 # IDE
 .idea/
 .vscode/
+
+tests/integration/kubeconfig

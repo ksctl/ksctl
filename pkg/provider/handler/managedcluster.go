@@ -16,7 +16,7 @@ package handler
 
 func (kc *Controller) CreateManagedCluster() (bool, bool, error) {
 
-	if kc.b.IsLocalProvider(kc.p) {
+	if !kc.b.IsLocalProvider(kc.p) {
 		if err := kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(); err != nil {
 			return false, false, err
 		}
@@ -54,7 +54,7 @@ func (kc *Controller) DeleteManagedCluster() error {
 		return err
 	}
 
-	if kc.b.IsLocalProvider(kc.p) {
+	if !kc.b.IsLocalProvider(kc.p) {
 		if err := kc.p.Cloud.DelNetwork(); err != nil {
 			return err
 		}
