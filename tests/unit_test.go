@@ -23,16 +23,6 @@ import (
 	"testing"
 )
 
-// ANSI escape codes for colors
-const (
-	RESET = "\033[0m"
-	BLUE  = "\033[94m"
-	GREEN = "\033[92m"
-	RED   = "\033[91m"
-	CYAN  = "\033[96m"
-	BOLD  = "\033[1m"
-)
-
 func getPackagesUnitTest() []string {
 	EXCLUDE_DIRS := []string{"cmd", "cli", "migration", "vendor", "tests"}
 
@@ -73,22 +63,73 @@ func isCloudProviderPackage(pkg string) string {
 	return ""
 }
 
-func runTests(packages []string) bool {
+func isFuzzPackage(pkg string) bool {
+	re := regexp.MustCompile(`.*/pkg/validation$`)
+	match := re.FindStringSubmatch(pkg)
+	return match != nil
+}
+
+func runFuzzTests(packagex string, fuzz string) bool {
+	fmt.Printf("\n%sRunning tests for package: %s with Fuzz: %s%s\n", CYAN, packagex, fuzz, RESET)
+	cmd := exec.Command("go", "test", "-fuzz", fuzz, "-fuzztime", "10s", "-v", packagex)
+	_bout := new(strings.Builder)
+	_berr := new(strings.Builder)
+	spinner := NewSpinner()
+
+	cmd.Stdout = _bout
+	cmd.Stderr = _berr
+	cmd.Dir = "../"
+
+	spinner.Start()
+	err := cmd.Run()
+	spinner.Stop()
+	if err != nil {
+		fmt.Printf("%s✘ Tests failed for package: %s%s\n", RED, packagex, RESET)
+		fmt.Printf("%s\n%s\n%s\n%s\n", RED, _bout.String(), _berr.String(), RESET)
+		return false
+	}
+	fmt.Printf("%s✔ Tests passed for package: %s%s\n", GREEN, packagex, RESET)
+	return true
+}
+
+func runTestsUnit(packages []string) bool {
 	for _, pkg := range packages {
-		cloudProvider := isCloudProviderPackage(pkg)
 		var cmd *exec.Cmd
+		cloudProvider := isCloudProviderPackage(pkg)
 		if cloudProvider != "" {
 			goTag := fmt.Sprintf("testing_%s", strings.ToLower(cloudProvider))
 			fmt.Printf("\n%sRunning tests for package: %s with tag: %s%s\n", CYAN, pkg, goTag, RESET)
 			cmd = exec.Command("go", "test", "-v", "-tags", goTag, pkg)
+		} else if isFuzzPackage(pkg) {
+
+			fuzzz := [...]string{"FuzzValidateCloud", "FuzzValidateCNI", "FuzzValidateDistro", "FuzzName", "FuzzValidateRole", "FuzzValidateStorage"}
+			for _, fuzz := range fuzzz {
+				if !runFuzzTests(pkg, fuzz) {
+					fmt.Printf("%s✘ Tests failed for package: %s%s\n", RED, pkg, RESET)
+					return false
+				}
+			}
+			fmt.Printf("%s✔ Tests passed for package: %s%s\n", GREEN, pkg, RESET)
+			continue
 		} else {
 			fmt.Printf("\n%sRunning tests for package: %s%s\n", CYAN, pkg, RESET)
-			cmd = exec.Command("go", "test", "-v", pkg)
+			cmd = exec.Command("go", "test", "-fuzz", "Fuzz", "-fuzztime", "10s", "-v", pkg)
 		}
+		_bout := new(strings.Builder)
+		_berr := new(strings.Builder)
+		spinner := NewSpinner()
 
+		cmd.Stdout = _bout
+		cmd.Stderr = _berr
+		cmd.Dir = "../"
+
+		spinner.Start()
 		err := cmd.Run()
+		spinner.Stop()
+
 		if err != nil {
 			fmt.Printf("%s✘ Tests failed for package: %s%s\n", RED, pkg, RESET)
+			fmt.Printf("%s\n%s\n%s\n%s\n", RED, _bout.String(), _berr.String(), RESET)
 			return false
 		}
 		fmt.Printf("%s✔ Tests passed for package: %s%s\n", GREEN, pkg, RESET)
@@ -96,23 +137,21 @@ func runTests(packages []string) bool {
 	return true
 }
 
-func TestUnitTest(t *testing.T) {
+func UnitTest(t *testing.T) {
 	t.Logf("\n%s%s🧪 Running unit tests...%s\n", CYAN, BOLD, RESET)
 
 	packages := getPackagesUnitTest()
 	if len(packages) == 0 {
 		t.Errorf("%sNo packages to test.%s\n", RED, RESET)
+		return
 	}
 
-	allTestsPassed := runTests(packages)
+	allTestsPassed := runTestsUnit(packages)
 
 	if !allTestsPassed {
 		t.Errorf("\n%s%s🚨 Some tests failed. Check the output above for details.%s\n", RED, BOLD, RESET)
+		return
 	}
 
 	t.Logf("\n%s%s🎉 All tests passed successfully!%s\n", GREEN, BOLD, RESET)
-}
-
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
 }

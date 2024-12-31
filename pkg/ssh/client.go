@@ -21,6 +21,13 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
+	mrand "math/rand"
+	"net"
+	"os/exec"
+	"strings"
+	"time"
+
 	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
@@ -28,12 +35,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/waiter"
 	"golang.org/x/crypto/ssh"
-	"io"
-	mrand "math/rand"
-	"net"
-	"os/exec"
-	"strings"
-	"time"
 )
 
 type RemoteConnection interface {

@@ -71,9 +71,17 @@ docker-build-state-import: ## docker build state importer
 		--tag ${KSCTL_STATE_IMPORTER_IMG} .
 
 ##@ Unit Tests (Core)
-.PHONY: unit_test_all
-unit_test_all:
-	@go test -v tests/unit_test.go
+.PHONY: test_all
+test_all:
+	@go test -timeout 20m  -run 'All' -v tests/{runner_test.go,unit_test.go,integration_test.go}
+
+.PHONY: unit_test
+unit_test: ## Run unit tests
+	@go test -timeout 20m -run 'Unit' -v tests/{runner_test.go,unit_test.go,integration_test.go}
+
+.PHONY: integeration_test
+integeration_test: ## Run integration tests
+	@go test -timeout 20m -run 'Integration' -v tests/{runner_test.go,unit_test.go,integration_test.go}
 
 ##@ Mock Tests (Core)
 .PHONY: mock_all
