@@ -16,8 +16,9 @@ package handler
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/provider"
 	"sync"
+
+	"github.com/ksctl/ksctl/pkg/provider"
 
 	"github.com/ksctl/ksctl/pkg/bootstrap"
 	"github.com/ksctl/ksctl/pkg/config"
@@ -28,6 +29,9 @@ import (
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/statefile"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Controller struct {
@@ -317,6 +321,63 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 // Warn: this is a deletion procedure
 func (kc *Controller) InvokeDestroyProcedure() error {
 	kc.l.Success(kc.ctx, "We need to implement the destroy procedure")
+
+	return nil
+}
+
+func (kc *Controller) EnableKsctlAddons(kubeconfig *string) error {
+	k, err := NewClusterClient(
+		kc.ctx,
+		kc.l,
+		kc.p.Storage,
+		*kubeconfig,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := k.k8sClient.NamespaceCreate(
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "ksctl-system",
+			},
+		},
+	); err != nil {
+		kc.l.Error("failed to create namespace", "namespace", "ksctl-system", "error", err)
+		return err
+	}
+
+	// TODO: the task list
+	// 1. install the ksctl specific configurations and no statefile configurations
+	//   - configmap apply to ksctl-system namespace
+	// 2. install the https://github.com/ksctl/cluster-management-operator
+
+	return nil
+}
+
+func (kc *Controller) DisableKsctlAddons(kubeconfig *string) error {
+
+	k, err := NewClusterClient(
+		kc.ctx,
+		kc.l,
+		kc.p.Storage,
+		*kubeconfig,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := k.k8sClient.NamespaceDelete(
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "ksctl-system",
+			},
+		},
+		true,
+	); err != nil {
+		kc.l.Error("failed to delete namespace", "namespace", "ksctl-system", "error", err)
+		return err
+	}
 
 	return nil
 }

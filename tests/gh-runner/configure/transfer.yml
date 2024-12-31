@@ -1,0 +1,15 @@
+---
+# Purpose: to transfer the binaries already built to the VMs
+- name: E2E Runner Playbook to transfer essential data like ksctle2e binary
+  hosts: e2e
+  become: true
+  tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping:
+    - name: Copy the binary to ksctl-bin
+      ansible.builtin.copy:
+        dest: /home/runner/actions-runner/ksctl-bin/ksctl-e2e-amd64
+        src: /tmp/ksctl-e2e-amd64
+        owner: runner
+        group: runner
+        mode: '0750'
