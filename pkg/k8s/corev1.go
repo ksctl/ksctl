@@ -340,7 +340,9 @@ func (k *Client) PodDelete(o *corev1.Pod) error {
 	err := k.clientset.
 		CoreV1().
 		Pods(o.Namespace).
-		Delete(context.Background(), o.Name, metav1.DeleteOptions{})
+		Delete(context.Background(), o.Name, metav1.DeleteOptions{
+			GracePeriodSeconds: o.DeletionGracePeriodSeconds,
+		})
 
 	if err != nil {
 		return ksctlErrors.WrapError(
@@ -421,14 +423,74 @@ func (k *Client) NodeUpdate(node *corev1.Node,
 		return nil,
 			ksctlErrors.WrapError(
 				ksctlErrors.ErrFailedKubernetesClient,
-
 				k.l.NewError(k.ctx, "node delete failed", "Reason", err),
 			)
 	}
 	return v, nil
 }
 
+func (k *Client) NodeCordon(nodeName string) error {
+	node, err := k.clientset.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKubernetesClient,
+			k.l.NewError(k.ctx, "node get failed", "Reason", err),
+		)
+	}
+
+	node.Spec.Unschedulable = true
+
+	_, err = k.clientset.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKubernetesClient,
+			k.l.NewError(k.ctx, "node cordon failed", "Reason", err),
+		)
+	}
+
+	return nil
+}
+
+func (k *Client) NodeDrain(nodeName string) error {
+	// Refer: https://kubernetes.io/images/docs/kubectl_drain.svg
+	if err := k.NodeCordon(nodeName); err != nil {
+		return err
+	}
+
+	pods, err := k.clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+		FieldSelector: "spec.nodeName=" + nodeName,
+	})
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKubernetesClient,
+			k.l.NewError(k.ctx, "failed to list pods on node", "Reason", err),
+		)
+	}
+
+	for _, pod := range pods.Items {
+		// Skip DaemonSet pods
+		if pod.DeletionGracePeriodSeconds != nil {
+			k.l.Print(k.ctx, "Skipping pod because it belongs to DaemonSet", "pod", pod.Name)
+			continue
+		}
+
+		err := k.PodDelete(&pod)
+		if err != nil {
+			k.l.Warn(k.ctx, "Failed to evict pod", "pod", pod.Name, "err", err)
+			continue
+		}
+		k.l.Success(k.ctx, "Evicted pod", "pod", pod.Name)
+	}
+
+	return nil
+}
+
 func (k *Client) NodeDelete(nodeName string) error {
+
+	if err := k.NodeDrain(nodeName); err != nil {
+		return err
+	}
+
 	err := k.clientset.
 		CoreV1().
 		Nodes().

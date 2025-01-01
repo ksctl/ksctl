@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package cni
 
 import (
 	"fmt"
 
+	"github.com/ksctl/ksctl/pkg/apps/stack"
 	"github.com/ksctl/ksctl/pkg/k8s"
 	"github.com/ksctl/ksctl/pkg/poller"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func getFlannelComponentOverridings(p ComponentOverrides) (version *string) {
+func getFlannelComponentOverridings(p stack.ComponentOverrides) (version *string) {
 	if p == nil {
 		return nil
 	}
@@ -38,7 +39,7 @@ func getFlannelComponentOverridings(p ComponentOverrides) (version *string) {
 	return
 }
 
-func setFlannelComponentOverridings(p ComponentOverrides) (
+func setFlannelComponentOverridings(p stack.ComponentOverrides) (
 	version string,
 	url string,
 	postInstall string,
@@ -64,14 +65,14 @@ func setFlannelComponentOverridings(p ComponentOverrides) (
 	return
 }
 
-func FlannelStandardComponent(params ComponentOverrides) (StackComponent, error) {
+func FlannelStandardComponent(params stack.ComponentOverrides) (stack.Component, error) {
 	version, url, postInstall, err := setFlannelComponentOverridings(params)
 	if err != nil {
-		return StackComponent{}, err
+		return stack.Component{}, err
 	}
 
-	return StackComponent{
-		HandlerType: ComponentTypeKubectl,
+	return stack.Component{
+		HandlerType: stack.ComponentTypeKubectl,
 		Kubectl: &k8s.App{
 			Urls:            []string{url},
 			Version:         version,
@@ -82,19 +83,19 @@ func FlannelStandardComponent(params ComponentOverrides) (StackComponent, error)
 	}, nil
 }
 
-func FlannelStandardCNI(params ApplicationParams) (ApplicationStack, error) {
+func FlannelStandardCNI(params stack.ApplicationParams) (stack.ApplicationStack, error) {
 	v, err := FlannelStandardComponent(
 		params.ComponentParams[FlannelComponentID],
 	)
 	if err != nil {
-		return ApplicationStack{}, err
+		return stack.ApplicationStack{}, err
 	}
 
-	return ApplicationStack{
-		Components: map[StackComponentID]StackComponent{
+	return stack.ApplicationStack{
+		Components: map[stack.ComponentID]stack.Component{
 			FlannelComponentID: v,
 		},
-		StkDepsIdx:  []StackComponentID{FlannelComponentID},
+		StkDepsIdx:  []stack.ComponentID{FlannelComponentID},
 		Maintainer:  "github:dipankardas011",
 		StackNameID: FlannelStandardStackID,
 	}, nil

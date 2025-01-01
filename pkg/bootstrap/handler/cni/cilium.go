@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package cni
 
 import (
 	"strings"
 
+	"github.com/ksctl/ksctl/pkg/apps/stack"
 	"github.com/ksctl/ksctl/pkg/helm"
 	"github.com/ksctl/ksctl/pkg/poller"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-func getCiliumComponentOverridings(p ComponentOverrides) (version *string, ciliumChartOverridings map[string]any) {
+func getCiliumComponentOverridings(p stack.ComponentOverrides) (version *string, ciliumChartOverridings map[string]any) {
 	ciliumChartOverridings = nil // By default it is nil
 
 	if p == nil {
@@ -44,7 +45,7 @@ func getCiliumComponentOverridings(p ComponentOverrides) (version *string, ciliu
 	return
 }
 
-func setCiliumComponentOverridings(p ComponentOverrides) (
+func setCiliumComponentOverridings(p stack.ComponentOverrides) (
 	version string,
 	ciliumChartOverridings map[string]any,
 	err error,
@@ -77,17 +78,17 @@ func setCiliumComponentOverridings(p ComponentOverrides) (
 	return
 }
 
-func CiliumStandardComponent(params ComponentOverrides) (StackComponent, error) {
+func CiliumStandardComponent(params stack.ComponentOverrides) (stack.Component, error) {
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	if err != nil {
-		return StackComponent{}, err
+		return stack.Component{}, err
 	}
 
 	if strings.HasPrefix(version, "v") {
 		version = strings.TrimPrefix(version, "v")
 	}
 
-	return StackComponent{
+	return stack.Component{
 		Helm: &helm.App{
 			RepoName: "cilium",
 			RepoUrl:  "https://helm.cilium.io/",
@@ -102,24 +103,24 @@ func CiliumStandardComponent(params ComponentOverrides) (StackComponent, error) 
 				},
 			},
 		},
-		HandlerType: ComponentTypeHelm,
+		HandlerType: stack.ComponentTypeHelm,
 	}, nil
 }
 
-func CiliumStandardCNI(params ApplicationParams) (ApplicationStack, error) {
+func CiliumStandardCNI(params stack.ApplicationParams) (stack.ApplicationStack, error) {
 	v, err := CiliumStandardComponent(
 		params.ComponentParams[CiliumComponentID],
 	)
 	if err != nil {
-		return ApplicationStack{}, err
+		return stack.ApplicationStack{}, err
 	}
 
-	return ApplicationStack{
-		Components: map[StackComponentID]StackComponent{
+	return stack.ApplicationStack{
+		Components: map[stack.ComponentID]stack.Component{
 			CiliumComponentID: v,
 		},
 
-		StkDepsIdx:  []StackComponentID{CiliumComponentID},
+		StkDepsIdx:  []stack.ComponentID{CiliumComponentID},
 		StackNameID: CiliumStandardStackID,
 		Maintainer:  "github@dipankardas011",
 	}, nil

@@ -29,6 +29,8 @@ import (
 	controllerCommon "github.com/ksctl/ksctl/pkg/handler/cluster/common"
 	controllerManaged "github.com/ksctl/ksctl/pkg/handler/cluster/managed"
 	controllerSelfManaged "github.com/ksctl/ksctl/pkg/handler/cluster/selfmanaged"
+
+	addonClusterMgt "github.com/ksctl/ksctl/pkg/handler/addons/clustermanager"
 )
 
 var (
@@ -149,6 +151,24 @@ func main() {
 			infoClusters(managerClient)
 		case OpSwitch:
 			switchCluster(managerClient)
+		}
+	case OpEnableClusterMgt, OpDisableClusterMgt:
+		cc, err := addonClusterMgt.NewController(
+			ctx,
+			l,
+			&controller.Client{
+				Metadata: meta,
+			},
+		)
+		if err != nil {
+			l.Error("unable to initialize the ksctl manager", "Reason", err)
+			os.Exit(1)
+		}
+		switch operation {
+		case OpEnableClusterMgt:
+			enableClusterMgtAddon(cc)
+		case OpDisableClusterMgt:
+			disableClusterMgtAddon(cc)
 		}
 
 	default:

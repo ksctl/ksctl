@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package cni
 
 import (
 	"testing"
 
+	"github.com/ksctl/ksctl/pkg/apps/stack"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,29 +25,56 @@ func TestCiliumComponentOverridingsWithNilParams(t *testing.T) {
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, "v1.16.1", version)
-	assert.Nil(t, ciliumChartOverridings)
+	assert.Equal(t, map[string]any{
+		"hubble": map[string]any{
+			"ui": map[string]any{
+				"enabled": true,
+			},
+			"relay": map[string]any{
+				"enabled": true,
+			},
+		},
+	}, ciliumChartOverridings)
 }
 
 func TestCiliumComponentOverridingsWithEmptyParams(t *testing.T) {
-	params := ComponentOverrides{}
+	params := stack.ComponentOverrides{}
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	assert.Nil(t, err)
 	assert.Equal(t, "v1.16.1", version)
-	assert.Nil(t, ciliumChartOverridings)
+	assert.Equal(t, map[string]any{
+		"hubble": map[string]any{
+			"ui": map[string]any{
+				"enabled": true,
+			},
+			"relay": map[string]any{
+				"enabled": true,
+			},
+		},
+	}, ciliumChartOverridings)
 }
 
 func TestCiliumComponentOverridingsWithVersionOnly(t *testing.T) {
-	params := ComponentOverrides{
+	params := stack.ComponentOverrides{
 		"version": "v1.0.0",
 	}
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
 	assert.Nil(t, err)
 	assert.Equal(t, "v1.0.0", version)
-	assert.Nil(t, ciliumChartOverridings)
+	assert.Equal(t, map[string]any{
+		"hubble": map[string]any{
+			"ui": map[string]any{
+				"enabled": true,
+			},
+			"relay": map[string]any{
+				"enabled": true,
+			},
+		},
+	}, ciliumChartOverridings)
 }
 
 func TestCiliumComponentOverridingsWithCiliumChartOverridingsOnly(t *testing.T) {
-	params := ComponentOverrides{
+	params := stack.ComponentOverrides{
 		"ciliumChartOverridings": map[string]any{"key": "value"},
 	}
 	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
@@ -57,7 +85,7 @@ func TestCiliumComponentOverridingsWithCiliumChartOverridingsOnly(t *testing.T) 
 }
 
 func TestCiliumComponentOverridingsWithVersionAndCiliumChartOverridings(t *testing.T) {
-	params := ComponentOverrides{
+	params := stack.ComponentOverrides{
 		"version":                "v1.0.0",
 		"ciliumChartOverridings": map[string]any{"key": "value"},
 	}

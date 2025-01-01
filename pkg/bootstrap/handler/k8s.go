@@ -16,11 +16,17 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/ksctl/ksctl/pkg/apps/stack"
+	"github.com/ksctl/ksctl/pkg/bootstrap/handler/cni"
 	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/pkg/helm"
 	"github.com/ksctl/ksctl/pkg/k8s"
 	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -82,12 +88,188 @@ func NewClusterClient(
 	return k, nil
 }
 
-func getVersionIfItsNotNilAndLatest(ver *string, defaultVer string) string {
-	if ver == nil {
-		return defaultVer
+func (k *K8sClusterClient) CNI(
+	cni controller.KsctlApp,
+	state *statefile.StorageDocument,
+	op consts.KsctlOperation) error {
+
+	if op == consts.OperationDelete {
+		return ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInternal,
+			"Operation not supported for CNI",
+		)
 	}
-	if *ver == "latest" {
-		return defaultVer
+
+	err := k.installCni(cni, state)
+	if err != nil {
+		return err
 	}
-	return *ver
+
+	return nil
+}
+
+func (k *K8sClusterClient) getStackManifest(app controller.KsctlApp, overriding map[string]map[string]any) (stack.ApplicationStack, error) {
+	convertedOverriding := make(map[stack.ComponentID]stack.ComponentOverrides)
+
+	if overriding != nil { // there are some user overriding
+		for k, v := range overriding {
+			convertedOverriding[stack.ComponentID(k)] = v
+		}
+	}
+
+	appStk, err := cni.FetchKsctlStack(k.ctx, k.l, app.StackName)
+	if err != nil {
+		return stack.ApplicationStack{}, err
+	}
+
+	return appStk(stack.ApplicationParams{
+		ComponentParams: convertedOverriding,
+	})
+}
+
+func (k *K8sClusterClient) installCni(
+	app controller.KsctlApp,
+	state *statefile.StorageDocument) error {
+
+	stackManifest, err := k.getStackManifest(app, app.Overrides)
+	if err != nil {
+		return err
+	}
+
+	foundInState := cni.DoesCNIExistOrNot(app, state)
+	var (
+		errorInStack error
+	)
+	if !foundInState {
+		stateTypeStack := statefile.Application{
+			Name:       string(stackManifest.StackNameID),
+			Components: map[string]statefile.Component{},
+		}
+
+		errorInStack = func() error {
+			for _, componentId := range stackManifest.StkDepsIdx {
+				component := stackManifest.Components[componentId]
+
+				componentVersion := stack.GetComponentVersionOverriding(component)
+
+				_err := k.handleInstallComponent(componentId, component)
+				if _err != nil {
+					return _err
+				}
+
+				stateTypeStack.Components[string(componentId)] = statefile.Component{
+					Version: componentVersion,
+				}
+				k.l.Success(
+					k.ctx,
+					"Installed component",
+					"type", "cni",
+					"stackId", stackManifest.StackNameID,
+					"component", string(componentId),
+					"version", componentVersion,
+				)
+			}
+			return nil
+		}()
+		state.Addons.Cni = stateTypeStack
+	} else {
+		var appInState statefile.Application
+		appInState = state.Addons.Cni
+
+		errorInStack = func() error {
+			for _, componentId := range stackManifest.StkDepsIdx {
+				component := stackManifest.Components[componentId]
+
+				componentVersion := stack.GetComponentVersionOverriding(component)
+
+				if componentInState, found := appInState.Components[string(componentId)]; !found {
+					_err := k.handleInstallComponent(componentId, component)
+					if _err != nil {
+						return _err
+					}
+					appInState.Components[string(componentId)] = statefile.Component{
+						Version: componentVersion,
+					}
+
+					k.l.Success(
+						k.ctx,
+						"Installed component",
+						"type", "cni",
+						"stackId", stackManifest.StackNameID,
+						"component", string(componentId),
+						"version", componentVersion,
+					)
+				} else {
+					if componentVersion != componentInState.Version {
+						return k.l.NewError(k.ctx, "Current Impl. doesn't support cni upgrade", `
+Upgrade of CNI is not Possible as of now!
+Reason: We need to add inplace changes!! for helm its possible but for flannel as it uses kubectl not possible
+thus we can't install cni without the help of state.
+So what we can do is Delete it and then
+
+solution is instead of performing k operation inside the cluster which will become hostile
+will perform k only from outside like the ksctl core for the cli or UI
+so what we can do is we can tell ksctl core to fetch latest state and then we can perform operations
+
+another nice thing would be to reconcile every 2 or 5 minutes from the kubernetes cluster Export()
+	(Only k problem will occur for local based system)
+advisiable to use external storage solution
+`)
+					} else {
+						k.l.Success(k.ctx,
+							"Already Installed",
+							"type", "cni",
+							"stackId", stackManifest.StackNameID,
+							"component", string(componentId),
+							"version", componentVersion,
+						)
+					}
+				}
+			}
+			return nil
+		}()
+	}
+
+	if _err := k.storageDriver.Write(state); _err != nil {
+		if errorInStack != nil {
+			return fmt.Errorf(errorInStack.Error() + " " + _err.Error())
+		}
+		return _err
+	}
+
+	if errorInStack != nil {
+		return errorInStack
+	}
+
+	k.l.Success(k.ctx,
+		"Installed the Application Stack",
+		"stackId", stackManifest.StackNameID,
+	)
+
+	return nil
+}
+
+func (k *K8sClusterClient) handleInstallComponent(componentId stack.ComponentID, component stack.Component) error {
+	var errorFailedToInstall = func(err error) error {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlComponent,
+			k.l.NewError(k.ctx, "failed to install", "component", componentId, "Reason", err),
+		)
+	}
+
+	if component.HandlerType == stack.ComponentTypeKubectl {
+		if err := k.k8sClient.KubectlApply(component.Kubectl); err != nil {
+			return errorFailedToInstall(err)
+		}
+		k.l.Box(
+			k.ctx,
+			"Component Details via kubectl",
+			component.Kubectl.Metadata+"\n"+component.Kubectl.PostInstall,
+		)
+	} else {
+		if err := k.helmClient.HelmDeploy(component.Helm); err != nil {
+			return errorFailedToInstall(err)
+		}
+	}
+	return nil
 }

@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package cni
 
 import (
 	"testing"
 
+	"github.com/ksctl/ksctl/pkg/apps/stack"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +30,7 @@ func TestFlannelComponentOverridingsWithNilParams(t *testing.T) {
 }
 
 func TestFlannelComponentOverridingsWithEmptyParams(t *testing.T) {
-	params := ComponentOverrides{}
+	params := stack.ComponentOverrides{}
 	version, url, postInstall, err := setFlannelComponentOverridings(params)
 	assert.Nil(t, err)
 	assert.Equal(t, "v0.25.5", version)
@@ -38,7 +39,7 @@ func TestFlannelComponentOverridingsWithEmptyParams(t *testing.T) {
 }
 
 func TestFlannelComponentOverridingsWithVersionOnly(t *testing.T) {
-	params := ComponentOverrides{
+	params := stack.ComponentOverrides{
 		"version": "v1.0.0",
 	}
 	version, url, postInstall, err := setFlannelComponentOverridings(params)

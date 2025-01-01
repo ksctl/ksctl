@@ -121,11 +121,14 @@ func (kc *Controller) helper() (*provider.CloudResourceState, error) {
 		return nil, err
 	}
 
-	transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
-	if errState != nil {
-		kc.l.Error("handled error", "catch", errState)
-		return nil, err
-	}
+	if kc.b.IsHA(kc.p) {
+		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
+		if errState != nil {
+			kc.l.Error("handled error", "catch", errState)
+			return nil, err
+		}
 
-	return &transferableInfraState, nil
+		return &transferableInfraState, nil
+	}
+	return nil, nil
 }
