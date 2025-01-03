@@ -15,10 +15,16 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"io"
 	"net/http"
+	"slices"
 )
 
 type Region struct {
@@ -31,8 +37,7 @@ type RegionDescription string
 
 type Regions map[RegionCode]RegionDescription
 
-// TODO: use the svc.Ec2.DescribeRegions with the default regions and filter out the below regioncodes!!!
-func GetAllRegions() (Regions, error) {
+func GetAllRegions(cfg aws.Config) (Regions, error) {
 	// https://github.com/aws/aws-sdk-go-v2/blob/main/codegen/smithy-aws-go-codegen/src/main/resources/software/amazon/smithy/aws/go/codegen/endpoints.json
 	type Service struct {
 		Endpoints map[string]interface{} `json:"endpoints"`
@@ -64,13 +69,44 @@ func GetAllRegions() (Regions, error) {
 		return nil, err
 	}
 
+	ec2Svc := ec2.NewFromConfig(cfg)
+	describeRegions, err := ec2Svc.DescribeRegions(context.TODO(), &ec2.DescribeRegionsInput{
+		AllRegions: aws.Bool(true),
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("opt-in-status"),
+				Values: []string{"opt-in-not-required", "opted-in"},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	availRegion := make([]string, 0, len(describeRegions.Regions))
+	for _, r := range describeRegions.Regions {
+		availRegion = append(availRegion, *r.RegionName)
+	}
+
 	var regions = make(Regions)
 	for _, p := range e.Partitions {
 		for r, v := range p.Regions {
 			if o, ok := v.(map[string]interface{})["description"].(string); ok {
-				regions[RegionCode(r)] = RegionDescription(o)
+				if slices.Contains(availRegion, r) {
+					regions[RegionCode(r)] = RegionDescription(o)
+				}
 			}
 		}
 	}
 	return regions, nil
+}
+
+func getAccountId(cfg aws.Config) (*string, error) {
+	svcP := sts.NewFromConfig(cfg)
+
+	result, err := svcP.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to get caller identity, %v", err)
+	}
+
+	return result.Account, nil
 }

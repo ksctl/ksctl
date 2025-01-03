@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/gookit/goutil/dump"
 	"github.com/ksctl/ksctl/pkg/provider/aws"
 	"log"
 )
@@ -29,9 +30,11 @@ func main() {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
 
-	r, _ := aws.GetAllRegions()
-
-	fmt.Printf("%#+v\n", r)
+	r, err := aws.GetAllRegions(cfg)
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+	dump.Println(r)
 
 	dd := [...][2]string{
 		{"us-east-1", "t3.micro"},

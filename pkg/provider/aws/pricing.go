@@ -21,7 +21,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	"github.com/aws/aws-sdk-go-v2/service/pricing/types"
+	"log"
+	"strconv"
 )
+
+type PricingResult struct {
+	Product struct {
+		Sku string `json:"sku"`
+	} `json:"product"`
+	Terms struct {
+		OnDemand map[string]struct {
+			PriceDimensions map[string]struct {
+				PricePerUnit struct {
+					USD string `json:"USD"`
+				} `json:"pricePerUnit"`
+			} `json:"priceDimensions"`
+		} `json:"OnDemand"`
+	} `json:"terms"`
+}
 
 func PricingForEC2(cfg aws.Config, regionDescription, vmType string) error {
 
@@ -65,11 +82,11 @@ func PricingForEC2(cfg aws.Config, regionDescription, vmType string) error {
 		},
 	}
 
-	// Retrieve products
 	input := &pricing.GetProductsInput{
 		ServiceCode:   aws.String("AmazonEC2"),
 		Filters:       filters,
 		FormatVersion: aws.String("aws_v1"),
+		MaxResults:    aws.Int32(1),
 	}
 
 	result, err := svc.GetProducts(context.TODO(), input)
@@ -77,47 +94,26 @@ func PricingForEC2(cfg aws.Config, regionDescription, vmType string) error {
 		return fmt.Errorf("failed to get products, %v", err)
 	}
 
-	// Parse and display the pricing information
-	for _, priceItem := range result.PriceList {
-		var product map[string]interface{}
-		if err := json.Unmarshal([]byte(priceItem), &product); err != nil {
-			return fmt.Errorf("failed to unmarshal price item, %v", err)
+	hourlyCost := 0.0
+	if result != nil && len(result.PriceList) > 0 {
+
+		pricingResult := PricingResult{}
+		err := json.Unmarshal([]byte(result.PriceList[0]), &pricingResult)
+		if err != nil {
+			log.Fatalf("Failed to unmarshal JSON: %v", err)
 		}
 
-		// Navigate through the JSON structure to find the price
-		terms, ok := product["terms"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		onDemand, ok := terms["OnDemand"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		for _, term := range onDemand {
-			termAttributes, ok := term.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			priceDimensions, ok := termAttributes["priceDimensions"].(map[string]interface{})
-			if !ok {
-				continue
-			}
-			for _, dimension := range priceDimensions {
-				dimensionAttributes, ok := dimension.(map[string]interface{})
-				if !ok {
-					continue
+		for _, onDemand := range pricingResult.Terms.OnDemand {
+			for _, priceDimension := range onDemand.PriceDimensions {
+				hourlyCost, err = strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
+				if err != nil {
+					log.Fatalf("Failed to parse hourly cost: %v", err)
 				}
-				pricePerUnit, ok := dimensionAttributes["pricePerUnit"].(map[string]interface{})
-				if !ok {
-					continue
-				}
-				usdPrice, ok := pricePerUnit["USD"].(string)
-				if !ok {
-					continue
-				}
-				fmt.Printf("Instance Type: %s in Region: %s, Price per Hour (USD): %s\n", vmType, regionDescription, usdPrice)
+				break
 			}
+			break
 		}
+		fmt.Printf("Instance Type: %s in Region: %s, Price per Hour (USD): %f\n", vmType, regionDescription, hourlyCost)
 	}
 
 	return nil
