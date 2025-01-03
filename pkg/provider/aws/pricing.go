@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	"github.com/aws/aws-sdk-go-v2/service/pricing/types"
+	"github.com/gookit/goutil/dump"
 	"log"
 	"strconv"
 )
@@ -114,6 +115,102 @@ func PricingForEC2(cfg aws.Config, regionDescription, vmType string) error {
 			break
 		}
 		fmt.Printf("Instance Type: %s in Region: %s, Price per Hour (USD): %f\n", vmType, regionDescription, hourlyCost)
+	}
+	return nil
+}
+
+func PricingForEKS(cfg aws.Config, regionDescription string, vmType string) error {
+
+	svc := pricing.NewFromConfig(cfg)
+
+	filters := []types.Filter{
+		{
+			Type:  types.FilterTypeTermMatch,
+			Field: aws.String("serviceCode"),
+			Value: aws.String("AmazonEKS"),
+		},
+		{
+			Type:  types.FilterTypeTermMatch,
+			Field: aws.String("location"),
+			Value: aws.String(regionDescription),
+		},
+		{
+			Type:  types.FilterTypeTermMatch,
+			Field: aws.String("instancetype"),
+			Value: aws.String(vmType),
+		},
+		{
+			Type:  types.FilterTypeTermMatch,
+			Field: aws.String("operation"),
+			Value: aws.String("EKSAutoUsage"), // Other options: EKSAutoUsage,CreateOperation,HybridNodesUsage,ExtendedSupport
+		},
+	}
+
+	input := &pricing.GetProductsInput{
+		ServiceCode:   aws.String("AmazonEKS"),
+		Filters:       filters,
+		FormatVersion: aws.String("aws_v1"),
+		//MaxResults:    aws.Int32(1),
+	}
+
+	//result, err := svc.GetProducts(context.TODO(), input)
+	//if err != nil {
+	//	return fmt.Errorf("failed to get products, %v", err)
+	//}
+	//dump.NewWithOptions(dump.SkipPrivate(), dump.SkipNilField()).Println(result)
+	//
+	//hourlyCost := 0.0
+	//if result != nil && len(result.PriceList) > 0 {
+	//
+	//	pricingResult := PricingResult{}
+	//	err := json.Unmarshal([]byte(result.PriceList[0]), &pricingResult)
+	//	if err != nil {
+	//		log.Fatalf("Failed to unmarshal JSON: %v", err)
+	//	}
+	//
+	//	for _, onDemand := range pricingResult.Terms.OnDemand {
+	//		for _, priceDimension := range onDemand.PriceDimensions {
+	//			hourlyCost, err = strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
+	//			if err != nil {
+	//				log.Fatalf("Failed to parse hourly cost: %v", err)
+	//			}
+	//			break
+	//		}
+	//		break
+	//	}
+	//	fmt.Printf("EKS in Region: %s, Price per Hour (USD): %f\n", regionDescription, hourlyCost)
+	//}
+	//
+
+	paginator := pricing.NewGetProductsPaginator(svc, input)
+
+	for paginator.HasMorePages() {
+		result, err := paginator.NextPage(context.TODO())
+		if err != nil {
+			return fmt.Errorf("failed to get products, %v", err)
+		}
+
+		for _, priceList := range result.PriceList {
+			v := map[string]any{}
+			_ = json.Unmarshal([]byte(priceList), &v)
+			dump.NewWithOptions(dump.SkipPrivate(), dump.SkipNilField()).Println(v)
+
+			pricingResult := PricingResult{}
+			err := json.Unmarshal([]byte(priceList), &pricingResult)
+			if err != nil {
+				log.Fatalf("Failed to unmarshal JSON: %v", err)
+			}
+
+			for _, onDemand := range pricingResult.Terms.OnDemand {
+				for _, priceDimension := range onDemand.PriceDimensions {
+					hourlyCost, err := strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
+					if err != nil {
+						log.Fatalf("Failed to parse hourly cost: %v", err)
+					}
+					fmt.Printf("EKS in Region: %s, Price per Hour (USD): %f\n", regionDescription, hourlyCost)
+				}
+			}
+		}
 	}
 
 	return nil

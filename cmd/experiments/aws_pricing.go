@@ -48,4 +48,10 @@ func main() {
 			fmt.Println(">===========", e)
 		}
 	}
+
+	if e := aws.PricingForEKS(cfg, string(r[aws.RegionCode("ap-south-1")]), "t2.medium"); e != nil {
+		fmt.Println(">===========", e)
+	}
+
+	fmt.Println("Done")
 }
