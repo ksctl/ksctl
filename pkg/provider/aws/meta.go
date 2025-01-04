@@ -18,13 +18,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"io"
 	"net/http"
 	"slices"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/pricing"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 type Region struct {
@@ -37,7 +39,36 @@ type RegionDescription string
 
 type Regions map[RegionCode]RegionDescription
 
-func GetAllRegions(cfg aws.Config) (Regions, error) {
+type ResourceDetails struct {
+	ctx       context.Context
+	cfg       aws.Config
+	svc       *pricing.Client
+	regions   Regions
+	accountId string
+}
+
+func NewResourceDetails(cfg aws.Config) (*ResourceDetails, error) {
+	regions, err := getAllRegions(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	accountId, err := getAccountId(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := pricing.NewFromConfig(cfg)
+
+	return &ResourceDetails{
+		cfg:       cfg,
+		regions:   regions,
+		accountId: *accountId,
+		svc:       svc,
+	}, nil
+}
+
+func getAllRegions(cfg aws.Config) (Regions, error) {
 	// https://github.com/aws/aws-sdk-go-v2/blob/main/codegen/smithy-aws-go-codegen/src/main/resources/software/amazon/smithy/aws/go/codegen/endpoints.json
 	type Service struct {
 		Endpoints map[string]interface{} `json:"endpoints"`
@@ -52,8 +83,6 @@ func GetAllRegions(cfg aws.Config) (Regions, error) {
 	type endpoints struct {
 		Partitions []Partition `json:"partitions"`
 	}
-
-	fmt.Println("Generating AWS regions")
 
 	resp, err := http.Get("https://raw.githubusercontent.com/aws/aws-sdk-go-v2/master/codegen/smithy-aws-go-codegen/src/main/resources/software/amazon/smithy/aws/go/codegen/endpoints.json")
 	if err != nil {

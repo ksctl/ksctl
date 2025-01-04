@@ -17,10 +17,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/gookit/goutil/dump"
 	"github.com/ksctl/ksctl/pkg/provider/aws"
-	"log"
 )
 
 func main() {
@@ -30,28 +31,42 @@ func main() {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
 
-	r, err := aws.GetAllRegions(cfg)
+	client, err := aws.NewResourceDetails(cfg)
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
-	dump.Println(r)
 
-	dd := [...][2]string{
-		{"us-east-1", "t3.micro"},
+	for _, d := range [...][2]string{
 		{"ap-south-1", "t2.micro"},
-		{"us-east-2", "t2.micro"},
-		{"us-west-2", "t3.small"},
-	}
-
-	for _, d := range dd {
-		if e := aws.PricingForEC2(cfg, string(r[aws.RegionCode(d[0])]), d[1]); e != nil {
+	} {
+		fmt.Println("$>", d)
+		if v, e := client.EC2(d[0], d[1]); e != nil {
 			fmt.Println(">===========", e)
+		} else {
+			dump.Println(v)
 		}
 	}
 
-	if e := aws.PricingForEKS(cfg, string(r[aws.RegionCode("ap-south-1")]), "t2.medium"); e != nil {
-		fmt.Println(">===========", e)
+	for _, d := range [...][5]any{
+		{"ap-south-1", "t2.micro", 2, false, aws.EksTypeStandard},
+		{"ap-south-1", "t2.medium", 2, true, aws.EksTypeStandard},
+	} {
+		fmt.Println("$>", d)
+		if v, e := client.EKS(d[0].(string), d[1].(string), d[2].(int), d[3].(bool), d[4].(aws.EksType)); e != nil {
+			fmt.Println(">===========", e)
+		} else {
+			dump.Println(v)
+		}
 	}
 
-	fmt.Println("Done")
+	for _, d := range [...][3]any{
+		{aws.EBSGp3, 1000, "ap-south-1"},
+	} {
+		fmt.Println("$>", d)
+		if v, e := client.EBS(d[0].(aws.EBSVolumeType), d[1].(int), d[2].(string)); e != nil {
+			fmt.Println(">===========", e)
+		} else {
+			dump.Println(v)
+		}
+	}
 }
