@@ -207,10 +207,12 @@ func (p *Provider) NewVM(index int) error {
 					Name:         utilities.Ptr(diskName),
 					CreateOption: utilities.Ptr(armcompute.DiskCreateOptionTypesFromImage),
 					Caching:      utilities.Ptr(armcompute.CachingTypesReadWrite),
+					DeleteOption: utilities.Ptr(armcompute.DiskDeleteOptionTypesDelete),
 					ManagedDisk: &armcompute.ManagedDiskParameters{
-						StorageAccountType: utilities.Ptr(armcompute.StorageAccountTypesStandardLRS), // OSDisk type Standard/Premium HDD/SSD
+						StorageAccountType: utilities.Ptr(armcompute.StorageAccountTypesStandardSSDLRS), // OSDisk type Standard/Premium HDD/SSD
 					},
-					//DiskSizeGB: utilities.Ptr[int32](100), // default 127G
+					// It means E6 Standard_SSD_LRS has 64GB disk size
+					DiskSizeGB: utilities.Ptr[int32](64), // default 127G
 				},
 			},
 			HardwareProfile: &armcompute.HardwareProfile{

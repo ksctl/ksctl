@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/gookit/goutil/dump"
@@ -36,16 +37,27 @@ func main() {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
 
+	summary := make([]string, 0, 5)
 	for _, d := range [...][2]string{
-		{"ap-south-1", "t2.micro"},
+		{"ap-south-1", "t2.large"},
+		{"ap-south-1", "t3.medium"},
+		{"ap-south-1", "t3.large"},
+		{"ap-south-1", "t4g.medium"},
+		{"ap-south-1", "t4g.large"},
+		// {"ap-south-1", "m8g.medium"},
+		// {"ap-south-1", "m8g.large"},
 	} {
+
 		fmt.Println("$>", d)
 		if v, e := client.EC2(d[0], d[1]); e != nil {
 			fmt.Println(">===========", e)
 		} else {
 			dump.Println(v)
+			summary = append(summary, v.PriceDescription+" "+v.VCPU+" "+v.Memory)
 		}
 	}
+
+	fmt.Println(strings.Join(summary, "\n"))
 
 	for _, d := range [...][5]any{
 		{"ap-south-1", "t2.micro", 2, false, aws.EksTypeStandard},

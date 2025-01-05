@@ -62,20 +62,24 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 
 	parameter := armcontainerservice.ManagedCluster{
 		Location: utilities.Ptr(p.state.Region),
+		SKU: &armcontainerservice.ManagedClusterSKU{
+			Name: utilities.Ptr(armcontainerservice.ManagedClusterSKUName(name)),
+			Tier: utilities.Ptr(armcontainerservice.ManagedClusterSKUTierStandard),
+		},
 		Properties: &armcontainerservice.ManagedClusterProperties{
 			DNSPrefix:         utilities.Ptr("aksgosdk"),
 			KubernetesVersion: utilities.Ptr(p.state.CloudInfra.Azure.B.KubernetesVer),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
-				NetworkPlugin: utilities.Ptr[armcontainerservice.NetworkPlugin](armcontainerservice.NetworkPlugin(p.cni)),
+				NetworkPlugin: utilities.Ptr(armcontainerservice.NetworkPlugin(p.cni)),
 			},
 			AutoUpgradeProfile: &armcontainerservice.ManagedClusterAutoUpgradeProfile{
-				NodeOSUpgradeChannel: utilities.Ptr[armcontainerservice.NodeOSUpgradeChannel](armcontainerservice.NodeOSUpgradeChannelNodeImage),
-				UpgradeChannel:       utilities.Ptr[armcontainerservice.UpgradeChannel](armcontainerservice.UpgradeChannelPatch),
+				NodeOSUpgradeChannel: utilities.Ptr(armcontainerservice.NodeOSUpgradeChannelNodeImage),
+				UpgradeChannel:       utilities.Ptr(armcontainerservice.UpgradeChannelPatch),
 			},
 			AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
 				{
 					Name:              utilities.Ptr("askagent"),
-					Count:             utilities.Ptr[int32](int32(noOfNodes)),
+					Count:             utilities.Ptr(int32(noOfNodes)),
 					VMSize:            utilities.Ptr(vmtype),
 					MaxPods:           utilities.Ptr[int32](110),
 					MinCount:          utilities.Ptr[int32](1),

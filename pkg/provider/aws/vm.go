@@ -254,6 +254,19 @@ func (p *Provider) NewVM(index int) error {
 		MaxCount:     aws.Int32(1),
 		KeyName:      aws.String(p.state.CloudInfra.Aws.B.SSHKeyName),
 
+		BlockDeviceMappings: []types.BlockDeviceMapping{
+			{
+				DeviceName: aws.String("/dev/sda1"),
+				Ebs: &types.EbsBlockDevice{
+					DeleteOnTermination: aws.Bool(true),
+					VolumeType:          types.VolumeTypeGp3,
+					Throughput:          aws.Int32(125),
+					VolumeSize:          aws.Int32(30),
+					Iops:                aws.Int32(3000),
+				},
+			},
+		},
+
 		TagSpecifications: []types.TagSpecification{
 			{
 				ResourceType: types.ResourceType("instance"),

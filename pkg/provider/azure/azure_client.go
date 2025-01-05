@@ -304,6 +304,10 @@ func (p *AzureClient) setRequiredENV_VAR() error {
 }
 
 func (p *AzureClient) InitClient(b *Provider) error {
+	p.b = b
+	p.region = b.Region
+	p.resourceGrp = b.resourceGroup
+
 	err := p.setRequiredENV_VAR()
 	if err != nil {
 		return err
@@ -315,9 +319,6 @@ func (p *AzureClient) InitClient(b *Provider) error {
 			p.b.l.NewError(p.b.ctx, "defaultAzureCredential", "Reason", err),
 		)
 	}
-	p.b = b
-	p.region = b.Region
-	p.resourceGrp = b.resourceGroup
 	p.azureTokenCred = cred
 	return nil
 }

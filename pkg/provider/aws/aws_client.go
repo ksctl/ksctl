@@ -658,13 +658,13 @@ func (l *AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
 }
 
 func (l *AwsClient) InitClient(b *Provider) error {
+	l.b = b
 
 	err := l.setRequiredENVVAR(l.b.ctx)
 	if err != nil {
 		return err
 	}
 
-	l.b = b
 	session, err := l.newEC2Client(l.b.Region)
 	if err != nil {
 		return err

@@ -1,43 +1,23 @@
-# 🚀 Pull Request
-
-## 🔗 Linked Issues
-
-### ✅ Completed Issues
-<!-- List the issues this PR completes -->
-- Closes #9999
-
-### 📎 Related Issues
-<!-- List any related issues that might be affected by this PR -->
-- Related to #9999
-
-## 🎯 Changes Overview
+## 🗒️ Changelog
 <!-- Provide a clear and concise overview of the changes -->
 
 
-## 📝 Details
-<!-- Add detailed information about implementation -->
-### What Changed
-<!-- List the key changes in this PR -->
--
--
+## 🏋🏼 Issues
 
-### Why These Changes
-<!-- Explain the reasoning behind these changes -->
--
--
+### ✅ Completed Issues
+<!-- List the issues this PR completes -->
+- Fixes:
 
-### How to Test
-<!-- Provide steps to test the changes -->
-1.
-2.
+### 📎 Related Issues
+<!-- List any related issues that might be affected by this PR -->
+- Related to:
 
-## ✨ Solution
-<!-- Describe your solution approach -->
 
-### 📋 Sub-Tasks
+## 🚀 Task List
 <!-- List any sub-tasks or milestones -->
 - [ ]
 - [ ]
+
 
 ## 🔍 Review Checklist
 <!-- Mark the items you've completed -->
