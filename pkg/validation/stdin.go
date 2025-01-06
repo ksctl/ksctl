@@ -16,14 +16,15 @@ package validation
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"golang.org/x/term"
 	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/ksctl/ksctl/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"golang.org/x/term"
 )
 
 func UserInputCredentials(ctx context.Context, logging logger.Logger) (string, error) {
@@ -99,7 +100,7 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 
 	switch cloud {
-	case consts.CloudAzure, consts.CloudAws, consts.CloudLocal, consts.CloudAll, consts.CloudCivo:
+	case consts.CloudAzure, consts.CloudAws, consts.CloudLocal, consts.CloudAll:
 		return true
 	default:
 		return false

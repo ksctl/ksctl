@@ -21,7 +21,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/provider/aws"
 	"github.com/ksctl/ksctl/pkg/provider/azure"
-	"github.com/ksctl/ksctl/pkg/provider/civo"
 	"github.com/ksctl/ksctl/pkg/provider/local"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
@@ -76,7 +75,6 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 
 	var (
 		cloudMapper = map[consts.KsctlCloud]provider.Cloud{
-			consts.CloudCivo:  nil,
 			consts.CloudAzure: nil,
 			consts.CloudAws:   nil,
 			consts.CloudLocal: nil,
@@ -85,8 +83,6 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 
 	var err error
 	switch kc.p.Metadata.Provider {
-	case consts.CloudCivo:
-		cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, civo.ProvideClient)
 
 	case consts.CloudAzure:
 		cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
@@ -108,11 +104,6 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 					),
 				)
 			} else {
-				cloudMapper[consts.CloudCivo], err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, civo.ProvideClient)
-				if err != nil {
-					kc.l.Error("handled error", "catch", err)
-					return nil, err
-				}
 				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 				if err != nil {
 					kc.l.Error("handled error", "catch", err)

@@ -179,56 +179,12 @@ func AzureTestingManaged() error {
 	return ExecuteManagedRun()
 }
 
-func CivoTestingManaged() error {
-	cli.Metadata.Region = "LON1"
-	cli.Metadata.Provider = consts.CloudCivo
-	cli.Metadata.ManagedNodeType = "g4s.kube.small"
-	cli.Metadata.NoMP = 2
-
-	return ExecuteManagedRun()
-}
-
 func LocalTestingManaged() error {
 	cli.Metadata.Provider = consts.CloudLocal
 	cli.Metadata.NoMP = 5
 	cli.Metadata.K8sVersion = "1.30.0"
 
 	return ExecuteManagedRun()
-}
-func CivoTestingHAKubeadm() error {
-	cli.Metadata.LoadBalancerNodeType = "fake.small"
-	cli.Metadata.ControlPlaneNodeType = "fake.small"
-	cli.Metadata.WorkerPlaneNodeType = "fake.small"
-	cli.Metadata.DataStoreNodeType = "fake.small"
-
-	cli.Metadata.IsHA = true
-
-	cli.Metadata.Region = "LON1"
-	cli.Metadata.Provider = consts.CloudCivo
-	cli.Metadata.K8sDistro = consts.K8sKubeadm
-	cli.Metadata.NoCP = 5
-	cli.Metadata.NoWP = 1
-	cli.Metadata.NoDS = 3
-
-	return ExecuteHARun()
-}
-
-func CivoTestingHAK3s() error {
-	cli.Metadata.LoadBalancerNodeType = "fake.small"
-	cli.Metadata.ControlPlaneNodeType = "fake.small"
-	cli.Metadata.WorkerPlaneNodeType = "fake.small"
-	cli.Metadata.DataStoreNodeType = "fake.small"
-
-	cli.Metadata.IsHA = true
-
-	cli.Metadata.Region = "LON1"
-	cli.Metadata.Provider = consts.CloudCivo
-	cli.Metadata.K8sDistro = consts.K8sK3s
-	cli.Metadata.NoCP = 5
-	cli.Metadata.NoWP = 1
-	cli.Metadata.NoDS = 3
-
-	return ExecuteHARun()
 }
 
 func AzureTestingHAKubeadm() error {

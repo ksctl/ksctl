@@ -88,17 +88,7 @@ integeration_test: ## Run integration tests
 mock_all: golang-test ## All Mock tests
 	@echo "Mock Test (integration)"
 	cd test/ && \
-		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws,testing_civo,testing_azure,testing_local -bench=. -benchtime=1x -cover -v
-
-.PHONY: mock_civo_ha
-mock_civo_ha: golang-test ## Civo HA mock test
-	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_civo -bench=BenchmarkCivoTestingHA -benchtime=1x -cover -v
-
-.PHONY: mock_civo_managed
-mock_civo_managed: golang-test ## Civo managed mock test
-	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_civo -bench=BenchmarkCivoTestingManaged -benchtime=1x -cover -v
+		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws,testing_azure,testing_local -bench=. -benchtime=1x -cover -v
 
 .PHONY: mock_azure_managed
 mock_azure_managed: golang-test ## Azure managed mock test

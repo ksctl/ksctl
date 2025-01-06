@@ -17,12 +17,13 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
 	"io"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
 	"github.com/docker/docker/api/types/image"
 
@@ -212,16 +213,16 @@ func TestGetClusterInfo(t *testing.T) {
 
 		func() {
 
-			if err := db.Setup(consts.CloudCivo, "regionCivo", "name_managed", consts.ClusterTypeMang); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_managed", consts.ClusterTypeMang); err != nil {
 				t.Fatal(err)
 			}
 
 			fakeData := &statefile.StorageDocument{
-				Region:        "regionCivo",
+				Region:        "regionAws",
 				ClusterName:   "name_managed",
-				InfraProvider: consts.CloudCivo,
+				InfraProvider: consts.CloudAws,
 				ClusterType:   "managed",
-				CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+				CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 			}
 
 			err := db.Write(fakeData)
@@ -237,16 +238,16 @@ func TestGetClusterInfo(t *testing.T) {
 
 		func() {
 
-			if err := db.Setup(consts.CloudCivo, "regionCivo", "name_ha", consts.ClusterTypeHa); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_ha", consts.ClusterTypeHa); err != nil {
 				t.Fatal(err)
 			}
 
 			fakeData := &statefile.StorageDocument{
-				Region:        "regionCivo",
+				Region:        "regionAws",
 				ClusterName:   "name_ha",
-				InfraProvider: consts.CloudCivo,
+				InfraProvider: consts.CloudAws,
 				ClusterType:   "ha",
-				CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+				CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 				K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
 			}
 
@@ -271,7 +272,7 @@ func TestGetClusterInfo(t *testing.T) {
 		}(t)
 
 		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "civo", "clusterType": "ha"})
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "aws", "clusterType": "ha"})
 
 			if err != nil {
 				t.Fatal(err)
@@ -314,16 +315,16 @@ func TestExportImport(t *testing.T) {
 					Region:        "regionCivo",
 					ClusterName:   "name_ha",
 					ClusterType:   "ha",
-					InfraProvider: consts.CloudCivo,
-					CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+					InfraProvider: consts.CloudAws,
+					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 					K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
 				},
 				{
 					Region:        "regionCivo",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
-					InfraProvider: consts.CloudCivo,
-					CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+					InfraProvider: consts.CloudAws,
+					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 				},
 
 				{
@@ -482,7 +483,7 @@ func TestDelete(t *testing.T) {
 
 	t.Run("delete all", func(t *testing.T) {
 		func() {
-			if err := db.Setup(consts.CloudCivo, "regionCivo", "name_ha", consts.ClusterTypeHa); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_ha", consts.ClusterTypeHa); err != nil {
 				t.Fatal(err)
 			}
 			if err := db.DeleteCluster(); err != nil {
@@ -491,7 +492,7 @@ func TestDelete(t *testing.T) {
 		}()
 
 		func() {
-			if err := db.Setup(consts.CloudCivo, "regionCivo", "name_managed", consts.ClusterTypeMang); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_managed", consts.ClusterTypeMang); err != nil {
 				t.Fatal(err)
 			}
 			if err := db.DeleteCluster(); err != nil {

@@ -30,10 +30,8 @@ type IntegrationTestP struct {
 
 func getPackagesIntegrationTest() []IntegrationTestP {
 	return []IntegrationTestP{
-		{"testing_civo", "BenchmarkCivoTestingHA"},
 		{"testing_azure", "BenchmarkAzureTestingHA"},
 		{"testing_aws", "BenchmarkAwsTestingHA"},
-		{"testing_civo", "BenchmarkCivoTestingManaged"},
 		{"testing_azure", "BenchmarkAzureTestingManaged"},
 		{"testing_aws", "BenchmarkAwsTestingManaged"},
 		{"testing_local", "BenchmarkLocalTestingManaged"},

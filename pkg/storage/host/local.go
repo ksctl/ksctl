@@ -18,14 +18,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/ksctl/ksctl/pkg/config"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/ksctl/ksctl/pkg/config"
+	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
@@ -149,7 +150,6 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*storage.St
 		// all the cloud provider credentials
 		for _, constsCloud := range []consts.KsctlCloud{
 			consts.CloudAws,
-			consts.CloudCivo,
 			consts.CloudAzure,
 		} {
 			_v, _err := s.ReadCredentials(constsCloud)
@@ -368,7 +368,6 @@ func (s *Store) ReadCredentials(cloud consts.KsctlCloud) (*statefile.Credentials
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	// for now create multiple files civo.json, azure.json, etc.
 	if e := s.credentialsPresent(nil); e != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrNoMatchingRecordsFound,
@@ -460,7 +459,7 @@ func (s *Store) WriteCredentials(cloud consts.KsctlCloud, v *statefile.Credentia
 
 func (s *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error {
 	switch cloud {
-	case consts.CloudAws, consts.CloudAzure, consts.CloudCivo, consts.CloudLocal:
+	case consts.CloudAws, consts.CloudAzure, consts.CloudLocal:
 		s.cloudProvider = string(cloud)
 	default:
 		return ksctlErrors.WrapError(
@@ -570,10 +569,7 @@ func (s *Store) GetOneOrMoreClusters(filter map[consts.KsctlSearchFilter]string)
 
 	switch cloud {
 	case string(consts.CloudAll), "":
-		filterCloudPath = append(filterCloudPath, string(consts.CloudCivo), string(consts.CloudAws), string(consts.CloudAzure), string(consts.CloudLocal))
-
-	case string(consts.CloudCivo):
-		filterCloudPath = append(filterCloudPath, string(consts.CloudCivo))
+		filterCloudPath = append(filterCloudPath, string(consts.CloudAws), string(consts.CloudAzure), string(consts.CloudLocal))
 
 	case string(consts.CloudAzure):
 		filterCloudPath = append(filterCloudPath, string(consts.CloudAzure))

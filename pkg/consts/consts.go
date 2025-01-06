@@ -97,7 +97,6 @@ const (
 	RoleDs KsctlRole = "datastore"
 )
 const (
-	CloudCivo  KsctlCloud = "civo"
 	CloudAzure KsctlCloud = "azure"
 	CloudLocal KsctlCloud = "local"
 	CloudAws   KsctlCloud = "aws"

@@ -18,12 +18,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
 	"gotest.tools/v3/assert"
 
@@ -85,7 +86,7 @@ func TestGenOsClusterPath(t *testing.T) {
 		"ksctl-local-store-test",
 		".ksctl",
 		"state",
-		"civo",
+		"aws",
 		"ha",
 		"name region"}...)
 	expectedManaged := filepath.Join([]string{
@@ -102,7 +103,7 @@ func TestGenOsClusterPath(t *testing.T) {
 		".ksctl",
 		"credentials"}...)
 
-	gotH, err := genOsClusterPath(false, string(consts.CloudCivo), string(consts.ClusterTypeHa), "name region")
+	gotH, err := genOsClusterPath(false, string(consts.CloudAws), string(consts.ClusterTypeHa), "name region")
 	assert.NilError(t, err)
 	if gotH != expectedHa {
 		t.Fatalf("expected %s; but got %s\n", expectedHa, gotH)
@@ -242,16 +243,16 @@ func TestGetClusterInfo(t *testing.T) {
 
 		func() {
 
-			if err := db.Setup(consts.CloudCivo, "regionCivo", "name_managed", consts.ClusterTypeMang); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_managed", consts.ClusterTypeMang); err != nil {
 				t.Fatal(err)
 			}
 
 			fakeData := &statefile.StorageDocument{
-				Region:        "regionCivo",
+				Region:        "regionAws",
 				ClusterName:   "name_managed",
 				ClusterType:   "managed",
-				InfraProvider: consts.CloudCivo,
-				CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+				InfraProvider: consts.CloudAws,
+				CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 			}
 
 			err := db.Write(fakeData)
@@ -267,16 +268,16 @@ func TestGetClusterInfo(t *testing.T) {
 
 		func() {
 
-			if err := db.Setup(consts.CloudCivo, "regionCivo", "name_ha", consts.ClusterTypeHa); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_ha", consts.ClusterTypeHa); err != nil {
 				t.Fatal(err)
 			}
 
 			fakeData := &statefile.StorageDocument{
-				Region:        "regionCivo",
+				Region:        "regionAws",
 				ClusterName:   "name_ha",
 				ClusterType:   "ha",
-				InfraProvider: consts.CloudCivo,
-				CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+				InfraProvider: consts.CloudAws,
+				CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 				K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
 			}
 
@@ -301,7 +302,7 @@ func TestGetClusterInfo(t *testing.T) {
 		}(t)
 
 		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "civo", "clusterType": "ha"})
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "aws", "clusterType": "ha"})
 
 			if err != nil {
 				t.Fatal(err)
@@ -347,19 +348,19 @@ func TestExportImport(t *testing.T) {
 			},
 			Clusters: []*statefile.StorageDocument{
 				{
-					Region:        "regionCivo",
+					Region:        "regionAws",
 					ClusterName:   "name_ha",
 					ClusterType:   "ha",
-					InfraProvider: consts.CloudCivo,
-					CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+					InfraProvider: consts.CloudAws,
+					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 					K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
 				},
 				{
-					Region:        "regionCivo",
+					Region:        "regionAws",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
-					InfraProvider: consts.CloudCivo,
-					CloudInfra:    &statefile.InfrastructureState{Civo: &statefile.StateConfigurationCivo{}},
+					InfraProvider: consts.CloudAws,
+					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 				},
 
 				{

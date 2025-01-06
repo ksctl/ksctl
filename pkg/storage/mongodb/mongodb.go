@@ -18,12 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"sync"
+
 	"github.com/ksctl/ksctl/pkg/config"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
-	"os"
-	"sync"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
@@ -104,7 +105,6 @@ func (db *Store) Export(filters map[consts.KsctlSearchFilter]string) (*storage.S
 		// all the cloud provider credentials
 		for _, constsCloud := range []consts.KsctlCloud{
 			consts.CloudAws,
-			consts.CloudCivo,
 			consts.CloudAzure,
 		} {
 			_v, _err := db.ReadCredentials(constsCloud)
@@ -398,7 +398,7 @@ func (db *Store) WriteCredentials(cloud consts.KsctlCloud, data *statefile.Crede
 
 func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error {
 	switch cloud {
-	case consts.CloudAws, consts.CloudAzure, consts.CloudCivo, consts.CloudLocal:
+	case consts.CloudAws, consts.CloudAzure, consts.CloudLocal:
 		db.cloudProvider = string(cloud)
 	default:
 		return ksctlErrors.NewError(ksctlErrors.ErrInvalidCloudProvider)
@@ -520,10 +520,7 @@ func (db *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]strin
 
 	switch cloud {
 	case string(consts.CloudAll), "":
-		filterCloudPath = append(filterCloudPath, string(consts.CloudCivo), string(consts.CloudAws), string(consts.CloudAzure), string(consts.CloudLocal))
-
-	case string(consts.CloudCivo):
-		filterCloudPath = append(filterCloudPath, string(consts.CloudCivo))
+		filterCloudPath = append(filterCloudPath, string(consts.CloudAws), string(consts.CloudAzure), string(consts.CloudLocal))
 
 	case string(consts.CloudAzure):
 		filterCloudPath = append(filterCloudPath, string(consts.CloudAzure))

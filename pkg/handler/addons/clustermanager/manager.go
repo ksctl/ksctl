@@ -23,7 +23,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/provider/aws"
 	"github.com/ksctl/ksctl/pkg/provider/azure"
-	"github.com/ksctl/ksctl/pkg/provider/civo"
 	"github.com/ksctl/ksctl/pkg/provider/local"
 	"github.com/ksctl/ksctl/pkg/statefile"
 )
@@ -89,9 +88,6 @@ func (kc *Controller) helper() (*provider.CloudResourceState, error) {
 
 	var err error
 	switch kc.p.Metadata.Provider {
-	case consts.CloudCivo:
-		kc.p.Cloud, err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, civo.ProvideClient)
-
 	case consts.CloudAzure:
 		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
 

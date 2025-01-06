@@ -25,7 +25,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/consts"
 	awsPkg "github.com/ksctl/ksctl/pkg/provider/aws"
 	azurePkg "github.com/ksctl/ksctl/pkg/provider/azure"
-	civoPkg "github.com/ksctl/ksctl/pkg/provider/civo"
 	localPkg "github.com/ksctl/ksctl/pkg/provider/local"
 )
 
@@ -65,12 +64,6 @@ func (kc *Controller) setupInterfaces(operation consts.KsctlOperation) error {
 
 	var err error
 	switch kc.p.Metadata.Provider {
-	case consts.CloudCivo:
-		kc.p.Cloud, err = civoPkg.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, civoPkg.ProvideClient)
-
-		if err != nil {
-			return err
-		}
 	case consts.CloudAzure:
 		kc.p.Cloud, err = azurePkg.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azurePkg.ProvideClient)
 

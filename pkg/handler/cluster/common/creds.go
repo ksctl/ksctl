@@ -19,15 +19,11 @@ import (
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/provider/aws"
 	"github.com/ksctl/ksctl/pkg/provider/azure"
-	"github.com/ksctl/ksctl/pkg/provider/civo"
 )
 
 func (kc *Controller) Credentials() error {
 	var err error
 	switch kc.p.Metadata.Provider {
-	case consts.CloudCivo:
-		kc.p.Cloud, err = civo.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, civo.ProvideClient)
-
 	case consts.CloudAzure:
 		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 
