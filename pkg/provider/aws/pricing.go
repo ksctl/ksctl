@@ -124,6 +124,8 @@ func (p *ResourceDetails) EC2(region, vmType string) (*EC2DetailsOutput, error) 
 			return nil, err
 		}
 
+		// TODO: need to add architecture of the machine type
+
 		if o, ok := pricingResult.Product.Attributes["tenancy"]; ok {
 			ee.Tenancy = o.(string)
 		}

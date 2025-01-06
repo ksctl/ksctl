@@ -312,7 +312,7 @@ func TestExportImport(t *testing.T) {
 			},
 			Clusters: []*statefile.StorageDocument{
 				{
-					Region:        "regionCivo",
+					Region:        "regionAws",
 					ClusterName:   "name_ha",
 					ClusterType:   "ha",
 					InfraProvider: consts.CloudAws,
@@ -320,7 +320,7 @@ func TestExportImport(t *testing.T) {
 					K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
 				},
 				{
-					Region:        "regionCivo",
+					Region:        "regionAws",
 					ClusterName:   "name_managed",
 					ClusterType:   "managed",
 					InfraProvider: consts.CloudAws,

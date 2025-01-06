@@ -17,20 +17,20 @@ package validation
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
+	"testing"
+
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"gotest.tools/v3/assert"
-	"os"
-	"regexp"
-	"testing"
 )
 
 func FuzzValidateCloud(f *testing.F) {
 	testcases := []string{
 		string(consts.CloudAll),
 		string(consts.CloudLocal),
-		string(consts.CloudCivo),
 		string(consts.CloudAws),
 		string(consts.CloudAzure),
 	}
@@ -43,7 +43,7 @@ func FuzzValidateCloud(f *testing.F) {
 		ok := ValidateCloud(consts.KsctlCloud(cloud))
 		t.Logf("cloud: %s and ok: %v", cloud, ok)
 		switch consts.KsctlCloud(cloud) {
-		case consts.CloudAll, consts.CloudAws, consts.CloudAzure, consts.CloudCivo, consts.CloudLocal:
+		case consts.CloudAll, consts.CloudAws, consts.CloudAzure, consts.CloudLocal:
 			if !ok {
 				t.Errorf("Correct cloud provider is invalid")
 			} else {

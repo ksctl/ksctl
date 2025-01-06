@@ -158,6 +158,8 @@ func (p *ResourceDetails) VMs(ctx context.Context, region string) (VMsOutput, er
 			return nil, err
 		}
 
+		// TODO: need to add architecture of the machine type
+
 		for _, vmSize := range page.Value {
 			ee[VMSku(*vmSize.Name)] = ComputeDetailsOutput{
 				VCPU:       strconv.FormatInt(int64(*vmSize.NumberOfCores), 10),

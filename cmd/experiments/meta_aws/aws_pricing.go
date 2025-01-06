@@ -44,6 +44,7 @@ func main() {
 		{"ap-south-1", "t3.large"},
 		{"ap-south-1", "t4g.medium"},
 		{"ap-south-1", "t4g.large"},
+		{"ap-south-1", "m6g.large"},
 		// {"ap-south-1", "m8g.medium"},
 		// {"ap-south-1", "m8g.large"},
 	} {
