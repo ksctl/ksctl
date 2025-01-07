@@ -25,8 +25,8 @@ import (
 
 func (kc *Controller) AddWorkerNodes() error {
 
-	if !kc.b.IsHA(kc.p) {
-		err := kc.l.NewError(kc.ctx, "this feature is only for ha clusters")
+	if !kc.b.IsSelfManaged(kc.p) {
+		err := kc.l.NewError(kc.ctx, "this feature is only for selfmanaged clusters")
 		kc.l.Error("handled error", "catch", err)
 		return err
 	}
@@ -35,7 +35,7 @@ func (kc *Controller) AddWorkerNodes() error {
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,
 		kc.p.Metadata.ClusterName,
-		consts.ClusterTypeHa,
+		consts.ClusterTypeSelfMang,
 	); err != nil {
 		kc.l.Error("handled error", "catch", err)
 		return err
@@ -91,8 +91,8 @@ func (kc *Controller) AddWorkerNodes() error {
 }
 
 func (kc *Controller) DeleteWorkerNodes() error {
-	if !kc.b.IsHA(kc.p) {
-		err := kc.l.NewError(kc.ctx, "this feature is only for ha clusters")
+	if !kc.b.IsSelfManaged(kc.p) {
+		err := kc.l.NewError(kc.ctx, "this feature is only for selfmanaged clusters")
 		kc.l.Error("handled error", "catch", err)
 		return err
 	}
@@ -101,7 +101,7 @@ func (kc *Controller) DeleteWorkerNodes() error {
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,
 		kc.p.Metadata.ClusterName,
-		consts.ClusterTypeHa,
+		consts.ClusterTypeSelfMang,
 	); err != nil {
 		kc.l.Error("handled error", "catch", err)
 		return err

@@ -29,7 +29,7 @@ import (
 
 func checkCurrentStateFileHA(t *testing.T) {
 
-	if err := storeHA.Setup(consts.CloudAws, fakeClientHA.state.Region, fakeClientHA.state.ClusterName, consts.ClusterTypeHa); err != nil {
+	if err := storeHA.Setup(consts.CloudAws, fakeClientHA.state.Region, fakeClientHA.state.ClusterName, consts.ClusterTypeSelfMang); err != nil {
 		t.Fatal(err)
 	}
 	read, err := storeHA.Read()
@@ -42,7 +42,7 @@ func checkCurrentStateFileHA(t *testing.T) {
 
 func TestHACluster(t *testing.T) {
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAws, "fake-region", "demo-ha", consts.ClusterTypeHa)
+	_ = storeHA.Setup(consts.CloudAws, "fake-region", "demo-ha", consts.ClusterTypeSelfMang)
 	_ = storeHA.Connect()
 
 	fakeClientHA, _ = NewClient(
@@ -52,7 +52,7 @@ func TestHACluster(t *testing.T) {
 			ClusterName: "demo-ha",
 			Region:      "fake-region",
 			Provider:    consts.CloudAws,
-			IsHA:        true,
+			SelfManaged: true,
 			NoCP:        7,
 			NoDS:        5,
 			NoWP:        10,
@@ -73,7 +73,7 @@ func TestHACluster(t *testing.T) {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, fakeClientHA.clusterType, consts.ClusterTypeHa, "clustertype should be managed")
+		assert.Equal(t, fakeClientHA.clusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientHA.state.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeHA.Read()
@@ -278,7 +278,7 @@ func TestHACluster(t *testing.T) {
 				Name:          fakeClientHA.ClusterName,
 				Region:        fakeClientHA.Region,
 				CloudProvider: consts.CloudAws,
-				ClusterType:   consts.ClusterTypeHa,
+				ClusterType:   consts.ClusterTypeSelfMang,
 				SSHKeyName:    "fake-ssh",
 				NetworkName:   fakeClientHA.ClusterName + "-vpc",
 				NetworkID:     "3456d25f36g474g546",
@@ -337,7 +337,7 @@ func TestHACluster(t *testing.T) {
 				ClusterName: "demo-ha",
 				Region:      "fake-region",
 				Provider:    consts.CloudAws,
-				IsHA:        true,
+				SelfManaged: true,
 				NoCP:        7,
 				NoDS:        5,
 				NoWP:        10,
@@ -353,7 +353,7 @@ func TestHACluster(t *testing.T) {
 			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
 		}
 
-		assert.Equal(t, fakeClientHA.clusterType, consts.ClusterTypeHa, "clustertype should be managed")
+		assert.Equal(t, fakeClientHA.clusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
 	})
 
 	t.Run("Get all counters", func(t *testing.T) {

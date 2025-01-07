@@ -20,6 +20,6 @@ func (cc *Controller) IsLocalProvider(c *Client) bool {
 	return c.Metadata.Provider == consts.CloudLocal
 }
 
-func (cc *Controller) IsHA(c *Client) bool {
-	return c.Metadata.IsHA
+func (cc *Controller) IsSelfManaged(c *Client) bool {
+	return c.Metadata.SelfManaged
 }

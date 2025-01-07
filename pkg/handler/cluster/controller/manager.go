@@ -46,7 +46,7 @@ type Metadata struct {
 	K8sDistro     consts.KsctlKubernetes `json:"kubernetes_distro"`
 	StateLocation consts.KsctlStore      `json:"storage_type"`
 
-	IsHA bool `json:"ha_cluster"`
+	SelfManaged bool `json:"self_managed"`
 
 	K8sVersion string `json:"kubernetes_version"`
 

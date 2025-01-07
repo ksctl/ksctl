@@ -1,7 +1,7 @@
 {
 	"cluster_name": "test-e2e-kubeadm-ha-azure",
 	"region": "centralindia",
-	"ha_cluster": true,
+	"self_managed": true,
 	"cloud_provider": "azure",
 	"kubernetes_distro": "kubeadm",
 	"storage_type": "store-local",

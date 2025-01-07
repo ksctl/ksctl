@@ -59,7 +59,7 @@ func NewController(
 	cc.p = controllerPayload
 	cc.s = state
 
-	if controllerPayload.Metadata.IsHA {
+	if controllerPayload.Metadata.SelfManaged {
 		err := cc.setupInterfaces(operation, transferableInfraState)
 		if err != nil {
 			return nil, err

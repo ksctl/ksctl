@@ -48,7 +48,7 @@ func (p *Provider) NewNetwork() error {
 		}
 		p.l.Success(p.ctx, "created the resource group", "name", *resourceGroup.Name)
 	}
-	if p.IsHA {
+	if p.SelfManaged {
 		virtNet := p.ClusterName + "-vnet"
 		subNet := p.ClusterName + "-subnet"
 
@@ -154,7 +154,7 @@ func (p *Provider) DelNetwork() error {
 		p.l.Print(p.ctx, "skipped already deleted the resource group")
 		return nil
 	} else {
-		if p.IsHA {
+		if p.SelfManaged {
 			if err := p.DeleteSubnet(); err != nil {
 				return err
 			}

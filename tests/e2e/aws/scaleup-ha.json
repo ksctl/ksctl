@@ -1,7 +1,7 @@
 {
 	"cluster_name": "test-e2e-ha-aws",
 	"region": "ap-south-1",
-	"ha_cluster": true,
+	"self_managed": true,
 	"cloud_provider": "aws",
 	"storage_type": "store-local",
 	"node_type_workerplane": "t2.micro",

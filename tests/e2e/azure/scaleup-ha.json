@@ -1,7 +1,7 @@
 {
 	"cluster_name": "test-e2e-ha-azure",
 	"region": "eastus2",
-	"ha_cluster": true,
+	"self_managed": true,
 	"cloud_provider": "azure",
 	"storage_type": "store-local",
 	"node_type_workerplane": "Standard_F2s",

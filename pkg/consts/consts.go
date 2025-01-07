@@ -120,8 +120,8 @@ const (
 )
 
 const (
-	ClusterTypeHa   KsctlClusterType = "ha"
-	ClusterTypeMang KsctlClusterType = "managed"
+	ClusterTypeSelfMang KsctlClusterType = "selfmanaged"
+	ClusterTypeMang     KsctlClusterType = "managed"
 )
 
 type KsctlContextKeyType int

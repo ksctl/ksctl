@@ -2,7 +2,7 @@
   "cluster_name": "test-e2e-aws",
   "kubernetes_version": "1.30",
   "region": "eu-central-1",
-  "ha_cluster": false,
+  "self_managed": false,
   "cloud_provider": "aws",
   "storage_type": "store-local",
   "desired_no_of_managed_nodes": 2,

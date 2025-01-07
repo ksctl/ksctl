@@ -34,8 +34,8 @@ func (kc *Controller) Switch() (*string, error) {
 	}
 
 	clusterType := consts.ClusterTypeMang
-	if kc.b.IsHA(kc.p) {
-		clusterType = consts.ClusterTypeHa
+	if kc.b.IsSelfManaged(kc.p) {
+		clusterType = consts.ClusterTypeSelfMang
 	}
 
 	if err := kc.p.Storage.Setup(

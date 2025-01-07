@@ -29,7 +29,7 @@ func (kc *Controller) Create() error {
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,
 		kc.p.Metadata.ClusterName,
-		consts.ClusterTypeHa,
+		consts.ClusterTypeSelfMang,
 	); err != nil {
 		kc.l.Error("handled error", "catch", err)
 		return err

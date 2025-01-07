@@ -80,7 +80,7 @@ func main() {
 
 	switch operation {
 	case OpCreate, OpDelete, OpScaleUp, OpScaleDown:
-		switch meta.IsHA {
+		switch meta.SelfManaged {
 		case true:
 
 			if meta.Provider == consts.CloudLocal {

@@ -103,7 +103,7 @@ func TestMain(m *testing.M) {
 
 func TestInitStorage(t *testing.T) {
 	db = NewClient(parentCtx, parentLogger)
-	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeHa)
+	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeSelfMang)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestStore_RWD(t *testing.T) {
 		t.Fatalf("Error should happen on deleting cluster info")
 	}
 
-	if err := db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeHa); err == nil {
+	if err := db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeSelfMang); err == nil {
 		t.Fatalf("Error should happen on checking for presence of the cluster")
 	}
 
@@ -135,7 +135,7 @@ func TestStore_RWD(t *testing.T) {
 		t.Fatalf("Error shouln't happen: %v", err)
 	}
 
-	if err := db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeHa); err != nil {
+	if err := db.AlreadyCreated(consts.CloudAzure, "region", "name", consts.ClusterTypeSelfMang); err != nil {
 		t.Fatalf("Error shouldn't happen on checking for presence of the cluster: %v", err)
 	}
 
@@ -238,7 +238,7 @@ func TestGetClusterInfo(t *testing.T) {
 
 		func() {
 
-			if err := db.Setup(consts.CloudAws, "regionAws", "name_ha", consts.ClusterTypeHa); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_ha", consts.ClusterTypeSelfMang); err != nil {
 				t.Fatal(err)
 			}
 
@@ -267,7 +267,7 @@ func TestGetClusterInfo(t *testing.T) {
 				t.Fatal(err)
 			}
 			dump.Println(m)
-			assert.Check(t, len(m[consts.ClusterTypeHa]) == 1)
+			assert.Check(t, len(m[consts.ClusterTypeSelfMang]) == 1)
 			assert.Check(t, len(m[consts.ClusterTypeMang]) == 2)
 		}(t)
 
@@ -278,7 +278,7 @@ func TestGetClusterInfo(t *testing.T) {
 				t.Fatal(err)
 			}
 			dump.Println(m)
-			assert.Check(t, len(m[consts.ClusterTypeHa]) == 1)
+			assert.Check(t, len(m[consts.ClusterTypeSelfMang]) == 1)
 			assert.Check(t, len(m[consts.ClusterTypeMang]) == 0)
 		}(t)
 
@@ -289,7 +289,7 @@ func TestGetClusterInfo(t *testing.T) {
 				t.Fatal(err)
 			}
 			dump.Println(m)
-			assert.Check(t, len(m[consts.ClusterTypeHa]) == 0)
+			assert.Check(t, len(m[consts.ClusterTypeSelfMang]) == 0)
 			assert.Check(t, len(m[consts.ClusterTypeMang]) == 1)
 		}(t)
 	})
@@ -413,7 +413,7 @@ func TestExportImport(t *testing.T) {
 				t.Fatal(err)
 			}
 			dump.Println(m)
-			assert.Check(t, len(m[consts.ClusterTypeHa]) == 1)
+			assert.Check(t, len(m[consts.ClusterTypeSelfMang]) == 1)
 			assert.Check(t, len(m[consts.ClusterTypeMang]) == 2)
 		}(t)
 	})
@@ -483,7 +483,7 @@ func TestDelete(t *testing.T) {
 
 	t.Run("delete all", func(t *testing.T) {
 		func() {
-			if err := db.Setup(consts.CloudAws, "regionAws", "name_ha", consts.ClusterTypeHa); err != nil {
+			if err := db.Setup(consts.CloudAws, "regionAws", "name_ha", consts.ClusterTypeSelfMang); err != nil {
 				t.Fatal(err)
 			}
 			if err := db.DeleteCluster(); err != nil {

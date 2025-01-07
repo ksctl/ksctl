@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 		dir)
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeHa)
+	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeSelfMang)
 	_ = storeVars.Connect()
 
 	fakeClientVars, _ = NewClient(
@@ -63,7 +63,7 @@ func TestMain(m *testing.M) {
 			ClusterName: "demo",
 			Region:      "fake-region",
 			Provider:    consts.CloudAws,
-			IsHA:        true,
+			SelfManaged: true,
 		},
 		&statefile.StorageDocument{},
 		storeVars,

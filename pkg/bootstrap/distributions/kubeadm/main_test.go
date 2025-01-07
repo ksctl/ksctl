@@ -101,7 +101,7 @@ func initClients() {
 	}
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeHa)
+	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeSelfMang)
 	_ = storeHA.Connect()
 	fakeStateFromCloud = provider.CloudResourceState{
 		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
@@ -109,7 +109,7 @@ func initClients() {
 		ClusterName:   "fake",
 		Provider:      consts.CloudAzure,
 		Region:        "fake",
-		ClusterType:   consts.ClusterTypeHa,
+		ClusterType:   consts.ClusterTypeSelfMang,
 
 		// public IPs
 		IPv4ControlPlanes: []string{"A.B.C.4", "A.B.C.5", "A.B.C.6"},

@@ -66,8 +66,8 @@ func (kc *Controller) helper() (*provider.CloudResourceState, error) {
 	}
 
 	clusterType := consts.ClusterTypeMang
-	if kc.b.IsHA(kc.p) {
-		clusterType = consts.ClusterTypeHa
+	if kc.b.IsSelfManaged(kc.p) {
+		clusterType = consts.ClusterTypeSelfMang
 	}
 
 	if err := kc.p.Storage.Setup(
@@ -117,7 +117,7 @@ func (kc *Controller) helper() (*provider.CloudResourceState, error) {
 		return nil, err
 	}
 
-	if kc.b.IsHA(kc.p) {
+	if kc.b.IsSelfManaged(kc.p) {
 		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
 		if errState != nil {
 			kc.l.Error("handled error", "catch", errState)

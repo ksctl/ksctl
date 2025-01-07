@@ -35,7 +35,7 @@ func TestInitState(t *testing.T) {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, fakeClientVars.clusterType, consts.ClusterTypeHa, "clustertype should be managed")
+		assert.Equal(t, fakeClientVars.clusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientVars.state.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")
 		assert.Equal(t, fakeClientVars.Name("fake-net").NewNetwork(), nil, "Network should be created")
 		assert.Equal(t, fakeClientVars.state.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")

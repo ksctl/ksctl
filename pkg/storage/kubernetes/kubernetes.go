@@ -393,7 +393,7 @@ func (s *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clust
 	default:
 		return ksctlErrors.NewError(ksctlErrors.ErrInvalidCloudProvider)
 	}
-	if clusterType != consts.ClusterTypeHa && clusterType != consts.ClusterTypeMang {
+	if clusterType != consts.ClusterTypeSelfMang && clusterType != consts.ClusterTypeMang {
 		return ksctlErrors.NewError(ksctlErrors.ErrInvalidClusterType)
 	}
 
@@ -521,14 +521,14 @@ func (s *Store) GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string
 	}
 
 	switch clusterType {
-	case string(consts.ClusterTypeHa):
-		filterClusterType = append(filterClusterType, string(consts.ClusterTypeHa))
+	case string(consts.ClusterTypeSelfMang):
+		filterClusterType = append(filterClusterType, string(consts.ClusterTypeSelfMang))
 
 	case string(consts.ClusterTypeMang):
 		filterClusterType = append(filterClusterType, string(consts.ClusterTypeMang))
 
 	case "":
-		filterClusterType = append(filterClusterType, string(consts.ClusterTypeMang), string(consts.ClusterTypeHa))
+		filterClusterType = append(filterClusterType, string(consts.ClusterTypeMang), string(consts.ClusterTypeSelfMang))
 	}
 	log.Debug(storeCtx, "storage.kubernetes.GetOneOrMoreClusters", "filter", filters, "filterCloudPath", filterCloudPath, "filterClusterType", filterClusterType)
 

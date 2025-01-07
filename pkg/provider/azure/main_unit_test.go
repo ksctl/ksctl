@@ -17,12 +17,13 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/pkg/storage"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -48,7 +49,7 @@ func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
-	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeHa)
+	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeSelfMang)
 	_ = storeVars.Connect()
 
 	fakeClientVars, _ = NewClient(
@@ -58,7 +59,7 @@ func TestMain(m *testing.M) {
 			ClusterName: "demo",
 			Region:      "fake",
 			Provider:    consts.CloudAzure,
-			IsHA:        true,
+			SelfManaged: true,
 		},
 		&statefile.StorageDocument{},
 		storeVars,

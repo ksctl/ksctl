@@ -129,11 +129,11 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 
 func (p *Provider) InitState(operation consts.KsctlOperation) error {
 
-	switch p.IsHA {
+	switch p.SelfManaged {
 	case false:
 		p.clusterType = consts.ClusterTypeMang
 	case true:
-		p.clusterType = consts.ClusterTypeHa
+		p.clusterType = consts.ClusterTypeSelfMang
 	}
 
 	p.chResName = make(chan string, 1)
@@ -606,13 +606,13 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 				K8sDistro: v.BootstrapProvider,
 				HAProxyVersion: func() string {
-					if v.ClusterType == string(consts.ClusterTypeHa) {
+					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
 						return v.K8sBootstrap.B.HAProxyVersion
 					}
 					return ""
 				}(),
 				EtcdVersion: func() string {
-					if v.ClusterType == string(consts.ClusterTypeHa) {
+					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
 						return v.K8sBootstrap.B.EtcdVersion
 					}
 					return ""
@@ -652,8 +652,8 @@ func (p *Provider) isPresent(cType consts.KsctlClusterType) error {
 }
 
 func (p *Provider) IsPresent() error {
-	if p.IsHA {
-		return p.isPresent(consts.ClusterTypeHa)
+	if p.SelfManaged {
+		return p.isPresent(consts.ClusterTypeSelfMang)
 	}
 	return p.isPresent(consts.ClusterTypeMang)
 }
