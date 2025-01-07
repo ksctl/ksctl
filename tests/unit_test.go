@@ -21,6 +21,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/ksctl/ksctl/hacks"
 )
 
 func getPackagesUnitTest() []string {
@@ -74,7 +76,7 @@ func runFuzzTests(packagex string, fuzz string) bool {
 	cmd := exec.Command("go", "test", "-fuzz", fuzz, "-fuzztime", "10s", "-v", packagex)
 	_bout := new(strings.Builder)
 	_berr := new(strings.Builder)
-	spinner := NewSpinner()
+	spinner := hacks.NewSpinner()
 
 	cmd.Stdout = _bout
 	cmd.Stderr = _berr
@@ -117,7 +119,7 @@ func runTestsUnit(packages []string) bool {
 		}
 		_bout := new(strings.Builder)
 		_berr := new(strings.Builder)
-		spinner := NewSpinner()
+		spinner := hacks.NewSpinner()
 
 		cmd.Stdout = _bout
 		cmd.Stderr = _berr

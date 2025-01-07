@@ -73,7 +73,7 @@ func TestStore_RWD(t *testing.T) {
 	fakeData := &statefile.StorageDocument{
 		Region:      "region",
 		ClusterName: "name",
-		ClusterType: "ha",
+		ClusterType: "selfmanaged",
 	}
 	err := db.Write(fakeData)
 	assert.NilError(t, err, fmt.Sprintf("Error shouln't happen: %v", err))
@@ -185,7 +185,7 @@ func TestGetClusterInfo(t *testing.T) {
 			fakeData := &statefile.StorageDocument{
 				Region:        "regionAws",
 				ClusterName:   "name_ha",
-				ClusterType:   "ha",
+				ClusterType:   "selfmanaged",
 				InfraProvider: consts.CloudAws,
 				CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 				K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
@@ -212,7 +212,7 @@ func TestGetClusterInfo(t *testing.T) {
 		}(t)
 
 		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "aws", "clusterType": "ha"})
+			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "aws", "clusterType": "selfmanaged"})
 
 			if err != nil {
 				t.Fatal(err)
@@ -253,7 +253,7 @@ func TestExportImport(t *testing.T) {
 				{
 					Region:        "regionAws",
 					ClusterName:   "name_ha",
-					ClusterType:   "ha",
+					ClusterType:   "selfmanaged",
 					InfraProvider: consts.CloudAws,
 					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
 					K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},

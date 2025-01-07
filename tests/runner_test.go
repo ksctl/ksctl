@@ -15,19 +15,19 @@
 package tests
 
 import (
-	"fmt"
 	"os"
 	"testing"
-	"time"
+
+	"github.com/ksctl/ksctl/hacks"
 )
 
 const (
-	RESET = "\033[0m"
-	BLUE  = "\033[94m"
-	GREEN = "\033[92m"
-	RED   = "\033[91m"
-	CYAN  = "\033[96m"
-	BOLD  = "\033[1m"
+	RED   = hacks.RED
+	GREEN = hacks.GREEN
+	CYAN  = hacks.CYAN
+	BOLD  = hacks.BOLD
+	RESET = hacks.RESET
+	BLUE  = hacks.BLUE
 )
 
 func TestMain(m *testing.M) {
@@ -45,58 +45,4 @@ func TestIntegration(t *testing.T) {
 func TestAll(t *testing.T) {
 	UnitTest(t)
 	IntegrationTest(t)
-}
-
-// Spinner represents a spinning animation
-type Spinner struct {
-	chars     []string
-	done      chan bool
-	active    bool
-	startTime time.Time
-}
-
-// NewSpinner creates a new spinner instance
-func NewSpinner() *Spinner {
-	return &Spinner{
-		chars: []string{
-			BLUE + "|" + RESET,
-			GREEN + "/" + RESET,
-			RED + "-" + RESET,
-			CYAN + "\\" + RESET,
-		},
-		done:   make(chan bool),
-		active: false,
-	}
-}
-
-// Start begins the spinner animation in a goroutine
-func (s *Spinner) Start() {
-	if s.active {
-		return
-	}
-	s.active = true
-	s.startTime = time.Now()
-
-	go func() {
-		for i := 0; ; i = (i + 1) % len(s.chars) {
-			select {
-			case <-s.done:
-				fmt.Print("\r") // Clear the spinner
-				return
-			default:
-				elapsed := time.Since(s.startTime).Round(time.Second)
-				fmt.Printf("\r%s %s", s.chars[i], elapsed)
-				time.Sleep(100 * time.Millisecond)
-			}
-		}
-	}()
-}
-
-// Stop halts the spinner animation
-func (s *Spinner) Stop() {
-	if !s.active {
-		return
-	}
-	s.done <- true
-	s.active = false
 }

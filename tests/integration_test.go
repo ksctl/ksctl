@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ksctl/ksctl/hacks"
 )
 
 type IntegrationTestP struct {
@@ -53,7 +55,7 @@ func runTestsIntegration(packages []IntegrationTestP) bool {
 		cmd.Dir = "../tests/integration"
 		_bout := new(strings.Builder)
 		_berr := new(strings.Builder)
-		spinner := NewSpinner()
+		spinner := hacks.NewSpinner()
 
 		cmd.Stdout = _bout
 		cmd.Stderr = _berr
