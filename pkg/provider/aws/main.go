@@ -69,7 +69,9 @@ type Provider struct {
 	controller.Metadata
 
 	vpc string
-	cni string
+
+	managedAddonCNI string
+	managedAddonApp map[string]map[string]*string
 
 	chResName chan string
 	chRole    chan consts.KsctlRole

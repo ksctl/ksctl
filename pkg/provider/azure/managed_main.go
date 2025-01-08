@@ -29,11 +29,16 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	addons := s.GetAddons("aks")
 
 	p.managedAddonCNI = "none" // Default: value
+	externalCNI = true
 
 	for _, addon := range addons {
 		if addon.IsCNI() {
-			if addon.Name == "azure" || addon.Name == "kubenet" || addon.Name == "" {
+			if addon.Name == "azure" || addon.Name == "kubenet" {
 				p.managedAddonCNI = addon.Name
+				externalCNI = false
+			} else if addon.Name == "" {
+				p.managedAddonCNI = "azure"
+				externalCNI = false
 			}
 		} else {
 			v := map[string]*string{}
@@ -50,7 +55,7 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 		}
 	}
 
-	return false
+	return
 }
 
 func (p *Provider) DelManagedCluster() error {

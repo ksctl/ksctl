@@ -27,16 +27,21 @@ import (
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", s)
 	addons := s.GetAddons("kind")
+	p.managedAddonCNI = "none" // Default: value
+	externalCNI = true
 
-	switch consts.KsctlValidCNIPlugin(s) {
-	case consts.CNIKind, "":
-		p.cni = string(consts.CNIKind)
-	default:
-		p.cni = string(consts.CNINone)
-		return true
+	for _, addon := range addons {
+		if addon.IsCNI() {
+			if addon.Name == "kind" || addon.Name == "" {
+				p.managedAddonCNI = "kind"
+				externalCNI = false
+			}
+		} else {
+			continue
+		}
 	}
 
-	return false
+	return
 }
 
 func (p *Provider) DelManagedCluster() error {
@@ -85,7 +90,7 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 	p.client.NewProvider(p, nil)
 
 	cni := false
-	if consts.KsctlValidCNIPlugin(p.cni) == consts.CNINone {
+	if consts.KsctlValidCNIPlugin(p.managedAddonCNI) == consts.CNINone {
 		cni = true
 	}
 

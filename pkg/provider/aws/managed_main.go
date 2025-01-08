@@ -15,13 +15,15 @@
 package aws
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/ksctl/ksctl/pkg/addons"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	eksTypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/ksctl/ksctl/pkg/consts"
 )
 
 const (
@@ -54,17 +56,26 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", s)
 	addons := s.GetAddons("eks")
 
-	switch consts.KsctlValidCNIPlugin(s) {
-	case consts.CNICilium, consts.CNIFlannel:
-		p.cni = s
-		return false
-	case "":
-		p.cni = string(consts.CNIFlannel)
-		return false
-	default:
-		p.cni = string(consts.CNINone)
-		return true
+	p.managedAddonCNI = "none" // Default: value
+	externalCNI = true
+
+	for _, addon := range addons {
+		if !addon.IsCNI() {
+			v := map[string]*string{}
+			if addon.Config != nil {
+				if err := json.Unmarshal([]byte(*addon.Config), &v); err != nil {
+					p.l.Warn(p.ctx, "failed to unmarshal addon config", "addonName", addon.Name, "config", *addon.Config, "resource", addon.Resource, "error", err)
+				}
+			} else {
+				p.l.Warn(p.ctx, "empty addon config", "addonName", addon.Name, "resource", addon.Resource)
+			}
+
+			p.managedAddonApp = make(map[string]map[string]*string)
+			p.managedAddonApp[addon.Name] = v
+		}
 	}
+
+	return
 }
 
 func (p *Provider) DelManagedCluster() error {

@@ -35,7 +35,9 @@ type Provider struct {
 	store storage.Storage
 	controller.Metadata
 
-	cni               string
+	managedAddonCNI string
+	managedAddonApp map[string]map[string]*string
+
 	tempDirKubeconfig string
 
 	vmType  string
