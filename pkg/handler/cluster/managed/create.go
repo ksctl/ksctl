@@ -64,7 +64,7 @@ func (kc *Controller) Create() error {
 		return err
 	}
 
-	_, externalCNI, errKpc := kpc.CreateManagedCluster()
+	externalCNI, errKpc := kpc.CreateManagedCluster()
 	if errKpc != nil {
 		kc.l.Error("handled error", "catch", errKpc)
 		return errKpc

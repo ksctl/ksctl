@@ -15,6 +15,7 @@
 package provider
 
 import (
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
 )
@@ -73,9 +74,7 @@ type Cloud interface {
 
 	Visibility(bool) Cloud
 
-	Application([]string) bool
-
-	CNI(string) (willBeInstalled bool)
+	ManagedAddons(addons.ClusterAddons) (willBeInstalled bool)
 
 	ManagedK8sVersion(string) Cloud
 

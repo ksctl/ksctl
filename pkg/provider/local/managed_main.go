@@ -19,9 +19,25 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 )
+
+func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
+	p.l.Debug(p.ctx, "Printing", "cni", s)
+	addons := s.GetAddons("kind")
+
+	switch consts.KsctlValidCNIPlugin(s) {
+	case consts.CNIKind, "":
+		p.cni = string(consts.CNIKind)
+	default:
+		p.cni = string(consts.CNINone)
+		return true
+	}
+
+	return false
+}
 
 func (p *Provider) DelManagedCluster() error {
 

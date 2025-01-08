@@ -110,24 +110,6 @@ func (p *Provider) Name(resName string) provider.Cloud {
 	return p
 }
 
-func (p *Provider) Application(s []string) (externalApps bool) {
-	return true
-}
-
-func (p *Provider) CNI(s string) (externalCNI bool) {
-	p.l.Debug(p.ctx, "Printing", "cni", s)
-
-	switch consts.KsctlValidCNIPlugin(s) {
-	case consts.CNIKind, "":
-		p.cni = string(consts.CNIKind)
-	default:
-		p.cni = string(consts.CNINone)
-		return true
-	}
-
-	return false
-}
-
 func (p *Provider) ManagedK8sVersion(ver string) provider.Cloud {
 	p.l.Debug(p.ctx, "Printing", "k8sVersion", ver)
 	p.K8sVersion = ver

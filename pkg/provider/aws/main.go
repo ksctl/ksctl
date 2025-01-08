@@ -291,31 +291,6 @@ func (p *Provider) Visibility(toBePublic bool) provider.Cloud {
 	return p
 }
 
-func (p *Provider) SupportForApplications() bool {
-	return false
-
-}
-
-func (p *Provider) Application(_ []string) bool {
-	return true
-}
-
-func (p *Provider) CNI(s string) (externalCNI bool) {
-
-	p.l.Debug(p.ctx, "Printing", "cni", s)
-	switch consts.KsctlValidCNIPlugin(s) {
-	case consts.CNICilium, consts.CNIFlannel:
-		p.cni = s
-		return false
-	case "":
-		p.cni = string(consts.CNIFlannel)
-		return false
-	default:
-		p.cni = string(consts.CNINone)
-		return true
-	}
-}
-
 func (p *Provider) NoOfWorkerPlane(no int, setter bool) (int, error) {
 	p.l.Debug(p.ctx, "Printing", "desiredNumber", no, "setterOrNot", setter)
 	if !setter {

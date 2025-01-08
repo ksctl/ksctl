@@ -271,7 +271,7 @@ func TestCniAndApps(t *testing.T) {
 	}
 
 	for k, v := range testCases {
-		got := fakeClientVars.CNI(k)
+		got := fakeClientVars.ManagedAddons(k)
 		assert.Equal(t, got, v, "missmatch")
 	}
 

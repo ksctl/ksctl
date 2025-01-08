@@ -15,11 +15,43 @@
 package azure
 
 import (
+	"encoding/json"
 	"os"
 
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
+
+func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
+
+	p.l.Debug(p.ctx, "Printing", "cni", s)
+	addons := s.GetAddons("aks")
+
+	p.managedAddonCNI = "none" // Default: value
+
+	for _, addon := range addons {
+		if addon.IsCNI() {
+			if addon.Name == "azure" || addon.Name == "kubenet" || addon.Name == "" {
+				p.managedAddonCNI = addon.Name
+			}
+		} else {
+			v := map[string]*string{}
+			if addon.Config != nil {
+				if err := json.Unmarshal([]byte(*addon.Config), &v); err != nil {
+					p.l.Warn(p.ctx, "failed to unmarshal addon config", "addonName", addon.Name, "config", *addon.Config, "resource", addon.Resource, "error", err)
+				}
+			} else {
+				p.l.Warn(p.ctx, "empty addon config", "addonName", addon.Name, "resource", addon.Resource)
+			}
+
+			p.managedAddonApp = make(map[string]map[string]*string)
+			p.managedAddonApp[addon.Name] = v
+		}
+	}
+
+	return false
+}
 
 func (p *Provider) DelManagedCluster() error {
 	if len(p.state.CloudInfra.Azure.ManagedClusterName) == 0 {
@@ -60,6 +92,17 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 	p.state.CloudInfra.Azure.B.KubernetesVer = p.K8sVersion
 	p.state.BootstrapProvider = "managed"
 
+	computedAddons := func() map[string]*armcontainerservice.ManagedClusterAddonProfile {
+		addonProfiles := make(map[string]*armcontainerservice.ManagedClusterAddonProfile)
+		for k, v := range p.managedAddonApp {
+			addonProfiles[k] = &armcontainerservice.ManagedClusterAddonProfile{
+				Enabled: utilities.Ptr(true),
+				Config:  v,
+			}
+		}
+		return addonProfiles
+	}
+
 	parameter := armcontainerservice.ManagedCluster{
 		Location: utilities.Ptr(p.state.Region),
 		SKU: &armcontainerservice.ManagedClusterSKU{
@@ -67,10 +110,12 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 			Tier: utilities.Ptr(armcontainerservice.ManagedClusterSKUTierStandard),
 		},
 		Properties: &armcontainerservice.ManagedClusterProperties{
+			AddonProfiles: computedAddons(),
+
 			DNSPrefix:         utilities.Ptr("aksgosdk"),
 			KubernetesVersion: utilities.Ptr(p.state.CloudInfra.Azure.B.KubernetesVer),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
-				NetworkPlugin: utilities.Ptr(armcontainerservice.NetworkPlugin(p.cni)),
+				NetworkPlugin: utilities.Ptr(armcontainerservice.NetworkPlugin(p.managedAddonCNI)),
 			},
 			AutoUpgradeProfile: &armcontainerservice.ManagedClusterAutoUpgradeProfile{
 				NodeOSUpgradeChannel: utilities.Ptr(armcontainerservice.NodeOSUpgradeChannelNodeImage),

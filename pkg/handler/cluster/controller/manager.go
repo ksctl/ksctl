@@ -18,6 +18,7 @@ import (
 	"context"
 	"runtime/debug"
 
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/bootstrap"
 	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/pkg/consts"
@@ -61,15 +62,7 @@ type Metadata struct {
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
 
-	// WARN(@dipankardas011): These 2 only used for managed cloud provider clusters and strongly discurrage its use in HA clusters
-	// as for HA cluster are need to move the management to the cluster agent or a cluster Operator
-	Applications []KsctlApp `json:"preinstalled_apps"`
-	CNIPlugin    KsctlApp   `json:"cni_plugin"`
-}
-
-type KsctlApp struct {
-	StackName string                    `json:"stack_name"`
-	Overrides map[string]map[string]any `json:"overrides"`
+	Addons addons.ClusterAddons `json:"addons"`
 }
 
 type Controller struct {
@@ -85,10 +78,8 @@ func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
 	return b
 }
 
-// PanicCatcher This function is intended to be used by the Cli and used once thus getting required information for developers to debug
-//
-//	Please use it in the main function of the cli or the server
-func (cc *Controller) PanicCatcher(log logger.Logger) {
+// PanicHandler This function is intended to be used by the Cli and used once thus getting required information for developers to debug
+func (cc *Controller) PanicHandler(log logger.Logger) {
 	if r := recover(); r != nil {
 		log.Error("Failed to recover stack trace", "error", r)
 		log.Print(cc.ctx, "Controller Information", "context", cc.ctx)

@@ -14,11 +14,11 @@
 
 package handler
 
-func (kc *Controller) CreateManagedCluster() (bool, bool, error) {
+func (kc *Controller) CreateManagedCluster() (bool, error) {
 
 	if !kc.b.IsLocalProvider(kc.p) {
 		if err := kc.p.Cloud.Name(kc.p.Metadata.ClusterName + "-ksctl-managed-net").NewNetwork(); err != nil {
-			return false, false, err
+			return false, err
 		}
 	}
 
@@ -26,26 +26,18 @@ func (kc *Controller) CreateManagedCluster() (bool, bool, error) {
 
 	managedClient = managedClient.VMType(kc.p.Metadata.ManagedNodeType)
 
-	externalApps := managedClient.Application(
-		func() (apps []string) {
-			for _, ss := range kc.p.Metadata.Applications {
-				apps = append(apps, ss.StackName)
-			}
-			return apps
-		}())
-
-	externalCNI := managedClient.CNI(kc.p.Metadata.CNIPlugin.StackName)
+	externalCNI := managedClient.ManagedAddons(kc.p.Metadata.CNIPlugin.StackName)
 
 	managedClient = managedClient.ManagedK8sVersion(kc.p.Metadata.K8sVersion)
 
 	if managedClient == nil {
-		return externalApps, externalCNI, kc.l.NewError(kc.ctx, "invalid k8s version")
+		return externalCNI, kc.l.NewError(kc.ctx, "invalid k8s version")
 	}
 
 	if err := managedClient.NewManagedCluster(kc.p.Metadata.NoMP); err != nil {
-		return externalApps, externalCNI, err
+		return externalCNI, err
 	}
-	return externalApps, externalCNI, nil
+	return externalCNI, nil
 }
 
 func (kc *Controller) DeleteManagedCluster() error {

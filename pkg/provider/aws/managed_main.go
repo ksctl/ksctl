@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	eksTypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/ksctl/ksctl/pkg/consts"
 )
 
 const (
@@ -47,6 +48,24 @@ const (
     ]
 }`
 )
+
+func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
+
+	p.l.Debug(p.ctx, "Printing", "cni", s)
+	addons := s.GetAddons("eks")
+
+	switch consts.KsctlValidCNIPlugin(s) {
+	case consts.CNICilium, consts.CNIFlannel:
+		p.cni = s
+		return false
+	case "":
+		p.cni = string(consts.CNIFlannel)
+		return false
+	default:
+		p.cni = string(consts.CNINone)
+		return true
+	}
+}
 
 func (p *Provider) DelManagedCluster() error {
 	if len(p.state.CloudInfra.Aws.ManagedClusterName) == 0 {

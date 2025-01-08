@@ -44,7 +44,8 @@ type Provider struct {
 
 	public bool
 
-	cni string
+	managedAddonCNI string
+	managedAddonApp map[string]map[string]*string
 
 	chResName chan string
 	chRole    chan consts.KsctlRole
@@ -282,27 +283,6 @@ func (p *Provider) VMType(size string) provider.Cloud {
 func (p *Provider) Visibility(toBePublic bool) provider.Cloud {
 	p.public = toBePublic
 	return p
-}
-
-func (p *Provider) Application(s []string) (externalApps bool) {
-	return true
-}
-
-func (p *Provider) CNI(s string) (externalCNI bool) {
-
-	p.l.Debug(p.ctx, "Printing", "cni", s)
-
-	switch consts.KsctlValidCNIPlugin(s) {
-	case consts.CNIKubenet, consts.CNIAzure:
-		p.cni = s
-	case "":
-		p.cni = string(consts.CNIAzure)
-	default:
-		p.cni = string(consts.CNINone) // any other cni it will marked as none for NetworkPlugin
-		return true
-	}
-
-	return false
 }
 
 func (p *Provider) NoOfControlPlane(no int, setter bool) (int, error) {
