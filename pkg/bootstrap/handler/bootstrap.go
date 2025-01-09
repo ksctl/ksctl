@@ -16,8 +16,11 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
+	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/apps/stack"
 	"github.com/ksctl/ksctl/pkg/provider"
 
 	"github.com/ksctl/ksctl/pkg/bootstrap"
@@ -174,7 +177,7 @@ func (kc *Controller) ConfigureCluster() (bool, error) {
 		return false, err
 	}
 
-	externalCNI := kc.p.Bootstrap.CNI(kc.p.Metadata.CNIPlugin.StackName)
+	externalCNI := kc.p.Bootstrap.CNI(kc.p.Metadata.Addons)
 
 	kc.p.Bootstrap = kc.p.Bootstrap.K8sVersion(kc.p.Metadata.K8sVersion)
 	if kc.p.Bootstrap == nil {
@@ -299,12 +302,37 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 	}
 
 	if externalCNI {
-		if len(kc.p.Metadata.CNIPlugin.StackName) == 0 {
-			kc.p.Metadata.CNIPlugin.StackName = "flannel"
-			kc.p.Metadata.CNIPlugin.Overrides = nil
+		kc.l.Print(kc.ctx, "Installing External CNI Plugin")
+		_addons := kc.p.Metadata.Addons.GetAddons("ksctl")
+		var _cni *addons.ClusterAddon
+		for _, addon := range _addons {
+			if addon.IsCNI {
+				_cni = &addon
+				break
+			}
+		}
+		_c := stack.KsctlApp{
+			StackName: _cni.Name,
 		}
 
-		if err := k.CNI(kc.p.Metadata.CNIPlugin, kc.s, consts.OperationCreate); err != nil {
+		if _cni == nil {
+			kc.l.Print(kc.ctx, "CNI Plugin not found in addons list")
+
+			_c.StackName = "flannel"
+			_c.Overrides = nil
+		} else {
+			if _cni.Config == nil {
+				_c.Overrides = nil
+			} else {
+				_v := map[string]map[string]any{}
+				if err := json.Unmarshal([]byte(*_cni.Config), &_v); err != nil {
+					return kc.l.NewError(kc.ctx, "failed to deserialize cni config", "error", err)
+				}
+				_c.Overrides = _v
+			}
+		}
+
+		if err := k.CNI(_c, kc.s, consts.OperationCreate); err != nil {
 			return err
 		}
 

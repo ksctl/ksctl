@@ -32,7 +32,7 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	externalCNI = true
 
 	for _, addon := range addons {
-		if addon.IsCNI() {
+		if addon.IsCNI {
 			if addon.Name == "azure" || addon.Name == "kubenet" {
 				p.managedAddonCNI = addon.Name
 				externalCNI = false
@@ -44,10 +44,10 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 			v := map[string]*string{}
 			if addon.Config != nil {
 				if err := json.Unmarshal([]byte(*addon.Config), &v); err != nil {
-					p.l.Warn(p.ctx, "failed to unmarshal addon config", "addonName", addon.Name, "config", *addon.Config, "resource", addon.Resource, "error", err)
+					p.l.Warn(p.ctx, "failed to unmarshal addon config", "addonName", addon.Name, "config", *addon.Config, "error", err)
 				}
 			} else {
-				p.l.Warn(p.ctx, "empty addon config", "addonName", addon.Name, "resource", addon.Resource)
+				p.l.Warn(p.ctx, "empty addon config", "addonName", addon.Name)
 			}
 
 			p.managedAddonApp = make(map[string]map[string]*string)

@@ -14,7 +14,10 @@
 
 package distributions
 
-import "github.com/ksctl/ksctl/pkg/consts"
+import (
+	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/consts"
+)
 
 type KubernetesDistribution interface {
 	Setup(operation consts.KsctlOperation) error
@@ -25,5 +28,5 @@ type KubernetesDistribution interface {
 
 	K8sVersion(string) KubernetesDistribution
 
-	CNI(string) (externalCNI bool)
+	CNI(addons.ClusterAddons) (externalCNI bool)
 }

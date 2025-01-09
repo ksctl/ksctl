@@ -17,13 +17,15 @@ package kubeadm
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
+
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/ssh"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
-	"strings"
-	"sync"
 
 	"github.com/ksctl/ksctl/pkg/poller"
 
@@ -38,7 +40,7 @@ type Kubeadm struct {
 	mu    *sync.Mutex
 	store storage.Storage
 
-	Cni string
+	// Cni string
 }
 
 func (p *Kubeadm) Setup(operation consts.KsctlOperation) error {
@@ -64,15 +66,23 @@ func (p *Kubeadm) K8sVersion(ver string) distributions.KubernetesDistribution {
 	}
 }
 
-func (p *Kubeadm) CNI(cni string) (externalCNI bool) {
+func (p *Kubeadm) CNI(cni addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", cni)
-	switch consts.KsctlValidCNIPlugin(cni) {
-	case "":
-		p.Cni = ""
-	default:
-		p.Cni = string(consts.CNINone)
-	}
-	return true // if its empty string we will install the default cni as flannel
+
+	_ = cni.GetAddons("kubeadm")
+
+	// p.Cni = "none" // Default: value
+	externalCNI = true
+
+	// for _, a := range addon {
+	// 	if a.IsCNI {
+	// 		if a.Name == "" {
+	// 			p.Cni = a.Name
+	// 			externalCNI = false
+	// 		}
+	// 	}
+	// }
+	return
 }
 
 func (p *Kubeadm) isValidKubeadmVersion(ver string) (string, error) {

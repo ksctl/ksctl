@@ -62,6 +62,8 @@ type Metadata struct {
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
 
+	// Addons Helps us with specifying cloud managed cluster addons (aks, eks, gke)
+	// to k3s, kubeadm specific as well
 	Addons addons.ClusterAddons `json:"addons"`
 }
 

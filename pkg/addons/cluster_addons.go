@@ -16,9 +16,9 @@ package addons
 
 // Label=ksctl,Resource=cni,Name=cilium;Label=eks,Name=vpc-cni,Config={...}
 type ClusterAddon struct {
-	Label    string `json:"label"`
-	Resource string `json:"resource"`
-	Name     string `json:"name"`
+	Label string `json:"label"`
+	IsCNI bool   `json:"is_cni,omitempty"`
+	Name  string `json:"name"`
 
 	// Config is a string representation of a JSON object
 	Config *string `json:"config,omitempty"`
@@ -37,8 +37,4 @@ func (ca ClusterAddons) GetAddons(label string) []ClusterAddon {
 		}
 	}
 	return caa
-}
-
-func (ca ClusterAddon) IsCNI() bool {
-	return ca.Resource == "cni"
 }

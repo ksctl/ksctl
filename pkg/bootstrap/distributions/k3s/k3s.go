@@ -18,6 +18,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/ssh"
@@ -89,16 +90,20 @@ func (p *K3s) K8sVersion(ver string) distributions.KubernetesDistribution {
 	}
 }
 
-func (p *K3s) CNI(cni string) (externalCNI bool) {
+func (p *K3s) CNI(cni addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", cni)
-	switch consts.KsctlValidCNIPlugin(cni) {
-	case consts.CNIFlannel, "":
-		p.Cni = string(consts.CNIFlannel)
-		return false
+	addon := cni.GetAddons("k3s")
 
-	default:
-		// this tells us that CNI should be installed via the k8s client
-		p.Cni = string(consts.CNINone)
-		return true
+	p.Cni = "none" // Default: value
+	externalCNI = true
+
+	for _, a := range addon {
+		if a.IsCNI {
+			if a.Name == "flannel" {
+				p.Cni = a.Name
+				externalCNI = false
+			}
+		}
 	}
+	return
 }

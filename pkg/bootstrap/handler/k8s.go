@@ -22,7 +22,6 @@ import (
 	"github.com/ksctl/ksctl/pkg/bootstrap/handler/cni"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/pkg/helm"
 	"github.com/ksctl/ksctl/pkg/k8s"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -89,7 +88,7 @@ func NewClusterClient(
 }
 
 func (k *K8sClusterClient) CNI(
-	cni controller.KsctlApp,
+	cni stack.KsctlApp,
 	state *statefile.StorageDocument,
 	op consts.KsctlOperation) error {
 
@@ -108,7 +107,11 @@ func (k *K8sClusterClient) CNI(
 	return nil
 }
 
-func (k *K8sClusterClient) getStackManifest(app controller.KsctlApp, overriding map[string]map[string]any) (stack.ApplicationStack, error) {
+func (k *K8sClusterClient) getStackManifest(
+	app stack.KsctlApp,
+	overriding map[string]map[string]any,
+) (stack.ApplicationStack, error) {
+
 	convertedOverriding := make(map[stack.ComponentID]stack.ComponentOverrides)
 
 	if overriding != nil { // there are some user overriding
@@ -128,7 +131,7 @@ func (k *K8sClusterClient) getStackManifest(app controller.KsctlApp, overriding 
 }
 
 func (k *K8sClusterClient) installCni(
-	app controller.KsctlApp,
+	app stack.KsctlApp,
 	state *statefile.StorageDocument) error {
 
 	stackManifest, err := k.getStackManifest(app, app.Overrides)

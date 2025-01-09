@@ -65,3 +65,8 @@ func GetComponentVersionOverriding(component Component) string {
 	}
 	return component.Helm.Charts[0].Version
 }
+
+type KsctlApp struct {
+	StackName string                    `json:"stack_name"`
+	Overrides map[string]map[string]any `json:"overrides"`
+}
