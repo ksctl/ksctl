@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -253,5 +254,72 @@ func TestIsValidVersion(t *testing.T) {
 		err := IsValidKsctlComponentVersion(dummyCtx, log, ver)
 		got := err == nil
 		assert.Equal(t, got, expected, fmt.Sprintf("Ver: %s, got: %v, expected: %v", ver, got, expected))
+	}
+}
+
+func TestIsValidKsctlClusterAddons(t *testing.T) {
+
+	testCases := []struct {
+		ca            addons.ClusterAddons
+		expectedError bool
+	}{
+		{
+			ca:            addons.ClusterAddons{},
+			expectedError: false,
+		},
+		{
+			ca: addons.ClusterAddons{
+				{Label: "dcdcd", Name: "cilium", IsCNI: true},
+			},
+			expectedError: true,
+		},
+		{
+			ca: addons.ClusterAddons{
+				{Label: "ksctl", Name: "cilium", IsCNI: true},
+			},
+			expectedError: true,
+		},
+		{
+			ca: addons.ClusterAddons{
+				{Label: "ksctl", Name: "cilium", IsCNI: true},
+				{Label: "aks", Name: "none", IsCNI: true},
+			},
+			expectedError: false,
+		},
+		{
+			ca: addons.ClusterAddons{
+				{Label: "aks", Name: "none", IsCNI: true},
+				{Label: "aks", Name: "none", IsCNI: true},
+			},
+			expectedError: true,
+		},
+		{ // when CNI is specified as none it doesn't matter if the ksctl handles it with its own cni
+			ca: addons.ClusterAddons{
+				{Label: "eks", Name: "none", IsCNI: true},
+			},
+			expectedError: false,
+		},
+		{ // No Duplicates in the addons
+			ca: addons.ClusterAddons{
+				{Label: "kind", Name: "random123"},
+				{Label: "kind", Name: "random123"},
+			},
+			expectedError: true,
+		},
+		{
+			ca: addons.ClusterAddons{
+				{Label: "aks", Name: "random123"},
+				{Label: "eks", Name: "random123"},
+				{Label: "gke", Name: "random123"},
+				{Label: "kind", Name: "random123"},
+				{Label: "ksctl", Name: "random123"},
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := IsValidKsctlClusterAddons(dummyCtx, log, tc.ca)
+		assert.Equal(t, err == nil, !tc.expectedError)
 	}
 }

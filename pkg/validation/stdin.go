@@ -175,7 +175,7 @@ func IsValidKsctlClusterAddons(ctx context.Context, log logger.Logger, ca addons
 	addonLabels := ca.GetAddonLabels()
 	for _, label := range addonLabels {
 		switch label {
-		case addons.AzureAKS, addons.AwsEKS, addons.GcpGKE, addons.Kind:
+		case addons.AzureAKS, addons.AwsEKS, addons.GcpGKE, addons.Kind, addons.Ksctl:
 			_addons := ca.GetAddons(label)
 
 			_addonNames := make(map[string]int, len(_addons))
@@ -219,7 +219,6 @@ func IsValidKsctlClusterAddons(ctx context.Context, log logger.Logger, ca addons
 				)
 			}
 
-			return nil
 		default:
 			return ksctlErrors.WrapError(
 				ksctlErrors.ErrInvalidKsctlClusterAddons,

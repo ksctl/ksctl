@@ -104,7 +104,7 @@ func runTestsUnit(packages []string) bool {
 			cmd = exec.Command("go", "test", "-v", "-tags", goTag, pkg)
 		} else if isFuzzPackage(pkg) {
 
-			fuzzz := [...]string{"FuzzValidateCloud", "FuzzValidateCNI", "FuzzValidateDistro", "FuzzName", "FuzzValidateRole", "FuzzValidateStorage"}
+			fuzzz := [...]string{"FuzzValidateCloud", "FuzzValidateDistro", "FuzzName", "FuzzValidateRole", "FuzzValidateStorage"}
 			for _, fuzz := range fuzzz {
 				if !runFuzzTests(pkg, fuzz) {
 					fmt.Printf("%s✘ Tests failed for package: %s%s\n", RED, pkg, RESET)
