@@ -1,5 +1,5 @@
 {
-	"cluster_name": "test-e2e-azure",
+	"cluster_name": "test-e2e-keda",
 	"region": "eastus",
 	"cloud_provider": "azure",
 	"storage_type": "store-local"

@@ -1,0 +1,15 @@
+{
+	"cluster_name": "test-e2e-keda",
+	"kubernetes_version": "1.31",
+	"region": "eastus",
+	"cloud_provider": "azure",
+	"storage_type": "store-local",
+	"desired_no_of_managed_nodes": 1,
+	"node_type_managed": "Standard_DS2_v2",
+	"addons": [
+		{
+			"label": "aks",
+			"name": "keda"
+		}
+	]
+}

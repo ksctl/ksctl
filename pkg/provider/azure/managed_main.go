@@ -103,12 +103,18 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 	p.state.CloudInfra.Azure.B.KubernetesVer = p.K8sVersion
 	p.state.BootstrapProvider = "managed"
 
+	isKeda := false
+
 	computedAddons := func() map[string]*armcontainerservice.ManagedClusterAddonProfile {
 		addonProfiles := make(map[string]*armcontainerservice.ManagedClusterAddonProfile)
 		for k, v := range p.managedAddonApp {
-			addonProfiles[k] = &armcontainerservice.ManagedClusterAddonProfile{
-				Enabled: utilities.Ptr(true),
-				Config:  v,
+			if k != "keda" {
+				addonProfiles[k] = &armcontainerservice.ManagedClusterAddonProfile{
+					Enabled: utilities.Ptr(true),
+					Config:  v,
+				}
+			} else {
+				isKeda = true
 			}
 		}
 		return addonProfiles
@@ -117,7 +123,7 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 	parameter := armcontainerservice.ManagedCluster{
 		Location: utilities.Ptr(p.state.Region),
 		SKU: &armcontainerservice.ManagedClusterSKU{
-			Name: utilities.Ptr(armcontainerservice.ManagedClusterSKUName(name)),
+			Name: utilities.Ptr(armcontainerservice.ManagedClusterSKUNameBase),
 			Tier: utilities.Ptr(armcontainerservice.ManagedClusterSKUTierStandard),
 		},
 		Properties: &armcontainerservice.ManagedClusterProperties{
@@ -149,6 +155,11 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 			ServicePrincipalProfile: &armcontainerservice.ManagedClusterServicePrincipalProfile{
 				ClientID: utilities.Ptr(os.Getenv("AZURE_CLIENT_ID")),
 				Secret:   utilities.Ptr(os.Getenv("AZURE_CLIENT_SECRET")),
+			},
+			WorkloadAutoScalerProfile: &armcontainerservice.ManagedClusterWorkloadAutoScalerProfile{
+				Keda: &armcontainerservice.ManagedClusterWorkloadAutoScalerProfileKeda{
+					Enabled: utilities.Ptr(isKeda),
+				},
 			},
 		},
 	}

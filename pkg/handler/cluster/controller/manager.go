@@ -47,7 +47,7 @@ type Metadata struct {
 	K8sDistro     consts.KsctlKubernetes `json:"kubernetes_distro"`
 	StateLocation consts.KsctlStore      `json:"storage_type"`
 
-	SelfManaged bool `json:"self_managed"`
+	SelfManaged bool `json:"self_managed,omitempty"`
 
 	K8sVersion string `json:"kubernetes_version"`
 
@@ -64,7 +64,7 @@ type Metadata struct {
 
 	// Addons Helps us with specifying cloud managed cluster addons (aks, eks, gke)
 	// to k3s, kubeadm specific as well
-	Addons addons.ClusterAddons `json:"addons"`
+	Addons addons.ClusterAddons `json:"addons,omitempty"`
 }
 
 type Controller struct {
