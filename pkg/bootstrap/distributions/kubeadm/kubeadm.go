@@ -71,17 +71,8 @@ func (p *Kubeadm) CNI(cni addons.ClusterAddons) (externalCNI bool) {
 
 	_ = cni.GetAddons("kubeadm")
 
-	// p.Cni = "none" // Default: value
 	externalCNI = true
 
-	// for _, a := range addon {
-	// 	if a.IsCNI {
-	// 		if a.Name == "" {
-	// 			p.Cni = a.Name
-	// 			externalCNI = false
-	// 		}
-	// 	}
-	// }
 	return
 }
 

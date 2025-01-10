@@ -15,9 +15,8 @@
 package aws
 
 import (
+	"github.com/ksctl/ksctl/pkg/firewall"
 	"strconv"
-
-	"github.com/ksctl/ksctl/pkg/provider"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
@@ -191,7 +190,7 @@ func (p *Provider) createSecurityGroupRules(
 	return nil
 }
 
-func convertToProviderSpecific(_rules []provider.FirewallRule, SgId *string) (ec2.AuthorizeSecurityGroupIngressInput, ec2.AuthorizeSecurityGroupEgressInput) {
+func convertToProviderSpecific(_rules []firewall.FirewallRule, SgId *string) (ec2.AuthorizeSecurityGroupIngressInput, ec2.AuthorizeSecurityGroupEgressInput) {
 
 	var ingressRules []types.IpPermission
 	var egressRules []types.IpPermission
@@ -248,7 +247,7 @@ func firewallRuleControlPlane(sgid *string,
 	ec2.AuthorizeSecurityGroupEgressInput) {
 
 	return convertToProviderSpecific(
-		provider.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+		firewall.FirewallforcontrolplaneBase(internalNetCidr, bootstrap),
 		sgid,
 	)
 }
@@ -261,7 +260,7 @@ func firewallRuleWorkerPlane(
 	ec2.AuthorizeSecurityGroupEgressInput) {
 
 	return convertToProviderSpecific(
-		provider.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+		firewall.FirewallforworkerplaneBase(internalNetCidr, bootstrap),
 		sgid,
 	)
 }
@@ -271,7 +270,7 @@ func firewallRuleLoadBalancer(
 ) (ec2.AuthorizeSecurityGroupIngressInput,
 	ec2.AuthorizeSecurityGroupEgressInput) {
 	return convertToProviderSpecific(
-		provider.FirewallForLoadBalancer_BASE(),
+		firewall.FirewallforloadbalancerBase(),
 		sgid,
 	)
 }
@@ -282,7 +281,7 @@ func firewallRuleDataStore(
 ) (ec2.AuthorizeSecurityGroupIngressInput,
 	ec2.AuthorizeSecurityGroupEgressInput) {
 	return convertToProviderSpecific(
-		provider.FirewallForDataStore_BASE(internalNetCidr),
+		firewall.FirewallfordatastoreBase(internalNetCidr),
 		sgid,
 	)
 }

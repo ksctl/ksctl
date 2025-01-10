@@ -16,6 +16,7 @@ package k3s
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/addons"
 	"sync"
 	"testing"
 
@@ -359,7 +360,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
 
-	fakeClient.CNI("flannel")
+	fakeClient.CNI(addons.ClusterAddons{{Label: "k3s", Name: "flannel", IsCNI: true}})
 	for no := 0; no < noCP; no++ {
 		err := fakeClient.ConfigureControlPlane(no)
 		if err != nil {
@@ -380,14 +381,46 @@ func TestOverallScriptsCreation(t *testing.T) {
 }
 
 func TestCNI(t *testing.T) {
-	testCases := map[string]bool{
-		string(consts.CNIFlannel): false,
-		string(consts.CNICilium):  true,
+	testCases := []struct {
+		Addon           addons.ClusterAddons
+		Valid           bool
+		managedAddonCNI string
+	}{
+		{
+			addons.ClusterAddons{
+				{
+					Label: "ksctl",
+					Name:  "cilium",
+					IsCNI: true,
+				},
+				{
+					Label: "k3s",
+					Name:  "none",
+					IsCNI: true,
+				},
+			}, true, "none",
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label: "k3s",
+					Name:  "flannel",
+					IsCNI: true,
+				},
+			}, false, "flannel",
+		},
+		{
+			addons.ClusterAddons{}, false, "flannel",
+		},
+		{
+			nil, false, "flannel",
+		},
 	}
 
-	for k, v := range testCases {
-		got := fakeClient.CNI(k)
-		assert.Equal(t, got, v, "missmatch")
+	for _, v := range testCases {
+		got := fakeClient.CNI(v.Addon)
+		assert.Equal(t, got, v.Valid, "missmatch in return value")
+		assert.Equal(t, fakeClient.Cni, v.managedAddonCNI, "missmatch in managedAddonCNI")
 	}
 }
 

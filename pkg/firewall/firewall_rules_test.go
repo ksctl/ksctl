@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package firewall
 
 import (
 	"github.com/ksctl/ksctl/pkg/consts"
@@ -169,7 +169,7 @@ func TestFirewallRules(t *testing.T) {
 
 	t.Run("firewallRule for ControlPlane", func(t *testing.T) {
 		assert.DeepEqual(t,
-			FirewallForControlplane_BASE(
+			FirewallforcontrolplaneBase(
 				cidr, consts.K8sK3s),
 			[]FirewallRule{
 				expectedK8sApiServer,
@@ -181,7 +181,7 @@ func TestFirewallRules(t *testing.T) {
 				expectedFlannelVXLan,
 			})
 		assert.DeepEqual(t,
-			FirewallForControlplane_BASE(
+			FirewallforcontrolplaneBase(
 				cidr, consts.K8sKubeadm),
 			[]FirewallRule{
 				expectedK8sApiServer,
@@ -196,7 +196,7 @@ func TestFirewallRules(t *testing.T) {
 
 	t.Run("firewallRule for WorkerPlane", func(t *testing.T) {
 		assert.DeepEqual(t,
-			FirewallForWorkerplane_BASE(
+			FirewallforworkerplaneBase(
 				cidr, consts.K8sK3s),
 			[]FirewallRule{
 				expectedKubeletApi,
@@ -207,7 +207,7 @@ func TestFirewallRules(t *testing.T) {
 				expectedFlannelVXLan,
 			})
 		assert.DeepEqual(t,
-			FirewallForWorkerplane_BASE(
+			FirewallforworkerplaneBase(
 				cidr, consts.K8sKubeadm),
 			[]FirewallRule{
 				expectedKubeletApi,
@@ -221,7 +221,7 @@ func TestFirewallRules(t *testing.T) {
 	})
 	t.Run("firewallRule for LoadBalancer", func(t *testing.T) {
 		assert.DeepEqual(t,
-			FirewallForLoadBalancer_BASE(),
+			FirewallforloadbalancerBase(),
 			[]FirewallRule{
 				{
 					Name:        "kubernetes_api_server",
@@ -242,7 +242,7 @@ func TestFirewallRules(t *testing.T) {
 	})
 	t.Run("firewallRule for DataStore", func(t *testing.T) {
 		assert.DeepEqual(t,
-			FirewallForDataStore_BASE(cidr),
+			FirewallfordatastoreBase(cidr),
 			[]FirewallRule{
 				expectedEtcd,
 				expectedSSH,

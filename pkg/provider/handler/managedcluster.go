@@ -26,7 +26,7 @@ func (kc *Controller) CreateManagedCluster() (bool, error) {
 
 	managedClient = managedClient.VMType(kc.p.Metadata.ManagedNodeType)
 
-	externalCNI := managedClient.ManagedAddons(kc.p.Metadata.CNIPlugin.StackName)
+	externalCNI := managedClient.ManagedAddons(kc.p.Metadata.Addons)
 
 	managedClient = managedClient.ManagedK8sVersion(kc.p.Metadata.K8sVersion)
 

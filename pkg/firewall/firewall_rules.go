@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
-
-// TODO(@dipankardas011): there are some k3s and kubeadm specific firewall rules so need to think of this
+package firewall
 
 import (
 	"github.com/ksctl/ksctl/pkg/consts"
@@ -158,7 +156,7 @@ func firewallRuleEtcd(cidr string) FirewallRule {
 	}
 }
 
-func FirewallForControlplane_BASE(cidr string, distro consts.KsctlKubernetes) []FirewallRule {
+func FirewallforcontrolplaneBase(cidr string, distro consts.KsctlKubernetes) []FirewallRule {
 
 	rules := []FirewallRule{
 		firewallRuleKubeApiServer(cidr),
@@ -173,7 +171,7 @@ func FirewallForControlplane_BASE(cidr string, distro consts.KsctlKubernetes) []
 	return rules
 }
 
-func FirewallForWorkerplane_BASE(cidr string, distro consts.KsctlKubernetes) []FirewallRule {
+func FirewallforworkerplaneBase(cidr string, distro consts.KsctlKubernetes) []FirewallRule {
 
 	rules := []FirewallRule{
 		firewallRuleKubeletApi(cidr),
@@ -193,7 +191,7 @@ func FirewallForWorkerplane_BASE(cidr string, distro consts.KsctlKubernetes) []F
 	return rules
 }
 
-func FirewallForLoadBalancer_BASE() []FirewallRule {
+func FirewallforloadbalancerBase() []FirewallRule {
 	return []FirewallRule{
 		firewallRuleKubeApiServer("0.0.0.0/0"),
 		firewallRuleSSH(),
@@ -202,7 +200,7 @@ func FirewallForLoadBalancer_BASE() []FirewallRule {
 	}
 }
 
-func FirewallForDataStore_BASE(cidr string) []FirewallRule {
+func FirewallfordatastoreBase(cidr string) []FirewallRule {
 	return []FirewallRule{
 		firewallRuleEtcd(cidr),
 		firewallRuleSSH(),

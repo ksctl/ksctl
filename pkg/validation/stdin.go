@@ -81,20 +81,6 @@ func ValidateStorage(storage consts.KsctlStore) bool {
 	}
 }
 
-func ValidCNIPlugin(cni consts.KsctlValidCNIPlugin) bool {
-
-	if b := utf8.ValidString(string(cni)); !b {
-		return false
-	}
-
-	switch cni {
-	case consts.CNIAzure, consts.CNICilium, consts.CNIFlannel, consts.CNIKubenet, consts.CNIKind, "":
-		return true
-	default:
-		return false
-	}
-}
-
 func ValidateCloud(cloud consts.KsctlCloud) bool {
 	if b := utf8.ValidString(string(cloud)); !b {
 		return false

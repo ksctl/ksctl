@@ -19,7 +19,6 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/apps/stack"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/statefile"
 )
@@ -60,7 +59,7 @@ func FetchKsctlStack(ctx context.Context, log logger.Logger, stkID string) (func
 	return fn, nil
 }
 
-func DoesCNIExistOrNot(app controller.KsctlApp, state *statefile.StorageDocument) (isPresent bool) {
+func DoesCNIExistOrNot(app stack.KsctlApp, state *statefile.StorageDocument) (isPresent bool) {
 	installedApps := state.Addons
 	if app.StackName == installedApps.Cni.Name {
 		isPresent = true

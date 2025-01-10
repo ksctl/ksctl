@@ -92,15 +92,19 @@ func (p *K3s) K8sVersion(ver string) distributions.KubernetesDistribution {
 
 func (p *K3s) CNI(cni addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", cni)
-	addon := cni.GetAddons("k3s")
+	clusterAddons := cni.GetAddons("k3s")
 
-	p.Cni = "none" // Default: value
-	externalCNI = true
+	p.Cni = "flannel" // Default: value
+	externalCNI = false
 
-	for _, a := range addon {
+	for _, a := range clusterAddons {
 		if a.IsCNI {
+			if a.Name == "none" {
+				p.Cni = "none"
+				externalCNI = true
+			}
 			if a.Name == "flannel" {
-				p.Cni = a.Name
+				p.Cni = "flannel"
 				externalCNI = false
 			}
 		}

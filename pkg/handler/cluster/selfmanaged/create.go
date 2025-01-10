@@ -46,12 +46,6 @@ func (kc *Controller) Create() error {
 		return err
 	}
 
-	if !validation.ValidCNIPlugin(consts.KsctlValidCNIPlugin(kc.p.Metadata.CNIPlugin.StackName)) {
-		err := kc.l.NewError(kc.ctx, "invalid CNI plugin")
-		kc.l.Error("handled error", "catch", err)
-		return err
-	}
-
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,

@@ -16,6 +16,7 @@ package kubeadm
 
 import (
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/addons"
 	"testing"
 
 	"github.com/ksctl/ksctl/pkg/ssh"
@@ -445,7 +446,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 	fakeClient.K8sVersion("")
 	noCP := len(fakeStateFromCloud.IPv4ControlPlanes)
 	noWP := len(fakeStateFromCloud.IPv4WorkerPlanes)
-	fakeClient.CNI("flannel")
+	fakeClient.CNI(nil)
 	for no := 0; no < noCP; no++ {
 		err := fakeClient.ConfigureControlPlane(no)
 		if err != nil {
@@ -464,14 +465,36 @@ func TestOverallScriptsCreation(t *testing.T) {
 	}
 
 }
+
 func TestCNI(t *testing.T) {
-	testCases := map[string]bool{
-		"":                       true,
-		string(consts.CNICilium): true,
+	testCases := []struct {
+		Addon addons.ClusterAddons
+		Valid bool
+	}{
+		{
+			addons.ClusterAddons{
+				{
+					Label: "ksctl",
+					Name:  "cilium",
+					IsCNI: true,
+				},
+				{
+					Label: "kubeadm",
+					Name:  "none",
+					IsCNI: true,
+				},
+			}, true,
+		},
+		{
+			addons.ClusterAddons{}, true,
+		},
+		{
+			nil, true,
+		},
 	}
 
-	for k, v := range testCases {
-		got := fakeClient.CNI(k)
-		assert.Equal(t, got, v, "missmatch")
+	for _, v := range testCases {
+		got := fakeClient.CNI(v.Addon)
+		assert.Equal(t, got, v.Valid, "missmatch in return value")
 	}
 }

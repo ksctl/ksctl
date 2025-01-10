@@ -24,17 +24,15 @@ import (
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
-// By default it should be from the aks and if we are going to add the addons for external we need to make the addon as none explicitly instead of handling implicitly
-
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 
 	p.l.Debug(p.ctx, "Printing", "cni", s)
-	addons := s.GetAddons("aks")
+	clusterAddons := s.GetAddons("aks")
 
 	p.managedAddonCNI = "azure" // Default: value
 	externalCNI = false
 
-	for _, addon := range addons {
+	for _, addon := range clusterAddons {
 		if addon.IsCNI {
 			switch addon.Name {
 			case string(consts.CNINone):
@@ -45,8 +43,12 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 				externalCNI = false
 			}
 		} else {
-			v := map[string]*string{}
+			var v map[string]*string
+
 			if addon.Config != nil {
+
+				v = make(map[string]*string)
+
 				if err := json.Unmarshal([]byte(*addon.Config), &v); err != nil {
 					p.l.Warn(p.ctx, "failed to unmarshal addon config", "addonName", addon.Name, "config", *addon.Config, "error", err)
 				}

@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/utilities"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -70,21 +72,65 @@ func TestMain(m *testing.M) {
 }
 
 func TestCNIandApp(t *testing.T) {
-
-	testCases := map[string]bool{
-		string(consts.CNIKind):    false,
-		string(consts.CNIKubenet): true,
-		string(consts.CNICilium):  true,
+	testCases := []struct {
+		Addon           addons.ClusterAddons
+		Valid           bool
+		managedAddonCNI string
+		managedAddonApp map[string]map[string]*string
+	}{
+		{
+			addons.ClusterAddons{
+				{
+					Label: "ksctl",
+					Name:  "cilium",
+					IsCNI: true,
+				},
+				{
+					Label: "kind",
+					Name:  "none",
+					IsCNI: true,
+				},
+			}, true, "none", nil,
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label: "kind",
+					Name:  "kind",
+					IsCNI: true,
+				},
+			}, false, "kind", nil,
+		},
+		{
+			addons.ClusterAddons{}, false, "kind", nil,
+		},
+		{
+			nil, false, "kind", nil,
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label:  "kind",
+					Name:   "heheheh",
+					Config: utilities.Ptr(`{"key":"value"}`),
+				},
+			}, false, "kind", nil,
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label: "kind",
+					Name:  "heheheh",
+				},
+			}, false, "kind", nil,
+		},
 	}
 
-	for k, v := range testCases {
-		got := fakeClientVars.ManagedAddons(k)
-		assert.Equal(t, got, v, "missmatch")
-	}
-
-	got := fakeClientVars.Application([]string{"abcd"})
-	if !got {
-		t.Fatalf("application should be external")
+	for _, v := range testCases {
+		got := fakeClientVars.ManagedAddons(v.Addon)
+		assert.Equal(t, got, v.Valid, "missmatch in return value")
+		assert.Equal(t, fakeClientVars.managedAddonCNI, v.managedAddonCNI, "missmatch in managedAddonCNI")
+		assert.DeepEqual(t, fakeClientVars.managedAddonApp, v.managedAddonApp)
 	}
 }
 

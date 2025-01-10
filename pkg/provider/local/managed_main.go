@@ -26,12 +26,12 @@ import (
 
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", s)
-	addons := s.GetAddons("kind")
+	clusterAddons := s.GetAddons("kind")
 
 	p.managedAddonCNI = "kind" // Default: value
 	externalCNI = false
 
-	for _, addon := range addons {
+	for _, addon := range clusterAddons {
 		if addon.IsCNI {
 			switch addon.Name {
 			case string(consts.CNINone):

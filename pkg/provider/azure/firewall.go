@@ -17,7 +17,7 @@ package azure
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/provider"
+	"github.com/ksctl/ksctl/pkg/firewall"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
@@ -168,7 +168,7 @@ func (p *Provider) NewFirewall() error {
 	return nil
 }
 
-func (p *Provider) convertToProviderSpecific(_rules []provider.FirewallRule) []*armnetwork.SecurityRule {
+func (p *Provider) convertToProviderSpecific(_rules []firewall.FirewallRule) []*armnetwork.SecurityRule {
 	rules := []*armnetwork.SecurityRule{}
 	priority := int32(100)
 	for _, _r := range _rules {
@@ -242,24 +242,24 @@ func (p *Provider) convertToProviderSpecific(_rules []provider.FirewallRule) []*
 
 func (p *Provider) firewallRuleControlPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
 	return p.convertToProviderSpecific(
-		provider.FirewallForControlplane_BASE(internalNetCidr, bootstrap),
+		firewall.FirewallforcontrolplaneBase(internalNetCidr, bootstrap),
 	)
 }
 
 func (p *Provider) firewallRuleWorkerPlane(internalNetCidr string, bootstrap consts.KsctlKubernetes) (securityRules []*armnetwork.SecurityRule) {
 	return p.convertToProviderSpecific(
-		provider.FirewallForWorkerplane_BASE(internalNetCidr, bootstrap),
+		firewall.FirewallforworkerplaneBase(internalNetCidr, bootstrap),
 	)
 }
 
 func (p *Provider) firewallRuleLoadBalancer() (securityRules []*armnetwork.SecurityRule) {
 	return p.convertToProviderSpecific(
-		provider.FirewallForLoadBalancer_BASE(),
+		firewall.FirewallforloadbalancerBase(),
 	)
 }
 
 func (p *Provider) firewallRuleDataStore(internalNetCidr string) (securityRules []*armnetwork.SecurityRule) {
 	return p.convertToProviderSpecific(
-		provider.FirewallForDataStore_BASE(internalNetCidr),
+		firewall.FirewallfordatastoreBase(internalNetCidr),
 	)
 }

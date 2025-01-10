@@ -15,6 +15,8 @@
 package aws
 
 import (
+	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/firewall"
 	"strconv"
 	"testing"
 
@@ -22,7 +24,6 @@ import (
 	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/utilities"
 	"gotest.tools/v3/assert"
 )
@@ -247,21 +248,74 @@ func TestVisibility(t *testing.T) {
 }
 
 func TestCniAndApps(t *testing.T) {
-
-	testCases := map[string]bool{
-		string(consts.CNIFlannel): false,
-		string(consts.CNICilium):  false,
-		string(consts.CNINone):    true,
+	testCases := []struct {
+		Addon           addons.ClusterAddons
+		Valid           bool
+		managedAddonCNI string
+		managedAddonApp map[string]map[string]*string
+	}{
+		{
+			addons.ClusterAddons{
+				{
+					Label: "ksctl",
+					Name:  "cilium",
+					IsCNI: true,
+				},
+				{
+					Label: "eks",
+					Name:  "none",
+					IsCNI: true,
+				},
+			}, true, "none", nil,
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label: "eks",
+					Name:  "aws",
+					IsCNI: true,
+				},
+			}, false, "aws", nil,
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label: "eks",
+					Name:  "vpc-cni",
+					IsCNI: true,
+				},
+			}, false, "vpc-cni", nil,
+		},
+		{
+			addons.ClusterAddons{}, false, "aws", nil,
+		},
+		{
+			nil, false, "aws", nil,
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label:  "eks",
+					Name:   "heheheh",
+					Config: utilities.Ptr(`{"key":"value"}`),
+				},
+			}, false, "aws", map[string]map[string]*string{"heheheh": {"key": utilities.Ptr("value")}},
+		},
+		{
+			addons.ClusterAddons{
+				{
+					Label: "eks",
+					Name:  "heheheh",
+				},
+			}, false, "aws", map[string]map[string]*string{"heheheh": nil},
+		},
 	}
 
-	for k, v := range testCases {
-		got := fakeClientVars.ManagedAddons(k)
-		assert.Equal(t, got, v, "missmatch")
-	}
-
-	got := fakeClientVars.Application([]string{"abcd"})
-	if !got {
-		t.Fatalf("application should be external")
+	for _, v := range testCases {
+		got := fakeClientVars.ManagedAddons(v.Addon)
+		assert.Equal(t, got, v.Valid, "missmatch in return value")
+		assert.Equal(t, fakeClientVars.managedAddonCNI, v.managedAddonCNI, "missmatch in managedAddonCNI")
+		assert.DeepEqual(t, fakeClientVars.managedAddonApp, v.managedAddonApp)
 	}
 }
 
@@ -272,7 +326,7 @@ func TestDeleteVarCluster(t *testing.T) {
 }
 
 func TestFirewallRules(t *testing.T) {
-	_rules := []provider.FirewallRule{
+	_rules := []firewall.FirewallRule{
 		{
 			Description: "nice",
 			Name:        "hello",
