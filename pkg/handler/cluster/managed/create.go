@@ -45,6 +45,11 @@ func (kc *Controller) Create() error {
 		}
 	}()
 
+	if err := validation.IsValidKsctlClusterAddons(kc.ctx, kc.l, kc.p.Metadata.Addons); err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return err
+	}
+
 	if !validation.ValidCNIPlugin(consts.KsctlValidCNIPlugin(kc.p.Metadata.CNIPlugin.StackName)) {
 		err := kc.l.NewError(kc.ctx, "invalid CNI plugin")
 		kc.l.Error("handled error", "catch", err)

@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"github.com/ksctl/ksctl/pkg/logger"
@@ -171,6 +172,80 @@ func IsValidKsctlComponentVersion(ctx context.Context, log logger.Logger, ver st
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidKsctlComponentVersion,
 			log.NewError(ctx, "invalid version", "version", ver),
+		)
+	}
+	return nil
+}
+
+func IsValidKsctlClusterAddons(ctx context.Context, log logger.Logger, ca addons.ClusterAddons) error {
+
+	if ca == nil {
+		return nil
+	}
+
+	nonKsctlCniIsNone := false
+	KsctlCniIsPresent := false
+
+	addonLabels := ca.GetAddonLabels()
+	for _, label := range addonLabels {
+		switch label {
+		case addons.AzureAKS, addons.AwsEKS, addons.GcpGKE, addons.Kind:
+			_addons := ca.GetAddons(label)
+
+			_addonNames := make(map[string]int, len(_addons))
+			counterCni := 0
+
+			for _, addon := range _addons {
+				if len(addon.Name) == 0 || !utf8.ValidString(addon.Name) {
+					return ksctlErrors.WrapError(
+						ksctlErrors.ErrInvalidKsctlClusterAddons,
+						log.NewError(ctx, "invalid addon name", "addon", addon.Name, "label", label),
+					)
+				}
+
+				if addon.IsCNI {
+					if addon.Name == string(consts.CNINone) {
+						if label != addons.Ksctl {
+							nonKsctlCniIsNone = true
+						}
+					} else {
+						KsctlCniIsPresent = true
+					}
+					counterCni++
+				} else {
+					_addonNames[addon.Name]++
+				}
+			}
+
+			for k, v := range _addonNames {
+				if v > 1 {
+					return ksctlErrors.WrapError(
+						ksctlErrors.ErrInvalidKsctlClusterAddons,
+						log.NewError(ctx, "duplicate addon name", "addon", k, "label", label),
+					)
+				}
+			}
+
+			if counterCni > 1 {
+				return ksctlErrors.WrapError(
+					ksctlErrors.ErrInvalidKsctlClusterAddons,
+					log.NewError(ctx, "more than one cni plugin", "label", label),
+				)
+			}
+
+			return nil
+		default:
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidKsctlClusterAddons,
+				log.NewError(ctx, "invalid cluster addon", "addon", label),
+			)
+		}
+	}
+
+	if !nonKsctlCniIsNone && KsctlCniIsPresent {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidKsctlClusterAddons,
+			log.NewError(ctx, "CONFLICT: provider specific cni is not `none` at the same time ksctl cni is there"),
 		)
 	}
 	return nil

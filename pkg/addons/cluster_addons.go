@@ -26,6 +26,14 @@ type ClusterAddon struct {
 
 type ClusterAddons []ClusterAddon
 
+const (
+	AzureAKS = "aks"
+	Kind     = "kind"
+	AwsEKS   = "eks"
+	Ksctl    = "ksctl"
+	GcpGKE   = "gke"
+)
+
 func (ca ClusterAddons) GetAddons(label string) []ClusterAddon {
 	var caa []ClusterAddon
 	if len(ca) == 0 {
@@ -37,4 +45,15 @@ func (ca ClusterAddons) GetAddons(label string) []ClusterAddon {
 		}
 	}
 	return caa
+}
+
+func (ca ClusterAddons) GetAddonLabels() []string {
+	var labels []string
+	if len(ca) == 0 {
+		return nil
+	}
+	for _, c := range ca {
+		labels = append(labels, c.Label)
+	}
+	return labels
 }

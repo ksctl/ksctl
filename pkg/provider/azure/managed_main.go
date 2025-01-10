@@ -20,24 +20,28 @@ import (
 
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
+
+// By default it should be from the aks and if we are going to add the addons for external we need to make the addon as none explicitly instead of handling implicitly
 
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 
 	p.l.Debug(p.ctx, "Printing", "cni", s)
 	addons := s.GetAddons("aks")
 
-	p.managedAddonCNI = "none" // Default: value
-	externalCNI = true
+	p.managedAddonCNI = "azure" // Default: value
+	externalCNI = false
 
 	for _, addon := range addons {
 		if addon.IsCNI {
-			if addon.Name == "azure" || addon.Name == "kubenet" {
+			switch addon.Name {
+			case string(consts.CNINone):
+				p.managedAddonCNI = "none"
+				externalCNI = true
+			case "azure", "kubenet":
 				p.managedAddonCNI = addon.Name
-				externalCNI = false
-			} else if addon.Name == "" {
-				p.managedAddonCNI = "azure"
 				externalCNI = false
 			}
 		} else {

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/consts"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
@@ -56,11 +57,20 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", s)
 	addons := s.GetAddons("eks")
 
-	p.managedAddonCNI = "none" // Default: value
-	externalCNI = true
+	p.managedAddonCNI = "aws" // Default: value
+	externalCNI = false
 
 	for _, addon := range addons {
-		if !addon.IsCNI {
+		if addon.IsCNI {
+			switch addon.Name {
+			case string(consts.CNINone):
+				p.managedAddonCNI = "none"
+				externalCNI = true
+			case "aws", "vpc-cni": // NOTE: these are yet to be used in the managed cluster provisoning. Refer: https://docs.aws.amazon.com/eks/latest/best-practices/vpc-cni.html
+				p.managedAddonCNI = addon.Name
+				externalCNI = false
+			}
+		} else {
 			v := map[string]*string{}
 			if addon.Config != nil {
 				if err := json.Unmarshal([]byte(*addon.Config), &v); err != nil {

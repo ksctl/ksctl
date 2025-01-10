@@ -42,6 +42,7 @@ const (
 	ErrInvalidNoOfDatastore
 	ErrInvalidNoOfWorkerplane
 	ErrInvalidKsctlComponentVersion
+	ErrInvalidKsctlClusterAddons
 
 	ErrFailedCloudAccountAuth
 	ErrInvalidCloudRegion
@@ -134,6 +135,8 @@ func (e KsctlError) errorCodeToString() string {
 		return "FailedGenerateCertificatesErr"
 	case ErrFailedConnectingKubernetesCluster:
 		return "FailedConnectingKubernetesClusterErr"
+	case ErrInvalidKsctlClusterAddons:
+		return "InvalidKsctlClusterAddonsErr"
 	default:
 		return "UnknownError"
 	}
@@ -283,4 +286,8 @@ func IsFailedGenerateCertificates(err error) bool {
 
 func IsFailedConnectingKubernetesCluster(err error) bool {
 	return codeForError(err) == ErrFailedConnectingKubernetesCluster
+}
+
+func IsInvalidKsctlClusterAddons(err error) bool {
+	return codeForError(err) == ErrInvalidKsctlClusterAddons
 }

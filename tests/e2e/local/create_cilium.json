@@ -5,7 +5,16 @@
 	"cloud_provider": "local",
 	"storage_type": "store-local",
 	"desired_no_of_managed_nodes": 2,
-	"cni_plugin": {
-		"stack_name": "cilium"
-	}
+	"addons": [
+		{
+			"label": "kind",
+			"name": "none",
+			"cni": true
+		},
+		{
+			"label": "ksctl",
+			"name": "cilium",
+			"cni": true
+		}
+	]
 }
