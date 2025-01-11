@@ -1,0 +1,48 @@
+name: PR Test
+
+on:
+  push:
+    paths:
+    - 'pkg/**'
+    - 'cmd/**'
+    - 'tests/**'
+    - 'go.mod'
+    - 'go.sum'
+    branches: [ main ]
+  pull_request:
+    types: [ labeled, opened, synchronize, reopened ]
+    paths:
+    - 'pkg/**'
+    - 'cmd/**'
+    - 'tests/**'
+    - 'go.mod'
+    - 'go.sum'
+
+jobs:
+  unit-test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      ) &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') != true ||
+        github.event.label.name != 'pr/lgtm'
+      )
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: get the list of changed files
+        id: get_files
+        run: echo "::set-output name=files::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})"
+      - name: store the list of changed files
+        id: store_files
+        run: echo "${{ steps.get_files.outputs.files }}" > changed_files.txt

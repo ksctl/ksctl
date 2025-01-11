@@ -54,21 +54,6 @@ docker-buildx-stateimport: ## docker build stateimport
 		$(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg="GO_VERSION=1.22" --tag ${KSCTL_STATE_IMPORTER_IMG} -f build/stateimport/Dockerfile .
 		- $(CONTAINER_TOOL) buildx rm project-v3-builder
 
-.PHONY: docker-build-agent
-docker-build-agent: ## docker build agent
-	docker build \
-		--file build/agent/Dockerfile \
-		--build-arg="GO_VERSION=1.22" \
-		--platform="linux/amd64" \
-		--tag ${KSCTL_AGENT_IMG} .
-
-.PHONY: docker-build-state-import
-docker-build-state-import: ## docker build state importer
-	docker build \
-		--file build/stateimport/Dockerfile \
-		--build-arg="GO_VERSION=1.22" \
-		--platform="linux/amd64" \
-		--tag ${KSCTL_STATE_IMPORTER_IMG} .
 
 ##@ Unit Tests (Core)
 .PHONY: test_all
@@ -82,62 +67,3 @@ unit_test: ## Run unit tests
 .PHONY: integeration_test
 integeration_test: ## Run integration tests
 	@go test -timeout 20m -run 'Integration' -v tests/{runner_test.go,unit_test.go,integration_test.go}
-
-##@ Mock Tests (Core)
-.PHONY: mock_all
-mock_all: golang-test ## All Mock tests
-	@echo "Mock Test (integration)"
-	cd test/ && \
-		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws,testing_azure,testing_local -bench=. -benchtime=1x -cover -v
-
-.PHONY: mock_azure_managed
-mock_azure_managed: golang-test ## Azure managed mock test
-	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_azure -bench=BenchmarkAzureTestingManaged -benchtime=1x -cover -v
-
-.PHONY: mock_azure_ha
-mock_azure_ha: golang-test ## Azure HA mock test
-	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_azure -bench=BenchmarkAzureTestingHA -benchtime=1x -cover -v
-
-.PHONY: mock_aws_ha
-mock_aws_ha: golang-test ## Aws HA mock test
-	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws -bench=BenchmarkAwsTestingHA -benchtime=1x -cover -v
-
-.PHONY: mock_aws_managed
-mock_aws_managed: golang-test ## Aws managed mock test
-	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_aws -bench=BenchmarkAwsTestingManaged -benchtime=1x -cover -v
-
-.PHONY: mock_local_managed
-mock_local_managed: golang-test ## Local managed mock test
-	cd test/ && \
- 		GOTEST_PALETTE="red,yellow,green" $(GO_TEST_COLOR) -tags testing_local -bench=BenchmarkLocalTestingManaged -benchtime=1x -cover -v
-
-
-##@ Complete Testing (Core)
-.PHONY: test-core
-test-core: unit_test_all mock_all ## do both unit and integration test
-	@echo "Done All tests"
-
-
-
-.PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter & yamllint
-	@echo -e "\n\033[36mRunning for Ksctl (Core)\033[0m\n" && \
-		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
-	@echo -e "\n\033[36mRunning for Ksctl (Agent)\033[0m" && \
-		cd ksctl-components/agent && \
-		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
-	@echo -e "\n\033[36mRunning for Ksctl (StateImport)\033[0m" && \
-		cd ksctl-components/stateimport && \
-		$(GOLANGCI_LINT) run --timeout 10m && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
-	@echo -e "\n\033[36mRunning for Ksctl Controllers (Application)\033[0m" && \
-		make lint-controller CONTROLLER=application && echo -e "\n=========\n\033[91m✔ PASSED\033[0m\n=========\n" || echo -e "\n=========\n\033[91m✖ FAILED\033[0m\n=========\n"
-
-.PHONY: test
-test: lint
-	make test-core
-	@echo -e "\n\033[36mTesting in ksctl-components\033[0m\n"
-	make test-controller CONTROLLER=application
