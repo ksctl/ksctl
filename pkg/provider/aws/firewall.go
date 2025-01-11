@@ -15,8 +15,9 @@
 package aws
 
 import (
-	"github.com/ksctl/ksctl/pkg/firewall"
 	"strconv"
+
+	"github.com/ksctl/ksctl/pkg/firewall"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
@@ -212,13 +213,13 @@ func convertToProviderSpecific(_rules []firewall.FirewallRule, SgId *string) (ec
 		_endPort, _ := strconv.Atoi(_r.EndPort)
 
 		v := types.IpPermission{
-			FromPort:   utilities.Ptr[int32](int32(_startPort)),
-			ToPort:     utilities.Ptr[int32](int32(_endPort)),
-			IpProtocol: utilities.Ptr[string](protocol),
+			FromPort:   utilities.Ptr(int32(_startPort)),
+			ToPort:     utilities.Ptr(int32(_endPort)),
+			IpProtocol: utilities.Ptr(protocol),
 			IpRanges: []types.IpRange{
 				{
-					CidrIp:      utilities.Ptr[string](_r.Cidr),
-					Description: utilities.Ptr[string](_r.Description),
+					CidrIp:      utilities.Ptr(_r.Cidr),
+					Description: utilities.Ptr(_r.Description),
 				},
 			},
 		}

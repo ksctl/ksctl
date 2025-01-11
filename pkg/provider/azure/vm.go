@@ -243,7 +243,7 @@ func (p *Provider) NewVM(index int) error {
 			},
 		},
 	}
-	p.l.Debug(p.ctx, "Printing", "VMConfig", parameters)
+	p.l.Debug(p.ctx, "Creating VM with name", name, "and VM size", vmtype)
 
 	pollerResponse, err := p.client.BeginCreateVM(name, parameters, nil)
 	if err != nil {
