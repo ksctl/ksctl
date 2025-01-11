@@ -16,6 +16,7 @@ package bootstrap
 
 import (
 	"fmt"
+
 	"github.com/ksctl/ksctl/pkg/ssh"
 
 	"github.com/ksctl/ksctl/pkg/consts"
@@ -49,7 +50,7 @@ func (p *PreBootstrap) ConfigureLoadbalancer() error {
 		return err
 	}
 
-	p.state.K8sBootstrap.B.HAProxyVersion = haProxyVer
+	p.state.Versions.HAProxy = utilities.Ptr(haProxyVer)
 	if err := p.store.Write(p.state); err != nil {
 		return err
 	}

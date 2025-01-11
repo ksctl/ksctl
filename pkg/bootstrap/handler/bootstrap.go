@@ -22,6 +22,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/apps/stack"
 	"github.com/ksctl/ksctl/pkg/provider"
+	"github.com/ksctl/ksctl/pkg/utilities"
 
 	"github.com/ksctl/ksctl/pkg/bootstrap"
 	"github.com/ksctl/ksctl/pkg/config"
@@ -353,7 +354,11 @@ func (kc *Controller) InvokeDestroyProcedure() error {
 	return nil
 }
 
-func (kc *Controller) EnableKsctlAddons(kubeconfig *string) error {
+func (kc *Controller) EnableKsctlAddons(
+	kubeconfig *string,
+	namespace string,
+	clusterConfigMapName string,
+) error {
 	k, err := NewClusterClient(
 		kc.ctx,
 		kc.l,
@@ -367,11 +372,11 @@ func (kc *Controller) EnableKsctlAddons(kubeconfig *string) error {
 	if err := k.k8sClient.NamespaceCreate(
 		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "ksctl-system",
+				Name: namespace,
 			},
 		},
 	); err != nil {
-		kc.l.Error("failed to create namespace", "namespace", "ksctl-system", "error", err)
+		kc.l.Error("failed to create namespace", "namespace", namespace, "error", err)
 		return err
 	}
 
@@ -380,10 +385,59 @@ func (kc *Controller) EnableKsctlAddons(kubeconfig *string) error {
 	//   - configmap apply to ksctl-system namespace
 	// 2. install the https://github.com/ksctl/cluster-management-operator
 
+	serializeVersion := func(versions map[string]*string) []byte {
+		versionsBytes, err := json.Marshal(versions)
+		if err != nil {
+			kc.l.Error("failed to serialize versions", "error", err)
+			return nil
+		}
+		return versionsBytes
+	}
+
+	ksctlConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterConfigMapName,
+			Namespace: namespace,
+		},
+		Data: map[string]string{
+			"cluster_type":     kc.s.ClusterType,
+			"cluster_name":     kc.s.ClusterName,
+			"cluster_region":   kc.s.Region,
+			"cloud":            string(kc.s.InfraProvider),
+			"k8s_distribution": string(kc.s.BootstrapProvider),
+		},
+		BinaryData: map[string][]byte{
+			"versions": func() []byte {
+				versions := map[string]*string{
+					"k3s":     kc.s.Versions.K3s,
+					"kubeadm": kc.s.Versions.Kubeadm,
+					"aks":     kc.s.Versions.Aks,
+					"eks":     kc.s.Versions.Eks,
+					"haproxy": kc.s.Versions.HAProxy,
+					"etcd":    kc.s.Versions.Etcd,
+				}
+
+				return serializeVersion(versions)
+			}(),
+		},
+		Immutable: utilities.Ptr(true),
+	}
+
+	if err := k.k8sClient.ConfigMapApply(ksctlConfigMap); err != nil {
+		kc.l.Error("failed to create configmap", "configmap", clusterConfigMapName, "error", err)
+		return err
+	}
+
+	kc.l.Warn(kc.ctx, "WIP: we need to install the cluster-management-operator")
+
 	return nil
 }
 
-func (kc *Controller) DisableKsctlAddons(kubeconfig *string) error {
+func (kc *Controller) DisableKsctlAddons(
+	kubeconfig *string,
+	namespace string,
+	clusterConfigMapName string,
+) error {
 
 	k, err := NewClusterClient(
 		kc.ctx,
@@ -395,15 +449,27 @@ func (kc *Controller) DisableKsctlAddons(kubeconfig *string) error {
 		return err
 	}
 
+	if err := k.k8sClient.ConfigMapDelete(
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterConfigMapName,
+				Namespace: namespace,
+			},
+		},
+	); err != nil {
+		kc.l.Error("failed to delete configmap", "configmap", clusterConfigMapName, "error", err)
+		// return err // ignore this error
+	}
+
 	if err := k.k8sClient.NamespaceDelete(
 		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "ksctl-system",
+				Name: namespace,
 			},
 		},
 		true,
 	); err != nil {
-		kc.l.Error("failed to delete namespace", "namespace", "ksctl-system", "error", err)
+		kc.l.Error("failed to delete namespace", "namespace", namespace, "error", err)
 		return err
 	}
 

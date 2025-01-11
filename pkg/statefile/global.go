@@ -37,6 +37,7 @@ type StorageDocument struct {
 
 	InfraProvider     consts.KsctlCloud      `json:"cloud_provider" bson:"cloud_provider"`
 	BootstrapProvider consts.KsctlKubernetes `json:"bootstrap_provider" bson:"bootstrap_provider"`
+	Versions          ComponentVersions      `json:"versions" bson:"versions"`
 
 	CloudInfra               *InfrastructureState      `json:"cloud_infrastructure_state" bson:"cloud_infrastructure_state,omitempty"`
 	K8sBootstrap             *KubernetesBootstrapState `json:"kubernetes_bootstrap_state" bson:"kubernetes_bootstrap_state,omitempty"`
@@ -58,6 +59,16 @@ type KubernetesBootstrapState struct {
 	B       BaseK8sBootstrap           `json:"b" bson:"b"`
 	K3s     *StateConfigurationK3s     `json:"k3s,omitempty" bson:"k3s,omitempty"`
 	Kubeadm *StateConfigurationKubeadm `json:"kubeadm,omitempty" bson:"kubeadm,omitempty"`
+}
+
+type ComponentVersions struct {
+	K3s     *string `json:"k3s,omitempty" bson:"k3s,omitempty"`
+	Kubeadm *string `json:"kubeadm,omitempty" bson:"kubeadm,omitempty"`
+	Aks     *string `json:"aks,omitempty" bson:"aks,omitempty"`
+	Eks     *string `json:"eks,omitempty" bson:"eks,omitempty"`
+	Kind    *string `json:"kind,omitempty" bson:"kind,omitempty"`
+	Etcd    *string `json:"etcd,omitempty" bson:"etcd,omitempty"`
+	HAProxy *string `json:"haproxy,omitempty" bson:"haproxy,omitempty"`
 }
 
 type SSHKeyPairState struct {

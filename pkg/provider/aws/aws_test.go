@@ -15,10 +15,11 @@
 package aws
 
 import (
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/firewall"
 	"strconv"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/firewall"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"

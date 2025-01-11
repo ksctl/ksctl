@@ -16,10 +16,11 @@ package kubeadm
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/ssh"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/ssh"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 )
@@ -27,7 +28,7 @@ import (
 func (p *Kubeadm) configurecp1(sshExecutor ssh.RemoteConnection) error {
 
 	installKubeadmTools := scriptTransferEtcdCerts(
-		scriptInstallKubeadmAndOtherTools(p.state.K8sBootstrap.Kubeadm.KubeadmVersion),
+		scriptInstallKubeadmAndOtherTools(*p.state.Versions.Kubeadm),
 		p.state.K8sBootstrap.B.CACert,
 		p.state.K8sBootstrap.B.EtcdCert,
 		p.state.K8sBootstrap.B.EtcdKey)
@@ -68,7 +69,7 @@ func (p *Kubeadm) configurecp1(sshExecutor ssh.RemoteConnection) error {
 	p.l.Print(p.ctx, "Configuring K8s cluster")
 
 	configureControlPlane0 := scriptAddKubeadmControlplane0(
-		p.state.K8sBootstrap.Kubeadm.KubeadmVersion,
+		*p.state.Versions.Kubeadm,
 		p.state.K8sBootstrap.Kubeadm.BootstrapToken,
 		p.state.K8sBootstrap.Kubeadm.CertificateKey,
 		p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
@@ -117,7 +118,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int) error {
 	} else {
 
 		installKubeadmTools := scriptTransferEtcdCerts(
-			scriptInstallKubeadmAndOtherTools(p.state.K8sBootstrap.Kubeadm.KubeadmVersion),
+			scriptInstallKubeadmAndOtherTools(*p.state.Versions.Kubeadm),
 			p.state.K8sBootstrap.B.CACert,
 			p.state.K8sBootstrap.B.EtcdCert,
 			p.state.K8sBootstrap.B.EtcdKey)

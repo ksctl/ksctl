@@ -20,6 +20,7 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/utilities"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
@@ -229,8 +230,8 @@ func (p *Provider) NewManagedCluster(noOfNode int) error {
 			},
 			Version: aws.String(p.K8sVersion),
 		}
-		p.state.CloudInfra.Aws.B.KubernetesVer = p.K8sVersion
-		p.state.BootstrapProvider = "managed"
+		p.state.Versions.Eks = utilities.Ptr(p.K8sVersion)
+		p.state.BootstrapProvider = consts.K8sEks
 
 		p.l.Print(p.ctx, "creating the EKS Controlplane")
 		clusterResp, err := p.client.BeginCreateEKS(p.ctx, &parameter)

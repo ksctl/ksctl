@@ -22,6 +22,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
@@ -104,10 +105,10 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 		return err
 	}
 
-	p.state.CloudInfra.Local.B.KubernetesVer = p.K8sVersion
+	p.state.Versions.Kind = utilities.Ptr(p.K8sVersion)
 	p.state.CloudInfra.Local.Nodes = noOfNodes
 
-	p.state.BootstrapProvider = "kind"
+	p.state.BootstrapProvider = consts.K8sKind
 	p.state.CloudInfra.Local.ManagedNodeSize = vmType
 
 	Wait := 50 * time.Second
@@ -132,7 +133,7 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 		}
 		return _path
 	}
-	Image := "kindest/node:v" + p.state.CloudInfra.Local.B.KubernetesVer
+	Image := "kindest/node:v" + p.K8sVersion
 
 	if err := p.client.Create(p.ClusterName, withConfig, Image, Wait, ConfigHandler); err != nil {
 		return ksctlErrors.WrapError(

@@ -85,7 +85,7 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Aws.B.IsCompleted, true, "cluster should not be completed")
 
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Aws.NoManagedNodes, 5)
-		assert.Equal(t, fakeClientManaged.state.CloudInfra.Aws.B.KubernetesVer, fakeClientManaged.K8sVersion)
+		assert.Equal(t, *fakeClientManaged.state.Versions.Eks, fakeClientManaged.K8sVersion)
 		assert.Assert(t, len(fakeClientManaged.state.CloudInfra.Aws.ManagedClusterName) > 0, "Managed cluster Name not saved")
 
 		_, err := storeManaged.Read()
@@ -110,8 +110,8 @@ func TestManagedCluster(t *testing.T) {
 				Region:     fakeClientManaged.Region,
 				NoMgt:      fakeClientManaged.state.CloudInfra.Aws.NoManagedNodes,
 				Mgt:        logger.VMData{VMSize: "fake"},
-				K8sDistro:  "managed",
-				K8sVersion: fakeClientManaged.state.CloudInfra.Aws.B.KubernetesVer,
+				K8sDistro:  consts.K8sEks,
+				K8sVersion: *fakeClientManaged.state.Versions.Eks,
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos()

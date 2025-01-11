@@ -123,7 +123,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 		t.Fatalf("Configure Datastore unable to operate %v", err)
 	}
 
-	assert.Equal(t, fakeClient.state.K8sBootstrap.B.HAProxyVersion, "3.0", "should be equal")
+	assert.Equal(t, *fakeClient.state.Versions.HAProxy, "3.0", "should be equal")
 
 	for no := 0; no < noDS; no++ {
 		err := fakeClient.ConfigureDataStore(no)
@@ -132,5 +132,5 @@ func TestOverallScriptsCreation(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, fakeClient.state.K8sBootstrap.B.EtcdVersion, "v3.5.15", "should be equal")
+	assert.Equal(t, *fakeClient.state.Versions.Etcd, "v3.5.15", "should be equal")
 }

@@ -16,10 +16,12 @@ package bootstrap
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/poller"
-	"github.com/ksctl/ksctl/pkg/ssh"
 	"strconv"
 	"strings"
+
+	"github.com/ksctl/ksctl/pkg/poller"
+	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/utilities"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 )
@@ -60,7 +62,7 @@ func (p *PreBootstrap) ConfigureDataStore(no int) error {
 		return err
 	}
 
-	p.state.K8sBootstrap.B.EtcdVersion = etcdVer
+	p.state.Versions.Etcd = utilities.Ptr(etcdVer)
 	if err := p.store.Write(p.state); err != nil {
 		return err
 	}

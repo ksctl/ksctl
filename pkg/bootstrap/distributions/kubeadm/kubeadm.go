@@ -26,6 +26,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/ssh"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/pkg/utilities"
 
 	"github.com/ksctl/ksctl/pkg/poller"
 
@@ -57,7 +58,7 @@ func (p *Kubeadm) Setup(operation consts.KsctlOperation) error {
 
 func (p *Kubeadm) K8sVersion(ver string) distributions.KubernetesDistribution {
 	if v, err := p.isValidKubeadmVersion(ver); err == nil {
-		p.state.K8sBootstrap.Kubeadm.KubeadmVersion = v
+		p.state.Versions.Kubeadm = utilities.Ptr(v)
 		p.l.Debug(p.ctx, "Printing", "kubeadm.KubeadmVersion", v)
 		return p
 	} else {

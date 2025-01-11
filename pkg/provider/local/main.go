@@ -96,7 +96,6 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 		p.state.InfraProvider = consts.CloudLocal
 		p.state.ClusterType = string(consts.ClusterTypeMang)
 
-		p.state.CloudInfra.Local.B.KubernetesVer = p.K8sVersion
 	case consts.OperationDelete, consts.OperationGet:
 		err := p.loadStateHelper()
 		if err != nil {
@@ -143,7 +142,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				},
 
 				K8sDistro:  v.BootstrapProvider,
-				K8sVersion: v.CloudInfra.Local.B.KubernetesVer,
+				K8sVersion: *v.Versions.Kind,
 			})
 			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 

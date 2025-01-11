@@ -45,7 +45,7 @@ func (kc *Controller) Disable() error {
 		return err
 	}
 
-	if errAddon := kbc.DisableKsctlAddons(kubeconfig); errAddon != nil {
+	if errAddon := kbc.DisableKsctlAddons(kubeconfig, "ksctl-system", "cluster-config"); errAddon != nil {
 		kc.l.Error("handled error", "catch", errAddon)
 		return errAddon
 	}

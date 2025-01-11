@@ -18,14 +18,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/utilities"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/pkg/utilities"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
@@ -197,7 +198,7 @@ func TestManagedCluster(t *testing.T) {
 
 		assert.Equal(t, fakeClientManaged.NewManagedCluster(2), nil, "managed cluster should be created")
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Local.Nodes, 2, "missmatch of no of nodes")
-		assert.Equal(t, fakeClientManaged.state.CloudInfra.Local.B.KubernetesVer, fakeClientManaged.K8sVersion, "k8s version does not match")
+		assert.Equal(t, *fakeClientManaged.state.Versions.Kind, fakeClientManaged.K8sVersion, "k8s version does not match")
 	})
 
 	t.Run("check getState()", func(t *testing.T) {
@@ -218,8 +219,8 @@ func TestManagedCluster(t *testing.T) {
 				NoMgt:         fakeClientManaged.state.CloudInfra.Local.Nodes,
 				Mgt:           logger.VMData{VMSize: fakeClientManaged.state.CloudInfra.Local.ManagedNodeSize},
 
-				K8sDistro:  "kind",
-				K8sVersion: fakeClientManaged.state.CloudInfra.Local.B.KubernetesVer,
+				K8sDistro:  consts.K8sKind,
+				K8sVersion: *fakeClientManaged.state.Versions.Kind,
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos()

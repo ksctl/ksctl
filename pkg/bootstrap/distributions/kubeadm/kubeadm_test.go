@@ -16,8 +16,9 @@ package kubeadm
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/addons"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/addons"
 
 	"github.com/ksctl/ksctl/pkg/ssh"
 	testHelper "github.com/ksctl/ksctl/pkg/ssh"
@@ -455,7 +456,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 	}
 
 	checkCurrentStateFile(t)
-	assert.Equal(t, fakeClient.state.K8sBootstrap.Kubeadm.KubeadmVersion, "v1.31", "should be equal")
+	assert.Equal(t, *fakeClient.state.Versions.Kubeadm, "v1.31", "should be equal")
 
 	for no := 0; no < noWP; no++ {
 		err := fakeClient.JoinWorkerplane(no)

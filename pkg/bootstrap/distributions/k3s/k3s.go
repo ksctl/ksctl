@@ -24,6 +24,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/ssh"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/pkg/utilities"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 )
@@ -81,7 +82,7 @@ sudo cat /etc/rancher/k3s/k3s.yaml
 
 func (p *K3s) K8sVersion(ver string) distributions.KubernetesDistribution {
 	if v, err := p.isValidK3sVersion(ver); err == nil {
-		p.state.K8sBootstrap.K3s.K3sVersion = v
+		p.state.Versions.K3s = utilities.Ptr(v)
 		p.l.Debug(p.ctx, "Printing", "k3s.K3sVer", v)
 		return p
 	} else {

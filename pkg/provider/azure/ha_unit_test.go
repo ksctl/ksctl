@@ -24,6 +24,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/logger"
 	"github.com/ksctl/ksctl/pkg/statefile"
 	localstate "github.com/ksctl/ksctl/pkg/storage/host"
+	"github.com/ksctl/ksctl/pkg/utilities"
 	"gotest.tools/v3/assert"
 )
 
@@ -556,9 +557,9 @@ func TestHACluster(t *testing.T) {
 				K3s: &statefile.StateConfigurationK3s{},
 			}
 
-			fakeClientHA.state.K8sBootstrap.B.EtcdVersion = "fake"
-			fakeClientHA.state.K8sBootstrap.B.HAProxyVersion = "3.0"
-			fakeClientHA.state.K8sBootstrap.K3s.K3sVersion = "fake"
+			fakeClientHA.state.Versions.Etcd = utilities.Ptr("fake")
+			fakeClientHA.state.Versions.HAProxy = utilities.Ptr("3.0")
+			fakeClientHA.state.Versions.K3s = utilities.Ptr("fake")
 			fakeClientHA.state.BootstrapProvider = consts.K8sK3s
 			if err := storeHA.Write(fakeClientHA.state); err != nil {
 				t.Fatalf("Unable to write the state, Reason: %v", err)

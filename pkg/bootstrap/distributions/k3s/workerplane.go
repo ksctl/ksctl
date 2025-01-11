@@ -33,7 +33,7 @@ func (p *K3s) JoinWorkerplane(no int) error {
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(
-			p.state.K8sBootstrap.K3s.K3sVersion,
+			*p.state.Versions.K3s,
 			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 			p.state.K8sBootstrap.K3s.K3sToken,
 		)).

@@ -164,7 +164,6 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Azure: &statefile.StateConfigurationAzure{},
 			}
-			p.state.CloudInfra.Azure.B.KubernetesVer = p.K8sVersion
 		}
 
 	case consts.OperationDelete:
@@ -587,24 +586,24 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				K8sDistro: v.BootstrapProvider,
 				HAProxyVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
-						return v.K8sBootstrap.B.HAProxyVersion
+						return *v.Versions.HAProxy
 					}
 					return ""
 				}(),
 				EtcdVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
-						return v.K8sBootstrap.B.EtcdVersion
+						return *v.Versions.Etcd
 					}
 					return ""
 				}(),
 				K8sVersion: func() string {
 					switch v.BootstrapProvider {
 					case consts.K8sK3s:
-						return v.K8sBootstrap.K3s.K3sVersion
+						return *v.Versions.K3s
 					case consts.K8sKubeadm:
-						return v.K8sBootstrap.Kubeadm.KubeadmVersion
+						return *v.Versions.Kubeadm
 					default:
-						return v.CloudInfra.Azure.B.KubernetesVer
+						return *v.Versions.Aks
 					}
 				}(),
 				Apps: func() (_a []string) {

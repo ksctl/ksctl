@@ -17,8 +17,6 @@ package statefile
 import "time"
 
 type StateConfigurationKubeadm struct {
-	KubeadmVersion string `json:"kubeadm_version" bson:"kubeadm_version"`
-
 	CertificateKey string `json:"certificate_key" bson:"certificate_key"`
 
 	BootstrapToken string `json:"bootstrap_token" bson:"bootstrap_token"`

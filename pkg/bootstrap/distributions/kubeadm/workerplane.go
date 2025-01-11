@@ -16,10 +16,11 @@ package kubeadm
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/ssh"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ksctl/ksctl/pkg/ssh"
 
 	"github.com/ksctl/ksctl/pkg/consts"
 )
@@ -70,7 +71,7 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int) error {
 	}
 
 	script := scriptJoinWorkerplane(
-		scriptInstallKubeadmAndOtherTools(p.state.K8sBootstrap.Kubeadm.KubeadmVersion),
+		scriptInstallKubeadmAndOtherTools(*p.state.Versions.Kubeadm),
 		p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		p.state.K8sBootstrap.Kubeadm.BootstrapToken,
 		p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,

@@ -16,9 +16,10 @@ package k3s
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/addons"
 	"sync"
 	"testing"
+
+	"github.com/ksctl/ksctl/pkg/addons"
 
 	"github.com/ksctl/ksctl/pkg/certs"
 	"github.com/ksctl/ksctl/pkg/ssh"
@@ -369,7 +370,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 	}
 	checkCurrentStateFile(t)
 
-	assert.Equal(t, fakeClient.state.K8sBootstrap.K3s.K3sVersion, "v1.30.3+k3s1", "should be equal")
+	assert.Equal(t, *fakeClient.state.Versions.K3s, "v1.30.3+k3s1", "should be equal")
 
 	for no := 0; no < noWP; no++ {
 		err := fakeClient.JoinWorkerplane(no)

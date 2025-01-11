@@ -100,8 +100,8 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 	}
 
 	p.state.CloudInfra.Azure.NoManagedNodes = noOfNodes
-	p.state.CloudInfra.Azure.B.KubernetesVer = p.K8sVersion
-	p.state.BootstrapProvider = "managed"
+	p.state.Versions.Aks = utilities.Ptr(p.K8sVersion)
+	p.state.BootstrapProvider = consts.K8sAks
 
 	isKeda := false
 
@@ -130,7 +130,7 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 			AddonProfiles: computedAddons(),
 
 			DNSPrefix:         utilities.Ptr("aksgosdk"),
-			KubernetesVersion: utilities.Ptr(p.state.CloudInfra.Azure.B.KubernetesVer),
+			KubernetesVersion: utilities.Ptr(p.K8sVersion),
 			NetworkProfile: &armcontainerservice.NetworkProfile{
 				NetworkPlugin: utilities.Ptr(armcontainerservice.NetworkPlugin(p.managedAddonCNI)),
 			},

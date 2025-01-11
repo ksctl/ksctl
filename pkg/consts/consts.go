@@ -105,6 +105,9 @@ const (
 const (
 	K8sK3s     KsctlKubernetes = "k3s"
 	K8sKubeadm KsctlKubernetes = "kubeadm"
+	K8sAks     KsctlKubernetes = "aks"
+	K8sEks     KsctlKubernetes = "eks"
+	K8sKind    KsctlKubernetes = "kind"
 )
 
 const (
