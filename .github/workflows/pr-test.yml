@@ -25,15 +25,15 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
-    if: |
-      (
-        github.event.label.name == 'tests/enable' ||
-        contains(github.event.pull_request.labels.*.name, 'tests/enable')
-      ) &&
-      (
-        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') != true ||
-        github.event.label.name != 'pr/lgtm'
-      )
+    # if: |
+    #   (
+    #     github.event.label.name == 'tests/enable' ||
+    #     contains(github.event.pull_request.labels.*.name, 'tests/enable')
+    #   ) &&
+    #   (
+    #     contains(github.event.pull_request.labels.*.name, 'pr/lgtm') != true ||
+    #     github.event.label.name != 'pr/lgtm'
+    #   )
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
