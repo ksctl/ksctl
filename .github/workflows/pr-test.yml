@@ -1,4 +1,4 @@
-name: PR Test
+name: PR Tests
 
 on:
   push:
@@ -18,6 +18,10 @@ on:
     - 'go.mod'
     - 'go.sum'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   unit-test:
     strategy:
@@ -25,25 +29,42 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
-    # if: |
-    #   (
-    #     github.event.label.name == 'tests/enable' ||
-    #     contains(github.event.pull_request.labels.*.name, 'tests/enable')
-    #   ) &&
-    #   (
-    #     contains(github.event.pull_request.labels.*.name, 'pr/lgtm') != true ||
-    #     github.event.label.name != 'pr/lgtm'
-    #   )
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      ) &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') != true ||
+        github.event.label.name != 'pr/lgtm'
+      )
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-      - name: get the list of changed files
-        id: get_files
-        run: |
-          git diff-tree --no-commit-id --name-only -r ${{ github.sha }} > changed_files.txt
-      - name: view the list of changed files
-        run: |
-          cat changed_files.txt
+      - run: make unit_test
+
+  integration-test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      ) &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') == true ||
+        github.event.label.name == 'pr/lgtm'
+      )
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: make integration_test

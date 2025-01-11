@@ -55,15 +55,17 @@ docker-buildx-stateimport: ## docker build stateimport
 		- $(CONTAINER_TOOL) buildx rm project-v3-builder
 
 
-##@ Unit Tests (Core)
+##@ Tests
 .PHONY: test_all
 test_all:
 	@go test -timeout 20m  -run 'All' -v tests/{runner_test.go,unit_test.go,integration_test.go}
 
+##@ Unit Tests
 .PHONY: unit_test
 unit_test: ## Run unit tests
 	@go test -timeout 20m -run 'Unit' -v tests/{runner_test.go,unit_test.go,integration_test.go}
 
+##@ Integeration Tests
 .PHONY: integeration_test
 integeration_test: ## Run integration tests
 	@go test -timeout 20m -run 'Integration' -v tests/{runner_test.go,unit_test.go,integration_test.go}
