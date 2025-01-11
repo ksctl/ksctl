@@ -21,6 +21,7 @@ import (
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
 	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
@@ -107,7 +108,15 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 
 	computedAddons := func() map[string]*armcontainerservice.ManagedClusterAddonProfile {
 		addonProfiles := make(map[string]*armcontainerservice.ManagedClusterAddonProfile)
+
+		vv := make([]statefile.SlimProvisionerAddon, 0, len(p.managedAddonApp))
+
 		for k, v := range p.managedAddonApp {
+			vv = append(vv, statefile.SlimProvisionerAddon{
+				Name: k,
+				For:  consts.K8sAks,
+			})
+
 			if k != "keda" {
 				addonProfiles[k] = &armcontainerservice.ManagedClusterAddonProfile{
 					Enabled: utilities.Ptr(true),
@@ -117,7 +126,16 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 				isKeda = true
 			}
 		}
+
+		p.state.ProvisionerAddons.Apps = vv
 		return addonProfiles
+	}
+
+	if p.managedAddonCNI != string(consts.CNINone) {
+		p.state.ProvisionerAddons.Cni = statefile.SlimProvisionerAddon{
+			Name: p.managedAddonCNI,
+			For:  consts.K8sAks,
+		}
 	}
 
 	parameter := armcontainerservice.ManagedCluster{

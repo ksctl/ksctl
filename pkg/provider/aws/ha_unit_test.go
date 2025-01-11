@@ -274,6 +274,11 @@ func TestHACluster(t *testing.T) {
 			PublicIP:   "A.B.C.D",
 			PrivateIP:  "192.168.1.2",
 		}
+
+		// ~adjustments
+		fakeClientHA.state.ProvisionerAddons.Cni.Name = "flannel"
+		fakeClientHA.state.ProvisionerAddons.Cni.For = consts.K8sK3s
+
 		expected := []logger.ClusterDataForLogging{
 			{
 				Name:          fakeClientHA.ClusterName,
@@ -307,6 +312,8 @@ func TestHACluster(t *testing.T) {
 				K8sVersion:     "fake",
 				HAProxyVersion: "3.0",
 				EtcdVersion:    "fake",
+				Apps:           nil,
+				Cni:            "Name: flannel, For: k3s, Version: <nil>, KsctlSpecificComponents: map[]",
 			},
 		}
 

@@ -22,6 +22,7 @@ import (
 	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/utilities"
 )
 
@@ -98,6 +99,11 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 	cni := false
 	if consts.KsctlValidCNIPlugin(p.managedAddonCNI) == consts.CNINone {
 		cni = true
+	} else {
+		p.state.ProvisionerAddons.Cni = statefile.SlimProvisionerAddon{
+			Name: p.managedAddonCNI,
+			For:  consts.K8sKind,
+		}
 	}
 
 	withConfig, err := p.configOption(noOfNodes, cni)

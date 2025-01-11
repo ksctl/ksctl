@@ -15,6 +15,8 @@
 package statefile
 
 import (
+	"fmt"
+
 	"github.com/ksctl/ksctl/pkg/consts"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -46,7 +48,34 @@ type StorageDocument struct {
 
 	SSHKeyPair SSHKeyPairState `json:"ssh_key_pair" bson:"ssh_key_pair"`
 
-	Addons KubernetesAddons `json:"addons" bson:"addons"`
+	ProvisionerAddons SlimProvisionerAddons `json:"provisioner_addons,omitempty" bson:"provisioner_addons,omitempty"`
+}
+
+type SlimProvisionerAddons struct {
+	Apps []SlimProvisionerAddon `json:"apps" bson:"apps"`
+	Cni  SlimProvisionerAddon   `json:"cni" bson:"cni"`
+}
+
+type SlimProvisionerAddon struct {
+	// +required
+	Name string `json:"name" bson:"name"`
+
+	// +required
+	For consts.KsctlKubernetes `json:"for" bson:"for"`
+
+	// +optional
+	Version *string `json:"version,omitempty" bson:"version,omitempty"`
+
+	// +required for ksctl specific apps
+	KsctlSpecificComponents map[string]KsctlSpecificComponent `json:"ksctl_specific_components,omitempty" bson:"ksctl_specific_components,omitempty"`
+}
+
+func (s SlimProvisionerAddon) String() string {
+	return fmt.Sprintf("Name: %s, For: %s, Version: %v, KsctlSpecificComponents: %+v", s.Name, s.For, s.Version, s.KsctlSpecificComponents)
+}
+
+type KsctlSpecificComponent struct {
+	Version string `json:"version" bson:"version"`
 }
 
 type InfrastructureState struct {

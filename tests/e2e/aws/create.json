@@ -5,5 +5,5 @@
   "cloud_provider": "aws",
   "storage_type": "store-local",
   "desired_no_of_managed_nodes": 2,
-  "node_type_managed": "t2.micro"
+  "node_type_managed": "t3a.medium"
 }

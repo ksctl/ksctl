@@ -15,11 +15,12 @@
 package aws
 
 import (
-	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/pkg/statefile"
 	"github.com/ksctl/ksctl/pkg/utilities"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -59,6 +60,7 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	clusterAddons := s.GetAddons("eks")
 
 	p.managedAddonCNI = "aws" // Default: value
+	p.managedAddonApp = nil
 	externalCNI = false
 
 	for _, addon := range clusterAddons {
@@ -72,21 +74,16 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 				externalCNI = false
 			}
 		} else {
-			var v map[string]*string
 			if addon.Config != nil {
-
-				v = map[string]*string{}
-
-				if err := json.Unmarshal([]byte(*addon.Config), &v); err != nil {
-					p.l.Warn(p.ctx, "failed to unmarshal addon config", "addonName", addon.Name, "config", *addon.Config, "error", err)
-				}
-			} else {
-				p.l.Warn(p.ctx, "empty addon config", "addonName", addon.Name)
+				p.l.Warn(p.ctx, "Addon config is not yet available for eks", "addonName", addon.Name)
 			}
 
-			p.managedAddonApp = make(map[string]map[string]*string)
-			p.managedAddonApp[addon.Name] = v
+			p.managedAddonApp = append(p.managedAddonApp, addon.Name)
 		}
+	}
+
+	if !slices.Contains(p.managedAddonApp, "eks-node-monitoring-agent") {
+		p.managedAddonApp = append(p.managedAddonApp, "eks-node-monitoring-agent") // NOTE: default additional app
 	}
 
 	return
@@ -123,6 +120,26 @@ func (p *Provider) DelManagedCluster() error {
 			return err
 		}
 	}
+
+	for _, addon := range p.state.ProvisionerAddons.Apps {
+		if addon.For != consts.K8sEks {
+			continue
+		}
+
+		p.l.Print(p.ctx, "uninstalling the addon", "addon", addon)
+		addonInput := &eks.DeleteAddonInput{
+			AddonName:   aws.String(addon.Name),
+			ClusterName: aws.String(p.state.CloudInfra.Aws.ManagedClusterName),
+		}
+		err := p.client.DeleteAddons(p.ctx, addonInput)
+		if err != nil {
+			p.l.Warn(p.ctx, "failed to uninstall the addon", "addon", addon, "error", err)
+			continue // Continue to next addon
+		}
+		p.l.Success(p.ctx, "uninstalled the addon", "addon", addon)
+	}
+
+	p.state.ProvisionerAddons.Apps = nil // for cleanup
 
 	p.l.Print(p.ctx, "Deleting the EKS cluster", "name", p.state.CloudInfra.Aws.ManagedClusterName)
 	clusterPerimeter := eks.DeleteClusterInput{
@@ -239,7 +256,43 @@ func (p *Provider) NewManagedCluster(noOfNode int) error {
 			return err
 		}
 
+		p.l.Success(p.ctx, "created the EKS cluster", "name", *clusterResp.Cluster.Name)
+
 		p.state.CloudInfra.Aws.ManagedClusterName = *clusterResp.Cluster.Name
+		err = p.store.Write(p.state)
+		if err != nil {
+			return err
+		}
+
+		vv := make([]statefile.SlimProvisionerAddon, 0, len(p.managedAddonApp))
+
+		for _, addon := range p.managedAddonApp {
+			p.l.Print(p.ctx, "installing the addon", "addon", addon)
+			addonInput := &eks.CreateAddonInput{
+				AddonName:   aws.String(addon),
+				ClusterName: aws.String(p.state.CloudInfra.Aws.ManagedClusterName),
+			}
+			err = p.client.CreateAddons(p.ctx, addonInput)
+			if err != nil {
+				p.l.Warn(p.ctx, "failed to install the addon", "addon", addon, "error", err)
+				continue // Continue to next addon
+			}
+
+			vv = append(vv, statefile.SlimProvisionerAddon{
+				Name: addon,
+				For:  consts.K8sEks,
+			})
+
+			p.l.Success(p.ctx, "installed the addon", "addon", addon)
+		}
+		p.state.ProvisionerAddons.Apps = vv
+		if p.managedAddonCNI != string(consts.CNINone) {
+			p.state.ProvisionerAddons.Cni = statefile.SlimProvisionerAddon{
+				Name: p.managedAddonCNI,
+				For:  consts.K8sEks,
+			}
+		}
+
 		err = p.store.Write(p.state)
 		if err != nil {
 			return err

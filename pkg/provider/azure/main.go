@@ -607,12 +607,12 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 					}
 				}(),
 				Apps: func() (_a []string) {
-					for _, a := range v.Addons.Apps {
+					for _, a := range v.ProvisionerAddons.Apps {
 						_a = append(_a, a.String())
 					}
 					return
 				}(),
-				Cni: v.Addons.Cni.String(),
+				Cni: v.ProvisionerAddons.Cni.String(),
 			})
 			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 

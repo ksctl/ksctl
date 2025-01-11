@@ -143,6 +143,13 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 				K8sDistro:  v.BootstrapProvider,
 				K8sVersion: *v.Versions.Kind,
+				Apps: func() (_a []string) {
+					for _, a := range v.ProvisionerAddons.Apps {
+						_a = append(_a, a.String())
+					}
+					return
+				}(),
+				Cni: v.ProvisionerAddons.Cni.String(),
 			})
 			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 

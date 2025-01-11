@@ -253,7 +253,7 @@ func TestCniAndApps(t *testing.T) {
 		Addon           addons.ClusterAddons
 		Valid           bool
 		managedAddonCNI string
-		managedAddonApp map[string]map[string]*string
+		managedAddonApp []string
 	}{
 		{
 			addons.ClusterAddons{
@@ -267,7 +267,7 @@ func TestCniAndApps(t *testing.T) {
 					Name:  "none",
 					IsCNI: true,
 				},
-			}, true, "none", nil,
+			}, true, "none", []string{"eks-node-monitoring-agent"},
 		},
 		{
 			addons.ClusterAddons{
@@ -276,7 +276,7 @@ func TestCniAndApps(t *testing.T) {
 					Name:  "aws",
 					IsCNI: true,
 				},
-			}, false, "aws", nil,
+			}, false, "aws", []string{"eks-node-monitoring-agent"},
 		},
 		{
 			addons.ClusterAddons{
@@ -285,13 +285,13 @@ func TestCniAndApps(t *testing.T) {
 					Name:  "vpc-cni",
 					IsCNI: true,
 				},
-			}, false, "vpc-cni", nil,
+			}, false, "vpc-cni", []string{"eks-node-monitoring-agent"},
 		},
 		{
-			addons.ClusterAddons{}, false, "aws", nil,
+			addons.ClusterAddons{}, false, "aws", []string{"eks-node-monitoring-agent"},
 		},
 		{
-			nil, false, "aws", nil,
+			nil, false, "aws", []string{"eks-node-monitoring-agent"},
 		},
 		{
 			addons.ClusterAddons{
@@ -300,7 +300,7 @@ func TestCniAndApps(t *testing.T) {
 					Name:   "heheheh",
 					Config: utilities.Ptr(`{"key":"value"}`),
 				},
-			}, false, "aws", map[string]map[string]*string{"heheheh": {"key": utilities.Ptr("value")}},
+			}, false, "aws", []string{"heheheh", "eks-node-monitoring-agent"},
 		},
 		{
 			addons.ClusterAddons{
@@ -308,7 +308,7 @@ func TestCniAndApps(t *testing.T) {
 					Label: "eks",
 					Name:  "heheheh",
 				},
-			}, false, "aws", map[string]map[string]*string{"heheheh": nil},
+			}, false, "aws", []string{"heheheh", "eks-node-monitoring-agent"},
 		},
 	}
 

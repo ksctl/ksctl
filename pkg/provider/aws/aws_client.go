@@ -1095,6 +1095,26 @@ func (l *AwsClient) BeginDeleteIAM(ctx context.Context, parameter *iam.DeleteRol
 	return resp, nil
 }
 
+func (l *AwsClient) CreateAddons(ctx context.Context, input *eks.CreateAddonInput) error {
+
+	_, err := l.eksClient.CreateAddon(ctx, input)
+	if err != nil {
+		return l.b.l.NewError(l.b.ctx, "Error Creating Addon", "Reason", err)
+	}
+
+	return nil
+}
+
+func (l *AwsClient) DeleteAddons(ctx context.Context, input *eks.DeleteAddonInput) error {
+
+	_, err := l.eksClient.DeleteAddon(ctx, input)
+	if err != nil {
+		return l.b.l.NewError(l.b.ctx, "Error Deleting Addon", "Reason", err)
+	}
+
+	return nil
+}
+
 func (l *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) {
 
 	input := &eks.DescribeAddonVersionsInput{

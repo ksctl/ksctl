@@ -195,6 +195,7 @@ func TestManagedCluster(t *testing.T) {
 
 		fakeClientManaged.ManagedK8sVersion("1.27.1")
 		fakeClientManaged.Name("fake")
+		fakeClientManaged.ManagedAddons(nil)
 
 		assert.Equal(t, fakeClientManaged.NewManagedCluster(2), nil, "managed cluster should be created")
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Local.Nodes, 2, "missmatch of no of nodes")
@@ -221,6 +222,8 @@ func TestManagedCluster(t *testing.T) {
 
 				K8sDistro:  consts.K8sKind,
 				K8sVersion: *fakeClientManaged.state.Versions.Kind,
+				Apps:       nil,
+				Cni:        "Name: kind, For: kind, Version: <nil>, KsctlSpecificComponents: map[]",
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos()

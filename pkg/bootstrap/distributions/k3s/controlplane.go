@@ -21,12 +21,20 @@ import (
 
 	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/pkg/statefile"
 )
 
 // NOTE: configureCP_1 is not meant for concurrency
 func (p *K3s) configureCP_1(sshExecutor ssh.RemoteConnection) error {
 
 	var script ssh.ExecutionPipeline
+
+	if consts.KsctlValidCNIPlugin(p.Cni) != consts.CNINone {
+		p.state.ProvisionerAddons.Cni = statefile.SlimProvisionerAddon{
+			Name: p.Cni,
+			For:  consts.K8sK3s,
+		}
+	}
 
 	if consts.KsctlValidCNIPlugin(p.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(

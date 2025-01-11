@@ -144,9 +144,10 @@ func (k *K8sClusterClient) installCni(
 		errorInStack error
 	)
 	if !foundInState {
-		stateTypeStack := statefile.Application{
-			Name:       string(stackManifest.StackNameID),
-			Components: map[string]statefile.Component{},
+		stateTypeStack := statefile.SlimProvisionerAddon{
+			Name:                    string(stackManifest.StackNameID),
+			For:                     consts.K8sKsctl,
+			KsctlSpecificComponents: make(map[string]statefile.KsctlSpecificComponent, len(stackManifest.Components)),
 		}
 
 		errorInStack = func() error {
@@ -160,9 +161,10 @@ func (k *K8sClusterClient) installCni(
 					return _err
 				}
 
-				stateTypeStack.Components[string(componentId)] = statefile.Component{
+				stateTypeStack.KsctlSpecificComponents[string(componentId)] = statefile.KsctlSpecificComponent{
 					Version: componentVersion,
 				}
+
 				k.l.Success(
 					k.ctx,
 					"Installed component",
@@ -174,10 +176,9 @@ func (k *K8sClusterClient) installCni(
 			}
 			return nil
 		}()
-		state.Addons.Cni = stateTypeStack
+		state.ProvisionerAddons.Cni = stateTypeStack
 	} else {
-		var appInState statefile.Application
-		appInState = state.Addons.Cni
+		appInState := state.ProvisionerAddons.Cni
 
 		errorInStack = func() error {
 			for _, componentId := range stackManifest.StkDepsIdx {
@@ -185,12 +186,12 @@ func (k *K8sClusterClient) installCni(
 
 				componentVersion := stack.GetComponentVersionOverriding(component)
 
-				if componentInState, found := appInState.Components[string(componentId)]; !found {
+				if componentInState, found := appInState.KsctlSpecificComponents[string(componentId)]; !found {
 					_err := k.handleInstallComponent(componentId, component)
 					if _err != nil {
 						return _err
 					}
-					appInState.Components[string(componentId)] = statefile.Component{
+					appInState.KsctlSpecificComponents[string(componentId)] = statefile.KsctlSpecificComponent{
 						Version: componentVersion,
 					}
 

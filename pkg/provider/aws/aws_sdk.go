@@ -84,4 +84,7 @@ type CloudSDK interface {
 	GetKubeConfig(ctx context.Context, clusterName string) (string, error)
 
 	ListK8sVersions(ctx context.Context) ([]string, error)
+
+	CreateAddons(ctx context.Context, input *eks.CreateAddonInput) error
+	DeleteAddons(ctx context.Context, input *eks.DeleteAddonInput) error
 }

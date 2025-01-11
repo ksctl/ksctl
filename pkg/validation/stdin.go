@@ -175,7 +175,7 @@ func IsValidKsctlClusterAddons(ctx context.Context, log logger.Logger, ca addons
 	addonLabels := ca.GetAddonLabels()
 	for _, label := range addonLabels {
 		switch label {
-		case addons.AzureAKS, addons.AwsEKS, addons.GcpGKE, addons.Kind, addons.Ksctl:
+		case string(consts.K8sK3s), string(consts.K8sKubeadm), string(consts.K8sKind), string(consts.K8sAks), string(consts.K8sEks), string(consts.K8sKsctl):
 			_addons := ca.GetAddons(label)
 
 			_addonNames := make(map[string]int, len(_addons))
@@ -191,7 +191,7 @@ func IsValidKsctlClusterAddons(ctx context.Context, log logger.Logger, ca addons
 
 				if addon.IsCNI {
 					if addon.Name == string(consts.CNINone) {
-						if label != addons.Ksctl {
+						if label != string(consts.K8sKsctl) {
 							nonKsctlCniIsNone = true
 						}
 					} else {

@@ -548,8 +548,13 @@ func TestHACluster(t *testing.T) {
 				K8sVersion:     "fake",
 				HAProxyVersion: "3.0",
 				EtcdVersion:    "fake",
+				Apps:           nil,
+				Cni:            "Name: flannel, For: k3s, Version: <nil>, KsctlSpecificComponents: map[]",
 			},
 		}
+		// ~adjustments
+		fakeClientHA.state.ProvisionerAddons.Cni.Name = "flannel"
+		fakeClientHA.state.ProvisionerAddons.Cni.For = consts.K8sK3s
 
 		{
 			// simulate the distro did something

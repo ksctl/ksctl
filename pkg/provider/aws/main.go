@@ -71,7 +71,7 @@ type Provider struct {
 	vpc string
 
 	managedAddonCNI string
-	managedAddonApp map[string]map[string]*string
+	managedAddonApp []string
 
 	chResName chan string
 	chRole    chan consts.KsctlRole
@@ -243,13 +243,13 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		Provider:          p.state.InfraProvider,
 		Region:            p.state.Region,
 		ClusterType:       p.clusterType,
-		IPv4ControlPlanes: utilities.DeepCopySlice[string](p.state.CloudInfra.Aws.InfoControlPlanes.PublicIPs),
-		IPv4DataStores:    utilities.DeepCopySlice[string](p.state.CloudInfra.Aws.InfoDatabase.PublicIPs),
-		IPv4WorkerPlanes:  utilities.DeepCopySlice[string](p.state.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs),
+		IPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoControlPlanes.PublicIPs),
+		IPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoDatabase.PublicIPs),
+		IPv4WorkerPlanes:  utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs),
 		IPv4LoadBalancer:  p.state.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
 
-		PrivateIPv4ControlPlanes: utilities.DeepCopySlice[string](p.state.CloudInfra.Aws.InfoControlPlanes.PrivateIPs),
-		PrivateIPv4DataStores:    utilities.DeepCopySlice[string](p.state.CloudInfra.Aws.InfoDatabase.PrivateIPs),
+		PrivateIPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoControlPlanes.PrivateIPs),
+		PrivateIPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  p.state.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
 	}
 
@@ -606,12 +606,12 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 					}
 				}(),
 				Apps: func() (_a []string) {
-					for _, a := range v.Addons.Apps {
+					for _, a := range v.ProvisionerAddons.Apps {
 						_a = append(_a, a.String())
 					}
 					return
 				}(),
-				Cni: v.Addons.Cni.String(),
+				Cni: v.ProvisionerAddons.Cni.String(),
 			})
 			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 

@@ -373,3 +373,11 @@ func (mock *AwsClient) GetKubeConfig(ctx context.Context, cluster string) (strin
 func (mock *AwsClient) ListK8sVersions(ctx context.Context) ([]string, error) {
 	return []string{"1.30", "1.29"}, nil
 }
+
+func (l *AwsClient) CreateAddons(ctx context.Context, input *eks.CreateAddonInput) error {
+	return nil
+}
+
+func (l *AwsClient) DeleteAddons(ctx context.Context, input *eks.DeleteAddonInput) error {
+	return nil
+}

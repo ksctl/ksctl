@@ -60,8 +60,8 @@ func FetchKsctlStack(ctx context.Context, log logger.Logger, stkID string) (func
 }
 
 func DoesCNIExistOrNot(app stack.KsctlApp, state *statefile.StorageDocument) (isPresent bool) {
-	installedApps := state.Addons
-	if app.StackName == installedApps.Cni.Name {
+	installedApps := state.ProvisionerAddons.Cni
+	if app.StackName == installedApps.Name {
 		isPresent = true
 		return
 	}

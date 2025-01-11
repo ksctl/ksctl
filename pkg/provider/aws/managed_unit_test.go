@@ -80,6 +80,7 @@ func TestManagedCluster(t *testing.T) {
 	})
 
 	t.Run("Create managed cluster", func(t *testing.T) {
+		_ = fakeClientManaged.ManagedAddons(nil)
 
 		assert.Equal(t, fakeClientManaged.Name("fake-managed").VMType("fake").NewManagedCluster(5), nil, "managed cluster should be created")
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Aws.B.IsCompleted, true, "cluster should not be completed")
@@ -97,7 +98,7 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("Get cluster managed", func(t *testing.T) {
 		expected := []logger.ClusterDataForLogging{
-			logger.ClusterDataForLogging{
+			{
 				Name:          fakeClientManaged.ClusterName,
 				CloudProvider: consts.CloudAws,
 				ClusterType:   consts.ClusterTypeMang,
@@ -112,6 +113,8 @@ func TestManagedCluster(t *testing.T) {
 				Mgt:        logger.VMData{VMSize: "fake"},
 				K8sDistro:  consts.K8sEks,
 				K8sVersion: *fakeClientManaged.state.Versions.Eks,
+				Apps:       []string{"Name: eks-node-monitoring-agent, For: eks, Version: <nil>, KsctlSpecificComponents: map[]"},
+				Cni:        "Name: aws, For: eks, Version: <nil>, KsctlSpecificComponents: map[]",
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos()

@@ -312,6 +312,8 @@ func TestIsValidKsctlClusterAddons(t *testing.T) {
 				{Label: "eks", Name: "random123"},
 				{Label: "gke", Name: "random123"},
 				{Label: "kind", Name: "random123"},
+				{Label: "k3s", Name: "random123"},
+				{Label: "kubeadm", Name: "random123"},
 				{Label: "ksctl", Name: "random123"},
 			},
 			expectedError: false,
