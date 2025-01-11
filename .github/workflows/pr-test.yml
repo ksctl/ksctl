@@ -42,7 +42,8 @@ jobs:
           go-version: stable
       - name: get the list of changed files
         id: get_files
-        run: echo "::set-output name=files::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})"
-      - name: store the list of changed files
-        id: store_files
-        run: echo "${{ steps.get_files.outputs.files }}" > changed_files.txt
+        run: |
+          git diff-tree --no-commit-id --name-only -r ${{ github.sha }} > changed_files.txt
+      - name: view the list of changed files
+        run: |
+          cat changed_files.txt
