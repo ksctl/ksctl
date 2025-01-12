@@ -145,7 +145,7 @@ func (l *AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (s
 	var savedImages []types.Image
 
 	for _, i := range resp.Images {
-		if trustedSource(*i.OwnerId) && *i.Public {
+		if trustedSource(*i.OwnerId) {
 			savedImages = append(savedImages, i)
 		}
 	}
@@ -154,7 +154,7 @@ func (l *AwsClient) FetchLatestAMIWithFilter(filter *ec2.DescribeImagesInput) (s
 		return *savedImages[i].CreationDate > *savedImages[j].CreationDate
 	})
 
-	for x := 0; x < 2; x++ {
+	for x := 0; x < 1; x++ {
 		i := savedImages[x]
 		if i.ImageOwnerAlias != nil {
 			l.b.l.Debug(l.b.ctx, "ownerAlias", *i.ImageOwnerAlias)

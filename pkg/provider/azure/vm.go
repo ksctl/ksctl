@@ -197,10 +197,10 @@ func (p *Provider) NewVM(index int) error {
 		},
 		Properties: &armcompute.VirtualMachineProperties{
 			StorageProfile: &armcompute.StorageProfile{
-				ImageReference: &armcompute.ImageReference{
-					Offer:     utilities.Ptr("0001-com-ubuntu-server-jammy"),
+				ImageReference: &armcompute.ImageReference{ // $ az vm image list --output table --publisher Canonical
+					Offer:     utilities.Ptr("ubuntu-24_04-lts"),
 					Publisher: utilities.Ptr("Canonical"),
-					SKU:       utilities.Ptr("22_04-lts-gen2"),
+					SKU:       utilities.Ptr("server"),
 					Version:   utilities.Ptr("latest"),
 				},
 				OSDisk: &armcompute.OSDisk{

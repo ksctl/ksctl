@@ -384,11 +384,11 @@ func (p *Provider) NewVM(index int) error {
 }
 
 func (p *Provider) getLatestUbuntuAMI() (string, error) {
-	imageFilter := &ec2.DescribeImagesInput{
+	imageFilter := &ec2.DescribeImagesInput{ // https://cloud-images.ubuntu.com/locator/ec2/
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("name"),
-				Values: []string{"ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server*"},
+				Values: []string{"ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server*"},
 			},
 			{
 				Name:   aws.String("architecture"),
@@ -397,6 +397,14 @@ func (p *Provider) getLatestUbuntuAMI() (string, error) {
 			{
 				Name:   aws.String("owner-alias"),
 				Values: []string{"amazon"},
+			},
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available"},
+			},
+			{
+				Name:   aws.String("is-public"),
+				Values: []string{"true"},
 			},
 		},
 	}
