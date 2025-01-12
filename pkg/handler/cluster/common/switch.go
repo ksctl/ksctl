@@ -29,6 +29,8 @@ import (
 )
 
 func (kc *Controller) Switch() (*string, error) {
+	defer kc.b.PanicHandler(kc.l)
+
 	if kc.b.IsLocalProvider(kc.p) {
 		kc.p.Metadata.Region = "LOCAL"
 	}

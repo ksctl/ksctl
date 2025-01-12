@@ -80,7 +80,6 @@ func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
 	return b
 }
 
-// PanicHandler This function is intended to be used by the Cli and used once thus getting required information for developers to debug
 func (cc *Controller) PanicHandler(log logger.Logger) {
 	if r := recover(); r != nil {
 		log.Error("Failed to recover stack trace", "error", r)

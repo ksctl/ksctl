@@ -172,6 +172,8 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 }
 
 func (kc *Controller) GetCluster() error {
+	defer kc.b.PanicHandler(kc.l)
+
 	v, err := kc.clusterDataHelper(logger.LoggingGetClusters)
 	if err != nil {
 		return err
@@ -185,6 +187,8 @@ func (kc *Controller) GetCluster() error {
 }
 
 func (kc *Controller) InfoCluster() (*logger.ClusterDataForLogging, error) {
+	defer kc.b.PanicHandler(kc.l)
+
 	v, err := kc.clusterDataHelper(logger.LoggingInfoCluster)
 	if err != nil {
 		return nil, err

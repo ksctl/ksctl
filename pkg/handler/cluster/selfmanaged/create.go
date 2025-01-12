@@ -24,6 +24,7 @@ import (
 )
 
 func (kc *Controller) Create() error {
+	defer kc.b.PanicHandler(kc.l)
 
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,

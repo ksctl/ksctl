@@ -24,6 +24,7 @@ import (
 )
 
 func (kc *Controller) AddWorkerNodes() error {
+	defer kc.b.PanicHandler(kc.l)
 
 	if !kc.b.IsSelfManaged(kc.p) {
 		err := kc.l.NewError(kc.ctx, "this feature is only for selfmanaged clusters")
@@ -91,6 +92,8 @@ func (kc *Controller) AddWorkerNodes() error {
 }
 
 func (kc *Controller) DeleteWorkerNodes() error {
+	defer kc.b.PanicHandler(kc.l)
+
 	if !kc.b.IsSelfManaged(kc.p) {
 		err := kc.l.NewError(kc.ctx, "this feature is only for selfmanaged clusters")
 		kc.l.Error("handled error", "catch", err)

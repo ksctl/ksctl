@@ -21,9 +21,8 @@ import (
 	"github.com/ksctl/ksctl/pkg/validation"
 )
 
-// TODO: Need to think how the panicCatcher should be used if not going to be used
-
 func (kc *Controller) Create() error {
+	defer kc.b.PanicHandler(kc.l)
 
 	if kc.b.IsLocalProvider(kc.p) {
 		kc.p.Metadata.Region = "LOCAL"

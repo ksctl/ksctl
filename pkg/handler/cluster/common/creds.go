@@ -22,6 +22,8 @@ import (
 )
 
 func (kc *Controller) Credentials() error {
+	defer kc.b.PanicHandler(kc.l)
+
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudAzure:

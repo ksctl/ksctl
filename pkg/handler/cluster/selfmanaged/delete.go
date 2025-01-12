@@ -21,6 +21,7 @@ import (
 )
 
 func (kc *Controller) Delete() error {
+	defer kc.b.PanicHandler(kc.l)
 
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,
