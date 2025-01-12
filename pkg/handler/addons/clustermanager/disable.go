@@ -20,6 +20,8 @@ import (
 )
 
 func (kc *Controller) Disable() error {
+	defer kc.b.PanicHandler(kc.l)
+
 	transferableInfraState, err := kc.helper()
 	if err != nil {
 		return err
