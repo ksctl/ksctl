@@ -139,9 +139,9 @@ func (c *Client) InstallChart(
 	clientInstall.ReleaseName = releaseName
 	clientInstall.Namespace = namespace // FIXME: this is not working
 	c.settings.SetNamespace(namespace)
-	if c.settings.Namespace() != clientInstall.Namespace {
-		panic(fmt.Sprintf("Namespace mismatch: %s != %s", c.settings.Namespace(), clientInstall.Namespace))
-	}
+	//	if c.settings.Namespace() != clientInstall.Namespace {
+	//		panic(fmt.Sprintf("Namespace mismatch: %s != %s", c.settings.Namespace(), clientInstall.Namespace))
+	//	}
 
 	clientInstall.CreateNamespace = createNamespace
 

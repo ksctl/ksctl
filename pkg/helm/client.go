@@ -92,5 +92,6 @@ func NewInClusterHelmClient(ctx context.Context, log logger.Logger) (client *Cli
 			log.NewError(ctx, "failed to init in-cluster helm client", "Reason", err),
 		)
 	}
+
 	return client, nil
 }
