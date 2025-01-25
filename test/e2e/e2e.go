@@ -1,3 +1,17 @@
+// Copyright 2024 Ksctl Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -7,14 +21,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/controllers"
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
+	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+
+	"github.com/ksctl/ksctl/pkg/consts"
 	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/types"
+
+	controllerCommon "github.com/ksctl/ksctl/pkg/handler/cluster/common"
+	controllerManaged "github.com/ksctl/ksctl/pkg/handler/cluster/managed"
+	controllerSelfManaged "github.com/ksctl/ksctl/pkg/handler/cluster/selfmanaged"
+
+	addonClusterMgt "github.com/ksctl/ksctl/pkg/handler/addons/clustermanager"
 )
 
 var (
-	l   types.LoggerFactory
+	l   logger.Logger
 	ctx context.Context
 )
 
@@ -60,7 +80,7 @@ func main() {
 
 	switch operation {
 	case OpCreate, OpDelete, OpScaleUp, OpScaleDown:
-		switch meta.IsHA {
+		switch meta.SelfManaged {
 		case true:
 
 			if meta.Provider == consts.CloudLocal {
@@ -68,10 +88,10 @@ func main() {
 				l.Error("handled error", "catch", err)
 				os.Exit(1)
 			}
-			managerClient, err := controllers.NewManagerClusterSelfManaged(
+			managerClient, err := controllerSelfManaged.NewController(
 				ctx,
 				l,
-				&types.KsctlClient{
+				&controller.Client{
 					Metadata: meta,
 				},
 			)
@@ -91,10 +111,10 @@ func main() {
 			}
 
 		case false:
-			managerClient, err := controllers.NewManagerClusterManaged(
+			managerClient, err := controllerManaged.NewController(
 				ctx,
 				l,
-				&types.KsctlClient{
+				&controller.Client{
 					Metadata: meta,
 				},
 			)
@@ -111,10 +131,10 @@ func main() {
 		}
 
 	case OpCreds, OpGet, OpSwitch, OpInfo:
-		managerClient, err := controllers.NewManagerClusterKsctl(
+		managerClient, err := controllerCommon.NewController(
 			ctx,
 			l,
-			&types.KsctlClient{
+			&controller.Client{
 				Metadata: meta,
 			},
 		)
@@ -131,6 +151,24 @@ func main() {
 			infoClusters(managerClient)
 		case OpSwitch:
 			switchCluster(managerClient)
+		}
+	case OpEnableClusterMgt, OpDisableClusterMgt:
+		cc, err := addonClusterMgt.NewController(
+			ctx,
+			l,
+			&controller.Client{
+				Metadata: meta,
+			},
+		)
+		if err != nil {
+			l.Error("unable to initialize the ksctl manager", "Reason", err)
+			os.Exit(1)
+		}
+		switch operation {
+		case OpEnableClusterMgt:
+			enableClusterMgtAddon(cc)
+		case OpDisableClusterMgt:
+			disableClusterMgtAddon(cc)
 		}
 
 	default:

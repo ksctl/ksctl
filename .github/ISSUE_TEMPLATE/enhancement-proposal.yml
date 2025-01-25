@@ -1,76 +1,128 @@
 name: Enhancement Proposal
-description: Suggest an enhancement for an existing feature or propose a new functionality
-title: "[Enhancement Proposal]: "
+description: "✨ Propose new features or improvements to existing functionality"
+title: "[Enhancement]: "
 labels: ["kind/enhancement", "needs-triage"]
 
 body:
   - type: markdown
     attributes:
       value: |
-        **Thank you for suggesting an enhancement.** Please fill in as much of the template below as you're able. Your proposal will help us understand your ideas better and improve the project.
+        # ✨ Enhancement Proposal
+
+        Thank you for helping improve our project! Your ideas and suggestions are valuable to us.
+
+        > 💡 Before submitting, please check if a similar enhancement has been proposed.
+
+        Let's hear about your amazing idea! 🚀
 
   - type: input
     id: enhancement-title
     attributes:
-      label: Enhancement Title
-      description: Provide a concise title for your enhancement proposal.
-      placeholder: Short and descriptive title
+      label: "📌 Enhancement Title"
+      description: "Give your enhancement a clear and descriptive title"
+      placeholder: "Example: Add support for custom backup schedules"
     validations:
       required: true
 
   - type: textarea
     id: enhancement-summary
     attributes:
-      label: Summary of the Enhancement
-      description: A brief summary of the enhancement you're proposing.
-      placeholder: What enhancement are you proposing and why?
+      label: "💫 Enhancement Summary"
+      description: "Provide a brief overview of your proposed enhancement"
+      placeholder: |
+        Briefly describe:
+        - What is the enhancement?
+        - Who will benefit from it?
+        - How does it improve the project?
     validations:
       required: true
 
   - type: textarea
     id: motivation-and-goals
     attributes:
-      label: Motivation and Goals
-      description: What motivates you to propose this enhancement? What goals do you aim to achieve?
-      placeholder: Explain the motivation behind this proposal and what you hope to achieve.
+      label: "🎯 Motivation and Goals"
+      description: "Help us understand the 'why' behind your proposal"
+      placeholder: |
+        - What problem does this solve?
+        - What use cases does it address?
+        - What benefits will it bring to users?
     validations:
       required: true
 
   - type: textarea
     id: detailed-design
     attributes:
-      label: Detailed Design
-      description: Describe in detail how this enhancement should be implemented. Include any specific technical requirements, methods, or steps.
-      placeholder: Detailed description of the enhancement's design and implementation.
+      label: "🔨 Detailed Design"
+      description: "Describe how your enhancement should work"
+      placeholder: |
+        Please include:
+        - Technical implementation details
+        - Required changes to existing features
+        - Any new interfaces or APIs
+        - Performance considerations
+
+        You can use diagrams or code examples:
+        ```yaml
+        example:
+          configuration:
+            - setting: value
+        ```
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives
-      description: Have you considered any alternative solutions or features? Why is your proposed enhancement preferable?
-      placeholder: Describe any alternative solutions or features you've considered.
+      label: "🤔 Alternative Approaches"
+      description: "What other approaches have you considered?"
+      placeholder: |
+        - Alternative solution 1 and why it was not chosen
+        - Alternative solution 2 and its trade-offs
+        - Current workarounds, if any
     validations:
       required: false
 
   - type: checkboxes
-    id: updates
+    id: impact-areas
     attributes:
-      label: Scope of changes
-      description: what all subprojects will be affected?
+      label: "🎯 Impact Areas"
+      description: "Which parts of the project will be affected?"
       options:
-        - label: Cli
-        - label: UI
-        - label: Docs
+        - label: "🖥️ CLI - Command line interface changes"
+        - label: "🎨 UI - User interface modifications"
+        - label: "📚 Documentation - Documentation updates"
+        - label: "⚙️ Core - Core functionality changes"
+        - label: "🔌 API - API modifications"
+        - label: "🧪 Tests - Test suite updates"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "📎 Additional Context"
+      description: "Any other context or screenshots about the enhancement"
+      placeholder: "Add any other relevant information, mockups, or examples here"
+    validations:
+      required: false
 
   - type: checkboxes
     id: agreement
     attributes:
-      label: Agreement
-      description: By submitting this feature proposal, you agree to engage in constructive discussion and follow our [Contribution Guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)
+      label: "📝 Agreement"
+      description: |
+        By submitting this enhancement proposal, you agree to:
       options:
-        - label: I agree to engage in constructive discussion and follow the Contribution Guidelines.
+        - label: "🤝 Engage in constructive discussion and follow our [Contribution Guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)"
+          required: true
+        - label: "💪 Help implement this enhancement if approved (optional)"
+        - label: "📢 Provide additional information if requested"
           required: true
 
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ### 🙏 Thank you for your contribution!
 
+        Your enhancement proposal will be reviewed by our maintainers. We'll discuss the implementation details and feasibility together.
+
+        > ⭐ Don't forget to star the repository if you haven't already!

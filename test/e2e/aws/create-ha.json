@@ -1,7 +1,7 @@
 {
 	"cluster_name": "test-e2e-ha-aws",
 	"region": "ap-south-1",
-	"ha_cluster": true,
+	"self_managed": true,
 	"cloud_provider": "aws",
 	"kubernetes_distro": "k3s",
 	"storage_type": "store-local",

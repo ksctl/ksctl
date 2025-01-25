@@ -98,12 +98,6 @@ jobs:
     needs: ["create-infra"]
     secrets: inherit
 
-  # deprecated: civo
-  # civo-e2e:
-  #   uses: ./.github/workflows/e2e-civo.yml
-  #   needs: ["create-infra"]
-  #   secrets: inherit
-
   azure-e2e:
     uses: ./.github/workflows/e2e-azure.yml
     needs: ["create-infra"]

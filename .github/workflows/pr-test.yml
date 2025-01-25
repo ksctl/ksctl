@@ -1,0 +1,70 @@
+name: PR Tests
+
+on:
+  push:
+    paths:
+      - "pkg/**"
+      - "cmd/**"
+      - "tests/**"
+      - "go.mod"
+      - "go.sum"
+    branches: [main]
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+    paths:
+      - "pkg/**"
+      - "cmd/**"
+      - "tests/**"
+      - "go.mod"
+      - "go.sum"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      ) &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') != true ||
+        github.event.label.name != 'pr/lgtm'
+      )
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: make unit_test
+
+  integration-test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    if: |
+      (
+        github.event.label.name == 'tests/enable' ||
+        contains(github.event.pull_request.labels.*.name, 'tests/enable')
+      ) &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'pr/lgtm') == true ||
+        github.event.label.name == 'pr/lgtm'
+      )
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: make integeration_test

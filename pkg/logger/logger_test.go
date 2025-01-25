@@ -1,3 +1,17 @@
+// Copyright 2024 Ksctl Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package logger
 
 import (
@@ -7,14 +21,10 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/ksctl/ksctl/pkg/helpers/consts"
-	"github.com/ksctl/ksctl/pkg/types"
-	"github.com/ksctl/ksctl/pkg/types/controllers/cloud"
 )
 
 var (
-	sL       types.LoggerFactory
+	sL       Logger
 	dummyCtx = context.TODO()
 )
 
@@ -65,8 +75,8 @@ func TestPrintersStructured(t *testing.T) {
 	})
 
 	t.Run("Table", func(t *testing.T) {
-		sL.Table(dummyCtx, consts.LoggingGetClusters,
-			[]cloud.AllClusterData{
+		sL.Table(dummyCtx, LoggingGetClusters,
+			[]ClusterDataForLogging{
 				{
 					Name:          "fake-demo",
 					CloudProvider: "fake",
@@ -74,7 +84,7 @@ func TestPrintersStructured(t *testing.T) {
 				},
 			})
 
-		sL.Table(dummyCtx, consts.LoggingInfoCluster, nil)
+		sL.Table(dummyCtx, LoggingInfoCluster, nil)
 	})
 
 	t.Run("Box", func(t *testing.T) {
@@ -85,8 +95,8 @@ func TestPrintersStructured(t *testing.T) {
 	})
 
 	t.Run("external", func(t *testing.T) {
-		for _, logType := range []consts.CustomExternalLogLevel{
-			consts.LogSuccess, consts.LogError, consts.LogWarning, consts.LogNote,
+		for _, logType := range []CustomExternalLogLevel{
+			LogSuccess, LogError, LogWarning, LogNote,
 		} {
 			sL.ExternalLogHandler(dummyCtx, logType, "cdcc")
 			sL.ExternalLogHandlerf(dummyCtx, logType, "cdcc: %v", nil)

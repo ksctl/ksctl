@@ -1,85 +1,145 @@
 name: Feature Proposal
-title: "[Feature Proposal]: "
-description: Propose a new feature or enhancement
-labels: [ "kind/feature", "needs-triage" ]
-
+title: "[Feature]: "
+description: "🌟 Propose a new feature to enhance our project"
+labels: ["kind/feature", "needs-triage"]
 
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for taking the initiative to propose a new feature! Please fill out the following details to help us understand your proposal better.
+        # 🌟 New Feature Proposal
 
-  - type: input
-    id: why
-    attributes:
-      label: Purpose
-      description: why do we need this feature
-    validations:
-      required: false
+        Thank you for proposing a new feature! Your ideas help make our project better.
+
+        > 💡 Before submitting, please check if a similar feature has been proposed.
+
+        Let's explore your innovative idea together! 🚀
 
   - type: input
     id: feature-name
     attributes:
-      label: Feature Name
-      description: What would you like to call this feature?
-      placeholder: A brief, descriptive name for the feature
+      label: "✨ Feature Name"
+      description: "What would you like to call this feature?"
+      placeholder: "Example: Automated Cluster Backup"
+    validations:
+      required: true
+
+  - type: input
+    id: why
+    attributes:
+      label: "🎯 Purpose"
+      description: "What problem does this feature solve?"
+      placeholder: "Example: Users need a way to automatically backup their clusters"
     validations:
       required: true
 
   - type: textarea
     id: feature-description
     attributes:
-      label: Feature Description
-      description: Describe the feature you're proposing. Include any specific details that can help us understand what it does and why it's beneficial.
-      placeholder: Detailed description of the feature
+      label: "📝 Feature Description"
+      description: "Describe how your feature would work"
+      placeholder: |
+        Please include:
+        - Detailed description of the feature
+        - How users will interact with it
+        - Any technical requirements
+        - Expected behavior
+
+        You can use code examples:
+        ```bash
+        # Example usage
+        ksctl backup create --schedule="0 0 * * *"
+        ```
     validations:
       required: true
 
   - type: textarea
     id: benefits
     attributes:
-      label: Benefits
-      description: Explain the benefits of this feature. How does it improve the project?
-      placeholder: Benefits and improvements
+      label: "🎁 Benefits"
+      description: "How will this feature improve the project?"
+      placeholder: |
+        Examples of benefits:
+        - Improves user productivity by...
+        - Reduces operational complexity by...
+        - Enhances security through...
     validations:
       required: true
 
   - type: textarea
     id: potential-drawbacks
     attributes:
-      label: Potential Drawbacks
-      description: Are there any potential drawbacks or downsides to implementing this feature?
-      placeholder: Possible downsides or challenges
+      label: "⚖️ Potential Drawbacks"
+      description: "What are the potential challenges or trade-offs?"
+      placeholder: |
+        Consider:
+        - Performance implications
+        - Maintenance overhead
+        - Complexity added
+        - Resource requirements
     validations:
       required: false
 
   - type: textarea
     id: alternatives-considered
     attributes:
-      label: Alternatives Considered
-      description: Have you considered any alternative solutions or features? If so, what are they and why were they not suitable?
-      placeholder: Alternative solutions or features
+      label: "🔄 Alternatives Considered"
+      description: "What other approaches have you considered?"
+      placeholder: |
+        For each alternative:
+        - Description of the approach
+        - Why it wasn't chosen
+        - Comparison with proposed solution
     validations:
       required: false
 
-
   - type: checkboxes
-    id: updates
+    id: impact-areas
     attributes:
-      label: Scope of changes
-      description: what all subprojects will be affected?
+      label: "🎯 Impact Areas"
+      description: "Which components will be affected by this feature?"
       options:
-        - label: Cli
-        - label: UI
-        - label: Docs
+        - label: "🖥️ CLI - Command line interface"
+        - label: "🎨 UI - User interface"
+        - label: "📚 Documentation"
+        - label: "⚙️ Core Features"
+        - label: "🔌 External Integrations"
+        - label: "🧪 Testing Infrastructure"
+
+  - type: textarea
+    id: implementation-details
+    attributes:
+      label: "🛠️ Implementation Details"
+      description: "Any technical details about the implementation?"
+      placeholder: |
+        Include if you have thoughts on:
+        - Technical architecture
+        - Required dependencies
+        - Integration points
+        - Migration considerations
+    validations:
+      required: false
 
   - type: checkboxes
     id: agreement
     attributes:
-      label: Agreement
-      description: By submitting this feature proposal, you agree to engage in constructive discussion and follow our [Contribution Guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)
+      label: "📋 Agreements"
+      description: |
+        Before submitting, please confirm:
       options:
-        - label: I agree to engage in constructive discussion and follow the Contribution Guidelines.
+        - label: "🤝 I agree to follow the [Contribution Guidelines](https://docs.ksctl.com/docs/contribution-guidelines/)"
+          required: true
+        - label: "🔍 I have searched for similar feature requests"
+          required: true
+        - label: "💬 I will participate in the discussion about this feature"
           required: true
 
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ### 🙏 Thank you for your contribution!
+
+        Our maintainers will review your proposal and provide feedback soon.
+
+        > 💪 Want to implement this feature? Let us know in the comments!
