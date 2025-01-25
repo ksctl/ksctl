@@ -29,5 +29,5 @@ go.work.sum
 .vscode/
 
 # Hide some of the test artifacts generated
-tests/integration/kubeconfig
-tests/e2e/kubeconfig
+test/integration/kubeconfig
+test/e2e/kubeconfig

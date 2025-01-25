@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: tests/gh-runner
+        working-directory: test/gh-runner
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -28,7 +28,7 @@ jobs:
           go-version: "stable"
 
       - name: terraform init
-        working-directory: tests/gh-runner/infra
+        working-directory: test/gh-runner/infra
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
@@ -49,7 +49,7 @@ jobs:
           chmod 644 ~/.ssh/id_ed25519.pub
 
       - name: terraform apply
-        working-directory: tests/gh-runner/infra
+        working-directory: test/gh-runner/infra
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
@@ -60,7 +60,7 @@ jobs:
           terraform apply --auto-approve
 
       - name: extract the public ip and configure the ansible inventory
-        working-directory: tests/gh-runner/infra
+        working-directory: test/gh-runner/infra
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
@@ -74,12 +74,12 @@ jobs:
             -inventory-loc /tmp/inventory.ini
 
       - name: building amd64 binary
-        working-directory: tests/e2e
+        working-directory: test/e2e
         run: |
           GOOS="linux" GOARCH="amd64" go build -v -o /tmp/ksctl-e2e-amd64 .
 
       - name: add VM as github runner
-        working-directory: tests/gh-runner/configure
+        working-directory: test/gh-runner/configure
         env:
           GH_TOKEN: ${{ secrets.GH_PAT_CUSTOM_RUNNER }}
           ANSIBLE_HOST_KEY_CHECKING: "False"
@@ -87,7 +87,7 @@ jobs:
           ansible-playbook -i /tmp/inventory.ini setup.yml
 
       - name: transfer binary
-        working-directory: tests/gh-runner/configure
+        working-directory: test/gh-runner/configure
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
@@ -131,7 +131,7 @@ jobs:
           go-version: "stable"
 
       - name: terraform init
-        working-directory: tests/gh-runner/infra
+        working-directory: test/gh-runner/infra
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
@@ -151,7 +151,7 @@ jobs:
           chmod 644 ~/.ssh/id_ed25519.pub
 
       - name: extract the public ip and configure the ansible inventory
-        working-directory: tests/gh-runner/infra
+        working-directory: test/gh-runner/infra
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}
@@ -168,12 +168,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT_CUSTOM_RUNNER }}
           ANSIBLE_HOST_KEY_CHECKING: "False"
-        working-directory: tests/gh-runner/configure
+        working-directory: test/gh-runner/configure
         run: |
           ansible-playbook -i /tmp/inventory.ini destroy.yml
 
       - name: terraform destroy
-        working-directory: tests/gh-runner/infra
+        working-directory: test/gh-runner/infra
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_S3 }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3 }}

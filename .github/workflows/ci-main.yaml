@@ -1,45 +1,34 @@
 name: CI-CD for ksctl main branch
 
 on:
+  workflow_dispatch:
   push:
     paths:
-      - "internal/**"
       - "pkg/**"
       - "go.mod"
       - "go.sum"
       - "build/**"
       - "test/e2e/**"
       - "test/gh-runner/**"
-      - "ksctl-components/agent/**"
-      - "ksctl-components/operators/**"
-      - "ksctl-components/stateimport/**"
       - ".github/workflows/e2e-*"
       - ".github/workflows/testing-*"
       - ".github/workflows/docker.yaml"
       - ".github/workflows/ci-main.yaml"
     branches: [main]
-  workflow_dispatch:
 
 concurrency:
-  group: ci-e2e-main
   cancel-in-progress: false
+  group: ci-e2e-main
 
 jobs:
-  trigger-oci-artifact-build-push:
-    uses: ./.github/workflows/docker.yaml
-    secrets: inherit
-    with:
-      image_tag: main
-    permissions:
-      packages: write
-      contents: read
-
-  # trigger-code-scanning:
-  #   uses: ./.github/workflows/code-scanning.yml
-  #   needs: ["trigger-oci-artifact-build-push"]
+  # trigger-oci-artifact-build-push:
+  #   uses: ./.github/workflows/docker.yaml
   #   secrets: inherit
   #   with:
-  #     image_tag: latest
+  #     image_tag: main
+  #   permissions:
+  #     packages: write
+  #     contents: read
 
   trigger-e2e:
     uses: ./.github/workflows/e2e.yml

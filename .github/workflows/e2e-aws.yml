@@ -26,21 +26,20 @@ jobs:
         with:
           filters: |
             paths:
-              - 'internal/cloudproviders/aws/*'
-              - 'internal/k8sdistros/k3s/*'
-              - 'internal/k8sdistros/kubeadm/*'
-              - 'internal/k8sdistros/*'
-              - 'internal/storage/**'
               - 'test/gh-runner/**'
-              - 'pkg/helpers/**'
-              - 'pkg/logger/**'
               - 'test/e2e/*'
               - 'test/e2e/aws/*'
               - 'go.mod'
               - 'go.sum'
-              - 'pkg/controllers/**'
-              - 'pkg/resources/**'
               - '.github/workflows/e2e-aws.yml'
+              - 'pkg/**'
+              - '!pkg/provider/azure/**'
+              - '!pkg/provider/local/**'
+              - '!**/*.md'
+              - '!**/*.json'
+              - '!**/*.yaml'
+              - '!.dockerignore'
+              - '!.gitignore'
 
         # run only if some file in 'src' folder was changed
       - name: create (managed)
@@ -60,14 +59,14 @@ jobs:
           sleep 5s
           kubectl get nodes -owide
 
-      - name: create (k3s ha)
+      - name: create (k3s selfmanaged)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
           ksctl-e2e-amd64 -op create -file aws/create-ha.json
           ksctl-e2e-amd64 -op info -file aws/info-ha.json
 
-      - name: create (kubeadm ha)
+      - name: create (kubeadm selfmanaged)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
@@ -83,17 +82,17 @@ jobs:
       - name: switch self managed cluster
         if: steps.changes.outputs.paths == 'true'
         run: |
-          echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
+          echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
           ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
           tree ~/.ksctl/state
-          jq -r . ~/.ksctl/state/aws/ha/test-e2e-ha-aws\ ap-south-1/state.json
+          jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-selfmanaged-aws\ ap-south-1/state.json
           sleep 5s
           kubectl get nodes -owide
 
-          echo -e "\033[1;34m@@@\033[0m \033[1;35mHA Cluster (kubeadm)\033[0m \033[1;34m@@@\033[0m"
+          echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (kubeadm)\033[0m \033[1;34m@@@\033[0m"
           ksctl-e2e-amd64 -op switch -file aws/switch-ha-kubeadm.json
           tree ~/.ksctl/state
-          jq -r . ~/.ksctl/state/aws/ha/test-e2e-kubeadm-ha-aws\ us-east-1/state.json
+          jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-kubeadm-selfmanaged-aws\ us-east-1/state.json
           sleep 5s
           kubectl get nodes -owide
 
@@ -107,7 +106,7 @@ jobs:
           ksctl-e2e-amd64 -op scaledown -file aws/scaledown-ha-kubeadm.json
 
           kubectl get nodes -owide
-          jq -r . ~/.ksctl/state/aws/ha/test-e2e-kubeadm-ha-aws\ us-east-1/state.json
+          jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-kubeadm-selfmanaged-aws\ us-east-1/state.json
 
       - name: scaleup kubeadm
         if: steps.changes.outputs.paths == 'true'
@@ -119,7 +118,7 @@ jobs:
           ksctl-e2e-amd64 -op scaleup -file aws/scaleup-ha-kubeadm.json
 
           kubectl get nodes -owide
-          jq -r . ~/.ksctl/state/aws/ha/test-e2e-kubeadm-ha-aws\ us-east-1/state.json
+          jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-kubeadm-selfmanaged-aws\ us-east-1/state.json
 
       - name: scaledown k3
         if: steps.changes.outputs.paths == 'true'
@@ -132,7 +131,7 @@ jobs:
           ksctl-e2e-amd64 -op scaledown -file aws/scaledown-ha.json
 
           kubectl get nodes -owide
-          jq -r . ~/.ksctl/state/aws/ha/test-e2e-ha-aws\ ap-south-1/state.json
+          jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-selfmanaged-aws\ ap-south-1/state.json
 
       - name: scaleup k3
         if: steps.changes.outputs.paths == 'true'
@@ -145,7 +144,7 @@ jobs:
           ksctl-e2e-amd64 -op scaleup -file aws/scaleup-ha.json
 
           kubectl get nodes -owide
-          jq -r . ~/.ksctl/state/aws/ha/test-e2e-ha-aws\ ap-south-1/state.json
+          jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-selfmanaged-aws\ ap-south-1/state.json
 
       - name: delete (managed)
         if: always() && steps.changes.outputs.paths == 'true'
@@ -153,14 +152,14 @@ jobs:
           set -xe
           ksctl-e2e-amd64 -op delete -file aws/delete.json
 
-      - name: delete (ha k3s)
+      - name: delete (selfmanaged k3s)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
           ksctl-e2e-amd64 -op delete -file aws/delete-ha.json
 
-      - name: delete (ha kubeadm)
+      - name: delete (selfmanaged kubeadm)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe

@@ -24,8 +24,8 @@ jobs:
         with:
           filters: |
             paths:
-              - 'internal/cloudproviders/local/*'
-              - 'internal/storage/**'
+              - 'pkg/providers/local/*'
+              - 'pkg/storage/**'
               - 'pkg/helpers/**'
               - 'pkg/logger/**'
               - 'test/e2e/*'
