@@ -17,10 +17,13 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/ksctl/ksctl/pkg/addons"
 	"github.com/ksctl/ksctl/pkg/apps/stack"
+	"github.com/ksctl/ksctl/pkg/k8s"
+	"github.com/ksctl/ksctl/pkg/poller"
 	"github.com/ksctl/ksctl/pkg/provider"
 	"github.com/ksctl/ksctl/pkg/utilities"
 
@@ -380,11 +383,6 @@ func (kc *Controller) EnableKsctlAddons(
 		return err
 	}
 
-	// TODO: the task list
-	// 1. install the ksctl specific configurations and no statefile configurations
-	//   - configmap apply to ksctl-system namespace
-	// 2. install the https://github.com/ksctl/cluster-management-operator
-
 	serializeVersion := func(versions map[string]*string) []byte {
 		versionsBytes, err := json.Marshal(versions)
 		if err != nil {
@@ -428,7 +426,27 @@ func (kc *Controller) EnableKsctlAddons(
 		return err
 	}
 
-	kc.l.Warn(kc.ctx, "WIP: we need to install the cluster-management-operator")
+	ver, err := poller.GetSharedPoller().Get("ksctl", "kcm")
+	if err != nil {
+		return err
+	}
+
+	if err := k.k8sClient.KubectlApply(&k8s.App{
+		Version: ver[0],
+		Urls:    []string{fmt.Sprintf("https://github.com/ksctl/kcm/releases/download/%s/install.yaml", ver[0])},
+	}); err != nil {
+		return err
+	}
+
+	kc.s.ProvisionerAddons.Apps = append(kc.s.ProvisionerAddons.Apps, statefile.SlimProvisionerAddon{
+		Name:    "kcm",
+		For:     consts.K8sKsctl,
+		Version: utilities.Ptr(ver[0]),
+	})
+	if err := kc.p.Storage.Write(kc.s); err != nil {
+		kc.l.Error("failed to write statefile", "error", err)
+		return err
+	}
 
 	return nil
 }
@@ -471,6 +489,27 @@ func (kc *Controller) DisableKsctlAddons(
 	); err != nil {
 		kc.l.Error("failed to delete namespace", "namespace", namespace, "error", err)
 		return err
+	}
+
+	idx := -1
+
+	for i, addon := range kc.s.ProvisionerAddons.Apps {
+		if addon.Name == "kcm" && addon.For == consts.K8sKsctl {
+			idx = i
+			if err := k.k8sClient.KubectlDelete(&k8s.App{
+				Version: *addon.Version,
+				Urls:    []string{fmt.Sprintf("https://github.com/ksctl/kcm/releases/download/%s/install.yaml", *addon.Version)},
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	if idx != -1 {
+		kc.s.ProvisionerAddons.Apps = append(kc.s.ProvisionerAddons.Apps[:idx], kc.s.ProvisionerAddons.Apps[idx+1:]...)
+		if err := kc.p.Storage.Write(kc.s); err != nil {
+			kc.l.Error("failed to write statefile", "error", err)
+			return err
+		}
 	}
 
 	return nil
