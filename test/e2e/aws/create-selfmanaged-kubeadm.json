@@ -1,5 +1,5 @@
 {
-  "cluster_name": "test-e2e-kubeadm-ha-aws",
+  "cluster_name": "test-e2e-kubeadm-selfmanaged-aws",
   "region": "us-east-1",
   "self_managed": true,
   "cloud_provider": "aws",

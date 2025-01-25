@@ -63,15 +63,15 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op create -file aws/create-ha.json
-          ksctl-e2e-amd64 -op info -file aws/info-ha.json
+          ksctl-e2e-amd64 -op create -file aws/create-selfmanaged.json
+          ksctl-e2e-amd64 -op info -file aws/info-selfmanaged.json
 
       - name: create (kubeadm selfmanaged)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op create -file aws/create-ha-kubeadm.json
-          ksctl-e2e-amd64 -op info -file aws/info-ha-kubeadm.json
+          ksctl-e2e-amd64 -op create -file aws/create-selfmanaged-kubeadm.json
+          ksctl-e2e-amd64 -op info -file aws/info-selfmanaged-kubeadm.json
 
       - name: get
         if: steps.changes.outputs.paths == 'true'
@@ -83,14 +83,14 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
-          ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-selfmanaged-aws\ ap-south-1/state.json
           sleep 5s
           kubectl get nodes -owide
 
           echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (kubeadm)\033[0m \033[1;34m@@@\033[0m"
-          ksctl-e2e-amd64 -op switch -file aws/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-kubeadm-selfmanaged-aws\ us-east-1/state.json
           sleep 5s
@@ -100,10 +100,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op switch -file aws/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json
 
           sleep 30s
-          ksctl-e2e-amd64 -op scaledown -file aws/scaledown-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaledown -file aws/scaledown-selfmanaged-kubeadm.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-kubeadm-selfmanaged-aws\ us-east-1/state.json
@@ -112,10 +112,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op switch -file aws/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json
 
           sleep 1m
-          ksctl-e2e-amd64 -op scaleup -file aws/scaleup-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaleup -file aws/scaleup-selfmanaged-kubeadm.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-kubeadm-selfmanaged-aws\ us-east-1/state.json
@@ -125,10 +125,10 @@ jobs:
         run: |
 
           set -xe
-          ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json
 
           sleep 30s
-          ksctl-e2e-amd64 -op scaledown -file aws/scaledown-ha.json
+          ksctl-e2e-amd64 -op scaledown -file aws/scaledown-selfmanaged.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-selfmanaged-aws\ ap-south-1/state.json
@@ -138,10 +138,10 @@ jobs:
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op switch -file aws/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json
 
           sleep 30s
-          ksctl-e2e-amd64 -op scaleup -file aws/scaleup-ha.json
+          ksctl-e2e-amd64 -op scaleup -file aws/scaleup-selfmanaged.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-selfmanaged-aws\ ap-south-1/state.json
@@ -157,11 +157,11 @@ jobs:
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op delete -file aws/delete-ha.json
+          ksctl-e2e-amd64 -op delete -file aws/delete-selfmanaged.json
 
       - name: delete (selfmanaged kubeadm)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op delete -file aws/delete-ha-kubeadm.json
+          ksctl-e2e-amd64 -op delete -file aws/delete-selfmanaged-kubeadm.json

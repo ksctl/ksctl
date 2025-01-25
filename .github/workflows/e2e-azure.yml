@@ -53,15 +53,15 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op create -file azure/create-ha.json
-          ksctl-e2e-amd64 -op info -file azure/info-ha.json
+          ksctl-e2e-amd64 -op create -file azure/create-selfmanaged.json
+          ksctl-e2e-amd64 -op info -file azure/info-selfmanaged.json
 
       - name: create (kubeadm selfmanaged)
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op create -file azure/create-ha-kubeadm.json
-          ksctl-e2e-amd64 -op info -file azure/info-ha-kubeadm.json
+          ksctl-e2e-amd64 -op create -file azure/create-selfmanaged-kubeadm.json
+          ksctl-e2e-amd64 -op info -file azure/info-selfmanaged-kubeadm.json
 
       - name: get
         if: steps.changes.outputs.paths == 'true'
@@ -86,7 +86,7 @@ jobs:
 
           echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
 
-          ksctl-e2e-amd64 -op switch -file azure/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file azure/switch-selfmanaged.json
 
           tree ~/.ksctl/state
 
@@ -98,7 +98,7 @@ jobs:
 
           echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (kubeadm)\033[0m \033[1;34m@@@\033[0m"
 
-          ksctl-e2e-amd64 -op switch -file azure/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file azure/switch-selfmanaged-kubeadm.json
 
           tree ~/.ksctl/state
 
@@ -112,10 +112,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op switch -file azure/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file azure/switch-selfmanaged-kubeadm.json
 
           sleep 30s
-          ksctl-e2e-amd64 -op scaledown -file azure/scaledown-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaledown -file azure/scaledown-selfmanaged-kubeadm.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/azure/selfmanaged/test-e2e-kubeadm-selfmanaged-azure\ centralindia/state.json
@@ -124,10 +124,10 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op switch -file azure/switch-ha-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file azure/switch-selfmanaged-kubeadm.json
 
           sleep 1m
-          ksctl-e2e-amd64 -op scaleup -file azure/scaleup-ha-kubeadm.json
+          ksctl-e2e-amd64 -op scaleup -file azure/scaleup-selfmanaged-kubeadm.json
 
           kubectl get nodes -owide
 
@@ -138,10 +138,10 @@ jobs:
         run: |
 
           set -xe
-          ksctl-e2e-amd64 -op switch -file azure/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file azure/switch-selfmanaged.json
 
           sleep 30s
-          ksctl-e2e-amd64 -op scaledown -file azure/scaledown-ha.json
+          ksctl-e2e-amd64 -op scaledown -file azure/scaledown-selfmanaged.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/azure/selfmanaged/test-e2e-selfmanaged-azure\ eastus2/state.json
@@ -151,10 +151,10 @@ jobs:
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op switch -file azure/switch-ha.json
+          ksctl-e2e-amd64 -op switch -file azure/switch-selfmanaged.json
 
           sleep 30s
-          ksctl-e2e-amd64 -op scaleup -file azure/scaleup-ha.json
+          ksctl-e2e-amd64 -op scaleup -file azure/scaleup-selfmanaged.json
 
           kubectl get nodes -owide
           jq -r . ~/.ksctl/state/azure/selfmanaged/test-e2e-selfmanaged-azure\ eastus2/state.json
@@ -171,11 +171,11 @@ jobs:
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op delete -file azure/delete-ha.json
+          ksctl-e2e-amd64 -op delete -file azure/delete-selfmanaged.json
 
       - name: delete (selfmanaged kubeadm)
         if: always() && steps.changes.outputs.paths == 'true'
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op delete -file azure/delete-ha-kubeadm.json
+          ksctl-e2e-amd64 -op delete -file azure/delete-selfmanaged-kubeadm.json

@@ -1,5 +1,5 @@
 {
-	"cluster_name": "test-e2e-ha-azure",
+	"cluster_name": "test-e2e-selfmanaged-azure",
 	"self_managed": true,
 	"region": "eastus2",
 	"cloud_provider": "azure",

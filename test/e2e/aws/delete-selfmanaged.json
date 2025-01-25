@@ -1,5 +1,5 @@
 {
-	"cluster_name": "test-e2e-ha-aws",
+	"cluster_name": "test-e2e-selfmanaged-aws",
 	"self_managed": true,
 	"region": "ap-south-1",
 	"cloud_provider": "aws",
