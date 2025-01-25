@@ -19,16 +19,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
 	"gopkg.in/yaml.v3"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
-	nodev1 "k8s.io/api/node/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -42,7 +36,7 @@ import (
 	k8sYaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func (k *Client) getDynamicClientFromManifest(manifest []byte) (dynamic.ResourceInterface, *unstructured.Unstructured, error) {
+func (k *Client) getDynamicClientFromManifest(manifest []byte, defaultNamespace *string) (dynamic.ResourceInterface, *unstructured.Unstructured, error) {
 
 	dynamicClient, err := dynamic.NewForConfig(k.r)
 	if err != nil {
@@ -74,7 +68,11 @@ func (k *Client) getDynamicClientFromManifest(manifest []byte) (dynamic.Resource
 
 	namespace := obj.GetNamespace()
 	if namespace == "" {
-		namespace = "default" // default namespace if not specified
+		if defaultNamespace != nil {
+			namespace = *defaultNamespace
+		} else {
+			namespace = "default"
+		}
 	}
 
 	var dri dynamic.ResourceInterface
@@ -118,40 +116,10 @@ func (k *Client) httpGet(uri string) ([]byte, error) {
 	return rBody, nil
 }
 
-func (k *Client) fileGet(path string) ([]byte, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedKubernetesClient,
-			k.l.NewError(k.ctx, "failed to open the manifest location", "Reason", err),
-		)
-	}
-
-	defer func(f *os.File) {
-		_ = f.Close()
-	}(f)
-
-	rBody, err := io.ReadAll(f)
-	if err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedKubernetesClient,
-			k.l.NewError(k.ctx, "failed to read the manifests", "Reason", err),
-		)
-	}
-
-	return rBody, nil
-}
-
 func (k *Client) getManifest(uri string) (string, error) {
 	var v []byte
 	var err error
-	if strings.HasPrefix(uri, "uri:::") {
-		v, err = k.httpGet(strings.TrimPrefix(uri, "uri:::"))
-	} else if strings.HasPrefix(uri, "file:::") {
-		v, err = k.fileGet(strings.TrimPrefix(uri, "file:::"))
-	} else {
-		v, err = k.httpGet(uri)
-	}
+	v, err = k.httpGet(uri)
 	if err != nil {
 		return "", err
 	}
@@ -198,7 +166,6 @@ func (k *Client) getManifests(appUrl string) ([]string, error) {
 }
 
 func (k *Client) KubectlApply(component *App) error {
-
 	for _, url := range component.Urls {
 		resources, err := k.getManifests(url)
 		if err != nil {
@@ -213,141 +180,53 @@ func (k *Client) KubectlApply(component *App) error {
 
 func (k *Client) individualKubectlInstall(component *App, resources []string) error {
 	if component.CreateNamespace {
-		if err := k.NamespaceCreate(&corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: component.Namespace,
-			}}); err != nil {
+		ns := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "v1",
+				"kind":       "Namespace",
+				"metadata": map[string]interface{}{
+					"name": component.Namespace,
+				},
+			},
+		}
+
+		if c, _, err := k.getDynamicClientFromManifest([]byte(mustYAMLMarshal(ns)), nil); err != nil {
 			return err
+		} else {
+			if _, err := c.Apply(k.ctx, ns.GetName(), ns, metav1.ApplyOptions{
+				FieldManager: "ksctl",
+				Force:        true,
+			}); err != nil {
+				return err
+			}
+			k.l.Success(k.ctx, "Created Namespace", "name", component.Namespace)
 		}
 	}
 
 	for _, resource := range resources {
-		decUnstructured := scheme.Codecs.UniversalDeserializer().Decode
+		ns := func() *string {
+			if component.CreateNamespace {
+				return &component.Namespace
+			}
+			return nil
+		}()
 
-		obj, _, err := decUnstructured([]byte(resource), nil, nil)
+		c, obj, err := k.getDynamicClientFromManifest([]byte(resource), ns)
 		if err != nil {
-			k.l.Warn(k.ctx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err)
-
-			if c, o, err := k.getDynamicClientFromManifest([]byte(resource)); err != nil {
-				return err
-			} else {
-				_, err := c.Create(k.ctx, o, metav1.CreateOptions{})
-				if err != nil {
-					return err
-				}
-				continue
-			}
+			return err
 		}
 
-		var errRes error
+		k.l.Print(k.ctx, "Applying Resource", "kind", obj.GetKind(), "name", obj.GetName())
 
-		switch o := obj.(type) {
-
-		case *apiextensionsv1.CustomResourceDefinition:
-			errRes = k.ApiExtensionsApply(o)
-
-		case *corev1.Namespace:
-			k.l.Print(k.ctx, "Namespace", "name", o.Name)
-			errRes = k.NamespaceCreate(o)
-
-		case *appsv1.DaemonSet:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Daemonset", "name", o.Name)
-			errRes = k.DaemonsetApply(o)
-
-		case *appsv1.Deployment:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Deployment", "name", o.Name)
-			errRes = k.DeploymentApply(o)
-
-		case *corev1.Service:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Service", "name", o.Name)
-			errRes = k.ServiceApply(o)
-
-		case *corev1.ServiceAccount:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ServiceAccount", "name", o.Name)
-			errRes = k.ServiceAccountApply(o)
-
-		case *corev1.ConfigMap:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ConfigMap", "name", o.Name)
-			errRes = k.ConfigMapApply(o)
-
-		case *corev1.Secret:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Secret", "name", o.Name)
-			errRes = k.SecretApply(o)
-
-		case *nodev1.RuntimeClass:
-			k.l.Print(k.ctx, "RuntimeClass", "name", o.Name)
-			errRes = k.RuntimeApply(o)
-
-		case *appsv1.StatefulSet:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "StatefulSet", "name", o.Name)
-			errRes = k.StatefulSetApply(o)
-
-		case *rbacv1.ClusterRole:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ClusterRole", "name", o.Name)
-			errRes = k.ClusterRoleApply(o)
-
-		case *rbacv1.ClusterRoleBinding:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ClusterRoleBinding", "name", o.Name)
-			errRes = k.ClusterRoleBindingApply(o)
-
-		case *rbacv1.Role:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Role", "name", o.Name)
-			errRes = k.RoleApply(o)
-
-		case *rbacv1.RoleBinding:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "RoleBinding", "name", o.Name)
-			errRes = k.RoleBindingApply(o)
-
-		case *networkingv1.NetworkPolicy:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "NetworkPolicy", "name", o.Name)
-			errRes = k.NetPolicyApply(o)
-
-		default:
-			errRes = ksctlErrors.WrapError(
-				ksctlErrors.ErrFailedKubernetesClient,
-				k.l.NewError(k.ctx, "unexpected type", "obj", o),
-			)
+		_, err = c.Apply(k.ctx, obj.GetName(), obj, metav1.ApplyOptions{
+			FieldManager: "ksctl",
+			Force:        true,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to apply resource %s/%s: %w", obj.GetKind(), obj.GetName(), err)
 		}
 
-		if errRes != nil {
-			return errRes
-		}
+		k.l.Success(k.ctx, "Applied Resource", "kind", obj.GetKind(), "name", obj.GetName(), "namespace", obj.GetNamespace())
 	}
 
 	return nil
@@ -368,142 +247,58 @@ func (k *Client) KubectlDelete(component *App) error {
 
 func (k *Client) individualKubectlUninstall(component *App, resources []string) error {
 	for _, resource := range resources {
-		decUnstructured := scheme.Codecs.UniversalDeserializer().Decode
+		ns := func() *string {
+			if component.CreateNamespace {
+				return &component.Namespace
+			}
+			return nil
+		}()
 
-		obj, _, err := decUnstructured([]byte(resource), nil, nil)
+		c, obj, err := k.getDynamicClientFromManifest([]byte(resource), ns)
 		if err != nil {
-			k.l.Warn(k.ctx, "failed to decode the raw manifests into kubernetes gvr", "Reason", err)
-
-			if c, o, err := k.getDynamicClientFromManifest([]byte(resource)); err != nil {
-				return err
-			} else {
-				err := c.Delete(k.ctx, o.GetName(), metav1.DeleteOptions{})
-				if err != nil {
-					return err
-				}
-				continue
-			}
+			return err
 		}
 
-		var errRes error
+		k.l.Print(k.ctx, "Deleting Resource", "kind", obj.GetKind(), "name", obj.GetName())
 
-		switch o := obj.(type) {
-
-		case *apiextensionsv1.CustomResourceDefinition:
-			errRes = k.ApiExtensionsDelete(o)
-
-		case *corev1.Namespace:
-			k.l.Print(k.ctx, "Namespace", "name", o.Name)
-			errRes = k.NamespaceDelete(o, false)
-
-		case *appsv1.DaemonSet:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Daemonset", "name", o.Name)
-			errRes = k.DaemonsetDelete(o)
-
-		case *appsv1.Deployment:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Deployment", "name", o.Name)
-			errRes = k.DeploymentDelete(o)
-
-		case *corev1.Service:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Service", "name", o.Name)
-			errRes = k.ServiceDelete(o)
-
-		case *corev1.ServiceAccount:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ServiceAccount", "name", o.Name)
-			errRes = k.ServiceAccountDelete(o)
-
-		case *corev1.ConfigMap:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ConfigMap", "name", o.Name)
-			errRes = k.ConfigMapDelete(o)
-
-		case *corev1.Secret:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Secret", "name", o.Name)
-			errRes = k.SecretDelete(o)
-
-		case *appsv1.StatefulSet:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "StatefulSet", "name", o.Name)
-			errRes = k.StatefulSetDelete(o)
-
-		case *nodev1.RuntimeClass:
-			k.l.Print(k.ctx, "RuntimeClass", "name", o.Name)
-			errRes = k.RuntimeDelete(o.Name)
-
-		case *rbacv1.ClusterRole:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ClusterRole", "name", o.Name)
-			errRes = k.ClusterRoleDelete(o)
-
-		case *rbacv1.ClusterRoleBinding:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "ClusterRoleBinding", "name", o.Name)
-			errRes = k.ClusterRoleBindingDelete(o)
-
-		case *rbacv1.Role:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "Role", "name", o.Name)
-			errRes = k.RoleDelete(o)
-
-		case *rbacv1.RoleBinding:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "RoleBinding", "name", o.Name)
-			errRes = k.RoleBindingDelete(o)
-
-		case *networkingv1.NetworkPolicy:
-			if component.CreateNamespace {
-				o.Namespace = component.Namespace
-			}
-			k.l.Print(k.ctx, "NetworkPolicy", "name", o.Name)
-			errRes = k.NetPolicyDelete(o)
-
-		default:
-			errRes = ksctlErrors.WrapError(
-				ksctlErrors.ErrFailedKubernetesClient,
-				k.l.NewError(k.ctx, "unexpected type", "obj", o),
-			)
+		err = c.Delete(k.ctx, obj.GetName(), metav1.DeleteOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to delete resource %s/%s: %w", obj.GetKind(), obj.GetName(), err)
 		}
 
-		if errRes != nil {
-			return errRes
-		}
+		k.l.Success(k.ctx, "Deleted Resource", "kind", obj.GetKind(), "name", obj.GetName(), "namespace", obj.GetNamespace())
 	}
 
 	if component.CreateNamespace {
-		if err := k.NamespaceDelete(&corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: component.Namespace,
-			}}, true); err != nil {
+		// Delete namespace using dynamic client
+		ns := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "v1",
+				"kind":       "Namespace",
+				"metadata": map[string]interface{}{
+					"name": component.Namespace,
+				},
+			},
+		}
+
+		if c, _, err := k.getDynamicClientFromManifest([]byte(mustYAMLMarshal(ns)), nil); err != nil {
 			return err
+		} else {
+			if err := c.Delete(k.ctx, ns.GetName(), metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+			k.l.Success(k.ctx, "Deleted Namespace", "name", component.Namespace)
 		}
 	}
 
 	return nil
+}
+
+// Helper function to marshal unstructured objects to YAML
+func mustYAMLMarshal(obj interface{}) []byte {
+	bytes, err := yaml.Marshal(obj)
+	if err != nil {
+		panic(err)
+	}
+	return bytes
 }
