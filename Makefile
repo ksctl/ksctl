@@ -8,15 +8,15 @@ help: ## Display this help.
 
 ##@ Tests
 .PHONY: test_all
-test_all:
-	@go test -timeout 20m  -run 'All' -v tests/{runner_test.go,unit_test.go,integration_test.go}
+test_all: ## Run all tests
+	@go test -timeout 20m  -run 'All' -v test/{runner_test.go,unit_test.go,integration_test.go}
 
 ##@ Unit Tests
 .PHONY: unit_test
 unit_test: ## Run unit tests
-	@go test -timeout 20m -run 'Unit' -v tests/{runner_test.go,unit_test.go,integration_test.go}
+	@go test -timeout 20m -run 'Unit' -v test/{runner_test.go,unit_test.go,integration_test.go}
 
 ##@ Integeration Tests
 .PHONY: integeration_test
 integeration_test: ## Run integration tests
-	@go test -timeout 20m -run 'Integration' -v tests/{runner_test.go,unit_test.go,integration_test.go}
+	@go test -timeout 20m -run 'Integration' -v test/{runner_test.go,unit_test.go,integration_test.go}
