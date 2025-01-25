@@ -26,7 +26,7 @@ import (
 )
 
 func getPackagesUnitTest() []string {
-	EXCLUDE_DIRS := []string{"cmd", "cli", "migration", "vendor", "tests"}
+	EXCLUDE_DIRS := []string{"cmd", "cli", "migration", "vendor", "test"}
 
 	fmt.Printf("%s%sCollecting packages...%s\n", BLUE, BOLD, RESET)
 	cmd := exec.Command("go", "list", "./...")

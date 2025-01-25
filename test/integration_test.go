@@ -52,7 +52,7 @@ func runTestsIntegration(packages []IntegrationTestP) bool {
 		fmt.Printf("\n%sRunning tests for package: %s with tag: %s and bench: %s%s\n", CYAN, pkg, pkg.goTag, pkg.goBench, RESET)
 
 		cmd = exec.Command("go", "test", "-tags", pkg.goTag, "-bench", pkg.goBench, "-benchtime=1x", "-cover", "-v", ".")
-		cmd.Dir = "../tests/integration"
+		cmd.Dir = "../test/integration"
 		_bout := new(strings.Builder)
 		_berr := new(strings.Builder)
 		spinner := hacks.NewSpinner()
