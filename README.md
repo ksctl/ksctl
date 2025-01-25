@@ -1,4 +1,4 @@
-![CoverPage Social Media](./img/cover.svg)
+![CoverPage Social Media](./assets/img/cover.svg)
 
 # Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
