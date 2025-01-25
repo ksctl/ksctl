@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ksctl/ksctl/pkg/poller"
+	"github.com/ksctl/ksctl/v2/pkg/poller"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
 func convertK3sVersion(ver string) string {

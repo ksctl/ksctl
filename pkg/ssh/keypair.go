@@ -20,9 +20,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/statefile"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"golang.org/x/crypto/ssh"
 )
 

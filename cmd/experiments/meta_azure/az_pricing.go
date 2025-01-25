@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/pkg/provider/azure"
+	"github.com/ksctl/ksctl/v2/pkg/provider/azure"
 )
 
 func main() {

@@ -17,10 +17,10 @@ package cni
 import (
 	"context"
 
-	"github.com/ksctl/ksctl/pkg/apps/stack"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/apps/stack"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 const (

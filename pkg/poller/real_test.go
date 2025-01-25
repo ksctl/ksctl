@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/pkg/poller"
+	"github.com/ksctl/ksctl/v2/pkg/poller"
 )
 
 func TestMain(m *testing.M) {

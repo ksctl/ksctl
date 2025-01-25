@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 type StructuredLog struct {

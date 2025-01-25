@@ -17,7 +17,7 @@ package statefile
 import (
 	"fmt"
 
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

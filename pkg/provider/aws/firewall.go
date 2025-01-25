@@ -17,14 +17,14 @@ package aws
 import (
 	"strconv"
 
-	"github.com/ksctl/ksctl/pkg/firewall"
+	"github.com/ksctl/ksctl/v2/pkg/firewall"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func (p *Provider) NewFirewall() error {

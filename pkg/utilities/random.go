@@ -16,7 +16,7 @@ package utilities
 
 import (
 	"crypto/rand"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"math/big"
 )
 

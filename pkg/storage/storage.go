@@ -15,8 +15,8 @@
 package storage
 
 import (
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 type Storage interface {

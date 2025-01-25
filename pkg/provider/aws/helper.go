@@ -15,9 +15,9 @@
 package aws
 
 import (
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/validation"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
 func (p *Provider) validationOfArguments() error {

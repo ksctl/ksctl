@@ -17,7 +17,7 @@ package k8s
 import (
 	"context"
 
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

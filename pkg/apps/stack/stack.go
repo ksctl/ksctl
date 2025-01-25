@@ -15,8 +15,8 @@
 package stack
 
 import (
-	"github.com/ksctl/ksctl/pkg/helm"
-	"github.com/ksctl/ksctl/pkg/k8s"
+	"github.com/ksctl/ksctl/v2/pkg/helm"
+	"github.com/ksctl/ksctl/v2/pkg/k8s"
 )
 
 type (

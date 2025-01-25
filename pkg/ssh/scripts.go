@@ -16,7 +16,7 @@ package ssh
 
 import (
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"sync"
 )
 

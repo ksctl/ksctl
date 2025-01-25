@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strings"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

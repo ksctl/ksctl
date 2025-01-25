@@ -18,7 +18,7 @@ package k8s
 import (
 	"context"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

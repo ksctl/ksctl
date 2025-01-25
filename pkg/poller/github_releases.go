@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/github"
+	"github.com/ksctl/ksctl/v2/pkg/github"
 )
 
 type status struct {

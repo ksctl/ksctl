@@ -19,7 +19,7 @@ package local
 import (
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 

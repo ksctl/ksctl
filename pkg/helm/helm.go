@@ -21,7 +21,7 @@ import (
 	"helm.sh/helm/v3/pkg/registry"
 
 	"github.com/fatih/color"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/getter"

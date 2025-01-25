@@ -17,8 +17,8 @@ package waiter
 import (
 	"context"
 	"errors"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/logger"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"gotest.tools/v3/assert"
 	"os"
 	"testing"

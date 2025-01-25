@@ -21,7 +21,7 @@ import (
 	nodev1 "k8s.io/api/node/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )

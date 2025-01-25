@@ -18,9 +18,9 @@ import (
 	"context"
 	"os"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/logger"
-	localStore "github.com/ksctl/ksctl/pkg/storage/host"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	localStore "github.com/ksctl/ksctl/v2/pkg/storage/host"
 )
 
 type CustomLogger struct {

@@ -19,12 +19,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	controllerCommon "github.com/ksctl/ksctl/pkg/handler/cluster/common"
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	controllerManaged "github.com/ksctl/ksctl/pkg/handler/cluster/managed"
-	controllerSelfManaged "github.com/ksctl/ksctl/pkg/handler/cluster/selfmanaged"
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
+	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
+	controllerManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/managed"
+	controllerSelfManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/selfmanaged"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 )
 
 var (

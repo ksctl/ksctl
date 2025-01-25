@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
 
 func (kc *Controller) DeleteHACluster() error {

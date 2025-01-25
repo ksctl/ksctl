@@ -16,9 +16,9 @@ package azure
 
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/firewall"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/firewall"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func (p *Provider) DelFirewall() error {

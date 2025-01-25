@@ -18,14 +18,14 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/provider"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
 type Provider struct {

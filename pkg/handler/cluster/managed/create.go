@@ -15,10 +15,10 @@
 package managed
 
 import (
-	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
-	"github.com/ksctl/ksctl/pkg/consts"
-	providerHandler "github.com/ksctl/ksctl/pkg/provider/handler"
-	"github.com/ksctl/ksctl/pkg/validation"
+	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
+	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
 func (kc *Controller) Create() error {

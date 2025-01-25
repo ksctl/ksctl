@@ -15,14 +15,14 @@
 package common
 
 import (
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/provider"
-	"github.com/ksctl/ksctl/pkg/provider/aws"
-	"github.com/ksctl/ksctl/pkg/provider/azure"
-	"github.com/ksctl/ksctl/pkg/provider/local"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
+	"github.com/ksctl/ksctl/v2/pkg/provider/azure"
+	"github.com/ksctl/ksctl/v2/pkg/provider/local"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]logger.ClusterDataForLogging, error) {

@@ -15,10 +15,10 @@
 package controller
 
 import (
-	"github.com/ksctl/ksctl/pkg/config"
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/validation"
+	"github.com/ksctl/ksctl/v2/pkg/config"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
 func (cc *Controller) ValidateName(name string) error {

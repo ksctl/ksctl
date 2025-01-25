@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
 
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 func (p *Kubeadm) JoinWorkerplane(noOfWP int) error {

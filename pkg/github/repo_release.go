@@ -17,7 +17,7 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"io"
 	"net/http"
 	"sort"

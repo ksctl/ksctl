@@ -23,13 +23,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ksctl/ksctl/pkg/config"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/v2/pkg/config"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
 const (

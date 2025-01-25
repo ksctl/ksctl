@@ -15,9 +15,9 @@
 package provider
 
 import (
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 )
 
 type CloudResourceState struct {

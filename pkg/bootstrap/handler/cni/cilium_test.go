@@ -17,7 +17,7 @@ package cni
 import (
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/apps/stack"
+	"github.com/ksctl/ksctl/v2/pkg/apps/stack"
 	"github.com/stretchr/testify/assert"
 )
 

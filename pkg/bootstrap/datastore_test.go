@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	testHelper "github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	testHelper "github.com/ksctl/ksctl/v2/pkg/ssh"
 	"github.com/stretchr/testify/assert"
 )
 

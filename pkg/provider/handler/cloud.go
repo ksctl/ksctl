@@ -18,14 +18,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	awsPkg "github.com/ksctl/ksctl/pkg/provider/aws"
-	azurePkg "github.com/ksctl/ksctl/pkg/provider/azure"
-	localPkg "github.com/ksctl/ksctl/pkg/provider/local"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	awsPkg "github.com/ksctl/ksctl/v2/pkg/provider/aws"
+	azurePkg "github.com/ksctl/ksctl/v2/pkg/provider/azure"
+	localPkg "github.com/ksctl/ksctl/v2/pkg/provider/local"
 )
 
 type Controller struct {

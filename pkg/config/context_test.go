@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"gotest.tools/v3/assert"
 )
 

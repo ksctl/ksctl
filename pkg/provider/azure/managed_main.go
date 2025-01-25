@@ -19,10 +19,10 @@ import (
 	"os"
 
 	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {

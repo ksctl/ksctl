@@ -17,7 +17,7 @@ package aws
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
 )
 
 func (p *Provider) CreateUploadSSHKeyPair() error {

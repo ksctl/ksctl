@@ -15,8 +15,8 @@
 package managed
 
 import (
-	"github.com/ksctl/ksctl/pkg/consts"
-	providerHandler "github.com/ksctl/ksctl/pkg/provider/handler"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
 
 func (kc *Controller) Delete() error {

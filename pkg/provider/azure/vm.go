@@ -19,9 +19,9 @@ import (
 
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/provider"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func (p *Provider) DelVM(index int) error {

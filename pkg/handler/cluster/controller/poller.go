@@ -17,18 +17,18 @@ package controller
 import (
 	"sort"
 
-	"github.com/ksctl/ksctl/pkg/config"
-	"github.com/ksctl/ksctl/pkg/validation"
+	"github.com/ksctl/ksctl/v2/pkg/config"
+	"github.com/ksctl/ksctl/v2/pkg/validation"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
-	"github.com/ksctl/ksctl/pkg/poller"
+	"github.com/ksctl/ksctl/v2/pkg/poller"
 
-	localstate "github.com/ksctl/ksctl/pkg/storage/host"
-	kubernetesstate "github.com/ksctl/ksctl/pkg/storage/kubernetes"
-	externalmongostate "github.com/ksctl/ksctl/pkg/storage/mongodb"
+	localstate "github.com/ksctl/ksctl/v2/pkg/storage/host"
+	kubernetesstate "github.com/ksctl/ksctl/v2/pkg/storage/kubernetes"
+	externalmongostate "github.com/ksctl/ksctl/v2/pkg/storage/mongodb"
 
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 func (cc *Controller) StartPoller() error {

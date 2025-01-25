@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"

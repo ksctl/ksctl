@@ -17,8 +17,8 @@ package main
 import (
 	"os"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	controllerManaged "github.com/ksctl/ksctl/pkg/handler/cluster/managed"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	controllerManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/managed"
 )
 
 func createManagedCluster(ksctlClient *controllerManaged.Controller) {

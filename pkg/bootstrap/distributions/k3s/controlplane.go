@@ -19,9 +19,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/ssh"
-	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 // NOTE: configureCP_1 is not meant for concurrency

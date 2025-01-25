@@ -18,12 +18,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
 
-	"github.com/ksctl/ksctl/pkg/ssh"
-	testHelper "github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
+	testHelper "github.com/ksctl/ksctl/v2/pkg/ssh"
 
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"gotest.tools/v3/assert"
 )
 

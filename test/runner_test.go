@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ksctl/ksctl/hacks"
+	"github.com/ksctl/ksctl/v2/hacks"
 )
 
 const (

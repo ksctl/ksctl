@@ -19,8 +19,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/poller"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/poller"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func TestMain(m *testing.M) {

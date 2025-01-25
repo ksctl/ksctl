@@ -16,15 +16,15 @@ package azure
 
 import (
 	"errors"
-	"github.com/ksctl/ksctl/pkg/firewall"
+	"github.com/ksctl/ksctl/v2/pkg/firewall"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 	"gotest.tools/v3/assert"
 )
 

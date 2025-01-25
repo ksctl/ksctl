@@ -25,15 +25,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
-	localstate "github.com/ksctl/ksctl/pkg/storage/host"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage"
+	localstate "github.com/ksctl/ksctl/v2/pkg/storage/host"
 	"gotest.tools/v3/assert"
 )
 

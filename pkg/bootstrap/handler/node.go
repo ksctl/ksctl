@@ -17,7 +17,7 @@ package handler
 import (
 	"strings"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
 func (k *K8sClusterClient) DeleteWorkerNodes(nodeName string) error {

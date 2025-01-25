@@ -17,8 +17,8 @@ package azure
 import (
 	"fmt"
 
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/statefile"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 func generateResourceGroupName(clusterName, clusterType string) string {

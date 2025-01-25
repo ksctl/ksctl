@@ -15,8 +15,8 @@
 package distributions
 
 import (
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 type KubernetesDistribution interface {

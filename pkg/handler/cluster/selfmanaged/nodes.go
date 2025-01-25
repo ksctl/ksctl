@@ -17,10 +17,10 @@ package selfmanaged
 import (
 	"strings"
 
-	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
-	"github.com/ksctl/ksctl/pkg/config"
-	"github.com/ksctl/ksctl/pkg/consts"
-	providerHandler "github.com/ksctl/ksctl/pkg/provider/handler"
+	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
+	"github.com/ksctl/ksctl/v2/pkg/config"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
 
 func (kc *Controller) AddWorkerNodes() error {

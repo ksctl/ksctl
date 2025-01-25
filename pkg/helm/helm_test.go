@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/helm"
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/helm"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 )
 
 var (

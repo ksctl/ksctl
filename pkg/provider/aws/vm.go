@@ -18,13 +18,13 @@ import (
 	"encoding/base64"
 	"strconv"
 
-	"github.com/ksctl/ksctl/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
 func (p *Provider) DelVM(index int) error {

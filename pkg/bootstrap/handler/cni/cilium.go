@@ -17,10 +17,10 @@ package cni
 import (
 	"strings"
 
-	"github.com/ksctl/ksctl/pkg/apps/stack"
-	"github.com/ksctl/ksctl/pkg/helm"
-	"github.com/ksctl/ksctl/pkg/poller"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/apps/stack"
+	"github.com/ksctl/ksctl/v2/pkg/helm"
+	"github.com/ksctl/ksctl/v2/pkg/poller"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func getCiliumComponentOverridings(p stack.ComponentOverrides) (version *string, ciliumChartOverridings map[string]any) {

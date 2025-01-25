@@ -21,16 +21,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 
-	controllerCommon "github.com/ksctl/ksctl/pkg/handler/cluster/common"
-	controllerManaged "github.com/ksctl/ksctl/pkg/handler/cluster/managed"
-	controllerSelfManaged "github.com/ksctl/ksctl/pkg/handler/cluster/selfmanaged"
+	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
+	controllerManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/managed"
+	controllerSelfManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/selfmanaged"
 
-	addonClusterMgt "github.com/ksctl/ksctl/pkg/handler/addons/clustermanager"
+	addonClusterMgt "github.com/ksctl/ksctl/v2/pkg/handler/addons/clustermanager"
 )
 
 var (

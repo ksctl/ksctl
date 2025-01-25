@@ -22,7 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/pkg/provider/aws"
+	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
 )
 
 func main() {

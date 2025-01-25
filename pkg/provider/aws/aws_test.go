@@ -18,14 +18,14 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/firewall"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/firewall"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	awsTypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 	"gotest.tools/v3/assert"
 )
 

@@ -19,10 +19,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ksctl/ksctl/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlError "github.com/ksctl/ksctl/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlError "github.com/ksctl/ksctl/v2/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 

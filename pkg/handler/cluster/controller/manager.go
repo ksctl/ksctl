@@ -18,13 +18,13 @@ import (
 	"context"
 	"runtime/debug"
 
-	"github.com/ksctl/ksctl/pkg/addons"
-	"github.com/ksctl/ksctl/pkg/bootstrap"
-	"github.com/ksctl/ksctl/pkg/bootstrap/distributions"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	"github.com/ksctl/ksctl/pkg/provider"
-	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap"
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/storage"
 )
 
 type Client struct {

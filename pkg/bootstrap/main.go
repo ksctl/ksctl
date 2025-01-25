@@ -16,16 +16,16 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/certs"
-	"github.com/ksctl/ksctl/pkg/provider"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/v2/pkg/certs"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage"
 	"sync"
 
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 type PreBootstrap struct {

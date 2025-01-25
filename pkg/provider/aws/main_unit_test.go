@@ -21,13 +21,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
-	localstate "github.com/ksctl/ksctl/pkg/storage/host"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
+	localstate "github.com/ksctl/ksctl/v2/pkg/storage/host"
 )
 
 var (

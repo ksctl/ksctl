@@ -18,8 +18,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ksctl/ksctl/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"os"
 )
 

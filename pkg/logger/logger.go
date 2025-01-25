@@ -16,7 +16,7 @@ package logger
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 type Logger interface {

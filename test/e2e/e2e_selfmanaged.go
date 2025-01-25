@@ -17,7 +17,7 @@ package main
 import (
 	"os"
 
-	controllerSelfManaged "github.com/ksctl/ksctl/pkg/handler/cluster/selfmanaged"
+	controllerSelfManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/selfmanaged"
 )
 
 func createHACluster(ksctlClient *controllerSelfManaged.Controller) {

@@ -15,12 +15,12 @@
 package selfmanaged
 
 import (
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/validation"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/validation"
 
-	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
+	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
 
-	providerHandler "github.com/ksctl/ksctl/pkg/provider/handler"
+	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
 
 func (kc *Controller) Create() error {

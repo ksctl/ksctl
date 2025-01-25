@@ -25,8 +25,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ksctl/ksctl/pkg/statefile"
-	"github.com/ksctl/ksctl/pkg/storage"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage"
 
 	"github.com/docker/docker/api/types/image"
 
@@ -36,8 +36,8 @@ import (
 	"gotest.tools/v3/assert"
 
 	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 )
 
 var (

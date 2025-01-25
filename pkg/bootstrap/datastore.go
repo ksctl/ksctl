@@ -19,11 +19,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ksctl/ksctl/pkg/poller"
-	"github.com/ksctl/ksctl/pkg/ssh"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/poller"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 
-	"github.com/ksctl/ksctl/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 func getLatestVersionEtcd() (string, error) {

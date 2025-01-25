@@ -15,8 +15,8 @@
 package clustermanager
 
 import (
-	bootstrapHandler "github.com/ksctl/ksctl/pkg/bootstrap/handler"
-	"github.com/ksctl/ksctl/pkg/consts"
+	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 func (kc *Controller) Enable() error {

@@ -17,7 +17,7 @@ package main
 import (
 	"os"
 
-	controllerCommon "github.com/ksctl/ksctl/pkg/handler/cluster/common"
+	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
 )
 
 func getClusters(ksctlClient *controllerCommon.Controller) {

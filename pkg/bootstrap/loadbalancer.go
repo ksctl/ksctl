@@ -17,10 +17,10 @@ package bootstrap
 import (
 	"fmt"
 
-	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/utilities"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func getLatestVersionHAProxy() (string, error) {

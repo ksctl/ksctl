@@ -15,7 +15,7 @@
 package main
 
 import (
-	addonClusterMgt "github.com/ksctl/ksctl/pkg/handler/addons/clustermanager"
+	addonClusterMgt "github.com/ksctl/ksctl/v2/pkg/handler/addons/clustermanager"
 	"os"
 )
 

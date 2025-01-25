@@ -18,7 +18,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 	klog "sigs.k8s.io/kind/pkg/log"
 )
 

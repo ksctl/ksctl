@@ -16,7 +16,7 @@ package github_test
 
 import (
 	"bytes"
-	"github.com/ksctl/ksctl/pkg/github"
+	"github.com/ksctl/ksctl/v2/pkg/github"
 	"io"
 	"testing"
 )

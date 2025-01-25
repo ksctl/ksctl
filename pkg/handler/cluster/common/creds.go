@@ -15,10 +15,10 @@
 package common
 
 import (
-	"github.com/ksctl/ksctl/pkg/consts"
-	ksctlErrors "github.com/ksctl/ksctl/pkg/errors"
-	"github.com/ksctl/ksctl/pkg/provider/aws"
-	"github.com/ksctl/ksctl/pkg/provider/azure"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
+	"github.com/ksctl/ksctl/v2/pkg/provider/azure"
 )
 
 func (kc *Controller) Credentials() error {

@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/ssh"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
 )
 
 // JoinWorkerplane implements storage.DistroFactory.

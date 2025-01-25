@@ -16,8 +16,8 @@ package certs
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/pkg/consts"
-	"github.com/ksctl/ksctl/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"os"
 	"testing"
 )
