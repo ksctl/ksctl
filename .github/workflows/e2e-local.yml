@@ -24,18 +24,20 @@ jobs:
         with:
           filters: |
             paths:
-              - 'pkg/providers/local/*'
-              - 'pkg/storage/**'
-              - 'pkg/helpers/**'
-              - 'pkg/logger/**'
-              - 'test/e2e/*'
               - 'test/gh-runner/**'
+              - 'test/e2e/*'
               - 'test/e2e/local/*'
               - 'go.mod'
               - 'go.sum'
-              - 'pkg/controllers/**'
-              - 'pkg/resources/**'
               - '.github/workflows/e2e-local.yml'
+              - 'pkg/**'
+              - '!pkg/provider/azure/**'
+              - '!pkg/provider/aws/**'
+              - '!**/*.md'
+              - '!**/*.json'
+              - '!**/*.yaml'
+              - '!.dockerignore'
+              - '!.gitignore'
       - name: run mongodb server
         if: steps.changes.outputs.paths == 'true'
         run: |
@@ -91,18 +93,20 @@ jobs:
         with:
           filters: |
             paths:
-              - 'internal/cloudproviders/local/*'
-              - 'internal/storage/**'
-              - 'pkg/helpers/**'
-              - 'pkg/logger/**'
-              - 'test/e2e/*'
               - 'test/gh-runner/**'
+              - 'test/e2e/*'
               - 'test/e2e/local/*'
               - 'go.mod'
               - 'go.sum'
-              - 'pkg/controllers/**'
-              - 'pkg/resources/**'
               - '.github/workflows/e2e-local.yml'
+              - 'pkg/**'
+              - '!pkg/provider/azure/**'
+              - '!pkg/provider/aws/**'
+              - '!**/*.md'
+              - '!**/*.json'
+              - '!**/*.yaml'
+              - '!.dockerignore'
+              - '!.gitignore'
 
       - name: create (managed)
         if: steps.changes.outputs.paths == 'true'
