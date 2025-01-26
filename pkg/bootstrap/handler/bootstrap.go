@@ -315,16 +315,15 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 				break
 			}
 		}
-		_c := stack.KsctlApp{
-			StackName: _cni.Name,
-		}
+		_c := stack.KsctlApp{}
 
 		if _cni == nil {
 			kc.l.Print(kc.ctx, "CNI Plugin not found in addons list")
 
-			_c.StackName = "flannel"
+			_c.StackName = "cilium"
 			_c.Overrides = nil
 		} else {
+			_c.StackName = _cni.Name
 			if _cni.Config == nil {
 				_c.Overrides = nil
 			} else {
