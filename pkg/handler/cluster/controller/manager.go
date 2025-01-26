@@ -84,11 +84,7 @@ func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
 
 func (cc *Controller) PanicHandler(log logger.Logger) error {
 	if r := recover(); r != nil {
-		log.Error("Failed to recover stack trace", "error", r)
-		log.Print(cc.ctx, "Controller Information", "context", cc.ctx)
-		debug.PrintStack()
-
-		return errors.WrapErrorf(ksctlErrors.ErrPanic, "Panic Error: %v", r)
+		return errors.WrapErrorf(ksctlErrors.ErrPanic, "Cause: {%v}\nTraceback\n%v", r, string(debug.Stack()))
 	}
 	return nil
 }
