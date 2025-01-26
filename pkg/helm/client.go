@@ -34,7 +34,7 @@ type Client struct {
 	actionConfig *action.Configuration
 	settings     *cli.EnvSettings
 
-	ociPullDestDir string
+	ociPullDestDir *string
 }
 
 type ChartOptions struct {
@@ -80,6 +80,7 @@ func WithOCIChartPullDestDir(dir string) Option {
 		if err != nil {
 			return err
 		}
+		f = "./" + f
 		o.ociPullDir = &f
 		return nil
 	}
@@ -106,9 +107,7 @@ func NewClient(ctx context.Context, log logger.Logger, opts ...Option) (client *
 
 	client.settings.Debug = options.runAsDebug
 	if options.ociPullDir != nil {
-		client.ociPullDestDir = "./" + *options.ociPullDir
-	} else {
-		client.ociPullDestDir = "./"
+		client.ociPullDestDir = options.ociPullDir
 	}
 
 	_log := &CustomLogger{Logger: log, ctx: ctx}
@@ -146,7 +145,6 @@ func NewKubeconfigHelmClient(ctx context.Context, log logger.Logger, kubeconfig 
 	client.settings.Debug = true
 	client.log = log
 
-	client.ociPullDestDir = "./"
 	client.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "helm-client")
 	if err := patchHelmDirectories(ctx, log, client); err != nil {
 		return nil, err
@@ -171,7 +169,6 @@ func NewInClusterHelmClient(ctx context.Context, log logger.Logger) (client *Cli
 	client.settings = cli.New()
 	client.settings.Debug = true
 	client.log = log
-	client.ociPullDestDir = "./"
 	client.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "helm-client")
 	if err := patchHelmDirectories(ctx, log, client); err != nil {
 		return nil, err

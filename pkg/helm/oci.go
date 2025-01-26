@@ -188,8 +188,12 @@ func (c *Client) runPull(chartRef, chartVersion string) error {
 	c.actionConfig.RegistryClient = registryClient
 
 	pullClient := action.NewPullWithOpts(
-		action.WithConfig(c.actionConfig))
-	pullClient.DestDir = c.ociPullDestDir
+		action.WithConfig(c.actionConfig),
+	)
+	pullClient.DestDir = "./"
+	if c.ociPullDestDir != nil {
+		pullClient.DestDir = *c.ociPullDestDir
+	}
 	pullClient.Settings = c.settings
 	pullClient.Version = chartVersion
 
