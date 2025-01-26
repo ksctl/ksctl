@@ -16,7 +16,7 @@ package handler
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/ksctl/ksctl/v2/pkg/apps/stack"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/handler/cni"
@@ -236,7 +236,7 @@ advisiable to use external storage solution
 
 	if _err := k.storageDriver.Write(state); _err != nil {
 		if errorInStack != nil {
-			return fmt.Errorf(errorInStack.Error() + " " + _err.Error())
+			return errors.Join(errorInStack, _err)
 		}
 		return _err
 	}
