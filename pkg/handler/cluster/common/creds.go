@@ -15,14 +15,23 @@
 package common
 
 import (
+	"errors"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
 	"github.com/ksctl/ksctl/v2/pkg/provider/azure"
 )
 
-func (kc *Controller) Credentials() error {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) Credentials() (errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	var err error
 	switch kc.p.Metadata.Provider {

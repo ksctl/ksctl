@@ -28,6 +28,7 @@ const (
 	ErrInternal
 	ErrDuplicateRecords
 	ErrNoMatchingRecordsFound
+	ErrPanic
 
 	ErrInvalidOperation
 	ErrInvalidKsctlRole
@@ -79,6 +80,8 @@ func (e KsctlError) errorCodeToString() string {
 		return "TimeoutErr"
 	case ErrContextCancelled:
 		return "ContextCancelledErr"
+	case ErrPanic:
+		return "PanicErr"
 	case ErrSSHExec:
 		return "SSHExecErr"
 	case ErrKubeconfigOperations:
@@ -170,6 +173,10 @@ func IsNilCredentials(err error) bool {
 
 func IsTimeout(err error) bool {
 	return codeForError(err) == ErrTimeOut
+}
+
+func IsPanic(err error) bool {
+	return codeForError(err) == ErrPanic
 }
 
 func IsContextCancelled(err error) bool {

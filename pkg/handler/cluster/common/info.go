@@ -15,6 +15,8 @@
 package common
 
 import (
+	"errors"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -171,8 +173,15 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 	return printerTable, err
 }
 
-func (kc *Controller) GetCluster() error {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) GetCluster() (errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	v, err := kc.clusterDataHelper(logger.LoggingGetClusters)
 	if err != nil {
@@ -186,8 +195,15 @@ func (kc *Controller) GetCluster() error {
 	return nil
 }
 
-func (kc *Controller) InfoCluster() (*logger.ClusterDataForLogging, error) {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) InfoCluster() (_ *logger.ClusterDataForLogging, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	v, err := kc.clusterDataHelper(logger.LoggingInfoCluster)
 	if err != nil {
@@ -198,5 +214,5 @@ func (kc *Controller) InfoCluster() (*logger.ClusterDataForLogging, error) {
 
 	kc.l.Success(kc.ctx, "successfully cluster info")
 
-	return utilities.Ptr[logger.ClusterDataForLogging](v[0]), nil
+	return utilities.Ptr(v[0]), nil
 }

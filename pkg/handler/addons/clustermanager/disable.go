@@ -15,12 +15,21 @@
 package clustermanager
 
 import (
+	"errors"
+
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
-func (kc *Controller) Disable() error {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) Disable() (errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	transferableInfraState, err := kc.helper()
 	if err != nil {

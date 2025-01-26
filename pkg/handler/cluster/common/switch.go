@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,8 +29,15 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/provider/local"
 )
 
-func (kc *Controller) Switch() (*string, error) {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) Switch() (_ *string, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	if kc.b.IsLocalProvider(kc.p) {
 		kc.p.Metadata.Region = "LOCAL"

@@ -88,27 +88,15 @@ func (kc *Controller) setupInterfaces(
 		kc.p.Storage,
 	)
 
+	var bootstrapProvider consts.KsctlKubernetes
+
 	if kc.s.BootstrapProvider == consts.K8sK3s || kc.s.BootstrapProvider == consts.K8sKubeadm {
-		switch kc.s.BootstrapProvider {
-		case consts.K8sK3s:
-			kc.p.Bootstrap = k3sPkg.NewClient(
-				kc.ctx,
-				kc.l,
-				kc.p.Storage,
-				kc.s,
-			)
-		case consts.K8sKubeadm:
-			kc.p.Bootstrap = kubeadmPkg.NewClient(
-				kc.ctx,
-				kc.l,
-				kc.p.Storage,
-				kc.s,
-			)
-		}
-		return nil
+		bootstrapProvider = kc.s.BootstrapProvider
+	} else {
+		bootstrapProvider = kc.p.Metadata.K8sDistro
 	}
 
-	switch kc.p.Metadata.K8sDistro {
+	switch bootstrapProvider {
 	case consts.K8sK3s:
 		kc.p.Bootstrap = k3sPkg.NewClient(
 			kc.ctx,
@@ -315,16 +303,15 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 				break
 			}
 		}
-		_c := stack.KsctlApp{
-			StackName: _cni.Name,
-		}
+		_c := stack.KsctlApp{}
 
 		if _cni == nil {
 			kc.l.Print(kc.ctx, "CNI Plugin not found in addons list")
 
-			_c.StackName = "flannel"
+			_c.StackName = "cilium"
 			_c.Overrides = nil
 		} else {
+			_c.StackName = _cni.Name
 			if _cni.Config == nil {
 				_c.Overrides = nil
 			} else {
