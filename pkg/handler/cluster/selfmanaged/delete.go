@@ -15,13 +15,22 @@
 package selfmanaged
 
 import (
+	"errors"
+
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
 
-func (kc *Controller) Delete() error {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) Delete() (errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,

@@ -22,6 +22,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/storage"
@@ -80,10 +81,13 @@ func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
 	return b
 }
 
-func (cc *Controller) PanicHandler(log logger.Logger) {
+func (cc *Controller) PanicHandler(log logger.Logger) error {
 	if r := recover(); r != nil {
 		log.Error("Failed to recover stack trace", "error", r)
 		log.Print(cc.ctx, "Controller Information", "context", cc.ctx)
 		debug.PrintStack()
+
+		return errors.WrapErrorf(errors.ErrPanic, "Panic Error: %v", r)
 	}
+	return nil
 }

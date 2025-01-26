@@ -15,6 +15,8 @@
 package selfmanaged
 
 import (
+	"errors"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 
@@ -23,8 +25,15 @@ import (
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
 
-func (kc *Controller) Create() error {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) Create() (errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,

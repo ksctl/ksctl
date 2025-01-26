@@ -15,12 +15,21 @@
 package managed
 
 import (
+	"errors"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
 
-func (kc *Controller) Delete() error {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) Delete() (errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	if kc.b.IsLocalProvider(kc.p) {
 		kc.p.Metadata.Region = "LOCAL"

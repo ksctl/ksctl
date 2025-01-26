@@ -15,14 +15,23 @@
 package managed
 
 import (
+	"errors"
+
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
-func (kc *Controller) Create() error {
-	defer kc.b.PanicHandler(kc.l)
+func (kc *Controller) Create() (errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
 
 	if kc.b.IsLocalProvider(kc.p) {
 		kc.p.Metadata.Region = "LOCAL"
