@@ -40,10 +40,10 @@ jobs:
       )
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version-file: go.mod
       - run: make unit_test
 
   integration-test:
@@ -63,8 +63,8 @@ jobs:
       )
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version-file: go.mod
       - run: make integeration_test
