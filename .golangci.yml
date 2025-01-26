@@ -1,0 +1,55 @@
+run:
+  timeout: 5m
+  allow-parallel-runners: true
+
+issues:
+  # don't skip warning about doc comments
+  # don't exclude the default set of lint
+  exclude-use-default: false
+  # restore some of the defaults
+  # (fill in the rest as needed)
+  exclude-rules:
+    - path: "pkg/k8s/*"
+      linters:
+        - dupl
+
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+linters:
+  disable-all: true
+  enable:
+    - dupl
+    - errcheck
+    - copyloopvar
+    - ginkgolinter
+    - goconst
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - prealloc
+    - revive
+    - staticcheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+
+linters-settings:
+  revive:
+    rules:
+      - name: comment-spacings
+  lll:
+    # Max line length, lines longer will be reported.
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option.
+    # Default: 120.
+    line-length: 120
+    tab-width: 2

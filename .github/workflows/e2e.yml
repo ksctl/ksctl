@@ -24,9 +24,10 @@ jobs:
           sudo apt install software-properties-common -y
           sudo add-apt-repository --yes --update ppa:ansible/ansible
           sudo apt install ansible -y
-      - uses: actions/setup-go@v5
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: "stable"
+          go-version-file: go.mod
 
       - name: terraform init
         working-directory: test/gh-runner/infra
@@ -127,9 +128,10 @@ jobs:
           sudo apt install software-properties-common -y
           sudo add-apt-repository --yes --update ppa:ansible/ansible
           sudo apt install ansible -y
-      - uses: actions/setup-go@v5
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: "stable"
+          go-version-file: go.mod
 
       - name: terraform init
         working-directory: test/gh-runner/infra
