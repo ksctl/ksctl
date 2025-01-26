@@ -17,12 +17,14 @@ package helm
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 type Client struct {
@@ -31,6 +33,8 @@ type Client struct {
 
 	actionConfig *action.Configuration
 	settings     *cli.EnvSettings
+
+	ociPullDestDir *string
 }
 
 type ChartOptions struct {
@@ -49,47 +53,85 @@ type App struct {
 	Charts   []ChartOptions
 }
 
-func NewKubeconfigHelmClient(ctx context.Context, log logger.Logger, kubeconfig string) (client *Client, err error) {
-	client = new(Client)
+type options struct {
+	runAsDebug bool
+	kubeconfig *string
+	ociPullDir *string
+}
+type Option func(options *options) error
 
-	client.settings = cli.New()
-	client.settings.Debug = true
-	client.log = log
-	client.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "helm-client")
-	if err := patchHelmDirectories(ctx, log, client); err != nil {
-		return nil, err
+func WithDebug() Option {
+	return func(o *options) error {
+		o.runAsDebug = true
+		return nil
 	}
-
-	client.actionConfig = new(action.Configuration)
-
-	_log := &CustomLogger{Logger: log, ctx: ctx}
-
-	if err := client.actionConfig.Init(NewRESTClientGetter(client.settings.Namespace(), kubeconfig), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), _log.HelmDebugf); err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedHelmClient,
-			log.NewError(ctx, "failed to init kubeconfig based helm client", "Reason", err),
-		)
-	}
-	return client, nil
 }
 
-func NewInClusterHelmClient(ctx context.Context, log logger.Logger) (client *Client, err error) {
-	client = new(Client)
+func WithKubeconfig(kubeconfig string) Option {
+	return func(o *options) error {
+		o.kubeconfig = &kubeconfig
+		return nil
+	}
+}
 
+func WithOCIChartPullDestDir(dir string) Option {
+	return func(o *options) error {
+		f, err := filepath.Abs(dir)
+		if err != nil {
+			return err
+		}
+		f = "./" + f
+		o.ociPullDir = &f
+		return nil
+	}
+}
+
+func NewClient(ctx context.Context, log logger.Logger, opts ...Option) (client *Client, err error) {
+	var options options
+	for _, opt := range opts {
+		err := opt(&options)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	client = new(Client)
+	client.actionConfig = new(action.Configuration)
 	client.settings = cli.New()
-	client.settings.Debug = true
 	client.log = log
-	client.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "helm-client")
+	client.ctx = context.WithValue(
+		ctx,
+		consts.KsctlModuleNameKey,
+		"helm-client",
+	)
+
+	client.settings.Debug = options.runAsDebug
+	if options.ociPullDir != nil {
+		client.ociPullDestDir = options.ociPullDir
+	}
+
+	_log := &CustomLogger{Logger: log, ctx: ctx}
+
 	if err := patchHelmDirectories(ctx, log, client); err != nil {
 		return nil, err
 	}
-	client.actionConfig = new(action.Configuration)
 
-	_log := &CustomLogger{Logger: log, ctx: ctx}
-	if err := client.actionConfig.Init(client.settings.RESTClientGetter(), client.settings.Namespace(), os.Getenv("HELM_DRIVER"), _log.HelmDebugf); err != nil {
+	var getter genericclioptions.RESTClientGetter
+	if options.kubeconfig != nil {
+		getter = NewRESTClientGetter(client.settings.Namespace(), *options.kubeconfig)
+	} else {
+		getter = client.settings.RESTClientGetter()
+	}
+
+	if err := client.actionConfig.Init(
+		getter,
+		client.settings.Namespace(),
+		os.Getenv("HELM_DRIVER"),
+		_log.HelmDebugf,
+	); err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedHelmClient,
-			log.NewError(ctx, "failed to init in-cluster helm client", "Reason", err),
+			log.NewError(ctx, "failed to init helm client", "Reason", err),
 		)
 	}
 

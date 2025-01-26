@@ -34,6 +34,7 @@ require (
 	k8s.io/api v0.32.0
 	k8s.io/apiextensions-apiserver v0.31.3
 	k8s.io/apimachinery v0.32.0
+	k8s.io/cli-runtime v0.31.3
 	k8s.io/client-go v0.32.0
 	sigs.k8s.io/kind v0.26.0
 )
@@ -185,7 +186,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiserver v0.31.3 // indirect
-	k8s.io/cli-runtime v0.31.3 // indirect
 	k8s.io/component-base v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect

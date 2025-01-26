@@ -16,6 +16,7 @@ package helm
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"helm.sh/helm/v3/pkg/registry"
@@ -163,8 +164,15 @@ func (c *Client) InstallChart(
 	// clientInstall.SetRegistryClient(registryClient)
 	/////
 
-	chartPath, err := clientInstall.ChartPathOptions.
-		LocateChart(chartName, c.settings)
+	chartPath, err := func() (string, error) {
+		if len(chartRef) != 0 && registry.IsOCI(chartRef) && c.ociPullDestDir != nil {
+			return filepath.Join(
+				*c.ociPullDestDir,
+				chartName,
+			), nil
+		}
+		return clientInstall.ChartPathOptions.LocateChart(chartName, c.settings)
+	}()
 	if err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedHelmClient,
