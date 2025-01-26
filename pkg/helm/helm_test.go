@@ -50,10 +50,11 @@ func TestInitClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	helmClient, err = helm.NewKubeconfigHelmClient(
+	helmClient, err = helm.NewClient(
 		parentCtx,
 		parentLogger,
-		string(v),
+		helm.WithDebug(),
+		helm.WithKubeconfig(string(v)),
 	)
 	if err != nil {
 		t.Error(err)

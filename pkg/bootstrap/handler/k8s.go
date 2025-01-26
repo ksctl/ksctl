@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"os"
 
 	"github.com/ksctl/ksctl/v2/pkg/apps/stack"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/handler/cni"
@@ -75,10 +76,12 @@ func NewClusterClient(
 	}
 	k.r = config
 
-	k.helmClient, err = helm.NewKubeconfigHelmClient(
+	k.helmClient, err = helm.NewClient(
 		k.ctx,
 		k.l,
-		kubeconfig,
+		helm.WithKubeconfig(kubeconfig),
+		helm.WithDebug(),
+		helm.WithOCIChartPullDestDir(os.TempDir()),
 	)
 	if err != nil {
 		return
