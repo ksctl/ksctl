@@ -16,11 +16,12 @@ package bootstrap
 
 import (
 	"context"
+	"sync"
+
 	"github.com/ksctl/ksctl/v2/pkg/certs"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"github.com/ksctl/ksctl/v2/pkg/storage"
-	"sync"
 
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 

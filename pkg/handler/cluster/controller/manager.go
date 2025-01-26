@@ -23,6 +23,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/storage"
@@ -87,7 +88,7 @@ func (cc *Controller) PanicHandler(log logger.Logger) error {
 		log.Print(cc.ctx, "Controller Information", "context", cc.ctx)
 		debug.PrintStack()
 
-		return errors.WrapErrorf(errors.ErrPanic, "Panic Error: %v", r)
+		return errors.WrapErrorf(ksctlErrors.ErrPanic, "Panic Error: %v", r)
 	}
 	return nil
 }

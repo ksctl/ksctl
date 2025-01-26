@@ -88,27 +88,15 @@ func (kc *Controller) setupInterfaces(
 		kc.p.Storage,
 	)
 
+	var bootstrapProvider consts.KsctlKubernetes
+
 	if kc.s.BootstrapProvider == consts.K8sK3s || kc.s.BootstrapProvider == consts.K8sKubeadm {
-		switch kc.s.BootstrapProvider {
-		case consts.K8sK3s:
-			kc.p.Bootstrap = k3sPkg.NewClient(
-				kc.ctx,
-				kc.l,
-				kc.p.Storage,
-				kc.s,
-			)
-		case consts.K8sKubeadm:
-			kc.p.Bootstrap = kubeadmPkg.NewClient(
-				kc.ctx,
-				kc.l,
-				kc.p.Storage,
-				kc.s,
-			)
-		}
-		return nil
+		bootstrapProvider = kc.s.BootstrapProvider
+	} else {
+		bootstrapProvider = kc.p.Metadata.K8sDistro
 	}
 
-	switch kc.p.Metadata.K8sDistro {
+	switch bootstrapProvider {
 	case consts.K8sK3s:
 		kc.p.Bootstrap = k3sPkg.NewClient(
 			kc.ctx,

@@ -167,6 +167,7 @@ func (kc *Controller) AddWorkerNodes() (*provider.CloudResourceState, int, error
 	if err != nil {
 		return nil, -1, err
 	}
+
 	wg := &sync.WaitGroup{}
 
 	errChanWP := make(chan error, kc.p.Metadata.NoWP-currWP)
