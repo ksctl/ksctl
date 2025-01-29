@@ -1,4 +1,4 @@
-// Copyright 2024 Ksctl Authors
+// Copyright 2025 Ksctl Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package statefile
 
-import (
-	"os"
-
-	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
-)
-
-func creds(ksctlClient *controllerCommon.Controller) {
-	l.Print(ctx, "Exec ksctl creds...")
-
-	err := ksctlClient.Credentials()
-	if err != nil {
-		l.Error("Failure", "err", err)
-		os.Exit(1)
-	}
+type CredentialsMongodb struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Domain   string `json:"domain"`
+	Port     *int   `json:"port,omitempty"`
+	SRV      bool   `json:"srv,omitempty"`
 }

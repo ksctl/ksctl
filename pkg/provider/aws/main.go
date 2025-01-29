@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 
@@ -78,6 +79,9 @@ type Provider struct {
 	chVMType  chan string
 
 	client CloudSDK
+
+	accessKeyId string
+	secretKey   string
 }
 
 func NewClient(
@@ -127,34 +131,6 @@ func (p *Provider) ManagedK8sVersion(ver string) provider.Cloud {
 	return p
 }
 
-func (p *Provider) Credential() error {
-	p.l.Print(p.ctx, "Enter your AWS ACCESS KEY")
-	acesskey, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	p.l.Print(p.ctx, "Enter your AWS SECRET KEY")
-	acesskeysecret, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	apiStore := &statefile.CredentialsDocument{
-		InfraProvider: consts.CloudAws,
-		Aws: &statefile.CredentialsAws{
-			AccessKeyId:     acesskey,
-			SecretAccessKey: acesskeysecret,
-		},
-	}
-
-	if err := p.store.WriteCredentials(consts.CloudAws, apiStore); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (p *Provider) Name(resName string) provider.Cloud {
 
 	if err := validation.IsValidName(p.ctx, p.l, resName); err != nil {
@@ -166,6 +142,23 @@ func (p *Provider) Name(resName string) provider.Cloud {
 }
 
 func (p *Provider) InitState(operation consts.KsctlOperation) error {
+	v, ok := config.IsContextPresent(p.ctx, consts.KsctlAwsCredentials)
+	if !ok {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "missing aws credentials"),
+		)
+	}
+	extractedCreds := statefile.CredentialsAws{}
+	if err := json.Unmarshal([]byte(v), &extractedCreds); err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "failed to get aws credentials", "reason", err),
+		)
+	}
+
+	p.accessKeyId = extractedCreds.AccessKeyId
+	p.secretKey = extractedCreds.SecretAccessKey
 
 	switch p.SelfManaged {
 	case false:

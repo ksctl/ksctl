@@ -21,14 +21,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// CredentialsDocument object which stores the credentials for each provider
-type CredentialsDocument struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty"`
-	Aws           *CredentialsAws    `json:"aws,omitempty" bson:"aws,omitempty"`
-	Azure         *CredentialsAzure  `json:"azure,omitempty" bson:"azure,omitempty"`
-	InfraProvider consts.KsctlCloud  `json:"cloud_provider" bson:"cloud_provider"`
-}
-
 // StorageDocument object which stores the state of infra and bootstrap in a doc
 type StorageDocument struct {
 	ID primitive.ObjectID `bson:"_id,omitempty"`

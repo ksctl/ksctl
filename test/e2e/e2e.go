@@ -75,6 +75,15 @@ func main() {
 	l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
 
 	operation, meta := GetReqPayload(l)
+	switch operation {
+	case OpCreate, OpDelete, OpScaleUp, OpScaleDown:
+		if meta.Provider == consts.CloudAws {
+			ctx = CredsAws(ctx)
+		}
+		if meta.Provider == consts.CloudAzure {
+			ctx = CredsAzure(ctx)
+		}
+	}
 
 	l.Print(ctx, "Testing starting...")
 
@@ -143,8 +152,6 @@ func main() {
 			os.Exit(1)
 		}
 		switch operation {
-		case OpCreds:
-			creds(managerClient)
 		case OpGet:
 			getClusters(managerClient)
 		case OpInfo:

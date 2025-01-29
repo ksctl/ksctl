@@ -16,9 +16,11 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"regexp"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val string, isPresent bool) {
@@ -34,17 +36,57 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 		return "", false
 	}
 
-	expectedPattern := contextVars[key]
-
-	gotV, ok := _val.(string)
-	if ok {
-		_ok, err := regexp.MatchString(expectedPattern, gotV)
-		if err != nil {
+	switch key {
+	case consts.KsctlAwsCredentials:
+		if _val == nil {
 			return "", false
 		}
-		if _ok {
-			return gotV, true
+		if v, ok := _val.([]byte); ok {
+			if err := json.Unmarshal(v, &statefile.CredentialsAws{}); err != nil {
+				return "", false
+			}
+			return string(v), true
+		} else {
+			return "", false
+		}
+	case consts.KsctlAzureCredentials:
+		if _val == nil {
+			return "", false
+		}
+		if v, ok := _val.([]byte); ok {
+			if err := json.Unmarshal(v, &statefile.CredentialsAzure{}); err != nil {
+				return "", false
+			}
+			return string(v), true
+		} else {
+			return "", false
+		}
+	case consts.KsctlMongodbCredentials:
+		if _val == nil {
+			return "", false
+		}
+		if v, ok := _val.([]byte); ok {
+			if err := json.Unmarshal(v, &statefile.CredentialsMongodb{}); err != nil {
+				return "", false
+			}
+			return string(v), true
+		} else {
+			return "", false
+		}
+	default:
+		expectedPattern := contextVars[key]
+
+		gotV, ok := _val.(string)
+		if ok {
+			_ok, err := regexp.MatchString(expectedPattern, gotV)
+			if err != nil {
+				return "", false
+			}
+			if _ok {
+				return gotV, true
+			}
 		}
 	}
+
 	return "", false
 }

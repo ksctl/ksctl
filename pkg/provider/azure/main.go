@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
@@ -52,6 +53,11 @@ type Provider struct {
 	chVMType  chan string
 
 	client CloudSDK
+
+	tenantID       string
+	subscriptionID string
+	clientID       string
+	clientSecret   string
 }
 
 func NewClient(
@@ -86,7 +92,7 @@ func (p *Provider) GetStateFile() (string, error) {
 }
 
 func (p *Provider) GetHostNameAllWorkerNode() []string {
-	hostnames := utilities.DeepCopySlice[string](p.state.CloudInfra.Azure.InfoWorkerPlanes.Hostnames)
+	hostnames := utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoWorkerPlanes.Hostnames)
 	p.l.Debug(p.ctx, "Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }
@@ -112,14 +118,14 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		ClusterType:   p.clusterType,
 
 		// public IPs
-		IPv4ControlPlanes: utilities.DeepCopySlice[string](p.state.CloudInfra.Azure.InfoControlPlanes.PublicIPs),
-		IPv4DataStores:    utilities.DeepCopySlice[string](p.state.CloudInfra.Azure.InfoDatabase.PublicIPs),
-		IPv4WorkerPlanes:  utilities.DeepCopySlice[string](p.state.CloudInfra.Azure.InfoWorkerPlanes.PublicIPs),
+		IPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoControlPlanes.PublicIPs),
+		IPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoDatabase.PublicIPs),
+		IPv4WorkerPlanes:  utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoWorkerPlanes.PublicIPs),
 		IPv4LoadBalancer:  p.state.CloudInfra.Azure.InfoLoadBalancer.PublicIP,
 
 		// Private IPs
-		PrivateIPv4ControlPlanes: utilities.DeepCopySlice[string](p.state.CloudInfra.Azure.InfoControlPlanes.PrivateIPs),
-		PrivateIPv4DataStores:    utilities.DeepCopySlice[string](p.state.CloudInfra.Azure.InfoDatabase.PrivateIPs),
+		PrivateIPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoControlPlanes.PrivateIPs),
+		PrivateIPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  p.state.CloudInfra.Azure.InfoLoadBalancer.PrivateIP,
 	}
 	p.l.Debug(p.ctx, "Printing", "azureStateTransferPayload", payload)
@@ -129,6 +135,25 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 }
 
 func (p *Provider) InitState(operation consts.KsctlOperation) error {
+	v, ok := config.IsContextPresent(p.ctx, consts.KsctlAzureCredentials)
+	if !ok {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "missing azure credentials"),
+		)
+	}
+	extractedCreds := statefile.CredentialsAzure{}
+	if err := json.Unmarshal([]byte(v), &extractedCreds); err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "failed to get azure credentials", "reason", err),
+		)
+	}
+
+	p.tenantID = extractedCreds.TenantID
+	p.subscriptionID = extractedCreds.SubscriptionID
+	p.clientID = extractedCreds.ClientID
+	p.clientSecret = extractedCreds.ClientSecret
 
 	switch p.SelfManaged {
 	case false:
@@ -193,49 +218,6 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	}
 
 	p.l.Debug(p.ctx, "init cloud state")
-
-	return nil
-}
-
-func (p *Provider) Credential() error {
-
-	p.l.Print(p.ctx, "Enter your SUBSCRIPTION ID")
-	skey, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	p.l.Print(p.ctx, "Enter your TENANT ID")
-	tid, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	p.l.Print(p.ctx, "Enter your CLIENT ID")
-	cid, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	p.l.Print(p.ctx, "Enter your CLIENT SECRET")
-	cs, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	apiStore := &statefile.CredentialsDocument{
-		InfraProvider: consts.CloudAzure,
-		Azure: &statefile.CredentialsAzure{
-			SubscriptionID: skey,
-			TenantID:       tid,
-			ClientID:       cid,
-			ClientSecret:   cs,
-		},
-	}
-
-	if err := p.store.WriteCredentials(consts.CloudAzure, apiStore); err != nil {
-		return err
-	}
 
 	return nil
 }

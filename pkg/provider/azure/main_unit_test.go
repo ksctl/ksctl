@@ -16,6 +16,7 @@ package azure
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,6 +52,17 @@ func TestMain(m *testing.M) {
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeSelfMang)
 	_ = storeVars.Connect()
+
+	v, err := json.Marshal(statefile.CredentialsAzure{
+		SubscriptionID: "fake",
+		TenantID:       "fake",
+		ClientID:       "fake",
+		ClientSecret:   "fake",
+	})
+	if err != nil {
+		panic(err)
+	}
+	parentCtx = context.WithValue(parentCtx, consts.KsctlAzureCredentials, v)
 
 	fakeClientVars, _ = NewClient(
 		parentCtx,

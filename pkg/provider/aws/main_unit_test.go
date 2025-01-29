@@ -16,6 +16,7 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -55,6 +56,15 @@ func TestMain(m *testing.M) {
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeSelfMang)
 	_ = storeVars.Connect()
+
+	v, err := json.Marshal(statefile.CredentialsAws{
+		AccessKeyId:     "fake",
+		SecretAccessKey: "fake",
+	})
+	if err != nil {
+		panic(err)
+	}
+	parentCtx = context.WithValue(parentCtx, consts.KsctlAwsCredentials, v)
 
 	fakeClientVars, _ = NewClient(
 		parentCtx,
