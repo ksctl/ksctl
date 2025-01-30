@@ -16,6 +16,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -25,6 +26,7 @@ import (
 	controllerManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/managed"
 	controllerSelfManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/selfmanaged"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 var (
@@ -48,6 +50,35 @@ func InitCore() (err error) {
 		ctx,
 		consts.KsctlTestFlagKey,
 		"true",
+	)
+
+	awsC, err := json.Marshal(statefile.CredentialsAws{
+		AccessKeyId:     "fake",
+		SecretAccessKey: "fake",
+	})
+	if err != nil {
+		return err
+	}
+
+	azC, err := json.Marshal(statefile.CredentialsAzure{
+		SubscriptionID: "fake",
+		ClientID:       "fake",
+		ClientSecret:   "fake",
+		TenantID:       "fake",
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlAwsCredentials,
+		awsC,
+	)
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlAzureCredentials,
+		azC,
 	)
 
 	cli = new(controller.Client)

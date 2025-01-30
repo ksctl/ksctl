@@ -97,11 +97,6 @@ func TestGenOsClusterPath(t *testing.T) {
 		"azure",
 		"managed",
 		"name region"}...)
-	expectedCreds := filepath.Join([]string{
-		os.TempDir(),
-		"ksctl-local-store-test",
-		".ksctl",
-		"credentials"}...)
 
 	gotH, err := db.genOsClusterPath(string(consts.CloudAws), string(consts.ClusterTypeSelfMang), "name region")
 	assert.NilError(t, err)
@@ -113,12 +108,6 @@ func TestGenOsClusterPath(t *testing.T) {
 	assert.NilError(t, err)
 	if gotM != expectedManaged {
 		t.Fatalf("expected %s; but got %s\n", expectedManaged, gotM)
-	}
-
-	gotC, err := db.genOsClusterPath()
-	assert.NilError(t, err)
-	if gotC != expectedCreds {
-		t.Fatalf("expected %s; but got %s\n", expectedCreds, gotC)
 	}
 }
 

@@ -55,8 +55,7 @@ var (
 var ksctlNamespace string = "ksctl"
 
 const (
-	ksctlStateName      string = "ksctl-state"       // configmap name
-	ksctlCredentialName string = "ksctl-credentials" // secret name
+	ksctlStateName string = "ksctl-state" // configmap name
 )
 
 func copyStore(src *Store, dest *Store) {
@@ -329,30 +328,6 @@ func (s *Store) isPresent() (*v1.ConfigMap, error) {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrInternal,
 			log.NewError(storeCtx, "failed to read the secret", "Reason", err),
-		)
-	}
-	return c, nil
-}
-
-func (s *Store) isPresentCreds(cloud string) (*v1.Secret, error) {
-	c, err := s.clientSet.ReadSecret(ksctlNamespace, ksctlCredentialName, metav1.GetOptions{})
-	if err != nil {
-		log.Debug(storeCtx, "storage.kubernetes.isPresentCreds", "err", err)
-		if errors.IsNotFound(err) {
-			return nil, ksctlErrors.WrapError(
-				ksctlErrors.ErrNoMatchingRecordsFound,
-				log.NewError(storeCtx, "no credential is present", "Reason", err),
-			)
-		}
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			log.NewError(storeCtx, "failed to read the secret", "Reason", err),
-		)
-	}
-	if _, ok := c.Data[cloud]; !ok {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrNoMatchingRecordsFound,
-			log.NewError(storeCtx, "no credential is present", "Reason", "no entry found for given cloud provider"),
 		)
 	}
 	return c, nil

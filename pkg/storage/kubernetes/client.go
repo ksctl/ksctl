@@ -151,11 +151,5 @@ func (f *FakeClient) DeleteResourcesForTest() error {
 		Delete(f.ctx, ksctlStateName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
-	if err := f.client.
-		CoreV1().
-		Secrets(ksctlNamespace).
-		Delete(f.ctx, ksctlCredentialName, metav1.DeleteOptions{}); err != nil {
-		return err
-	}
 	return nil
 }
