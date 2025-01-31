@@ -44,8 +44,6 @@ func (p *Provider) CreateUploadSSHKeyPair() error {
 		},
 	}
 
-	p.l.Debug(p.ctx, "Printing", "sshConfig", parameters)
-
 	_, err = p.client.CreateSSHKey(name, parameters, nil)
 	if err != nil {
 		return err

@@ -75,8 +75,6 @@ func (p *K3s) configureCP_1(sshExecutor ssh.RemoteConnection) error {
 
 	p.state.K8sBootstrap.K3s.K3sToken = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	p.l.Debug(p.ctx, "Printing", "k3sToken", p.state.K8sBootstrap.K3s.K3sToken)
-
 	err = p.store.Write(p.state)
 	if err != nil {
 		return err

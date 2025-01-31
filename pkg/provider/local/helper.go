@@ -88,8 +88,6 @@ networking:
 		return nil, err
 	}
 
-	p.l.Debug(p.ctx, "Printing", "configCluster", string(raw))
-
 	return cluster.CreateWithRawConfig(raw), nil
 }
 

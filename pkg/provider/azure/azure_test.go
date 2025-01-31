@@ -16,8 +16,9 @@ package azure
 
 import (
 	"errors"
-	"github.com/ksctl/ksctl/v2/pkg/firewall"
 	"testing"
+
+	"github.com/ksctl/ksctl/v2/pkg/firewall"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 
@@ -78,12 +79,12 @@ func TestNoOfControlPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfControlPlane(-1, false)
-	if no != -1 || err == nil || (err != nil && !ksctlErrors.IsInvalidNoOfControlplane(err)) {
+	if no != -1 || err == nil || !ksctlErrors.IsInvalidNoOfControlplane(err) {
 		t.Fatalf("Getter failed on unintalized controlplanes array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfControlPlane(1, true)
-	if err == nil || (err != nil && !ksctlErrors.IsInvalidNoOfControlplane(err)) {
+	if err == nil || !ksctlErrors.IsInvalidNoOfControlplane(err) {
 		t.Fatalf("setter should fail on when no < 3 controlplanes provided_no: %d", 1)
 	}
 
@@ -102,12 +103,12 @@ func TestNoOfDataStore(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfDataStore(-1, false)
-	if no != -1 || err == nil || (err != nil && !ksctlErrors.IsInvalidNoOfDatastore(err)) {
+	if no != -1 || err == nil || !ksctlErrors.IsInvalidNoOfDatastore(err) {
 		t.Fatalf("Getter failed on unintalized datastore array got no: %d and err: %v", no, err)
 	}
 
 	_, err = fakeClientVars.NoOfDataStore(0, true)
-	if err == nil || (err != nil && !ksctlErrors.IsInvalidNoOfDatastore(err)) {
+	if err == nil || !ksctlErrors.IsInvalidNoOfDatastore(err) {
 		t.Fatalf("setter should fail on when no < 3 datastore provided_no: %d", 1)
 	}
 
@@ -126,7 +127,7 @@ func TestNoOfWorkerPlane(t *testing.T) {
 	var no int
 	var err error
 	no, err = fakeClientVars.NoOfWorkerPlane(-1, false)
-	if no != -1 || err == nil || (err != nil && !ksctlErrors.IsInvalidNoOfWorkerplane(err)) {
+	if no != -1 || err == nil || !ksctlErrors.IsInvalidNoOfWorkerplane(err) {
 		t.Fatalf("Getter failed on unintalized workerplane array got no: %d and err: %v", no, err)
 	}
 

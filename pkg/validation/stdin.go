@@ -16,7 +16,6 @@ package validation
 
 import (
 	"context"
-	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -25,22 +24,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
-	"golang.org/x/term"
 )
-
-func UserInputCredentials(ctx context.Context, logging logger.Logger) (string, error) {
-
-	logging.Print(ctx, "Enter Secret")
-	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
-	if err != nil {
-		return "", err
-	}
-	if len(bytePassword) == 0 {
-		logging.Error("Empty secret passed!")
-		return UserInputCredentials(ctx, logging)
-	}
-	return strings.TrimSpace(string(bytePassword)), nil
-}
 
 func ValidateDistro(distro consts.KsctlKubernetes) bool {
 	if b := utf8.ValidString(string(distro)); !b {

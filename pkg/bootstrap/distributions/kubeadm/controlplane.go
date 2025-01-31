@@ -53,8 +53,6 @@ func (p *Kubeadm) configurecp1(sshExecutor ssh.RemoteConnection) error {
 
 	p.state.K8sBootstrap.Kubeadm.CertificateKey = strings.Trim(sshExecutor.GetOutput()[0], "\n")
 
-	p.l.Debug(p.ctx, "Printing", "CertificateKey", p.state.K8sBootstrap.Kubeadm.CertificateKey)
-
 	p.l.Print(p.ctx, "Generating Kubeadm Bootstrap Token")
 
 	if err := sshExecutor.Flag(consts.UtilExecWithOutput).
@@ -94,8 +92,6 @@ func (p *Kubeadm) configurecp1(sshExecutor ssh.RemoteConnection) error {
 	}
 
 	p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash = strings.Trim(sshExecutor.GetOutput()[0], "\n")
-
-	p.l.Debug(p.ctx, "Printing", "DiscoveryTokenCACertHash", p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash)
 
 	if err := p.store.Write(p.state); err != nil {
 		return err

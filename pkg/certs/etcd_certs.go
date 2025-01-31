@@ -22,11 +22,12 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
-	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"math/big"
 	"net"
 	"time"
+
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/logger"
 )
 
 // NOTE: this go is refering to https://shaneutt.com/blog/golang-ca-and-signed-cert-go/
@@ -48,7 +49,6 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 			)
 		}
 	}
-	log.Debug(ctx, "Etcd Members private ip", "ips", validIPAddresses)
 
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2019),
@@ -91,7 +91,6 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 	}
 
 	caCert = extractBuffer(caPEM)
-	log.Debug(ctx, "CA CERTIFICATE", "ca.crt", caCert)
 
 	caPrivKeyPEM := new(bytes.Buffer)
 	if err := pem.Encode(caPrivKeyPEM, &pem.Block{
@@ -157,7 +156,5 @@ func GenerateCerts(ctx context.Context, log logger.Logger, etcdMemPrivAddr []str
 	etcdCert = extractBuffer(certPEM)
 	etcdKey = extractBuffer(certPrivKeyPEM)
 
-	log.Debug(ctx, "ETCD CERTIFICATE", "etcd.crt", etcdCert)
-	log.Debug(ctx, "ETCD KEY", "key.pem", etcdKey)
 	return
 }

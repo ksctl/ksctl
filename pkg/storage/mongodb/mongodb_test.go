@@ -19,11 +19,14 @@ package mongodb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"github.com/ksctl/ksctl/v2/pkg/storage"
@@ -41,7 +44,7 @@ import (
 )
 
 var (
-	db           storage.Storage
+	db           *Store
 	parentCtx    context.Context
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
@@ -89,10 +92,16 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	err = os.Setenv("MONGODB_URI", "mongodb://root:1234@localhost:27017")
+	v, err := json.Marshal(statefile.CredentialsMongodb{
+		Username: "root",
+		Password: "1234",
+		Domain:   "localhost",
+		Port:     utilities.Ptr(27017),
+	})
 	if err != nil {
 		panic(err)
 	}
+	parentCtx = context.WithValue(parentCtx, consts.KsctlMongodbCredentials, v)
 
 	defer func() {
 		if err := cli.ContainerRemove(parentCtx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
@@ -102,6 +111,30 @@ func TestMain(m *testing.M) {
 	//recover()
 	_ = m.Run()
 
+}
+
+func TestUriAssembler(t *testing.T) {
+	testCases := []struct {
+		creds    statefile.CredentialsMongodb
+		expected string
+	}{
+		{
+			creds: statefile.CredentialsMongodb{
+				Username: "root",
+				Password: "1234",
+				Domain:   "localhost",
+			},
+			expected: "mongodb://root:1234@localhost",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(fmt.Sprintf("test case on, %#v", tt.creds), func(t *testing.T) {
+			if got := URIAssembler(tt.creds); got != tt.expected {
+				t.Fatalf("Expected: %s, Got: %s", tt.expected, got)
+			}
+		})
+	}
 }
 
 func TestInitStorage(t *testing.T) {
@@ -158,34 +191,6 @@ func TestStore_RWD(t *testing.T) {
 
 	if err := db.DeleteCluster(); err != nil {
 		t.Fatalf("Error shouln't happen on deleting cluster info: %v", err)
-	}
-}
-
-func TestStore_RWDCredentials(t *testing.T) {
-	if _, err := db.ReadCredentials(consts.CloudAzure); err == nil {
-		t.Fatalf("Error should occur as there is no folder created, %v", err)
-	}
-
-	fakeData := &statefile.CredentialsDocument{
-		InfraProvider: consts.CloudAzure,
-		Azure: &statefile.CredentialsAzure{
-			ClientID: "client_id",
-		},
-	}
-	err := db.WriteCredentials(consts.CloudAzure, fakeData)
-	if err != nil {
-		t.Fatalf("Error shouln't happen: %v", err)
-	}
-
-	if gotFakeData, err := db.ReadCredentials(consts.CloudAzure); err != nil {
-		t.Fatalf("Error shouln't happen on reading file: %v", err)
-	} else {
-		fmt.Printf("%#+v\n", gotFakeData)
-
-		gotFakeData.ID = [12]byte{} // to make the ID same as out fake as it gets updated
-		if !reflect.DeepEqual(gotFakeData, fakeData) {
-			t.Fatalf("Written data doesn't match Reading")
-		}
 	}
 }
 
@@ -305,14 +310,6 @@ func TestExportImport(t *testing.T) {
 
 	t.Run("Export all", func(t *testing.T) {
 		var _expect = storage.StateExportImport{
-			Credentials: []*statefile.CredentialsDocument{
-				{
-					Azure: &statefile.CredentialsAzure{
-						ClientID: "client_id",
-					},
-					InfraProvider: consts.CloudAzure,
-				},
-			},
 			Clusters: []*statefile.StorageDocument{
 				{
 					Region:        "regionAws",
@@ -346,8 +343,7 @@ func TestExportImport(t *testing.T) {
 		} else {
 			dump.Println(_got)
 			bkpData = _got // storing the data
-			assert.Check(t, _got != nil && _got.Clusters != nil && _got.Credentials != nil)
-			assert.Check(t, len(_got.Credentials) == len(_expect.Credentials))
+			assert.Check(t, _got != nil && _got.Clusters != nil)
 			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
 
 			for _, g := range _got.Clusters {
@@ -361,17 +357,6 @@ func TestExportImport(t *testing.T) {
 					}
 				}
 				assert.Check(t, v == true, "didn't find the exepcted cluster state")
-			}
-			for _, g := range _got.Credentials {
-				g.ID = [12]byte{}
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Credentials {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted credentials state")
 			}
 		}
 	})
@@ -396,7 +381,7 @@ func TestExportImport(t *testing.T) {
 			}
 		}(db)
 
-		err := f.databaseClient.Drop(storeCtx)
+		err := f.databaseClient.Drop(parentCtx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -424,14 +409,6 @@ func TestExportImport(t *testing.T) {
 	t.Run("Export specific cluster", func(t *testing.T) {
 
 		var _expect = storage.StateExportImport{
-			Credentials: []*statefile.CredentialsDocument{
-				{
-					Azure: &statefile.CredentialsAzure{
-						ClientID: "client_id",
-					},
-					InfraProvider: consts.CloudAzure,
-				},
-			},
 			Clusters: []*statefile.StorageDocument{
 				{
 					Region:        "regionAzure",
@@ -452,8 +429,7 @@ func TestExportImport(t *testing.T) {
 			t.Fatal(err)
 		} else {
 			dump.Println(_got)
-			assert.Check(t, _got != nil && _got.Clusters != nil && _got.Credentials != nil)
-			assert.Check(t, len(_got.Credentials) == len(_expect.Credentials))
+			assert.Check(t, _got != nil && _got.Clusters != nil)
 			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
 
 			for _, g := range _got.Clusters {
@@ -466,17 +442,6 @@ func TestExportImport(t *testing.T) {
 					}
 				}
 				assert.Check(t, v == true, "didn't find the exepcted cluster state")
-			}
-			for _, g := range _got.Credentials {
-				g.ID = [12]byte{}
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Credentials {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted credentials state")
 			}
 		}
 	})

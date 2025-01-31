@@ -50,8 +50,6 @@ type Cloud interface {
 
 	DelNetwork() error
 
-	Credential() error
-
 	InitState(consts.KsctlOperation) error
 
 	CreateUploadSSHKeyPair() error

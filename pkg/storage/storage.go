@@ -28,11 +28,7 @@ type Storage interface {
 
 	Write(*statefile.StorageDocument) error
 
-	WriteCredentials(consts.KsctlCloud, *statefile.CredentialsDocument) error
-
 	Read() (*statefile.StorageDocument, error)
-
-	ReadCredentials(consts.KsctlCloud) (*statefile.CredentialsDocument, error)
 
 	DeleteCluster() error
 
@@ -48,6 +44,6 @@ type Storage interface {
 }
 
 type StateExportImport struct {
-	Clusters    []*statefile.StorageDocument
-	Credentials []*statefile.CredentialsDocument
+	Clusters []*statefile.StorageDocument
+	// Credentials []*statefile.CredentialsDocument
 }

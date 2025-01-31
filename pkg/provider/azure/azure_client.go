@@ -23,7 +23,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
 	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
@@ -38,7 +37,6 @@ func ProvideClient() CloudSDK {
 }
 
 type AzureClient struct {
-	subscriptionID string
 	azureTokenCred azcore.TokenCredential
 	region         string
 	resourceGrp    string
@@ -223,53 +221,7 @@ func (p *AzureClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Pol
 
 func (p *AzureClient) setRequiredENV_VAR() error {
 
-	envTenant := os.Getenv("AZURE_TENANT_ID")
-	envSub := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	envClientid := os.Getenv("AZURE_CLIENT_ID")
-	envClientsec := os.Getenv("AZURE_CLIENT_SECRET")
-
-	if len(envTenant) != 0 &&
-		len(envSub) != 0 &&
-		len(envClientid) != 0 &&
-		len(envClientsec) != 0 {
-
-		p.subscriptionID = envSub
-		return nil
-	}
-
-	msg := "environment vars not set:"
-	if len(envTenant) == 0 {
-		msg = msg + " AZURE_TENANT_ID"
-	}
-
-	if len(envSub) == 0 {
-		msg = msg + " AZURE_SUBSCRIPTION_ID"
-	}
-
-	if len(envClientid) == 0 {
-		msg = msg + " AZURE_CLIENT_ID"
-	}
-
-	if len(envClientsec) == 0 {
-		msg = msg + " AZURE_CLIENT_SECRET"
-	}
-
-	p.b.l.Debug(p.b.ctx, msg)
-
-	credentials, err := p.b.store.ReadCredentials(consts.CloudAzure)
-	if err != nil {
-		return err
-	}
-	if credentials.Azure == nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrNilCredentials,
-			p.b.l.NewError(p.b.ctx, "no credentials was found"),
-		)
-	}
-
-	p.subscriptionID = credentials.Azure.SubscriptionID
-
-	err = os.Setenv("AZURE_SUBSCRIPTION_ID", credentials.Azure.SubscriptionID)
+	err := os.Setenv("AZURE_SUBSCRIPTION_ID", p.b.subscriptionID)
 	if err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrUnknown,
@@ -277,7 +229,7 @@ func (p *AzureClient) setRequiredENV_VAR() error {
 		)
 	}
 
-	err = os.Setenv("AZURE_TENANT_ID", credentials.Azure.TenantID)
+	err = os.Setenv("AZURE_TENANT_ID", p.b.tenantID)
 	if err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrUnknown,
@@ -285,7 +237,7 @@ func (p *AzureClient) setRequiredENV_VAR() error {
 		)
 	}
 
-	err = os.Setenv("AZURE_CLIENT_ID", credentials.Azure.ClientID)
+	err = os.Setenv("AZURE_CLIENT_ID", p.b.clientID)
 	if err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrUnknown,
@@ -293,7 +245,7 @@ func (p *AzureClient) setRequiredENV_VAR() error {
 		)
 	}
 
-	err = os.Setenv("AZURE_CLIENT_SECRET", credentials.Azure.ClientSecret)
+	err = os.Setenv("AZURE_CLIENT_SECRET", p.b.clientSecret)
 	if err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrUnknown,
@@ -331,7 +283,7 @@ func (p *AzureClient) ListLocations() ([]string, error) {
 			p.b.l.NewError(p.b.ctx, "failed in azure client", "Reason", err),
 		)
 	}
-	pager := clientFactory.NewClient().NewListLocationsPager(p.subscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
+	pager := clientFactory.NewClient().NewListLocationsPager(p.b.subscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
 
 	var validReg []string
 	for pager.More() {
@@ -350,7 +302,7 @@ func (p *AzureClient) ListLocations() ([]string, error) {
 }
 
 func (p *AzureClient) ListKubernetesVersions() (armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse, error) {
-	clientFactory, err := armcontainerservice.NewClientFactory(p.subscriptionID, p.azureTokenCred, nil)
+	clientFactory, err := armcontainerservice.NewClientFactory(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return armcontainerservice.ManagedClustersClientListKubernetesVersionsResponse{},
 			ksctlErrors.WrapError(
@@ -372,7 +324,7 @@ func (p *AzureClient) ListKubernetesVersions() (armcontainerservice.ManagedClust
 }
 
 func (p *AzureClient) ListVMTypes() ([]string, error) {
-	clientFactory, err := armcompute.NewClientFactory(p.subscriptionID, p.azureTokenCred, nil)
+	clientFactory, err := armcompute.NewClientFactory(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -400,7 +352,7 @@ func (p *AzureClient) ListVMTypes() ([]string, error) {
 }
 
 func (p *AzureClient) PublicIPClient() (*armnetwork.PublicIPAddressesClient, error) {
-	client, err := armnetwork.NewPublicIPAddressesClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewPublicIPAddressesClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -412,7 +364,7 @@ func (p *AzureClient) PublicIPClient() (*armnetwork.PublicIPAddressesClient, err
 }
 
 func (p *AzureClient) CreateResourceGrp(parameters armresources.ResourceGroup, options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (armresources.ResourceGroupsClientCreateOrUpdateResponse, error) {
-	client, err := armresources.NewResourceGroupsClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armresources.NewResourceGroupsClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return armresources.ResourceGroupsClientCreateOrUpdateResponse{},
 			ksctlErrors.WrapError(
@@ -432,7 +384,7 @@ func (p *AzureClient) CreateResourceGrp(parameters armresources.ResourceGroup, o
 }
 
 func (p *AzureClient) BeginDeleteResourceGrp(options *armresources.ResourceGroupsClientBeginDeleteOptions) (*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error) {
-	client, err := armresources.NewResourceGroupsClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armresources.NewResourceGroupsClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -452,7 +404,7 @@ func (p *AzureClient) BeginDeleteResourceGrp(options *armresources.ResourceGroup
 }
 
 func (p *AzureClient) BeginCreateVirtNet(virtualNetworkName string, parameters armnetwork.VirtualNetwork, options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error) {
-	client, err := armnetwork.NewVirtualNetworksClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewVirtualNetworksClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -473,7 +425,7 @@ func (p *AzureClient) BeginCreateVirtNet(virtualNetworkName string, parameters a
 }
 
 func (p *AzureClient) BeginDeleteVirtNet(virtualNetworkName string, options *armnetwork.VirtualNetworksClientBeginDeleteOptions) (*runtime.Poller[armnetwork.VirtualNetworksClientDeleteResponse], error) {
-	client, err := armnetwork.NewVirtualNetworksClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewVirtualNetworksClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -494,7 +446,7 @@ func (p *AzureClient) BeginDeleteVirtNet(virtualNetworkName string, options *arm
 }
 
 func (p *AzureClient) BeginCreateSubNet(virtualNetworkName string, subnetName string, subnetParameters armnetwork.Subnet, options *armnetwork.SubnetsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SubnetsClientCreateOrUpdateResponse], error) {
-	client, err := armnetwork.NewSubnetsClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewSubnetsClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -516,7 +468,7 @@ func (p *AzureClient) BeginCreateSubNet(virtualNetworkName string, subnetName st
 }
 
 func (p *AzureClient) BeginDeleteSubNet(virtualNetworkName string, subnetName string, options *armnetwork.SubnetsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SubnetsClientDeleteResponse], error) {
-	client, err := armnetwork.NewSubnetsClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewSubnetsClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -537,7 +489,7 @@ func (p *AzureClient) BeginDeleteSubNet(virtualNetworkName string, subnetName st
 }
 
 func (p *AzureClient) BeginDeleteSecurityGrp(networkSecurityGroupName string, options *armnetwork.SecurityGroupsClientBeginDeleteOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientDeleteResponse], error) {
-	client, err := armnetwork.NewSecurityGroupsClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewSecurityGroupsClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -558,7 +510,7 @@ func (p *AzureClient) BeginDeleteSecurityGrp(networkSecurityGroupName string, op
 }
 
 func (p *AzureClient) BeginCreateSecurityGrp(networkSecurityGroupName string, parameters armnetwork.SecurityGroup, options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error) {
-	client, err := armnetwork.NewSecurityGroupsClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewSecurityGroupsClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -579,7 +531,7 @@ func (p *AzureClient) BeginCreateSecurityGrp(networkSecurityGroupName string, pa
 }
 
 func (p *AzureClient) CreateSSHKey(sshPublicKeyName string, parameters armcompute.SSHPublicKeyResource, options *armcompute.SSHPublicKeysClientCreateOptions) (armcompute.SSHPublicKeysClientCreateResponse, error) {
-	client, err := armcompute.NewSSHPublicKeysClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcompute.NewSSHPublicKeysClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return armcompute.SSHPublicKeysClientCreateResponse{},
 			ksctlErrors.WrapError(
@@ -600,7 +552,7 @@ func (p *AzureClient) CreateSSHKey(sshPublicKeyName string, parameters armcomput
 }
 
 func (p *AzureClient) DeleteSSHKey(sshPublicKeyName string, options *armcompute.SSHPublicKeysClientDeleteOptions) (armcompute.SSHPublicKeysClientDeleteResponse, error) {
-	client, err := armcompute.NewSSHPublicKeysClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcompute.NewSSHPublicKeysClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return armcompute.SSHPublicKeysClientDeleteResponse{},
 			ksctlErrors.WrapError(
@@ -621,7 +573,7 @@ func (p *AzureClient) DeleteSSHKey(sshPublicKeyName string, options *armcompute.
 }
 
 func (p *AzureClient) BeginCreateVM(vmName string, parameters armcompute.VirtualMachine, options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcompute.VirtualMachinesClientCreateOrUpdateResponse], error) {
-	client, err := armcompute.NewVirtualMachinesClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcompute.NewVirtualMachinesClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -642,7 +594,7 @@ func (p *AzureClient) BeginCreateVM(vmName string, parameters armcompute.Virtual
 }
 
 func (p *AzureClient) BeginDeleteVM(vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (*runtime.Poller[armcompute.VirtualMachinesClientDeleteResponse], error) {
-	client, err := armcompute.NewVirtualMachinesClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcompute.NewVirtualMachinesClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -663,7 +615,7 @@ func (p *AzureClient) BeginDeleteVM(vmName string, options *armcompute.VirtualMa
 }
 
 func (p *AzureClient) BeginDeleteDisk(diskName string, options *armcompute.DisksClientBeginDeleteOptions) (*runtime.Poller[armcompute.DisksClientDeleteResponse], error) {
-	client, err := armcompute.NewDisksClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcompute.NewDisksClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -684,7 +636,7 @@ func (p *AzureClient) BeginDeleteDisk(diskName string, options *armcompute.Disks
 }
 
 func (p *AzureClient) BeginCreatePubIP(publicIPAddressName string, parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error) {
-	client, err := armnetwork.NewPublicIPAddressesClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewPublicIPAddressesClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -705,7 +657,7 @@ func (p *AzureClient) BeginCreatePubIP(publicIPAddressName string, parameters ar
 }
 
 func (p *AzureClient) BeginDeletePubIP(publicIPAddressName string, options *armnetwork.PublicIPAddressesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.PublicIPAddressesClientDeleteResponse], error) {
-	client, err := armnetwork.NewPublicIPAddressesClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewPublicIPAddressesClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -726,7 +678,7 @@ func (p *AzureClient) BeginDeletePubIP(publicIPAddressName string, options *armn
 }
 
 func (p *AzureClient) BeginCreateNIC(networkInterfaceName string, parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error) {
-	client, err := armnetwork.NewInterfacesClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewInterfacesClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -747,7 +699,7 @@ func (p *AzureClient) BeginCreateNIC(networkInterfaceName string, parameters arm
 }
 
 func (p *AzureClient) BeginDeleteNIC(networkInterfaceName string, options *armnetwork.InterfacesClientBeginDeleteOptions) (*runtime.Poller[armnetwork.InterfacesClientDeleteResponse], error) {
-	client, err := armnetwork.NewInterfacesClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armnetwork.NewInterfacesClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -768,7 +720,7 @@ func (p *AzureClient) BeginDeleteNIC(networkInterfaceName string, options *armne
 }
 
 func (p *AzureClient) BeginDeleteAKS(resourceName string, options *armcontainerservice.ManagedClustersClientBeginDeleteOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientDeleteResponse], error) {
-	client, err := armcontainerservice.NewManagedClustersClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcontainerservice.NewManagedClustersClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -789,7 +741,7 @@ func (p *AzureClient) BeginDeleteAKS(resourceName string, options *armcontainers
 }
 
 func (p *AzureClient) BeginCreateAKS(resourceName string, parameters armcontainerservice.ManagedCluster, options *armcontainerservice.ManagedClustersClientBeginCreateOrUpdateOptions) (*runtime.Poller[armcontainerservice.ManagedClustersClientCreateOrUpdateResponse], error) {
-	client, err := armcontainerservice.NewManagedClustersClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcontainerservice.NewManagedClustersClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return nil,
 			ksctlErrors.WrapError(
@@ -810,7 +762,7 @@ func (p *AzureClient) BeginCreateAKS(resourceName string, parameters armcontaine
 }
 
 func (p *AzureClient) ListClusterAdminCredentials(resourceName string, options *armcontainerservice.ManagedClustersClientListClusterAdminCredentialsOptions) (armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse, error) {
-	client, err := armcontainerservice.NewManagedClustersClient(p.subscriptionID, p.azureTokenCred, nil)
+	client, err := armcontainerservice.NewManagedClustersClient(p.b.subscriptionID, p.azureTokenCred, nil)
 	if err != nil {
 		return armcontainerservice.ManagedClustersClientListClusterAdminCredentialsResponse{},
 			ksctlErrors.WrapError(

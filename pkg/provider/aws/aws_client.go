@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/base64"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"text/template"
@@ -36,7 +35,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
@@ -97,8 +95,8 @@ func (l *AwsClient) newEC2Client(region string) (aws.Config, error) {
 		config.WithRegion(region),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
-				os.Getenv("AWS_ACCESS_KEY_ID"),
-				os.Getenv("AWS_SECRET_ACCESS_KEY"),
+				l.b.accessKeyId,
+				l.b.secretKey,
 				"",
 			),
 		),
@@ -660,11 +658,6 @@ func (l *AwsClient) DeleteSSHKey(ctx context.Context, name string) error {
 func (l *AwsClient) InitClient(b *Provider) error {
 	l.b = b
 
-	err := l.setRequiredENVVAR(l.b.ctx)
-	if err != nil {
-		return err
-	}
-
 	session, err := l.newEC2Client(l.b.Region)
 	if err != nil {
 		return err
@@ -687,56 +680,6 @@ func (l *AwsClient) ImportKeyPair(ctx context.Context, input *ec2.ImportKeyPairI
 		)
 	}
 
-	return nil
-}
-
-func (l *AwsClient) setRequiredENVVAR(_ context.Context) error {
-
-	envacesskeyid := os.Getenv("AWS_ACCESS_KEY_ID")
-	envkeysecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-
-	if len(envacesskeyid) != 0 && len(envkeysecret) != 0 {
-		return nil
-	}
-
-	msg := "environment vars not set:"
-
-	if len(envacesskeyid) == 0 {
-		msg = msg + " AWS_ACCESS_KEY_ID"
-	}
-
-	if len(envkeysecret) == 0 {
-		msg = msg + " AWS_SECRET_ACCESS_KEY"
-	}
-
-	l.b.l.Debug(l.b.ctx, msg)
-
-	credentialsDocument, err := l.b.store.ReadCredentials(consts.CloudAws)
-	if err != nil {
-		return err
-	}
-
-	if credentialsDocument.Aws == nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrNilCredentials,
-			l.b.l.NewError(l.b.ctx, "no entry for aws present"),
-		)
-	}
-
-	err = os.Setenv("AWS_ACCESS_KEY_ID", credentialsDocument.Aws.AccessKeyId)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			l.b.l.NewError(l.b.ctx, "failed to set environmenet variable", "Reason", err),
-		)
-	}
-	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentialsDocument.Aws.SecretAccessKey)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			l.b.l.NewError(l.b.ctx, "failed to set environmenet variable", "Reason", err),
-		)
-	}
 	return nil
 }
 

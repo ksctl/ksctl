@@ -55,8 +55,7 @@ var (
 var ksctlNamespace string = "ksctl"
 
 const (
-	ksctlStateName      string = "ksctl-state"       // configmap name
-	ksctlCredentialName string = "ksctl-credentials" // secret name
+	ksctlStateName string = "ksctl-state" // configmap name
 )
 
 func copyStore(src *Store, dest *Store) {
@@ -101,39 +100,10 @@ func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*storage.St
 		}
 	}
 
-	if len(_cloud) == 0 {
-		// all the cloud provider credentials
-		for _, constsCloud := range []consts.KsctlCloud{
-			consts.CloudAws,
-			consts.CloudAzure,
-		} {
-			_v, _err := s.ReadCredentials(constsCloud)
-
-			if _err != nil {
-				log.Debug(storeCtx, "failed to read the credentials for export", "err", _err)
-				if ksctlErrors.IsNoMatchingRecordsFound(_err) {
-					continue
-				} else {
-					return nil, _err
-				}
-			}
-			dest.Credentials = append(dest.Credentials, _v)
-		}
-	} else {
-		_v, _err := s.ReadCredentials(consts.KsctlCloud(_cloud))
-		if _cloud != string(consts.CloudLocal) {
-			if _err != nil {
-				return nil, _err
-			}
-		}
-		dest.Credentials = append(dest.Credentials, _v)
-	}
-
 	return dest, nil
 }
 
 func (s *Store) Import(src *storage.StateExportImport) error {
-	creds := src.Credentials
 	states := src.Clusters
 
 	var cpyS *Store = s
@@ -153,18 +123,6 @@ func (s *Store) Import(src *storage.StateExportImport) error {
 		}
 
 		if err := s.Write(state); err != nil {
-			return err
-		}
-	}
-
-	for _, cred := range creds {
-		if cred == nil {
-			continue
-		}
-		cloud := cred.InfraProvider
-
-		log.Debug(storeCtx, "key fields of cred", "cloud", cloud)
-		if err := s.WriteCredentials(cloud, cred); err != nil {
 			return err
 		}
 	}
@@ -213,8 +171,6 @@ func (s *Store) Read() (*statefile.StorageDocument, error) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	log.Debug(storeCtx, "storage.kubernetes.Read", "Store", s)
-
 	if c, err := s.isPresent(); err == nil {
 		var result *statefile.StorageDocument
 		if raw, ok := c.BinaryData[helperGenerateKeyForState(s)]; ok {
@@ -230,37 +186,6 @@ func (s *Store) Read() (*statefile.StorageDocument, error) {
 			return nil, ksctlErrors.WrapError(
 				ksctlErrors.ErrNoMatchingRecordsFound,
 				log.NewError(storeCtx, "no state as binarydata", "Reason", "c.BinaryData==nil"),
-			)
-		}
-
-	} else {
-		return nil, err
-	}
-}
-
-func (s *Store) ReadCredentials(cloud consts.KsctlCloud) (*statefile.CredentialsDocument, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.wg.Add(1)
-	defer s.wg.Done()
-
-	log.Debug(storeCtx, "storage.kubernetes.ReadCreds", "Store", s)
-
-	if c, err := s.isPresentCreds(string(cloud)); err == nil {
-		var result *statefile.CredentialsDocument
-		if raw, ok := c.Data[string(cloud)]; ok {
-			if _err := json.Unmarshal(raw, &result); _err != nil {
-				return nil, ksctlErrors.WrapError(
-					ksctlErrors.ErrInternal,
-					log.NewError(storeCtx, "unable to deserialize the creds", "Reason", _err),
-				)
-			}
-
-			return result, nil
-		} else {
-			return nil, ksctlErrors.WrapError(
-				ksctlErrors.ErrNilCredentials,
-				log.NewError(storeCtx, "no credentials", "Reason", "c.Data==nil"),
 			)
 		}
 
@@ -303,8 +228,6 @@ func (s *Store) Write(data *statefile.StorageDocument) error {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	log.Debug(storeCtx, "storage.kubernetes.Write", "Store", s)
-
 	raw, err := json.Marshal(data)
 	if err != nil {
 		return ksctlErrors.WrapError(
@@ -341,51 +264,6 @@ func (s *Store) Write(data *statefile.StorageDocument) error {
 	return nil
 }
 
-func (s *Store) WriteCredentials(cloud consts.KsctlCloud, data *statefile.CredentialsDocument) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.wg.Add(1)
-	defer s.wg.Done()
-
-	log.Debug(storeCtx, "storage.kubernetes.WriteCreds", "Store", s)
-
-	raw, err := json.Marshal(data)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			log.NewError(storeCtx, "unable to serialize state", "Reason", err),
-		)
-	}
-
-	var sc *v1.Secret
-
-	sc, err = s.isPresentCreds(string(cloud))
-	if err != nil {
-		if ksctlErrors.IsNoMatchingRecordsFound(err) {
-			log.Debug(storeCtx, "secret for write was not found")
-			sc = generateSecret(ksctlCredentialName, ksctlNamespace)
-
-		} else {
-			return err
-		}
-	} else {
-		log.Debug(storeCtx, "secret for write was found")
-		if sc.Data == nil {
-			sc.Data = make(map[string][]byte)
-		}
-	}
-
-	sc.Data[string(cloud)] = raw
-
-	if _, err := s.clientSet.WriteSecret(ksctlNamespace, sc, metav1.UpdateOptions{}); err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			log.NewError(storeCtx, "failed to write to the secret", "Reason", err),
-		)
-	}
-	return nil
-}
-
 func (s *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error {
 	switch cloud {
 	case consts.CloudAws, consts.CloudAzure, consts.CloudLocal:
@@ -401,7 +279,6 @@ func (s *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clust
 	s.region = region
 	s.clusterType = string(clusterType)
 
-	log.Debug(storeCtx, "storage.kubernetes.Setup", "Store", s)
 	return nil
 }
 
@@ -410,8 +287,6 @@ func (s *Store) DeleteCluster() error {
 	defer s.mu.Unlock()
 	s.wg.Add(1)
 	defer s.wg.Done()
-
-	log.Debug(storeCtx, "storage.kubernetes.Delete", "Store", s)
 
 	if c, err := s.isPresent(); err != nil {
 		return err
@@ -446,30 +321,6 @@ func (s *Store) isPresent() (*v1.ConfigMap, error) {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrInternal,
 			log.NewError(storeCtx, "failed to read the secret", "Reason", err),
-		)
-	}
-	return c, nil
-}
-
-func (s *Store) isPresentCreds(cloud string) (*v1.Secret, error) {
-	c, err := s.clientSet.ReadSecret(ksctlNamespace, ksctlCredentialName, metav1.GetOptions{})
-	if err != nil {
-		log.Debug(storeCtx, "storage.kubernetes.isPresentCreds", "err", err)
-		if errors.IsNotFound(err) {
-			return nil, ksctlErrors.WrapError(
-				ksctlErrors.ErrNoMatchingRecordsFound,
-				log.NewError(storeCtx, "no credential is present", "Reason", err),
-			)
-		}
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			log.NewError(storeCtx, "failed to read the secret", "Reason", err),
-		)
-	}
-	if _, ok := c.Data[cloud]; !ok {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrNoMatchingRecordsFound,
-			log.NewError(storeCtx, "no credential is present", "Reason", "no entry found for given cloud provider"),
 		)
 	}
 	return c, nil

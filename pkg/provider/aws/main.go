@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 
@@ -78,6 +79,9 @@ type Provider struct {
 	chVMType  chan string
 
 	client CloudSDK
+
+	accessKeyId string
+	secretKey   string
 }
 
 func NewClient(
@@ -96,7 +100,6 @@ func NewClient(
 	p.client = ClientOption()
 	p.store = storage
 
-	p.l.Debug(p.ctx, "Printing", "AwsProvider", p)
 	return p, nil
 }
 
@@ -127,34 +130,6 @@ func (p *Provider) ManagedK8sVersion(ver string) provider.Cloud {
 	return p
 }
 
-func (p *Provider) Credential() error {
-	p.l.Print(p.ctx, "Enter your AWS ACCESS KEY")
-	acesskey, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	p.l.Print(p.ctx, "Enter your AWS SECRET KEY")
-	acesskeysecret, err := validation.UserInputCredentials(p.ctx, p.l)
-	if err != nil {
-		return err
-	}
-
-	apiStore := &statefile.CredentialsDocument{
-		InfraProvider: consts.CloudAws,
-		Aws: &statefile.CredentialsAws{
-			AccessKeyId:     acesskey,
-			SecretAccessKey: acesskeysecret,
-		},
-	}
-
-	if err := p.store.WriteCredentials(consts.CloudAws, apiStore); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (p *Provider) Name(resName string) provider.Cloud {
 
 	if err := validation.IsValidName(p.ctx, p.l, resName); err != nil {
@@ -166,6 +141,23 @@ func (p *Provider) Name(resName string) provider.Cloud {
 }
 
 func (p *Provider) InitState(operation consts.KsctlOperation) error {
+	v, ok := config.IsContextPresent(p.ctx, consts.KsctlAwsCredentials)
+	if !ok {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "missing aws credentials"),
+		)
+	}
+	extractedCreds := statefile.CredentialsAws{}
+	if err := json.Unmarshal([]byte(v), &extractedCreds); err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			p.l.NewError(p.ctx, "failed to get aws credentials", "reason", err),
+		)
+	}
+
+	p.accessKeyId = extractedCreds.AccessKeyId
+	p.secretKey = extractedCreds.SecretAccessKey
 
 	switch p.SelfManaged {
 	case false:
@@ -252,8 +244,6 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		PrivateIPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  p.state.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
 	}
-
-	p.l.Debug(p.ctx, "Printing", "awsStateTransferPayload", payload)
 
 	p.l.Success(p.ctx, "Transferred Data, it's ready to be shipped!")
 	return payload, nil
@@ -378,7 +368,6 @@ func (p *Provider) NoOfControlPlane(no int, setter bool) (int, error) {
 			)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "p.state.CloudInfra.Aws.InfoControlPlanes.Names", p.state.CloudInfra.Aws.InfoControlPlanes.HostNames)
 		return len(p.state.CloudInfra.Aws.InfoControlPlanes.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
@@ -400,7 +389,6 @@ func (p *Provider) NoOfControlPlane(no int, setter bool) (int, error) {
 			p.state.CloudInfra.Aws.InfoControlPlanes.VMSizes = make([]string, no)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "awsCloudState.InfoControlplanes", p.state.CloudInfra.Aws.InfoControlPlanes)
 		return -1, nil
 	}
 	return -1, ksctlErrors.WrapError(
@@ -426,7 +414,6 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 			)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "awsCloudState.InfoDatabase.Names", p.state.CloudInfra.Aws.InfoDatabase.HostNames)
 		return len(p.state.CloudInfra.Aws.InfoDatabase.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
@@ -449,7 +436,6 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 			p.state.CloudInfra.Aws.InfoDatabase.VMSizes = make([]string, no)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "awsCloudState.InfoDatabase", p.state.CloudInfra.Aws.InfoDatabase)
 		return -1, nil
 	}
 	return -1, ksctlErrors.WrapError(
@@ -459,7 +445,7 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 }
 
 func (p *Provider) GetHostNameAllWorkerNode() []string {
-	hostnames := utilities.DeepCopySlice[string](p.state.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
+	hostnames := utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 	p.l.Debug(p.ctx, "Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }
@@ -613,7 +599,6 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				}(),
 				Cni: v.ProvisionerAddons.Cni.String(),
 			})
-			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 
 		}
 	}

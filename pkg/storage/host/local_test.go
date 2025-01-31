@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	db storage.Storage
+	db *Store
 
 	parentCtx    context.Context
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
@@ -97,28 +97,17 @@ func TestGenOsClusterPath(t *testing.T) {
 		"azure",
 		"managed",
 		"name region"}...)
-	expectedCreds := filepath.Join([]string{
-		os.TempDir(),
-		"ksctl-local-store-test",
-		".ksctl",
-		"credentials"}...)
 
-	gotH, err := genOsClusterPath(false, string(consts.CloudAws), string(consts.ClusterTypeSelfMang), "name region")
+	gotH, err := db.genOsClusterPath(string(consts.CloudAws), string(consts.ClusterTypeSelfMang), "name region")
 	assert.NilError(t, err)
 	if gotH != expectedHa {
 		t.Fatalf("expected %s; but got %s\n", expectedHa, gotH)
 	}
 
-	gotM, err := genOsClusterPath(false, string(consts.CloudAzure), string(consts.ClusterTypeMang), "name region")
+	gotM, err := db.genOsClusterPath(string(consts.CloudAzure), string(consts.ClusterTypeMang), "name region")
 	assert.NilError(t, err)
 	if gotM != expectedManaged {
 		t.Fatalf("expected %s; but got %s\n", expectedManaged, gotM)
-	}
-
-	gotC, err := genOsClusterPath(true)
-	assert.NilError(t, err)
-	if gotC != expectedCreds {
-		t.Fatalf("expected %s; but got %s\n", expectedCreds, gotC)
 	}
 }
 
@@ -161,59 +150,6 @@ func TestStore_RWD(t *testing.T) {
 
 	err = db.DeleteCluster()
 	assert.NilError(t, err, fmt.Sprintf("Error shouln't happen on deleting cluster info: %v", err))
-}
-
-func TestStore_RWDCredentials(t *testing.T) {
-	if _, err := db.ReadCredentials(consts.CloudAzure); err == nil {
-		t.Fatal("Error should occur as there is no folder created")
-	}
-
-	t.Run("azure", func(t *testing.T) {
-		fakeDataAzure := &statefile.CredentialsDocument{
-			Azure: &statefile.CredentialsAzure{
-				ClientID: "client_id",
-			},
-			InfraProvider: consts.CloudAzure,
-		}
-		err := db.WriteCredentials(consts.CloudAzure, fakeDataAzure)
-		if err != nil {
-			t.Fatalf("Error shouln't happen: %v", err)
-		}
-
-		if gotFakeData, err := db.ReadCredentials(consts.CloudAzure); err != nil {
-			t.Fatalf("Error shouln't happen on reading file: %v", err)
-		} else {
-			fmt.Printf("%#+v\n", gotFakeData)
-
-			if !reflect.DeepEqual(gotFakeData, fakeDataAzure) {
-				t.Fatalf("Written data doesn't match Reading")
-			}
-		}
-	})
-
-	t.Run("aws", func(t *testing.T) {
-		fakeDataAws := &statefile.CredentialsDocument{
-			Aws: &statefile.CredentialsAws{
-				AccessKeyId:     "access_key",
-				SecretAccessKey: "secret",
-			},
-			InfraProvider: consts.CloudAws,
-		}
-		err := db.WriteCredentials(consts.CloudAws, fakeDataAws)
-		if err != nil {
-			t.Fatalf("Error shouln't happen: %v", err)
-		}
-
-		if gotFakeData, err := db.ReadCredentials(consts.CloudAws); err != nil {
-			t.Fatalf("Error shouln't happen on reading file: %v", err)
-		} else {
-			fmt.Printf("%#+v\n", gotFakeData)
-
-			if !reflect.DeepEqual(gotFakeData, fakeDataAws) {
-				t.Fatalf("Written data doesn't match Reading")
-			}
-		}
-	})
 }
 
 func TestGetClusterInfo(t *testing.T) {
@@ -331,21 +267,6 @@ func TestExportImport(t *testing.T) {
 
 	t.Run("Export all", func(t *testing.T) {
 		var _expect storage.StateExportImport = storage.StateExportImport{
-			Credentials: []*statefile.CredentialsDocument{
-				{
-					Azure: &statefile.CredentialsAzure{
-						ClientID: "client_id",
-					},
-					InfraProvider: consts.CloudAzure,
-				},
-				{
-					Aws: &statefile.CredentialsAws{
-						AccessKeyId:     "access_key",
-						SecretAccessKey: "secret",
-					},
-					InfraProvider: consts.CloudAws,
-				},
-			},
 			Clusters: []*statefile.StorageDocument{
 				{
 					Region:        "regionAws",
@@ -380,8 +301,7 @@ func TestExportImport(t *testing.T) {
 			dump.Println(_got)
 			bkpData = _got // storing the exported data
 
-			assert.Check(t, _got != nil && _got.Clusters != nil && _got.Credentials != nil)
-			assert.Check(t, len(_got.Credentials) == len(_expect.Credentials))
+			assert.Check(t, _got != nil && _got.Clusters != nil)
 			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
 
 			for _, g := range _got.Clusters {
@@ -393,16 +313,6 @@ func TestExportImport(t *testing.T) {
 					}
 				}
 				assert.Check(t, v == true, "didn't find the exepcted cluster state")
-			}
-			for _, g := range _got.Credentials {
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Credentials {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted credentials state")
 			}
 		}
 	})
@@ -444,14 +354,6 @@ func TestExportImport(t *testing.T) {
 	t.Run("Export specific cluster", func(t *testing.T) {
 
 		var _expect storage.StateExportImport = storage.StateExportImport{
-			Credentials: []*statefile.CredentialsDocument{
-				{
-					Azure: &statefile.CredentialsAzure{
-						ClientID: "client_id",
-					},
-					InfraProvider: consts.CloudAzure,
-				},
-			},
 			Clusters: []*statefile.StorageDocument{
 				{
 					Region:        "regionAzure",
@@ -472,8 +374,7 @@ func TestExportImport(t *testing.T) {
 			t.Fatal(err)
 		} else {
 			dump.Println(_got)
-			assert.Check(t, _got != nil && _got.Clusters != nil && _got.Credentials != nil)
-			assert.Check(t, len(_got.Credentials) == len(_expect.Credentials))
+			assert.Check(t, _got != nil && _got.Clusters != nil)
 			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
 
 			for _, g := range _got.Clusters {
@@ -486,36 +387,25 @@ func TestExportImport(t *testing.T) {
 				}
 				assert.Check(t, v == true, "didn't find the exepcted cluster state")
 			}
-			for _, g := range _got.Credentials {
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Credentials {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted credentials state")
-			}
 		}
 	})
 }
 
 func TestExternalUsageFunctions(t *testing.T) {
-	extDb := db.(*Store)
 
-	locGot, okGot := extDb.PresentDirectory([]string{"demo03", "234"})
+	locGot, okGot := db.PresentDirectory([]string{"demo03", "234"})
 	assert.Equal(t, locGot, filepath.Join("demo03", "234"))
 	assert.Equal(t, okGot, false)
 
 	home, _ := os.UserHomeDir()
-	locGot, okGot = extDb.PresentDirectory([]string{home})
+	locGot, okGot = db.PresentDirectory([]string{home})
 	assert.Equal(t, locGot, home)
 	assert.Equal(t, okGot, true)
 
-	err := extDb.CreateDirectory([]string{os.TempDir(), "ksctl-local-store-test"})
+	err := db.CreateDirectory([]string{os.TempDir(), "ksctl-local-store-test"})
 	assert.NilError(t, err)
 
-	locGot, err = extDb.CreateFileIfNotPresent([]string{os.TempDir(), "ksctl-local-store-test", "abcd.yml"})
+	locGot, err = db.CreateFileIfNotPresent([]string{os.TempDir(), "ksctl-local-store-test", "abcd.yml"})
 	assert.NilError(t, err)
 
 	assert.Equal(t, locGot, filepath.Join(os.TempDir(), "ksctl-local-store-test", "abcd.yml"))
