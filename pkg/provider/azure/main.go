@@ -76,7 +76,6 @@ func NewClient(
 	p.client = ClientOption()
 	p.store = storage
 
-	p.l.Debug(p.ctx, "Printing", "AzureProvider", p)
 	return p, nil
 }
 
@@ -128,7 +127,6 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		PrivateIPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  p.state.CloudInfra.Azure.InfoLoadBalancer.PrivateIP,
 	}
-	p.l.Debug(p.ctx, "Printing", "azureStateTransferPayload", payload)
 
 	p.l.Success(p.ctx, "Transferred Data, it's ready to be shipped!")
 	return payload, nil
@@ -310,7 +308,6 @@ func (p *Provider) NoOfControlPlane(no int, setter bool) (int, error) {
 			p.state.CloudInfra.Azure.InfoControlPlanes.VMSizes = make([]string, no)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "p.state.CloudInfra.Azure.InfoControlPlanes", p.state.CloudInfra.Azure.InfoControlPlanes)
 		return -1, nil
 	}
 	return -1, ksctlErrors.WrapError(
@@ -336,7 +333,6 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 			)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "p.state.CloudInfra.Azure.InfoDatabase.Names", p.state.CloudInfra.Azure.InfoDatabase.Names)
 		return len(p.state.CloudInfra.Azure.InfoDatabase.Names), nil
 	}
 	if no >= 3 && (no&1) == 1 {
@@ -363,7 +359,6 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 			p.state.CloudInfra.Azure.InfoDatabase.VMSizes = make([]string, no)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "p.state.CloudInfra.Azure.InfoDatabase", p.state.CloudInfra.Azure.InfoDatabase)
 		return -1, nil
 	}
 	return -1, ksctlErrors.WrapError(
@@ -596,7 +591,6 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				}(),
 				Cni: v.ProvisionerAddons.Cni.String(),
 			})
-			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 
 		}
 	}

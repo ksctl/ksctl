@@ -20,6 +20,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
@@ -100,9 +101,6 @@ func CreateSSHKeyPair(ctx context.Context, log logger.Logger, state *statefile.S
 	}
 
 	privateKeyBytes := encodePrivateKeyToPEM(log, privateKey)
-
-	log.Debug(ctx, "Printing", "ssh pub key", string(publicKeyBytes))
-	log.Debug(ctx, "Printing", "ssh private key", string(privateKeyBytes))
 
 	state.SSHKeyPair.PrivateKey = string(privateKeyBytes)
 	state.SSHKeyPair.PublicKey = string(publicKeyBytes)

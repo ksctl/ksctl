@@ -158,8 +158,6 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 		)
 	}
 
-	p.l.Debug(p.ctx, "kubeconfig", "kubeconfigTempPath", _path)
-
 	p.state.ClusterKubeConfig = string(data)
 	p.state.ClusterKubeConfigContext = "kind-" + p.ClusterName
 	p.state.CloudInfra.Local.B.IsCompleted = true

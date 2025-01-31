@@ -182,8 +182,6 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 		},
 	}
 
-	p.l.Debug(p.ctx, "Printing", "AKSConfig", parameter)
-
 	pollerResp, err := p.client.BeginCreateAKS(name, parameter, nil)
 	if err != nil {
 		return err

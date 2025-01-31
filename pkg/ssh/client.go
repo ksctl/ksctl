@@ -287,7 +287,6 @@ func (client *SSH) SSHExecute() error {
 		}
 	}
 
-	client.log.Debug(client.ctx, "Printing", "bashScript", client.script)
 	client.log.Print(client.ctx, "Exec Scripts")
 
 	if _, ok := config.IsContextPresent(client.ctx, consts.KsctlTestFlagKey); !ok {
@@ -302,7 +301,6 @@ func (client *SSH) SSHExecute() error {
 		script := scripts.NextScript()
 
 		client.log.Print(client.ctx, "Executing Sub-Script", "name", script.Name)
-		client.log.Debug(client.ctx, "Script To Exec", script.ShellScript)
 		success := false
 		var scriptFailureReason error
 		var stdout, stderr string

@@ -151,7 +151,6 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				}(),
 				Cni: v.ProvisionerAddons.Cni.String(),
 			})
-			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 
 		}
 	}

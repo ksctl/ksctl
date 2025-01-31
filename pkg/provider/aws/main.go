@@ -100,7 +100,6 @@ func NewClient(
 	p.client = ClientOption()
 	p.store = storage
 
-	p.l.Debug(p.ctx, "Printing", "AwsProvider", p)
 	return p, nil
 }
 
@@ -246,8 +245,6 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		PrivateIPv4LoadBalancer:  p.state.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
 	}
 
-	p.l.Debug(p.ctx, "Printing", "awsStateTransferPayload", payload)
-
 	p.l.Success(p.ctx, "Transferred Data, it's ready to be shipped!")
 	return payload, nil
 }
@@ -371,7 +368,6 @@ func (p *Provider) NoOfControlPlane(no int, setter bool) (int, error) {
 			)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "p.state.CloudInfra.Aws.InfoControlPlanes.Names", p.state.CloudInfra.Aws.InfoControlPlanes.HostNames)
 		return len(p.state.CloudInfra.Aws.InfoControlPlanes.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
@@ -393,7 +389,6 @@ func (p *Provider) NoOfControlPlane(no int, setter bool) (int, error) {
 			p.state.CloudInfra.Aws.InfoControlPlanes.VMSizes = make([]string, no)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "awsCloudState.InfoControlplanes", p.state.CloudInfra.Aws.InfoControlPlanes)
 		return -1, nil
 	}
 	return -1, ksctlErrors.WrapError(
@@ -419,7 +414,6 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 			)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "awsCloudState.InfoDatabase.Names", p.state.CloudInfra.Aws.InfoDatabase.HostNames)
 		return len(p.state.CloudInfra.Aws.InfoDatabase.HostNames), nil
 	}
 	if no >= 3 && (no&1) == 1 {
@@ -442,7 +436,6 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 			p.state.CloudInfra.Aws.InfoDatabase.VMSizes = make([]string, no)
 		}
 
-		p.l.Debug(p.ctx, "Printing", "awsCloudState.InfoDatabase", p.state.CloudInfra.Aws.InfoDatabase)
 		return -1, nil
 	}
 	return -1, ksctlErrors.WrapError(
@@ -452,7 +445,7 @@ func (p *Provider) NoOfDataStore(no int, setter bool) (int, error) {
 }
 
 func (p *Provider) GetHostNameAllWorkerNode() []string {
-	hostnames := utilities.DeepCopySlice[string](p.state.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
+	hostnames := utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoWorkerPlanes.HostNames)
 	p.l.Debug(p.ctx, "Printing", "hostnameWorkerPlanes", hostnames)
 	return hostnames
 }
@@ -606,7 +599,6 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				}(),
 				Cni: v.ProvisionerAddons.Cni.String(),
 			})
-			p.l.Debug(p.ctx, "Printing", "cloudClusterInfoFetched", data)
 
 		}
 	}

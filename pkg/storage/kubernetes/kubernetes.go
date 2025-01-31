@@ -171,8 +171,6 @@ func (s *Store) Read() (*statefile.StorageDocument, error) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	log.Debug(storeCtx, "storage.kubernetes.Read", "Store", s)
-
 	if c, err := s.isPresent(); err == nil {
 		var result *statefile.StorageDocument
 		if raw, ok := c.BinaryData[helperGenerateKeyForState(s)]; ok {
@@ -230,8 +228,6 @@ func (s *Store) Write(data *statefile.StorageDocument) error {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	log.Debug(storeCtx, "storage.kubernetes.Write", "Store", s)
-
 	raw, err := json.Marshal(data)
 	if err != nil {
 		return ksctlErrors.WrapError(
@@ -283,7 +279,6 @@ func (s *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clust
 	s.region = region
 	s.clusterType = string(clusterType)
 
-	log.Debug(storeCtx, "storage.kubernetes.Setup", "Store", s)
 	return nil
 }
 
@@ -292,8 +287,6 @@ func (s *Store) DeleteCluster() error {
 	defer s.mu.Unlock()
 	s.wg.Add(1)
 	defer s.wg.Done()
-
-	log.Debug(storeCtx, "storage.kubernetes.Delete", "Store", s)
 
 	if c, err := s.isPresent(); err != nil {
 		return err

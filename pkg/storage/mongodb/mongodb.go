@@ -254,8 +254,6 @@ func (db *Store) Read() (*statefile.StorageDocument, error) {
 	db.wg.Add(1)
 	defer db.wg.Done()
 
-	db.l.Debug(db.ctx, "storage.external.mongodb.Read", "Store", db)
-
 	if ret, err := db.isPresent(); err == nil {
 		var result *statefile.StorageDocument
 		err := ret.Decode(&result)
@@ -278,7 +276,6 @@ func (db *Store) Write(data *statefile.StorageDocument) error {
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
-	db.l.Debug(db.ctx, "storage.external.mongodb.Write", "Store", db)
 
 	bsonMap, err := bson.Marshal(data)
 	if err != nil {
@@ -323,7 +320,6 @@ func (db *Store) Setup(cloud consts.KsctlCloud, region, clusterName string, clus
 	db.region = region
 	db.clusterType = string(clusterType)
 
-	db.l.Debug(db.ctx, "storage.external.mongodb.Setup", "Store", db)
 	return nil
 }
 
@@ -332,8 +328,6 @@ func (db *Store) DeleteCluster() error {
 	defer db.mu.Unlock()
 	db.wg.Add(1)
 	defer db.wg.Done()
-
-	db.l.Debug(db.ctx, "storage.external.mongodb.Delete", "Store", db)
 
 	if _, err := db.isPresent(); err != nil {
 		return err
