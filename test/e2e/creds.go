@@ -18,9 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strconv"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func CredsAws(ctx context.Context) context.Context {
@@ -71,4 +73,56 @@ func CredsAzure(ctx context.Context) context.Context {
 		panic(err)
 	}
 	return context.WithValue(ctx, consts.KsctlAzureCredentials, v)
+}
+
+func CredsMongo(ctx context.Context) context.Context {
+	var mongodbSrv bool
+	var mongoPort int
+
+	if mongoSchema, ok := os.LookupEnv("MONGODB_SRV"); !ok {
+		mongodbSrv = false
+	} else {
+		if v, err := strconv.ParseBool(mongoSchema); err != nil {
+			panic("MONGODB_SRV must be a boolean")
+		} else {
+			mongodbSrv = v
+		}
+	}
+
+	mongoHost, ok := os.LookupEnv("MONGODB_HOST")
+	if !ok {
+		panic("MONGODB_HOST not set")
+	}
+
+	if v, ok := os.LookupEnv("MONGODB_PORT"); !ok {
+		mongoPort = 27017
+	} else {
+		if v, err := strconv.Atoi(v); err != nil {
+			panic("MONGODB_PORT must be an integer")
+		} else {
+			mongoPort = v
+		}
+	}
+
+	mongoUser, ok := os.LookupEnv("MONGODB_USER")
+	if !ok {
+		panic("MONGODB_USER not set")
+	}
+
+	mongoPass, ok := os.LookupEnv("MONGODB_PASS")
+	if !ok {
+		panic("MONGODB_PASS not set")
+	}
+
+	v, err := json.Marshal(statefile.CredentialsMongodb{
+		SRV:      mongodbSrv,
+		Username: mongoUser,
+		Password: mongoPass,
+		Domain:   mongoHost,
+		Port:     utilities.Ptr(mongoPort),
+	})
+	if err != nil {
+		panic(err)
+	}
+	return context.WithValue(ctx, consts.KsctlMongodbCredentials, v)
 }

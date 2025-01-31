@@ -56,7 +56,7 @@ func main() {
 
 	verbosityLevel := 0
 
-	if slices.Contains[[]string, string](rFlags, "debug") {
+	if slices.Contains(rFlags, "debug") {
 		verbosityLevel = -1
 	}
 
@@ -75,14 +75,15 @@ func main() {
 	l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
 
 	operation, meta := GetReqPayload(l)
-	switch operation {
-	case OpCreate, OpDelete, OpScaleUp, OpScaleDown:
-		if meta.Provider == consts.CloudAws {
-			ctx = CredsAws(ctx)
-		}
-		if meta.Provider == consts.CloudAzure {
-			ctx = CredsAzure(ctx)
-		}
+	if meta.StateLocation == consts.StoreExtMongo {
+		ctx = CredsMongo(ctx)
+	}
+
+	if meta.Provider == consts.CloudAws {
+		ctx = CredsAws(ctx)
+	}
+	if meta.Provider == consts.CloudAzure {
+		ctx = CredsAzure(ctx)
 	}
 
 	l.Print(ctx, "Testing starting...")
