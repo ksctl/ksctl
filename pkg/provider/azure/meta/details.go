@@ -115,7 +115,8 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 		for _, v := range page.Value {
 			if *v.ResourceType == "virtualMachines" && *v.Tier == "Standard" {
 				o := provider.InstanceRegionOutput{
-					Sku: *v.Name,
+					Sku:         *v.Name,
+					Description: *v.Family,
 				}
 				if v.Capabilities != nil {
 					for _, cap := range v.Capabilities {
