@@ -41,18 +41,20 @@ func (kc *Controller) Create() (errC error) {
 		kc.p.Metadata.ClusterName,
 		consts.ClusterTypeSelfMang,
 	); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
 
 	if err := validation.IsValidKsctlClusterAddons(kc.ctx, kc.l, kc.p.Metadata.Addons); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -65,13 +67,11 @@ func (kc *Controller) Create() (errC error) {
 		kc.p,
 	)
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	transferableInfraState, errProvisioning := kpc.CreateHACluster()
 	if errProvisioning != nil {
-		kc.l.Error("handled error", "catch", errProvisioning)
 		return errProvisioning
 	}
 
@@ -85,18 +85,15 @@ func (kc *Controller) Create() (errC error) {
 		kc.p,
 	)
 	if errBootstrapController != nil {
-		kc.l.Error("handled error", "catch", errBootstrapController)
 		return errBootstrapController
 	}
 
 	externalCNI, errConfiguration := kbc.ConfigureCluster()
 	if errConfiguration != nil {
-		kc.l.Error("handled error", "catch", errConfiguration)
 		return errConfiguration
 	}
 
 	if err := kbc.InstallAdditionalTools(externalCNI); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 

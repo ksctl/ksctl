@@ -63,7 +63,7 @@ func TestManagedCluster(t *testing.T) {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, fakeClientManaged.clusterType, consts.ClusterTypeMang, "clustertype should be managed")
+		assert.Equal(t, fakeClientManaged.ClusterType, consts.ClusterTypeMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeManaged.Read()

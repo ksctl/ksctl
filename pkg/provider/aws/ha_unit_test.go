@@ -53,7 +53,7 @@ func TestHACluster(t *testing.T) {
 			ClusterName: "demo-ha",
 			Region:      "fake-region",
 			Provider:    consts.CloudAws,
-			SelfManaged: true,
+			ClusterType: consts.ClusterTypeSelfMang,
 			NoCP:        7,
 			NoDS:        5,
 			NoWP:        10,
@@ -74,7 +74,7 @@ func TestHACluster(t *testing.T) {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, fakeClientHA.clusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
+		assert.Equal(t, fakeClientHA.ClusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientHA.state.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeHA.Read()
@@ -345,7 +345,7 @@ func TestHACluster(t *testing.T) {
 				ClusterName: "demo-ha",
 				Region:      "fake-region",
 				Provider:    consts.CloudAws,
-				SelfManaged: true,
+				ClusterType: consts.ClusterTypeSelfMang,
 				NoCP:        7,
 				NoDS:        5,
 				NoWP:        10,
@@ -361,7 +361,7 @@ func TestHACluster(t *testing.T) {
 			t.Fatalf("Unable to init the state for delete, Reason: %v", err)
 		}
 
-		assert.Equal(t, fakeClientHA.clusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
+		assert.Equal(t, fakeClientHA.ClusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
 	})
 
 	t.Run("Get all counters", func(t *testing.T) {

@@ -66,7 +66,7 @@ func NewController(
 	cc.p = controllerPayload
 	cc.s = state
 
-	if controllerPayload.Metadata.SelfManaged {
+	if controllerPayload.Metadata.ClusterType == consts.ClusterTypeSelfMang {
 		err := cc.setupInterfaces(operation, transferableInfraState)
 		if err != nil {
 			return nil, err

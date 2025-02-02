@@ -32,12 +32,11 @@ import (
 )
 
 type Provider struct {
-	l           logger.Logger
-	ctx         context.Context
-	state       *statefile.StorageDocument
-	store       storage.Storage
-	clusterType consts.KsctlClusterType
-	mu          sync.Mutex
+	l     logger.Logger
+	ctx   context.Context
+	state *statefile.StorageDocument
+	store storage.Storage
+	mu    sync.Mutex
 
 	controller.Metadata
 
@@ -114,7 +113,7 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		ClusterName:   p.state.ClusterName,
 		Provider:      p.state.InfraProvider,
 		Region:        p.state.Region,
-		ClusterType:   p.clusterType,
+		ClusterType:   p.ClusterType,
 
 		// public IPs
 		IPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoControlPlanes.PublicIPs),
@@ -153,18 +152,11 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	p.clientID = extractedCreds.ClientID
 	p.clientSecret = extractedCreds.ClientSecret
 
-	switch p.SelfManaged {
-	case false:
-		p.clusterType = consts.ClusterTypeMang
-	case true:
-		p.clusterType = consts.ClusterTypeSelfMang
-	}
-
 	p.chResName = make(chan string, 1)
 	p.chRole = make(chan consts.KsctlRole, 1)
 	p.chVMType = make(chan string, 1)
 
-	p.resourceGroup = generateResourceGroupName(p.ClusterName, string(p.clusterType))
+	p.resourceGroup = generateResourceGroupName(p.ClusterName, string(p.ClusterType))
 
 	errLoadState := p.loadStateHelper()
 	switch operation {
@@ -182,7 +174,7 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 
 			p.state.ClusterName = p.ClusterName
 			p.state.InfraProvider = consts.CloudAzure
-			p.state.ClusterType = string(p.clusterType)
+			p.state.ClusterType = string(p.ClusterType)
 			p.state.Region = p.Region
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Azure: &statefile.StateConfigurationAzure{},
@@ -607,10 +599,7 @@ func (p *Provider) isPresent(cType consts.KsctlClusterType) error {
 }
 
 func (p *Provider) IsPresent() error {
-	if p.SelfManaged {
-		return p.isPresent(consts.ClusterTypeSelfMang)
-	}
-	return p.isPresent(consts.ClusterTypeMang)
+	return p.isPresent(p.ClusterType)
 }
 
 func (p *Provider) GetKubeconfig() (*string, error) {

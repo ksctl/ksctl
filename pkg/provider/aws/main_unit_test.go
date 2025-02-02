@@ -73,7 +73,7 @@ func TestMain(m *testing.M) {
 			ClusterName: "demo",
 			Region:      "fake-region",
 			Provider:    consts.CloudAws,
-			SelfManaged: true,
+			ClusterType: consts.ClusterTypeSelfMang,
 		},
 		&statefile.StorageDocument{},
 		storeVars,

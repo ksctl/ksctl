@@ -16,7 +16,7 @@ package clustermanager
 
 import (
 	"context"
-
+	"errors"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -49,6 +49,10 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 		return nil, err
 	}
 
+	if err := cc.b.ValidateClusterType(controllerPayload.Metadata.ClusterType); err != nil {
+		return nil, err
+	}
+
 	if err := cc.b.InitStorage(controllerPayload); err != nil {
 		return nil, err
 	}
@@ -60,21 +64,16 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 	return cc, nil
 }
 
-func (kc *Controller) helper() (*provider.CloudResourceState, error) {
+func (kc *Controller) helper() (_ *provider.CloudResourceState, errC error) {
 	if kc.b.IsLocalProvider(kc.p) {
 		kc.p.Metadata.Region = "LOCAL"
-	}
-
-	clusterType := consts.ClusterTypeMang
-	if kc.b.IsSelfManaged(kc.p) {
-		clusterType = consts.ClusterTypeSelfMang
 	}
 
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,
 		kc.p.Metadata.ClusterName,
-		clusterType); err != nil {
+		kc.p.Metadata.ClusterType); err != nil {
 
 		kc.l.Error("handled error", "catch", err)
 		return nil, err
@@ -82,7 +81,11 @@ func (kc *Controller) helper() (*provider.CloudResourceState, error) {
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
 
@@ -117,7 +120,7 @@ func (kc *Controller) helper() (*provider.CloudResourceState, error) {
 		return nil, err
 	}
 
-	if kc.b.IsSelfManaged(kc.p) {
+	if kc.p.Metadata.ClusterType == consts.ClusterTypeSelfMang {
 		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
 		if errState != nil {
 			kc.l.Error("handled error", "catch", errState)

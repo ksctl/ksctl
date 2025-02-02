@@ -224,7 +224,7 @@ func AzureTestingHAKubeadm() error {
 	cli.Metadata.WorkerPlaneNodeType = "fake"
 	cli.Metadata.DataStoreNodeType = "fake"
 
-	cli.Metadata.SelfManaged = true
+	cli.Metadata.ClusterType = consts.ClusterTypeSelfMang
 
 	cli.Metadata.Region = "fake"
 	cli.Metadata.Provider = consts.CloudAzure
@@ -242,7 +242,7 @@ func AzureTestingHAK3s() error {
 	cli.Metadata.WorkerPlaneNodeType = "fake"
 	cli.Metadata.DataStoreNodeType = "fake"
 
-	cli.Metadata.SelfManaged = true
+	cli.Metadata.ClusterType = consts.ClusterTypeSelfMang
 
 	cli.Metadata.Region = "fake"
 	cli.Metadata.Provider = consts.CloudAzure
@@ -260,7 +260,7 @@ func AwsTestingHA() error {
 	cli.Metadata.WorkerPlaneNodeType = "fake"
 	cli.Metadata.DataStoreNodeType = "fake"
 
-	cli.Metadata.SelfManaged = true
+	cli.Metadata.ClusterType = consts.ClusterTypeSelfMang
 
 	cli.Metadata.Region = "fake-region"
 	cli.Metadata.Provider = consts.CloudAws

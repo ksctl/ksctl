@@ -27,9 +27,8 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
-func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]logger.ClusterDataForLogging, error) {
+func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []logger.ClusterDataForLogging, errC error) {
 	if err := kc.b.ValidateMetadata(kc.p); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -61,15 +60,17 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 				kc.l.NewError(kc.ctx, "Failure", "reason", err),
 			)
 
-			kc.l.Error("Failure", "reason", _err)
-
 			return nil, _err
 		}
 	}
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
 
@@ -108,17 +109,14 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 			} else {
 				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 				if err != nil {
-					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
 				cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
 				if err != nil {
-					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
 				cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
 				if err != nil {
-					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
 			}
@@ -135,7 +133,6 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 	}
 
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -146,7 +143,6 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 		}
 		data, err := v.GetRAWClusterInfos()
 		if err != nil {
-			kc.l.Error("handled error", "catch", err)
 			return nil, err
 		}
 

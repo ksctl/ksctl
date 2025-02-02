@@ -42,14 +42,12 @@ type Client struct {
 }
 
 type Metadata struct {
-	ClusterName string `json:"cluster_name"`
-	Region      string `json:"region"`
-
-	Provider      consts.KsctlCloud      `json:"cloud_provider"`
-	K8sDistro     consts.KsctlKubernetes `json:"kubernetes_distro"`
-	StateLocation consts.KsctlStore      `json:"storage_type"`
-
-	SelfManaged bool `json:"self_managed,omitempty"`
+	ClusterName   string                  `json:"cluster_name"`
+	Region        string                  `json:"region"`
+	Provider      consts.KsctlCloud       `json:"cloud_provider"`
+	K8sDistro     consts.KsctlKubernetes  `json:"kubernetes_distro"`
+	StateLocation consts.KsctlStore       `json:"storage_type"`
+	ClusterType   consts.KsctlClusterType `json:"cluster_type"`
 
 	K8sVersion string `json:"kubernetes_version"`
 

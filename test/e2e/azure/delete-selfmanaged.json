@@ -1,6 +1,6 @@
 {
 	"cluster_name": "test-e2e-selfmanaged-azure",
-	"self_managed": true,
+	"cluster_type": "selfmanaged",
 	"region": "eastus2",
 	"cloud_provider": "azure",
 	"storage_type": "store-local"

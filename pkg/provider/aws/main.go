@@ -58,12 +58,11 @@ type KubeConfigData struct {
 }
 
 type Provider struct {
-	l           logger.Logger
-	ctx         context.Context
-	state       *statefile.StorageDocument
-	store       storage.Storage
-	clusterType consts.KsctlClusterType
-	mu          sync.Mutex
+	l     logger.Logger
+	ctx   context.Context
+	state *statefile.StorageDocument
+	store storage.Storage
+	mu    sync.Mutex
 
 	public bool
 
@@ -112,10 +111,7 @@ func (p *Provider) isPresent(cType consts.KsctlClusterType) error {
 }
 
 func (p *Provider) IsPresent() error {
-	if p.SelfManaged {
-		return p.isPresent(consts.ClusterTypeSelfMang)
-	}
-	return p.isPresent(consts.ClusterTypeMang)
+	return p.isPresent(p.ClusterType)
 }
 
 func (p *Provider) ManagedK8sVersion(ver string) provider.Cloud {
@@ -159,18 +155,11 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	p.accessKeyId = extractedCreds.AccessKeyId
 	p.secretKey = extractedCreds.SecretAccessKey
 
-	switch p.SelfManaged {
-	case false:
-		p.clusterType = consts.ClusterTypeMang
-	case true:
-		p.clusterType = consts.ClusterTypeSelfMang
-	}
-
 	p.chResName = make(chan string, 1)
 	p.chRole = make(chan consts.KsctlRole, 1)
 	p.chVMType = make(chan string, 1)
 
-	p.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", p.ClusterName, p.clusterType)
+	p.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", p.ClusterName, p.ClusterType)
 
 	errLoadState := p.loadStateHelper()
 
@@ -189,7 +178,7 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 
 			p.state.ClusterName = p.ClusterName
 			p.state.InfraProvider = consts.CloudAws
-			p.state.ClusterType = string(p.clusterType)
+			p.state.ClusterType = string(p.ClusterType)
 			p.state.Region = p.Region
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Aws: &statefile.StateConfigurationAws{},
@@ -234,7 +223,7 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		ClusterName:       p.state.ClusterName,
 		Provider:          p.state.InfraProvider,
 		Region:            p.state.Region,
-		ClusterType:       p.clusterType,
+		ClusterType:       p.ClusterType,
 		IPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoControlPlanes.PublicIPs),
 		IPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoDatabase.PublicIPs),
 		IPv4WorkerPlanes:  utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs),
@@ -608,7 +597,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 func (p *Provider) GetKubeconfig() (*string, error) {
 
-	if !p.SelfManaged {
+	if p.ClusterType == consts.ClusterTypeMang {
 		kubeconfig, err := p.client.GetKubeConfig(p.ctx, p.state.CloudInfra.Aws.ManagedClusterName)
 		if err != nil {
 			return nil, err

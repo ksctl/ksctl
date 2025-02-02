@@ -3,5 +3,5 @@
 	"storage_type": "store-local",
 	"region": "eastus2",
 	"cloud_provider": "azure",
-	"self_managed": true
+	"cluster_type": "selfmanaged"
 }
