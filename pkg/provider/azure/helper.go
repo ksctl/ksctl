@@ -16,6 +16,7 @@ package azure
 
 import (
 	"fmt"
+	"os"
 
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
@@ -105,4 +106,44 @@ func (p *Provider) isValidVMSize(size string) error {
 		ksctlErrors.ErrInvalidCloudVMSize,
 		p.l.NewError(p.ctx, "Invalid vm size", "Valid options", validSize),
 	)
+}
+
+func SetRequiredENV_VAR(
+	subscriptionId,
+	tenantId,
+	clientId,
+	clientSecret string) error {
+
+	err := os.Setenv("AZURE_SUBSCRIPTION_ID", subscriptionId)
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
+			err,
+		)
+	}
+
+	err = os.Setenv("AZURE_TENANT_ID", tenantId)
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
+			err,
+		)
+	}
+
+	err = os.Setenv("AZURE_CLIENT_ID", clientId)
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
+			err,
+		)
+	}
+
+	err = os.Setenv("AZURE_CLIENT_SECRET", clientSecret)
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrUnknown,
+			err,
+		)
+	}
+	return nil
 }

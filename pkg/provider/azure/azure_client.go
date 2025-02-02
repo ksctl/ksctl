@@ -18,7 +18,6 @@ package azure
 
 import (
 	"context"
-	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -219,48 +218,12 @@ func (p *AzureClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Pol
 	return res, nil
 }
 
-func (p *AzureClient) setRequiredENV_VAR() error {
-
-	err := os.Setenv("AZURE_SUBSCRIPTION_ID", p.b.subscriptionID)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-
-	err = os.Setenv("AZURE_TENANT_ID", p.b.tenantID)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-
-	err = os.Setenv("AZURE_CLIENT_ID", p.b.clientID)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-
-	err = os.Setenv("AZURE_CLIENT_SECRET", p.b.clientSecret)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-	return nil
-}
-
 func (p *AzureClient) InitClient(b *Provider) error {
 	p.b = b
 	p.region = b.Region
 	p.resourceGrp = b.resourceGroup
 
-	err := p.setRequiredENV_VAR()
+	err := SetRequiredENV_VAR(p.b.subscriptionID, p.b.tenantID, p.b.clientID, p.b.clientSecret)
 	if err != nil {
 		return err
 	}

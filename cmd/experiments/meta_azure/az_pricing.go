@@ -14,46 +14,37 @@
 
 package main
 
-import (
-	"context"
-	"log"
-	"os"
-
-	"github.com/gookit/goutil/dump"
-	"github.com/ksctl/ksctl/v2/pkg/provider/azure"
-)
-
 func main() {
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-
-	cc, err := azure.NewResourceDetails(subscriptionID)
-	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
-	}
-
-	v, err := cc.VMs(context.Background(), "eastus")
-	if err != nil {
-		log.Fatalf("failed to get VMs: %v", err)
-	}
-
-	dump.Println(v[azure.VMSku("Standard_F4s")])
-	dump.Println(v[azure.VMSku("Standard_D2_v3")])
-
-	pp, err := cc.Disks(context.Background(), "eastus")
-	if err != nil {
-		log.Fatalf("failed to get disks: %v", err)
-	}
-	dump.Println(pp)
-
-	p, err := cc.AKS(
-		context.Background(),
-		"eastus",
-		"Standard_D2_v3",
-		2,
-		azure.Standard,
-	)
-	if err != nil {
-		log.Fatalf("failed to get AKS: %v", err)
-	}
-	dump.Println(p)
+	// subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	//
+	// cc, err := azure.NewResourceDetails(subscriptionID)
+	// if err != nil {
+	// 	log.Fatalf("failed to create client: %v", err)
+	// }
+	//
+	// v, err := cc.VMs(context.Background(), "eastus")
+	// if err != nil {
+	// 	log.Fatalf("failed to get VMs: %v", err)
+	// }
+	//
+	// dump.Println(v[azure.VMSku("Standard_F4s")])
+	// dump.Println(v[azure.VMSku("Standard_D2_v3")])
+	//
+	// pp, err := cc.Disks(context.Background(), "eastus")
+	// if err != nil {
+	// 	log.Fatalf("failed to get disks: %v", err)
+	// }
+	// dump.Println(pp)
+	//
+	// p, err := cc.AKS(
+	// 	context.Background(),
+	// 	"eastus",
+	// 	"Standard_D2_v3",
+	// 	2,
+	// 	azure.Standard,
+	// )
+	// if err != nil {
+	// 	log.Fatalf("failed to get AKS: %v", err)
+	// }
+	// dump.Println(p)
 }

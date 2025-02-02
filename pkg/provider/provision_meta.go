@@ -20,11 +20,10 @@ type RegionOutput struct {
 }
 
 type PriceOutput struct {
+	Currency     string
 	HourlyPrice  *float64
 	MonthlyPrice *float64
 }
-
-type InstanceRegionInput string
 
 type MachineCategory string
 
@@ -35,20 +34,32 @@ const (
 	SpotMachine           MachineCategory = "spot"
 )
 
+type MachineArchitecture string
+
+const (
+	ArchArm64 MachineArchitecture = "arm64"
+	ArchAmd64 MachineArchitecture = "amd64"
+)
+
 type InstanceRegionOutput struct {
 	// Sku is the SKU of the instance
-	Sku string
+	Sku         string
+	Description string
 
-	// VCpu is the number of virtual CPUs
-	VCpu uint8
+	// VCpus is the number of virtual CPUs
+	VCpus int32
 
-	// Memory is in MB
-	Memory uint32
+	// Memory is in GB
+	Memory int32
 
 	// CpuArch is the architecture of the CPU
-	CpuArch string
+	CpuArch MachineArchitecture
 
 	Category MachineCategory
+
+	// EphemeralOSDiskSupport is true if the instance supports ephemeral OS disk
+	//  Currently being used for AKS to make cluster easier to update versions,...
+	EphemeralOSDiskSupport bool
 
 	Price PriceOutput
 
@@ -68,11 +79,21 @@ type StorageBlockRegionOutput struct {
 	//  If it is InstanceDiskNotIncluded then the disk is not included in the instance and cost is not included in the instance
 	AttachmentType DiskAttachmentType
 
-	// DiskSize is the size of the disk in GB
-	DiskSize uint32
+	MaxIOps *int32
+	MinIOps *int32
 
-	// Sku is the SKU of the disk only gets populated if the disk is not included in the instance
+	// Throughput is in MBps
+	MaxThroughput *int32
+	MinThroughput *int32
+
+	// Size is in GB
+	Size *int32
+
+	// Sku in terms of Disk in AZ is E6
 	Sku *string
+
+	// Tier in terms of Disk in AZ is StandardSSD_LRS
+	Tier *string
 
 	// Price are included in the instance if its managed by the instance itself like For ex. Hetzner, DigitalOcean
 	Price *PriceOutput
@@ -87,9 +108,9 @@ type ManagedClusterOutput struct {
 type ProvisionMetadata interface {
 	GetAvailableRegions() ([]RegionOutput, error)
 
-	GetAvailableInstanceTypes(InstanceRegionInput) ([]InstanceRegionOutput, error)
+	GetAvailableInstanceTypes(regionSku string) ([]InstanceRegionOutput, error)
 
-	GetAvailableManagedK8sManagementOfferings() ([]ManagedClusterOutput, error)
+	GetAvailableManagedK8sManagementOfferings(regionSku string) ([]ManagedClusterOutput, error)
 
-	GetAvailableManagedK8sVersions() ([]string, error)
+	GetAvailableManagedK8sVersions(regionSku string) ([]string, error)
 }
