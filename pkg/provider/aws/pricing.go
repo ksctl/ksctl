@@ -58,6 +58,52 @@ type EC2DetailsOutput struct {
 	ClockSpeed            string
 }
 
+type EBSVolumeType string
+
+const (
+	EBSGp3 EBSVolumeType = "gp3"
+	EBSGp2 EBSVolumeType = "gp2"
+	EBSIo1 EBSVolumeType = "io1"
+	EBSIo2 EBSVolumeType = "io2"
+)
+
+type EBSDetailsOutput struct {
+	RegionDescription string
+	VolumeType        string
+	VolumeSizeGB      int
+
+	AdditionalCostForThroughPutOrIOPS bool
+	PricePerGBMonth                   float64
+
+	MaxThroughputVol string // For gp3 (MB/s)
+	MaxIopsvolume    int    // For gp3
+
+	BaseIOPS      int // Base IOPS included for Gp3
+	BaseThoughput int // Base throughput included (MB/s) for GP3
+
+	TotalMonthlyCost float64
+	PriceDescription string
+}
+
+type EksType string
+
+const (
+	EksTypeStandard EksType = "Standard"
+	EksTypeExtended EksType = "Extended"
+)
+
+type EksDetailsOutput struct {
+	RegionDescription string
+	VMType            string
+	EksType           string
+	MonthlyCost       float64
+	PriceDescription  string
+	EC2DetailsOutput  *EC2DetailsOutput
+	EBSDetailsOutput  *EBSDetailsOutput
+	VMCount           int
+	EnabledAutoUsage  bool
+}
+
 func (p *ResourceDetails) EC2(region, vmType string) (*EC2DetailsOutput, error) {
 
 	regionDescription := string(p.regions[RegionCode(region)])
@@ -164,33 +210,6 @@ func (p *ResourceDetails) EC2(region, vmType string) (*EC2DetailsOutput, error) 
 		}
 	}
 	return ee, nil
-}
-
-type EBSVolumeType string
-
-const (
-	EBSGp3 EBSVolumeType = "gp3"
-	EBSGp2 EBSVolumeType = "gp2"
-	EBSIo1 EBSVolumeType = "io1"
-	EBSIo2 EBSVolumeType = "io2"
-)
-
-type EBSDetailsOutput struct {
-	RegionDescription string
-	VolumeType        string
-	VolumeSizeGB      int
-
-	AdditionalCostForThroughPutOrIOPS bool
-	PricePerGBMonth                   float64
-
-	MaxThroughputVol string // For gp3 (MB/s)
-	MaxIopsvolume    int    // For gp3
-
-	BaseIOPS      int // Base IOPS included for Gp3
-	BaseThoughput int // Base throughput included (MB/s) for GP3
-
-	TotalMonthlyCost float64
-	PriceDescription string
 }
 
 func (p *ResourceDetails) EBS(volumeType EBSVolumeType, sizeGB int, region string) (*EBSDetailsOutput, error) {
@@ -305,25 +324,6 @@ func (p *ResourceDetails) EBS(volumeType EBSVolumeType, sizeGB int, region strin
 	}
 
 	return ee, nil
-}
-
-type EksType string
-
-const (
-	EksTypeStandard EksType = "Standard"
-	EksTypeExtended EksType = "Extended"
-)
-
-type EksDetailsOutput struct {
-	RegionDescription string
-	VMType            string
-	EksType           string
-	MonthlyCost       float64
-	PriceDescription  string
-	EC2DetailsOutput  *EC2DetailsOutput
-	EBSDetailsOutput  *EBSDetailsOutput
-	VMCount           int
-	EnabledAutoUsage  bool
 }
 
 func (p *ResourceDetails) EKS(

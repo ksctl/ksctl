@@ -56,6 +56,39 @@ type PricingResponse struct {
 	NextPageLink string  `json:"NextPageLink"`
 }
 
+type DiskDetailsOutput struct {
+	Cost          float64
+	DiskSizeGB    int
+	ServiceName   string
+	ProductName   string
+	MeterName     string
+	UnitOfMeasure string
+	Region        string
+}
+
+type DiskSku string
+
+type DisksOutput map[DiskSku]DiskDetailsOutput
+
+type AksDetailsOutput struct {
+	Region        string
+	Price         float64
+	ServiceName   string
+	ProductName   string
+	UnitOfMeasure string
+
+	Compute    ComputeDetailsOutput
+	TotalPrice float64
+}
+
+type AKSTier string
+
+const (
+	Standard AKSTier = "Standard"
+	Premium  AKSTier = "Premium"
+	Free     AKSTier = "Free"
+)
+
 func fetchPrices(query string) ([]Price, error) {
 	apiURL := "https://prices.azure.com/api/retail/prices"
 	v := make([]Price, 0, 100)
@@ -96,20 +129,6 @@ func fetchPrices(query string) ([]Price, error) {
 
 	return v, nil
 }
-
-type DiskDetailsOutput struct {
-	Cost          float64
-	DiskSizeGB    int
-	ServiceName   string
-	ProductName   string
-	MeterName     string
-	UnitOfMeasure string
-	Region        string
-}
-
-type DiskSku string
-
-type DisksOutput map[DiskSku]DiskDetailsOutput
 
 func (p *ResourceDetails) Disks(ctx context.Context, region string) (DisksOutput, error) {
 	ee := DisksOutput{}
@@ -188,25 +207,6 @@ func (p *ResourceDetails) VMs(ctx context.Context, region string) (VMsOutput, er
 
 	return ee, nil
 }
-
-type AksDetailsOutput struct {
-	Region        string
-	Price         float64
-	ServiceName   string
-	ProductName   string
-	UnitOfMeasure string
-
-	Compute    ComputeDetailsOutput
-	TotalPrice float64
-}
-
-type AKSTier string
-
-const (
-	Standard AKSTier = "Standard"
-	Premium  AKSTier = "Premium"
-	Free     AKSTier = "Free"
-)
 
 func (p *ResourceDetails) AKS(
 	ctx context.Context,
