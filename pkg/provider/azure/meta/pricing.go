@@ -154,6 +154,46 @@ func (m *AzureMeta) priceVMs(regionSku string) (map[string]provider.InstanceRegi
 	return o, nil
 }
 
+func (m *AzureMeta) priceAksManagement(regionSku string) (out []provider.ManagedClusterOutput, _ error) {
+	filter := fmt.Sprintf("serviceName eq 'Azure Kubernetes Service' and armRegionName eq '%s' and unitOfMeasure eq '1 Hour' and skuName eq 'Standard'", regionSku)
+
+	prices, err := fetchPrices(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	out = append(out, provider.ManagedClusterOutput{
+		Sku: "Standard Free",
+		Price: provider.PriceOutput{
+			HourlyPrice: utilities.Ptr(0.0),
+			Currency:    prices[0].CurrencyCode,
+		},
+		Tier: "Free",
+	})
+
+	for _, p := range prices {
+		tier := ""
+		if p.MeterName == "Standard Long Term Support" {
+			tier = "Premium"
+		} else if p.MeterName == "Standard Uptime SLA" {
+			tier = "Standard"
+		}
+
+		o := provider.ManagedClusterOutput{
+			Sku:  p.MeterName,
+			Tier: tier,
+			Price: provider.PriceOutput{
+				HourlyPrice: utilities.Ptr(prices[0].UnitPrice),
+				Currency:    p.CurrencyCode,
+			},
+		}
+
+		out = append(out, o)
+	}
+
+	return out, nil
+}
+
 // type AksDetailsOutput struct {
 // 	Region        string
 // 	Price         float64

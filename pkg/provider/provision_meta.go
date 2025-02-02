@@ -14,6 +14,8 @@
 
 package provider
 
+import "github.com/ksctl/ksctl/v2/pkg/consts"
+
 type RegionOutput struct {
 	Sku  string
 	Name string
@@ -108,7 +110,7 @@ type ManagedClusterOutput struct {
 type ProvisionMetadata interface {
 	GetAvailableRegions() ([]RegionOutput, error)
 
-	GetAvailableInstanceTypes(regionSku string) ([]InstanceRegionOutput, error)
+	GetAvailableInstanceTypes(regionSku string, clusterType consts.KsctlClusterType) ([]InstanceRegionOutput, error)
 
 	GetAvailableManagedK8sManagementOfferings(regionSku string) ([]ManagedClusterOutput, error)
 

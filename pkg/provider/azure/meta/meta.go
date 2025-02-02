@@ -20,7 +20,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v6"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
@@ -117,14 +117,8 @@ func (m *AzureMeta) GetAvailableRegions() ([]provider.RegionOutput, error) {
 	return regions, nil
 }
 
-// TODO: if it is managed cluster then skip the calculation of Disk and its information
-func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string) ([]provider.InstanceRegionOutput, error) {
+func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType consts.KsctlClusterType) ([]provider.InstanceRegionOutput, error) {
 	vms, err := m.listOfVms(regionSku)
-	if err != nil {
-		return nil, err
-	}
-
-	disks, err := m.listOfDisksStandardLRS_ESeries(regionSku)
 	if err != nil {
 		return nil, err
 	}
@@ -134,20 +128,27 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string) ([]provider.Inst
 		return nil, err
 	}
 
-	priceDisks, err := m.priceDisksStandardLRS_ESeries(regionSku)
-	if err != nil {
-		return nil, err
-	}
-
 	// NOTE: limiting the disk to StandardSSD_LRS E6
 	vDisk := provider.StorageBlockRegionOutput{}
 
-	for idx, disk := range disks {
-		if *disk.Sku == "E6" {
-			if price, ok := priceDisks[*disk.Sku]; ok {
-				disks[idx].Price = price.Price
+	if clusterType != consts.ClusterTypeMang {
+		disks, err := m.listOfDisksStandardLRS_ESeries(regionSku)
+		if err != nil {
+			return nil, err
+		}
+
+		priceDisks, err := m.priceDisksStandardLRS_ESeries(regionSku)
+		if err != nil {
+			return nil, err
+		}
+
+		for idx, disk := range disks {
+			if *disk.Sku == "E6" {
+				if price, ok := priceDisks[*disk.Sku]; ok {
+					disks[idx].Price = price.Price
+				}
+				vDisk = disks[idx] // At this case the procing will be zero
 			}
-			vDisk = disks[idx] // At this case the procing will be zero
 		}
 	}
 
@@ -166,7 +167,7 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string) ([]provider.Inst
 }
 
 func (m *AzureMeta) GetAvailableManagedK8sManagementOfferings(regionSku string) ([]provider.ManagedClusterOutput, error) {
-	return nil, nil
+	return m.priceAksManagement(regionSku)
 }
 
 func (m *AzureMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, error) {
