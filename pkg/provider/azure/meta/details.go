@@ -38,8 +38,8 @@ func (m *AzureMeta) listOfDisksStandardLRS_ESeries(region string) (out []provide
 		IncludeExtendedLocations: nil,
 	})
 
-	allowedStorageTierWithSizes := func(tier, size string) bool {
-		return strings.HasPrefix(size, "E") && tier == "StandardSSD_LRS"
+	allowedStorageTierWithSizes := func(size, name string) bool {
+		return strings.HasPrefix(size, "E") && name == "StandardSSD_LRS"
 	}
 
 	for pager.More() {
@@ -51,8 +51,10 @@ func (m *AzureMeta) listOfDisksStandardLRS_ESeries(region string) (out []provide
 			)
 		}
 		for _, v := range page.Value {
-			if *v.ResourceType == "disks" && *v.Tier == "Standard" &&
-				allowedStorageTierWithSizes(*v.Size, *v.Name) {
+			if v.Size == nil {
+				continue
+			}
+			if *v.ResourceType == "disks" && *v.Tier == "Standard" && allowedStorageTierWithSizes(*v.Size, *v.Name) {
 				o := provider.StorageBlockRegionOutput{
 					Tier:           v.Name,
 					Sku:            v.Size,
@@ -116,7 +118,7 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 			if *v.ResourceType == "virtualMachines" && *v.Tier == "Standard" {
 				o := provider.InstanceRegionOutput{
 					Sku:         *v.Name,
-					Description: *v.Family,
+					Description: *v.Name,
 				}
 				if v.Capabilities != nil {
 					for _, cap := range v.Capabilities {

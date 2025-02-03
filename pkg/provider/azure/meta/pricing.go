@@ -124,7 +124,7 @@ func (m *AzureMeta) priceDisksStandardLRS_ESeries(regionSku string) (map[string]
 	for _, p := range prices {
 		o[strings.Split(p.SkuName, " ")[0]] = provider.StorageBlockRegionOutput{
 			Price: &provider.PriceOutput{
-				MonthlyPrice: utilities.Ptr(prices[0].UnitPrice),
+				MonthlyPrice: utilities.Ptr(p.UnitPrice),
 				Currency:     p.CurrencyCode,
 			},
 		}
@@ -134,7 +134,8 @@ func (m *AzureMeta) priceDisksStandardLRS_ESeries(regionSku string) (map[string]
 }
 
 func (m *AzureMeta) priceVMs(regionSku string) (map[string]provider.InstanceRegionOutput, error) {
-	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and type eq 'Consumption' and unitOfMeasure eq '1 Hour' and startswith(armSkuName, 'Standard_')", regionSku)
+	// filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and type eq 'Consumption' and unitOfMeasure eq '1 Hour' and startswith(armSkuName, 'Standard_')", regionSku)
+	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and type eq 'Consumption' and unitOfMeasure eq '1 Hour'", regionSku)
 
 	prices, err := fetchPrices(filter, IgnoreSpotAndLowPriMeterName())
 	if err != nil {
@@ -145,7 +146,7 @@ func (m *AzureMeta) priceVMs(regionSku string) (map[string]provider.InstanceRegi
 	for _, p := range prices {
 		o[p.ArmSkuName] = provider.InstanceRegionOutput{
 			Price: provider.PriceOutput{
-				HourlyPrice: utilities.Ptr(prices[0].UnitPrice),
+				HourlyPrice: utilities.Ptr(p.UnitPrice),
 				Currency:    p.CurrencyCode,
 			},
 		}

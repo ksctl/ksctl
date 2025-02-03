@@ -16,6 +16,7 @@ package metadata
 
 import (
 	"errors"
+
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
 
@@ -45,7 +46,7 @@ func (kc *Controller) ListAllRegions() (
 }
 
 func (kc *Controller) ListAllInstances(region string) (
-	_ []provider.InstanceRegionOutput,
+	out map[string]provider.InstanceRegionOutput,
 	errC error,
 ) {
 	defer func() {
@@ -66,5 +67,10 @@ func (kc *Controller) ListAllInstances(region string) (
 		return nil, err
 	}
 
-	return instances, nil
+	out = make(map[string]provider.InstanceRegionOutput)
+	for _, v := range instances {
+		out[v.Sku] = v
+	}
+
+	return out, nil
 }

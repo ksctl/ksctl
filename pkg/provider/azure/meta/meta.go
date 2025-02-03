@@ -131,7 +131,7 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType cons
 	// NOTE: limiting the disk to StandardSSD_LRS E6
 	vDisk := provider.StorageBlockRegionOutput{}
 
-	if clusterType != consts.ClusterTypeMang {
+	if clusterType == consts.ClusterTypeSelfMang {
 		disks, err := m.listOfDisksStandardLRS_ESeries(regionSku)
 		if err != nil {
 			return nil, err
@@ -142,28 +142,27 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType cons
 			return nil, err
 		}
 
-		for idx, disk := range disks {
-			if *disk.Sku == "E6" {
-				if price, ok := priceDisks[*disk.Sku]; ok {
-					disks[idx].Price = price.Price
+		for i := range disks {
+			if *disks[i].Sku == "E6" {
+				if price, ok := priceDisks[*disks[i].Sku]; ok {
+					disks[i].Price = price.Price
 				}
-				vDisk = disks[idx] // At this case the procing will be zero
+				vDisk = disks[i]
 			}
 		}
 	}
 
-	for idx, vm := range vms {
-		if price, ok := priceVMs[vm.Sku]; ok {
-			vms[idx].Price = price.Price
-			vms[idx].Disk = vDisk
+	var outVMs []provider.InstanceRegionOutput
+
+	for i := range vms {
+		if price, ok := priceVMs[vms[i].Sku]; ok {
+			vms[i].Price = price.Price
+			vms[i].Disk = vDisk
+			outVMs = append(outVMs, vms[i])
 		}
 	}
 
-	// TODO: need to check if we can free the memory for priceVMs and priceDisks
-	// clear(priceVMs)
-	// clear(priceDisks)
-
-	return vms, nil
+	return outVMs, nil
 }
 
 func (m *AzureMeta) GetAvailableManagedK8sManagementOfferings(regionSku string) ([]provider.ManagedClusterOutput, error) {
