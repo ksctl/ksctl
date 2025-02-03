@@ -16,6 +16,7 @@ package metadata
 
 import (
 	"errors"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
@@ -43,6 +44,37 @@ func (kc *Controller) ListAllRegions() (
 	}
 
 	return regions, nil
+}
+
+type PriceCalculatorInput struct {
+	// NoOfWorkerNodes this is used for both managed as managedNodes and self managed as workerNodes
+	NoOfWorkerNodes       int
+	NoOfControlPlaneNodes int
+	NoOfEtcdNodes         int
+	ControlPlaneMachine   provider.InstanceRegionOutput
+
+	// WorkerMachine this is used for both managed as managedNodes and self managed as workerNodes
+	WorkerMachine       provider.InstanceRegionOutput
+	EtcdMachine         provider.InstanceRegionOutput
+	LoadBalancerMachine provider.InstanceRegionOutput
+
+	ManagedControlPlaneMachine provider.ManagedClusterOutput
+}
+
+func (kc *Controller) PriceCalculator(inp PriceCalculatorInput) (float64, error) {
+	if kc.client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
+		return kc.priceCalculatorForSelfManagedCluster(inp)
+	} else {
+		return kc.priceCalculatorForManagedCluster(inp)
+	}
+}
+
+func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorInput) (float64, error) {
+	return 0.0, nil
+}
+
+func (kc *Controller) priceCalculatorForManagedCluster(inp PriceCalculatorInput) (float64, error) {
+	return 0.0, nil
 }
 
 func (kc *Controller) ListAllInstances(region string) (
