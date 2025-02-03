@@ -70,11 +70,48 @@ func (kc *Controller) PriceCalculator(inp PriceCalculatorInput) (float64, error)
 }
 
 func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorInput) (float64, error) {
-	return 0.0, nil
+	workerCost := float64(inp.NoOfWorkerNodes) * inp.WorkerMachine.GetCost()
+	controlPlaneCost := float64(inp.NoOfControlPlaneNodes) * inp.ControlPlaneMachine.GetCost()
+	etcdCost := float64(inp.NoOfEtcdNodes) * inp.EtcdMachine.GetCost()
+	lbCost := inp.LoadBalancerMachine.GetCost()
+
+	return workerCost + controlPlaneCost + etcdCost + lbCost, nil
 }
 
 func (kc *Controller) priceCalculatorForManagedCluster(inp PriceCalculatorInput) (float64, error) {
-	return 0.0, nil
+	managedNodeCost := float64(inp.NoOfWorkerNodes) * inp.WorkerMachine.GetCost()
+
+	return managedNodeCost + inp.ManagedControlPlaneMachine.GetCost(), nil
+}
+
+func (kc *Controller) ListAllManagedClusterManagementOfferings(region string) (
+	out map[string]provider.ManagedClusterOutput,
+	errC error,
+) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	if kc.b.IsLocalProvider(kc.client) {
+		return nil, nil
+	}
+
+	offerings, err := kc.cc.GetAvailableManagedK8sManagementOfferings(region)
+	if err != nil {
+		return nil, err
+	}
+
+	out = make(map[string]provider.ManagedClusterOutput)
+	for _, v := range offerings {
+		out[v.Sku] = v
+	}
+
+	return out, nil
 }
 
 func (kc *Controller) ListAllInstances(region string) (

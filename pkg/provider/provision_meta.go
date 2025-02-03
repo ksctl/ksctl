@@ -68,6 +68,19 @@ type InstanceRegionOutput struct {
 	Disk StorageBlockRegionOutput
 }
 
+func (I InstanceRegionOutput) GetCost() float64 {
+	machineCostPerMonth := 0.0
+
+	if I.Price.HourlyPrice != nil {
+		machineCostPerMonth = *I.Price.HourlyPrice * 730
+	}
+	if I.Price.MonthlyPrice != nil {
+		machineCostPerMonth = *I.Price.MonthlyPrice
+	}
+
+	return machineCostPerMonth + I.Disk.GetCost()
+}
+
 type DiskAttachmentType string
 
 const (
@@ -101,10 +114,39 @@ type StorageBlockRegionOutput struct {
 	Price *PriceOutput
 }
 
+func (S StorageBlockRegionOutput) GetCost() float64 {
+	if S.Price == nil {
+		return 0.0
+	}
+	costPerMonth := 0.0
+
+	if S.Price.HourlyPrice != nil {
+		costPerMonth = *S.Price.HourlyPrice * 730
+	}
+	if S.Price.MonthlyPrice != nil {
+		costPerMonth = *S.Price.MonthlyPrice
+	}
+
+	return costPerMonth
+}
+
 type ManagedClusterOutput struct {
 	Sku   string
 	Tier  string
 	Price PriceOutput
+}
+
+func (M ManagedClusterOutput) GetCost() float64 {
+	cost := 0.0
+
+	if M.Price.HourlyPrice != nil {
+		cost = *M.Price.HourlyPrice * 730
+	}
+	if M.Price.MonthlyPrice != nil {
+		cost = *M.Price.MonthlyPrice
+	}
+
+	return cost
 }
 
 type ProvisionMetadata interface {
