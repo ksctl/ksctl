@@ -22,9 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	_ "github.com/aws/aws-sdk-go-v2/service/pricing/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
@@ -37,12 +35,9 @@ import (
 )
 
 type AwsMeta struct {
-	ctx           context.Context
-	l             logger.Logger
-	stsClient     *sts.Client
-	ec2Client     *ec2.Client
-	pricingClient *pricing.Client
-	config        aws.Config
+	ctx   context.Context
+	l     logger.Logger
+	creds statefile.CredentialsAws
 }
 
 func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
@@ -61,12 +56,21 @@ func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
 		)
 	}
 
-	_session, err := awsConfig.LoadDefaultConfig(ctx,
-		awsConfig.WithRegion(""),
+	return &AwsMeta{
+		ctx:   ctx,
+		l:     l,
+		creds: extractedCreds,
+	}, nil
+}
+
+// GetNewSession returns a new aws session given you can "" or any valid region
+func (m *AwsMeta) GetNewSession(region string) (*aws.Config, error) {
+	_session, err := awsConfig.LoadDefaultConfig(m.ctx,
+		awsConfig.WithRegion(region),
 		awsConfig.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
-				extractedCreds.AccessKeyId,
-				extractedCreds.SecretAccessKey,
+				m.creds.AccessKeyId,
+				m.creds.SecretAccessKey,
 				"",
 			),
 		),
@@ -74,18 +78,11 @@ func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrInternal,
-			l.NewError(ctx, "Failed Init aws session", "Reason", err),
+			m.l.NewError(m.ctx, "Failed Init aws session", "Reason", err),
 		)
 	}
 
-	return &AwsMeta{
-		ctx:           ctx,
-		l:             l,
-		config:        _session,
-		stsClient:     sts.NewFromConfig(_session),
-		ec2Client:     ec2.NewFromConfig(_session),
-		pricingClient: pricing.NewFromConfig(_session),
-	}, nil
+	return &_session, nil
 }
 
 func (m *AwsMeta) GetAvailableRegions() ([]provider.RegionOutput, error) {
@@ -117,16 +114,21 @@ func (m *AwsMeta) GetAvailableRegions() ([]provider.RegionOutput, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&e); err != nil {
 		return nil, err
 	}
+	session, err := m.GetNewSession("")
+	if err != nil {
+		return nil, err
+	}
 
-	describeRegions, err := m.ec2Client.DescribeRegions(m.ctx, &ec2.DescribeRegionsInput{
-		AllRegions: aws.Bool(true),
-		Filters: []ec2Types.Filter{
-			{
-				Name:   aws.String("opt-in-status"),
-				Values: []string{"opt-in-not-required", "opted-in"},
+	describeRegions, err := ec2.NewFromConfig(*session).
+		DescribeRegions(m.ctx, &ec2.DescribeRegionsInput{
+			AllRegions: aws.Bool(true),
+			Filters: []ec2Types.Filter{
+				{
+					Name:   aws.String("opt-in-status"),
+					Values: []string{"opt-in-not-required", "opted-in"},
+				},
 			},
-		},
-	})
+		})
 	if err != nil {
 		return nil, err
 	}
