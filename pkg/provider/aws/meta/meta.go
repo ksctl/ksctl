@@ -17,6 +17,10 @@ package meta
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+	"slices"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -29,15 +33,15 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
-	"io"
-	"net/http"
-	"slices"
 )
 
 type AwsMeta struct {
 	ctx   context.Context
 	l     logger.Logger
 	creds statefile.CredentialsAws
+
+	// cachedInstanceMapping used for calling pricing api
+	cachedRegionMapping []provider.RegionOutput
 }
 
 func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
@@ -64,9 +68,9 @@ func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
 }
 
 // GetNewSession returns a new aws session given you can "" or any valid region
-func (m *AwsMeta) GetNewSession(region string) (*aws.Config, error) {
+func (m *AwsMeta) GetNewSession(regionSku string) (*aws.Config, error) {
 	_session, err := awsConfig.LoadDefaultConfig(m.ctx,
-		awsConfig.WithRegion(region),
+		awsConfig.WithRegion(regionSku),
 		awsConfig.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
 				m.creds.AccessKeyId,
@@ -150,121 +154,72 @@ func (m *AwsMeta) GetAvailableRegions() ([]provider.RegionOutput, error) {
 			}
 		}
 	}
+	m.cachedRegionMapping = regions
+
 	return regions, nil
 }
 
-func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, clusterType consts.KsctlClusterType) ([]provider.InstanceRegionOutput, error) {
-	return nil, nil
+func (m *AwsMeta) searchRegionDescription(regionSku string) *provider.RegionOutput {
+	for _, v := range m.cachedRegionMapping {
+		if v.Sku == regionSku {
+			return &v
+		}
+	}
+	return nil
+}
+
+func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, _ consts.KsctlClusterType) ([]provider.InstanceRegionOutput, error) {
+	reg := m.searchRegionDescription(regionSku)
+
+	vms, err := m.listOfVms(regionSku)
+	if err != nil {
+		return nil, err
+	}
+
+	priceVMs, err := m.priceVMs(*reg)
+	if err != nil {
+		return nil, err
+	}
+
+	disks, err := m.priceDisks(*reg)
+	if err != nil {
+		return nil, err
+	}
+
+	disk, ok := disks["gp3"]
+	if !ok {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			m.l.NewError(m.ctx, "disk gp3 not found"),
+		)
+	}
+
+	var outVMs []provider.InstanceRegionOutput
+	for i := range vms {
+		if price, ok := priceVMs[vms[i].Sku]; ok {
+			vms[i].Price = price.Price
+			vms[i].Disk = disk
+			outVMs = append(outVMs, vms[i])
+		}
+	}
+
+	return outVMs, nil
 }
 
 func (m *AwsMeta) GetAvailableManagedK8sManagementOfferings(regionSku string) ([]provider.ManagedClusterOutput, error) {
+	reg := m.searchRegionDescription(regionSku)
+	_ = reg
+
 	return nil, nil
 }
 
 func (m *AwsMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, error) {
+	reg := m.searchRegionDescription(regionSku)
+	_ = reg
+
 	return nil, nil
 }
 
-//type Region struct {
-//	Code        string
-//	Description string
-//}
-//
-//type RegionCode string
-//type RegionDescription string
-//
-//type Regions map[RegionCode]RegionDescription
-//
-//type ResourceDetails struct {
-//	ctx       context.Context
-//	cfg       aws.Config
-//	svc       *pricing.Client
-//	regions   Regions
-//	accountId string
-//}
-//
-//func NewResourceDetails(cfg aws.Config) (*ResourceDetails, error) {
-//	regions, err := getAllRegions(cfg)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	accountId, err := getAccountId(cfg)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	svc := pricing.NewFromConfig(cfg)
-//
-//	return &ResourceDetails{
-//		cfg:       cfg,
-//		regions:   regions,
-//		accountId: *accountId,
-//		svc:       svc,
-//	}, nil
-//}
-//
-//func getAllRegions(cfg aws.Config) (Regions, error) {
-//	// https://github.com/aws/aws-sdk-go-v2/blob/main/codegen/smithy-aws-go-codegen/src/main/resources/software/amazon/smithy/aws/go/codegen/endpoints.json
-//	type Service struct {
-//		Endpoints map[string]interface{} `json:"endpoints"`
-//	}
-//
-//	type Partition struct {
-//		PartitionName string                 `json:"partitionName"`
-//		Regions       map[string]interface{} `json:"regions"`
-//		Services      map[string]Service     `json:"services"`
-//	}
-//
-//	type endpoints struct {
-//		Partitions []Partition `json:"partitions"`
-//	}
-//
-//	resp, err := http.Get("https://raw.githubusercontent.com/aws/aws-sdk-go-v2/master/codegen/smithy-aws-go-codegen/src/main/resources/software/amazon/smithy/aws/go/codegen/endpoints.json")
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	defer func(Body io.ReadCloser) {
-//		_ = Body.Close()
-//	}(resp.Body)
-//
-//	e := endpoints{}
-//	if err := json.NewDecoder(resp.Body).Decode(&e); err != nil {
-//		return nil, err
-//	}
-//
-//	ec2Svc := ec2.NewFromConfig(cfg)
-//	describeRegions, err := ec2Svc.DescribeRegions(context.TODO(), &ec2.DescribeRegionsInput{
-//		AllRegions: aws.Bool(true),
-//		Filters: []types.Filter{
-//			{
-//				Name:   aws.String("opt-in-status"),
-//				Values: []string{"opt-in-not-required", "opted-in"},
-//			},
-//		},
-//	})
-//	if err != nil {
-//		return nil, err
-//	}
-//	availRegion := make([]string, 0, len(describeRegions.Regions))
-//	for _, r := range describeRegions.Regions {
-//		availRegion = append(availRegion, *r.RegionName)
-//	}
-//
-//	var regions = make(Regions)
-//	for _, p := range e.Partitions {
-//		for r, v := range p.Regions {
-//			if o, ok := v.(map[string]interface{})["description"].(string); ok {
-//				if slices.Contains(availRegion, r) {
-//					regions[RegionCode(r)] = RegionDescription(o)
-//				}
-//			}
-//		}
-//	}
-//	return regions, nil
-//}
-//
 //func getAccountId(cfg aws.Config) (*string, error) {
 //	svcP := sts.NewFromConfig(cfg)
 //

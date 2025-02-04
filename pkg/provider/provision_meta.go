@@ -95,10 +95,13 @@ type StorageBlockRegionOutput struct {
 	AttachmentType DiskAttachmentType
 
 	MaxIOps *int32
+
 	MinIOps *int32
 
-	// Throughput is in MBps
+	// MaxThroughput in MBps
 	MaxThroughput *int32
+
+	// MinThroughput in MBps
 	MinThroughput *int32
 
 	// Size is in GB

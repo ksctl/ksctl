@@ -51,8 +51,10 @@ func (m *AwsMeta) listOfVms(region string) (out []provider.InstanceRegionOutput,
 		return nil, err
 	}
 
+	ec2C := ec2.NewFromConfig(*session)
+
 	for {
-		output, err := ec2.NewFromConfig(*session).DescribeInstanceTypes(m.ctx, input)
+		output, err := ec2C.DescribeInstanceTypes(m.ctx, input)
 		if err != nil {
 			return nil, ksctlErrors.WrapError(
 				ksctlErrors.ErrInvalidCloudVMSize,
@@ -93,9 +95,5 @@ func (m *AwsMeta) listOfVms(region string) (out []provider.InstanceRegionOutput,
 		)
 	}
 
-	return nil, nil
-}
-
-func (m *AwsMeta) listOfDisksGp3(region string) (out []provider.StorageBlockRegionOutput, _ error) {
-	return nil, nil
+	return out, nil
 }

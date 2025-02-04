@@ -14,6 +14,20 @@
 
 package meta
 
+import (
+	"encoding/json"
+	"log"
+	"strconv"
+	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/pricing"
+	pricingTypes "github.com/aws/aws-sdk-go-v2/service/pricing/types"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
+)
+
 type AwsSDKPricing struct {
 	Product struct {
 		Sku        string         `json:"sku"`
@@ -25,54 +39,307 @@ type AwsSDKPricing struct {
 				PricePerUnit struct {
 					USD string `json:"USD"`
 				} `json:"pricePerUnit"`
-				Description string `json:"description"`
+				Description       string `json:"description"`
+				UnitOfMeasurement string `json:"unit"` // Hrs, GB-Mo, GB-month
 			} `json:"priceDimensions"`
 		} `json:"OnDemand"`
 	} `json:"terms"`
 }
 
-//type EC2DetailsOutput struct {
-//	RegionDescription     string
-//	VMType                string
-//	HourlyCost            float64
-//	PriceDescription      string
-//	Tenancy               string
-//	CurrentGeneration     string
-//	PhysicalProcessor     string
-//	ProcessorFeatures     string
-//	ProcessorArchitecture string
-//	VCPU                  string
-//	Memory                string
-//	ClockSpeed            string
-//}
-//
-//type EBSVolumeType string
-//
-//const (
-//	EBSGp3 EBSVolumeType = "gp3"
-//	EBSGp2 EBSVolumeType = "gp2"
-//	EBSIo1 EBSVolumeType = "io1"
-//	EBSIo2 EBSVolumeType = "io2"
-//)
-//
-//type EBSDetailsOutput struct {
-//	RegionDescription string
-//	VolumeType        string
-//	VolumeSizeGB      int
-//
-//	AdditionalCostForThroughPutOrIOPS bool
-//	PricePerGBMonth                   float64
-//
-//	MaxThroughputVol string // For gp3 (MB/s)
-//	MaxIopsvolume    int    // For gp3
-//
-//	BaseIOPS      int // Base IOPS included for Gp3
-//	BaseThoughput int // Base throughput included (MB/s) for GP3
-//
-//	TotalMonthlyCost float64
-//	PriceDescription string
-//}
-//
+func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.InstanceRegionOutput, error) {
+	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=operatingSystem,Value=linux Type=TERM_MATCH,Field=tenancy,Value="Shared" Type=TERM_MATCH,Field=capacitystatus,Value="Used" Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" --output=json
+	filters := []pricingTypes.Filter{
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("serviceCode"),
+			Value: aws.String("AmazonEC2"),
+		},
+		//{
+		//	Type:  pricingTypes.FilterTypeTermMatch,
+		//	Field: aws.String("instanceType"),
+		//	Value: aws.String(vmType),
+		//},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("location"),
+			Value: aws.String(region.Name),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("operatingSystem"),
+			Value: aws.String("Linux"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("preInstalledSw"),
+			Value: aws.String("NA"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("tenancy"),
+			Value: aws.String("Shared"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("capacitystatus"),
+			Value: aws.String("Used"),
+		},
+	}
+
+	input := &pricing.GetProductsInput{
+		ServiceCode:   aws.String("AmazonEC2"),
+		Filters:       filters,
+		FormatVersion: aws.String("aws_v1"),
+	}
+
+	session, err := m.GetNewSession(region.Sku)
+	if err != nil {
+		return nil, err
+	}
+
+	priC := pricing.NewFromConfig(*session)
+	var vmsPrice pricing.GetProductsOutput
+
+	for {
+		o, err := priC.GetProducts(m.ctx, input)
+		if err != nil {
+			// TODO: need to correctly handle the error
+			return nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrInternal,
+				m.l.NewError(m.ctx, "Error in fetching instance types", "Reason", err),
+			)
+		}
+		vmsPrice.PriceList = append(vmsPrice.PriceList, o.PriceList...)
+		if o.NextToken == nil {
+			break
+		}
+		input.NextToken = o.NextToken
+	}
+
+	out := make(map[string]provider.InstanceRegionOutput, len(vmsPrice.PriceList))
+	for _, p := range vmsPrice.PriceList {
+		pricingResult := AwsSDKPricing{}
+		err = json.Unmarshal([]byte(p), &pricingResult)
+		if err != nil {
+			return nil, err
+		}
+
+		instanceType := ""
+
+		if o, ok := pricingResult.Product.Attributes["instanceType"]; ok {
+			instanceType = o.(string)
+		}
+
+		//if o, ok := pricingResult.Product.Attributes["tenancy"]; ok {
+		//	ee.Tenancy = o.(string)
+		//}
+		//if o, ok := pricingResult.Product.Attributes["currentGeneration"]; ok {
+		//	ee.CurrentGeneration = o.(string)
+		//}
+		//if o, ok := pricingResult.Product.Attributes["physicalProcessor"]; ok {
+		//	ee.PhysicalProcessor = o.(string)
+		//}
+		//if o, ok := pricingResult.Product.Attributes["processorFeatures"]; ok {
+		//	ee.ProcessorFeatures = o.(string)
+		//}
+		//if o, ok := pricingResult.Product.Attributes["processorArchitecture"]; ok {
+		//	ee.ProcessorArchitecture = o.(string)
+		//}
+		//if o, ok := pricingResult.Product.Attributes["vcpu"]; ok {
+		//	ee.VCPU = o.(string)
+		//}
+		//if o, ok := pricingResult.Product.Attributes["memory"]; ok {
+		//	ee.Memory = o.(string)
+		//}
+		//if o, ok := pricingResult.Product.Attributes["clockSpeed"]; ok {
+		//	ee.ClockSpeed = o.(string)
+		//}
+
+		for _, onDemand := range pricingResult.Terms.OnDemand {
+			for _, priceDimension := range onDemand.PriceDimensions {
+				var monthlyPrice, hourlyPrice *float64
+
+				cost, err := strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
+				if err != nil {
+					log.Fatalf("Failed to parse hourly cost: %v", err)
+				}
+				if priceDimension.UnitOfMeasurement == "Hrs" {
+					hourlyPrice = utilities.Ptr(cost)
+				} else if priceDimension.UnitOfMeasurement == "GB-Mo" || priceDimension.UnitOfMeasurement == "GB-month" {
+					monthlyPrice = utilities.Ptr(cost)
+				}
+
+				out[instanceType] = provider.InstanceRegionOutput{
+					Price: provider.PriceOutput{
+						HourlyPrice:  hourlyPrice,
+						MonthlyPrice: monthlyPrice,
+						Currency:     "USD",
+					},
+				}
+				break
+			}
+			break
+		}
+	}
+
+	return out, nil
+}
+
+func (m *AwsMeta) priceDisks(region provider.RegionOutput) (map[string]provider.StorageBlockRegionOutput, error) {
+	volTypes := []string{"gp3", "gp2", "io1", "io2"}
+	out := make(map[string]provider.StorageBlockRegionOutput, len(volTypes))
+
+	for _, volumeType := range volTypes {
+		v, err := m.priceSpecificEBS(region, volumeType, 30)
+		if err != nil {
+			return nil, err
+		}
+		out[volumeType] = *v
+	}
+
+	return out, nil
+}
+
+func (m *AwsMeta) priceSpecificEBS(region provider.RegionOutput, volumeType string, volSize int) (*provider.StorageBlockRegionOutput, error) {
+
+	filterVolType := ""
+	var minIops, maxIops, minThroughput, maxThroughput *int32
+
+	switch volumeType {
+	case "gp3":
+		minIops = utilities.Ptr(int32(3000))
+		minThroughput = utilities.Ptr(int32(125))
+		filterVolType = "General Purpose"
+	case "gp2":
+		filterVolType = "General Purpose"
+	case "io1", "io2":
+		filterVolType = "Provisioned IOPS"
+	}
+
+	// Get volume pricing
+	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=productFamily,Value=Storage Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" Type=TERM_MATCH,Field=volumeType,Value="Provisioned IOPS" Type=TERM_MATCH,Field=volumeType,Value="General Purpose" --output=json
+	filters := []pricingTypes.Filter{
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("serviceCode"),
+			Value: aws.String("AmazonEC2"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("volumeType"),
+			Value: aws.String(filterVolType),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("volumeApiName"),
+			Value: aws.String(volumeType),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("location"),
+			Value: aws.String(region.Name),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("productFamily"),
+			Value: aws.String("Storage"),
+		},
+	}
+
+	input := &pricing.GetProductsInput{
+		ServiceCode:   aws.String("AmazonEC2"),
+		Filters:       filters,
+		FormatVersion: aws.String("aws_v1"),
+		MaxResults:    aws.Int32(1),
+	}
+	session, err := m.GetNewSession(region.Sku)
+	if err != nil {
+		return nil, err
+	}
+
+	priC := pricing.NewFromConfig(*session)
+
+	result, err := priC.GetProducts(m.ctx, input)
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			m.l.NewError(m.ctx, "failed to get EBS pricing", "reason", err),
+		)
+	}
+
+	var out *provider.StorageBlockRegionOutput
+	if result != nil && len(result.PriceList) > 0 {
+
+		pricingResult := AwsSDKPricing{}
+		err = json.Unmarshal([]byte(result.PriceList[0]), &pricingResult)
+		if err != nil {
+			return nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrInternal,
+				m.l.NewError(m.ctx, "failed to unmarshal EBS pricing", "reason", err),
+			)
+		}
+
+		if o, ok := pricingResult.Product.Attributes["maxThroughputvolume"]; ok {
+			_o := o.(string)
+			_o = strings.TrimSpace(strings.TrimSuffix(_o, "MiB/s"))
+			v, err := strconv.Atoi(_o)
+			if err != nil {
+				return nil, ksctlErrors.WrapError(
+					ksctlErrors.ErrInternal,
+					m.l.NewError(m.ctx, "failed to get max throughput", "reason", err),
+				)
+			}
+			maxThroughput = utilities.Ptr(int32(v))
+		}
+		if o, ok := pricingResult.Product.Attributes["maxIopsvolume"]; ok {
+			v, err := strconv.Atoi(o.(string))
+			if err != nil {
+				return nil, ksctlErrors.WrapError(
+					ksctlErrors.ErrInternal,
+					m.l.NewError(m.ctx, "failed to get max Iops", "reason", err),
+				)
+			}
+			maxIops = utilities.Ptr(int32(v))
+		}
+		//GB-month,GB-Mo
+		for _, onDemand := range pricingResult.Terms.OnDemand {
+			for _, priceDimension := range onDemand.PriceDimensions {
+				var monthlyPrice, hourlyPrice *float64
+
+				cost, err := strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
+				if err != nil {
+					log.Fatalf("Failed to parse monthly cost: %v", err)
+				}
+				if priceDimension.UnitOfMeasurement == "Hrs" {
+					hourlyPrice = utilities.Ptr(cost)
+				} else if priceDimension.UnitOfMeasurement == "GB-Mo" || priceDimension.UnitOfMeasurement == "GB-month" {
+					monthlyPrice = utilities.Ptr(cost)
+				}
+				out = &provider.StorageBlockRegionOutput{
+					Sku: utilities.Ptr(volumeType),
+					Price: &provider.PriceOutput{
+						MonthlyPrice: monthlyPrice,
+						HourlyPrice:  hourlyPrice,
+						Currency:     "USD",
+					},
+					Tier:           utilities.Ptr(filterVolType),
+					Size:           utilities.Ptr(int32(volSize)),
+					AttachmentType: provider.InstanceDiskNotIncluded,
+					MaxIOps:        maxIops,
+					MinIOps:        minIops,
+					MaxThroughput:  maxThroughput,
+					MinThroughput:  minThroughput,
+				}
+
+				break
+			}
+			break
+		}
+
+	}
+	return out, nil
+}
+
 //type EksType string
 //
 //const (
@@ -90,228 +357,6 @@ type AwsSDKPricing struct {
 //	EBSDetailsOutput  *EBSDetailsOutput
 //	VMCount           int
 //	EnabledAutoUsage  bool
-//}
-//
-//func (p *ResourceDetails) EC2(region, vmType string) (*EC2DetailsOutput, error) {
-//
-//	regionDescription := string(p.regions[RegionCode(region)])
-//	ee := &EC2DetailsOutput{
-//		RegionDescription: regionDescription,
-//		VMType:            vmType,
-//	}
-//
-//	filters := []types.Filter{
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("serviceCode"),
-//			Value: aws.String("AmazonEC2"),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("instanceType"),
-//			Value: aws.String(vmType),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("location"),
-//			Value: aws.String(regionDescription),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("operatingSystem"),
-//			Value: aws.String("Linux"),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("preInstalledSw"),
-//			Value: aws.String("NA"),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("tenancy"),
-//			Value: aws.String("Shared"),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("capacitystatus"),
-//			Value: aws.String("Used"),
-//		},
-//	}
-//
-//	input := &pricing.GetProductsInput{
-//		ServiceCode:   aws.String("AmazonEC2"),
-//		Filters:       filters,
-//		FormatVersion: aws.String("aws_v1"),
-//		MaxResults:    aws.Int32(1),
-//	}
-//
-//	result, err := p.svc.GetProducts(context.TODO(), input)
-//	if err != nil {
-//		return nil, fmt.Errorf("failed to get products, %v", err)
-//	}
-//
-//	if result != nil && len(result.PriceList) > 0 {
-//
-//		pricingResult := PricingResult{}
-//		err = json.Unmarshal([]byte(result.PriceList[0]), &pricingResult)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		// TODO: need to add architecture of the machine type
-//
-//		if o, ok := pricingResult.Product.Attributes["tenancy"]; ok {
-//			ee.Tenancy = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["currentGeneration"]; ok {
-//			ee.CurrentGeneration = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["physicalProcessor"]; ok {
-//			ee.PhysicalProcessor = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["processorFeatures"]; ok {
-//			ee.ProcessorFeatures = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["processorArchitecture"]; ok {
-//			ee.ProcessorArchitecture = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["vcpu"]; ok {
-//			ee.VCPU = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["memory"]; ok {
-//			ee.Memory = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["clockSpeed"]; ok {
-//			ee.ClockSpeed = o.(string)
-//		}
-//
-//		for _, onDemand := range pricingResult.Terms.OnDemand {
-//			for _, priceDimension := range onDemand.PriceDimensions {
-//				ee.PriceDescription = priceDimension.Description
-//				ee.HourlyCost, err = strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
-//				if err != nil {
-//					log.Fatalf("Failed to parse hourly cost: %v", err)
-//				}
-//				break
-//			}
-//			break
-//		}
-//	}
-//	return ee, nil
-//}
-//
-//func (p *ResourceDetails) EBS(volumeType EBSVolumeType, sizeGB int, region string) (*EBSDetailsOutput, error) {
-//
-//	regionDescription := string(p.regions[RegionCode(region)])
-//	ee := &EBSDetailsOutput{
-//		RegionDescription: regionDescription,
-//		VolumeType:        string(volumeType),
-//		VolumeSizeGB:      sizeGB,
-//	}
-//
-//	filterVolType := ""
-//
-//	switch volumeType {
-//	case EBSGp3:
-//		ee.BaseIOPS = 3000
-//		ee.BaseThoughput = 125
-//		ee.AdditionalCostForThroughPutOrIOPS = true
-//		filterVolType = "General Purpose"
-//	case EBSGp2:
-//		ee.BaseIOPS = 0
-//		ee.BaseThoughput = 0
-//		ee.AdditionalCostForThroughPutOrIOPS = false
-//		filterVolType = "General Purpose"
-//	case EBSIo1:
-//		ee.BaseIOPS = 0
-//		ee.BaseThoughput = 0
-//		ee.AdditionalCostForThroughPutOrIOPS = true
-//		filterVolType = "Provisioned IOPS"
-//	case EBSIo2:
-//		ee.BaseIOPS = 0
-//		ee.BaseThoughput = 0
-//		ee.AdditionalCostForThroughPutOrIOPS = true
-//		filterVolType = "Provisioned IOPS"
-//	}
-//
-//	// Get volume pricing
-//	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=productFamily,Value=Storage Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" Type=TERM_MATCH,Field=volumeType,Value="Provisioned IOPS" Type=TERM_MATCH,Field=volumeType,Value="General Purpose" --output=json
-//	filters := []types.Filter{
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("serviceCode"),
-//			Value: aws.String("AmazonEC2"),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("volumeType"),
-//			Value: aws.String(filterVolType),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("volumeApiName"),
-//			Value: aws.String(string(volumeType)),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("location"),
-//			Value: aws.String(regionDescription),
-//		},
-//		{
-//			Type:  types.FilterTypeTermMatch,
-//			Field: aws.String("productFamily"),
-//			Value: aws.String("Storage"),
-//		},
-//	}
-//
-//	input := &pricing.GetProductsInput{
-//		ServiceCode:   aws.String("AmazonEC2"),
-//		Filters:       filters,
-//		FormatVersion: aws.String("aws_v1"),
-//		MaxResults:    aws.Int32(1),
-//	}
-//
-//	result, err := p.svc.GetProducts(context.TODO(), input)
-//	if err != nil {
-//		return nil, fmt.Errorf("failed to get EBS pricing: %v", err)
-//	}
-//
-//	monthPerGB := 0.0
-//	if result != nil && len(result.PriceList) > 0 {
-//
-//		pricingResult := PricingResult{}
-//		err = json.Unmarshal([]byte(result.PriceList[0]), &pricingResult)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		if o, ok := pricingResult.Product.Attributes["maxThroughputvolume"]; ok {
-//			ee.MaxThroughputVol = o.(string)
-//		}
-//		if o, ok := pricingResult.Product.Attributes["maxIopsvolume"]; ok {
-//			ee.MaxIopsvolume, err = strconv.Atoi(o.(string))
-//			if err != nil {
-//				ee.MaxIopsvolume = -1 // failed to get it
-//			}
-//		}
-//
-//		for _, onDemand := range pricingResult.Terms.OnDemand {
-//			for _, priceDimension := range onDemand.PriceDimensions {
-//				ee.PriceDescription = priceDimension.Description
-//				monthPerGB, err = strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
-//				if err != nil {
-//					log.Fatalf("Failed to parse monthly cost: %v", err)
-//				}
-//				ee.PricePerGBMonth = monthPerGB
-//				break
-//			}
-//			break
-//		}
-//
-//		ee.TotalMonthlyCost = monthPerGB * float64(sizeGB)
-//	}
-//
-//	return ee, nil
 //}
 //
 //func (p *ResourceDetails) EKS(
