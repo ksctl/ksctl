@@ -84,11 +84,10 @@ func (m *AwsMeta) listOfVms(region string) (out []provider.InstanceRegionOutput,
 		out = append(
 			out,
 			provider.InstanceRegionOutput{
-				Sku:         string(vm.InstanceType),
-				Description: string(vm.InstanceType),
-				VCpus:       *vm.VCpuInfo.DefaultVCpus,
-				//Memory:      int32(*vm.MemoryInfo.SizeInMiB / 1024),
-				Memory:                 int32(*vm.MemoryInfo.SizeInMiB), // TODO: please check what is the value
+				Sku:                    string(vm.InstanceType),
+				Description:            string(vm.InstanceType),
+				VCpus:                  *vm.VCpuInfo.DefaultVCpus,
+				Memory:                 int32(*vm.MemoryInfo.SizeInMiB / 1024),
 				CpuArch:                arch,
 				EphemeralOSDiskSupport: *vm.InstanceStorageSupported,
 			},
