@@ -51,30 +51,10 @@ type options struct {
 	ebsType *string
 	ebsSize *int32
 	eksType *string
+	ec2Type []string
 }
 
 type Option func(*options) error
-
-func WithDefaultEBSVolumeType() Option {
-	return func(o *options) error {
-		o.ebsType = utilities.Ptr("gp3")
-		return nil
-	}
-}
-
-func WithDefaultEBSSize() Option {
-	return func(o *options) error {
-		o.ebsSize = utilities.Ptr(int32(30))
-		return nil
-	}
-}
-
-func WithDefaultEKS() Option {
-	return func(o *options) error {
-		o.eksType = utilities.Ptr("Standard")
-		return nil
-	}
-}
 
 func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.InstanceRegionOutput, error) {
 	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=operatingSystem,Value=linux Type=TERM_MATCH,Field=tenancy,Value="Shared" Type=TERM_MATCH,Field=capacitystatus,Value="Used" Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" --output=json
@@ -183,6 +163,20 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 	}
 
 	return out, nil
+}
+
+func WithDefaultEBSVolumeType() Option {
+	return func(o *options) error {
+		o.ebsType = utilities.Ptr("gp3")
+		return nil
+	}
+}
+
+func WithDefaultEBSSize() Option {
+	return func(o *options) error {
+		o.ebsSize = utilities.Ptr(int32(30))
+		return nil
+	}
 }
 
 func (m *AwsMeta) priceDisks(region provider.RegionOutput, opts ...Option) ([]provider.StorageBlockRegionOutput, error) {
@@ -361,6 +355,13 @@ func (m *AwsMeta) priceSpecificEBS(region provider.RegionOutput, volumeType stri
 
 	}
 	return out, nil
+}
+
+func WithDefaultEKS() Option {
+	return func(o *options) error {
+		o.eksType = utilities.Ptr("Standard")
+		return nil
+	}
 }
 
 func (m *AwsMeta) priceEksManagement(region provider.RegionOutput, vmType *string, opts ...Option) ([]provider.ManagedClusterOutput, error) {

@@ -43,11 +43,14 @@ type APIPricingResponse struct {
 
 type options struct {
 	ignoreSpotAndLowPriMeterName bool
+	filterManagedDisk            *string
+	filterInstanceType           *string
+	filterAksOfferings           *string
 }
 
-type option func(op *options) error
+type Option func(op *options) error
 
-func IgnoreSpotAndLowPriMeterName() option {
+func IgnoreSpotAndLowPriMeterName() Option {
 	return func(op *options) error {
 		op.ignoreSpotAndLowPriMeterName = true
 		return nil
@@ -62,7 +65,7 @@ func doesProductNameContainWindows(productName string) bool {
 	return strings.HasSuffix(productName, "Windows")
 }
 
-func fetchPrices(query string, opts ...option) ([]AzPrice, error) {
+func fetchPrices(query string, opts ...Option) ([]AzPrice, error) {
 	apiURL := "https://prices.azure.com/api/retail/prices"
 	v := make([]AzPrice, 0, 100)
 	var options options
@@ -113,29 +116,75 @@ func fetchPrices(query string, opts ...option) ([]AzPrice, error) {
 	return v, nil
 }
 
-func (m *AzureMeta) priceDisksStandardLRS_ESeries(regionSku string) (map[string]provider.StorageBlockRegionOutput, error) {
-	filter := fmt.Sprintf("armRegionName eq '%s' and serviceFamily eq 'Storage' and productName eq 'Standard SSD Managed Disks' and endswith(skuName, 'LRS') and startswith(skuName, 'E') and endswith(meterName, 'LRS Disk') and Type eq 'Consumption' and unitOfMeasure eq '1/Month'", regionSku)
+func WithDefaultManagedDisk() Option {
+	return func(op *options) error {
+		op.filterManagedDisk = utilities.Ptr("skuName eq 'E6 LRS'")
+		return nil
+	}
+}
+
+func (m *AzureMeta) priceDisksStandardLRS_ESeries(regionSku string, opts ...Option) ([]provider.StorageBlockRegionOutput, error) {
+
+	var options options
+	for _, opt := range opts {
+		err := opt(&options)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	filterForDisk := "endswith(skuName, 'LRS') and startswith(skuName, 'E')"
+	if options.filterManagedDisk != nil {
+		filterForDisk = *options.filterManagedDisk
+	}
+
+	filter := fmt.Sprintf("armRegionName eq '%s' and serviceFamily eq 'Storage' and productName eq 'Standard SSD Managed Disks' and %s and endswith(meterName, 'LRS Disk') and Type eq 'Consumption' and unitOfMeasure eq '1/Month'", filterForDisk, regionSku)
 
 	prices, err := fetchPrices(filter)
 	if err != nil {
 		return nil, err
 	}
-	o := make(map[string]provider.StorageBlockRegionOutput)
+	o := make([]provider.StorageBlockRegionOutput, 0, len(prices))
 	for _, p := range prices {
-		o[strings.Split(p.SkuName, " ")[0]] = provider.StorageBlockRegionOutput{
-			Price: &provider.PriceOutput{
-				MonthlyPrice: utilities.Ptr(p.UnitPrice),
-				Currency:     p.CurrencyCode,
+		o = append(
+			o,
+			provider.StorageBlockRegionOutput{
+				Sku: utilities.Ptr(strings.Split(p.SkuName, " ")[0]),
+				Price: &provider.PriceOutput{
+					MonthlyPrice: utilities.Ptr(p.UnitPrice),
+					Currency:     p.CurrencyCode,
+				},
 			},
-		}
+		)
 	}
 
 	return o, nil
 }
 
-func (m *AzureMeta) priceVMs(regionSku string) (map[string]provider.InstanceRegionOutput, error) {
-	// filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and type eq 'Consumption' and unitOfMeasure eq '1 Hour' and startswith(armSkuName, 'Standard_')", regionSku)
-	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and type eq 'Consumption' and unitOfMeasure eq '1 Hour'", regionSku)
+func WithDefaultInstanceType() Option {
+	return func(op *options) error {
+		op.filterInstanceType = utilities.Ptr("(startswith(armSkuName, 'Standard_D2s') or startswith(armSkuName, 'Standard_D4s') or startswith(armSkuName, 'Standard_E2s') or startswith(armSkuName, 'Standard_E4s') or startswith(armSkuName, 'Standard_F2s') or startswith(armSkuName, 'Standard_F4s') or startswith(armSkuName, 'Standard_B2s') or startswith(armSkuName, 'Standard_B4s'))")
+		return nil
+	}
+}
+
+func (m *AzureMeta) priceVMs(regionSku string, opts ...Option) (map[string]provider.InstanceRegionOutput, error) {
+
+	var options options
+
+	for _, opt := range opts {
+		err := opt(&options)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	filterInstance := "startswith(armSkuName, 'Standard_')"
+	if options.filterInstanceType != nil {
+		filterInstance = *options.filterInstanceType
+	}
+
+	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and %s and type eq 'Consumption' and unitOfMeasure eq '1 Hour'", filterInstance, regionSku)
 
 	prices, err := fetchPrices(filter, IgnoreSpotAndLowPriMeterName())
 	if err != nil {
@@ -155,9 +204,29 @@ func (m *AzureMeta) priceVMs(regionSku string) (map[string]provider.InstanceRegi
 	return o, nil
 }
 
-// TODO: Lets use Option as WithKsctlDefaultType()
-func (m *AzureMeta) priceAksManagement(regionSku string) (out []provider.ManagedClusterOutput, _ error) {
-	filter := fmt.Sprintf("serviceName eq 'Azure Kubernetes Service' and armRegionName eq '%s' and unitOfMeasure eq '1 Hour' and skuName eq 'Standard'", regionSku)
+func WithDefaultAks() Option {
+	return func(op *options) error {
+		op.filterAksOfferings = utilities.Ptr("meterName eq 'Standard Uptime SLA'")
+		return nil
+	}
+}
+
+func (m *AzureMeta) priceAksManagement(regionSku string, opts ...Option) (out []provider.ManagedClusterOutput, _ error) {
+
+	var options options
+	for _, opt := range opts {
+		err := opt(&options)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	filterAks := ""
+	if options.filterAksOfferings != nil {
+		filterAks = "and " + *options.filterInstanceType
+	}
+
+	filter := fmt.Sprintf("serviceName eq 'Azure Kubernetes Service' and armRegionName eq '%s' and unitOfMeasure eq '1 Hour' and skuName eq 'Standard' %s", regionSku, filterAks)
 
 	prices, err := fetchPrices(filter)
 	if err != nil {
@@ -165,7 +234,8 @@ func (m *AzureMeta) priceAksManagement(regionSku string) (out []provider.Managed
 	}
 
 	out = append(out, provider.ManagedClusterOutput{
-		Sku: "Standard Free",
+		Sku:         "Standard Free",
+		Description: "Aks Free Management",
 		Price: provider.PriceOutput{
 			HourlyPrice: utilities.Ptr(0.0),
 			Currency:    prices[0].CurrencyCode,
@@ -182,8 +252,9 @@ func (m *AzureMeta) priceAksManagement(regionSku string) (out []provider.Managed
 		}
 
 		o := provider.ManagedClusterOutput{
-			Sku:  p.MeterName,
-			Tier: tier,
+			Sku:         p.MeterName,
+			Description: p.ProductName,
+			Tier:        tier,
 			Price: provider.PriceOutput{
 				HourlyPrice: utilities.Ptr(prices[0].UnitPrice),
 				Currency:    p.CurrencyCode,

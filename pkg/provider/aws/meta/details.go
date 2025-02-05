@@ -18,11 +18,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
 
-func (m *AwsMeta) listOfVms(region string) (out []provider.InstanceRegionOutput, _ error) {
+func WithDefaultEC2() Option {
+	return func(o *options) error {
+		o.ec2Type = []string{"c5*", "t3*", "m5*"}
+		return nil
+	}
+}
+
+func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.InstanceRegionOutput, _ error) {
+
+	options := options{}
+	for _, o := range opts {
+		if err := o(&options); err != nil {
+			return nil, err
+		}
+	}
+
 	var vmTypes ec2.DescribeInstanceTypesOutput
 	// https://github.com/aws/aws-sdk-go-v2/blob/service/ec2/v1.198.1/service/ec2/api_op_DescribeInstanceTypes.go#L31
 	input := &ec2.DescribeInstanceTypesInput{
@@ -44,6 +60,13 @@ func (m *AwsMeta) listOfVms(region string) (out []provider.InstanceRegionOutput,
 				Values: []string{"x86_64", "arm64"},
 			},
 		},
+	}
+
+	if len(options.ec2Type) > 0 {
+		input.Filters = append(input.Filters, ec2Types.Filter{
+			Name:   aws.String("instance-type"),
+			Values: options.ec2Type,
+		})
 	}
 
 	session, err := m.GetNewSession(region)
@@ -95,4 +118,42 @@ func (m *AwsMeta) listOfVms(region string) (out []provider.InstanceRegionOutput,
 	}
 
 	return out, nil
+}
+
+func (m *AwsMeta) listManagedOfferingsK8sVersions(regionSku string) ([]string, error) {
+	input := &eks.DescribeAddonVersionsInput{
+		AddonName:         aws.String("vpc-cni"),
+		KubernetesVersion: aws.String(""),
+	}
+
+	session, err := m.GetNewSession(regionSku)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := eks.NewFromConfig(*session).DescribeAddonVersions(m.ctx, input)
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedKsctlClusterOperation,
+			m.l.NewError(m.ctx, "Error Describing Addon Versions", "Reason", err),
+		)
+	}
+
+	versions := make(map[string]struct{})
+	for _, addon := range resp.Addons {
+		for _, addonVersion := range addon.AddonVersions {
+			for _, k8sVersion := range addonVersion.Compatibilities {
+				if k8sVersion.ClusterVersion != nil {
+					versions[*k8sVersion.ClusterVersion] = struct{}{}
+				}
+			}
+		}
+	}
+
+	var s []string
+	for k := range versions {
+		s = append(s, k)
+	}
+
+	return s, nil
 }

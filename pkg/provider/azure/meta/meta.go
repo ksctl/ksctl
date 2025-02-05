@@ -123,12 +123,11 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType cons
 		return nil, err
 	}
 
-	priceVMs, err := m.priceVMs(regionSku)
+	priceVMs, err := m.priceVMs(regionSku, WithDefaultInstanceType())
 	if err != nil {
 		return nil, err
 	}
 
-	// NOTE: limiting the disk to StandardSSD_LRS E6
 	vDisk := provider.StorageBlockRegionOutput{}
 
 	if clusterType == consts.ClusterTypeSelfMang {
@@ -137,18 +136,14 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType cons
 			return nil, err
 		}
 
-		priceDisks, err := m.priceDisksStandardLRS_ESeries(regionSku)
+		priceDisks, err := m.priceDisksStandardLRS_ESeries(regionSku, WithDefaultManagedDisk())
 		if err != nil {
 			return nil, err
 		}
 
 		for i := range disks {
-			if *disks[i].Sku == "E6" {
-				if price, ok := priceDisks[*disks[i].Sku]; ok {
-					disks[i].Price = price.Price
-				}
-				vDisk = disks[i]
-			}
+			disks[i].Price = priceDisks[0].Price
+			vDisk = disks[i]
 		}
 	}
 
@@ -166,7 +161,7 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType cons
 }
 
 func (m *AzureMeta) GetAvailableManagedK8sManagementOfferings(regionSku string, _ *string) ([]provider.ManagedClusterOutput, error) {
-	return m.priceAksManagement(regionSku)
+	return m.priceAksManagement(regionSku, WithDefaultAks())
 }
 
 func (m *AzureMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, error) {

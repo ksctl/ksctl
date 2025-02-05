@@ -171,7 +171,7 @@ func (m *AwsMeta) searchRegionDescription(regionSku string) *provider.RegionOutp
 func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, _ consts.KsctlClusterType) ([]provider.InstanceRegionOutput, error) {
 	reg := m.searchRegionDescription(regionSku)
 
-	vms, err := m.listOfVms(regionSku)
+	vms, err := m.listOfVms(regionSku, WithDefaultEC2())
 	if err != nil {
 		return nil, err
 	}
@@ -205,10 +205,7 @@ func (m *AwsMeta) GetAvailableManagedK8sManagementOfferings(regionSku string, vm
 }
 
 func (m *AwsMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, error) {
-	reg := m.searchRegionDescription(regionSku)
-	_ = reg
-
-	return nil, nil
+	return m.listManagedOfferingsK8sVersions(regionSku)
 }
 
 //func getAccountId(cfg aws.Config) (*string, error) {
