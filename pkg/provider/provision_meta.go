@@ -134,9 +134,10 @@ func (S StorageBlockRegionOutput) GetCost() float64 {
 }
 
 type ManagedClusterOutput struct {
-	Sku   string
-	Tier  string
-	Price PriceOutput
+	Sku         string
+	Description string
+	Tier        string
+	Price       PriceOutput
 }
 
 func (M ManagedClusterOutput) GetCost() float64 {
@@ -157,7 +158,7 @@ type ProvisionMetadata interface {
 
 	GetAvailableInstanceTypes(regionSku string, clusterType consts.KsctlClusterType) ([]InstanceRegionOutput, error)
 
-	GetAvailableManagedK8sManagementOfferings(regionSku string) ([]ManagedClusterOutput, error)
+	GetAvailableManagedK8sManagementOfferings(regionSku string, vmType *string) ([]ManagedClusterOutput, error)
 
 	GetAvailableManagedK8sVersions(regionSku string) ([]string, error)
 }

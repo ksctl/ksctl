@@ -155,6 +155,7 @@ func (m *AzureMeta) priceVMs(regionSku string) (map[string]provider.InstanceRegi
 	return o, nil
 }
 
+// TODO: Lets use Option as WithKsctlDefaultType()
 func (m *AzureMeta) priceAksManagement(regionSku string) (out []provider.ManagedClusterOutput, _ error) {
 	filter := fmt.Sprintf("serviceName eq 'Azure Kubernetes Service' and armRegionName eq '%s' and unitOfMeasure eq '1 Hour' and skuName eq 'Standard'", regionSku)
 

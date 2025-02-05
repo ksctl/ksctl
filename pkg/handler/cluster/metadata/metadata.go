@@ -16,6 +16,7 @@ package metadata
 
 import (
 	"errors"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
@@ -84,7 +85,8 @@ func (kc *Controller) priceCalculatorForManagedCluster(inp PriceCalculatorInput)
 	return managedNodeCost + inp.ManagedControlPlaneMachine.GetCost(), nil
 }
 
-func (kc *Controller) ListAllManagedClusterManagementOfferings(region string) (
+// ListAllManagedClusterManagementOfferings you can pass choosenInstanceType as nil if you are not using EKS AutoNode mode
+func (kc *Controller) ListAllManagedClusterManagementOfferings(region string, choosenInstanceType *string) (
 	out map[string]provider.ManagedClusterOutput,
 	errC error,
 ) {
@@ -101,7 +103,7 @@ func (kc *Controller) ListAllManagedClusterManagementOfferings(region string) (
 		return nil, nil
 	}
 
-	offerings, err := kc.cc.GetAvailableManagedK8sManagementOfferings(region)
+	offerings, err := kc.cc.GetAvailableManagedK8sManagementOfferings(region, choosenInstanceType)
 	if err != nil {
 		return nil, err
 	}

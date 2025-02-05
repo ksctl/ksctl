@@ -165,7 +165,7 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType cons
 	return outVMs, nil
 }
 
-func (m *AzureMeta) GetAvailableManagedK8sManagementOfferings(regionSku string) ([]provider.ManagedClusterOutput, error) {
+func (m *AzureMeta) GetAvailableManagedK8sManagementOfferings(regionSku string, _ *string) ([]provider.ManagedClusterOutput, error) {
 	return m.priceAksManagement(regionSku)
 }
 

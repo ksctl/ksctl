@@ -181,24 +181,16 @@ func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, _ consts.KsctlClus
 		return nil, err
 	}
 
-	disks, err := m.priceDisks(*reg)
+	disks, err := m.priceDisks(*reg, WithDefaultEBSSize(), WithDefaultEBSVolumeType())
 	if err != nil {
 		return nil, err
-	}
-
-	disk, ok := disks["gp3"]
-	if !ok {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			m.l.NewError(m.ctx, "disk gp3 not found"),
-		)
 	}
 
 	var outVMs []provider.InstanceRegionOutput
 	for i := range vms {
 		if price, ok := priceVMs[vms[i].Sku]; ok {
 			vms[i].Price = price.Price
-			vms[i].Disk = disk
+			vms[i].Disk = disks[0]
 			outVMs = append(outVMs, vms[i])
 		}
 	}
@@ -206,11 +198,10 @@ func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, _ consts.KsctlClus
 	return outVMs, nil
 }
 
-func (m *AwsMeta) GetAvailableManagedK8sManagementOfferings(regionSku string) ([]provider.ManagedClusterOutput, error) {
+func (m *AwsMeta) GetAvailableManagedK8sManagementOfferings(regionSku string, vmType *string) ([]provider.ManagedClusterOutput, error) {
 	reg := m.searchRegionDescription(regionSku)
-	_ = reg
 
-	return nil, nil
+	return m.priceEksManagement(*reg, vmType, WithDefaultEKS())
 }
 
 func (m *AwsMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, error) {
