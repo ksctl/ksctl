@@ -156,10 +156,6 @@ func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []strin
 		}
 	}()
 
-	if kc.b.IsLocalProvider(kc.client) {
-		return nil, nil
-	}
-
 	vers, err := kc.cc.GetAvailableManagedK8sVersions(region)
 	if err != nil {
 		return nil, err

@@ -16,12 +16,14 @@ package metadata
 
 import (
 	"context"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	awsMeta "github.com/ksctl/ksctl/v2/pkg/provider/aws/meta"
 	azureMeta "github.com/ksctl/ksctl/v2/pkg/provider/azure/meta"
+	localMeta "github.com/ksctl/ksctl/v2/pkg/provider/local/meta"
 )
 
 type Controller struct {
@@ -58,6 +60,8 @@ func NewController(ctx context.Context, log logger.Logger, client *controller.Cl
 		cc.cc, err = azureMeta.NewAzureMeta(cc.ctx, cc.l)
 	case consts.CloudAws:
 		cc.cc, err = awsMeta.NewAwsMeta(cc.ctx, cc.l)
+	case consts.CloudLocal:
+		cc.cc, err = localMeta.NewLocalMeta(cc.ctx, cc.l)
 	}
 	if err != nil {
 		return nil, err

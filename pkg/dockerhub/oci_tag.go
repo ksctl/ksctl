@@ -1,4 +1,4 @@
-// Copyright 2024 ksctl
+// Copyright 2025 Ksctl Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+package dockerhub
 
 import (
 	"encoding/json"
@@ -24,19 +24,18 @@ import (
 	"time"
 
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
-
 	"golang.org/x/mod/semver"
 )
 
-func ExtractReleases(io io.Reader) ([]string, error) {
-	type ReleaseInfo struct {
-		TagName     string    `json:"tag_name"`
-		Draft       bool      `json:"draft"`
-		Prerelease  bool      `json:"prerelease"`
-		PublishedAt time.Time `json:"published_at"`
+func ExtractTags(io io.Reader) ([]string, error) {
+	type Result struct {
+		Results []struct {
+			TagName   string    `json:"name"`
+			UpdatedAt time.Time `json:"last_updated"`
+		} `json:"results"`
 	}
 
-	var releases []ReleaseInfo
+	var releases Result
 
 	if err := json.NewDecoder(io).Decode(&releases); err != nil {
 		return nil, ksctlErrors.WrapErrorf(
@@ -45,47 +44,39 @@ func ExtractReleases(io io.Reader) ([]string, error) {
 		)
 	}
 
+	res := releases.Results
 	isRepoRespectSemver := true
-	for i := range releases {
-		if !semver.IsValid(releases[i].TagName) {
+	for i := range res {
+		if !semver.IsValid(res[i].TagName) {
 			isRepoRespectSemver = false
-			releases[i].TagName = semver.Canonical("v" + releases[i].TagName)
+			res[i].TagName = semver.Canonical("v" + res[i].TagName)
 		}
 	}
 
-	sort.Slice(releases, func(i, j int) bool {
-		cmp := semver.Compare(releases[i].TagName, releases[j].TagName)
+	sort.Slice(res, func(i, j int) bool {
+		cmp := semver.Compare(res[i].TagName, res[j].TagName)
 		if cmp != 0 {
 			return cmp > 0
 		}
-		return releases[i].PublishedAt.After(releases[j].PublishedAt)
+		return res[i].UpdatedAt.After(res[j].UpdatedAt)
 	})
 
-	tags := make([]string, 0, len(releases))
+	tags := make([]string, 0, len(res))
 
-	for _, r := range releases {
-		if !r.Draft && !r.Prerelease {
-			v := r.TagName
-			if !isRepoRespectSemver {
-				v = strings.TrimPrefix(v, "v")
-			}
-			tags = append(tags, v)
+	for _, r := range res {
+		v := r.TagName
+		if !isRepoRespectSemver {
+			v = strings.TrimPrefix(v, "v")
 		}
-	}
-
-	if len(tags) == 0 {
-		for _, r := range releases {
-			if r.Prerelease && !r.Draft {
-				tags = append(tags, r.TagName)
-			}
-		}
+		tags = append(tags, v)
 	}
 
 	return tags, nil
 }
 
-func HttpGetAllStableGithubReleases(org, repo string) ([]string, error) {
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", org, repo))
+func HttpGetAllTags(org, repo string) ([]string, error) {
+	uri := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/%s/tags?page_size=20", org, repo)
+	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -96,18 +87,18 @@ func HttpGetAllStableGithubReleases(org, repo string) ([]string, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, ksctlErrors.WrapErrorf(
 			ksctlErrors.ErrInternal,
-			"Failed to get the latest version from the Github API. Status code: %d", resp.StatusCode,
+			"Failed to get the latest version from the DockerHub. Status code: %d", resp.StatusCode,
 		)
 	}
 
-	v, err := ExtractReleases(resp.Body)
+	v, err := ExtractTags(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 	if len(v) == 0 {
 		return nil, ksctlErrors.WrapErrorf(
 			ksctlErrors.ErrInternal,
-			"Unable to get any releases. Not Even prerelease, most probabilty release are not there or in draft",
+			"Unable to get any releases",
 		)
 	}
 	return v, nil
