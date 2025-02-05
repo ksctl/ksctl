@@ -145,3 +145,25 @@ func (kc *Controller) ListAllInstances(region string) (
 
 	return out, nil
 }
+
+func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []string, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	if kc.b.IsLocalProvider(kc.client) {
+		return nil, nil
+	}
+
+	vers, err := kc.cc.GetAvailableManagedK8sVersions(region)
+	if err != nil {
+		return nil, err
+	}
+
+	return vers, nil
+}

@@ -184,7 +184,7 @@ func (m *AzureMeta) priceVMs(regionSku string, opts ...Option) (map[string]provi
 		filterInstance = *options.filterInstanceType
 	}
 
-	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and %s and type eq 'Consumption' and unitOfMeasure eq '1 Hour'", filterInstance, regionSku)
+	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and %s and type eq 'Consumption' and unitOfMeasure eq '1 Hour'", regionSku, filterInstance)
 
 	prices, err := fetchPrices(filter, IgnoreSpotAndLowPriMeterName())
 	if err != nil {
@@ -223,7 +223,7 @@ func (m *AzureMeta) priceAksManagement(regionSku string, opts ...Option) (out []
 
 	filterAks := ""
 	if options.filterAksOfferings != nil {
-		filterAks = "and " + *options.filterInstanceType
+		filterAks = "and " + *options.filterAksOfferings
 	}
 
 	filter := fmt.Sprintf("serviceName eq 'Azure Kubernetes Service' and armRegionName eq '%s' and unitOfMeasure eq '1 Hour' and skuName eq 'Standard' %s", regionSku, filterAks)
@@ -233,15 +233,15 @@ func (m *AzureMeta) priceAksManagement(regionSku string, opts ...Option) (out []
 		return nil, err
 	}
 
-	out = append(out, provider.ManagedClusterOutput{
-		Sku:         "Standard Free",
-		Description: "Aks Free Management",
-		Price: provider.PriceOutput{
-			HourlyPrice: utilities.Ptr(0.0),
-			Currency:    prices[0].CurrencyCode,
-		},
-		Tier: "Free",
-	})
+	// out = append(out, provider.ManagedClusterOutput{
+	// 	Sku:         "Standard Free",
+	// 	Description: "Aks Free Management",
+	// 	Price: provider.PriceOutput{
+	// 		HourlyPrice: utilities.Ptr(0.0),
+	// 		Currency:    prices[0].CurrencyCode,
+	// 	},
+	// 	Tier: "Free",
+	// })
 
 	for _, p := range prices {
 		tier := ""
@@ -253,7 +253,7 @@ func (m *AzureMeta) priceAksManagement(regionSku string, opts ...Option) (out []
 
 		o := provider.ManagedClusterOutput{
 			Sku:         p.MeterName,
-			Description: p.ProductName,
+			Description: p.MeterName + " " + p.ProductName,
 			Tier:        tier,
 			Price: provider.PriceOutput{
 				HourlyPrice: utilities.Ptr(prices[0].UnitPrice),
