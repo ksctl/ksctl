@@ -17,11 +17,11 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"testing"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	localstate "github.com/ksctl/ksctl/v2/pkg/storage/host"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
@@ -265,9 +265,9 @@ func TestHACluster(t *testing.T) {
 	})
 
 	t.Run("Get cluster ha", func(t *testing.T) {
-		_e := logger.VMData{
+		_e := provider.VMData{
 			VMSize:     "fake",
-			VMID:       "test-instance-1234567890",
+			Id:         "test-instance-1234567890",
 			FirewallID: "test-security-group-1234567890",
 			SubnetID:   "3456d25f36g474g546",
 			SubnetName: "demo-ha-subnet0",
@@ -279,7 +279,7 @@ func TestHACluster(t *testing.T) {
 		fakeClientHA.state.ProvisionerAddons.Cni.Name = "flannel"
 		fakeClientHA.state.ProvisionerAddons.Cni.For = consts.K8sK3s
 
-		expected := []logger.ClusterDataForLogging{
+		expected := []provider.ClusterData{
 			{
 				Name:          fakeClientHA.ClusterName,
 				Region:        fakeClientHA.Region,
@@ -293,16 +293,16 @@ func TestHACluster(t *testing.T) {
 				NoCP: fakeClientHA.NoCP,
 				NoDS: fakeClientHA.NoDS,
 
-				WP: []logger.VMData{
+				WP: []provider.VMData{
 					_e, _e, _e, _e,
 					_e, _e, _e, _e,
 					_e, _e,
 				},
-				CP: []logger.VMData{
+				CP: []provider.VMData{
 					_e, _e, _e, _e,
 					_e, _e, _e,
 				},
-				DS: []logger.VMData{
+				DS: []provider.VMData{
 					_e, _e, _e, _e,
 					_e,
 				},

@@ -451,9 +451,9 @@ func (p *Provider) GetStateFile() (string, error) {
 	return string(cloudstate), nil
 }
 
-func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) {
+func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 
-	var data []logger.ClusterDataForLogging
+	var data []provider.ClusterData
 
 	clusters, err := p.store.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudAws),
@@ -470,15 +470,15 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 		return ""
 	}
 
-	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []logger.VMData) {
+	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []provider.VMData) {
 
 		switch r {
 		case consts.RoleCp:
 			o := st.CloudInfra.Aws.InfoControlPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMID:       o.InstanceIds[i],
+				v = append(v, provider.VMData{
+					Id:         o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -492,8 +492,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Aws.InfoWorkerPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMID:       o.InstanceIds[i],
+				v = append(v, provider.VMData{
+					Id:         o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -507,8 +507,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Aws.InfoDatabase
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMID:       o.InstanceIds[i],
+				v = append(v, provider.VMData{
+					Id:         o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -519,8 +519,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			}
 
 		default:
-			v = append(v, logger.VMData{
-				VMID:       st.CloudInfra.Aws.InfoLoadBalancer.InstanceID,
+			v = append(v, provider.VMData{
+				Id:         st.CloudInfra.Aws.InfoLoadBalancer.InstanceID,
 				VMSize:     st.CloudInfra.Aws.InfoLoadBalancer.VMSize,
 				FirewallID: st.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID,
 				PublicIP:   st.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
@@ -534,7 +534,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 	for K, Vs := range clusters {
 		for _, v := range Vs {
-			data = append(data, logger.ClusterDataForLogging{
+			data = append(data, provider.ClusterData{
 				CloudProvider: consts.CloudAws,
 				Name:          v.ClusterName,
 				Region:        v.Region,
@@ -548,7 +548,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
 				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.HostNames),
 				NoMgt: v.CloudInfra.Aws.NoManagedNodes,
-				Mgt: logger.VMData{
+				Mgt: provider.VMData{
 					VMSize: v.CloudInfra.Aws.ManagedNodeSize,
 				},
 				ManagedK8sID: v.CloudInfra.Aws.ManagedClusterArn,

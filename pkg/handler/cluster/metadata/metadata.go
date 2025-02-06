@@ -79,13 +79,17 @@ func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorIn
 	etcdCost := float64(inp.NoOfEtcdNodes) * inp.EtcdMachine.GetCost()
 	lbCost := inp.LoadBalancerMachine.GetCost()
 
-	return workerCost + controlPlaneCost + etcdCost + lbCost, nil
+	total := workerCost + controlPlaneCost + etcdCost + lbCost
+
+	return total, nil
 }
 
 func (kc *Controller) priceCalculatorForManagedCluster(inp PriceCalculatorInput) (float64, error) {
 	managedNodeCost := float64(inp.NoOfWorkerNodes) * inp.WorkerMachine.GetCost()
 
-	return managedNodeCost + inp.ManagedControlPlaneMachine.GetCost(), nil
+	total := managedNodeCost + inp.ManagedControlPlaneMachine.GetCost()
+
+	return total, nil
 }
 
 // ListAllManagedClusterManagementOfferings you can pass choosenInstanceType as nil if you are not using EKS AutoNode mode

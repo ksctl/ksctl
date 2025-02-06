@@ -27,7 +27,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
-func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []logger.ClusterDataForLogging, errC error) {
+func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []provider.ClusterData, errC error) {
 	if err := kc.b.ValidateMetadata(kc.p); err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []
 		return nil, err
 	}
 
-	var printerTable []logger.ClusterDataForLogging
+	var printerTable []provider.ClusterData
 	for _, v := range cloudMapper {
 		if v == nil {
 			continue
@@ -184,14 +184,12 @@ func (kc *Controller) GetCluster() (errC error) {
 		return err
 	}
 
-	kc.l.Table(kc.ctx, logger.LoggingGetClusters, v)
-
-	kc.l.Success(kc.ctx, "successfully get clusters")
+	kc.l.Success(kc.ctx, "successfully get clusters", "data", v)
 
 	return nil
 }
 
-func (kc *Controller) InfoCluster() (_ *logger.ClusterDataForLogging, errC error) {
+func (kc *Controller) InfoCluster() (_ *provider.ClusterData, errC error) {
 	defer func() {
 		if errC != nil {
 			v := kc.b.PanicHandler(kc.l)
@@ -206,9 +204,14 @@ func (kc *Controller) InfoCluster() (_ *logger.ClusterDataForLogging, errC error
 		return nil, err
 	}
 
-	kc.l.Table(kc.ctx, logger.LoggingInfoCluster, v)
+	if len(v) == 0 {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrNoMatchingRecordsFound,
+			kc.l.NewError(kc.ctx, "No state is present"),
+		)
+	}
 
-	kc.l.Success(kc.ctx, "successfully cluster info")
+	kc.l.Success(kc.ctx, "successfully cluster info", "data", v[0])
 
 	return utilities.Ptr(v[0]), nil
 }

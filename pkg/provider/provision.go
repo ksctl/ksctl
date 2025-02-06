@@ -17,7 +17,6 @@ package provider
 import (
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
-	"github.com/ksctl/ksctl/v2/pkg/logger"
 )
 
 type CloudResourceState struct {
@@ -62,7 +61,7 @@ type Cloud interface {
 
 	DelManagedCluster() error
 
-	GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error)
+	GetRAWClusterInfos() ([]ClusterData, error)
 
 	Name(string) Cloud
 

@@ -448,9 +448,9 @@ func (p *Provider) NoOfWorkerPlane(no int, setter bool) (int, error) {
 	)
 }
 
-func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) {
+func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 
-	var data []logger.ClusterDataForLogging
+	var data []provider.ClusterData
 
 	clusters, err := p.store.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudAzure),
@@ -460,15 +460,15 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 		return nil, err
 	}
 
-	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []logger.VMData) {
+	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []provider.VMData) {
 
 		switch r {
 		case consts.RoleCp:
 			o := st.CloudInfra.Azure.InfoControlPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMName:       o.Names[i],
+				v = append(v, provider.VMData{
+					Name:         o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName,
@@ -483,8 +483,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Azure.InfoWorkerPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMName:       o.Names[i],
+				v = append(v, provider.VMData{
+					Name:         o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName,
@@ -499,8 +499,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Azure.InfoDatabase
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMName:       o.Names[i],
+				v = append(v, provider.VMData{
+					Name:         o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName,
@@ -512,8 +512,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			}
 
 		default:
-			v = append(v, logger.VMData{
-				VMName:       st.CloudInfra.Azure.InfoLoadBalancer.Name,
+			v = append(v, provider.VMData{
+				Name:         st.CloudInfra.Azure.InfoLoadBalancer.Name,
 				VMSize:       st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
 				FirewallID:   st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID,
 				FirewallName: st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName,
@@ -528,7 +528,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 	for K, Vs := range clusters {
 		for _, v := range Vs {
-			data = append(data, logger.ClusterDataForLogging{
+			data = append(data, provider.ClusterData{
 				CloudProvider: consts.CloudAzure,
 				Name:          v.ClusterName,
 				Region:        v.Region,
@@ -542,7 +542,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				NoCP:  len(v.CloudInfra.Azure.InfoControlPlanes.Names),
 				NoDS:  len(v.CloudInfra.Azure.InfoDatabase.Names),
 				NoMgt: v.CloudInfra.Azure.NoManagedNodes,
-				Mgt: logger.VMData{
+				Mgt: provider.VMData{
 					VMSize: v.CloudInfra.Azure.ManagedNodeSize,
 				},
 				ManagedK8sName:  v.CloudInfra.Azure.ManagedClusterName,
