@@ -26,7 +26,7 @@ import (
 )
 
 func TestLatestVersionEtcd(t *testing.T) {
-	verLatest, err := getLatestVersionEtcd()
+	verLatest, err := fakeClient.verifyVersion("")
 	if err != nil {
 		t.Fatalf("Error %v", err)
 	}

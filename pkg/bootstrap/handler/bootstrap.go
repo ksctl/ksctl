@@ -143,7 +143,7 @@ func (kc *Controller) ConfigureCluster() (bool, error) {
 		go func(i int) {
 			defer waitForPre.Done()
 
-			err := kc.p.PreBootstrap.ConfigureDataStore(i)
+			err := kc.p.PreBootstrap.ConfigureDataStore(i, kc.p.Metadata.EtcdVersion)
 			if err != nil {
 				errChanDS <- err
 			}
