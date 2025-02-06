@@ -165,10 +165,12 @@ func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []strin
 	}
 
 	isRepoRespectSemver := true
+	oldVer := 3
 	for i := range vers {
 		if !semver.IsValid(vers[i]) {
 			isRepoRespectSemver = false
-			vers[i] = semver.Canonical("v" + vers[i]) // WARN: this is adding patch version to the version aka .0 to the end
+			oldVer = len(strings.Split(vers[i], "."))
+			vers[i] = semver.Canonical("v" + vers[i])
 		}
 	}
 
@@ -181,6 +183,10 @@ func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []strin
 	for _, r := range vers {
 		if !isRepoRespectSemver {
 			r = strings.TrimPrefix(r, "v")
+			_v := strings.Split(r, ".")
+			if oldVer < len(_v) {
+				r = strings.Join(_v[:oldVer], ".")
+			}
 		}
 		tags = append(tags, r)
 	}
