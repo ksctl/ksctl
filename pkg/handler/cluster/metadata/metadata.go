@@ -17,6 +17,7 @@ package metadata
 import (
 	"errors"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
@@ -51,6 +52,8 @@ func (kc *Controller) ListAllRegions() (
 }
 
 type PriceCalculatorInput struct {
+	Currency string
+
 	// NoOfWorkerNodes this is used for both managed as managedNodes and self managed as workerNodes
 	NoOfWorkerNodes       int
 	NoOfControlPlaneNodes int
@@ -73,6 +76,10 @@ func (kc *Controller) PriceCalculator(inp PriceCalculatorInput) (float64, error)
 	}
 }
 
+func convertFloatToStr(f float64) string {
+	return strconv.FormatFloat(f, 'f', 2, 64)
+}
+
 func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorInput) (float64, error) {
 	workerCost := float64(inp.NoOfWorkerNodes) * inp.WorkerMachine.GetCost()
 	controlPlaneCost := float64(inp.NoOfControlPlaneNodes) * inp.ControlPlaneMachine.GetCost()
@@ -80,6 +87,40 @@ func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorIn
 	lbCost := inp.LoadBalancerMachine.GetCost()
 
 	total := workerCost + controlPlaneCost + etcdCost + lbCost
+
+	headers := []string{"Resource", "UnitCost", "Quantity", "TotalCost"}
+	rows := [][]string{
+		{
+			"Control Plane",
+			inp.Currency + "" + convertFloatToStr(inp.ControlPlaneMachine.GetCost()),
+			strconv.Itoa(inp.NoOfControlPlaneNodes),
+			inp.Currency + "" + convertFloatToStr(controlPlaneCost),
+		},
+		{
+			"Worker Node(s)",
+			inp.Currency + " " + convertFloatToStr(inp.WorkerMachine.GetCost()),
+			strconv.Itoa(inp.NoOfWorkerNodes),
+			inp.Currency + "" + convertFloatToStr(workerCost),
+		},
+		{
+			"Etcd Nodes",
+			inp.Currency + "" + convertFloatToStr(inp.EtcdMachine.GetCost()),
+			strconv.Itoa(inp.NoOfEtcdNodes),
+			inp.Currency + "" + convertFloatToStr(etcdCost),
+		},
+		{
+			"LoadBalancer Node",
+			inp.Currency + "" + convertFloatToStr(inp.LoadBalancerMachine.GetCost()),
+			"1",
+			inp.Currency + "" + convertFloatToStr(lbCost),
+		},
+		{
+			"Total", "", "",
+			inp.Currency + "" + convertFloatToStr(total),
+		},
+	}
+
+	kc.l.Table(kc.ctx, headers, rows)
 
 	return total, nil
 }
