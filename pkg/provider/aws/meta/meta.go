@@ -205,7 +205,13 @@ func (m *AwsMeta) GetAvailableManagedK8sManagementOfferings(regionSku string, vm
 }
 
 func (m *AwsMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, error) {
-	return m.listManagedOfferingsK8sVersions(regionSku)
+	v, err := m.listManagedOfferingsK8sVersions(regionSku)
+	if err != nil {
+		return nil, err
+	}
+
+	m.l.Debug(m.ctx, "Managed K8s versions", "EksVersions", v)
+	return v, nil
 }
 
 //func getAccountId(cfg aws.Config) (*string, error) {

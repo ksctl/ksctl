@@ -16,8 +16,11 @@ package metadata
 
 import (
 	"errors"
+	"sort"
+	"strings"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"golang.org/x/mod/semver"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
@@ -161,7 +164,28 @@ func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []strin
 		return nil, err
 	}
 
-	return vers, nil
+	isRepoRespectSemver := true
+	for i := range vers {
+		if !semver.IsValid(vers[i]) {
+			isRepoRespectSemver = false
+			vers[i] = semver.Canonical("v" + vers[i]) // WARN: this is adding patch version to the version aka .0 to the end
+		}
+	}
+
+	sort.Slice(vers, func(i, j int) bool {
+		return semver.Compare(vers[i], vers[j]) > 0
+	})
+
+	tags := make([]string, 0, len(vers))
+
+	for _, r := range vers {
+		if !isRepoRespectSemver {
+			r = strings.TrimPrefix(r, "v")
+		}
+		tags = append(tags, r)
+	}
+
+	return tags, nil
 }
 
 func (kc *Controller) ListAllEtcdVersions() (_ []string, errC error) {

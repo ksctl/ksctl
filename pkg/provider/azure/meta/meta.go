@@ -192,5 +192,8 @@ func (m *AzureMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, 
 		}
 		versions = append(versions, *v.Version)
 	}
+
+	m.l.Debug(m.ctx, "Managed K8s versions", "AksVersions", versions)
+
 	return versions, nil
 }

@@ -48,5 +48,7 @@ func (l *LocalMeta) GetAvailableManagedK8sVersions(_ string) ([]string, error) {
 		vers = append(vers, strings.TrimPrefix(v, "v"))
 	}
 
+	l.l.Debug(l.ctx, "Managed K8s versions", "kindVersions", vers)
+
 	return vers, nil
 }
