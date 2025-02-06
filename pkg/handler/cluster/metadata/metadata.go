@@ -163,3 +163,29 @@ func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []strin
 
 	return vers, nil
 }
+
+func (kc *Controller) ListAllEtcdVersions() (_ []string, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	return kc.bb.GetAvailableEtcdVersions()
+}
+
+func (kc *Controller) ListAllBootstrapVersions() (_ []string, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	return kc.bb.D.GetBootstrapedDistributionVersions()
+}

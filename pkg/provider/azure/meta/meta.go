@@ -136,7 +136,7 @@ func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType cons
 			return nil, err
 		}
 
-		priceDisks, err := m.priceDisksStandardLRS_ESeries(regionSku, WithDefaultManagedDisk())
+		priceDisks, err := m.priceDisks(regionSku, WithDefaultManagedDisk())
 		if err != nil {
 			return nil, err
 		}

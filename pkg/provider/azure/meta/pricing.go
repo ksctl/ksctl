@@ -123,7 +123,7 @@ func WithDefaultManagedDisk() Option {
 	}
 }
 
-func (m *AzureMeta) priceDisksStandardLRS_ESeries(regionSku string, opts ...Option) ([]provider.StorageBlockRegionOutput, error) {
+func (m *AzureMeta) priceDisks(regionSku string, opts ...Option) ([]provider.StorageBlockRegionOutput, error) {
 
 	var options options
 	for _, opt := range opts {
@@ -138,7 +138,7 @@ func (m *AzureMeta) priceDisksStandardLRS_ESeries(regionSku string, opts ...Opti
 		filterForDisk = *options.filterManagedDisk
 	}
 
-	filter := fmt.Sprintf("armRegionName eq '%s' and serviceFamily eq 'Storage' and productName eq 'Standard SSD Managed Disks' and %s and endswith(meterName, 'LRS Disk') and Type eq 'Consumption' and unitOfMeasure eq '1/Month'", filterForDisk, regionSku)
+	filter := fmt.Sprintf("armRegionName eq '%s' and serviceFamily eq 'Storage' and productName eq 'Standard SSD Managed Disks' and %s and endswith(meterName, 'LRS Disk') and Type eq 'Consumption' and unitOfMeasure eq '1/Month'", regionSku, filterForDisk)
 
 	prices, err := fetchPrices(filter)
 	if err != nil {

@@ -15,5 +15,5 @@
 package distributions
 
 type DistributionMetadata interface {
-	GetAvailableK8sVersions() ([]string, error)
+	GetBootstrapedDistributionVersions() ([]string, error)
 }

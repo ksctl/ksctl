@@ -17,6 +17,7 @@ package metadata
 import (
 	"context"
 
+	bootstrapMeta "github.com/ksctl/ksctl/v2/pkg/bootstrap/meta"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -32,6 +33,7 @@ type Controller struct {
 	b      *controller.Controller
 	client *controller.Client
 	cc     provider.ProvisionMetadata
+	bb     *bootstrapMeta.BootstrapMetadata
 }
 
 func NewController(ctx context.Context, log logger.Logger, client *controller.Client) (*Controller, error) {
@@ -65,6 +67,10 @@ func NewController(ctx context.Context, log logger.Logger, client *controller.Cl
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	if client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
+		cc.bb = bootstrapMeta.NewBootstrapMetadata(client.Metadata.K8sDistro)
 	}
 
 	return cc, nil

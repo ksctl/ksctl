@@ -12,8 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bootstrap
+package meta
 
-type BootstrapMetadata interface {
-	GetAvailableEtcdVersions() ([]string, error)
+import (
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/poller"
+)
+
+type K3sMeta struct{}
+
+func NewK3sMeta() *K3sMeta {
+	return &K3sMeta{}
+}
+
+func (m *K3sMeta) GetBootstrapedDistributionVersions() ([]string, error) {
+	validVersion, err := poller.GetSharedPoller().Get("k3s-io", "k3s")
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			err,
+		)
+	}
+
+	if len(validVersion) == 0 {
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInternal,
+			"Unable to get any releases",
+		)
+	}
+
+	return validVersion, nil
 }
