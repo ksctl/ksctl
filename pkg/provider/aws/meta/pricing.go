@@ -97,7 +97,7 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 		FormatVersion: aws.String("aws_v1"),
 	}
 
-	session, err := m.GetNewSession(region.Sku)
+	session, err := m.GetNewSession("us-east-1")
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (m *AwsMeta) priceSpecificEBS(region provider.RegionOutput, volumeType stri
 		FormatVersion: aws.String("aws_v1"),
 		MaxResults:    aws.Int32(1),
 	}
-	session, err := m.GetNewSession(region.Sku)
+	session, err := m.GetNewSession("us-east-1")
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +520,7 @@ func (m *AwsMeta) _pricingForEKS(
 		MaxResults:    aws.Int32(1),
 	}
 
-	session, err := m.GetNewSession(region.Sku)
+	session, err := m.GetNewSession("us-east-1")
 	if err != nil {
 		return nil, err
 	}
