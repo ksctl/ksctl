@@ -16,12 +16,12 @@ package metadata
 
 import (
 	"errors"
+	"github.com/fatih/color"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"golang.org/x/mod/semver"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/ksctl/ksctl/v2/pkg/consts"
-	"golang.org/x/mod/semver"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
@@ -76,8 +76,21 @@ func (kc *Controller) PriceCalculator(inp PriceCalculatorInput) (float64, error)
 	}
 }
 
-func convertFloatToStr(f float64) string {
-	return strconv.FormatFloat(f, 'f', 2, 64)
+func convertToHumanReadable(price float64, currency string) string {
+	symbol := map[string]rune{
+		"USD": '$',
+		"EUR": '€',
+		"INR": '₹',
+	}
+
+	sign := ""
+	if v, ok := symbol[currency]; ok {
+		sign = string(v)
+	} else {
+		sign = string(symbol["USD"])
+	}
+
+	return sign + strconv.FormatFloat(price, 'f', 2, 64)
 }
 
 func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorInput) (float64, error) {
@@ -85,38 +98,57 @@ func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorIn
 	controlPlaneCost := float64(inp.NoOfControlPlaneNodes) * inp.ControlPlaneMachine.GetCost()
 	etcdCost := float64(inp.NoOfEtcdNodes) * inp.EtcdMachine.GetCost()
 	lbCost := inp.LoadBalancerMachine.GetCost()
+	currency := inp.Currency
 
 	total := workerCost + controlPlaneCost + etcdCost + lbCost
 
-	headers := []string{"Resource", "UnitCost", "Quantity", "TotalCost"}
+	headers := []string{"Resource", "UnitCost", "Quantity", "Cost"}
 	rows := [][]string{
 		{
 			"Control Plane",
-			inp.Currency + "" + convertFloatToStr(inp.ControlPlaneMachine.GetCost()),
+			color.HiCyanString(
+				convertToHumanReadable(inp.ControlPlaneMachine.GetCost(), currency),
+			),
 			strconv.Itoa(inp.NoOfControlPlaneNodes),
-			inp.Currency + "" + convertFloatToStr(controlPlaneCost),
+			color.HiCyanString(
+				convertToHumanReadable(controlPlaneCost, currency),
+			),
 		},
 		{
 			"Worker Node(s)",
-			inp.Currency + " " + convertFloatToStr(inp.WorkerMachine.GetCost()),
+			color.HiCyanString(
+				convertToHumanReadable(inp.WorkerMachine.GetCost(), currency),
+			),
 			strconv.Itoa(inp.NoOfWorkerNodes),
-			inp.Currency + "" + convertFloatToStr(workerCost),
+			color.HiCyanString(
+				convertToHumanReadable(workerCost, currency),
+			),
 		},
 		{
 			"Etcd Nodes",
-			inp.Currency + "" + convertFloatToStr(inp.EtcdMachine.GetCost()),
+			color.HiCyanString(
+				convertToHumanReadable(inp.EtcdMachine.GetCost(), currency),
+			),
 			strconv.Itoa(inp.NoOfEtcdNodes),
-			inp.Currency + "" + convertFloatToStr(etcdCost),
+			color.HiCyanString(
+				convertToHumanReadable(etcdCost, currency),
+			),
 		},
 		{
 			"LoadBalancer Node",
-			inp.Currency + "" + convertFloatToStr(inp.LoadBalancerMachine.GetCost()),
+			color.HiCyanString(
+				convertToHumanReadable(inp.LoadBalancerMachine.GetCost(), currency),
+			),
 			"1",
-			inp.Currency + "" + convertFloatToStr(lbCost),
+			color.HiCyanString(
+				convertToHumanReadable(lbCost, currency),
+			),
 		},
 		{
 			"Total", "", "",
-			inp.Currency + "" + convertFloatToStr(total),
+			color.HiCyanString(
+				convertToHumanReadable(total, currency),
+			),
 		},
 	}
 
@@ -129,6 +161,40 @@ func (kc *Controller) priceCalculatorForManagedCluster(inp PriceCalculatorInput)
 	managedNodeCost := float64(inp.NoOfWorkerNodes) * inp.WorkerMachine.GetCost()
 
 	total := managedNodeCost + inp.ManagedControlPlaneMachine.GetCost()
+
+	currency := inp.Currency
+
+	headers := []string{"Resource", "UnitCost", "Quantity", "Cost"}
+	rows := [][]string{
+		{
+			"Managed Node(s)",
+			color.HiCyanString(
+				convertToHumanReadable(inp.WorkerMachine.GetCost(), currency),
+			),
+			strconv.Itoa(inp.NoOfWorkerNodes),
+			color.HiCyanString(
+				convertToHumanReadable(managedNodeCost, currency),
+			),
+		},
+		{
+			"Cloud-Managed Control Plane",
+			color.HiCyanString(
+				convertToHumanReadable(inp.ManagedControlPlaneMachine.GetCost(), currency),
+			),
+			"1",
+			color.HiCyanString(
+				convertToHumanReadable(inp.ManagedControlPlaneMachine.GetCost(), currency),
+			),
+		},
+		{
+			"Total", "", "",
+			color.HiCyanString(
+				convertToHumanReadable(total, currency),
+			),
+		},
+	}
+
+	kc.l.Table(kc.ctx, headers, rows)
 
 	return total, nil
 }
