@@ -38,7 +38,6 @@ func (kc *Controller) Enable() (errC error) {
 
 	kubeconfig, err := kc.p.Cloud.GetKubeconfig()
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
@@ -52,12 +51,10 @@ func (kc *Controller) Enable() (errC error) {
 		kc.p,
 	)
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	if errAddon := kbc.EnableKsctlAddons(kubeconfig, "ksctl-system", "cluster-config"); errAddon != nil {
-		kc.l.Error("handled error", "catch", errAddon)
 		return errAddon
 	}
 

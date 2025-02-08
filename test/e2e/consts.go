@@ -23,7 +23,6 @@ const (
 	OpScaleDown         = Operation("scaledown")
 	OpGet               = Operation("get")
 	OpSwitch            = Operation("switch")
-	OpCreds             = Operation("creds")
 	OpInfo              = Operation("info")
 	OpEnableClusterMgt  = Operation("enable-cluster-mgt")
 	OpDisableClusterMgt = Operation("disable-cluster-mgt")

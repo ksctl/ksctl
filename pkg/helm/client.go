@@ -112,7 +112,7 @@ func NewClient(ctx context.Context, log logger.Logger, opts ...Option) (client *
 
 	_log := &CustomLogger{Logger: log, ctx: ctx}
 
-	if err := patchHelmDirectories(ctx, log, client); err != nil {
+	if err := patchHelmDirectories(client.ctx, client.log, client); err != nil {
 		return nil, err
 	}
 

@@ -78,6 +78,19 @@ func ValidateCloud(cloud consts.KsctlCloud) bool {
 	}
 }
 
+func ValidateClusterType(clusterType consts.KsctlClusterType) bool {
+	if b := utf8.ValidString(string(clusterType)); !b {
+		return false
+	}
+
+	switch clusterType {
+	case consts.ClusterTypeSelfMang, consts.ClusterTypeMang:
+		return true
+	default:
+		return false
+	}
+}
+
 func IsValidName(ctx context.Context, log logger.Logger, name string) error {
 	if len(name) > 50 {
 		return ksctlErrors.WrapError(

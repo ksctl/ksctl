@@ -24,18 +24,32 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
-func getLatestVersionEtcd() (string, error) {
-	latestVersion, err := poller.GetSharedPoller().Get("etcd-io", "etcd")
+func (k *PreBootstrap) verifyVersion(ver string) (string, error) {
+	versions, err := poller.GetSharedPoller().Get("etcd-io", "etcd")
 	if err != nil {
 		return "", err
 	}
 
-	return latestVersion[0], nil
+	if ver == "" {
+		return versions[0], nil
+	}
+
+	for _, vver := range versions {
+		if vver == ver {
+			return vver, nil
+		}
+	}
+
+	return "", ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidVersion,
+		k.l.NewError(k.ctx, "invalid k3s version", "valid versions", strings.Join(versions, " ")),
+	)
 }
 
-func (p *PreBootstrap) ConfigureDataStore(no int) error {
+func (p *PreBootstrap) ConfigureDataStore(no int, version string) error {
 	p.mu.Lock()
 	idx := no
 	sshExecutor := ssh.NewSSHExecutor(p.ctx, p.l, p.state) //making sure that a new obj gets initialized for an every run thus eliminating possible problems with concurrency
@@ -43,7 +57,7 @@ func (p *PreBootstrap) ConfigureDataStore(no int) error {
 
 	p.l.Note(p.ctx, "configuring Datastore", "number", strconv.Itoa(idx))
 
-	etcdVer, err := getLatestVersionEtcd()
+	etcdVer, err := p.verifyVersion(version)
 	if err != nil {
 		return err
 	}

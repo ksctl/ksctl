@@ -17,12 +17,13 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"io"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
+
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
 	"golang.org/x/mod/semver"
 )

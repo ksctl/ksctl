@@ -90,8 +90,8 @@ func main() {
 
 	switch operation {
 	case OpCreate, OpDelete, OpScaleUp, OpScaleDown:
-		switch meta.SelfManaged {
-		case true:
+		switch meta.ClusterType {
+		case consts.ClusterTypeSelfMang:
 
 			if meta.Provider == consts.CloudLocal {
 				err := l.NewError(ctx, "ha not supported for local")
@@ -120,7 +120,7 @@ func main() {
 				scaleDownHACluster(managerClient)
 			}
 
-		case false:
+		case consts.ClusterTypeMang:
 			managerClient, err := controllerManaged.NewController(
 				ctx,
 				l,
@@ -140,7 +140,7 @@ func main() {
 			}
 		}
 
-	case OpCreds, OpGet, OpSwitch, OpInfo:
+	case OpGet, OpSwitch, OpInfo:
 		managerClient, err := controllerCommon.NewController(
 			ctx,
 			l,

@@ -1,4 +1,4 @@
-// Copyright 2024 Ksctl Authors
+// Copyright 2025 Ksctl Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,23 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package distributions
 
-import (
-	"fmt"
-	"runtime"
-)
-
-func (kc *Controller) printKubeConfig(path string) {
-	key := ""
-	box := ""
-	switch runtime.GOOS {
-	case "windows":
-		key = "$Env:KUBECONFIG"
-	case "linux", "darwin":
-		key = "export KUBECONFIG"
-	}
-
-	box = key + "=" + fmt.Sprintf("\"%s\"", path)
-	kc.l.Box(kc.ctx, "KUBECONFIG env var", box)
+type DistributionMetadata interface {
+	GetBootstrapedDistributionVersions() ([]string, error)
 }

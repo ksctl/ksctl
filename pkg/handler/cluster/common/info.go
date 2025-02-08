@@ -27,9 +27,8 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
-func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]logger.ClusterDataForLogging, error) {
+func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []provider.ClusterData, errC error) {
 	if err := kc.b.ValidateMetadata(kc.p); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -61,19 +60,21 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 				kc.l.NewError(kc.ctx, "Failure", "reason", err),
 			)
 
-			kc.l.Error("Failure", "reason", _err)
-
 			return nil, _err
 		}
 	}
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
 
-	kc.l.Note(kc.ctx, "Filter", "cloudProvider", string(kc.p.Metadata.Provider))
+	kc.l.Debug(kc.ctx, "Filter", "cloudProvider", string(kc.p.Metadata.Provider))
 
 	var (
 		cloudMapper = map[consts.KsctlCloud]provider.Cloud{
@@ -108,17 +109,14 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 			} else {
 				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 				if err != nil {
-					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
 				cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
 				if err != nil {
-					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
 				cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
 				if err != nil {
-					kc.l.Error("handled error", "catch", err)
 					return nil, err
 				}
 			}
@@ -135,18 +133,16 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 	}
 
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
-	var printerTable []logger.ClusterDataForLogging
+	var printerTable []provider.ClusterData
 	for _, v := range cloudMapper {
 		if v == nil {
 			continue
 		}
 		data, err := v.GetRAWClusterInfos()
 		if err != nil {
-			kc.l.Error("handled error", "catch", err)
 			return nil, err
 		}
 
@@ -173,7 +169,7 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) ([]lo
 	return printerTable, err
 }
 
-func (kc *Controller) GetCluster() (errC error) {
+func (kc *Controller) ListClusters() (_ []provider.ClusterData, errC error) {
 	defer func() {
 		if errC != nil {
 			v := kc.b.PanicHandler(kc.l)
@@ -185,17 +181,13 @@ func (kc *Controller) GetCluster() (errC error) {
 
 	v, err := kc.clusterDataHelper(logger.LoggingGetClusters)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	kc.l.Table(kc.ctx, logger.LoggingGetClusters, v)
-
-	kc.l.Success(kc.ctx, "successfully get clusters")
-
-	return nil
+	return v, nil
 }
 
-func (kc *Controller) InfoCluster() (_ *logger.ClusterDataForLogging, errC error) {
+func (kc *Controller) GetCluster() (_ *provider.ClusterData, errC error) {
 	defer func() {
 		if errC != nil {
 			v := kc.b.PanicHandler(kc.l)
@@ -210,9 +202,12 @@ func (kc *Controller) InfoCluster() (_ *logger.ClusterDataForLogging, errC error
 		return nil, err
 	}
 
-	kc.l.Table(kc.ctx, logger.LoggingInfoCluster, v)
-
-	kc.l.Success(kc.ctx, "successfully cluster info")
+	if len(v) == 0 {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrNoMatchingRecordsFound,
+			kc.l.NewError(kc.ctx, "No state is present"),
+		)
+	}
 
 	return utilities.Ptr(v[0]), nil
 }

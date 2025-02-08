@@ -190,28 +190,8 @@ func (l *StructuredLog) Warn(ctx context.Context, msg string, args ...any) {
 	l.logger.Warn(msg, args...)
 }
 
-func (l *StructuredLog) Table(ctx context.Context, operation LogClusterDetail, data []ClusterDataForLogging) {
-
-	if operation == LoggingGetClusters {
-		for _, _data := range data {
-			l.Success(ctx, "Get clusters",
-				"Name", _data.Name,
-				"Type", _data.ClusterType,
-				"Region", _data.Region,
-				"Cloud", _data.CloudProvider,
-				"Bootstrap", _data.K8sDistro,
-				"NoOfWorkerPlaneNodes", _data.NoWP,
-				"NoOfControlPlaneNodes", _data.NoCP,
-				"NoOfEtcdNodes", _data.NoDS,
-				"NoOfCloudManagedNodes", _data.NoMgt,
-			)
-		}
-	} else {
-		l.Success(ctx, "table content", "data", data)
-		l.Note(ctx, "To access the cluster you need to exec",
-			"Command", "$ ksctl switch ...",
-		)
-	}
+func (l *StructuredLog) Table(ctx context.Context, headers []string, data [][]string) {
+	l.Success(ctx, "table content", "headers", headers, "data", data)
 }
 
 func (l *StructuredLog) Box(ctx context.Context, title string, lines string) {

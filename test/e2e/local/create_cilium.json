@@ -2,6 +2,7 @@
 	"cluster_name": "test-e2e-local-cilium",
 	"kubernetes_version": "1.27.1",
 	"cloud_provider": "local",
+	"cluster_type": "managed",
 	"storage_type": "store-local",
 	"desired_no_of_managed_nodes": 2,
 	"addons": [

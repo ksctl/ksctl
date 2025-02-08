@@ -3,6 +3,7 @@
   "kubernetes_version": "1.30",
   "region": "eu-central-1",
   "cloud_provider": "aws",
+  "cluster_type": "managed",
   "storage_type": "store-local",
   "desired_no_of_managed_nodes": 2,
   "node_type_managed": "t3a.medium"

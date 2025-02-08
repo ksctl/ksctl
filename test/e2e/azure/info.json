@@ -2,5 +2,6 @@
 	"cluster_name": "test-e2e-azure",
 	"region": "eastus",
 	"cloud_provider": "azure",
+	"cluster_type": "managed",
 	"storage_type": "store-local"
 }

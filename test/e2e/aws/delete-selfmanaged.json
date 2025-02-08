@@ -1,6 +1,6 @@
 {
 	"cluster_name": "test-e2e-selfmanaged-aws",
-	"self_managed": true,
+	"cluster_type": "selfmanaged",
 	"region": "ap-south-1",
 	"cloud_provider": "aws",
 	"storage_type": "store-local"

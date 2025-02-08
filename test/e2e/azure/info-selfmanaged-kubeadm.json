@@ -1,6 +1,7 @@
 {
 	"cluster_name": "test-e2e-kubeadm-selfmanaged-azure",
 	"region": "centralindia",
+	"cluster_type": "selfmanaged",
 	"cloud_provider": "azure",
 	"storage_type": "store-local"
 }

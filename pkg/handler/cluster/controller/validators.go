@@ -28,6 +28,18 @@ func (cc *Controller) ValidateName(name string) error {
 	return nil
 }
 
+func (cc *Controller) ValidateClusterType(clusterType consts.KsctlClusterType) error {
+	if !validation.ValidateClusterType(clusterType) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidClusterType,
+			cc.l.NewError(
+				cc.ctx, "Problem in validation", "clusterType", clusterType,
+			),
+		)
+	}
+	return nil
+}
+
 func (cc *Controller) ValidateMetadata(c *Client) error {
 	meta := c.Metadata
 	if _, ok := config.IsContextPresent(cc.ctx, consts.KsctlContextUserID); !ok {

@@ -18,15 +18,14 @@ package azure
 
 import (
 	"context"
-	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
-	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
-	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v4"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
+	armcontainerservice "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v6"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -219,48 +218,12 @@ func (p *AzureClient) PollUntilDoneDelAKS(ctx context.Context, poll *runtime.Pol
 	return res, nil
 }
 
-func (p *AzureClient) setRequiredENV_VAR() error {
-
-	err := os.Setenv("AZURE_SUBSCRIPTION_ID", p.b.subscriptionID)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-
-	err = os.Setenv("AZURE_TENANT_ID", p.b.tenantID)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-
-	err = os.Setenv("AZURE_CLIENT_ID", p.b.clientID)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-
-	err = os.Setenv("AZURE_CLIENT_SECRET", p.b.clientSecret)
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrUnknown,
-			err,
-		)
-	}
-	return nil
-}
-
 func (p *AzureClient) InitClient(b *Provider) error {
 	p.b = b
 	p.region = b.Region
 	p.resourceGrp = b.resourceGroup
 
-	err := p.setRequiredENV_VAR()
+	err := SetRequiredENV_VAR(p.b.subscriptionID, p.b.tenantID, p.b.clientID, p.b.clientSecret)
 	if err != nil {
 		return err
 	}

@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 			ClusterName: "demo",
 			Region:      "fake",
 			Provider:    consts.CloudAzure,
-			SelfManaged: true,
+			ClusterType: consts.ClusterTypeSelfMang,
 		},
 		&statefile.StorageDocument{},
 		storeVars,

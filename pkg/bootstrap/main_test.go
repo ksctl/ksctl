@@ -126,7 +126,7 @@ func TestOverallScriptsCreation(t *testing.T) {
 	assert.Equal(t, *fakeClient.state.Versions.HAProxy, "3.0", "should be equal")
 
 	for no := 0; no < noDS; no++ {
-		err := fakeClient.ConfigureDataStore(no)
+		err := fakeClient.ConfigureDataStore(no, "")
 		if err != nil {
 			t.Fatalf("Configure Datastore unable to operate %v", err)
 		}

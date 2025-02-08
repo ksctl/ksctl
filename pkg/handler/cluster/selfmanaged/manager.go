@@ -16,7 +16,6 @@ package selfmanaged
 
 import (
 	"context"
-
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -45,6 +44,11 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 	}
 
 	if err := cc.b.ValidateName(controllerPayload.Metadata.ClusterName); err != nil {
+		return nil, err
+	}
+
+	if cc.p.Metadata.ClusterType != consts.ClusterTypeSelfMang {
+		err := cc.l.NewError(cc.ctx, "this feature is only for selfmanaged clusters")
 		return nil, err
 	}
 

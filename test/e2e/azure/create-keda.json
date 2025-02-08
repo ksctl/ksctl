@@ -3,6 +3,7 @@
 	"kubernetes_version": "1.31",
 	"region": "eastus",
 	"cloud_provider": "azure",
+	"cluster_type": "managed",
 	"storage_type": "store-local",
 	"desired_no_of_managed_nodes": 3,
 	"node_type_managed": "Standard_DS2_v2",

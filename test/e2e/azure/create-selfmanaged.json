@@ -1,7 +1,7 @@
 {
 	"cluster_name": "test-e2e-selfmanaged-azure",
 	"region": "eastus2",
-	"self_managed": true,
+	"cluster_type": "selfmanaged",
 	"cloud_provider": "azure",
 	"kubernetes_distro": "k3s",
 	"storage_type": "store-local",
