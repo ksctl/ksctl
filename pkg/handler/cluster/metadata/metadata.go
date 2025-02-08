@@ -16,12 +16,12 @@ package metadata
 
 import (
 	"errors"
-	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/v2/pkg/consts"
-	"golang.org/x/mod/semver"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"golang.org/x/mod/semver"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
@@ -106,49 +106,32 @@ func (kc *Controller) priceCalculatorForSelfManagedCluster(inp PriceCalculatorIn
 	rows := [][]string{
 		{
 			"Control Plane",
-			color.HiCyanString(
-				convertToHumanReadable(inp.ControlPlaneMachine.GetCost(), currency),
-			),
+			convertToHumanReadable(inp.ControlPlaneMachine.GetCost(), currency),
 			strconv.Itoa(inp.NoOfControlPlaneNodes),
-			color.HiCyanString(
-				convertToHumanReadable(controlPlaneCost, currency),
-			),
+			convertToHumanReadable(controlPlaneCost, currency),
 		},
 		{
 			"Worker Node(s)",
-			color.HiCyanString(
-				convertToHumanReadable(inp.WorkerMachine.GetCost(), currency),
-			),
+			convertToHumanReadable(inp.WorkerMachine.GetCost(), currency),
 			strconv.Itoa(inp.NoOfWorkerNodes),
-			color.HiCyanString(
-				convertToHumanReadable(workerCost, currency),
-			),
+			convertToHumanReadable(workerCost, currency),
 		},
 		{
 			"Etcd Nodes",
-			color.HiCyanString(
-				convertToHumanReadable(inp.EtcdMachine.GetCost(), currency),
-			),
+			convertToHumanReadable(inp.EtcdMachine.GetCost(), currency),
 			strconv.Itoa(inp.NoOfEtcdNodes),
-			color.HiCyanString(
-				convertToHumanReadable(etcdCost, currency),
-			),
+			convertToHumanReadable(etcdCost, currency),
 		},
 		{
 			"LoadBalancer Node",
-			color.HiCyanString(
-				convertToHumanReadable(inp.LoadBalancerMachine.GetCost(), currency),
-			),
+			convertToHumanReadable(inp.LoadBalancerMachine.GetCost(), currency),
 			"1",
-			color.HiCyanString(
-				convertToHumanReadable(lbCost, currency),
-			),
+			convertToHumanReadable(lbCost, currency),
 		},
+		{"", "", "", ""},
 		{
 			"Total", "", "",
-			color.HiCyanString(
-				convertToHumanReadable(total, currency),
-			),
+			convertToHumanReadable(total, currency),
 		},
 	}
 
@@ -168,29 +151,20 @@ func (kc *Controller) priceCalculatorForManagedCluster(inp PriceCalculatorInput)
 	rows := [][]string{
 		{
 			"Managed Node(s)",
-			color.HiCyanString(
-				convertToHumanReadable(inp.WorkerMachine.GetCost(), currency),
-			),
+			convertToHumanReadable(inp.WorkerMachine.GetCost(), currency),
 			strconv.Itoa(inp.NoOfWorkerNodes),
-			color.HiCyanString(
-				convertToHumanReadable(managedNodeCost, currency),
-			),
+			convertToHumanReadable(managedNodeCost, currency),
 		},
 		{
 			"Cloud-Managed Control Plane",
-			color.HiCyanString(
-				convertToHumanReadable(inp.ManagedControlPlaneMachine.GetCost(), currency),
-			),
+			convertToHumanReadable(inp.ManagedControlPlaneMachine.GetCost(), currency),
 			"1",
-			color.HiCyanString(
-				convertToHumanReadable(inp.ManagedControlPlaneMachine.GetCost(), currency),
-			),
+			convertToHumanReadable(inp.ManagedControlPlaneMachine.GetCost(), currency),
 		},
+		{"", "", "", ""},
 		{
 			"Total", "", "",
-			color.HiCyanString(
-				convertToHumanReadable(total, currency),
-			),
+			convertToHumanReadable(total, currency),
 		},
 	}
 
