@@ -94,6 +94,5 @@ func (kc *Controller) Create() (errC error) {
 		return err
 	}
 
-	kc.l.Success(kc.ctx, "successfully created managed cluster")
 	return nil
 }

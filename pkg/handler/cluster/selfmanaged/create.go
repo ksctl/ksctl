@@ -97,7 +97,5 @@ func (kc *Controller) Create() (errC error) {
 		return err
 	}
 
-	kc.l.Success(kc.ctx, "successfully created ha cluster")
-
 	return nil
 }

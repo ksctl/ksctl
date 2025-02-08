@@ -107,7 +107,5 @@ func (kc *Controller) Delete() (errC error) {
 		return errDelete
 	}
 
-	kc.l.Success(kc.ctx, "successfully deleted ha cluster")
-
 	return nil
 }

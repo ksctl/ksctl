@@ -141,8 +141,13 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 					VMSize: v.CloudInfra.Local.ManagedNodeSize,
 				},
 
-				K8sDistro:  v.BootstrapProvider,
-				K8sVersion: *v.Versions.Kind,
+				K8sDistro: v.BootstrapProvider,
+				K8sVersion: func() string {
+					if v.Versions.Kind == nil {
+						return ""
+					}
+					return *v.Versions.Kind
+				}(),
 				Apps: func() (_a []string) {
 					for _, a := range v.ProvisionerAddons.Apps {
 						_a = append(_a, a.String())

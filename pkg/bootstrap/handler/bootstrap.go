@@ -330,7 +330,6 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 		kc.l.Success(kc.ctx, "Done with installing k8s cni")
 	}
 
-	kc.l.Success(kc.ctx, "Done with installing additional k8s tools")
 	return nil
 }
 

@@ -87,8 +87,6 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 		return err
 	}
 
-	kc.l.Success(kc.ctx, "worker nodes added successfully")
-
 	return nil
 }
 
@@ -163,8 +161,6 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 			return err
 		}
 	}
-
-	kc.l.Success(kc.ctx, "Successfully deleted workerNodes")
 
 	return nil
 }

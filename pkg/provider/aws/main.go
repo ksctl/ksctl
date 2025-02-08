@@ -577,6 +577,9 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 					case consts.K8sKubeadm:
 						return *v.Versions.Kubeadm
 					default:
+						if v.Versions.Eks == nil {
+							return ""
+						}
 						return *v.Versions.Eks
 					}
 				}(),

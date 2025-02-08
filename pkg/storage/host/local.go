@@ -187,7 +187,7 @@ func (s *Store) disconnect() error {
 
 func (s *Store) Kill() error {
 	s.wg.Wait()
-	defer s.l.Success(s.ctx, "Local Storage Got Killed")
+	defer s.l.Debug(s.ctx, "Local Storage Got Killed")
 
 	return s.disconnect()
 }
@@ -199,7 +199,7 @@ func (s *Store) Connect() error {
 		s.userid = "default"
 	}
 
-	s.l.Success(s.ctx, "CONN to HostOS")
+	s.l.Debug(s.ctx, "CONN to HostOS")
 	return nil
 }
 

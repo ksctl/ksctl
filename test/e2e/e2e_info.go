@@ -23,7 +23,7 @@ import (
 func infoClusters(ksctlClient *controllerCommon.Controller) {
 	l.Print(ctx, "Exec ksctl get...")
 
-	_, err := ksctlClient.InfoCluster()
+	_, err := ksctlClient.GetCluster()
 	if err != nil {
 		l.Error("Failure", "err", err)
 		os.Exit(1)

@@ -71,6 +71,5 @@ func (kc *Controller) Delete() (errC error) {
 		return errKpc
 	}
 
-	kc.l.Success(kc.ctx, "successfully deleted managed cluster")
 	return nil
 }

@@ -149,7 +149,7 @@ func (s *Store) Connect() error {
 		return err
 	}
 
-	log.Success(storeCtx, "CONN to k8s configmap")
+	log.Debug(storeCtx, "CONN to k8s configmap")
 
 	return nil
 }
@@ -160,7 +160,7 @@ func (s *Store) disconnect() error {
 
 func (s *Store) Kill() error {
 	s.wg.Wait()
-	defer log.Success(storeCtx, "K8s Storage Got Killed")
+	defer log.Debug(storeCtx, "K8s Storage Got Killed")
 
 	return s.disconnect()
 }

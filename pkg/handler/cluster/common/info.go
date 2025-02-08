@@ -74,7 +74,7 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []
 		}
 	}()
 
-	kc.l.Note(kc.ctx, "Filter", "cloudProvider", string(kc.p.Metadata.Provider))
+	kc.l.Debug(kc.ctx, "Filter", "cloudProvider", string(kc.p.Metadata.Provider))
 
 	var (
 		cloudMapper = map[consts.KsctlCloud]provider.Cloud{
@@ -169,7 +169,7 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []
 	return printerTable, err
 }
 
-func (kc *Controller) GetCluster() (errC error) {
+func (kc *Controller) ListClusters() (_ []provider.ClusterData, errC error) {
 	defer func() {
 		if errC != nil {
 			v := kc.b.PanicHandler(kc.l)
@@ -181,15 +181,13 @@ func (kc *Controller) GetCluster() (errC error) {
 
 	v, err := kc.clusterDataHelper(logger.LoggingGetClusters)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	kc.l.Success(kc.ctx, "successfully get clusters", "data", v)
-
-	return nil
+	return v, nil
 }
 
-func (kc *Controller) InfoCluster() (_ *provider.ClusterData, errC error) {
+func (kc *Controller) GetCluster() (_ *provider.ClusterData, errC error) {
 	defer func() {
 		if errC != nil {
 			v := kc.b.PanicHandler(kc.l)
@@ -210,8 +208,6 @@ func (kc *Controller) InfoCluster() (_ *provider.ClusterData, errC error) {
 			kc.l.NewError(kc.ctx, "No state is present"),
 		)
 	}
-
-	kc.l.Success(kc.ctx, "successfully cluster info", "data", v[0])
 
 	return utilities.Ptr(v[0]), nil
 }

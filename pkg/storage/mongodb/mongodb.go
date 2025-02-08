@@ -232,7 +232,7 @@ func (db *Store) Connect() error {
 		)
 	}
 
-	db.l.Success(db.ctx, "CONN to MongoDB")
+	db.l.Debug(db.ctx, "CONN to MongoDB")
 
 	return nil
 }
@@ -243,7 +243,7 @@ func (db *Store) disconnect() error {
 
 func (db *Store) Kill() error {
 	db.wg.Wait()
-	defer db.l.Success(db.ctx, "Mongodb Storage Got Killed")
+	defer db.l.Debug(db.ctx, "Mongodb Storage Got Killed")
 
 	return db.disconnect()
 }
