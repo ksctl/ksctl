@@ -91,8 +91,6 @@ func InitCore() (err error) {
 }
 
 func ExecuteKsctlSpecificRun() error {
-	// TODO: add the context with timeout
-
 	log := logger.NewStructuredLogger(-1, os.Stdout)
 
 	controller, err := controllerCommon.NewController(
@@ -108,19 +106,17 @@ func ExecuteKsctlSpecificRun() error {
 		return err
 	}
 
-	if _, err := controller.InfoCluster(); err != nil {
+	if _, err := controller.GetCluster(); err != nil {
 		return err
 	}
 
-	if err := controller.GetCluster(); err != nil {
+	if _, err := controller.ListClusters(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func ExecuteManagedRun() error {
-	// TODO: add the context with timeout
-
 	log := logger.NewStructuredLogger(-1, os.Stdout)
 
 	controller, err := controllerManaged.NewController(
@@ -193,6 +189,7 @@ func ExecuteHARun() error {
 func AwsTestingManaged() error {
 	cli.Metadata.Region = "fake-region"
 	cli.Metadata.Provider = consts.CloudAws
+	cli.Metadata.ClusterType = consts.ClusterTypeMang
 	cli.Metadata.ManagedNodeType = "fake"
 	cli.Metadata.NoMP = 2
 	cli.Metadata.K8sVersion = "1.30"
@@ -204,6 +201,7 @@ func AzureTestingManaged() error {
 	cli.Metadata.Region = "fake"
 	cli.Metadata.Provider = consts.CloudAzure
 	cli.Metadata.ManagedNodeType = "fake"
+	cli.Metadata.ClusterType = consts.ClusterTypeMang
 	cli.Metadata.NoMP = 2
 	cli.Metadata.K8sVersion = "1.27"
 
@@ -214,6 +212,7 @@ func LocalTestingManaged() error {
 	cli.Metadata.Provider = consts.CloudLocal
 	cli.Metadata.NoMP = 5
 	cli.Metadata.K8sVersion = "1.30.0"
+	cli.Metadata.ClusterType = consts.ClusterTypeMang
 
 	return ExecuteManagedRun()
 }
@@ -224,7 +223,7 @@ func AzureTestingHAKubeadm() error {
 	cli.Metadata.WorkerPlaneNodeType = "fake"
 	cli.Metadata.DataStoreNodeType = "fake"
 
-	cli.Metadata.SelfManaged = true
+	cli.Metadata.ClusterType = consts.ClusterTypeSelfMang
 
 	cli.Metadata.Region = "fake"
 	cli.Metadata.Provider = consts.CloudAzure
@@ -242,7 +241,7 @@ func AzureTestingHAK3s() error {
 	cli.Metadata.WorkerPlaneNodeType = "fake"
 	cli.Metadata.DataStoreNodeType = "fake"
 
-	cli.Metadata.SelfManaged = true
+	cli.Metadata.ClusterType = consts.ClusterTypeSelfMang
 
 	cli.Metadata.Region = "fake"
 	cli.Metadata.Provider = consts.CloudAzure
@@ -260,7 +259,7 @@ func AwsTestingHA() error {
 	cli.Metadata.WorkerPlaneNodeType = "fake"
 	cli.Metadata.DataStoreNodeType = "fake"
 
-	cli.Metadata.SelfManaged = true
+	cli.Metadata.ClusterType = consts.ClusterTypeSelfMang
 
 	cli.Metadata.Region = "fake-region"
 	cli.Metadata.Provider = consts.CloudAws

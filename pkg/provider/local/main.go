@@ -117,9 +117,9 @@ func (p *Provider) ManagedK8sVersion(ver string) provider.Cloud {
 	return p
 }
 
-func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) {
+func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 
-	var data []logger.ClusterDataForLogging
+	var data []provider.ClusterData
 	clusters, err := p.store.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudLocal),
 		consts.ClusterType: string(consts.ClusterTypeMang),
@@ -130,19 +130,24 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 	for K, Vs := range clusters {
 		for _, v := range Vs {
-			data = append(data, logger.ClusterDataForLogging{
+			data = append(data, provider.ClusterData{
 				CloudProvider: consts.CloudLocal,
 				Name:          v.ClusterName,
 				Region:        v.Region,
 				ClusterType:   K,
 
 				NoMgt: v.CloudInfra.Local.Nodes,
-				Mgt: logger.VMData{
+				Mgt: provider.VMData{
 					VMSize: v.CloudInfra.Local.ManagedNodeSize,
 				},
 
-				K8sDistro:  v.BootstrapProvider,
-				K8sVersion: *v.Versions.Kind,
+				K8sDistro: v.BootstrapProvider,
+				K8sVersion: func() string {
+					if v.Versions.Kind == nil {
+						return ""
+					}
+					return *v.Versions.Kind
+				}(),
 				Apps: func() (_a []string) {
 					for _, a := range v.ProvisionerAddons.Apps {
 						_a = append(_a, a.String())

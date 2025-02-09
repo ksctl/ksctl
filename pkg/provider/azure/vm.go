@@ -17,7 +17,7 @@ package azure
 import (
 	"encoding/base64"
 
-	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
@@ -259,16 +259,16 @@ func (p *Provider) NewVM(index int) error {
 		switch role {
 		case consts.RoleWp:
 			p.state.CloudInfra.Azure.InfoWorkerPlanes.Names[indexNo] = name
-			p.state.CloudInfra.Azure.InfoWorkerPlanes.VMSizes[indexNo] = name
+			p.state.CloudInfra.Azure.InfoWorkerPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleCp:
 			p.state.CloudInfra.Azure.InfoControlPlanes.Names[indexNo] = name
-			p.state.CloudInfra.Azure.InfoControlPlanes.VMSizes[indexNo] = name
+			p.state.CloudInfra.Azure.InfoControlPlanes.VMSizes[indexNo] = vmtype
 		case consts.RoleLb:
 			p.state.CloudInfra.Azure.InfoLoadBalancer.Name = name
-			p.state.CloudInfra.Azure.InfoLoadBalancer.VMSize = name
+			p.state.CloudInfra.Azure.InfoLoadBalancer.VMSize = vmtype
 		case consts.RoleDs:
 			p.state.CloudInfra.Azure.InfoDatabase.Names[indexNo] = name
-			p.state.CloudInfra.Azure.InfoDatabase.VMSizes[indexNo] = name
+			p.state.CloudInfra.Azure.InfoDatabase.VMSizes[indexNo] = vmtype
 		}
 		if err := p.store.Write(p.state); err != nil {
 			errCreateVM = err

@@ -16,7 +16,6 @@ package logger
 
 import (
 	"context"
-	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
 type Logger interface {
@@ -37,48 +36,7 @@ type Logger interface {
 
 	NewError(ctx context.Context, msg string, v ...any) error
 
-	Table(ctx context.Context, operation LogClusterDetail, data []ClusterDataForLogging)
+	Table(ctx context.Context, headers []string, data [][]string)
 
 	Box(ctx context.Context, title string, lines string)
-}
-
-type VMData struct {
-	VMID         string
-	VMName       string
-	VMSize       string
-	FirewallID   string
-	FirewallName string
-	SubnetID     string
-	SubnetName   string
-	PublicIP     string
-	PrivateIP    string
-}
-
-type ClusterDataForLogging struct {
-	Name            string
-	CloudProvider   consts.KsctlCloud
-	ClusterType     consts.KsctlClusterType
-	K8sDistro       consts.KsctlKubernetes
-	SSHKeyName      string
-	SSHKeyID        string
-	Region          string
-	ResourceGrpName string
-	NetworkName     string
-	NetworkID       string
-	ManagedK8sID    string
-	ManagedK8sName  string
-	WP              []VMData
-	CP              []VMData
-	DS              []VMData
-	LB              VMData
-	Mgt             VMData
-	NoWP            int
-	NoCP            int
-	NoDS            int
-	NoMgt           int
-	K8sVersion      string
-	EtcdVersion     string
-	HAProxyVersion  string
-	Apps            []string
-	Cni             string
 }

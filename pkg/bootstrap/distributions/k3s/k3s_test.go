@@ -66,9 +66,9 @@ func NewClientHelper(x provider.CloudResourceState, state *statefile.StorageDocu
 
 func TestK3sDistro_Version(t *testing.T) {
 	forTesting := map[string]bool{
-		"":       true,
-		"1.30.3": true,
-		"1.27":   false,
+		"":             true,
+		"v1.30.3+k3s1": true,
+		"1.27":         false,
 	}
 	for ver, expected := range forTesting {
 		v, err := fakeClient.isValidK3sVersion(ver)
@@ -81,7 +81,7 @@ func TestK3sDistro_Version(t *testing.T) {
 				if len(ver) == 0 {
 					assert.Equal(t, v, "v1.30.3+k3s1", "it should be equal")
 				} else {
-					assert.Equal(t, v, convertK3sVersion(ver), "it should be equal")
+					assert.Equal(t, v, ver, "it should be equal")
 				}
 			}
 		}

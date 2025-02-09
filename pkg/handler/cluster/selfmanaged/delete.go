@@ -38,13 +38,16 @@ func (kc *Controller) Delete() (errC error) {
 		kc.p.Metadata.ClusterName,
 		consts.ClusterTypeSelfMang,
 	); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
 
@@ -62,14 +65,16 @@ func (kc *Controller) Delete() (errC error) {
 			kc.p,
 		)
 		if err != nil {
-			kc.l.Error("handled error", "catch", err)
 			return err
 		}
 
 		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
 		if errState != nil {
-			kc.l.Error("handled error", "catch", errState)
 			return err
+		}
+
+		if kc.s.BootstrapProvider == "" {
+			goto Extra
 		}
 
 		kbc, errBootstrapController := bootstrapHandler.NewController(
@@ -82,15 +87,15 @@ func (kc *Controller) Delete() (errC error) {
 			kc.p,
 		)
 		if errBootstrapController != nil {
-			kc.l.Error("handled error", "catch", errBootstrapController)
 			return errBootstrapController
 		}
 
 		if err := kbc.InvokeDestroyProcedure(); err != nil {
-			kc.l.Error("handled error", "catch", err)
 			return err
 		}
 	}
+
+Extra:
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
@@ -101,16 +106,12 @@ func (kc *Controller) Delete() (errC error) {
 		kc.p,
 	)
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	if errDelete := kpc.DeleteHACluster(); errDelete != nil {
-		kc.l.Error("handled error", "catch", errDelete)
 		return errDelete
 	}
-
-	kc.l.Success(kc.ctx, "successfully deleted ha cluster")
 
 	return nil
 }

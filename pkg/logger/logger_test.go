@@ -75,16 +75,12 @@ func TestPrintersStructured(t *testing.T) {
 	})
 
 	t.Run("Table", func(t *testing.T) {
-		sL.Table(dummyCtx, LoggingGetClusters,
-			[]ClusterDataForLogging{
-				{
-					Name:          "fake-demo",
-					CloudProvider: "fake",
-					Region:        "fake-reg",
-				},
-			})
-
-		sL.Table(dummyCtx, LoggingInfoCluster, nil)
+		sL.Table(dummyCtx, []string{"dd", "dd"},
+			[][]string{
+				{"dd", "dd"},
+				{"dd", "dd"},
+			},
+		)
 	})
 
 	t.Run("Box", func(t *testing.T) {

@@ -58,12 +58,11 @@ type KubeConfigData struct {
 }
 
 type Provider struct {
-	l           logger.Logger
-	ctx         context.Context
-	state       *statefile.StorageDocument
-	store       storage.Storage
-	clusterType consts.KsctlClusterType
-	mu          sync.Mutex
+	l     logger.Logger
+	ctx   context.Context
+	state *statefile.StorageDocument
+	store storage.Storage
+	mu    sync.Mutex
 
 	public bool
 
@@ -112,10 +111,7 @@ func (p *Provider) isPresent(cType consts.KsctlClusterType) error {
 }
 
 func (p *Provider) IsPresent() error {
-	if p.SelfManaged {
-		return p.isPresent(consts.ClusterTypeSelfMang)
-	}
-	return p.isPresent(consts.ClusterTypeMang)
+	return p.isPresent(p.ClusterType)
 }
 
 func (p *Provider) ManagedK8sVersion(ver string) provider.Cloud {
@@ -159,18 +155,11 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	p.accessKeyId = extractedCreds.AccessKeyId
 	p.secretKey = extractedCreds.SecretAccessKey
 
-	switch p.SelfManaged {
-	case false:
-		p.clusterType = consts.ClusterTypeMang
-	case true:
-		p.clusterType = consts.ClusterTypeSelfMang
-	}
-
 	p.chResName = make(chan string, 1)
 	p.chRole = make(chan consts.KsctlRole, 1)
 	p.chVMType = make(chan string, 1)
 
-	p.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", p.ClusterName, p.clusterType)
+	p.vpc = fmt.Sprintf("%s-ksctl-%s-vpc", p.ClusterName, p.ClusterType)
 
 	errLoadState := p.loadStateHelper()
 
@@ -189,7 +178,7 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 
 			p.state.ClusterName = p.ClusterName
 			p.state.InfraProvider = consts.CloudAws
-			p.state.ClusterType = string(p.clusterType)
+			p.state.ClusterType = string(p.ClusterType)
 			p.state.Region = p.Region
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Aws: &statefile.StateConfigurationAws{},
@@ -234,7 +223,7 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		ClusterName:       p.state.ClusterName,
 		Provider:          p.state.InfraProvider,
 		Region:            p.state.Region,
-		ClusterType:       p.clusterType,
+		ClusterType:       p.ClusterType,
 		IPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoControlPlanes.PublicIPs),
 		IPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoDatabase.PublicIPs),
 		IPv4WorkerPlanes:  utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoWorkerPlanes.PublicIPs),
@@ -462,9 +451,9 @@ func (p *Provider) GetStateFile() (string, error) {
 	return string(cloudstate), nil
 }
 
-func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) {
+func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 
-	var data []logger.ClusterDataForLogging
+	var data []provider.ClusterData
 
 	clusters, err := p.store.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudAws),
@@ -481,15 +470,15 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 		return ""
 	}
 
-	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []logger.VMData) {
+	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []provider.VMData) {
 
 		switch r {
 		case consts.RoleCp:
 			o := st.CloudInfra.Aws.InfoControlPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMID:       o.InstanceIds[i],
+				v = append(v, provider.VMData{
+					Id:         o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoControlPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -503,8 +492,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Aws.InfoWorkerPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMID:       o.InstanceIds[i],
+				v = append(v, provider.VMData{
+					Id:         o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoWorkerPlanes.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -518,8 +507,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Aws.InfoDatabase
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMID:       o.InstanceIds[i],
+				v = append(v, provider.VMData{
+					Id:         o.InstanceIds[i],
 					VMSize:     o.VMSizes[i],
 					FirewallID: st.CloudInfra.Aws.InfoDatabase.NetworkSecurityGroupIDs,
 					PublicIP:   o.PublicIPs[i],
@@ -530,8 +519,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			}
 
 		default:
-			v = append(v, logger.VMData{
-				VMID:       st.CloudInfra.Aws.InfoLoadBalancer.InstanceID,
+			v = append(v, provider.VMData{
+				Id:         st.CloudInfra.Aws.InfoLoadBalancer.InstanceID,
 				VMSize:     st.CloudInfra.Aws.InfoLoadBalancer.VMSize,
 				FirewallID: st.CloudInfra.Aws.InfoLoadBalancer.NetworkSecurityGroupID,
 				PublicIP:   st.CloudInfra.Aws.InfoLoadBalancer.PublicIP,
@@ -545,7 +534,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 	for K, Vs := range clusters {
 		for _, v := range Vs {
-			data = append(data, logger.ClusterDataForLogging{
+			data = append(data, provider.ClusterData{
 				CloudProvider: consts.CloudAws,
 				Name:          v.ClusterName,
 				Region:        v.Region,
@@ -559,7 +548,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				NoCP:  len(v.CloudInfra.Aws.InfoControlPlanes.HostNames),
 				NoDS:  len(v.CloudInfra.Aws.InfoDatabase.HostNames),
 				NoMgt: v.CloudInfra.Aws.NoManagedNodes,
-				Mgt: logger.VMData{
+				Mgt: provider.VMData{
 					VMSize: v.CloudInfra.Aws.ManagedNodeSize,
 				},
 				ManagedK8sID: v.CloudInfra.Aws.ManagedClusterArn,
@@ -571,12 +560,18 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				K8sDistro: v.BootstrapProvider,
 				HAProxyVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
+						if v.Versions.HAProxy == nil {
+							return ""
+						}
 						return *v.Versions.HAProxy
 					}
 					return ""
 				}(),
 				EtcdVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
+						if v.Versions.Etcd == nil {
+							return ""
+						}
 						return *v.Versions.Etcd
 					}
 					return ""
@@ -584,10 +579,19 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				K8sVersion: func() string {
 					switch v.BootstrapProvider {
 					case consts.K8sK3s:
+						if v.Versions.K3s == nil {
+							return ""
+						}
 						return *v.Versions.K3s
 					case consts.K8sKubeadm:
+						if v.Versions.Kubeadm == nil {
+							return ""
+						}
 						return *v.Versions.Kubeadm
 					default:
+						if v.Versions.Eks == nil {
+							return ""
+						}
 						return *v.Versions.Eks
 					}
 				}(),
@@ -608,7 +612,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 func (p *Provider) GetKubeconfig() (*string, error) {
 
-	if !p.SelfManaged {
+	if p.ClusterType == consts.ClusterTypeMang {
 		kubeconfig, err := p.client.GetKubeConfig(p.ctx, p.state.CloudInfra.Aws.ManagedClusterName)
 		if err != nil {
 			return nil, err

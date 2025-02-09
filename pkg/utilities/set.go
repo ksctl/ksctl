@@ -1,4 +1,4 @@
-// Copyright 2024 Ksctl Authors
+// Copyright 2025 Ksctl Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package utilities
 
-func main() {
-	// use the `pkg/storage`
+func DeduplicateStringsAlreadySorted[T string | int](input []T) []T {
+	if len(input) < 2 {
+		return input
+	}
+	j := 0
+	for i := 1; i < len(input); i++ {
+		if input[j] == input[i] {
+			continue
+		}
+		j++
+		input[j] = input[i]
+	}
+	return input[:j+1]
 }

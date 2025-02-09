@@ -32,12 +32,11 @@ import (
 )
 
 type Provider struct {
-	l           logger.Logger
-	ctx         context.Context
-	state       *statefile.StorageDocument
-	store       storage.Storage
-	clusterType consts.KsctlClusterType
-	mu          sync.Mutex
+	l     logger.Logger
+	ctx   context.Context
+	state *statefile.StorageDocument
+	store storage.Storage
+	mu    sync.Mutex
 
 	controller.Metadata
 
@@ -114,7 +113,7 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		ClusterName:   p.state.ClusterName,
 		Provider:      p.state.InfraProvider,
 		Region:        p.state.Region,
-		ClusterType:   p.clusterType,
+		ClusterType:   p.ClusterType,
 
 		// public IPs
 		IPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Azure.InfoControlPlanes.PublicIPs),
@@ -153,18 +152,11 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	p.clientID = extractedCreds.ClientID
 	p.clientSecret = extractedCreds.ClientSecret
 
-	switch p.SelfManaged {
-	case false:
-		p.clusterType = consts.ClusterTypeMang
-	case true:
-		p.clusterType = consts.ClusterTypeSelfMang
-	}
-
 	p.chResName = make(chan string, 1)
 	p.chRole = make(chan consts.KsctlRole, 1)
 	p.chVMType = make(chan string, 1)
 
-	p.resourceGroup = generateResourceGroupName(p.ClusterName, string(p.clusterType))
+	p.resourceGroup = generateResourceGroupName(p.ClusterName, string(p.ClusterType))
 
 	errLoadState := p.loadStateHelper()
 	switch operation {
@@ -182,7 +174,7 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 
 			p.state.ClusterName = p.ClusterName
 			p.state.InfraProvider = consts.CloudAzure
-			p.state.ClusterType = string(p.clusterType)
+			p.state.ClusterType = string(p.ClusterType)
 			p.state.Region = p.Region
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Azure: &statefile.StateConfigurationAzure{},
@@ -456,9 +448,9 @@ func (p *Provider) NoOfWorkerPlane(no int, setter bool) (int, error) {
 	)
 }
 
-func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) {
+func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 
-	var data []logger.ClusterDataForLogging
+	var data []provider.ClusterData
 
 	clusters, err := p.store.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudAzure),
@@ -468,15 +460,15 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 		return nil, err
 	}
 
-	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []logger.VMData) {
+	convertToAllClusterDataType := func(st *statefile.StorageDocument, r consts.KsctlRole) (v []provider.VMData) {
 
 		switch r {
 		case consts.RoleCp:
 			o := st.CloudInfra.Azure.InfoControlPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMName:       o.Names[i],
+				v = append(v, provider.VMData{
+					Name:         o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoControlPlanes.NetworkSecurityGroupName,
@@ -491,8 +483,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Azure.InfoWorkerPlanes
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMName:       o.Names[i],
+				v = append(v, provider.VMData{
+					Name:         o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoWorkerPlanes.NetworkSecurityGroupName,
@@ -507,8 +499,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			o := st.CloudInfra.Azure.InfoDatabase
 			no := len(o.VMSizes)
 			for i := 0; i < no; i++ {
-				v = append(v, logger.VMData{
-					VMName:       o.Names[i],
+				v = append(v, provider.VMData{
+					Name:         o.Names[i],
 					VMSize:       o.VMSizes[i],
 					FirewallID:   st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupID,
 					FirewallName: st.CloudInfra.Azure.InfoDatabase.NetworkSecurityGroupName,
@@ -520,8 +512,8 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 			}
 
 		default:
-			v = append(v, logger.VMData{
-				VMName:       st.CloudInfra.Azure.InfoLoadBalancer.Name,
+			v = append(v, provider.VMData{
+				Name:         st.CloudInfra.Azure.InfoLoadBalancer.Name,
 				VMSize:       st.CloudInfra.Azure.InfoLoadBalancer.VMSize,
 				FirewallID:   st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupID,
 				FirewallName: st.CloudInfra.Azure.InfoLoadBalancer.NetworkSecurityGroupName,
@@ -536,7 +528,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 
 	for K, Vs := range clusters {
 		for _, v := range Vs {
-			data = append(data, logger.ClusterDataForLogging{
+			data = append(data, provider.ClusterData{
 				CloudProvider: consts.CloudAzure,
 				Name:          v.ClusterName,
 				Region:        v.Region,
@@ -550,7 +542,7 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				NoCP:  len(v.CloudInfra.Azure.InfoControlPlanes.Names),
 				NoDS:  len(v.CloudInfra.Azure.InfoDatabase.Names),
 				NoMgt: v.CloudInfra.Azure.NoManagedNodes,
-				Mgt: logger.VMData{
+				Mgt: provider.VMData{
 					VMSize: v.CloudInfra.Azure.ManagedNodeSize,
 				},
 				ManagedK8sName:  v.CloudInfra.Azure.ManagedClusterName,
@@ -563,23 +555,38 @@ func (p *Provider) GetRAWClusterInfos() ([]logger.ClusterDataForLogging, error) 
 				K8sDistro: v.BootstrapProvider,
 				HAProxyVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
-						return *v.Versions.HAProxy
+						if v.Versions.HAProxy != nil {
+							return *v.Versions.HAProxy
+						}
+						return ""
 					}
 					return ""
 				}(),
 				EtcdVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
-						return *v.Versions.Etcd
+						if v.Versions.Etcd != nil {
+							return *v.Versions.Etcd
+						}
+						return ""
 					}
 					return ""
 				}(),
 				K8sVersion: func() string {
 					switch v.BootstrapProvider {
 					case consts.K8sK3s:
+						if v.Versions.K3s == nil {
+							return ""
+						}
 						return *v.Versions.K3s
 					case consts.K8sKubeadm:
+						if v.Versions.Kubeadm == nil {
+							return ""
+						}
 						return *v.Versions.Kubeadm
 					default:
+						if v.Versions.Aks == nil {
+							return ""
+						}
 						return *v.Versions.Aks
 					}
 				}(),
@@ -607,10 +614,7 @@ func (p *Provider) isPresent(cType consts.KsctlClusterType) error {
 }
 
 func (p *Provider) IsPresent() error {
-	if p.SelfManaged {
-		return p.isPresent(consts.ClusterTypeSelfMang)
-	}
-	return p.isPresent(consts.ClusterTypeMang)
+	return p.isPresent(p.ClusterType)
 }
 
 func (p *Provider) GetKubeconfig() (*string, error) {

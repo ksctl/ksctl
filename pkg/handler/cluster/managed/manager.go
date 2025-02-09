@@ -48,6 +48,11 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 		return nil, err
 	}
 
+	if cc.p.Metadata.ClusterType != consts.ClusterTypeMang {
+		err := cc.l.NewError(cc.ctx, "this feature is only for managed clusters")
+		return nil, err
+	}
+
 	if err := cc.b.InitStorage(controllerPayload); err != nil {
 		return nil, err
 	}

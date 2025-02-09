@@ -42,14 +42,12 @@ type Client struct {
 }
 
 type Metadata struct {
-	ClusterName string `json:"cluster_name"`
-	Region      string `json:"region"`
-
-	Provider      consts.KsctlCloud      `json:"cloud_provider"`
-	K8sDistro     consts.KsctlKubernetes `json:"kubernetes_distro"`
-	StateLocation consts.KsctlStore      `json:"storage_type"`
-
-	SelfManaged bool `json:"self_managed,omitempty"`
+	ClusterName   string                  `json:"cluster_name"`
+	Region        string                  `json:"region"`
+	Provider      consts.KsctlCloud       `json:"cloud_provider"`
+	K8sDistro     consts.KsctlKubernetes  `json:"kubernetes_distro"`
+	StateLocation consts.KsctlStore       `json:"storage_type"`
+	ClusterType   consts.KsctlClusterType `json:"cluster_type"`
 
 	K8sVersion string `json:"kubernetes_version"`
 
@@ -63,6 +61,8 @@ type Metadata struct {
 	NoWP int `json:"desired_no_of_workerplane_nodes"`  // No of woerkplane VMs
 	NoCP int `json:"desired_no_of_controlplane_nodes"` // No of Controlplane VMs
 	NoDS int `json:"desired_no_of_datastore_nodes"`    // No of DataStore VMs
+
+	EtcdVersion string `json:"etcd_version"`
 
 	// Addons Helps us with specifying cloud managed cluster addons (aks, eks, gke)
 	// to k3s, kubeadm specific as well

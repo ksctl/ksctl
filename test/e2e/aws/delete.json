@@ -2,5 +2,6 @@
   "cluster_name": "test-e2e-aws",
   "region": "eu-central-1",
   "cloud_provider": "aws",
+  "cluster_type": "managed",
   "storage_type": "store-local"
 }

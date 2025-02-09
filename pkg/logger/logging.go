@@ -15,21 +15,22 @@
 package logger
 
 import (
+	"strings"
+
 	"github.com/fatih/color"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
-	"strings"
 )
 
 type CustomExternalLogLevel string
 type LogClusterDetail uint
 
 var (
-	LogWarning = CustomExternalLogLevel(color.HiYellowString("WARN"))
-	LogError   = CustomExternalLogLevel(color.HiRedString("ERR"))
-	LogInfo    = CustomExternalLogLevel(color.HiBlueString("INFO"))
-	LogNote    = CustomExternalLogLevel(color.CyanString("NOTE"))
-	LogSuccess = CustomExternalLogLevel(color.HiGreenString("PASS"))
-	LogDebug   = CustomExternalLogLevel(color.WhiteString("DEBUG"))
+	LogWarning = CustomExternalLogLevel(color.New(color.FgBlack, color.BgYellow).Sprintf("WARN"))
+	LogInfo    = CustomExternalLogLevel(color.New(color.FgBlack, color.BgBlue).Sprintf("INFO"))
+	LogNote    = CustomExternalLogLevel(color.New(color.FgBlack, color.BgCyan).Sprintf("NOTE"))
+	LogDebug   = CustomExternalLogLevel(color.New(color.FgBlack, color.BgMagenta).Sprintf("DEBUG"))
+	LogSuccess = CustomExternalLogLevel(color.New(color.FgBlack, color.BgGreen).Sprintf("SUCC"))
+	LogError   = CustomExternalLogLevel(color.New(color.FgBlack, color.BgRed).Sprintf("ERR"))
 )
 
 const (

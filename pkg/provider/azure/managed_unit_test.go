@@ -15,11 +15,11 @@
 package azure
 
 import (
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"testing"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
-	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	localstate "github.com/ksctl/ksctl/v2/pkg/storage/host"
 	"gotest.tools/v3/assert"
@@ -54,6 +54,7 @@ func TestManagedCluster(t *testing.T) {
 		controller.Metadata{
 			ClusterName: "demo-managed",
 			Region:      "fake",
+			ClusterType: consts.ClusterTypeMang,
 			Provider:    consts.CloudAzure,
 		},
 		&statefile.StorageDocument{},
@@ -68,7 +69,7 @@ func TestManagedCluster(t *testing.T) {
 			t.Fatalf("Unable to init the state for fresh start, Reason: %v", err)
 		}
 
-		assert.Equal(t, fakeClientManaged.clusterType, consts.ClusterTypeMang, "clustertype should be managed")
+		assert.Equal(t, fakeClientManaged.ClusterType, consts.ClusterTypeMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")
 
 		_, err := storeManaged.Read()
@@ -102,7 +103,7 @@ func TestManagedCluster(t *testing.T) {
 	})
 
 	t.Run("Get cluster managed", func(t *testing.T) {
-		expected := []logger.ClusterDataForLogging{
+		expected := []provider.ClusterData{
 			{
 				Name:            fakeClientManaged.ClusterName,
 				CloudProvider:   consts.CloudAzure,
@@ -111,7 +112,7 @@ func TestManagedCluster(t *testing.T) {
 				Region:          fakeClientManaged.Region,
 				ManagedK8sName:  "fake-managed",
 				NoMgt:           fakeClientManaged.state.CloudInfra.Azure.NoManagedNodes,
-				Mgt:             logger.VMData{VMSize: "fake"},
+				Mgt:             provider.VMData{VMSize: "fake"},
 				K8sDistro:       consts.K8sAks,
 				K8sVersion:      *fakeClientManaged.state.Versions.Aks,
 				Apps:            nil,

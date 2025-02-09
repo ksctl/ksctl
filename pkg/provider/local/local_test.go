@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -57,6 +58,7 @@ func TestMain(m *testing.M) {
 		controller.Metadata{
 			ClusterName: "demo",
 			Region:      "LOCAL",
+			ClusterType: consts.ClusterTypeMang,
 			Provider:    consts.CloudLocal,
 		},
 		&statefile.StorageDocument{},
@@ -181,6 +183,7 @@ func TestManagedCluster(t *testing.T) {
 		controller.Metadata{
 			ClusterName: "demo-managed",
 			Region:      "LOCAL",
+			ClusterType: consts.ClusterTypeMang,
 			Provider:    consts.CloudLocal,
 		},
 		&statefile.StorageDocument{},
@@ -211,14 +214,14 @@ func TestManagedCluster(t *testing.T) {
 	})
 
 	t.Run("Get cluster managed", func(t *testing.T) {
-		expected := []logger.ClusterDataForLogging{
+		expected := []provider.ClusterData{
 			{
 				Name:          fakeClientManaged.ClusterName,
 				CloudProvider: consts.CloudLocal,
 				ClusterType:   consts.ClusterTypeMang,
 				Region:        fakeClientManaged.Region,
 				NoMgt:         fakeClientManaged.state.CloudInfra.Local.Nodes,
-				Mgt:           logger.VMData{VMSize: fakeClientManaged.state.CloudInfra.Local.ManagedNodeSize},
+				Mgt:           provider.VMData{VMSize: fakeClientManaged.state.CloudInfra.Local.ManagedNodeSize},
 
 				K8sDistro:  consts.K8sKind,
 				K8sVersion: *fakeClientManaged.state.Versions.Kind,

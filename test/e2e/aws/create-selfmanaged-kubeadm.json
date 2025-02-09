@@ -1,7 +1,7 @@
 {
   "cluster_name": "test-e2e-kubeadm-selfmanaged-aws",
   "region": "us-east-1",
-  "self_managed": true,
+  "cluster_type": "selfmanaged",
   "cloud_provider": "aws",
   "kubernetes_distro": "kubeadm",
   "storage_type": "store-local",

@@ -66,7 +66,7 @@ func NewController(
 	cc.p = controllerPayload
 	cc.s = state
 
-	if controllerPayload.Metadata.SelfManaged {
+	if controllerPayload.Metadata.ClusterType == consts.ClusterTypeSelfMang {
 		err := cc.setupInterfaces(operation, transferableInfraState)
 		if err != nil {
 			return nil, err
@@ -143,7 +143,7 @@ func (kc *Controller) ConfigureCluster() (bool, error) {
 		go func(i int) {
 			defer waitForPre.Done()
 
-			err := kc.p.PreBootstrap.ConfigureDataStore(i)
+			err := kc.p.PreBootstrap.ConfigureDataStore(i, kc.p.Metadata.EtcdVersion)
 			if err != nil {
 				errChanDS <- err
 			}
@@ -330,16 +330,11 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 		kc.l.Success(kc.ctx, "Done with installing k8s cni")
 	}
 
-	kc.l.Success(kc.ctx, "Done with installing additional k8s tools")
 	return nil
 }
 
-// TODO: we need to delete any infrastructure resources before we remove this
-// Goal: is to trigger a event in the cluster and wait for it
-// the event handler will deprovision all the resources before it is safe for us to do ahead
-// Warn: this is a deletion procedure
 func (kc *Controller) InvokeDestroyProcedure() error {
-	kc.l.Success(kc.ctx, "We need to implement the destroy procedure")
+	kc.l.Debug(kc.ctx, "We need to implement the destroy procedure")
 
 	return nil
 }

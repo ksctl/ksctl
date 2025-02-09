@@ -15,7 +15,7 @@
 package azure
 
 import (
-	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	armcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )

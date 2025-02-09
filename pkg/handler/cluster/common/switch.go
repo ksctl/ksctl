@@ -15,13 +15,7 @@
 package common
 
 import (
-	"context"
 	"errors"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
@@ -39,28 +33,29 @@ func (kc *Controller) Switch() (_ *string, errC error) {
 		}
 	}()
 
-	if kc.b.IsLocalProvider(kc.p) {
-		kc.p.Metadata.Region = "LOCAL"
+	if err := kc.b.ValidateClusterType(kc.p.Metadata.ClusterType); err != nil {
+		return nil, err
 	}
 
-	clusterType := consts.ClusterTypeMang
-	if kc.b.IsSelfManaged(kc.p) {
-		clusterType = consts.ClusterTypeSelfMang
+	if kc.b.IsLocalProvider(kc.p) {
+		kc.p.Metadata.Region = "LOCAL"
 	}
 
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,
 		kc.p.Metadata.ClusterName,
-		clusterType); err != nil {
-
-		kc.l.Error("handled error", "catch", err)
+		kc.p.Metadata.ClusterType); err != nil {
 		return nil, err
 	}
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
 
@@ -81,23 +76,19 @@ func (kc *Controller) Switch() (_ *string, errC error) {
 	}
 
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
 	if errInit := kc.p.Cloud.InitState(consts.OperationGet); errInit != nil {
-		kc.l.Error("handled error", "catch", errInit)
 		return nil, errInit
 	}
 
 	if err := kc.p.Cloud.IsPresent(); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
 	kubeconfig, err := kc.p.Cloud.GetKubeconfig()
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
 
@@ -105,59 +96,11 @@ func (kc *Controller) Switch() (_ *string, errC error) {
 		err = ksctlErrors.WrapError(
 			ksctlErrors.ErrKubeconfigOperations,
 			kc.l.NewError(
-				kc.ctx, "Problem in kubeconfig get"),
+				kc.ctx, "Problem in kubeconfig get, we got nil kubeconfig"),
 		)
 
-		kc.l.Error("Kubeconfig we got is nil")
 		return nil, err
 	}
-
-	path, err := writeKubeConfig(kc.ctx, *kubeconfig)
-	kc.l.Debug(kc.ctx, "data", "kubeconfigPath", path)
-
-	if err != nil {
-		kc.l.Error("handled error", "catch", err)
-		return nil, err
-	}
-
-	kc.printKubeConfig(path)
 
 	return kubeconfig, nil
-}
-
-func genOSKubeConfigPath(ctx context.Context) (string, error) {
-
-	var userLoc string
-	if v, ok := config.IsContextPresent(ctx, consts.KsctlCustomDirLoc); ok {
-		userLoc = filepath.Join(strings.Split(strings.TrimSpace(v), " ")...)
-	} else {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		userLoc = home
-	}
-
-	pathArr := []string{userLoc, ".ksctl", "kubeconfig"}
-
-	return filepath.Join(pathArr...), nil
-}
-
-func writeKubeConfig(ctx context.Context, kubeconfig string) (string, error) {
-	path, err := genOSKubeConfigPath(ctx)
-	if err != nil {
-		return "", ksctlErrors.WrapError(ksctlErrors.ErrInternal, err)
-	}
-
-	dir, _ := filepath.Split(path)
-
-	if err := os.MkdirAll(dir, 0750); err != nil {
-		return "", ksctlErrors.WrapError(ksctlErrors.ErrKubeconfigOperations, err)
-	}
-
-	if err := os.WriteFile(path, []byte(kubeconfig), 0755); err != nil {
-		return "", ksctlErrors.WrapError(ksctlErrors.ErrKubeconfigOperations, err)
-	}
-
-	return path, nil
 }

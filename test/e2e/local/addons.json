@@ -1,5 +1,6 @@
 {
 	"cluster_name": "test-e2e-local",
 	"storage_type": "store-local",
+	"cluster_type": "managed",
 	"cloud_provider": "local"
 }

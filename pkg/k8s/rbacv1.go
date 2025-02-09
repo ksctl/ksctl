@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(@dipankardas011): Please depricate these interfaces
 package k8s
 
 import (

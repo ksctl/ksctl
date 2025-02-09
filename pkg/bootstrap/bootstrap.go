@@ -22,7 +22,7 @@ import (
 type Bootstrap interface {
 	Setup(*provider.CloudResourceState, consts.KsctlOperation) error
 
-	ConfigureDataStore(int) error
+	ConfigureDataStore(noOfNodes int, version string) error
 
 	ConfigureLoadbalancer() error
 }

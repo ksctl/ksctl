@@ -23,10 +23,6 @@ import (
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
-func convertK3sVersion(ver string) string {
-	return fmt.Sprintf("v%s+k3s1", ver)
-}
-
 func (p *K3s) isValidK3sVersion(ver string) (string, error) {
 
 	validVersion, err := poller.GetSharedPoller().Get("k3s-io", "k3s")
@@ -38,7 +34,6 @@ func (p *K3s) isValidK3sVersion(ver string) (string, error) {
 		return validVersion[0], nil
 	}
 
-	ver = convertK3sVersion(ver)
 	for _, vver := range validVersion {
 		if vver == ver {
 			return vver, nil

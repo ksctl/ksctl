@@ -21,7 +21,9 @@ import (
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
+	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
 func (kc *Controller) AddWorkerNodes() (errC error) {
@@ -34,27 +36,33 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 		}
 	}()
 
-	if !kc.b.IsSelfManaged(kc.p) {
-		err := kc.l.NewError(kc.ctx, "this feature is only for selfmanaged clusters")
-		kc.l.Error("handled error", "catch", err)
-		return err
-	}
-
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,
 		kc.p.Metadata.ClusterName,
 		consts.ClusterTypeSelfMang,
 	); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
+
+	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidBootstrapProvider,
+			kc.l.NewError(
+				kc.ctx, "Problem in validation", "bootstrap", kc.p.Metadata.K8sDistro,
+			),
+		)
+	}
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
@@ -65,13 +73,11 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 		kc.p,
 	)
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	transferableInfraState, idxWPNotConfigured, errProvisioningWorker := kpc.AddWorkerNodes()
 	if errProvisioningWorker != nil {
-		kc.l.Error("handled error", "catch", errProvisioningWorker)
 		return errProvisioningWorker
 	}
 
@@ -85,16 +91,12 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 		kc.p,
 	)
 	if errBootstrapController != nil {
-		kc.l.Error("handled error", "catch", errBootstrapController)
 		return errBootstrapController
 	}
 
 	if err := kbc.JoinMoreWorkerPlanes(idxWPNotConfigured, kc.p.Metadata.NoWP); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
-
-	kc.l.Success(kc.ctx, "worker nodes added successfully")
 
 	return nil
 }
@@ -109,27 +111,33 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 		}
 	}()
 
-	if !kc.b.IsSelfManaged(kc.p) {
-		err := kc.l.NewError(kc.ctx, "this feature is only for selfmanaged clusters")
-		kc.l.Error("handled error", "catch", err)
-		return err
-	}
-
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,
 		kc.p.Metadata.ClusterName,
 		consts.ClusterTypeSelfMang,
 	); err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	defer func() {
 		if err := kc.p.Storage.Kill(); err != nil {
-			kc.l.Error("StorageClass Kill failed", "reason", err)
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
 		}
 	}()
+
+	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidBootstrapProvider,
+			kc.l.NewError(
+				kc.ctx, "Problem in validation", "bootstrap", kc.p.Metadata.K8sDistro,
+			),
+		)
+	}
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
@@ -140,13 +148,11 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 		kc.p,
 	)
 	if err != nil {
-		kc.l.Error("handled error", "catch", err)
 		return err
 	}
 
 	transferableInfraState, hostnames, errDelWP := kpc.DelWorkerNodes()
 	if errDelWP != nil {
-		kc.l.Error("handled error", "catch", errDelWP)
 		return errDelWP
 	}
 
@@ -168,17 +174,13 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 			kc.p,
 		)
 		if err != nil {
-			kc.l.Error("handled error", "catch", err)
 			return err
 		}
 
 		if err := kbc.DelWorkerPlanes(kc.s.ClusterKubeConfig, hostnames); err != nil {
-			kc.l.Error("handled error", "catch", err)
 			return err
 		}
 	}
-
-	kc.l.Success(kc.ctx, "Successfully deleted workerNodes")
 
 	return nil
 }
