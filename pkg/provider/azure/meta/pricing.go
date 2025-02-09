@@ -140,10 +140,15 @@ func (m *AzureMeta) priceDisks(regionSku string, opts ...Option) ([]provider.Sto
 
 	filter := fmt.Sprintf("armRegionName eq '%s' and serviceFamily eq 'Storage' and productName eq 'Standard SSD Managed Disks' and %s and endswith(meterName, 'LRS Disk') and Type eq 'Consumption' and unitOfMeasure eq '1/Month'", regionSku, filterForDisk)
 
+	m.l.Debug(m.ctx, "Fetching Disk prices", "Filter", filter)
+
 	prices, err := fetchPrices(filter)
 	if err != nil {
 		return nil, err
 	}
+
+	m.l.Debug(m.ctx, "Disk prices", "Prices", prices)
+
 	o := make([]provider.StorageBlockRegionOutput, 0, len(prices))
 	for _, p := range prices {
 		o = append(
@@ -186,10 +191,14 @@ func (m *AzureMeta) priceVMs(regionSku string, opts ...Option) (map[string]provi
 
 	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and %s and type eq 'Consumption' and unitOfMeasure eq '1 Hour'", regionSku, filterInstance)
 
+	m.l.Debug(m.ctx, "Fetching VM prices", "Filter", filter)
+
 	prices, err := fetchPrices(filter, IgnoreSpotAndLowPriMeterName())
 	if err != nil {
 		return nil, err
 	}
+
+	m.l.Debug(m.ctx, "VM prices", "Prices", prices)
 
 	o := make(map[string]provider.InstanceRegionOutput)
 	for _, p := range prices {
@@ -228,10 +237,14 @@ func (m *AzureMeta) priceAksManagement(regionSku string, opts ...Option) (out []
 
 	filter := fmt.Sprintf("serviceName eq 'Azure Kubernetes Service' and armRegionName eq '%s' and unitOfMeasure eq '1 Hour' and skuName eq 'Standard' %s", regionSku, filterAks)
 
+	m.l.Debug(m.ctx, "Fetching AKS prices", "Filter", filter)
+
 	prices, err := fetchPrices(filter)
 	if err != nil {
 		return nil, err
 	}
+
+	m.l.Debug(m.ctx, "AKS prices", "Prices", prices)
 
 	// out = append(out, provider.ManagedClusterOutput{
 	// 	Sku:         "Standard Free",
