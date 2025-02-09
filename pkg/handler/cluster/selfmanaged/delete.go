@@ -73,6 +73,10 @@ func (kc *Controller) Delete() (errC error) {
 			return err
 		}
 
+		if kc.s.BootstrapProvider == "" {
+			goto Extra
+		}
+
 		kbc, errBootstrapController := bootstrapHandler.NewController(
 			kc.ctx,
 			kc.l,
@@ -90,6 +94,8 @@ func (kc *Controller) Delete() (errC error) {
 			return err
 		}
 	}
+
+Extra:
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
