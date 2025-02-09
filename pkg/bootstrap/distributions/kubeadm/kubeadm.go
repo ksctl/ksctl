@@ -92,6 +92,8 @@ func (p *Kubeadm) isValidKubeadmVersion(ver string) (string, error) {
 		}
 	}
 
+	validVersion = utilities.DeduplicateStringsAlreadySorted(validVersion)
+
 	if ver == "" {
 		return validVersion[0], nil
 	}

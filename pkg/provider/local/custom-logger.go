@@ -36,13 +36,13 @@ func (l *customLogger) Enabled() bool {
 func (l *customLogger) Info(message string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandler(l.ctx, logger.LogInfo, message)
+	l.Logger.ExternalLogHandler(l.ctx, logger.LogDebug, message)
 }
 
 func (l *customLogger) Infof(format string, args ...any) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.Logger.ExternalLogHandlerf(l.ctx, logger.LogInfo, format, args...)
+	l.Logger.ExternalLogHandlerf(l.ctx, logger.LogDebug, format, args...)
 }
 
 func (l *customLogger) Warn(message string) {

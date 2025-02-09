@@ -21,6 +21,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
@@ -53,6 +54,15 @@ func (kc *Controller) Create() (errC error) {
 			}
 		}
 	}()
+
+	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidBootstrapProvider,
+			kc.l.NewError(
+				kc.ctx, "Problem in validation", "bootstrap", kc.p.Metadata.K8sDistro,
+			),
+		)
+	}
 
 	if err := validation.IsValidKsctlClusterAddons(kc.ctx, kc.l, kc.p.Metadata.Addons); err != nil {
 		return err

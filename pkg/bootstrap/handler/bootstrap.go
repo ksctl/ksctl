@@ -333,12 +333,8 @@ func (kc *Controller) InstallAdditionalTools(externalCNI bool) error {
 	return nil
 }
 
-// TODO: we need to delete any infrastructure resources before we remove this
-// Goal: is to trigger a event in the cluster and wait for it
-// the event handler will deprovision all the resources before it is safe for us to do ahead
-// Warn: this is a deletion procedure
 func (kc *Controller) InvokeDestroyProcedure() error {
-	kc.l.Success(kc.ctx, "We need to implement the destroy procedure")
+	kc.l.Debug(kc.ctx, "We need to implement the destroy procedure")
 
 	return nil
 }

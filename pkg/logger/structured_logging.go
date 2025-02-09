@@ -48,9 +48,9 @@ func (l *StructuredLog) ExternalLogHandler(ctx context.Context, msgType CustomEx
 	case LogDebug:
 		_m = "DEBUG"
 	case LogError:
-		_m = "ERROR"
+		_m = "ERRO"
 	case LogSuccess:
-		_m = "SUCCESS"
+		_m = "SUCC"
 	case LogWarning:
 		_m = "WARN"
 	default:
@@ -65,9 +65,9 @@ func (l *StructuredLog) ExternalLogHandlerf(ctx context.Context, msgType CustomE
 	case LogDebug:
 		_m = "DEBUG"
 	case LogError:
-		_m = "ERROR"
+		_m = "ERR"
 	case LogSuccess:
-		_m = "SUCCESS"
+		_m = "SUCC"
 	case LogWarning:
 		_m = "WARN"
 	default:

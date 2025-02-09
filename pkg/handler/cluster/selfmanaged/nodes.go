@@ -21,7 +21,9 @@ import (
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
+	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
 func (kc *Controller) AddWorkerNodes() (errC error) {
@@ -52,6 +54,15 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 			}
 		}
 	}()
+
+	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidBootstrapProvider,
+			kc.l.NewError(
+				kc.ctx, "Problem in validation", "bootstrap", kc.p.Metadata.K8sDistro,
+			),
+		)
+	}
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
@@ -118,6 +129,15 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 			}
 		}
 	}()
+
+	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidBootstrapProvider,
+			kc.l.NewError(
+				kc.ctx, "Problem in validation", "bootstrap", kc.p.Metadata.K8sDistro,
+			),
+		)
+	}
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,

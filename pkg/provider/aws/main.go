@@ -560,12 +560,18 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 				K8sDistro: v.BootstrapProvider,
 				HAProxyVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
+						if v.Versions.HAProxy == nil {
+							return ""
+						}
 						return *v.Versions.HAProxy
 					}
 					return ""
 				}(),
 				EtcdVersion: func() string {
 					if v.ClusterType == string(consts.ClusterTypeSelfMang) {
+						if v.Versions.Etcd == nil {
+							return ""
+						}
 						return *v.Versions.Etcd
 					}
 					return ""
@@ -573,8 +579,14 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 				K8sVersion: func() string {
 					switch v.BootstrapProvider {
 					case consts.K8sK3s:
+						if v.Versions.K3s == nil {
+							return ""
+						}
 						return *v.Versions.K3s
 					case consts.K8sKubeadm:
+						if v.Versions.Kubeadm == nil {
+							return ""
+						}
 						return *v.Versions.Kubeadm
 					default:
 						if v.Versions.Eks == nil {

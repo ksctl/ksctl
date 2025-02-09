@@ -57,14 +57,6 @@ func (cc *Controller) ValidateMetadata(c *Client) error {
 			),
 		)
 	}
-	if !validation.ValidateDistro(meta.K8sDistro) {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrInvalidBootstrapProvider,
-			cc.l.NewError(
-				cc.ctx, "Problem in validation", "bootstrap", meta.K8sDistro,
-			),
-		)
-	}
 
 	return nil
 }

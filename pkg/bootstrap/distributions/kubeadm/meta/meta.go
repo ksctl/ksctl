@@ -15,8 +15,12 @@
 package meta
 
 import (
+	"fmt"
+	"strings"
+
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/poller"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 type KubeadmMeta struct{}
@@ -41,5 +45,12 @@ func (m *KubeadmMeta) GetBootstrapedDistributionVersions() ([]string, error) {
 		)
 	}
 
-	return validVersion, nil
+	for i := range validVersion {
+		_v := strings.Split(validVersion[i], ".")
+		if len(_v) == 3 {
+			validVersion[i] = fmt.Sprintf("%s.%s", _v[0], _v[1])
+		}
+	}
+
+	return utilities.DeduplicateStringsAlreadySorted(validVersion), nil
 }

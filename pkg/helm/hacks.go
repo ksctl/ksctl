@@ -17,6 +17,7 @@ package helm
 import (
 	"context"
 	"os"
+	"strings"
 
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -29,7 +30,11 @@ type CustomLogger struct {
 }
 
 func (l *CustomLogger) HelmDebugf(format string, v ...any) {
-	l.Logger.ExternalLogHandlerf(l.ctx, logger.LogInfo, format+"\n", v...)
+	if strings.HasSuffix(format, "\n") {
+		l.Logger.ExternalLogHandlerf(l.ctx, logger.LogDebug, format, v...)
+		return
+	}
+	l.Logger.ExternalLogHandlerf(l.ctx, logger.LogDebug, format+"\n", v...)
 }
 
 func patchHelmDirectories(ctx context.Context, log logger.Logger, client *Client) error {
