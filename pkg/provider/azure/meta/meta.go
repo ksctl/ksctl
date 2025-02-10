@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v6"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
@@ -196,4 +197,14 @@ func (m *AzureMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, 
 	m.l.Debug(m.ctx, "Managed K8s versions", "AksVersions", versions)
 
 	return versions, nil
+}
+
+func (m *AzureMeta) GetAvailableManagedCNIPlugins(regionSku string) (addons.ClusterAddons, string, error) {
+	v, d, err := m.listManagedOfferingsCNIPlugins(regionSku)
+	if err != nil {
+		return nil, "", err
+	}
+
+	m.l.Debug(m.ctx, "Managed CNI plugins", "CNIPlugins", v)
+	return v, d, nil
 }

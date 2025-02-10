@@ -67,10 +67,21 @@ func (p *Kubeadm) K8sVersion(ver string) distributions.KubernetesDistribution {
 	}
 }
 
+func GetCNIs() (addons.ClusterAddons, string) {
+	return addons.ClusterAddons{
+		{
+			Name:   string(consts.CNINone),
+			IsCNI:  true,
+			Label:  string(consts.K8sKubeadm),
+			Config: nil,
+		},
+	}, string(consts.CNINone)
+}
+
 func (p *Kubeadm) CNI(cni addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", cni)
 
-	_ = cni.GetAddons("kubeadm")
+	_ = cni.GetAddons(string(consts.K8sKubeadm))
 
 	externalCNI = true
 

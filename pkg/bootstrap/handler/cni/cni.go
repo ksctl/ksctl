@@ -17,7 +17,9 @@ package cni
 import (
 	"context"
 
+	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/apps/stack"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
@@ -46,6 +48,23 @@ func getVersionIfItsNotNilAndLatest(ver *string, defaultVer string) string {
 		return defaultVer
 	}
 	return *ver
+}
+
+func GetCNIs() (addons.ClusterAddons, string) {
+	return addons.ClusterAddons{
+		{
+			Name:   "cilium",
+			Label:  string(consts.K8sKsctl),
+			IsCNI:  true,
+			Config: nil,
+		},
+		{
+			Name:   "flannel",
+			Label:  string(consts.K8sKsctl),
+			IsCNI:  true,
+			Config: nil,
+		},
+	}, "cilium"
 }
 
 func FetchKsctlStack(ctx context.Context, log logger.Logger, stkID string) (func(stack.ApplicationParams) (stack.ApplicationStack, error), error) {

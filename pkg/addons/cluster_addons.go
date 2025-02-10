@@ -25,8 +25,8 @@ type ClusterAddon struct {
 
 type ClusterAddons []ClusterAddon
 
-func (ca ClusterAddons) GetAddons(label string) []ClusterAddon {
-	var caa []ClusterAddon
+func (ca ClusterAddons) GetAddons(label string) ClusterAddons {
+	var caa ClusterAddons
 	if len(ca) == 0 {
 		return nil
 	}

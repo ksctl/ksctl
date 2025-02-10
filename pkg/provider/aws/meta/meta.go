@@ -27,6 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	_ "github.com/aws/aws-sdk-go-v2/service/pricing/types"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
@@ -214,13 +215,13 @@ func (m *AwsMeta) GetAvailableManagedK8sVersions(regionSku string) ([]string, er
 	return v, nil
 }
 
-//func getAccountId(cfg aws.Config) (*string, error) {
-//	svcP := sts.NewFromConfig(cfg)
-//
-//	result, err := svcP.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
-//	if err != nil {
-//		return nil, fmt.Errorf("unable to get caller identity, %v", err)
-//	}
-//
-//	return result.Account, nil
-//}
+func (m *AwsMeta) GetAvailableManagedCNIPlugins(regionSku string) (addons.ClusterAddons, string, error) {
+
+	v, d, err := m.listManagedOfferingsCNIPlugins(regionSku)
+	if err != nil {
+		return nil, "", err
+	}
+
+	m.l.Debug(m.ctx, "Managed CNI plugins", "CNIPlugins", v)
+	return v, d, nil
+}

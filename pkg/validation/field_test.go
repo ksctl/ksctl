@@ -269,6 +269,12 @@ func TestIsValidKsctlClusterAddons(t *testing.T) {
 		},
 		{
 			ca: addons.ClusterAddons{
+				{Label: "kind", Name: "cilium", IsCNI: true},
+			},
+			expectedError: false,
+		},
+		{
+			ca: addons.ClusterAddons{
 				{Label: "dcdcd", Name: "cilium", IsCNI: true},
 			},
 			expectedError: true,

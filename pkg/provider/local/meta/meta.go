@@ -18,9 +18,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/dockerhub"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
+	localPkg "github.com/ksctl/ksctl/v2/pkg/provider/local"
 )
 
 type LocalMeta struct {
@@ -51,4 +53,9 @@ func (l *LocalMeta) GetAvailableManagedK8sVersions(_ string) ([]string, error) {
 	l.l.Debug(l.ctx, "Managed K8s versions", "kindVersions", vers)
 
 	return vers, nil
+}
+
+func (m *LocalMeta) GetAvailableManagedCNIPlugins(_ string) (addons.ClusterAddons, string, error) {
+	v, d := localPkg.GetManagedCNIAddons()
+	return v, d, nil
 }

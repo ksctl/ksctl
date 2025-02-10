@@ -17,6 +17,7 @@ package validation
 import (
 	"context"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -166,69 +167,157 @@ func IsValidKsctlClusterAddons(ctx context.Context, log logger.Logger, ca addons
 		return nil
 	}
 
-	nonKsctlCniIsNone := false
-	KsctlCniIsPresent := false
-
 	addonLabels := ca.GetAddonLabels()
+
+	if len(addonLabels) > 2 {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidKsctlClusterAddons,
+			log.NewError(ctx, "more than 2 labels are present in the cluster addons"),
+		)
+	}
+
+	if len(addonLabels) == 2 && !slices.Contains(addonLabels, string(consts.K8sKsctl)) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidKsctlClusterAddons,
+			log.NewError(ctx, "ksctl label is not present in the cluster addons"),
+		)
+	}
+
+	cniCounter := 0
+	foundNonKsctlAddonHavingNoneCni := false
+	foundKsctlAddonHavingCni := false
+
 	for _, label := range addonLabels {
-		switch label {
-		case string(consts.K8sK3s), string(consts.K8sKubeadm), string(consts.K8sKind), string(consts.K8sAks), string(consts.K8sEks), string(consts.K8sKsctl):
-			_addons := ca.GetAddons(label)
+		_addons := ca.GetAddons(label)
 
-			_addonNames := make(map[string]int, len(_addons))
-			counterCni := 0
-
-			for _, addon := range _addons {
-				if len(addon.Name) == 0 || !utf8.ValidString(addon.Name) {
-					return ksctlErrors.WrapError(
-						ksctlErrors.ErrInvalidKsctlClusterAddons,
-						log.NewError(ctx, "invalid addon name", "addon", addon.Name, "label", label),
-					)
-				}
-
-				if addon.IsCNI {
-					if addon.Name == string(consts.CNINone) {
-						if label != string(consts.K8sKsctl) {
-							nonKsctlCniIsNone = true
-						}
-					} else {
-						KsctlCniIsPresent = true
-					}
-					counterCni++
-				} else {
-					_addonNames[addon.Name]++
-				}
-			}
-
-			for k, v := range _addonNames {
-				if v > 1 {
-					return ksctlErrors.WrapError(
-						ksctlErrors.ErrInvalidKsctlClusterAddons,
-						log.NewError(ctx, "duplicate addon name", "addon", k, "label", label),
-					)
-				}
-			}
-
-			if counterCni > 1 {
+		_addonNames := make(map[string]int, len(_addons))
+		for _, addon := range _addons {
+			if addon.Name == "" || !utf8.ValidString(addon.Name) {
 				return ksctlErrors.WrapError(
 					ksctlErrors.ErrInvalidKsctlClusterAddons,
-					log.NewError(ctx, "more than one cni plugin", "label", label),
+					log.NewError(ctx, "invalid addon name", "addon", addon.Name, "label", label),
 				)
 			}
 
-		default:
-			return ksctlErrors.WrapError(
-				ksctlErrors.ErrInvalidKsctlClusterAddons,
-				log.NewError(ctx, "invalid cluster addon", "addon", label),
-			)
+			if !addon.IsCNI {
+				_addonNames[addon.Name]++
+			} else {
+				cniCounter++
+				if addon.Name == string(consts.CNINone) {
+					if label == string(consts.K8sKsctl) {
+						return ksctlErrors.WrapError(
+							ksctlErrors.ErrInvalidKsctlClusterAddons,
+							log.NewError(ctx, "ksctl cni is `none` which is not possible"),
+						)
+					} else {
+						foundNonKsctlAddonHavingNoneCni = true
+						// mark that non ksctl cni is none
+					}
+				} else {
+					if label == string(consts.K8sKsctl) {
+						foundKsctlAddonHavingCni = true
+					}
+				}
+			}
+		}
+
+		for k, v := range _addonNames {
+			if v > 1 {
+				return ksctlErrors.WrapError(
+					ksctlErrors.ErrInvalidKsctlClusterAddons,
+					log.NewError(ctx, "duplicate addon name", "addon", k, "label", label),
+				)
+			}
 		}
 	}
 
-	if !nonKsctlCniIsNone && KsctlCniIsPresent {
+	if cniCounter > 1 {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidKsctlClusterAddons,
-			log.NewError(ctx, "CONFLICT: provider specific cni is not `none` at the same time ksctl cni is there"),
+			log.NewError(ctx, "more than one cni plugin"),
 		)
 	}
+
+	if foundNonKsctlAddonHavingNoneCni {
+		if foundKsctlAddonHavingCni {
+			// valid
+		} else {
+			// valid
+		}
+	} else {
+		if foundKsctlAddonHavingCni {
+			// invalid
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidKsctlClusterAddons,
+				log.NewError(ctx, "ksctl cni is present but non ksctl cni is not `none`"),
+			)
+		} else {
+			// valid
+		}
+	}
+
+	// at max 2 labels can be present in the cluster addons
+	// one for provider specific addons and one for ksctl specific addons
+
+	// for _, label := range addonLabels {
+	// 	switch label {
+	// 	case string(consts.K8sK3s), string(consts.K8sKubeadm), string(consts.K8sKind), string(consts.K8sAks), string(consts.K8sEks), string(consts.K8sKsctl):
+	// 		_addons := ca.GetAddons(label)
+	//
+	// 		_addonNames := make(map[string]int, len(_addons))
+	// 		counterCni := 0
+	//
+	// 		for _, addon := range _addons {
+	// 			if len(addon.Name) == 0 || !utf8.ValidString(addon.Name) {
+	// 				return ksctlErrors.WrapError(
+	// 					ksctlErrors.ErrInvalidKsctlClusterAddons,
+	// 					log.NewError(ctx, "invalid addon name", "addon", addon.Name, "label", label),
+	// 				)
+	// 			}
+	//
+	// 			if addon.IsCNI {
+	// 				if addon.Name == string(consts.CNINone) {
+	// 					if label != string(consts.K8sKsctl) {
+	// 						nonKsctlCniIsNone = true
+	// 					}
+	// 				} else {
+	// 					KsctlCniIsPresent = true
+	// 				}
+	// 				counterCni++
+	// 			} else {
+	// 				_addonNames[addon.Name]++
+	// 			}
+	// 		}
+	//
+	// 		for k, v := range _addonNames {
+	// 			if v > 1 {
+	// 				return ksctlErrors.WrapError(
+	// 					ksctlErrors.ErrInvalidKsctlClusterAddons,
+	// 					log.NewError(ctx, "duplicate addon name", "addon", k, "label", label),
+	// 				)
+	// 			}
+	// 		}
+	//
+	// 		if counterCni > 1 {
+	// 			return ksctlErrors.WrapError(
+	// 				ksctlErrors.ErrInvalidKsctlClusterAddons,
+	// 				log.NewError(ctx, "more than one cni plugin", "label", label),
+	// 			)
+	// 		}
+	//
+	// 	default:
+	// 		return ksctlErrors.WrapError(
+	// 			ksctlErrors.ErrInvalidKsctlClusterAddons,
+	// 			log.NewError(ctx, "invalid cluster addon", "addon", label),
+	// 		)
+	// 	}
+	// }
+	//
+	// if !nonKsctlCniIsNone && KsctlCniIsPresent {
+	// 	return ksctlErrors.WrapError(
+	// 		ksctlErrors.ErrInvalidKsctlClusterAddons,
+	// 		log.NewError(ctx, "CONFLICT: provider specific cni is not `none` at the same time ksctl cni is there"),
+	// 	)
+	// }
 	return nil
 }

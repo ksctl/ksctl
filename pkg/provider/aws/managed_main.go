@@ -54,10 +54,27 @@ const (
 }`
 )
 
+func GetManagedCNIAddons() (addons.ClusterAddons, string) {
+	return addons.ClusterAddons{
+		{
+			Name:   string(consts.CNINone),
+			Label:  string(consts.K8sEks),
+			IsCNI:  true,
+			Config: nil,
+		},
+		{
+			Name:   "vpc-cni",
+			Label:  string(consts.K8sEks),
+			IsCNI:  true,
+			Config: nil,
+		},
+	}, "vpc-cni"
+}
+
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 
 	p.l.Debug(p.ctx, "Printing", "cni", s)
-	clusterAddons := s.GetAddons("eks")
+	clusterAddons := s.GetAddons(string(consts.K8sEks))
 
 	p.managedAddonCNI = "aws" // Default: value
 	p.managedAddonApp = nil
@@ -69,7 +86,7 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 			case string(consts.CNINone):
 				p.managedAddonCNI = "none"
 				externalCNI = true
-			case "aws", "vpc-cni": // NOTE: these are yet to be used in the managed cluster provisoning. Refer: https://docs.aws.amazon.com/eks/latest/best-practices/vpc-cni.html
+			case "vpc-cni": // NOTE: these are yet to be used in the managed cluster provisoning. Refer: https://docs.aws.amazon.com/eks/latest/best-practices/vpc-cni.html
 				p.managedAddonCNI = addon.Name
 				externalCNI = false
 			}

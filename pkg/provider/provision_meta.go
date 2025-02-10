@@ -14,7 +14,10 @@
 
 package provider
 
-import "github.com/ksctl/ksctl/v2/pkg/consts"
+import (
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+)
 
 type RegionOutput struct {
 	Sku  string
@@ -161,4 +164,6 @@ type ProvisionMetadata interface {
 	GetAvailableManagedK8sManagementOfferings(regionSku string, vmType *string) ([]ManagedClusterOutput, error)
 
 	GetAvailableManagedK8sVersions(regionSku string) ([]string, error)
+
+	GetAvailableManagedCNIPlugins(regionSku string) (addons.ClusterAddons, string, error)
 }

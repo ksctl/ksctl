@@ -25,10 +25,27 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
+func GetManagedCNIAddons() (addons.ClusterAddons, string) {
+	return addons.ClusterAddons{
+		{
+			Name:   string(consts.CNINone),
+			Label:  string(consts.K8sAks),
+			IsCNI:  true,
+			Config: nil,
+		},
+		{
+			Name:   "azure",
+			Label:  string(consts.K8sAks),
+			IsCNI:  true,
+			Config: nil,
+		},
+	}, "azure"
+}
+
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 
 	p.l.Debug(p.ctx, "Printing", "cni", s)
-	clusterAddons := s.GetAddons("aks")
+	clusterAddons := s.GetAddons(string(consts.K8sAks))
 
 	p.managedAddonCNI = "azure" // Default: value
 	externalCNI = false
@@ -39,7 +56,7 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 			case string(consts.CNINone):
 				p.managedAddonCNI = "none"
 				externalCNI = true
-			case "azure", "kubenet":
+			case "azure":
 				p.managedAddonCNI = addon.Name
 				externalCNI = false
 			}

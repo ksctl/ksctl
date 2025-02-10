@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions/kubeadm"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/poller"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
@@ -53,4 +55,10 @@ func (m *KubeadmMeta) GetBootstrapedDistributionVersions() ([]string, error) {
 	}
 
 	return utilities.DeduplicateStringsAlreadySorted(validVersion), nil
+}
+
+func (m *KubeadmMeta) GetAvailableCNIPlugins() (addons.ClusterAddons, string, error) {
+	v, d := kubeadm.GetCNIs()
+
+	return v, d, nil
 }
