@@ -93,6 +93,8 @@ func (p *Provider) DelManagedCluster() error {
 		}()
 	}
 
+	p.l.Print(p.ctx, "Deleting the managed cluster")
+
 	if err := p.client.Delete(p.ClusterName, _path); err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedKsctlClusterOperation,
@@ -122,6 +124,8 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 			For:  consts.K8sKind,
 		}
 	}
+
+	p.l.Print(p.ctx, "Creating a new managed cluster")
 
 	withConfig, err := p.configOption(noOfNodes, cni)
 	if err != nil {
@@ -183,6 +187,8 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 		return err
 	}
 	_ = os.RemoveAll(p.tempDirKubeconfig) // remove the temp directory
+
+	p.l.Success(p.ctx, "Created a new managed cluster", "name", p.ClusterName)
 
 	return nil
 }
