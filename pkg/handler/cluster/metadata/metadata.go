@@ -26,6 +26,8 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
+
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
 func (kc *Controller) ListAllRegions() (
@@ -321,6 +323,13 @@ func (kc *Controller) ListManagedCNIs() (
 		}
 	}()
 
+	if kc.client.Metadata.ClusterType != consts.ClusterTypeMang {
+		return nil, "", nil, "", ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidUserInput,
+			"Only supported for managed clusters",
+		)
+	}
+
 	c, d, err := kc.cc.GetAvailableManagedCNIPlugins(kc.client.Metadata.Region)
 	if err != nil {
 		return nil, "", nil, "", err
@@ -345,7 +354,14 @@ func (kc *Controller) ListBootstrapCNIs() (
 		}
 	}()
 
-	c, d, err := kc.cc.GetAvailableManagedCNIPlugins(kc.client.Metadata.Region)
+	if kc.client.Metadata.ClusterType != consts.ClusterTypeSelfMang {
+		return nil, "", nil, "", ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidUserInput,
+			"Only supported for self-managed clusters",
+		)
+	}
+
+	c, d, err := kc.bb.D.GetAvailableCNIPlugins()
 	if err != nil {
 		return nil, "", nil, "", err
 	}
