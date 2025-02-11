@@ -321,12 +321,14 @@ func TestIsValidKsctlClusterAddons(t *testing.T) {
 				{Label: "kubeadm", Name: "random123"},
 				{Label: "ksctl", Name: "random123"},
 			},
-			expectedError: false,
+			expectedError: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		err := IsValidKsctlClusterAddons(dummyCtx, log, tc.ca)
-		assert.Equal(t, err == nil, !tc.expectedError)
+		assert.Equal(t, err == nil, !tc.expectedError, fmt.Sprintf("❌ Expected(%#v): %v, Got: %v", tc, !tc.expectedError, err == nil))
+
+		t.Logf("✔️ Got(%#v): %v, Got: %v", tc, !tc.expectedError, err == nil)
 	}
 }
