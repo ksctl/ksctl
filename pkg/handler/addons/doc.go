@@ -12,37 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// It represents Ksctl addons specifically for any kubernetes cluster
 package addons
-
-import "slices"
-
-func listSupportedAddons() []string {
-	return []string{}
-}
-
-func supportedAddon(addon string) bool {
-	return slices.Contains(listSupportedAddons(), addon)
-}
-
-type AddonHandler interface {
-	InstallAddon() error
-	UninstallAddon() error
-}
-
-type Addon struct{}
-
-func NewAddon() *Addon {
-	return &Addon{}
-}
-
-func (a *Addon) EnableAddon(addon string) error {
-	return nil
-}
-
-func (a *Addon) DisableAddon(addon string) error {
-	return nil
-}
-
-func (a *Addon) ListAddons() ([]string, error) {
-	return listSupportedAddons(), nil
-}

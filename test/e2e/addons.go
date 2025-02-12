@@ -15,25 +15,42 @@
 package main
 
 import (
-	addonClusterMgt "github.com/ksctl/ksctl/v2/pkg/handler/addons/clustermanager"
 	"os"
+
+	addonClusterMgt "github.com/ksctl/ksctl/v2/pkg/handler/addons"
 )
 
-func enableClusterMgtAddon(ksctlClient *addonClusterMgt.Controller) {
+func enableClusterMgtAddon(ksctlClient *addonClusterMgt.AddonController) {
 	l.Print(ctx, "Exec ksctl addons disable clustermgt...")
 
-	err := ksctlClient.Enable()
+	vers, err := ksctlClient.ListAvailableVersions("kcm")
 	if err != nil {
+		l.Error("Failure", "err", err)
+		os.Exit(1)
+	}
+
+	cc, err := ksctlClient.GetAddon("kcm")
+	if err != nil {
+		l.Error("Failure", "err", err)
+		os.Exit(1)
+	}
+
+	if err := cc.Install(vers[0]); err != nil {
 		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
 }
 
-func disableClusterMgtAddon(ksctlClient *addonClusterMgt.Controller) {
+func disableClusterMgtAddon(ksctlClient *addonClusterMgt.AddonController) {
 	l.Print(ctx, "Exec ksctl addons disable clustermgt...")
 
-	err := ksctlClient.Disable()
+	cc, err := ksctlClient.GetAddon("kcm")
 	if err != nil {
+		l.Error("Failure", "err", err)
+		os.Exit(1)
+	}
+
+	if err := cc.Uninstall(); err != nil {
 		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
