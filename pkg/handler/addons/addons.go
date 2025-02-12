@@ -16,12 +16,17 @@ package addons
 
 import (
 	"context"
+	"errors"
+	"slices"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
-	"github.com/ksctl/ksctl/v2/pkg/errors"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/handler/addons/kcm"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
+	"github.com/ksctl/ksctl/v2/pkg/provider/azure"
+	"github.com/ksctl/ksctl/v2/pkg/provider/local"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
@@ -66,13 +71,89 @@ func (ac *AddonController) ListAllAddons() ([]string, error) {
 	return []string{kcm.Sku}, nil
 }
 
+type InstalledAddon struct {
+	Name    string
+	Version string
+}
+
+func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error) {
+	if kc.p.Metadata.Provider == consts.CloudLocal {
+		kc.p.Metadata.Region = "LOCAL"
+	}
+
+	if err := kc.p.Storage.Setup(
+		kc.p.Metadata.Provider,
+		kc.p.Metadata.Region,
+		kc.p.Metadata.ClusterName,
+		kc.p.Metadata.ClusterType); err != nil {
+
+		kc.l.Error("handled error", "catch", err)
+		return nil, err
+	}
+
+	defer func() {
+		if err := kc.p.Storage.Kill(); err != nil {
+			if errC != nil {
+				errC = errors.Join(errC, err)
+			} else {
+				errC = err
+			}
+		}
+	}()
+
+	var err error
+	switch kc.p.Metadata.Provider {
+	case consts.CloudAzure:
+		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
+
+	case consts.CloudAws:
+		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
+		if err != nil {
+			break
+		}
+
+	case consts.CloudLocal:
+		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
+
+	}
+
+	if err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return nil, err
+	}
+
+	if errInit := kc.p.Cloud.InitState(consts.OperationGet); errInit != nil {
+		kc.l.Error("handled error", "catch", errInit)
+		return nil, errInit
+	}
+
+	addons := make([]InstalledAddon, 0)
+	availableAddons, _ := kc.ListAllAddons()
+
+	for _, app := range kc.s.ProvisionerAddons.Apps {
+		if slices.Contains(availableAddons, app.Name) {
+			a := InstalledAddon{
+				Name: app.Name,
+			}
+
+			if app.Version != nil {
+				a.Version = *app.Version
+			}
+
+			addons = append(addons, a)
+		}
+	}
+
+	return addons, nil
+}
+
 func (ac *AddonController) ListAvailableVersions(addonSku string) ([]string, error) {
 	switch addonSku {
 	case kcm.Sku:
 		return kcm.GetAvailableVersions()
 	default:
-		return nil, errors.WrapErrorf(
-			errors.ErrInvalidKsctlClusterAddons,
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidKsctlClusterAddons,
 			"addon %s is not supported", addonSku)
 	}
 }
@@ -87,8 +168,8 @@ func (ac *AddonController) GetAddon(sku string) (KsctlAddon, error) {
 	case kcm.Sku:
 		return kcm.NewKcm(ac.ctx, ac.l, ac.p, ac.b, ac.s)
 	default:
-		return nil, errors.WrapErrorf(
-			errors.ErrInvalidKsctlClusterAddons,
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidKsctlClusterAddons,
 			"addon %s is not supported", sku)
 	}
 }
