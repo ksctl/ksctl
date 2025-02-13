@@ -26,11 +26,28 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
+func GetManagedCNIAddons() (addons.ClusterAddons, string) {
+	return addons.ClusterAddons{
+		{
+			Name:   string(consts.CNINone),
+			Label:  string(consts.K8sKind),
+			IsCNI:  true,
+			Config: nil,
+		},
+		{
+			Name:   "kindnet",
+			Label:  string(consts.K8sKind),
+			IsCNI:  true,
+			Config: nil,
+		},
+	}, "kindnet"
+}
+
 func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 	p.l.Debug(p.ctx, "Printing", "cni", s)
-	clusterAddons := s.GetAddons("kind")
+	clusterAddons := s.GetAddons(string(consts.K8sKind))
 
-	p.managedAddonCNI = "kind" // Default: value
+	p.managedAddonCNI = "kindnet" // Default: value
 	externalCNI = false
 
 	for _, addon := range clusterAddons {
@@ -39,7 +56,7 @@ func (p *Provider) ManagedAddons(s addons.ClusterAddons) (externalCNI bool) {
 			case string(consts.CNINone):
 				p.managedAddonCNI = "none"
 				externalCNI = true
-			case "kind":
+			case "kindnet":
 				p.managedAddonCNI = addon.Name
 				externalCNI = false
 			}
@@ -76,6 +93,8 @@ func (p *Provider) DelManagedCluster() error {
 		}()
 	}
 
+	p.l.Print(p.ctx, "Deleting the managed cluster")
+
 	if err := p.client.Delete(p.ClusterName, _path); err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedKsctlClusterOperation,
@@ -105,6 +124,8 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 			For:  consts.K8sKind,
 		}
 	}
+
+	p.l.Print(p.ctx, "Creating a new managed cluster")
 
 	withConfig, err := p.configOption(noOfNodes, cni)
 	if err != nil {
@@ -166,6 +187,8 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 		return err
 	}
 	_ = os.RemoveAll(p.tempDirKubeconfig) // remove the temp directory
+
+	p.l.Success(p.ctx, "Created a new managed cluster", "name", p.ClusterName)
 
 	return nil
 }

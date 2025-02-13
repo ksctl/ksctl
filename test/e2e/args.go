@@ -18,14 +18,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
-	"os"
 )
 
 func GetReqPayload(l logger.Logger) (Operation, controller.Metadata) {
 	arg1 := flag.String("op", "", "operation to perform")
 	arg2 := flag.String("file", "", "file name as payload")
+	arg3 := flag.String("path-kubeconfig", "", "path to kubeconfig file")
 
 	// Parse the command-line flags
 	flag.Parse()
@@ -34,6 +36,15 @@ func GetReqPayload(l logger.Logger) (Operation, controller.Metadata) {
 	if *arg1 == "" || *arg2 == "" {
 		fmt.Println("Usage: go run log.go -op <value> -file <value>")
 		os.Exit(1)
+	}
+
+	if *arg1 == string(OpSwitch) && *arg3 == "" {
+		fmt.Println("Usage: go run log.go -op switch -file <value> -path-kubeconfig <value>")
+		os.Exit(1)
+	}
+
+	if *arg1 == string(OpSwitch) && *arg3 != "" {
+		KsctlKubeconfigPath = *arg3
 	}
 
 	raw, err := os.ReadFile(*arg2)

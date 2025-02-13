@@ -19,8 +19,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
+	awsPkg "github.com/ksctl/ksctl/v2/pkg/provider/aws"
 )
 
 func WithDefaultEC2() Option {
@@ -156,4 +158,9 @@ func (m *AwsMeta) listManagedOfferingsK8sVersions(regionSku string) ([]string, e
 	}
 
 	return s, nil
+}
+
+func (m *AwsMeta) listManagedOfferingsCNIPlugins(region string) (addons.ClusterAddons, string, error) {
+	v, d := awsPkg.GetManagedCNIAddons()
+	return v, d, nil
 }

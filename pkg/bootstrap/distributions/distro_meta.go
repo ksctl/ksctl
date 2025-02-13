@@ -14,6 +14,10 @@
 
 package distributions
 
+import "github.com/ksctl/ksctl/v2/pkg/addons"
+
 type DistributionMetadata interface {
 	GetBootstrapedDistributionVersions() ([]string, error)
+
+	GetAvailableCNIPlugins() (addons.ClusterAddons, string, error)
 }

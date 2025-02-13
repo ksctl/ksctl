@@ -23,7 +23,6 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/apps/stack"
 	"github.com/ksctl/ksctl/v2/pkg/k8s"
-	"github.com/ksctl/ksctl/v2/pkg/poller"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 
@@ -339,10 +338,11 @@ func (kc *Controller) InvokeDestroyProcedure() error {
 	return nil
 }
 
-func (kc *Controller) EnableKsctlAddons(
+func (kc *Controller) InstallKcm(
 	kubeconfig *string,
 	namespace string,
 	clusterConfigMapName string,
+	app statefile.SlimProvisionerAddon,
 ) error {
 	k, err := NewClusterClient(
 		kc.ctx,
@@ -408,23 +408,14 @@ func (kc *Controller) EnableKsctlAddons(
 		return err
 	}
 
-	ver, err := poller.GetSharedPoller().Get("ksctl", "kcm")
-	if err != nil {
-		return err
-	}
-
 	if err := k.k8sClient.KubectlApply(&k8s.App{
-		Version: ver[0],
-		Urls:    []string{fmt.Sprintf("https://github.com/ksctl/kcm/releases/download/%s/install.yaml", ver[0])},
+		Version: *app.Version,
+		Urls:    []string{fmt.Sprintf("https://github.com/ksctl/kcm/releases/download/%s/install.yaml", *app.Version)},
 	}); err != nil {
 		return err
 	}
 
-	kc.s.ProvisionerAddons.Apps = append(kc.s.ProvisionerAddons.Apps, statefile.SlimProvisionerAddon{
-		Name:    "kcm",
-		For:     consts.K8sKsctl,
-		Version: utilities.Ptr(ver[0]),
-	})
+	kc.s.ProvisionerAddons.Apps = append(kc.s.ProvisionerAddons.Apps, app)
 	if err := kc.p.Storage.Write(kc.s); err != nil {
 		kc.l.Error("failed to write statefile", "error", err)
 		return err
@@ -433,12 +424,12 @@ func (kc *Controller) EnableKsctlAddons(
 	return nil
 }
 
-func (kc *Controller) DisableKsctlAddons(
+func (kc *Controller) UninstallKcm(
 	kubeconfig *string,
 	namespace string,
 	clusterConfigMapName string,
+	app statefile.SlimProvisionerAddon,
 ) error {
-
 	k, err := NewClusterClient(
 		kc.ctx,
 		kc.l,
@@ -476,7 +467,7 @@ func (kc *Controller) DisableKsctlAddons(
 	idx := -1
 
 	for i, addon := range kc.s.ProvisionerAddons.Apps {
-		if addon.Name == "kcm" && addon.For == consts.K8sKsctl {
+		if addon.Name == app.Name && addon.For == app.For {
 			idx = i
 			if err := k.k8sClient.KubectlDelete(&k8s.App{
 				Version: *addon.Version,
@@ -496,20 +487,3 @@ func (kc *Controller) DisableKsctlAddons(
 
 	return nil
 }
-
-// func handleCreds(ctx context.Context, log logger.Logger, store consts.KsctlStore) (map[string][]byte, error) {
-// 	switch store {
-// 	case consts.StoreLocal, consts.StoreK8s:
-// 		return nil, ksctlErrors.WrapError(
-// 			ksctlErrors.ErrInvalidStorageProvider,
-// 			log.NewError(ctx, "these are not external storageProvider"),
-// 		)
-// 	case consts.StoreExtMongo:
-// 		return mongodb.ExportEndpoint()
-// 	default:
-// 		return nil, ksctlErrors.WrapError(
-// 			ksctlErrors.ErrInvalidStorageProvider,
-// 			log.NewError(ctx, "invalid storage", "storage", store),
-// 		)
-// 	}
-// }

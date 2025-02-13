@@ -20,9 +20,12 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
+	"github.com/ksctl/ksctl/v2/pkg/addons"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
+
+	azurePkg "github.com/ksctl/ksctl/v2/pkg/provider/azure"
 )
 
 func (m *AzureMeta) listOfDisksStandardLRS_ESeries(region string) (out []provider.StorageBlockRegionOutput, _ error) {
@@ -152,4 +155,9 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 	}
 
 	return out, nil
+}
+
+func (m *AzureMeta) listManagedOfferingsCNIPlugins(region string) (addons.ClusterAddons, string, error) {
+	v, d := azurePkg.GetManagedCNIAddons()
+	return v, d, nil
 }

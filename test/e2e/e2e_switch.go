@@ -20,13 +20,27 @@ import (
 	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
 )
 
+var (
+	KsctlKubeconfigPath = ""
+)
+
 func switchCluster(ksctlClient *controllerCommon.Controller) {
 
 	l.Print(ctx, "Exec ksctl switch...")
 
-	_, err := ksctlClient.Switch()
+	if KsctlKubeconfigPath == "" {
+		l.Error("KsctlKubeconfigPath is not set")
+		os.Exit(1)
+	}
+
+	kubeconfig, err := ksctlClient.Switch()
 	if err != nil {
 		l.Error("Failure", "err", err)
+		os.Exit(1)
+	}
+
+	if err := os.WriteFile(KsctlKubeconfigPath, []byte(*kubeconfig), 0644); err != nil {
+		l.Error("Failure in writing the kubeconfig", "destPath", KsctlKubeconfigPath, "err", err)
 		os.Exit(1)
 	}
 }

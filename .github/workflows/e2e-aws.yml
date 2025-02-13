@@ -53,7 +53,7 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           echo -e "\033[1;34m@@@\033[0m \033[1;35mManaged Cluster\033[0m \033[1;34m@@@\033[0m"
-          ksctl-e2e-amd64 -op switch -file aws/switch.json
+          ksctl-e2e-amd64 -op switch -file aws/switch.json -path-kubeconfig ${{ env.KUBECONFIG }}
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/aws/managed/test-e2e-aws\ eu-central-1/state.json
           sleep 5s
@@ -83,14 +83,14 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (K3s)\033[0m \033[1;34m@@@\033[0m"
-          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json -path-kubeconfig ${{ env.KUBECONFIG }}
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-selfmanaged-aws\ ap-south-1/state.json
           sleep 5s
           kubectl get nodes -owide
 
           echo -e "\033[1;34m@@@\033[0m \033[1;35mselfmanaged Cluster (kubeadm)\033[0m \033[1;34m@@@\033[0m"
-          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json -path-kubeconfig ${{ env.KUBECONFIG }}
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/aws/selfmanaged/test-e2e-kubeadm-selfmanaged-aws\ us-east-1/state.json
           sleep 5s
@@ -100,7 +100,7 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json -path-kubeconfig ${{ env.KUBECONFIG }}
 
           sleep 30s
           ksctl-e2e-amd64 -op scaledown -file aws/scaledown-selfmanaged-kubeadm.json
@@ -112,7 +112,7 @@ jobs:
         if: steps.changes.outputs.paths == 'true'
         run: |
           set -xe
-          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged-kubeadm.json -path-kubeconfig ${{ env.KUBECONFIG }}
 
           sleep 1m
           ksctl-e2e-amd64 -op scaleup -file aws/scaleup-selfmanaged-kubeadm.json
@@ -125,7 +125,7 @@ jobs:
         run: |
 
           set -xe
-          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json -path-kubeconfig ${{ env.KUBECONFIG }}
 
           sleep 30s
           ksctl-e2e-amd64 -op scaledown -file aws/scaledown-selfmanaged.json
@@ -138,7 +138,7 @@ jobs:
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json
+          ksctl-e2e-amd64 -op switch -file aws/switch-selfmanaged.json -path-kubeconfig ${{ env.KUBECONFIG }}
 
           sleep 30s
           ksctl-e2e-amd64 -op scaleup -file aws/scaleup-selfmanaged.json

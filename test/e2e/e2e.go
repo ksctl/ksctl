@@ -30,7 +30,7 @@ import (
 	controllerManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/managed"
 	controllerSelfManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/selfmanaged"
 
-	addonClusterMgt "github.com/ksctl/ksctl/v2/pkg/handler/addons/clustermanager"
+	addonClusterMgt "github.com/ksctl/ksctl/v2/pkg/handler/addons"
 )
 
 var (

@@ -20,10 +20,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/handler/cni"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"golang.org/x/mod/semver"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
+
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 )
 
 func (kc *Controller) ListAllRegions() (
@@ -303,4 +307,65 @@ func (kc *Controller) ListAllBootstrapVersions() (_ []string, errC error) {
 	}()
 
 	return kc.bb.D.GetBootstrapedDistributionVersions()
+}
+
+func (kc *Controller) ListManagedCNIs() (
+	_ addons.ClusterAddons, defaultOptionManaged string,
+	_ addons.ClusterAddons, defaultOptionKsctl string,
+	errC error) {
+
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	if kc.client.Metadata.ClusterType != consts.ClusterTypeMang {
+		return nil, "", nil, "", ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidUserInput,
+			"Only supported for managed clusters",
+		)
+	}
+
+	c, d, err := kc.cc.GetAvailableManagedCNIPlugins(kc.client.Metadata.Region)
+	if err != nil {
+		return nil, "", nil, "", err
+	}
+
+	a, b := cni.GetCNIs()
+
+	return c, d, a, b, nil
+}
+
+func (kc *Controller) ListBootstrapCNIs() (
+	_ addons.ClusterAddons, defaultOptionManaged string,
+	_ addons.ClusterAddons, defaultOptionKsctl string,
+	errC error) {
+
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	if kc.client.Metadata.ClusterType != consts.ClusterTypeSelfMang {
+		return nil, "", nil, "", ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidUserInput,
+			"Only supported for self-managed clusters",
+		)
+	}
+
+	c, d, err := kc.bb.D.GetAvailableCNIPlugins()
+	if err != nil {
+		return nil, "", nil, "", err
+	}
+	a, b := cni.GetCNIs()
+
+	return c, d, a, b, nil
 }

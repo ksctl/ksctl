@@ -15,6 +15,8 @@
 package meta
 
 import (
+	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions/k3s"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/poller"
 )
@@ -42,4 +44,10 @@ func (m *K3sMeta) GetBootstrapedDistributionVersions() ([]string, error) {
 	}
 
 	return validVersion, nil
+}
+
+func (m *K3sMeta) GetAvailableCNIPlugins() (addons.ClusterAddons, string, error) {
+	v, d := k3s.GetCNIs()
+
+	return v, d, nil
 }

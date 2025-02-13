@@ -68,7 +68,7 @@ jobs:
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op switch -file local/switch_mongodb.json
+          ksctl-e2e-amd64 -op switch -file local/switch_mongodb.json -path-kubeconfig ${{ env.KUBECONFIG }}
           kubectl get nodes -owide
 
       - name: delete (managed)
@@ -128,7 +128,7 @@ jobs:
         run: |
           set -xe
 
-          ksctl-e2e-amd64 -op switch -file local/switch.json
+          ksctl-e2e-amd64 -op switch -file local/switch.json -path-kubeconfig ${{ env.KUBECONFIG }}
           tree ~/.ksctl/state
           jq -r . ~/.ksctl/state/local/managed/test-e2e-local\ LOCAL/state.json
           kubectl get nodes -owide

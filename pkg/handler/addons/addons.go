@@ -1,4 +1,4 @@
-// Copyright 2024 Ksctl Authors
+// Copyright 2025 Ksctl Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,22 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clustermanager
+package addons
 
 import (
 	"context"
 	"errors"
+	"slices"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
+	"github.com/ksctl/ksctl/v2/pkg/handler/addons/kcm"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
-	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
 	"github.com/ksctl/ksctl/v2/pkg/provider/azure"
 	"github.com/ksctl/ksctl/v2/pkg/provider/local"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
-type Controller struct {
+type AddonController struct {
 	ctx context.Context
 	l   logger.Logger
 	p   *controller.Client
@@ -36,10 +39,10 @@ type Controller struct {
 }
 
 // NewController intended to be used by the cli to enable or disable addon 'ksctl-clustermanager'
-func NewController(ctx context.Context, log logger.Logger, controllerPayload *controller.Client) (*Controller, error) {
+func NewController(ctx context.Context, log logger.Logger, controllerPayload *controller.Client) (*AddonController, error) {
 
-	cc := new(Controller)
-	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "addons-ksctl-clustermanager")
+	cc := new(AddonController)
+	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-addons")
 	cc.b = controller.NewBaseController(ctx, log)
 	cc.p = controllerPayload
 	cc.s = new(statefile.StorageDocument)
@@ -64,8 +67,17 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 	return cc, nil
 }
 
-func (kc *Controller) helper() (_ *provider.CloudResourceState, errC error) {
-	if kc.b.IsLocalProvider(kc.p) {
+func (ac *AddonController) ListAllAddons() ([]string, error) {
+	return []string{kcm.Sku}, nil
+}
+
+type InstalledAddon struct {
+	Name    string
+	Version string
+}
+
+func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error) {
+	if kc.p.Metadata.Provider == consts.CloudLocal {
 		kc.p.Metadata.Region = "LOCAL"
 	}
 
@@ -115,19 +127,49 @@ func (kc *Controller) helper() (_ *provider.CloudResourceState, errC error) {
 		return nil, errInit
 	}
 
-	if err := kc.p.Cloud.IsPresent(); err != nil {
-		kc.l.Error("handled error", "catch", err)
-		return nil, err
-	}
+	addons := make([]InstalledAddon, 0)
+	availableAddons, _ := kc.ListAllAddons()
 
-	if kc.p.Metadata.ClusterType == consts.ClusterTypeSelfMang {
-		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
-		if errState != nil {
-			kc.l.Error("handled error", "catch", errState)
-			return nil, err
+	for _, app := range kc.s.ProvisionerAddons.Apps {
+		if slices.Contains(availableAddons, app.Name) {
+			a := InstalledAddon{
+				Name: app.Name,
+			}
+
+			if app.Version != nil {
+				a.Version = *app.Version
+			}
+
+			addons = append(addons, a)
 		}
-
-		return &transferableInfraState, nil
 	}
-	return nil, nil
+
+	return addons, nil
+}
+
+func (ac *AddonController) ListAvailableVersions(addonSku string) ([]string, error) {
+	switch addonSku {
+	case kcm.Sku:
+		return kcm.GetAvailableVersions()
+	default:
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidKsctlClusterAddons,
+			"addon %s is not supported", addonSku)
+	}
+}
+
+type KsctlAddon interface {
+	Install(version string) error
+	Uninstall() error
+}
+
+func (ac *AddonController) GetAddon(sku string) (KsctlAddon, error) {
+	switch sku {
+	case kcm.Sku:
+		return kcm.NewKcm(ac.ctx, ac.l, ac.p, ac.b, ac.s)
+	default:
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInvalidKsctlClusterAddons,
+			"addon %s is not supported", sku)
+	}
 }
