@@ -17,15 +17,18 @@ package main
 import (
 	"os"
 
+	"github.com/gookit/goutil/dump"
 	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
 )
 
 func infoClusters(ksctlClient *controllerCommon.Controller) {
 	l.Print(ctx, "Exec ksctl get...")
 
-	_, err := ksctlClient.GetCluster()
+	v, err := ksctlClient.GetCluster()
 	if err != nil {
 		l.Error("Failure", "err", err)
 		os.Exit(1)
 	}
+
+	dump.NewWithOptions(dump.WithoutType()).Println(v)
 }
