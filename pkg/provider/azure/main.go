@@ -452,9 +452,14 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 
 	var data []provider.ClusterData
 
+	clusterType := ""
+	if p.ClusterType != "" {
+		clusterType = string(p.ClusterType)
+	}
+
 	clusters, err := p.store.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
 		consts.Cloud:       string(consts.CloudAzure),
-		consts.ClusterType: "",
+		consts.ClusterType: clusterType,
 	})
 	if err != nil {
 		return nil, err

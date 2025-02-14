@@ -160,17 +160,30 @@ func (m *AwsMeta) GetAvailableRegions() ([]provider.RegionOutput, error) {
 	return regions, nil
 }
 
-func (m *AwsMeta) searchRegionDescription(regionSku string) *provider.RegionOutput {
+func (m *AwsMeta) searchRegionDescription(regionSku string) (*provider.RegionOutput, error) {
+	if m.cachedRegionMapping == nil {
+		v, err := m.GetAvailableRegions()
+		if err != nil {
+			return nil, err
+		}
+		m.cachedRegionMapping = v
+	}
 	for _, v := range m.cachedRegionMapping {
 		if v.Sku == regionSku {
-			return &v
+			return &v, nil
 		}
 	}
-	return nil
+	return nil, ksctlErrors.WrapError(
+		ksctlErrors.ErrInvalidUserInput,
+		m.l.NewError(m.ctx, "Region not found", "Region", regionSku),
+	)
 }
 
 func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, _ consts.KsctlClusterType) ([]provider.InstanceRegionOutput, error) {
-	reg := m.searchRegionDescription(regionSku)
+	reg, err := m.searchRegionDescription(regionSku)
+	if err != nil {
+		return nil, err
+	}
 
 	vms, err := m.listOfVms(regionSku, WithDefaultEC2())
 	if err != nil {
@@ -200,7 +213,10 @@ func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, _ consts.KsctlClus
 }
 
 func (m *AwsMeta) GetAvailableManagedK8sManagementOfferings(regionSku string, vmType *string) ([]provider.ManagedClusterOutput, error) {
-	reg := m.searchRegionDescription(regionSku)
+	reg, err := m.searchRegionDescription(regionSku)
+	if err != nil {
+		return nil, err
+	}
 
 	return m.priceEksManagement(*reg, vmType, WithDefaultEKS())
 }
