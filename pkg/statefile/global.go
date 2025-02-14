@@ -63,7 +63,11 @@ type SlimProvisionerAddon struct {
 }
 
 func (s SlimProvisionerAddon) String() string {
-	return fmt.Sprintf("Name: %s, For: %s, Version: %v, KsctlSpecificComponents: %+v", s.Name, s.For, s.Version, s.KsctlSpecificComponents)
+	ver := "<nil>"
+	if s.Version != nil {
+		ver = *s.Version
+	}
+	return fmt.Sprintf("Name: %s, For: %s, Version: %v, KsctlSpecificComponents: %+v", s.Name, s.For, ver, s.KsctlSpecificComponents)
 }
 
 type KsctlSpecificComponent struct {
