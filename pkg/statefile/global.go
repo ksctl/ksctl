@@ -21,9 +21,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type ClusterState string
+
+const (
+	StateCreating ClusterState = "creating"
+	StateDeleting ClusterState = "deleting"
+	StateUpdating ClusterState = "updating"
+	StateStable   ClusterState = "stable"
+)
+
 // StorageDocument object which stores the state of infra and bootstrap in a doc
 type StorageDocument struct {
 	ID primitive.ObjectID `bson:"_id,omitempty"`
+
+	ClusterState ClusterState `json:"cluster_state" bson:"cluster_state"`
 
 	ClusterType string `json:"cluster_type" bson:"cluster_type" `
 	Region      string `json:"region" bson:"region"`

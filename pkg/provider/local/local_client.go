@@ -36,7 +36,7 @@ func ProvideClient() KindSDK {
 func (l *LocalClient) NewProvider(b *Provider, options ...cluster.ProviderOption) {
 	options = append(options, cluster.ProviderWithLogger(&customLogger{
 		Logger: b.l,
-		ctx:    b.ctx,
+		ctx:    b.l.C,
 	}))
 	l.b = b
 	l.provider = cluster.NewProvider(options...)

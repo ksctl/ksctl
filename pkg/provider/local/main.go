@@ -29,8 +29,7 @@ import (
 )
 
 type Provider struct {
-	l     logger.Logger
-	ctx   context.Context
+	l     logger.LogCtx
 	state *statefile.StorageDocument
 	store storage.Storage
 	controller.Metadata
@@ -49,22 +48,20 @@ type Provider struct {
 }
 
 func NewClient(
-	ctx context.Context,
-	l logger.Logger,
+	l logger.LogCtx,
 	meta controller.Metadata,
 	state *statefile.StorageDocument,
 	storage storage.Storage,
 	ClientOption func() KindSDK,
 ) (*Provider, error) {
 	p := new(Provider)
-	p.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, string(consts.CloudLocal))
+	p.l.C = context.WithValue(l.C, consts.KsctlModuleNameKey, string(consts.CloudLocal))
+	p.l.Logger = l.Logger
 	p.state = state
 	p.Metadata = meta
-	p.l = l
 	p.client = ClientOption()
 	p.store = storage
 
-	p.l.Debug(p.ctx, "Printing", "LocalProvider", p)
 	return p, nil
 }
 

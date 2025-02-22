@@ -40,3 +40,8 @@ type Logger interface {
 
 	Box(ctx context.Context, title string, lines string)
 }
+
+type LogCtx struct {
+	Logger
+	C context.Context
+}

@@ -15,6 +15,8 @@
 package provider
 
 import (
+	"context"
+
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
@@ -36,54 +38,49 @@ type CloudResourceState struct {
 	Provider                 consts.KsctlCloud
 }
 
+type InfrastructureProvisioner interface {
+	CreateInstance(ctx context.Context, stateIdx int, instanceName string, instanceRole consts.KsctlRole, instanceType string, public bool) error
+	DeleteInstance(ctx context.Context, stateIdx int, instanceRole consts.KsctlRole) error
+
+	CreateFirewall(ctx context.Context, firewallName string, firewallRole consts.KsctlRole) error
+	DeleteFirewall(ctx context.Context, firewallRole consts.KsctlRole) error
+
+	CreateVirtualNetwork(ctx context.Context, vNetName string) error
+	DeleteVirtualNetwork(ctx context.Context) error
+
+	UploadSSHKeyPair(ctx context.Context, keyPairName string) error
+	DeleteSSHKeyPair(ctx context.Context) error
+
+	CreateManagedKubernetesCluster(ctx context.Context, name string, workerNodes int, workerNodeInstanceType string, kubernetesVersion string) error
+	DeleteManagedKubernetesCluster(ctx context.Context) error
+}
+
+type ProvisionerQuerier interface {
+	List(ctx context.Context) ([]ClusterData, error)
+
+	GetHostNameOfWorkerNodes(ctx context.Context) []string
+
+	GetCountOfWorkerNodes(ctx context.Context) (int, error)
+	GetCountOfControlPlaneNodes(ctx context.Context) (int, error)
+	GetCountOfDataStoreNodes(ctx context.Context) (int, error)
+
+	GetClusterDataForBootstrap(ctx context.Context) (CloudResourceState, error)
+
+	GetKubeconfig(ctx context.Context) ([]byte, error)
+
+	// TODO: why can't we completely drop these methods?
+	SetCountOfWorkerNodes(ctx context.Context, count int) error
+	SetCountOfControlPlaneNodes(ctx context.Context, count int) error
+	SetCountOfDataStoreNodes(ctx context.Context, count int) error
+}
+
 type Cloud interface {
-	NewVM(int) error
+	ConfigureProvider(context.Context, consts.KsctlOperation) error
 
-	DelVM(int) error
+	InfrastructureProvisioner
+	ProvisionerQuerier
 
-	NewFirewall() error
+	Addons(context.Context, addons.ClusterAddons) (willBeInstalled bool)
 
-	DelFirewall() error
-
-	NewNetwork() error
-
-	DelNetwork() error
-
-	InitState(consts.KsctlOperation) error
-
-	CreateUploadSSHKeyPair() error
-
-	DelSSHKeyPair() error
-
-	GetStateForHACluster() (CloudResourceState, error)
-
-	NewManagedCluster(int) error
-
-	DelManagedCluster() error
-
-	GetRAWClusterInfos() ([]ClusterData, error)
-
-	Name(string) Cloud
-
-	Role(consts.KsctlRole) Cloud
-
-	VMType(string) Cloud
-
-	Visibility(bool) Cloud
-
-	ManagedAddons(addons.ClusterAddons) (willBeInstalled bool)
-
-	ManagedK8sVersion(string) Cloud
-
-	NoOfWorkerPlane(int, bool) (int, error)
-
-	NoOfControlPlane(int, bool) (int, error)
-
-	NoOfDataStore(int, bool) (int, error)
-
-	GetHostNameAllWorkerNode() []string
-
-	IsPresent() error
-
-	GetKubeconfig() (*string, error)
+	CheckClusterPresence(context.Context) error
 }

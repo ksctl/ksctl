@@ -30,7 +30,7 @@ func (p *Provider) generateConfig(noWorker, noControl int, cni bool) ([]byte, er
 	if noWorker >= 0 && noControl == 0 {
 		return nil, ksctlError.WrapError(
 			ksctlError.ErrInvalidUserInput,
-			p.l.NewError(p.ctx, "invalid config request control node cannot be 0"),
+			p.l.NewError(p.l.C, "invalid config request control node cannot be 0"),
 		)
 	}
 	var config string
@@ -65,7 +65,7 @@ func (p *Provider) configOption(noOfNodes int, cni bool) (cluster.CreateOption, 
 	if noOfNodes < 1 {
 		return nil, ksctlError.WrapError(
 			ksctlError.ErrInvalidUserInput,
-			p.l.NewError(p.ctx, "invalid config request control node cannot be 0"),
+			p.l.NewError(p.l.C, "invalid config request control node cannot be 0"),
 		)
 	}
 	if noOfNodes == 1 {
@@ -102,7 +102,7 @@ func (p *Provider) createNecessaryConfigs(storeDir string) (string, error) {
 	if err != nil {
 		return "", ksctlError.WrapError(
 			ksctlError.ErrInternal,
-			p.l.NewError(p.ctx, "failed to create file to store kubeconfig", "Reason", err),
+			p.l.NewError(p.l.C, "failed to create file to store kubeconfig", "Reason", err),
 		)
 	}
 	return _path, nil
