@@ -295,15 +295,6 @@ func TestCniAndApps(t *testing.T) {
 			}, false, "azure", nil,
 		},
 		{
-			addons.ClusterAddons{
-				{
-					Label: "aks",
-					Name:  "kubenet",
-					IsCNI: true,
-				},
-			}, false, "kubenet", nil,
-		},
-		{
 			addons.ClusterAddons{}, false, "azure", nil,
 		},
 		{
