@@ -18,13 +18,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
@@ -99,16 +100,16 @@ func TestCNIandApp(t *testing.T) {
 			addons.ClusterAddons{
 				{
 					Label: "kind",
-					Name:  "kind",
+					Name:  "kindnet",
 					IsCNI: true,
 				},
-			}, false, "kind", nil,
+			}, false, "kindnet", nil,
 		},
 		{
-			addons.ClusterAddons{}, false, "kind", nil,
+			addons.ClusterAddons{}, false, "kindnet", nil,
 		},
 		{
-			nil, false, "kind", nil,
+			nil, false, "kindnet", nil,
 		},
 		{
 			addons.ClusterAddons{
@@ -117,7 +118,7 @@ func TestCNIandApp(t *testing.T) {
 					Name:   "heheheh",
 					Config: utilities.Ptr(`{"key":"value"}`),
 				},
-			}, false, "kind", nil,
+			}, false, "kindnet", nil,
 		},
 		{
 			addons.ClusterAddons{
@@ -125,7 +126,7 @@ func TestCNIandApp(t *testing.T) {
 					Label: "kind",
 					Name:  "heheheh",
 				},
-			}, false, "kind", nil,
+			}, false, "kindnet", nil,
 		},
 	}
 
@@ -226,7 +227,7 @@ func TestManagedCluster(t *testing.T) {
 				K8sDistro:  consts.K8sKind,
 				K8sVersion: *fakeClientManaged.state.Versions.Kind,
 				Apps:       nil,
-				Cni:        "Name: kind, For: kind, Version: <nil>, KsctlSpecificComponents: map[]",
+				Cni:        "Name: kindnet, For: kind, Version: <nil>, KsctlSpecificComponents: map[]",
 			},
 		}
 		got, err := fakeClientManaged.GetRAWClusterInfos()

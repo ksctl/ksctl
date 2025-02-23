@@ -17,8 +17,9 @@ package azure
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"testing"
+
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
@@ -309,7 +310,7 @@ func TestHACluster(t *testing.T) {
 
 				WP: []provider.VMData{
 					{
-						VMSize:       "fake-wp-0",
+						VMSize:       "fake",
 						Name:         "fake-wp-0",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -319,7 +320,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-1",
+						VMSize:       "fake",
 						Name:         "fake-wp-1",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -329,7 +330,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-2",
+						VMSize:       "fake",
 						Name:         "fake-wp-2",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -339,7 +340,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-3",
+						VMSize:       "fake",
 						Name:         "fake-wp-3",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -349,7 +350,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-4",
+						VMSize:       "fake",
 						Name:         "fake-wp-4",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -359,7 +360,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-5",
+						VMSize:       "fake",
 						Name:         "fake-wp-5",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -369,7 +370,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-6",
+						VMSize:       "fake",
 						Name:         "fake-wp-6",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -379,7 +380,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-7",
+						VMSize:       "fake",
 						Name:         "fake-wp-7",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -389,7 +390,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-8",
+						VMSize:       "fake",
 						Name:         "fake-wp-8",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -399,7 +400,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-wp-9",
+						VMSize:       "fake",
 						Name:         "fake-wp-9",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-wp",
@@ -411,7 +412,7 @@ func TestHACluster(t *testing.T) {
 				},
 				CP: []provider.VMData{
 					{
-						VMSize:       "fake-cp-0",
+						VMSize:       "fake",
 						Name:         "fake-cp-0",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-cp",
@@ -421,7 +422,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-cp-1",
+						VMSize:       "fake",
 						Name:         "fake-cp-1",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-cp",
@@ -431,7 +432,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-cp-2",
+						VMSize:       "fake",
 						Name:         "fake-cp-2",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-cp",
@@ -441,7 +442,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-cp-3",
+						VMSize:       "fake",
 						Name:         "fake-cp-3",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-cp",
@@ -451,7 +452,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-cp-4",
+						VMSize:       "fake",
 						Name:         "fake-cp-4",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-cp",
@@ -461,7 +462,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-cp-5",
+						VMSize:       "fake",
 						Name:         "fake-cp-5",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-cp",
@@ -471,7 +472,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-cp-6",
+						VMSize:       "fake",
 						Name:         "fake-cp-6",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-cp",
@@ -483,7 +484,7 @@ func TestHACluster(t *testing.T) {
 				},
 				DS: []provider.VMData{
 					{
-						VMSize:       "fake-ds-0",
+						VMSize:       "fake",
 						Name:         "fake-ds-0",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-ds",
@@ -493,7 +494,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-ds-1",
+						VMSize:       "fake",
 						Name:         "fake-ds-1",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-ds",
@@ -503,7 +504,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-ds-2",
+						VMSize:       "fake",
 						Name:         "fake-ds-2",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-ds",
@@ -513,7 +514,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-ds-3",
+						VMSize:       "fake",
 						Name:         "fake-ds-3",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-ds",
@@ -523,7 +524,7 @@ func TestHACluster(t *testing.T) {
 						PrivateIP:    "192.168.1.2",
 					},
 					{
-						VMSize:       "fake-ds-4",
+						VMSize:       "fake",
 						Name:         "fake-ds-4",
 						FirewallID:   "XXYY",
 						FirewallName: "fake-fw-ds",
@@ -534,7 +535,7 @@ func TestHACluster(t *testing.T) {
 					},
 				},
 				LB: provider.VMData{
-					VMSize:       "fake-lb",
+					VMSize:       "fake",
 					Name:         "fake-lb",
 					FirewallID:   "XXYY",
 					FirewallName: "fake-fw-lb",
