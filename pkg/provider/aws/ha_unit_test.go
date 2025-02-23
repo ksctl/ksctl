@@ -17,8 +17,9 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"testing"
+
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
