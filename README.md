@@ -7,7 +7,7 @@
 <h3>Visit <a href="https://docs.ksctl.com" target="_blank">ksctl docs</a> for the full documentation,
 examples and guides.</h3>
 
-[![slack](https://img.shields.io/badge/slack-k0rdent-brightgreen.svg?logo=slack)](https://cloud-native.slack.com/archives/C08A63Q4NCD) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/k0rdent/k0rdent/blob/main/LICENSE) [![X/Twitter][x-badge]][x-link]
+[![Discord](https://img.shields.io/badge/discord-ksctl-brightgreen.svg)][discord] [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)][license] [![X/Twitter][x-badge]][x-link]
 
 
 It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks.
