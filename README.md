@@ -7,7 +7,7 @@
 <h3>Visit <a href="https://docs.ksctl.com" target="_blank">ksctl docs</a> for the full documentation,
 examples and guides.</h3>
 
-[![Discord](https://img.shields.io/badge/discord-ksctl-brightgreen.svg)][discord] [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)][license] [![X/Twitter][x-badge]][x-link]
+[![Discord](https://img.shields.io/badge/discord-ksctl-brightgreen.svg)][discord-link] [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)][license] [![X/Twitter][x-badge]][x-link]
 
 
 It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks.
@@ -100,7 +100,7 @@ Apache License 2.0, see [LICENSE][license].
 <h1 id="project resources">💼 Project Resources</h1>
 
 - [k0rdent Community Details](https://github.com/k0rdent/community)
-- Join the [Ksctl Discord][discord] community.
+- Join the [Ksctl Discord][discord-link] community.
 - k0rdent GitHub:  https://github.com/k0rdent
 - k0rdent docs: https://k0rdent.github.io/docs/
 - Monthly community call on Tuesday 5:30-6:30 PM (CET) so join our [Google Group](https://groups.google.com/g/ksctl)
