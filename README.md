@@ -99,10 +99,7 @@ Apache License 2.0, see [LICENSE][license].
 
 <h1 id="project resources">💼 Project Resources</h1>
 
-- [k0rdent Community Details](https://github.com/k0rdent/community)
 - Join the [Ksctl Discord][discord-link] community.
-- k0rdent GitHub:  https://github.com/k0rdent
-- k0rdent docs: https://k0rdent.github.io/docs/
 - Monthly community call on Tuesday 5:30-6:30 PM (CET) so join our [Google Group](https://groups.google.com/g/ksctl)
 
 ## Thanks to all the contributors ❤️
