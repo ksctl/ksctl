@@ -68,8 +68,11 @@ func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
 	}, nil
 }
 
-// GetNewSession returns a new aws session given you can "" or any valid region
 func (m *AwsMeta) GetNewSession(regionSku string) (*aws.Config, error) {
+	if regionSku == "" {
+		regionSku = "us-east-1"
+	}
+
 	_session, err := awsConfig.LoadDefaultConfig(m.ctx,
 		awsConfig.WithRegion(regionSku),
 		awsConfig.WithCredentialsProvider(
