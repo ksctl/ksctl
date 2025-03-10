@@ -33,10 +33,10 @@ type PriceOutput struct {
 type MachineCategory string
 
 const (
-	GeneralPurposeMachine MachineCategory = "general-purpose"
-	ComputeOptimized      MachineCategory = "compute-optimized"
-	GpuMachine            MachineCategory = "gpu"
-	SpotMachine           MachineCategory = "spot"
+// GeneralPurposeMachine MachineCategory = "general-purpose"
+// ComputeOptimized      MachineCategory = "compute-optimized"
+// GpuMachine            MachineCategory = "gpu"
+// SpotMachine           MachineCategory = "spot"
 )
 
 type MachineArchitecture string
@@ -61,6 +61,8 @@ type InstanceRegionOutput struct {
 	CpuArch MachineArchitecture
 
 	Category MachineCategory
+	// MostlyUsedFor is used what does the category tells about
+	MostlyUsedFor []string
 
 	// EphemeralOSDiskSupport is true if the instance supports ephemeral OS disk
 	//  Currently being used for AKS to make cluster easier to update versions,...

@@ -23,6 +23,7 @@ import (
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	awsPkg "github.com/ksctl/ksctl/v2/pkg/provider/aws"
+	"strings"
 )
 
 func WithDefaultEC2() Option {
@@ -106,11 +107,31 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 			}
 		}
 
+		analyseVMType := func(vmTypeSku string) (provider.MachineCategory, []string) {
+			var categoryDesc []string
+			category := ""
+			if strings.HasPrefix(vmTypeSku, "c5") {
+				category = "Compute Optimized"
+				categoryDesc = []string{"High-performance web servers", "Batch processing", "Scientific modeling", "CPU-intensive microservices", "Ad serving", "Game servers"}
+			} else if strings.HasPrefix(vmTypeSku, "t3") {
+				category = "Burstable"
+				categoryDesc = []string{"Development/testing", "Low-traffic websites", "Microservices", "Small databases", "CronJobs", "Variable workloads"}
+			} else if strings.HasPrefix(vmTypeSku, "m5") {
+				category = "General Purpose"
+				categoryDesc = []string{"Small to medium databases", "Web servers", "Development environments", "Build servers", "Code repositories", "General container workloads"}
+			}
+
+			return provider.MachineCategory(category), categoryDesc
+		}
+		category, mostlyUsedFor := analyseVMType(string(vm.InstanceType))
+
 		out = append(
 			out,
 			provider.InstanceRegionOutput{
 				Sku:                    string(vm.InstanceType),
 				Description:            string(vm.InstanceType),
+				Category:               category,
+				MostlyUsedFor:          mostlyUsedFor,
 				VCpus:                  *vm.VCpuInfo.DefaultVCpus,
 				Memory:                 int32(*vm.MemoryInfo.SizeInMiB / 1024),
 				CpuArch:                arch,
