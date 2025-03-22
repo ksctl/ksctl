@@ -15,6 +15,8 @@
 package meta
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -23,7 +25,6 @@ import (
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	awsPkg "github.com/ksctl/ksctl/v2/pkg/provider/aws"
-	"strings"
 )
 
 func WithDefaultEC2() Option {
@@ -94,6 +95,22 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 		input.NextToken = output.NextToken
 	}
 
+	analyseVMType := func(vmTypeSku string) provider.MachineCategory {
+
+		var category provider.MachineCategory
+		if strings.HasPrefix(vmTypeSku, "c5") {
+			category = provider.ComputeIntensive
+		} else if strings.HasPrefix(vmTypeSku, "t3") {
+			category = provider.GeneralPurpose
+		} else if strings.HasPrefix(vmTypeSku, "m5") {
+			category = provider.MemoryIntensive
+		} else {
+			return provider.Unknown
+		}
+
+		return category
+	}
+
 	for _, vm := range vmTypes.InstanceTypes {
 		var arch provider.MachineArchitecture
 		for _, arc := range vm.ProcessorInfo.SupportedArchitectures {
@@ -107,23 +124,7 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 			}
 		}
 
-		analyseVMType := func(vmTypeSku string) (provider.MachineCategory, []string) {
-			var categoryDesc []string
-			category := ""
-			if strings.HasPrefix(vmTypeSku, "c5") {
-				category = "Compute Optimized"
-				categoryDesc = []string{"High-performance web servers", "Batch processing", "Scientific modeling", "CPU-intensive microservices", "Ad serving", "Game servers"}
-			} else if strings.HasPrefix(vmTypeSku, "t3") {
-				category = "Burstable"
-				categoryDesc = []string{"Development/testing", "Low-traffic websites", "Microservices", "Small databases", "CronJobs", "Variable workloads"}
-			} else if strings.HasPrefix(vmTypeSku, "m5") {
-				category = "General Purpose"
-				categoryDesc = []string{"Small to medium databases", "Web servers", "Development environments", "Build servers", "Code repositories", "General container workloads"}
-			}
-
-			return provider.MachineCategory(category), categoryDesc
-		}
-		category, mostlyUsedFor := analyseVMType(string(vm.InstanceType))
+		category := analyseVMType(string(vm.InstanceType))
 
 		out = append(
 			out,
@@ -131,7 +132,6 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 				Sku:                    string(vm.InstanceType),
 				Description:            string(vm.InstanceType),
 				Category:               category,
-				MostlyUsedFor:          mostlyUsedFor,
 				VCpus:                  *vm.VCpuInfo.DefaultVCpus,
 				Memory:                 int32(*vm.MemoryInfo.SizeInMiB / 1024),
 				CpuArch:                arch,

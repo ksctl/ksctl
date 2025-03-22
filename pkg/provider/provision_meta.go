@@ -33,11 +33,27 @@ type PriceOutput struct {
 type MachineCategory string
 
 const (
-// GeneralPurposeMachine MachineCategory = "general-purpose"
-// ComputeOptimized      MachineCategory = "compute-optimized"
-// GpuMachine            MachineCategory = "gpu"
-// SpotMachine           MachineCategory = "spot"
+	ComputeIntensive MachineCategory = "cpu-intensive"
+	Burst            MachineCategory = "dynamic"
+	GeneralPurpose   MachineCategory = "standard"
+	MemoryIntensive  MachineCategory = "memory-intensive"
+	Unknown          MachineCategory = "unknown"
 )
+
+func (M MachineCategory) UseCases() []string {
+	switch M {
+	case ComputeIntensive:
+		return []string{"Batch processing", "Web servers", "Application servers", "CPU-intensive microservices"}
+	case Burst:
+		return []string{"Development/test environments", "Low-traffic web servers", "Small databases", "CronJobs", "Microservices with variable load"}
+	case GeneralPurpose:
+		return []string{"Web servers", "Medium-sized databases", "API servers", "General container workloads"}
+	case MemoryIntensive:
+		return []string{"In-memory databases", "Caching", "Data analytics", "Large StatefulSets", "Memory-intensive applications"}
+	default:
+		return []string{"N/A"}
+	}
+}
 
 type MachineArchitecture string
 
@@ -61,8 +77,6 @@ type InstanceRegionOutput struct {
 	CpuArch MachineArchitecture
 
 	Category MachineCategory
-	// MostlyUsedFor is used what does the category tells about
-	MostlyUsedFor []string
 
 	// EphemeralOSDiskSupport is true if the instance supports ephemeral OS disk
 	//  Currently being used for AKS to make cluster easier to update versions,...

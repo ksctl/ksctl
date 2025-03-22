@@ -109,24 +109,21 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 		IncludeExtendedLocations: nil,
 	})
 
-	analyseVMType := func(vmTypeSku string) (provider.MachineCategory, []string) {
-		var categoryDesc []string
-		category := ""
+	analyseVMType := func(vmTypeSku string) provider.MachineCategory {
+		var category provider.MachineCategory
 		if strings.HasPrefix(vmTypeSku, "Standard_F") {
-			category = "Compute Optimized"
-			categoryDesc = []string{"Batch processing", "Web servers", "Application servers", "CPU-intensive microservices"}
+			category = provider.ComputeIntensive
 		} else if strings.HasPrefix(vmTypeSku, "Standard_B") {
-			category = "Burstable"
-			categoryDesc = []string{"Development/test environments", "Low-traffic web servers", "Small databases", "CronJobs", "Microservices with variable load"}
+			category = provider.Burst
 		} else if strings.HasPrefix(vmTypeSku, "Standard_D") {
-			category = "General Purpose"
-			categoryDesc = []string{"Web servers", "Medium-sized databases", "API servers", "General container workloads"}
+			category = provider.GeneralPurpose
 		} else if strings.HasPrefix(vmTypeSku, "Standard_E") {
-			category = "Memory Optimized"
-			categoryDesc = []string{"In-memory databases", "Caching", "Data analytics", "Large StatefulSets", "Memory-intensive applications"}
+			category = provider.MemoryIntensive
+		} else {
+			return provider.Unknown
 		}
 
-		return provider.MachineCategory(category), categoryDesc
+		return category
 	}
 
 	for pager.More() {
@@ -143,7 +140,7 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 					Sku:         *v.Name,
 					Description: *v.Name,
 				}
-				o.Category, o.MostlyUsedFor = analyseVMType(*v.Name)
+				o.Category = analyseVMType(*v.Name)
 				if v.Capabilities != nil {
 					for _, cap := range v.Capabilities {
 						if *cap.Name == "vCPUs" {
