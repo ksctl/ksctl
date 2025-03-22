@@ -54,6 +54,10 @@ type options struct {
 	ec2Type []string
 }
 
+const (
+	default_aws_region = "us-east-1"
+)
+
 type Option func(*options) error
 
 func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.InstanceRegionOutput, error) {
@@ -97,7 +101,7 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 		FormatVersion: aws.String("aws_v1"),
 	}
 
-	session, err := m.GetNewSession("us-east-1")
+	session, err := m.GetNewSession(default_aws_region)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +271,7 @@ func (m *AwsMeta) priceSpecificEBS(region provider.RegionOutput, volumeType stri
 		FormatVersion: aws.String("aws_v1"),
 		MaxResults:    aws.Int32(1),
 	}
-	session, err := m.GetNewSession("us-east-1")
+	session, err := m.GetNewSession(default_aws_region)
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +515,7 @@ func (m *AwsMeta) priceSpeficEks(region provider.RegionOutput, eksType string, v
 func (m *AwsMeta) _pricingForEKS(
 	isAutoNode bool, eksType string,
 	filters []pricingTypes.Filter,
-	region provider.RegionOutput) (*provider.ManagedClusterOutput, error) {
+	_ provider.RegionOutput) (*provider.ManagedClusterOutput, error) {
 
 	input := &pricing.GetProductsInput{
 		ServiceCode:   aws.String("AmazonEKS"),
@@ -520,7 +524,7 @@ func (m *AwsMeta) _pricingForEKS(
 		MaxResults:    aws.Int32(1),
 	}
 
-	session, err := m.GetNewSession("us-east-1")
+	session, err := m.GetNewSession(default_aws_region)
 	if err != nil {
 		return nil, err
 	}

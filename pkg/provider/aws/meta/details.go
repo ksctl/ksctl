@@ -15,6 +15,8 @@
 package meta
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -93,6 +95,22 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 		input.NextToken = output.NextToken
 	}
 
+	analyseVMType := func(vmTypeSku string) provider.MachineCategory {
+
+		var category provider.MachineCategory
+		if strings.HasPrefix(vmTypeSku, "c5") {
+			category = provider.ComputeIntensive
+		} else if strings.HasPrefix(vmTypeSku, "t3") {
+			category = provider.GeneralPurpose
+		} else if strings.HasPrefix(vmTypeSku, "m5") {
+			category = provider.MemoryIntensive
+		} else {
+			return provider.Unknown
+		}
+
+		return category
+	}
+
 	for _, vm := range vmTypes.InstanceTypes {
 		var arch provider.MachineArchitecture
 		for _, arc := range vm.ProcessorInfo.SupportedArchitectures {
@@ -106,11 +124,14 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 			}
 		}
 
+		category := analyseVMType(string(vm.InstanceType))
+
 		out = append(
 			out,
 			provider.InstanceRegionOutput{
 				Sku:                    string(vm.InstanceType),
 				Description:            string(vm.InstanceType),
+				Category:               category,
 				VCpus:                  *vm.VCpuInfo.DefaultVCpus,
 				Memory:                 int32(*vm.MemoryInfo.SizeInMiB / 1024),
 				CpuArch:                arch,

@@ -109,6 +109,23 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 		IncludeExtendedLocations: nil,
 	})
 
+	analyseVMType := func(vmTypeSku string) provider.MachineCategory {
+		var category provider.MachineCategory
+		if strings.HasPrefix(vmTypeSku, "Standard_F") {
+			category = provider.ComputeIntensive
+		} else if strings.HasPrefix(vmTypeSku, "Standard_B") {
+			category = provider.Burst
+		} else if strings.HasPrefix(vmTypeSku, "Standard_D") {
+			category = provider.GeneralPurpose
+		} else if strings.HasPrefix(vmTypeSku, "Standard_E") {
+			category = provider.MemoryIntensive
+		} else {
+			return provider.Unknown
+		}
+
+		return category
+	}
+
 	for pager.More() {
 		page, err := pager.NextPage(m.ctx)
 		if err != nil {
@@ -123,6 +140,7 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 					Sku:         *v.Name,
 					Description: *v.Name,
 				}
+				o.Category = analyseVMType(*v.Name)
 				if v.Capabilities != nil {
 					for _, cap := range v.Capabilities {
 						if *cap.Name == "vCPUs" {
