@@ -70,7 +70,7 @@ func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
 
 func (m *AwsMeta) GetNewSession(regionSku string) (*aws.Config, error) {
 	if regionSku == "" {
-		regionSku = "us-east-1"
+		regionSku = default_aws_region
 	}
 
 	_session, err := awsConfig.LoadDefaultConfig(m.ctx,
