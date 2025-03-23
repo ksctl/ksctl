@@ -29,7 +29,7 @@ import (
 
 func WithDefaultEC2() Option {
 	return func(o *options) error {
-		o.ec2Type = []string{"c5*", "t3*", "m5*"}
+		o.ec2Type = []string{"c5*", "t3*", "m5*", "r5*"}
 		return nil
 	}
 }
@@ -103,6 +103,8 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 		} else if strings.HasPrefix(vmTypeSku, "t3") {
 			category = provider.GeneralPurpose
 		} else if strings.HasPrefix(vmTypeSku, "m5") {
+			category = provider.GeneralPurpose
+		} else if strings.HasPrefix(vmTypeSku, "r5") {
 			category = provider.MemoryIntensive
 		} else {
 			return provider.Unknown
@@ -181,7 +183,7 @@ func (m *AwsMeta) listManagedOfferingsK8sVersions(regionSku string) ([]string, e
 	return s, nil
 }
 
-func (m *AwsMeta) listManagedOfferingsCNIPlugins(region string) (addons.ClusterAddons, string, error) {
+func (m *AwsMeta) listManagedOfferingsCNIPlugins(_ string) (addons.ClusterAddons, string, error) {
 	v, d := awsPkg.GetManagedCNIAddons()
 	return v, d, nil
 }
