@@ -101,7 +101,7 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 		if strings.HasPrefix(vmTypeSku, "c5") {
 			category = provider.ComputeIntensive
 		} else if strings.HasPrefix(vmTypeSku, "t3") {
-			category = provider.GeneralPurpose
+			category = provider.Burst
 		} else if strings.HasPrefix(vmTypeSku, "m5") {
 			category = provider.GeneralPurpose
 		} else if strings.HasPrefix(vmTypeSku, "r5") {
