@@ -175,7 +175,7 @@ func (m *AzureMeta) listOfVms(region string) (out []provider.InstanceRegionOutpu
 	return out, nil
 }
 
-func (m *AzureMeta) listManagedOfferingsCNIPlugins(region string) (addons.ClusterAddons, string, error) {
+func (m *AzureMeta) listManagedOfferingsCNIPlugins(_ string) (addons.ClusterAddons, string, error) {
 	v, d := azurePkg.GetManagedCNIAddons()
 	return v, d, nil
 }

@@ -55,6 +55,15 @@ func (M MachineCategory) UseCases() []string {
 	}
 }
 
+func GetAvailableMachineCategories() map[string]MachineCategory {
+	return map[string]MachineCategory{
+		string(ComputeIntensive): ComputeIntensive,
+		string(Burst):            Burst,
+		string(GeneralPurpose):   GeneralPurpose,
+		string(MemoryIntensive):  MemoryIntensive,
+	}
+}
+
 type MachineArchitecture string
 
 const (
