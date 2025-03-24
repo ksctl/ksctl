@@ -190,5 +190,7 @@ type ProvisionMetadata interface {
 
 	GetAvailableManagedK8sVersions(regionSku string) ([]string, error)
 
+	GetPriceInstanceType(regionSku string, instanceType string) (*InstanceRegionOutput, error)
+
 	GetAvailableManagedCNIPlugins(regionSku string) (addons.ClusterAddons, string, error)
 }

@@ -23,7 +23,6 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/handler/cni"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
-	"github.com/ksctl/ksctl/v2/pkg/utilities"
 	"golang.org/x/mod/semver"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
@@ -209,8 +208,7 @@ func (kc *Controller) ListAllManagedClusterManagementOfferings(region string, ch
 	return out, nil
 }
 
-// getPriceForInstance TODO: need to implement this
-func (kc *Controller) getPriceForInstance(region string) (_ *float64, errC error) {
+func (kc *Controller) getPriceForInstance(region string, instanceType string) (_ float64, errC error) {
 	defer func() {
 		if errC != nil {
 			v := kc.b.PanicHandler(kc.l)
@@ -221,11 +219,15 @@ func (kc *Controller) getPriceForInstance(region string) (_ *float64, errC error
 	}()
 
 	if kc.b.IsLocalProvider(kc.client) {
-		return nil, nil
+		return 0.0, nil
 	}
 
-	// TODO: need to implament this
-	return utilities.Ptr(0.0), nil
+	prices, err := kc.cc.GetPriceInstanceType(region, instanceType)
+	if err != nil {
+		return 0.0, err
+	}
+
+	return prices.GetCost(), nil
 }
 
 func (kc *Controller) ListAllInstances(region string) (

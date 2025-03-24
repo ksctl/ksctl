@@ -60,6 +60,115 @@ const (
 
 type Option func(*options) error
 
+func (m *AwsMeta) priceVM(region provider.RegionOutput, instanceSku string) (*provider.InstanceRegionOutput, error) {
+	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=operatingSystem,Value=linux Type=TERM_MATCH,Field=tenancy,Value="Shared" Type=TERM_MATCH,Field=capacitystatus,Value="Used" Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" Type=TERM_MATCH,Field=instanceType,Value="t3.medium" Type=TERM_MATCH,Field=preInstalledSw,Value="NA" --output=json | jq -r '.PriceList[]' | jq -r .
+
+	filters := []pricingTypes.Filter{
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("serviceCode"),
+			Value: aws.String("AmazonEC2"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("location"),
+			Value: aws.String(region.Name),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("operatingSystem"),
+			Value: aws.String("Linux"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("preInstalledSw"),
+			Value: aws.String("NA"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("tenancy"),
+			Value: aws.String("Shared"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("capacitystatus"),
+			Value: aws.String("Used"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("instanceType"),
+			Value: aws.String(instanceSku),
+		},
+	}
+
+	input := &pricing.GetProductsInput{
+		ServiceCode:   aws.String("AmazonEC2"),
+		Filters:       filters,
+		FormatVersion: aws.String("aws_v1"),
+		MaxResults:    aws.Int32(1),
+	}
+
+	session, err := m.GetNewSession(default_aws_region)
+	if err != nil {
+		return nil, err
+	}
+
+	priC := pricing.NewFromConfig(*session)
+	var vmsPrice pricing.GetProductsOutput
+
+	o, err := priC.GetProducts(m.ctx, input)
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			m.l.NewError(m.ctx, "Error in fetching instance types", "Reason", err),
+		)
+	}
+
+	if len(o.PriceList) == 0 {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			m.l.NewError(m.ctx, "No instance type found", "Reason", err),
+		)
+	}
+
+	pricingResult := AwsSDKPricing{}
+	err = json.Unmarshal([]byte(vmsPrice.PriceList[0]), &pricingResult)
+	if err != nil {
+		return nil, err
+	}
+
+	var res *provider.InstanceRegionOutput
+
+	for _, onDemand := range pricingResult.Terms.OnDemand {
+		for _, priceDimension := range onDemand.PriceDimensions {
+			var monthlyPrice, hourlyPrice *float64
+
+			cost, err := strconv.ParseFloat(priceDimension.PricePerUnit.USD, 64)
+			if err != nil {
+				log.Fatalf("Failed to parse hourly cost: %v", err)
+			}
+			switch priceDimension.UnitOfMeasurement {
+			case "Hrs", "hours", "Hours":
+				hourlyPrice = utilities.Ptr(cost)
+			case "GB-Mo", "GB-month":
+				monthlyPrice = utilities.Ptr(cost)
+			}
+
+			res = &provider.InstanceRegionOutput{
+				Price: provider.PriceOutput{
+					HourlyPrice:  hourlyPrice,
+					MonthlyPrice: monthlyPrice,
+					Currency:     "USD",
+				},
+			}
+			break
+		}
+		break
+	}
+
+	return res, nil
+}
+
 func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.InstanceRegionOutput, error) {
 	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=operatingSystem,Value=linux Type=TERM_MATCH,Field=tenancy,Value="Shared" Type=TERM_MATCH,Field=capacitystatus,Value="Used" Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" --output=json
 	filters := []pricingTypes.Filter{
