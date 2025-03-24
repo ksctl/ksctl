@@ -63,16 +63,14 @@ type Option func(*options) error
 func (m *AwsMeta) priceVM(region provider.RegionOutput, instanceSku string) (*provider.InstanceRegionOutput, error) {
 	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=operatingSystem,Value=linux Type=TERM_MATCH,Field=tenancy,Value="Shared" Type=TERM_MATCH,Field=capacitystatus,Value="Used" Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" Type=TERM_MATCH,Field=instanceType,Value="t3.medium" Type=TERM_MATCH,Field=preInstalledSw,Value="NA" --output=json | jq -r '.PriceList[]' | jq -r .
 
+	if strings.HasPrefix(region.Name, "Europe") {
+	}
+
 	filters := []pricingTypes.Filter{
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
 			Field: aws.String("serviceCode"),
 			Value: aws.String("AmazonEC2"),
-		},
-		{
-			Type:  pricingTypes.FilterTypeTermMatch,
-			Field: aws.String("location"),
-			Value: aws.String(region.Name),
 		},
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
@@ -101,6 +99,26 @@ func (m *AwsMeta) priceVM(region provider.RegionOutput, instanceSku string) (*pr
 		},
 	}
 
+	if strings.HasPrefix(region.Name, "Europe") {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("regionCode"),
+				Value: aws.String(region.Sku),
+			},
+		}...,
+		)
+	} else {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("location"),
+				Value: aws.String(region.Name),
+			},
+		}...,
+		)
+	}
+
 	input := &pricing.GetProductsInput{
 		ServiceCode:   aws.String("AmazonEC2"),
 		Filters:       filters,
@@ -114,7 +132,6 @@ func (m *AwsMeta) priceVM(region provider.RegionOutput, instanceSku string) (*pr
 	}
 
 	priC := pricing.NewFromConfig(*session)
-	var vmsPrice pricing.GetProductsOutput
 
 	o, err := priC.GetProducts(m.ctx, input)
 	if err != nil {
@@ -127,12 +144,12 @@ func (m *AwsMeta) priceVM(region provider.RegionOutput, instanceSku string) (*pr
 	if len(o.PriceList) == 0 {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrInternal,
-			m.l.NewError(m.ctx, "No instance type found", "Reason", err),
+			m.l.NewError(m.ctx, "No instance type found"),
 		)
 	}
 
 	pricingResult := AwsSDKPricing{}
-	err = json.Unmarshal([]byte(vmsPrice.PriceList[0]), &pricingResult)
+	err = json.Unmarshal([]byte(o.PriceList[0]), &pricingResult)
 	if err != nil {
 		return nil, err
 	}
@@ -179,11 +196,6 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 		},
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
-			Field: aws.String("location"),
-			Value: aws.String(region.Name),
-		},
-		{
-			Type:  pricingTypes.FilterTypeTermMatch,
 			Field: aws.String("operatingSystem"),
 			Value: aws.String("Linux"),
 		},
@@ -202,6 +214,26 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 			Field: aws.String("capacitystatus"),
 			Value: aws.String("Used"),
 		},
+	}
+
+	if strings.HasPrefix(region.Name, "Europe") {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("regionCode"),
+				Value: aws.String(region.Sku),
+			},
+		}...,
+		)
+	} else {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("location"),
+				Value: aws.String(region.Name),
+			},
+		}...,
+		)
 	}
 
 	input := &pricing.GetProductsInput{
@@ -364,14 +396,29 @@ func (m *AwsMeta) priceSpecificEBS(region provider.RegionOutput, volumeType stri
 		},
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
-			Field: aws.String("location"),
-			Value: aws.String(region.Name),
-		},
-		{
-			Type:  pricingTypes.FilterTypeTermMatch,
 			Field: aws.String("productFamily"),
 			Value: aws.String("Storage"),
 		},
+	}
+
+	if strings.HasPrefix(region.Name, "Europe") {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("regionCode"),
+				Value: aws.String(region.Sku),
+			},
+		}...,
+		)
+	} else {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("location"),
+				Value: aws.String(region.Name),
+			},
+		}...,
+		)
 	}
 
 	input := &pricing.GetProductsInput{
@@ -526,15 +573,30 @@ func (m *AwsMeta) priceSpeficEks(region provider.RegionOutput, eksType string, v
 		},
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
-			Field: aws.String("location"),
-			Value: aws.String(region.Name),
-		},
-		{
-			Type:  pricingTypes.FilterTypeTermMatch,
 			Field: aws.String("locationType"),
 			Value: aws.String("AWS Region"),
 		},
 	}
+	if strings.HasPrefix(region.Name, "Europe") {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("regionCode"),
+				Value: aws.String(region.Sku),
+			},
+		}...,
+		)
+	} else {
+		filters = append(filters, []pricingTypes.Filter{
+			{
+				Type:  pricingTypes.FilterTypeTermMatch,
+				Field: aws.String("location"),
+				Value: aws.String(region.Name),
+			},
+		}...,
+		)
+	}
+
 	var autoNode *provider.ManagedClusterOutput
 	if strings.HasPrefix(eksType, "AutoNode") {
 		autonodeFilters := append(filters, []types.Filter{

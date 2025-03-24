@@ -208,7 +208,7 @@ func (kc *Controller) ListAllManagedClusterManagementOfferings(region string, ch
 	return out, nil
 }
 
-func (kc *Controller) getPriceForInstance(region string, instanceType string) (_ float64, errC error) {
+func (kc *Controller) GetPriceForInstance(region string, instanceType string) (_ float64, errC error) {
 	defer func() {
 		if errC != nil {
 			v := kc.b.PanicHandler(kc.l)
