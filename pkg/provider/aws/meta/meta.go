@@ -182,6 +182,34 @@ func (m *AwsMeta) searchRegionDescription(regionSku string) (*provider.RegionOut
 	)
 }
 
+func (m *AwsMeta) GetPriceInstanceType(regionSku string, instanceType string) (*provider.InstanceRegionOutput, error) {
+	reg, err := m.searchRegionDescription(regionSku)
+	if err != nil {
+		return nil, err
+	}
+
+	vm, err := m.priceVM(*reg, instanceType)
+	if err != nil {
+		return nil, err
+	}
+
+	disks, err := m.priceDisks(*reg, WithDefaultEBSSize(), WithDefaultEBSVolumeType())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(disks) == 0 {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			m.l.NewError(m.ctx, "failed to get disk price"),
+		)
+	}
+
+	vm.Disk = disks[0]
+
+	return vm, nil
+}
+
 func (m *AwsMeta) GetAvailableInstanceTypes(regionSku string, _ consts.KsctlClusterType) ([]provider.InstanceRegionOutput, error) {
 	reg, err := m.searchRegionDescription(regionSku)
 	if err != nil {

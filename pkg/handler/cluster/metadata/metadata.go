@@ -208,6 +208,28 @@ func (kc *Controller) ListAllManagedClusterManagementOfferings(region string, ch
 	return out, nil
 }
 
+func (kc *Controller) GetPriceForInstance(region string, instanceType string) (_ float64, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	if kc.b.IsLocalProvider(kc.client) {
+		return 0.0, nil
+	}
+
+	prices, err := kc.cc.GetPriceInstanceType(region, instanceType)
+	if err != nil {
+		return 0.0, err
+	}
+
+	return prices.GetCost(), nil
+}
+
 func (kc *Controller) ListAllInstances(region string) (
 	out map[string]provider.InstanceRegionOutput,
 	errC error,

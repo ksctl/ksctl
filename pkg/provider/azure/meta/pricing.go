@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"strings"
 
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
@@ -171,6 +172,39 @@ func WithDefaultInstanceType() Option {
 		op.filterInstanceType = utilities.Ptr("(startswith(armSkuName, 'Standard_D2s') or startswith(armSkuName, 'Standard_D4s') or startswith(armSkuName, 'Standard_E2s') or startswith(armSkuName, 'Standard_E4s') or startswith(armSkuName, 'Standard_F2s') or startswith(armSkuName, 'Standard_F4s') or startswith(armSkuName, 'Standard_B2s') or startswith(armSkuName, 'Standard_B4s'))")
 		return nil
 	}
+}
+
+func (m *AzureMeta) priceVM(regionSku string, instanceType string) (*provider.InstanceRegionOutput, error) {
+	filterInstance := fmt.Sprintf("startswith(armSkuName, '%s')", instanceType)
+
+	filter := fmt.Sprintf("serviceName eq 'Virtual Machines' and armRegionName eq '%s' and serviceFamily eq 'Compute' and %s and type eq 'Consumption' and unitOfMeasure eq '1 Hour'", regionSku, filterInstance)
+
+	m.l.Debug(m.ctx, "Fetching VM prices", "Filter", filter)
+
+	prices, err := fetchPrices(filter, IgnoreSpotAndLowPriMeterName())
+	if err != nil {
+		return nil, err
+	}
+
+	m.l.Debug(m.ctx, "VM prices", "Prices", prices)
+
+	var res *provider.InstanceRegionOutput
+
+	if len(prices) == 0 {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			m.l.NewError(m.ctx, "failed to get VM price"),
+		)
+	}
+
+	res = &provider.InstanceRegionOutput{
+		Price: provider.PriceOutput{
+			HourlyPrice: utilities.Ptr(prices[0].UnitPrice),
+			Currency:    prices[0].CurrencyCode,
+		},
+	}
+
+	return res, nil
 }
 
 func (m *AzureMeta) priceVMs(regionSku string, opts ...Option) (map[string]provider.InstanceRegionOutput, error) {

@@ -118,6 +118,29 @@ func (m *AzureMeta) GetAvailableRegions() ([]provider.RegionOutput, error) {
 	return regions, nil
 }
 
+func (m *AzureMeta) GetPriceInstanceType(regionSku string, instanceType string) (*provider.InstanceRegionOutput, error) {
+	priceVM, err := m.priceVM(regionSku, instanceType)
+	if err != nil {
+		return nil, err
+	}
+
+	priceDisks, err := m.priceDisks(regionSku, WithDefaultManagedDisk())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(priceDisks) == 0 {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			m.l.NewError(m.ctx, "failed to get disk price"),
+		)
+	}
+
+	priceVM.Disk = priceDisks[0]
+
+	return priceVM, nil
+}
+
 func (m *AzureMeta) GetAvailableInstanceTypes(regionSku string, clusterType consts.KsctlClusterType) ([]provider.InstanceRegionOutput, error) {
 	vms, err := m.listOfVms(regionSku)
 	if err != nil {
