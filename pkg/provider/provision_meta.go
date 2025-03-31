@@ -19,9 +19,23 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
+type ZonalEmission struct {
+	ZoneId string
+	// DirectCarbonIntensity has unit gCO2eq/kWh
+	DirectCarbonIntensity float64
+	// LCACarbonIntensity has unit gCO2eq/kWh
+	LCACarbonIntensity  float64
+	LowCarbonPercentage float64
+	RenewablePercentage float64
+	DataSource          string
+	Unit                string
+}
+
 type RegionOutput struct {
 	Sku  string
 	Name string
+
+	Emission *ZonalEmission
 }
 
 type PriceOutput struct {

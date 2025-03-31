@@ -16,6 +16,8 @@ package metadata
 
 import (
 	"errors"
+	"fmt"
+	"github.com/ksctl/ksctl/v2/pkg/provider/optimizer"
 	"sort"
 	"strconv"
 	"strings"
@@ -52,7 +54,13 @@ func (kc *Controller) ListAllRegions() (
 		return nil, err
 	}
 
-	return regions, nil
+	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
+	res, err := o.AttachEmissionsToRegions()
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 type PriceCalculatorInput struct {
@@ -390,4 +398,98 @@ func (kc *Controller) ListBootstrapCNIs() (
 	a, b := cni.GetCNIs()
 
 	return c, d, a, b, nil
+}
+
+func (kc *Controller) findManagedOfferingCostAcrossRegions(
+	availRegions []provider.RegionOutput,
+	managedOfferingSku string,
+) (map[string]float64, error) {
+	resultChan := make(chan struct {
+		region string
+		price  float64
+		err    error
+	}, len(availRegions))
+
+	for _, region := range availRegions {
+		regSku := region.Sku
+		go func(sku string) {
+			_price, err := kc.ListAllManagedClusterManagementOfferings(regSku, nil)
+			if err == nil {
+				v, ok := _price[managedOfferingSku]
+				if ok {
+					resultChan <- struct {
+						region string
+						price  float64
+						err    error
+					}{sku, v.GetCost(), nil}
+				} else {
+					resultChan <- struct {
+						region string
+						price  float64
+						err    error
+					}{sku, 0.0, fmt.Errorf("managed offering not found")}
+				}
+
+			} else {
+				resultChan <- struct {
+					region string
+					price  float64
+					err    error
+				}{sku, 0.0, err}
+			}
+		}(regSku)
+	}
+
+	cost := make(map[string]float64, len(availRegions))
+	for i := 0; i < len(availRegions); i++ {
+		result := <-resultChan
+		if result.err == nil {
+			cost[result.region] = result.price
+		}
+	}
+
+	return cost, nil
+}
+
+// findInstanceCostAcrossRegions it returns a map of K[V] where K is the region and V is the cost of the instance
+func (kc *Controller) findInstanceCostAcrossRegions(
+	availRegions []provider.RegionOutput,
+	instanceSku string,
+) (map[string]float64, error) {
+	resultChan := make(chan struct {
+		region string
+		price  float64
+		err    error
+	}, len(availRegions))
+
+	for _, region := range availRegions {
+		regSku := region.Sku
+		go func(sku string) {
+			price, err := kc.GetPriceForInstance(sku, instanceSku)
+			resultChan <- struct {
+				region string
+				price  float64
+				err    error
+			}{sku, price, err}
+		}(regSku)
+	}
+
+	cost := make(map[string]float64, len(availRegions))
+	for i := 0; i < len(availRegions); i++ {
+		result := <-resultChan
+		if result.err == nil {
+			cost[result.region] = result.price
+		}
+	}
+
+	return cost, nil
+}
+
+func (kc *Controller) CostOptimizeAcrossRegions(regions []provider.RegionOutput) {
+	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
+
+	_ = o
+	if kc.client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
+	} else {
+	}
 }
