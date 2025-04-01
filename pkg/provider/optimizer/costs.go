@@ -18,14 +18,15 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"slices"
+
 	"github.com/fatih/color"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
-	"slices"
 )
 
 type RecommendationManagedCost struct {
-	region    string
+	Region    string
 	totalCost float64
 
 	cpCost float64
@@ -53,7 +54,7 @@ func (k *Optimizer) getBestRegionsWithTotalCostManaged(
 		totalCost := costForCP[region.Sku] + costForWP[region.Sku]
 
 		costForCluster = append(costForCluster, RecommendationManagedCost{
-			region:    region.Sku,
+			Region:    region.Sku,
 			cpCost:    costForCP[region.Sku],
 			wpCost:    costForWP[region.Sku],
 			totalCost: totalCost,
@@ -68,7 +69,7 @@ func (k *Optimizer) getBestRegionsWithTotalCostManaged(
 }
 
 type RecommendationSelfManagedCost struct {
-	region    string
+	Region    string
 	totalCost float64
 
 	cpCost   float64
@@ -102,7 +103,7 @@ func (k *Optimizer) getBestRegionsWithTotalCostSelfManaged(
 		totalCost := costForCP[region.Sku] + costForWP[region.Sku] + costForDS[region.Sku] + costForLB[region.Sku]
 
 		costForCluster = append(costForCluster, RecommendationSelfManagedCost{
-			region:    region.Sku,
+			Region:    region.Sku,
 			cpCost:    costForCP[region.Sku],
 			wpCost:    costForWP[region.Sku],
 			etcdCost:  costForDS[region.Sku],
@@ -158,7 +159,6 @@ func (k *Optimizer) OptimizeSelfManagedInstanceTypesAcrossRegions(
 }
 
 func (k *Optimizer) OptimizeManagedOfferingsAcrossRegions(
-	l logger.Logger,
 	cp provider.ManagedClusterOutput,
 	wp provider.InstanceRegionOutput,
 
@@ -166,12 +166,12 @@ func (k *Optimizer) OptimizeManagedOfferingsAcrossRegions(
 ) []RecommendationManagedCost {
 	wpInstanceCosts, err := instanceCostGetter(k.AvailRegions, wp.Sku)
 	if err != nil {
-		l.Error("Failed to get the cost of worker plane instances", "Reason", err)
+		k.l.Error("Failed to get the cost of worker plane instances", "Reason", err)
 	}
 
 	cpInstanceCosts, err := managedOfferingCostGetter(k.AvailRegions, cp.Sku)
 	if err != nil {
-		l.Error("Failed to get the cost of control plane managed offerings", "Reason", err)
+		k.l.Error("Failed to get the cost of control plane managed offerings", "Reason", err)
 	}
 
 	return k.getBestRegionsWithTotalCostManaged(
@@ -195,7 +195,7 @@ func (k *Optimizer) PrintRecommendationSelfManagedCost(
 	l.Print(ctx,
 		"Here is your recommendation",
 		"Parameter", "Region wise cost",
-		"OptimizedRegion", color.HiCyanString(costs[0].region),
+		"OptimizedRegion", color.HiCyanString(costs[0].Region),
 	)
 
 	headers := []string{
@@ -211,7 +211,7 @@ func (k *Optimizer) PrintRecommendationSelfManagedCost(
 	for _, cost := range costs {
 		total := cost.cpCost*float64(noOfCP) + cost.wpCost*float64(noOfWP) + cost.etcdCost*float64(noOfDS) + cost.lbCost
 		data = append(data, []string{
-			cost.region,
+			cost.Region,
 			fmt.Sprintf("$%.2f X %d", cost.cpCost, noOfCP),
 			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
 			fmt.Sprintf("$%.2f X %d", cost.etcdCost, noOfDS),
@@ -234,7 +234,7 @@ func (k *Optimizer) PrintRecommendationManagedCost(
 	l.Print(ctx,
 		"Here is your recommendation",
 		"Parameter", "Region wise cost",
-		"OptimizedRegion", color.HiCyanString(costs[0].region),
+		"OptimizedRegion", color.HiCyanString(costs[0].Region),
 	)
 
 	headers := []string{
@@ -248,7 +248,7 @@ func (k *Optimizer) PrintRecommendationManagedCost(
 	for _, cost := range costs {
 		total := cost.cpCost + cost.wpCost*float64(noOfWP)
 		data = append(data, []string{
-			cost.region,
+			cost.Region,
 			fmt.Sprintf("$%.2f X 1", cost.cpCost),
 			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
 			fmt.Sprintf("$%.2f", total),

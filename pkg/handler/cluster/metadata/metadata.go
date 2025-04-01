@@ -17,10 +17,12 @@ package metadata
 import (
 	"errors"
 	"fmt"
-	"github.com/ksctl/ksctl/v2/pkg/provider/optimizer"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ksctl/ksctl/v2/pkg/provider/optimizer"
 
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/handler/cni"
@@ -485,11 +487,99 @@ func (kc *Controller) findInstanceCostAcrossRegions(
 	return cost, nil
 }
 
-func (kc *Controller) CostOptimizeAcrossRegions(regions []provider.RegionOutput) {
+type CostOptimizerInput struct {
+	// mcp needs to be added for managed cluster it denotes managed control plane
+	mcp provider.ManagedClusterOutput
+
+	// mp needs to be added for managed cluster it denotes managed plane
+	mp provider.InstanceRegionOutput
+
+	// wp needs to be added for self managed cluster it denotes worker plane
+	wp provider.InstanceRegionOutput
+
+	// etcd needs to be added for self managed cluster it denotes etcd plane
+	etcd provider.InstanceRegionOutput
+
+	// cp needs to be added for self managed cluster it denotes control plane
+	cp provider.InstanceRegionOutput
+
+	// lb needs to be added for self managed cluster it denotes load balancer
+	lb provider.InstanceRegionOutput
+
+	countOfWorkerNodes       int
+	countOfControlPlaneNodes int
+	countOfEtcdNodes         int
+
+	countOfManagedNodes int
+}
+
+type CostOptimizerOutput struct {
+	// Regions sorted via the cost in ascending order
+	Regions []string
+}
+
+func (kc *Controller) CostOptimizeAcrossRegions(
+	regions []provider.RegionOutput,
+	req CostOptimizerInput,
+) (res CostOptimizerOutput) {
+
 	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
 
-	_ = o
 	if kc.client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
+		_o := o.OptimizeSelfManagedInstanceTypesAcrossRegions(
+			req.cp,
+			req.wp,
+			req.etcd,
+			req.lb,
+			kc.findInstanceCostAcrossRegions,
+		)
+
+		o.PrintRecommendationSelfManagedCost(
+			kc.ctx,
+			kc.l,
+			_o,
+			req.countOfControlPlaneNodes,
+			req.countOfWorkerNodes,
+			req.countOfEtcdNodes,
+			req.cp.Sku,
+			req.wp.Sku,
+			req.etcd.Sku,
+			req.lb.Sku,
+		)
+
+		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationSelfManagedCost) bool {
+			return i.Region == kc.client.Metadata.Region
+		})
+		_o = append(_o[:pos], _o[pos+1:]...)
+		for _, v := range _o {
+			res.Regions = append(res.Regions, v.Region)
+		}
+
 	} else {
+		_o := o.OptimizeManagedOfferingsAcrossRegions(
+			req.mcp,
+			req.mp,
+			kc.findInstanceCostAcrossRegions,
+			kc.findManagedOfferingCostAcrossRegions,
+		)
+
+		o.PrintRecommendationManagedCost(
+			kc.ctx,
+			kc.l,
+			_o,
+			req.countOfManagedNodes,
+			req.mcp.Sku,
+			req.mp.Sku,
+		)
+
+		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationManagedCost) bool {
+			return i.Region == kc.client.Metadata.Region
+		})
+		_o = append(_o[:pos], _o[pos+1:]...)
+		for _, v := range _o {
+			res.Regions = append(res.Regions, v.Region)
+		}
 	}
+
+	return res
 }
