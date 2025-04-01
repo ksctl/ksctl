@@ -488,29 +488,29 @@ func (kc *Controller) findInstanceCostAcrossRegions(
 }
 
 type CostOptimizerInput struct {
-	// mcp needs to be added for managed cluster it denotes managed control plane
-	mcp provider.ManagedClusterOutput
+	// ManagedOffering needs to be added for managed cluster it denotes managed control plane
+	ManagedOffering provider.ManagedClusterOutput
 
-	// mp needs to be added for managed cluster it denotes managed plane
-	mp provider.InstanceRegionOutput
+	// ManagedPlane needs to be added for managed cluster it denotes managed plane
+	ManagedPlane provider.InstanceRegionOutput
 
-	// wp needs to be added for self managed cluster it denotes worker plane
-	wp provider.InstanceRegionOutput
+	// WorkerPlane needs to be added for self managed cluster it denotes worker plane
+	WorkerPlane provider.InstanceRegionOutput
 
-	// etcd needs to be added for self managed cluster it denotes etcd plane
-	etcd provider.InstanceRegionOutput
+	// DataStorePlane needs to be added for self managed cluster it denotes DataStorePlane plane
+	DataStorePlane provider.InstanceRegionOutput
 
-	// cp needs to be added for self managed cluster it denotes control plane
-	cp provider.InstanceRegionOutput
+	// ControlPlane needs to be added for self managed cluster it denotes control plane
+	ControlPlane provider.InstanceRegionOutput
 
-	// lb needs to be added for self managed cluster it denotes load balancer
-	lb provider.InstanceRegionOutput
+	// LoadBalancer needs to be added for self managed cluster it denotes load balancer
+	LoadBalancer provider.InstanceRegionOutput
 
-	countOfWorkerNodes       int
-	countOfControlPlaneNodes int
-	countOfEtcdNodes         int
+	CountOfWorkerNodes       int
+	CountOfControlPlaneNodes int
+	CountOfEtcdNodes         int
 
-	countOfManagedNodes int
+	CountOfManagedNodes int
 }
 
 type CostOptimizerOutput struct {
@@ -527,10 +527,10 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 
 	if kc.client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
 		_o := o.OptimizeSelfManagedInstanceTypesAcrossRegions(
-			req.cp,
-			req.wp,
-			req.etcd,
-			req.lb,
+			req.ControlPlane,
+			req.WorkerPlane,
+			req.DataStorePlane,
+			req.LoadBalancer,
 			kc.findInstanceCostAcrossRegions,
 		)
 
@@ -538,13 +538,13 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 			kc.ctx,
 			kc.l,
 			_o,
-			req.countOfControlPlaneNodes,
-			req.countOfWorkerNodes,
-			req.countOfEtcdNodes,
-			req.cp.Sku,
-			req.wp.Sku,
-			req.etcd.Sku,
-			req.lb.Sku,
+			req.CountOfControlPlaneNodes,
+			req.CountOfWorkerNodes,
+			req.CountOfEtcdNodes,
+			req.ControlPlane.Sku,
+			req.WorkerPlane.Sku,
+			req.DataStorePlane.Sku,
+			req.LoadBalancer.Sku,
 		)
 
 		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationSelfManagedCost) bool {
@@ -557,8 +557,8 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 
 	} else {
 		_o := o.OptimizeManagedOfferingsAcrossRegions(
-			req.mcp,
-			req.mp,
+			req.ManagedOffering,
+			req.ManagedPlane,
 			kc.findInstanceCostAcrossRegions,
 			kc.findManagedOfferingCostAcrossRegions,
 		)
@@ -567,9 +567,9 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 			kc.ctx,
 			kc.l,
 			_o,
-			req.countOfManagedNodes,
-			req.mcp.Sku,
-			req.mp.Sku,
+			req.CountOfManagedNodes,
+			req.ManagedOffering.Sku,
+			req.ManagedPlane.Sku,
 		)
 
 		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationManagedCost) bool {
