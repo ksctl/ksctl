@@ -520,6 +520,7 @@ type CostOptimizerOutput struct {
 
 func (kc *Controller) CostOptimizeAcrossRegions(
 	regions []provider.RegionOutput,
+	currentRegion string,
 	req CostOptimizerInput,
 ) (res CostOptimizerOutput) {
 
@@ -548,7 +549,7 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 		)
 
 		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationSelfManagedCost) bool {
-			return i.Region == kc.client.Metadata.Region
+			return i.Region == currentRegion
 		})
 		_o = append(_o[:pos], _o[pos+1:]...)
 		for _, v := range _o {
@@ -573,7 +574,7 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 		)
 
 		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationManagedCost) bool {
-			return i.Region == kc.client.Metadata.Region
+			return i.Region == currentRegion
 		})
 		_o = append(_o[:pos], _o[pos+1:]...)
 		for _, v := range _o {
