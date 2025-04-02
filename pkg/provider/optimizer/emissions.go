@@ -14,7 +14,87 @@
 
 package optimizer
 
-import "github.com/ksctl/ksctl/v2/pkg/provider"
+import (
+	"encoding/csv"
+	"fmt"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
+	"io"
+	"net/http"
+)
+
+func (k *Optimizer) GetMappingCloudRegionToElectricityMapsZones() (map[string]map[string]string, error) {
+	url := "https://raw.githubusercontent.com/Green-Software-Foundation/real-time-cloud/3ba9accf352bcd081c3fe6b0789ee276d5286f82/Cloud_Region_Metadata.csv"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("API returned non-200 status code: %d, response: %s",
+			res.StatusCode, string(bodyBytes))
+	}
+
+	reader := csv.NewReader(res.Body)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	resMapping := make(map[string]map[string]string, len(records))
+
+	cpIdx, crIdx, emZone := -1, -1, -1
+	for i, header := range records[0] {
+		switch header {
+		case "cloud-provider":
+			cpIdx = i
+		case "cloud-region":
+			crIdx = i
+		case "em-zone-id":
+			emZone = i
+		}
+	}
+
+	for _, row := range records[1:] {
+		cp := row[cpIdx]
+		cr := row[crIdx]
+		em := row[emZone]
+
+		key := ""
+
+		if cp == "Amazon Web Services" {
+			key = "aws"
+		} else if cp == "Google Cloud" {
+			key = "gcp"
+		} else if cp == "Microsoft Azure" {
+			key = "azure"
+		}
+
+		if len(em) == 0 {
+			continue
+		}
+
+		if v, ok := resMapping[key]; ok {
+			if _, ok := v[cr]; ok {
+				v[cr] = em
+			} else {
+				v[cr] = em
+			}
+		} else {
+			resMapping[key] = make(map[string]string)
+			resMapping[key][cr] = em
+		}
+	}
+
+	return resMapping, nil
+}
 
 func (k *Optimizer) AttachEmissionsToRegions() ([]provider.RegionOutput, error) {
 	for idx, region := range k.AvailRegions {
