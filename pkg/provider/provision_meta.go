@@ -15,6 +15,7 @@
 package provider
 
 import (
+	"fmt"
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
@@ -46,9 +47,26 @@ func (r RegionsOutput) S() map[string]string {
 	for _, region := range r {
 		desc := region.Name
 		if region.Emission == nil {
-			desc += " (no emissions data)"
+			desc += " ⚠️ (no emissions data)"
 		} else {
-			desc += " (" + region.Emission.CalcMethod + ")"
+			// Determine emission level emoji based on carbon intensity
+			emissionEmoji := "🔴" // High emissions (default)
+			if region.Emission.DirectCarbonIntensity < 200 {
+				emissionEmoji = "🟢" // Low emissions
+			} else if region.Emission.DirectCarbonIntensity < 400 {
+				emissionEmoji = "🟡" // Medium emissions
+			}
+
+			// Format carbon intensity with 2 decimal places
+			carbonInfo := fmt.Sprintf("%.2f %s", region.Emission.DirectCarbonIntensity, region.Emission.Unit)
+
+			// Add renewable percentage if available
+			renewableInfo := ""
+			if region.Emission.RenewablePercentage > 0 {
+				renewableInfo = fmt.Sprintf(", 🌿 %.1f%% renewable", region.Emission.RenewablePercentage)
+			}
+
+			desc += fmt.Sprintf(" %s (%s: %s%s)", emissionEmoji, region.Emission.CalcMethod, carbonInfo, renewableInfo)
 		}
 		m[desc] = region.Sku
 	}
