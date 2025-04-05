@@ -17,12 +17,13 @@ package optimizer
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/ksctl/ksctl/v2/pkg/consts"
-	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
 
 func patchZones(emZone string) (updatedZone string) {
@@ -139,7 +140,6 @@ func (k *Optimizer) AttachEmissionsToRegions(cloudProvider consts.KsctlCloud) (p
 		err      error
 	}, len(k.AvailRegions))
 
-	// Launch goroutines for each region
 	for idx, region := range k.AvailRegions {
 		go func(idx int, sku string) {
 			emission, err := k.getZonalEmissions(emZones, cloudProvider, sku)
@@ -151,7 +151,6 @@ func (k *Optimizer) AttachEmissionsToRegions(cloudProvider consts.KsctlCloud) (p
 		}(idx, region.Sku)
 	}
 
-	// Collect results from the channel
 	for i := 0; i < len(k.AvailRegions); i++ {
 		result := <-resultChan
 		if result.err != nil {
@@ -270,12 +269,13 @@ func (k *Optimizer) getZonalEmissions(emZones map[string]map[string]string, clou
 
 	emZone, ok := regMapping[sku]
 	if !ok {
-		return nil, fmt.Errorf("region %s not found in emissions mapping", sku)
+		k.l.Debug(k.ctx, "No emissions mapping found for region", "region", sku)
+		return nil, nil
 	}
-	// query the emission api
+
 	v, err := k.getMonthlyPastData(emZone)
 	if err != nil {
-		k.l.Warn(k.ctx, "Failed to get emissions data", "region", sku, "reason", err)
+		k.l.Debug(k.ctx, "Failed to get emissions data", "region", sku, "reason", err)
 		return nil, nil
 	}
 
