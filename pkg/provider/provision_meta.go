@@ -49,7 +49,6 @@ func (r RegionsOutput) S() map[string]string {
 		if region.Emission == nil {
 			desc += " ⚠️ (no emissions data)"
 		} else {
-			// Determine emission level emoji based on carbon intensity
 			emissionEmoji := "🔴" // High emissions (default)
 			if region.Emission.DirectCarbonIntensity < 200 {
 				emissionEmoji = "🟢" // Low emissions
@@ -57,16 +56,21 @@ func (r RegionsOutput) S() map[string]string {
 				emissionEmoji = "🟡" // Medium emissions
 			}
 
-			// Format carbon intensity with 2 decimal places
-			carbonInfo := fmt.Sprintf("%.2f %s", region.Emission.DirectCarbonIntensity, region.Emission.Unit)
+			carbonInfo := fmt.Sprintf("🏭 Direct %.2f %s, Lifecycle %.2f %s",
+				region.Emission.DirectCarbonIntensity,
+				region.Emission.Unit,
+				region.Emission.LCACarbonIntensity,
+				region.Emission.Unit)
 
-			// Add renewable percentage if available
-			renewableInfo := ""
+			percentageInfo := ""
 			if region.Emission.RenewablePercentage > 0 {
-				renewableInfo = fmt.Sprintf(", 🌿 %.1f%% renewable", region.Emission.RenewablePercentage)
+				percentageInfo += fmt.Sprintf(", ♻️ %.1f%% renewable", region.Emission.RenewablePercentage)
+			}
+			if region.Emission.LowCarbonPercentage > 0 {
+				percentageInfo += fmt.Sprintf(", 👣 %.1f%% low-carbon", region.Emission.LowCarbonPercentage)
 			}
 
-			desc += fmt.Sprintf(" %s (%s: %s%s)", emissionEmoji, region.Emission.CalcMethod, carbonInfo, renewableInfo)
+			desc += fmt.Sprintf(" %s (%s: %s%s)", emissionEmoji, region.Emission.CalcMethod, carbonInfo, percentageInfo)
 		}
 		m[desc] = region.Sku
 	}
