@@ -19,15 +19,15 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
-type ZonalEmission struct {
-	ZoneId string
+type RegionalEmission struct {
+	// CalculationMethod is the method used to calculate the emissions
+	CalcMethod string
 	// DirectCarbonIntensity has unit gCO2eq/kWh
 	DirectCarbonIntensity float64
 	// LCACarbonIntensity has unit gCO2eq/kWh
 	LCACarbonIntensity  float64
 	LowCarbonPercentage float64
 	RenewablePercentage float64
-	DataSource          string
 	Unit                string
 }
 
@@ -35,7 +35,24 @@ type RegionOutput struct {
 	Sku  string
 	Name string
 
-	Emission *ZonalEmission
+	Emission *RegionalEmission
+}
+
+type RegionsOutput []RegionOutput
+
+// S returns a map of the regions with new description
+func (r RegionsOutput) S() map[string]string {
+	m := make(map[string]string, len(r))
+	for _, region := range r {
+		desc := region.Name
+		if region.Emission == nil {
+			desc += " (no emissions data)"
+		} else {
+			desc += " (" + region.Emission.CalcMethod + ")"
+		}
+		m[desc] = region.Sku
+	}
+	return m
 }
 
 type PriceOutput struct {

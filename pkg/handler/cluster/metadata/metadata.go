@@ -35,7 +35,7 @@ import (
 )
 
 func (kc *Controller) ListAllRegions() (
-	_ []provider.RegionOutput,
+	_ provider.RegionsOutput,
 	errC error,
 ) {
 	defer func() {
@@ -57,7 +57,7 @@ func (kc *Controller) ListAllRegions() (
 	}
 
 	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
-	res, err := o.AttachEmissionsToRegions()
+	res, err := o.AttachEmissionsToRegions(kc.client.Metadata.Provider)
 	if err != nil {
 		return nil, err
 	}
@@ -449,6 +449,7 @@ func (kc *Controller) findManagedOfferingCostAcrossRegions(
 			cost[result.region] = result.price
 		}
 	}
+	close(resultChan)
 
 	return cost, nil
 }
@@ -483,6 +484,8 @@ func (kc *Controller) findInstanceCostAcrossRegions(
 			cost[result.region] = result.price
 		}
 	}
+
+	close(resultChan)
 
 	return cost, nil
 }
