@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
@@ -295,4 +296,116 @@ func (k *Optimizer) getZonalEmissions(emZones map[string]map[string]string, clou
 	em.RenewablePercentage /= float64(len(v))
 
 	return em, nil
+}
+
+type embodiedCo2Emissions map[consts.KsctlCloud]map[string]provider.VMEmbodied
+
+func (k *Optimizer) getEmbodiedEmissions() (embodiedCo2Emissions, error) {
+	url := "https://raw.githubusercontent.com/ksctl/components/c4e4bf2a768acf497cf711e15fed985ebc870dfb/co2/embodied_emissions.csv"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %v", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("API returned non-200 status code: %d, response: %s",
+			res.StatusCode, string(bodyBytes))
+	}
+
+	reader := csv.NewReader(res.Body)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CSV: %v", err)
+	}
+
+	records = records[1:]
+
+	type coordinates struct {
+		start, end int
+	}
+
+	azureRecords := coordinates{0, 6}
+	gcpRecords := coordinates{7, 13}
+	awsRecords := coordinates{14, 20}
+
+	dataAws := make(map[string]provider.VMEmbodied, 200)
+	dataAzure := make(map[string]provider.VMEmbodied, 200)
+	dataGcp := make(map[string]provider.VMEmbodied, 100)
+
+	for _, record := range records {
+		aws := record[awsRecords.start:awsRecords.end]
+		azure := record[azureRecords.start:azureRecords.end]
+		gcp := record[gcpRecords.start:gcpRecords.end]
+
+		if len(gcp[1]) > 0 {
+			gcpEmission, _ := strconv.ParseFloat(gcp[4], 64)
+			dataGcp[gcp[1]] = provider.VMEmbodied{
+				EmboddedCo2: gcpEmission,
+				Co2Unit:     "kgCO2eq",
+			}
+		}
+
+		if len(azure[1]) > 0 && (strings.HasPrefix(azure[1], "E") ||
+			strings.HasPrefix(azure[1], "D") ||
+			strings.HasPrefix(azure[1], "B") ||
+			strings.HasPrefix(azure[1], "F")) {
+			azureEmission, _ := strconv.ParseFloat(azure[4], 64)
+			sku := "Standard_" + strings.ReplaceAll(azure[1], " ", "_")
+			dataAzure[sku] = provider.VMEmbodied{
+				EmboddedCo2: azureEmission,
+				Co2Unit:     "kgCO2eq",
+			}
+		}
+
+		if len(aws[1]) > 0 && (strings.HasPrefix(aws[1], "m5") ||
+			strings.HasPrefix(aws[1], "c5") ||
+			strings.HasPrefix(aws[1], "r5") ||
+			strings.HasPrefix(aws[1], "t3") ||
+			strings.HasPrefix(aws[1], "m7i") ||
+			strings.HasPrefix(aws[1], "m7a") ||
+			strings.HasPrefix(aws[1], "m8g")) {
+			awsEmission, _ := strconv.ParseFloat(aws[4], 64)
+			dataAws[aws[1]] = provider.VMEmbodied{
+				EmboddedCo2: awsEmission,
+				Co2Unit:     "kgCO2eq",
+			}
+		}
+	}
+
+	return embodiedCo2Emissions{
+		consts.CloudAzure: dataAzure,
+		consts.CloudAws:   dataAws,
+		consts.CloudGcp:   dataGcp,
+	}, nil
+}
+
+func (k *Optimizer) AttachEmbodiedToInstanceType(
+	instances []provider.InstanceRegionOutput,
+	cloudProvider consts.KsctlCloud,
+) (provider.InstancesRegionOutput, error) {
+	mappings, err := k.getEmbodiedEmissions()
+	if err != nil {
+		return nil, err
+	}
+
+	data, ok := mappings[cloudProvider]
+	if !ok {
+		return nil, fmt.Errorf("cloud provider %s not found in emissions mapping", cloudProvider)
+	}
+	for i, instance := range instances {
+		if v, ok := data[instance.Sku]; ok {
+			instances[i].EmboddedEmissions = &v
+		} else {
+			k.l.Debug(k.ctx, "No embodied emissions mapping found for instance", "instance", instance.Sku)
+		}
+	}
+
+	return instances, nil
 }

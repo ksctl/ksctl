@@ -241,7 +241,7 @@ func (kc *Controller) GetPriceForInstance(region string, instanceType string) (_
 }
 
 func (kc *Controller) ListAllInstances(region string) (
-	out map[string]provider.InstanceRegionOutput,
+	out provider.InstancesRegionOutput,
 	errC error,
 ) {
 	defer func() {
@@ -262,12 +262,14 @@ func (kc *Controller) ListAllInstances(region string) (
 		return nil, err
 	}
 
-	out = make(map[string]provider.InstanceRegionOutput)
-	for _, v := range instances {
-		out[v.Sku] = v
+	o := optimizer.NewOptimizer(kc.ctx, kc.l, nil)
+	_instances, err := o.AttachEmbodiedToInstanceType(instances, kc.client.Metadata.Provider)
+	if err != nil {
+		kc.l.Debug(kc.ctx, "Failed to attach embodied to instance type", "reason", err)
+		return nil, nil
 	}
 
-	return out, nil
+	return _instances, nil
 }
 
 func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []string, errC error) {

@@ -383,6 +383,7 @@ func (p *Provider) NewVM(index int) error {
 	return nil
 }
 
+// NOTE: We need to make the AMI for both arm and x86-64
 func (p *Provider) getLatestUbuntuAMI() (string, error) {
 	imageFilter := &ec2.DescribeImagesInput{ // https://cloud-images.ubuntu.com/locator/ec2/
 		Filters: []types.Filter{

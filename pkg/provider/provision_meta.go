@@ -15,7 +15,6 @@
 package provider
 
 import (
-	"fmt"
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
@@ -40,42 +39,6 @@ type RegionOutput struct {
 }
 
 type RegionsOutput []RegionOutput
-
-// S returns a map of the regions with new description
-func (r RegionsOutput) S() map[string]string {
-	m := make(map[string]string, len(r))
-	for _, region := range r {
-		desc := region.Name
-		if region.Emission == nil {
-			desc += " ⚠️ (no emissions data)"
-		} else {
-			emissionEmoji := "🔴" // High emissions (default)
-			if region.Emission.DirectCarbonIntensity < 200 {
-				emissionEmoji = "🟢" // Low emissions
-			} else if region.Emission.DirectCarbonIntensity < 400 {
-				emissionEmoji = "🟡" // Medium emissions
-			}
-
-			carbonInfo := fmt.Sprintf("🏭 Direct %.2f %s, Lifecycle %.2f %s",
-				region.Emission.DirectCarbonIntensity,
-				region.Emission.Unit,
-				region.Emission.LCACarbonIntensity,
-				region.Emission.Unit)
-
-			percentageInfo := ""
-			if region.Emission.RenewablePercentage > 0 {
-				percentageInfo += fmt.Sprintf(", ♻️ %.1f%% renewable", region.Emission.RenewablePercentage)
-			}
-			if region.Emission.LowCarbonPercentage > 0 {
-				percentageInfo += fmt.Sprintf(", 👣 %.1f%% low-carbon", region.Emission.LowCarbonPercentage)
-			}
-
-			desc += fmt.Sprintf(" %s (%s: %s%s)", emissionEmoji, region.Emission.CalcMethod, carbonInfo, percentageInfo)
-		}
-		m[desc] = region.Sku
-	}
-	return m
-}
 
 type PriceOutput struct {
 	Currency     string
@@ -124,6 +87,11 @@ const (
 	ArchAmd64 MachineArchitecture = "amd64"
 )
 
+type VMEmbodied struct {
+	EmboddedCo2 float64 `json:"embodded_co2"`
+	Co2Unit     string  `json:"co2_unit"`
+}
+
 type InstanceRegionOutput struct {
 	// Sku is the SKU of the instance
 	Sku         string
@@ -137,6 +105,8 @@ type InstanceRegionOutput struct {
 
 	// CpuArch is the architecture of the CPU
 	CpuArch MachineArchitecture
+
+	EmboddedEmissions *VMEmbodied
 
 	Category MachineCategory
 
@@ -160,6 +130,17 @@ func (I InstanceRegionOutput) GetCost() float64 {
 	}
 
 	return machineCostPerMonth + I.Disk.GetCost()
+}
+
+type InstancesRegionOutput []InstanceRegionOutput
+
+func (I InstancesRegionOutput) Get(vmSku string) (*InstanceRegionOutput, bool) {
+	for _, instance := range I {
+		if instance.Sku == vmSku {
+			return &instance, true
+		}
+	}
+	return nil, false
 }
 
 type DiskAttachmentType string
