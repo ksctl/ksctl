@@ -530,6 +530,12 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 ) (res CostOptimizerOutput) {
 
 	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
+	newRegions, err := o.AttachEmissionsToRegions(kc.client.Metadata.Provider)
+	if err != nil {
+		kc.l.Debug(kc.ctx, "Failed to attach emissions to regions", "reason", err)
+		return
+	}
+	o.AvailRegions = newRegions
 
 	if kc.client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
 		_o := o.OptimizeSelfManagedInstanceTypesAcrossRegions(

@@ -201,10 +201,11 @@ func (k *Optimizer) PrintRecommendationSelfManagedCost(
 
 	headers := []string{
 		"Region",
-		fmt.Sprintf("Control Plane (%s)", instanceTypeCP),
-		fmt.Sprintf("Worker Plane (%s)", instanceTypeWP),
-		fmt.Sprintf("Etcd Nodes (%s)", instanceTypeDS),
-		fmt.Sprintf("Load Balancer (%s)", instanceTypeLB),
+		"🏭 Direct Emission",
+		fmt.Sprintf("ControlPlane (%s)", instanceTypeCP),
+		fmt.Sprintf("WorkerPlane (%s)", instanceTypeWP),
+		fmt.Sprintf("DatastorePlane (%s)", instanceTypeDS),
+		fmt.Sprintf("LoadBalancer (%s)", instanceTypeLB),
 		"Total Monthly Cost",
 	}
 
@@ -215,8 +216,21 @@ func (k *Optimizer) PrintRecommendationSelfManagedCost(
 		if reg == currRegion {
 			reg += "*"
 		}
+		regEmissions := ""
+		if v, ok := k.getRegionsInMapFormat()[reg]; ok && v.Emission != nil {
+			regEmissions = fmt.Sprintf("%.2f %s",
+				v.Emission.DirectCarbonIntensity,
+				v.Emission.Unit,
+			)
+		} else if reg == currRegion {
+			regEmissions = "*"
+		} else {
+			regEmissions = "NA"
+		}
+
 		data = append(data, []string{
 			reg,
+			regEmissions,
 			fmt.Sprintf("$%.2f X %d", cost.cpCost, noOfCP),
 			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
 			fmt.Sprintf("$%.2f X %d", cost.etcdCost, noOfDS),
@@ -245,8 +259,9 @@ func (k *Optimizer) PrintRecommendationManagedCost(
 
 	headers := []string{
 		"Region",
-		fmt.Sprintf("Control Plane (%s)", managedOfferingCP),
-		fmt.Sprintf("Worker Plane (%s)", instanceTypeWP),
+		"🏭 Direct Emission",
+		fmt.Sprintf("ControlPlane (%s)", managedOfferingCP),
+		fmt.Sprintf("WorkerPlane (%s)", instanceTypeWP),
 		"Total Monthly Cost",
 	}
 
@@ -257,8 +272,20 @@ func (k *Optimizer) PrintRecommendationManagedCost(
 		if reg == currRegion {
 			reg += "*"
 		}
+		regEmissions := ""
+		if v, ok := k.getRegionsInMapFormat()[reg]; ok && v.Emission != nil {
+			regEmissions = fmt.Sprintf("%.2f %s",
+				v.Emission.DirectCarbonIntensity,
+				v.Emission.Unit,
+			)
+		} else if reg == currRegion {
+			regEmissions = "*"
+		} else {
+			regEmissions = "NA"
+		}
 		data = append(data, []string{
 			reg,
+			regEmissions,
 			fmt.Sprintf("$%.2f X 1", cost.cpCost),
 			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
 			fmt.Sprintf("$%.2f", total),

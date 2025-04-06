@@ -24,7 +24,7 @@ import (
 type Optimizer struct {
 	ctx          context.Context
 	l            logger.Logger
-	AvailRegions []provider.RegionOutput
+	AvailRegions provider.RegionsOutput
 }
 
 func NewOptimizer(
@@ -35,4 +35,12 @@ func NewOptimizer(
 		l:            l,
 		AvailRegions: availRegions,
 	}
+}
+
+func (k *Optimizer) getRegionsInMapFormat() map[string]provider.RegionOutput {
+	regionMap := make(map[string]provider.RegionOutput)
+	for _, region := range k.AvailRegions {
+		regionMap[region.Sku] = region
+	}
+	return regionMap
 }
