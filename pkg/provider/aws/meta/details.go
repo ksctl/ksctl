@@ -29,7 +29,7 @@ import (
 
 func WithDefaultEC2() Option {
 	return func(o *options) error {
-		o.ec2Type = []string{"c5*", "t3*", "m5*", "r5*"}
+		o.ec2Type = []string{"c5*", "t3*", "m5*", "r5*", "m7i*", "m7a*", "m8g*"}
 		return nil
 	}
 }
@@ -102,7 +102,7 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 			category = provider.ComputeIntensive
 		} else if strings.HasPrefix(vmTypeSku, "t3") {
 			category = provider.Burst
-		} else if strings.HasPrefix(vmTypeSku, "m5") {
+		} else if strings.HasPrefix(vmTypeSku, "m") {
 			category = provider.GeneralPurpose
 		} else if strings.HasPrefix(vmTypeSku, "r5") {
 			category = provider.MemoryIntensive

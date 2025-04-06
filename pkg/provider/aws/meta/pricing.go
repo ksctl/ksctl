@@ -63,9 +63,6 @@ type Option func(*options) error
 func (m *AwsMeta) priceVM(region provider.RegionOutput, instanceSku string) (*provider.InstanceRegionOutput, error) {
 	// aws pricing get-products --service-code AmazonEC2 --filters Type=TERM_MATCH,Field=operatingSystem,Value=linux Type=TERM_MATCH,Field=tenancy,Value="Shared" Type=TERM_MATCH,Field=capacitystatus,Value="Used" Type=TERM_MATCH,Field=location,Value="US East (N. Virginia)" Type=TERM_MATCH,Field=instanceType,Value="t3.medium" Type=TERM_MATCH,Field=preInstalledSw,Value="NA" --output=json | jq -r '.PriceList[]' | jq -r .
 
-	if strings.HasPrefix(region.Name, "Europe") {
-	}
-
 	filters := []pricingTypes.Filter{
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
@@ -97,26 +94,11 @@ func (m *AwsMeta) priceVM(region provider.RegionOutput, instanceSku string) (*pr
 			Field: aws.String("instanceType"),
 			Value: aws.String(instanceSku),
 		},
-	}
-
-	if strings.HasPrefix(region.Name, "Europe") {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("regionCode"),
-				Value: aws.String(region.Sku),
-			},
-		}...,
-		)
-	} else {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("location"),
-				Value: aws.String(region.Name),
-			},
-		}...,
-		)
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("regionCode"),
+			Value: aws.String(region.Sku),
+		},
 	}
 
 	input := &pricing.GetProductsInput{
@@ -192,6 +174,11 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
 			Field: aws.String("serviceCode"),
+			Value: aws.String("AmazonEC2"),
+		},
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("servicecode"),
 			Value: aws.String("AmazonEC2"),
 		},
 		{
