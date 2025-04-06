@@ -184,6 +184,7 @@ func (k *Optimizer) PrintRecommendationSelfManagedCost(
 	ctx context.Context,
 	l logger.Logger,
 	costs []RecommendationSelfManagedCost,
+	currRegion string,
 	noOfCP int,
 	noOfWP int,
 	noOfDS int,
@@ -210,8 +211,12 @@ func (k *Optimizer) PrintRecommendationSelfManagedCost(
 	var data [][]string
 	for _, cost := range costs {
 		total := cost.cpCost*float64(noOfCP) + cost.wpCost*float64(noOfWP) + cost.etcdCost*float64(noOfDS) + cost.lbCost
+		reg := cost.Region
+		if reg == currRegion {
+			reg += "*"
+		}
 		data = append(data, []string{
-			cost.Region,
+			reg,
 			fmt.Sprintf("$%.2f X %d", cost.cpCost, noOfCP),
 			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
 			fmt.Sprintf("$%.2f X %d", cost.etcdCost, noOfDS),
@@ -227,6 +232,7 @@ func (k *Optimizer) PrintRecommendationManagedCost(
 	ctx context.Context,
 	l logger.Logger,
 	costs []RecommendationManagedCost,
+	currRegion string,
 	noOfWP int,
 	managedOfferingCP string,
 	instanceTypeWP string,
@@ -247,8 +253,12 @@ func (k *Optimizer) PrintRecommendationManagedCost(
 	var data [][]string
 	for _, cost := range costs {
 		total := cost.cpCost + cost.wpCost*float64(noOfWP)
+		reg := cost.Region
+		if reg == currRegion {
+			reg += "*"
+		}
 		data = append(data, []string{
-			cost.Region,
+			reg,
 			fmt.Sprintf("$%.2f X 1", cost.cpCost),
 			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
 			fmt.Sprintf("$%.2f", total),

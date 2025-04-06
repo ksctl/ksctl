@@ -541,7 +541,7 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 		o.PrintRecommendationSelfManagedCost(
 			kc.ctx,
 			kc.l,
-			_o,
+			_o, currentRegion,
 			req.CountOfControlPlaneNodes,
 			req.CountOfWorkerNodes,
 			req.CountOfEtcdNodes,
@@ -570,7 +570,7 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 		o.PrintRecommendationManagedCost(
 			kc.ctx,
 			kc.l,
-			_o,
+			_o, currentRegion,
 			req.CountOfManagedNodes,
 			req.ManagedOffering.Sku,
 			req.ManagedPlane.Sku,
