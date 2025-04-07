@@ -16,8 +16,9 @@ package optimizer
 
 import (
 	"cmp"
-	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"slices"
+
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )

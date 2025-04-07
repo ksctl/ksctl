@@ -17,7 +17,6 @@ package metadata
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -518,25 +517,17 @@ type CostOptimizerInput struct {
 	CountOfManagedNodes int
 }
 
-type CostOptimizerOutput struct {
-	// Regions sorted via the cost in ascending order
-	Regions          []string
-	CostsManaged     []optimizer.RecommendationManagedCost
-	CostsSelfManaged []optimizer.RecommendationSelfManagedCost
-}
-
 func (kc *Controller) CostOptimizeAcrossRegions(
 	regions []provider.RegionOutput,
-	_ map[string]provider.RegionOutput,
 	currentRegion string,
 	req CostOptimizerInput,
-) (res CostOptimizerOutput) {
+) (_ *optimizer.RecommendationAcrossRegions, _ error) {
 
 	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
 	newRegions, err := o.AttachEmissionsToRegions(kc.client.Metadata.Provider)
 	if err != nil {
 		kc.l.Debug(kc.ctx, "Failed to attach emissions to regions", "reason", err)
-		return
+		return nil, err
 	}
 	o.AvailRegions = newRegions
 
@@ -553,61 +544,35 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 			req.LoadBalancer,
 			kc.findInstanceCostAcrossRegions,
 		)
-
-		//o.PrintRecommendationSelfManagedCost(
-		//	kc.ctx,
-		//	kc.l,
-		//	_o, currentRegion,
-		//	req.CountOfControlPlaneNodes,
-		//	req.CountOfWorkerNodes,
-		//	req.CountOfEtcdNodes,
-		//	req.ControlPlane.Sku,
-		//	req.WorkerPlane.Sku,
-		//	req.DataStorePlane.Sku,
-		//	req.LoadBalancer.Sku,
-		//)
-
-		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationSelfManagedCost) bool {
-			return i.Region == currentRegion
-		})
-		_o = append(_o[:pos], _o[pos+1:]...)
-		for _, v := range _o {
-			res.Regions = append(res.Regions, v.Region)
-		}
-
-	} else {
-		_o := o.OptimizeManagedOfferingsAcrossRegions(
-			req.ManagedOffering,
-			req.ManagedPlane,
-			kc.findInstanceCostAcrossRegions,
-			kc.findManagedOfferingCostAcrossRegions,
+		resC, err := o.InstanceTypeOptimizerAcrossRegions(
+			consts.ClusterTypeMang,
+			nil, _o,
+			currentRegion,
+			req.CountOfControlPlaneNodes, req.CountOfWorkerNodes, req.CountOfEtcdNodes,
+			"", req.ControlPlane.Sku, req.WorkerPlane.Sku, req.DataStorePlane.Sku, req.LoadBalancer.Sku,
 		)
-
-		//o.InstanceTypeOptimizerAcrossRegions(
-		//	consts.ClusterTypeMang,
-		//	_o, nil,
-		//	currentRegion,
-		//	req.CountOfControlPlaneNodes,
-		//	req.CountOfWorkerNodes,
-		//)
-		//
-		//o.PrintRecommendationManagedCost(
-		//	kc.ctx,
-		//	kc.l,
-		//	_o, currentRegion,
-		//	req.CountOfManagedNodes,
-		//	req.ManagedOffering.Sku,
-		//	req.ManagedPlane.Sku,
-		//)
-
-		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationManagedCost) bool {
-			return i.Region == currentRegion
-		})
-		_o = append(_o[:pos], _o[pos+1:]...)
-		for _, v := range _o {
-			res.Regions = append(res.Regions, v.Region)
+		if err != nil {
+			return nil, err
 		}
+		return &resC, nil
 	}
 
-	return res
+	_o := o.OptimizeManagedOfferingsAcrossRegions(
+		req.ManagedOffering,
+		req.ManagedPlane,
+		kc.findInstanceCostAcrossRegions,
+		kc.findManagedOfferingCostAcrossRegions,
+	)
+
+	resC, err := o.InstanceTypeOptimizerAcrossRegions(
+		consts.ClusterTypeMang,
+		_o, nil,
+		currentRegion,
+		req.CountOfControlPlaneNodes, req.CountOfManagedNodes, 0,
+		req.ManagedOffering.Sku, "", req.ManagedPlane.Sku, "", "",
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &resC, nil
 }
