@@ -520,11 +520,14 @@ type CostOptimizerInput struct {
 
 type CostOptimizerOutput struct {
 	// Regions sorted via the cost in ascending order
-	Regions []string
+	Regions          []string
+	CostsManaged     []optimizer.RecommendationManagedCost
+	CostsSelfManaged []optimizer.RecommendationSelfManagedCost
 }
 
 func (kc *Controller) CostOptimizeAcrossRegions(
 	regions []provider.RegionOutput,
+	_ map[string]provider.RegionOutput,
 	currentRegion string,
 	req CostOptimizerInput,
 ) (res CostOptimizerOutput) {
@@ -537,6 +540,11 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 	}
 	o.AvailRegions = newRegions
 
+	regionMap := make(map[string]provider.RegionOutput)
+	for _, region := range newRegions {
+		regionMap[region.Sku] = region
+	}
+
 	if kc.client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
 		_o := o.OptimizeSelfManagedInstanceTypesAcrossRegions(
 			req.ControlPlane,
@@ -546,18 +554,18 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 			kc.findInstanceCostAcrossRegions,
 		)
 
-		o.PrintRecommendationSelfManagedCost(
-			kc.ctx,
-			kc.l,
-			_o, currentRegion,
-			req.CountOfControlPlaneNodes,
-			req.CountOfWorkerNodes,
-			req.CountOfEtcdNodes,
-			req.ControlPlane.Sku,
-			req.WorkerPlane.Sku,
-			req.DataStorePlane.Sku,
-			req.LoadBalancer.Sku,
-		)
+		//o.PrintRecommendationSelfManagedCost(
+		//	kc.ctx,
+		//	kc.l,
+		//	_o, currentRegion,
+		//	req.CountOfControlPlaneNodes,
+		//	req.CountOfWorkerNodes,
+		//	req.CountOfEtcdNodes,
+		//	req.ControlPlane.Sku,
+		//	req.WorkerPlane.Sku,
+		//	req.DataStorePlane.Sku,
+		//	req.LoadBalancer.Sku,
+		//)
 
 		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationSelfManagedCost) bool {
 			return i.Region == currentRegion
@@ -575,14 +583,22 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 			kc.findManagedOfferingCostAcrossRegions,
 		)
 
-		o.PrintRecommendationManagedCost(
-			kc.ctx,
-			kc.l,
-			_o, currentRegion,
-			req.CountOfManagedNodes,
-			req.ManagedOffering.Sku,
-			req.ManagedPlane.Sku,
-		)
+		//o.InstanceTypeOptimizerAcrossRegions(
+		//	consts.ClusterTypeMang,
+		//	_o, nil,
+		//	currentRegion,
+		//	req.CountOfControlPlaneNodes,
+		//	req.CountOfWorkerNodes,
+		//)
+		//
+		//o.PrintRecommendationManagedCost(
+		//	kc.ctx,
+		//	kc.l,
+		//	_o, currentRegion,
+		//	req.CountOfManagedNodes,
+		//	req.ManagedOffering.Sku,
+		//	req.ManagedPlane.Sku,
+		//)
 
 		pos := slices.IndexFunc(_o, func(i optimizer.RecommendationManagedCost) bool {
 			return i.Region == currentRegion

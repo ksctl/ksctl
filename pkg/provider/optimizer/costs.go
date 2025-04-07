@@ -16,21 +16,18 @@ package optimizer
 
 import (
 	"cmp"
-	"context"
-	"fmt"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"slices"
 
-	"github.com/fatih/color"
-	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 )
 
 type RecommendationManagedCost struct {
 	Region    string
-	totalCost float64
+	TotalCost float64
 
-	cpCost float64
-	wpCost float64
+	CpCost float64
+	WpCost float64
 }
 
 func (k *Optimizer) getBestRegionsWithTotalCostManaged(
@@ -55,14 +52,14 @@ func (k *Optimizer) getBestRegionsWithTotalCostManaged(
 
 		costForCluster = append(costForCluster, RecommendationManagedCost{
 			Region:    region.Sku,
-			cpCost:    costForCP[region.Sku],
-			wpCost:    costForWP[region.Sku],
-			totalCost: totalCost,
+			CpCost:    costForCP[region.Sku],
+			WpCost:    costForWP[region.Sku],
+			TotalCost: totalCost,
 		})
 	}
 
 	slices.SortFunc(costForCluster, func(a, b RecommendationManagedCost) int {
-		return cmp.Compare(a.totalCost, b.totalCost)
+		return cmp.Compare(a.TotalCost, b.TotalCost)
 	})
 
 	return costForCluster
@@ -70,12 +67,12 @@ func (k *Optimizer) getBestRegionsWithTotalCostManaged(
 
 type RecommendationSelfManagedCost struct {
 	Region    string
-	totalCost float64
+	TotalCost float64
 
-	cpCost   float64
-	wpCost   float64
-	etcdCost float64
-	lbCost   float64
+	CpCost   float64
+	WpCost   float64
+	EtcdCost float64
+	LbCost   float64
 }
 
 func (k *Optimizer) getBestRegionsWithTotalCostSelfManaged(
@@ -104,16 +101,16 @@ func (k *Optimizer) getBestRegionsWithTotalCostSelfManaged(
 
 		costForCluster = append(costForCluster, RecommendationSelfManagedCost{
 			Region:    region.Sku,
-			cpCost:    costForCP[region.Sku],
-			wpCost:    costForWP[region.Sku],
-			etcdCost:  costForDS[region.Sku],
-			lbCost:    costForLB[region.Sku],
-			totalCost: totalCost,
+			CpCost:    costForCP[region.Sku],
+			WpCost:    costForWP[region.Sku],
+			EtcdCost:  costForDS[region.Sku],
+			LbCost:    costForLB[region.Sku],
+			TotalCost: totalCost,
 		})
 	}
 
 	slices.SortFunc(costForCluster, func(a, b RecommendationSelfManagedCost) int {
-		return cmp.Compare(a.totalCost, b.totalCost)
+		return cmp.Compare(a.TotalCost, b.TotalCost)
 	})
 
 	return costForCluster
@@ -180,117 +177,130 @@ func (k *Optimizer) OptimizeManagedOfferingsAcrossRegions(
 	)
 }
 
-func (k *Optimizer) PrintRecommendationSelfManagedCost(
-	ctx context.Context,
-	l logger.Logger,
-	costs []RecommendationSelfManagedCost,
+type RegionRecommendation struct {
+	Region           string                     `json:"region"`
+	Emissions        *provider.RegionalEmission `json:"emissions,omitempty"`
+	ControlPlaneCost float64                    `json:"controlPlaneCost"`
+	WorkerPlaneCost  float64                    `json:"workerPlaneCost"`
+	DataStoreCost    float64                    `json:"dataStoreCost,omitempty"`
+	LoadBalancerCost float64                    `json:"loadBalancerCost,omitempty"`
+	TotalCost        float64                    `json:"totalCost"`
+}
+
+type RecommendationAcrossRegions struct {
+	RegionRecommendations []RegionRecommendation     `json:"regionRecommendations"`
+	CurrentRegion         string                     `json:"current_region"`
+	CurrentTotalCost      float64                    `json:"current_total_cost"`
+	CurrentEmissions      *provider.RegionalEmission `json:"current_emissions"`
+
+	InstanceTypeCP string `json:"instanceTypeCP,omitempty"`
+	InstanceTypeWP string `json:"instanceTypeWP"`
+	InstanceTypeDS string `json:"instanceTypeDS,omitempty"`
+	InstanceTypeLB string `json:"instanceTypeLB,omitempty"`
+
+	ManagedOffering string `json:"managedOffering,omitempty"`
+
+	ControlPlaneCount int `json:"controlPlaneCount,omitempty"`
+	WorkerPlaneCount  int `json:"workerPlaneCount"`
+	DataStoreCount    int `json:"dataStoreCount,omitempty"`
+}
+
+// InstanceTypeOptimizerAcrossRegions is used to get the best regions for the given instance types across all the regions
+//
+//	TODO: also wrt to the emissions as well!!!
+func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
+	clusterType consts.KsctlClusterType,
+	costsManaged []RecommendationManagedCost,
+	costsSelfManaged []RecommendationSelfManagedCost,
 	currRegion string,
 	noOfCP int,
 	noOfWP int,
 	noOfDS int,
+	managedOfferingCP string,
 	instanceTypeCP string,
 	instanceTypeWP string,
 	instanceTypeDS string,
 	instanceTypeLB string,
-) {
-	l.Print(ctx,
-		"Here is your recommendation",
-		"Parameter", "Region wise cost",
-		"OptimizedRegion", color.HiCyanString(costs[0].Region),
-	)
+) (res RecommendationAcrossRegions, errC error) {
+	res = RecommendationAcrossRegions{
+		CurrentRegion:    currRegion,
+		CurrentEmissions: nil,
+		CurrentTotalCost: 0.0,
 
-	headers := []string{
-		"Region",
-		"🏭 Direct Emission",
-		fmt.Sprintf("ControlPlane (%s)", instanceTypeCP),
-		fmt.Sprintf("WorkerPlane (%s)", instanceTypeWP),
-		fmt.Sprintf("DatastorePlane (%s)", instanceTypeDS),
-		fmt.Sprintf("LoadBalancer (%s)", instanceTypeLB),
-		"Total Monthly Cost",
+		InstanceTypeCP:  instanceTypeCP,
+		ManagedOffering: managedOfferingCP,
+
+		InstanceTypeWP: instanceTypeWP,
+
+		InstanceTypeDS: instanceTypeDS,
+		InstanceTypeLB: instanceTypeLB,
+
+		ControlPlaneCount: noOfCP,
+		WorkerPlaneCount:  noOfWP,
+		DataStoreCount:    noOfDS,
 	}
 
-	var data [][]string
-	for _, cost := range costs {
-		total := cost.cpCost*float64(noOfCP) + cost.wpCost*float64(noOfWP) + cost.etcdCost*float64(noOfDS) + cost.lbCost
-		reg := cost.Region
-		if reg == currRegion {
-			reg += "*"
-		}
-		regEmissions := ""
-		if v, ok := k.getRegionsInMapFormat()[reg]; ok && v.Emission != nil {
-			regEmissions = fmt.Sprintf("%.2f %s",
-				v.Emission.DirectCarbonIntensity,
-				v.Emission.Unit,
-			)
-		} else if reg == currRegion {
-			regEmissions = "*"
-		} else {
-			regEmissions = "NA"
+	if clusterType == consts.ClusterTypeMang {
+		idxCurrReg := -1
+		for i, cost := range costsManaged {
+			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP)
+			if cost.Region == currRegion {
+				idxCurrReg = i
+				res.CurrentTotalCost = total
+				if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+					res.CurrentEmissions = v.Emission
+				}
+				break
+			}
 		}
 
-		data = append(data, []string{
-			reg,
-			regEmissions,
-			fmt.Sprintf("$%.2f X %d", cost.cpCost, noOfCP),
-			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
-			fmt.Sprintf("$%.2f X %d", cost.etcdCost, noOfDS),
-			fmt.Sprintf("$%.2f X 1", cost.lbCost),
-			fmt.Sprintf("$%.2f", total),
-		})
+		for _, cost := range costsManaged[:idxCurrReg] {
+			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP)
+
+			var regionEmissions *provider.RegionalEmission
+			if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+				regionEmissions = v.Emission
+			}
+			res.RegionRecommendations = append(res.RegionRecommendations, RegionRecommendation{
+				Region:           cost.Region,
+				ControlPlaneCost: cost.CpCost,
+				WorkerPlaneCost:  cost.WpCost,
+				TotalCost:        total,
+				Emissions:        regionEmissions,
+			})
+		}
+
+	} else if clusterType == consts.ClusterTypeSelfMang {
+		idxCurrReg := -1
+		for i, cost := range costsSelfManaged {
+			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP) + cost.EtcdCost*float64(noOfDS) + cost.LbCost
+			if cost.Region == currRegion {
+				idxCurrReg = i
+				res.CurrentTotalCost = total
+				if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+					res.CurrentEmissions = v.Emission
+				}
+				break
+			}
+		}
+
+		for _, cost := range costsSelfManaged[:idxCurrReg] {
+			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP) + cost.EtcdCost*float64(noOfDS) + cost.LbCost
+
+			var regionEmissions *provider.RegionalEmission
+			if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+				regionEmissions = v.Emission
+			}
+			res.RegionRecommendations = append(res.RegionRecommendations, RegionRecommendation{
+				Region:           cost.Region,
+				ControlPlaneCost: cost.CpCost,
+				WorkerPlaneCost:  cost.WpCost,
+				DataStoreCost:    cost.EtcdCost,
+				LoadBalancerCost: cost.LbCost,
+				TotalCost:        total,
+				Emissions:        regionEmissions,
+			})
+		}
 	}
-
-	l.Table(ctx, headers, data)
-}
-
-func (k *Optimizer) PrintRecommendationManagedCost(
-	ctx context.Context,
-	l logger.Logger,
-	costs []RecommendationManagedCost,
-	currRegion string,
-	noOfWP int,
-	managedOfferingCP string,
-	instanceTypeWP string,
-) {
-	l.Print(ctx,
-		"Here is your recommendation",
-		"Parameter", "Region wise cost",
-		"OptimizedRegion", color.HiCyanString(costs[0].Region),
-	)
-
-	headers := []string{
-		"Region",
-		"🏭 Direct Emission",
-		fmt.Sprintf("ControlPlane (%s)", managedOfferingCP),
-		fmt.Sprintf("WorkerPlane (%s)", instanceTypeWP),
-		"Total Monthly Cost",
-	}
-
-	var data [][]string
-	for _, cost := range costs {
-		total := cost.cpCost + cost.wpCost*float64(noOfWP)
-		reg := cost.Region
-		if reg == currRegion {
-			reg += "*"
-		}
-		regEmissions := ""
-		if v, ok := k.getRegionsInMapFormat()[reg]; ok && v.Emission != nil {
-			regEmissions = fmt.Sprintf("%.2f %s",
-				v.Emission.DirectCarbonIntensity,
-				v.Emission.Unit,
-			)
-		} else if reg == currRegion {
-			regEmissions = "*"
-		} else {
-			regEmissions = "NA"
-		}
-		data = append(data, []string{
-			reg,
-			regEmissions,
-			fmt.Sprintf("$%.2f X 1", cost.cpCost),
-			fmt.Sprintf("$%.2f X %d", cost.wpCost, noOfWP),
-			fmt.Sprintf("$%.2f", total),
-		})
-	}
-
-	l.Table(ctx, headers, data)
+	return res, nil
 }
