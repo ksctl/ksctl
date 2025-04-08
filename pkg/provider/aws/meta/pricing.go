@@ -196,26 +196,11 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 			Field: aws.String("capacitystatus"),
 			Value: aws.String("Used"),
 		},
-	}
-
-	if strings.HasPrefix(region.Name, "Europe") {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("regionCode"),
-				Value: aws.String(region.Sku),
-			},
-		}...,
-		)
-	} else {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("location"),
-				Value: aws.String(region.Name),
-			},
-		}...,
-		)
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("regionCode"),
+			Value: aws.String(region.Sku),
+		},
 	}
 
 	input := &pricing.GetProductsInput{
@@ -381,26 +366,11 @@ func (m *AwsMeta) priceSpecificEBS(region provider.RegionOutput, volumeType stri
 			Field: aws.String("productFamily"),
 			Value: aws.String("Storage"),
 		},
-	}
-
-	if strings.HasPrefix(region.Name, "Europe") {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("regionCode"),
-				Value: aws.String(region.Sku),
-			},
-		}...,
-		)
-	} else {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("location"),
-				Value: aws.String(region.Name),
-			},
-		}...,
-		)
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("regionCode"),
+			Value: aws.String(region.Sku),
+		},
 	}
 
 	input := &pricing.GetProductsInput{
@@ -558,25 +528,11 @@ func (m *AwsMeta) priceSpeficEks(region provider.RegionOutput, eksType string, v
 			Field: aws.String("locationType"),
 			Value: aws.String("AWS Region"),
 		},
-	}
-	if strings.HasPrefix(region.Name, "Europe") {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("regionCode"),
-				Value: aws.String(region.Sku),
-			},
-		}...,
-		)
-	} else {
-		filters = append(filters, []pricingTypes.Filter{
-			{
-				Type:  pricingTypes.FilterTypeTermMatch,
-				Field: aws.String("location"),
-				Value: aws.String(region.Name),
-			},
-		}...,
-		)
+		{
+			Type:  pricingTypes.FilterTypeTermMatch,
+			Field: aws.String("regionCode"),
+			Value: aws.String(region.Sku),
+		},
 	}
 
 	var autoNode *provider.ManagedClusterOutput
