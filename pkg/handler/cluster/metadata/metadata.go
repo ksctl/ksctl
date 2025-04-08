@@ -16,9 +16,12 @@ package metadata
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ksctl/ksctl/v2/pkg/provider/optimizer"
 
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/handler/cni"
@@ -31,7 +34,7 @@ import (
 )
 
 func (kc *Controller) ListAllRegions() (
-	_ []provider.RegionOutput,
+	_ provider.RegionsOutput,
 	errC error,
 ) {
 	defer func() {
@@ -52,7 +55,13 @@ func (kc *Controller) ListAllRegions() (
 		return nil, err
 	}
 
-	return regions, nil
+	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
+	res, err := o.AttachEmissionsToRegions(kc.client.Metadata.Provider)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 type PriceCalculatorInput struct {
@@ -231,7 +240,7 @@ func (kc *Controller) GetPriceForInstance(region string, instanceType string) (_
 }
 
 func (kc *Controller) ListAllInstances(region string) (
-	out map[string]provider.InstanceRegionOutput,
+	out provider.InstancesRegionOutput,
 	errC error,
 ) {
 	defer func() {
@@ -252,12 +261,14 @@ func (kc *Controller) ListAllInstances(region string) (
 		return nil, err
 	}
 
-	out = make(map[string]provider.InstanceRegionOutput)
-	for _, v := range instances {
-		out[v.Sku] = v
+	o := optimizer.NewOptimizer(kc.ctx, kc.l, nil)
+	_instances, err := o.AttachEmbodiedToInstanceType(instances, kc.client.Metadata.Provider)
+	if err != nil {
+		kc.l.Debug(kc.ctx, "Failed to attach embodied to instance type", "reason", err)
+		return nil, nil
 	}
 
-	return out, nil
+	return _instances, nil
 }
 
 func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []string, errC error) {
@@ -390,4 +401,178 @@ func (kc *Controller) ListBootstrapCNIs() (
 	a, b := cni.GetCNIs()
 
 	return c, d, a, b, nil
+}
+
+func (kc *Controller) findManagedOfferingCostAcrossRegions(
+	availRegions []provider.RegionOutput,
+	managedOfferingSku string,
+) (map[string]float64, error) {
+	resultChan := make(chan struct {
+		region string
+		price  float64
+		err    error
+	}, len(availRegions))
+
+	for _, region := range availRegions {
+		regSku := region.Sku
+		go func(sku string) {
+			_price, err := kc.ListAllManagedClusterManagementOfferings(regSku, nil)
+			if err == nil {
+				v, ok := _price[managedOfferingSku]
+				if ok {
+					resultChan <- struct {
+						region string
+						price  float64
+						err    error
+					}{sku, v.GetCost(), nil}
+				} else {
+					resultChan <- struct {
+						region string
+						price  float64
+						err    error
+					}{sku, 0.0, fmt.Errorf("managed offering not found")}
+				}
+
+			} else {
+				resultChan <- struct {
+					region string
+					price  float64
+					err    error
+				}{sku, 0.0, err}
+			}
+		}(regSku)
+	}
+
+	cost := make(map[string]float64, len(availRegions))
+	for i := 0; i < len(availRegions); i++ {
+		result := <-resultChan
+		if result.err == nil {
+			cost[result.region] = result.price
+		}
+	}
+	close(resultChan)
+
+	return cost, nil
+}
+
+// findInstanceCostAcrossRegions it returns a map of K[V] where K is the region and V is the cost of the instance
+func (kc *Controller) findInstanceCostAcrossRegions(
+	availRegions []provider.RegionOutput,
+	instanceSku string,
+) (map[string]float64, error) {
+	resultChan := make(chan struct {
+		region string
+		price  float64
+		err    error
+	}, len(availRegions))
+
+	for _, region := range availRegions {
+		regSku := region.Sku
+		go func(sku string) {
+			price, err := kc.GetPriceForInstance(sku, instanceSku)
+			resultChan <- struct {
+				region string
+				price  float64
+				err    error
+			}{sku, price, err}
+		}(regSku)
+	}
+
+	cost := make(map[string]float64, len(availRegions))
+	for i := 0; i < len(availRegions); i++ {
+		result := <-resultChan
+		if result.err == nil {
+			cost[result.region] = result.price
+		}
+	}
+
+	close(resultChan)
+
+	return cost, nil
+}
+
+type CostOptimizerInput struct {
+	// ManagedOffering needs to be added for managed cluster it denotes managed control plane
+	ManagedOffering provider.ManagedClusterOutput
+
+	// ManagedPlane needs to be added for managed cluster it denotes managed plane
+	ManagedPlane provider.InstanceRegionOutput
+
+	// WorkerPlane needs to be added for self managed cluster it denotes worker plane
+	WorkerPlane provider.InstanceRegionOutput
+
+	// DataStorePlane needs to be added for self managed cluster it denotes DataStorePlane plane
+	DataStorePlane provider.InstanceRegionOutput
+
+	// ControlPlane needs to be added for self managed cluster it denotes control plane
+	ControlPlane provider.InstanceRegionOutput
+
+	// LoadBalancer needs to be added for self managed cluster it denotes load balancer
+	LoadBalancer provider.InstanceRegionOutput
+
+	CountOfWorkerNodes       int
+	CountOfControlPlaneNodes int
+	CountOfEtcdNodes         int
+
+	CountOfManagedNodes int
+}
+
+func (kc *Controller) CostOptimizeAcrossRegions(
+	regions []provider.RegionOutput,
+	currentRegion string,
+	req CostOptimizerInput,
+) (_ *optimizer.RecommendationAcrossRegions, _ error) {
+
+	o := optimizer.NewOptimizer(kc.ctx, kc.l, regions)
+	newRegions, err := o.AttachEmissionsToRegions(kc.client.Metadata.Provider)
+	if err != nil {
+		kc.l.Debug(kc.ctx, "Failed to attach emissions to regions", "reason", err)
+		return nil, err
+	}
+	o.AvailRegions = newRegions
+
+	regionMap := make(map[string]provider.RegionOutput)
+	for _, region := range newRegions {
+		regionMap[region.Sku] = region
+	}
+
+	if kc.client.Metadata.ClusterType == consts.ClusterTypeSelfMang {
+		_o := o.OptimizeSelfManagedInstanceTypesAcrossRegions(
+			req.ControlPlane,
+			req.WorkerPlane,
+			req.DataStorePlane,
+			req.LoadBalancer,
+			kc.findInstanceCostAcrossRegions,
+		)
+		resC, err := o.InstanceTypeOptimizerAcrossRegions(
+			consts.ClusterTypeMang,
+			nil, _o,
+			currentRegion,
+			req.CountOfControlPlaneNodes, req.CountOfWorkerNodes, req.CountOfEtcdNodes,
+			"", req.ControlPlane.Sku, req.WorkerPlane.Sku, req.DataStorePlane.Sku, req.LoadBalancer.Sku,
+		)
+		if err != nil {
+			return nil, err
+		}
+		return &resC, nil
+	}
+
+	_o := o.OptimizeManagedOfferingsAcrossRegions(
+		req.ManagedOffering,
+		req.ManagedPlane,
+		kc.findInstanceCostAcrossRegions,
+		kc.findManagedOfferingCostAcrossRegions,
+	)
+
+	resC, err := o.InstanceTypeOptimizerAcrossRegions(
+		consts.ClusterTypeMang,
+		_o, nil,
+		currentRegion,
+		req.CountOfControlPlaneNodes, req.CountOfManagedNodes, 0,
+		req.ManagedOffering.Sku, "", req.ManagedPlane.Sku, "", "",
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &resC, nil
 }

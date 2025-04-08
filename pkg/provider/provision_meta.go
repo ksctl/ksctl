@@ -19,10 +19,26 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
+type RegionalEmission struct {
+	// CalculationMethod is the method used to calculate the emissions
+	CalcMethod string
+	// DirectCarbonIntensity has unit gCO2eq/kWh
+	DirectCarbonIntensity float64
+	// LCACarbonIntensity has unit gCO2eq/kWh
+	LCACarbonIntensity  float64
+	LowCarbonPercentage float64
+	RenewablePercentage float64
+	Unit                string
+}
+
 type RegionOutput struct {
 	Sku  string
 	Name string
+
+	Emission *RegionalEmission
 }
+
+type RegionsOutput []RegionOutput
 
 type PriceOutput struct {
 	Currency     string
@@ -71,6 +87,11 @@ const (
 	ArchAmd64 MachineArchitecture = "amd64"
 )
 
+type VMEmbodied struct {
+	EmboddedCo2 float64 `json:"embodded_co2"`
+	Co2Unit     string  `json:"co2_unit"`
+}
+
 type InstanceRegionOutput struct {
 	// Sku is the SKU of the instance
 	Sku         string
@@ -84,6 +105,8 @@ type InstanceRegionOutput struct {
 
 	// CpuArch is the architecture of the CPU
 	CpuArch MachineArchitecture
+
+	EmboddedEmissions *VMEmbodied
 
 	Category MachineCategory
 
@@ -107,6 +130,17 @@ func (I InstanceRegionOutput) GetCost() float64 {
 	}
 
 	return machineCostPerMonth + I.Disk.GetCost()
+}
+
+type InstancesRegionOutput []InstanceRegionOutput
+
+func (I InstancesRegionOutput) Get(vmSku string) (*InstanceRegionOutput, bool) {
+	for _, instance := range I {
+		if instance.Sku == vmSku {
+			return &instance, true
+		}
+	}
+	return nil, false
 }
 
 type DiskAttachmentType string

@@ -100,6 +100,7 @@ const (
 	CloudAzure KsctlCloud = "azure"
 	CloudLocal KsctlCloud = "local"
 	CloudAws   KsctlCloud = "aws"
+	CloudGcp   KsctlCloud = "gcp"
 	CloudAll   KsctlCloud = "all"
 )
 const (
