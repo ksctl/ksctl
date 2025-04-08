@@ -178,11 +178,6 @@ func (m *AwsMeta) priceVMs(region provider.RegionOutput) (map[string]provider.In
 		},
 		{
 			Type:  pricingTypes.FilterTypeTermMatch,
-			Field: aws.String("servicecode"),
-			Value: aws.String("AmazonEC2"),
-		},
-		{
-			Type:  pricingTypes.FilterTypeTermMatch,
 			Field: aws.String("operatingSystem"),
 			Value: aws.String("Linux"),
 		},
