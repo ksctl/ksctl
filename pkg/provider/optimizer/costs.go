@@ -244,7 +244,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	if clusterType == consts.ClusterTypeMang {
 		idxCurrReg := -1
 		for i, cost := range costsManaged {
-			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP)
+			total := cost.CpCost + cost.WpCost*float64(noOfWP)
 			if cost.Region == currRegion {
 				idxCurrReg = i
 				res.CurrentTotalCost = total
@@ -256,7 +256,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		}
 
 		for _, cost := range costsManaged[:idxCurrReg] {
-			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP)
+			total := cost.CpCost + cost.WpCost*float64(noOfWP)
 
 			var regionEmissions *provider.RegionalEmission
 			if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
