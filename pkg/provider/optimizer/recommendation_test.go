@@ -40,6 +40,8 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			Name: "region1",
 			Emission: &provider.RegionalEmission{
 				DirectCarbonIntensity: 50.0,
+				RenewablePercentage:   74.4,
+				LowCarbonPercentage:   5.5,
 				Unit:                  "gCO2/kWh",
 			},
 		},
@@ -48,6 +50,8 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			Name: "region2",
 			Emission: &provider.RegionalEmission{
 				DirectCarbonIntensity: 100.0,
+				RenewablePercentage:   94.4,
+				LowCarbonPercentage:   9.5,
 				Unit:                  "gCO2/kWh",
 			},
 		},
@@ -207,17 +211,27 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 		currReg := "region2"
 
 		expectedResp := optimizer.RecommendationAcrossRegions{
-			CurrentRegion:         currReg,
-			CurrentEmissions:      regions[currReg].Emission,
-			CurrentTotalCost:      100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-			InstanceTypeCP:        cpSku,
-			InstanceTypeWP:        wpSku,
-			InstanceTypeDS:        etcdSku,
-			InstanceTypeLB:        lbSku,
-			ControlPlaneCount:     noCP,
-			WorkerPlaneCount:      noWP,
-			DataStoreCount:        noDS,
-			RegionRecommendations: nil,
+			CurrentRegion:     currReg,
+			CurrentEmissions:  regions[currReg].Emission,
+			CurrentTotalCost:  100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+			InstanceTypeCP:    cpSku,
+			InstanceTypeWP:    wpSku,
+			InstanceTypeDS:    etcdSku,
+			InstanceTypeLB:    lbSku,
+			ControlPlaneCount: noCP,
+			WorkerPlaneCount:  noWP,
+			DataStoreCount:    noDS,
+			RegionRecommendations: []optimizer.RegionRecommendation{
+				{
+					Region:           "region1",
+					ControlPlaneCost: 100.0,
+					WorkerPlaneCost:  200.0,
+					DataStoreCost:    300.0,
+					LoadBalancerCost: 20.0,
+					TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+					Emissions:        regions["region1"].Emission,
+				},
+			},
 		}
 
 		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
