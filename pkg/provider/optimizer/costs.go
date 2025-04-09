@@ -31,7 +31,7 @@ type RecommendationManagedCost struct {
 	WpCost float64
 }
 
-func (k *Optimizer) getBestRegionsWithTotalCostManaged(
+func (k *Optimizer) getRegionsWithTotalCostManaged(
 	costForCP map[string]float64,
 	costForWP map[string]float64,
 ) []RecommendationManagedCost {
@@ -59,10 +59,6 @@ func (k *Optimizer) getBestRegionsWithTotalCostManaged(
 		})
 	}
 
-	slices.SortFunc(costForCluster, func(a, b RecommendationManagedCost) int {
-		return cmp.Compare(a.TotalCost, b.TotalCost)
-	})
-
 	return costForCluster
 }
 
@@ -76,7 +72,7 @@ type RecommendationSelfManagedCost struct {
 	LbCost   float64
 }
 
-func (k *Optimizer) getBestRegionsWithTotalCostSelfManaged(
+func (k *Optimizer) getRegionsWithTotalCostSelfManaged(
 	costForCP map[string]float64,
 	costForWP map[string]float64,
 	costForDS map[string]float64,
@@ -109,10 +105,6 @@ func (k *Optimizer) getBestRegionsWithTotalCostSelfManaged(
 			TotalCost: totalCost,
 		})
 	}
-
-	slices.SortFunc(costForCluster, func(a, b RecommendationSelfManagedCost) int {
-		return cmp.Compare(a.TotalCost, b.TotalCost)
-	})
 
 	return costForCluster
 }
@@ -148,7 +140,7 @@ func (k *Optimizer) OptimizeSelfManagedInstanceTypesAcrossRegions(
 		k.l.Error("Failed to get the cost of load balancer instances", "Reason", err)
 	}
 
-	return k.getBestRegionsWithTotalCostSelfManaged(
+	return k.getRegionsWithTotalCostSelfManaged(
 		cpInstanceCosts,
 		wpInstanceCosts,
 		etcdInstanceCosts,
@@ -172,7 +164,7 @@ func (k *Optimizer) OptimizeManagedOfferingsAcrossRegions(
 		k.l.Error("Failed to get the cost of control plane managed offerings", "Reason", err)
 	}
 
-	return k.getBestRegionsWithTotalCostManaged(
+	return k.getRegionsWithTotalCostManaged(
 		cpInstanceCosts,
 		wpInstanceCosts,
 	)
@@ -250,6 +242,10 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	)
 
 	if clusterType == consts.ClusterTypeMang {
+		slices.SortFunc(costsManaged, func(a, b RecommendationManagedCost) int {
+			return cmp.Compare(a.TotalCost, b.TotalCost)
+		})
+
 		for _, cost := range costsManaged {
 			if cost.Region == currRegion {
 				res.CurrentTotalCost = cost.CpCost + cost.WpCost*float64(noOfWP)
@@ -286,6 +282,10 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			}
 		}
 	} else if clusterType == consts.ClusterTypeSelfMang {
+		slices.SortFunc(costsSelfManaged, func(a, b RecommendationSelfManagedCost) int {
+			return cmp.Compare(a.TotalCost, b.TotalCost)
+		})
+
 		for _, cost := range costsSelfManaged {
 			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP) + cost.EtcdCost*float64(noOfDS) + cost.LbCost
 			if cost.Region == currRegion {

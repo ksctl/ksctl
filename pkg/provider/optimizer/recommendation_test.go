@@ -15,7 +15,6 @@
 package optimizer_test
 
 import (
-	"cmp"
 	"context"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -23,7 +22,6 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/provider/optimizer"
 	"gotest.tools/v3/assert"
 	"os"
-	"slices"
 	"testing"
 )
 
@@ -83,9 +81,6 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				TotalCost: 780.0,
 			},
 		}
-		slices.SortFunc(costsSelfManaged, func(a, b optimizer.RecommendationSelfManagedCost) int {
-			return cmp.Compare(a.TotalCost, b.TotalCost)
-		})
 
 		currReg := "region1"
 
@@ -142,9 +137,6 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				TotalCost: 780.0,
 			},
 		}
-		slices.SortFunc(costsSelfManaged, func(a, b optimizer.RecommendationSelfManagedCost) int {
-			return cmp.Compare(a.TotalCost, b.TotalCost)
-		})
 
 		currReg := "region2"
 
@@ -211,10 +203,6 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				TotalCost: 620.0,
 			},
 		}
-
-		slices.SortFunc(costsSelfManaged, func(a, b optimizer.RecommendationSelfManagedCost) int {
-			return cmp.Compare(a.TotalCost, b.TotalCost)
-		})
 
 		currReg := "region2"
 
@@ -294,9 +282,6 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 				TotalCost: 400.0,
 			},
 		}
-		slices.SortFunc(costsManaged, func(a, b optimizer.RecommendationManagedCost) int {
-			return cmp.Compare(a.TotalCost, b.TotalCost)
-		})
 
 		currReg := "region1"
 
@@ -344,9 +329,6 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 				TotalCost: 400.0,
 			},
 		}
-		slices.SortFunc(costsManaged, func(a, b optimizer.RecommendationManagedCost) int {
-			return cmp.Compare(a.TotalCost, b.TotalCost)
-		})
 
 		currReg := "region2"
 
