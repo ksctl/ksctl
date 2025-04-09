@@ -242,11 +242,16 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		DataStoreCount:    noOfDS,
 	}
 
+	var (
+		lowerCostReg []RegionRecommendation
+
+		// lowerEmissionReg we use it when the costs are same as the current region
+		lowerEmissionReg []RegionRecommendation
+	)
+
 	if clusterType == consts.ClusterTypeMang {
-		idxCurrReg := -1
-		for i, cost := range costsManaged {
+		for _, cost := range costsManaged {
 			if cost.Region == currRegion {
-				idxCurrReg = i
 				res.CurrentTotalCost = cost.CpCost + cost.WpCost*float64(noOfWP)
 				if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 					res.CurrentEmissions = v.Emission
@@ -255,28 +260,35 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			}
 		}
 
-		for _, cost := range costsManaged[:idxCurrReg] {
+		for _, cost := range costsManaged {
 			total := cost.CpCost + cost.WpCost*float64(noOfWP)
 
 			var regionEmissions *provider.RegionalEmission
 			if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 				regionEmissions = v.Emission
 			}
-			res.RegionRecommendations = append(res.RegionRecommendations, RegionRecommendation{
-				Region:           cost.Region,
-				ControlPlaneCost: cost.CpCost,
-				WorkerPlaneCost:  cost.WpCost,
-				TotalCost:        total,
-				Emissions:        regionEmissions,
-			})
-		}
 
+			if total > res.CurrentTotalCost {
+				break
+			}
+
+			if total == res.CurrentTotalCost {
+				// we need to compute something else aka emissions!!
+
+			} else {
+				lowerCostReg = append(lowerCostReg, RegionRecommendation{
+					Region:           cost.Region,
+					ControlPlaneCost: cost.CpCost,
+					WorkerPlaneCost:  cost.WpCost,
+					TotalCost:        total,
+					Emissions:        regionEmissions,
+				})
+			}
+		}
 	} else if clusterType == consts.ClusterTypeSelfMang {
-		idxCurrReg := -1
-		for i, cost := range costsSelfManaged {
+		for _, cost := range costsSelfManaged {
 			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP) + cost.EtcdCost*float64(noOfDS) + cost.LbCost
 			if cost.Region == currRegion {
-				idxCurrReg = i
 				res.CurrentTotalCost = total
 				if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 					res.CurrentEmissions = v.Emission
@@ -285,23 +297,36 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			}
 		}
 
-		for _, cost := range costsSelfManaged[:idxCurrReg] {
+		for _, cost := range costsSelfManaged {
 			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP) + cost.EtcdCost*float64(noOfDS) + cost.LbCost
 
 			var regionEmissions *provider.RegionalEmission
 			if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 				regionEmissions = v.Emission
 			}
-			res.RegionRecommendations = append(res.RegionRecommendations, RegionRecommendation{
-				Region:           cost.Region,
-				ControlPlaneCost: cost.CpCost,
-				WorkerPlaneCost:  cost.WpCost,
-				DataStoreCost:    cost.EtcdCost,
-				LoadBalancerCost: cost.LbCost,
-				TotalCost:        total,
-				Emissions:        regionEmissions,
-			})
+
+			if total > res.CurrentTotalCost {
+				break
+			}
+
+			if total == res.CurrentTotalCost {
+				// we need to compute something else aka emissions!!
+			} else {
+				lowerCostReg = append(lowerCostReg, RegionRecommendation{
+					Region:           cost.Region,
+					ControlPlaneCost: cost.CpCost,
+					WorkerPlaneCost:  cost.WpCost,
+					DataStoreCost:    cost.EtcdCost,
+					LoadBalancerCost: cost.LbCost,
+					TotalCost:        total,
+					Emissions:        regionEmissions,
+				})
+			}
 		}
 	}
+
+	res.RegionRecommendations = append(res.RegionRecommendations, lowerCostReg...)
+	res.RegionRecommendations = append(res.RegionRecommendations, lowerEmissionReg...)
+
 	return res, nil
 }

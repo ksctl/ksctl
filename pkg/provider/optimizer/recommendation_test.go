@@ -193,7 +193,6 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 	})
 
 	t.Run("2 regions have same costs no recommendation", func(t *testing.T) {
-		// CAUTION: if the region2 is above region 1 then testcases passes, but if below then it fails aka generates recommendation
 		costsSelfManaged := []optimizer.RecommendationSelfManagedCost{
 			{
 				Region:    "region1",
