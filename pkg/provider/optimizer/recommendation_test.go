@@ -15,6 +15,7 @@
 package optimizer_test
 
 import (
+	"cmp"
 	"context"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -22,6 +23,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/provider/optimizer"
 	"gotest.tools/v3/assert"
 	"os"
+	"slices"
 	"testing"
 )
 
@@ -81,13 +83,16 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				TotalCost: 780.0,
 			},
 		}
+		slices.SortFunc(costsSelfManaged, func(a, b optimizer.RecommendationSelfManagedCost) int {
+			return cmp.Compare(a.TotalCost, b.TotalCost)
+		})
 
 		currReg := "region1"
 
 		expectedResp := optimizer.RecommendationAcrossRegions{
 			CurrentRegion:         currReg,
 			CurrentEmissions:      regions[currReg].Emission,
-			CurrentTotalCost:      300.0 + 800.0 + 1500.0 + 20.0,
+			CurrentTotalCost:      100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
 			InstanceTypeCP:        cpSku,
 			InstanceTypeWP:        wpSku,
 			InstanceTypeDS:        etcdSku,
@@ -112,6 +117,133 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			wpSku,
 			etcdSku,
 			lbSku,
+		)
+
+		assert.NilError(t, err, "error should be nil")
+		assert.DeepEqual(t, expectedResp, actualResp)
+	})
+
+	t.Run("2 regions have diff costs with recommendation", func(t *testing.T) {
+		costsSelfManaged := []optimizer.RecommendationSelfManagedCost{
+			{
+				Region:    "region1",
+				CpCost:    100.0,
+				WpCost:    200.0,
+				EtcdCost:  300.0,
+				LbCost:    20.0,
+				TotalCost: 620.0,
+			},
+			{
+				Region:    "region2",
+				CpCost:    150.0,
+				WpCost:    250.0,
+				EtcdCost:  350.0,
+				LbCost:    30.0,
+				TotalCost: 780.0,
+			},
+		}
+		slices.SortFunc(costsSelfManaged, func(a, b optimizer.RecommendationSelfManagedCost) int {
+			return cmp.Compare(a.TotalCost, b.TotalCost)
+		})
+
+		currReg := "region2"
+
+		expectedResp := optimizer.RecommendationAcrossRegions{
+			CurrentRegion:     currReg,
+			CurrentEmissions:  regions[currReg].Emission,
+			CurrentTotalCost:  150.0*float64(noCP) + 250.0*float64(noWP) + 350.0*float64(noDS) + 30.0,
+			InstanceTypeCP:    cpSku,
+			InstanceTypeWP:    wpSku,
+			InstanceTypeDS:    etcdSku,
+			InstanceTypeLB:    lbSku,
+			ControlPlaneCount: noCP,
+			WorkerPlaneCount:  noWP,
+			DataStoreCount:    noDS,
+			RegionRecommendations: []optimizer.RegionRecommendation{
+				{
+					Region:           "region1",
+					ControlPlaneCost: 100.0,
+					WorkerPlaneCost:  200.0,
+					DataStoreCost:    300.0,
+					LoadBalancerCost: 20.0,
+					TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+					Emissions:        regions["region1"].Emission,
+				},
+			},
+		}
+
+		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			regions,
+			clusterType,
+			nil,
+			costsSelfManaged,
+			currReg,
+			noCP,
+			noWP,
+			noDS,
+			"",
+			cpSku,
+			wpSku,
+			etcdSku,
+			lbSku,
+		)
+
+		assert.NilError(t, err, "error should be nil")
+		assert.DeepEqual(t, expectedResp, actualResp)
+	})
+
+	t.Run("2 regions have same costs no recommendation", func(t *testing.T) {
+		// CAUTION: if the region2 is above region 1 then testcases passes, but if below then it fails aka generates recommendation
+		costsSelfManaged := []optimizer.RecommendationSelfManagedCost{
+			{
+				Region:    "region1",
+				CpCost:    100.0,
+				WpCost:    200.0,
+				EtcdCost:  300.0,
+				LbCost:    20.0,
+				TotalCost: 620.0,
+			},
+			{
+				Region:    "region2",
+				CpCost:    100.0,
+				WpCost:    200.0,
+				EtcdCost:  300.0,
+				LbCost:    20.0,
+				TotalCost: 620.0,
+			},
+		}
+
+		slices.SortFunc(costsSelfManaged, func(a, b optimizer.RecommendationSelfManagedCost) int {
+			return cmp.Compare(a.TotalCost, b.TotalCost)
+		})
+
+		currReg := "region2"
+
+		expectedResp := optimizer.RecommendationAcrossRegions{
+			CurrentRegion:         currReg,
+			CurrentEmissions:      regions[currReg].Emission,
+			CurrentTotalCost:      100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+			InstanceTypeCP:        cpSku,
+			InstanceTypeWP:        wpSku,
+			InstanceTypeDS:        etcdSku,
+			InstanceTypeLB:        lbSku,
+			ControlPlaneCount:     noCP,
+			WorkerPlaneCount:      noWP,
+			DataStoreCount:        noDS,
+			RegionRecommendations: nil,
+		}
+
+		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			regions,
+			clusterType,
+			nil,
+			costsSelfManaged,
+			currReg,
+			noCP,
+			noWP,
+			noDS,
+			"", cpSku,
+			wpSku, etcdSku, lbSku,
 		)
 
 		assert.NilError(t, err, "error should be nil")
@@ -163,13 +295,16 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 				TotalCost: 400.0,
 			},
 		}
+		slices.SortFunc(costsManaged, func(a, b optimizer.RecommendationManagedCost) int {
+			return cmp.Compare(a.TotalCost, b.TotalCost)
+		})
 
 		currReg := "region1"
 
 		expectedResp := optimizer.RecommendationAcrossRegions{
 			CurrentRegion:         currReg,
 			CurrentEmissions:      regions[currReg].Emission,
-			CurrentTotalCost:      100.0 + 800.0,
+			CurrentTotalCost:      100.0 + 200.0*float64(noWP),
 			ManagedOffering:       managedOfferSku,
 			InstanceTypeWP:        wpSku,
 			WorkerPlaneCount:      noWP,
@@ -189,6 +324,63 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 			"",
 			wpSku,
 			"", "",
+		)
+
+		assert.NilError(t, err, "error should be nil")
+		assert.DeepEqual(t, expectedResp, actualResp)
+	})
+
+	t.Run("2 regions have diff costs with recommendation", func(t *testing.T) {
+		costsManaged := []optimizer.RecommendationManagedCost{
+			{
+				Region:    "region1",
+				CpCost:    100.0,
+				WpCost:    200.0,
+				TotalCost: 300.0,
+			},
+			{
+				Region:    "region2",
+				CpCost:    150.0,
+				WpCost:    250.0,
+				TotalCost: 400.0,
+			},
+		}
+		slices.SortFunc(costsManaged, func(a, b optimizer.RecommendationManagedCost) int {
+			return cmp.Compare(a.TotalCost, b.TotalCost)
+		})
+
+		currReg := "region2"
+
+		expectedResp := optimizer.RecommendationAcrossRegions{
+			CurrentRegion:    currReg,
+			CurrentEmissions: regions[currReg].Emission,
+			CurrentTotalCost: 150.0 + 250.0*float64(noWP),
+			ManagedOffering:  managedOfferSku,
+			InstanceTypeWP:   wpSku,
+			WorkerPlaneCount: noWP,
+			RegionRecommendations: []optimizer.RegionRecommendation{
+				{
+					Region:           "region1",
+					ControlPlaneCost: 100.0,
+					WorkerPlaneCost:  200.0,
+					TotalCost:        100.0 + 200.0*float64(noWP),
+					Emissions:        regions["region1"].Emission,
+				},
+			},
+		}
+
+		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			regions,
+			clusterType,
+			costsManaged,
+			nil,
+			currReg,
+			noCP,
+			noWP,
+			noDS,
+			managedOfferSku,
+			"",
+			wpSku, "", "",
 		)
 
 		assert.NilError(t, err, "error should be nil")
