@@ -241,6 +241,27 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		lowerEmissionReg []RegionRecommendation
 	)
 
+	var overallEmissionCompare = func(a, b provider.RegionalEmission) int {
+		dco2Cmp := cmp.Compare(a.DirectCarbonIntensity, b.DirectCarbonIntensity)
+		rpCmp := cmp.Compare(a.RenewablePercentage, b.RenewablePercentage)
+		lco2Cmp := cmp.Compare(a.LowCarbonPercentage, b.LowCarbonPercentage)
+		lcaco2Cmp := cmp.Compare(a.LCACarbonIntensity, b.LCACarbonIntensity)
+
+		if dco2Cmp != 0 {
+			return dco2Cmp
+		}
+
+		if rpCmp != 0 {
+			return rpCmp
+		}
+
+		if lco2Cmp != 0 {
+			return lco2Cmp
+		}
+
+		return lcaco2Cmp
+	}
+
 	if clusterType == consts.ClusterTypeMang {
 		slices.SortFunc(costsManaged, func(a, b RecommendationManagedCost) int {
 			return cmp.Compare(a.TotalCost, b.TotalCost)
@@ -279,7 +300,10 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				Emissions:        regionEmissions,
 			}
 
-			if total == res.CurrentTotalCost && regionEmissions != nil {
+			if total == res.CurrentTotalCost &&
+				res.CurrentEmissions != nil &&
+				regionEmissions != nil &&
+				overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) == -1 { // it means the emissions are lower
 				lowerEmissionReg = append(lowerEmissionReg, item)
 			} else {
 				lowerCostReg = append(lowerCostReg, item)
@@ -326,7 +350,10 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				Emissions:        regionEmissions,
 			}
 
-			if total == res.CurrentTotalCost && regionEmissions != nil {
+			if total == res.CurrentTotalCost &&
+				res.CurrentEmissions != nil &&
+				regionEmissions != nil &&
+				overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) == -1 { // it means the emissions are lower
 				lowerEmissionReg = append(lowerEmissionReg, item)
 			} else {
 				lowerCostReg = append(lowerCostReg, item)
@@ -335,18 +362,11 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	}
 
 	slices.SortFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
-		dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
-		rpCmp := cmp.Compare(a.Emissions.RenewablePercentage, b.Emissions.RenewablePercentage)
-		lco2Cmp := cmp.Compare(a.Emissions.LowCarbonPercentage, b.Emissions.LowCarbonPercentage)
-		if dco2Cmp != 0 {
-			return dco2Cmp
+		if a.Emissions == nil || b.Emissions == nil {
+			return 0
 		}
 
-		if rpCmp != 0 {
-			return rpCmp
-		}
-
-		return lco2Cmp
+		return overallEmissionCompare(*a.Emissions, *b.Emissions)
 	})
 
 	res.RegionRecommendations = append(res.RegionRecommendations, lowerEmissionReg...)
