@@ -545,6 +545,7 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 			kc.findInstanceCostAcrossRegions,
 		)
 		resC, err := o.InstanceTypeOptimizerAcrossRegions(
+			regionMap,
 			consts.ClusterTypeMang,
 			nil, _o,
 			currentRegion,
@@ -565,6 +566,7 @@ func (kc *Controller) CostOptimizeAcrossRegions(
 	)
 
 	resC, err := o.InstanceTypeOptimizerAcrossRegions(
+		regionMap,
 		consts.ClusterTypeMang,
 		_o, nil,
 		currentRegion,

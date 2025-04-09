@@ -36,11 +36,3 @@ func NewOptimizer(
 		AvailRegions: availRegions,
 	}
 }
-
-func (k *Optimizer) getRegionsInMapFormat() map[string]provider.RegionOutput {
-	regionMap := make(map[string]provider.RegionOutput)
-	for _, region := range k.AvailRegions {
-		regionMap[region.Sku] = region
-	}
-	return regionMap
-}

@@ -210,6 +210,7 @@ type RecommendationAcrossRegions struct {
 //
 //	TODO: also wrt to the emissions as well!!!
 func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
+	regions map[string]provider.RegionOutput,
 	clusterType consts.KsctlClusterType,
 	costsManaged []RecommendationManagedCost,
 	costsSelfManaged []RecommendationSelfManagedCost,
@@ -244,11 +245,10 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	if clusterType == consts.ClusterTypeMang {
 		idxCurrReg := -1
 		for i, cost := range costsManaged {
-			total := cost.CpCost + cost.WpCost*float64(noOfWP)
 			if cost.Region == currRegion {
 				idxCurrReg = i
-				res.CurrentTotalCost = total
-				if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+				res.CurrentTotalCost = cost.CpCost + cost.WpCost*float64(noOfWP)
+				if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 					res.CurrentEmissions = v.Emission
 				}
 				break
@@ -259,7 +259,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			total := cost.CpCost + cost.WpCost*float64(noOfWP)
 
 			var regionEmissions *provider.RegionalEmission
-			if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+			if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 				regionEmissions = v.Emission
 			}
 			res.RegionRecommendations = append(res.RegionRecommendations, RegionRecommendation{
@@ -278,7 +278,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			if cost.Region == currRegion {
 				idxCurrReg = i
 				res.CurrentTotalCost = total
-				if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+				if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 					res.CurrentEmissions = v.Emission
 				}
 				break
@@ -289,7 +289,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP) + cost.EtcdCost*float64(noOfDS) + cost.LbCost
 
 			var regionEmissions *provider.RegionalEmission
-			if v, ok := k.getRegionsInMapFormat()[cost.Region]; ok && v.Emission != nil {
+			if v, ok := regions[cost.Region]; ok && v.Emission != nil {
 				regionEmissions = v.Emission
 			}
 			res.RegionRecommendations = append(res.RegionRecommendations, RegionRecommendation{
