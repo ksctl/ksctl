@@ -247,18 +247,18 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		lco2Cmp := cmp.Compare(a.LowCarbonPercentage, b.LowCarbonPercentage)
 		lcaco2Cmp := cmp.Compare(a.LCACarbonIntensity, b.LCACarbonIntensity)
 
-		if dco2Cmp != 0 {
-			return dco2Cmp
+		if dco2Cmp == 1 || rpCmp == 1 || lco2Cmp == 1 || lcaco2Cmp == 1 {
+			return 1
 		}
-
-		if rpCmp != 0 {
-			return rpCmp
+		if dco2Cmp == -1 {
+			return -1
 		}
-
-		if lco2Cmp != 0 {
-			return lco2Cmp
+		if rpCmp == -1 {
+			return -1
 		}
-
+		if lco2Cmp == -1 {
+			return -1
+		}
 		return lcaco2Cmp
 	}
 
@@ -300,11 +300,15 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				Emissions:        regionEmissions,
 			}
 
-			if total == res.CurrentTotalCost &&
-				res.CurrentEmissions != nil &&
-				regionEmissions != nil &&
-				overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) == -1 { // it means the emissions are lower
-				lowerEmissionReg = append(lowerEmissionReg, item)
+			if total == res.CurrentTotalCost {
+				if res.CurrentEmissions == nil || regionEmissions == nil {
+					lowerCostReg = append(lowerCostReg, item)
+					continue
+				}
+
+				if overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) <= 0 { // it means the emissions higher are skipped
+					lowerEmissionReg = append(lowerEmissionReg, item)
+				}
 			} else {
 				lowerCostReg = append(lowerCostReg, item)
 			}
@@ -350,11 +354,15 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				Emissions:        regionEmissions,
 			}
 
-			if total == res.CurrentTotalCost &&
-				res.CurrentEmissions != nil &&
-				regionEmissions != nil &&
-				overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) == -1 { // it means the emissions are lower
-				lowerEmissionReg = append(lowerEmissionReg, item)
+			if total == res.CurrentTotalCost {
+				if res.CurrentEmissions == nil || regionEmissions == nil {
+					lowerCostReg = append(lowerCostReg, item)
+					continue
+				}
+
+				if overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) == -1 { // it means the emissions are lower
+					lowerEmissionReg = append(lowerEmissionReg, item)
+				}
 			} else {
 				lowerCostReg = append(lowerCostReg, item)
 			}
@@ -366,7 +374,24 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			return 0
 		}
 
-		return overallEmissionCompare(*a.Emissions, *b.Emissions)
+		dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
+		rpCmp := cmp.Compare(a.Emissions.RenewablePercentage, b.Emissions.RenewablePercentage)
+		lco2Cmp := cmp.Compare(a.Emissions.LowCarbonPercentage, b.Emissions.LowCarbonPercentage)
+		lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
+
+		if dco2Cmp != 0 {
+			return dco2Cmp
+		}
+
+		if rpCmp != 0 {
+			return rpCmp
+		}
+
+		if lco2Cmp != 0 {
+			return lco2Cmp
+		}
+
+		return lcaco2Cmp
 	})
 
 	res.RegionRecommendations = append(res.RegionRecommendations, lowerEmissionReg...)

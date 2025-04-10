@@ -232,73 +232,60 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			},
 		}
 
-		for _, region := range []string{"region1", "region2", "region3", "region4", "region5"} {
-			if v, _ := regions[region]; true {
-				v.Emission = nil
-				regions[region] = v
-			} else {
-				regions[region] = provider.RegionOutput{
-					Sku:  region,
-					Name: region,
-				}
-			}
-		}
-
 		tI.Run("different emissions (all depths)", func(tII *testing.T) {
 			currReg := "region2"
 
-			if v, _ := regions["region1"]; true {
-				v.Emission = &provider.RegionalEmission{
-					DirectCarbonIntensity: 50.0,
-					RenewablePercentage:   74.4,
-					LowCarbonPercentage:   5.5,
-					LCACarbonIntensity:    60.0,
-					Unit:                  "gCO2/kWh",
-				}
-				regions["region1"] = v
-			}
-
-			if v, _ := regions["region2"]; true {
-				v.Emission = &provider.RegionalEmission{
-					DirectCarbonIntensity: 100.0,
-					RenewablePercentage:   94.4,
-					LowCarbonPercentage:   9.5,
-					LCACarbonIntensity:    100.0,
-					Unit:                  "gCO2/kWh",
-				}
-				regions["region2"] = v
-			}
-
-			if v, _ := regions["region3"]; true {
-				v.Emission = &provider.RegionalEmission{
-					DirectCarbonIntensity: 50.0,
-					RenewablePercentage:   73.4,
-					LowCarbonPercentage:   5.5,
-					LCACarbonIntensity:    60.0,
-					Unit:                  "gCO2/kWh",
-				}
-				regions["region3"] = v
-			}
-
-			if v, _ := regions["region4"]; true {
-				v.Emission = &provider.RegionalEmission{
-					DirectCarbonIntensity: 50.0,
-					RenewablePercentage:   73.4,
-					LowCarbonPercentage:   4.5,
-					LCACarbonIntensity:    60.0,
-					Unit:                  "gCO2/kWh",
-				}
-				regions["region4"] = v
-			}
-			if v, _ := regions["region5"]; true {
-				v.Emission = &provider.RegionalEmission{
-					DirectCarbonIntensity: 50.0,
-					RenewablePercentage:   73.4,
-					LowCarbonPercentage:   4.5,
-					LCACarbonIntensity:    50.0,
-					Unit:                  "gCO2/kWh",
-				}
-				regions["region5"] = v
+			regions := map[string]provider.RegionOutput{
+				"region1": {
+					Sku: "region1",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   74.4,
+						LowCarbonPercentage:   5.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region2": {
+					Sku: "region2",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 100.0,
+						RenewablePercentage:   94.4,
+						LowCarbonPercentage:   9.5,
+						LCACarbonIntensity:    100.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region3": {
+					Sku: "region3",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   73.4,
+						LowCarbonPercentage:   5.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region4": {
+					Sku: "region4",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   73.4,
+						LowCarbonPercentage:   4.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region5": {
+					Sku: "region5",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   73.4,
+						LowCarbonPercentage:   4.5,
+						LCACarbonIntensity:    50.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
 			}
 
 			expectedResp := optimizer.RecommendationAcrossRegions{
@@ -365,8 +352,222 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				wpSku, etcdSku, lbSku,
 			)
 
-			assert.NilError(tI, err, "error should be nil")
-			assert.DeepEqual(tI, expectedResp, actualResp)
+			assert.NilError(tII, err, "error should be nil")
+			assert.DeepEqual(tII, expectedResp, actualResp)
+		})
+
+		tI.Run("different emissions (some are missing)", func(tII *testing.T) {
+			currReg := "region2"
+
+			regions := map[string]provider.RegionOutput{
+				"region1": {
+					Sku: "region1",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   74.4,
+						LowCarbonPercentage:   5.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region2": {
+					Sku: "region2",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 100.0,
+						RenewablePercentage:   94.4,
+						LowCarbonPercentage:   9.5,
+						LCACarbonIntensity:    100.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region3": {
+					Sku:      "region3",
+					Emission: nil,
+				},
+				"region4": {
+					Sku: "region4",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   73.4,
+						LowCarbonPercentage:   4.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region5": {
+					Sku: "region5",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   73.4,
+						LowCarbonPercentage:   4.5,
+						LCACarbonIntensity:    50.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+			}
+
+			expectedResp := optimizer.RecommendationAcrossRegions{
+				CurrentRegion:     currReg,
+				CurrentEmissions:  regions[currReg].Emission,
+				CurrentTotalCost:  100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+				InstanceTypeCP:    cpSku,
+				InstanceTypeWP:    wpSku,
+				InstanceTypeDS:    etcdSku,
+				InstanceTypeLB:    lbSku,
+				ControlPlaneCount: noCP,
+				WorkerPlaneCount:  noWP,
+				DataStoreCount:    noDS,
+				RegionRecommendations: []optimizer.RegionRecommendation{
+					{
+						Region:           "region5",
+						ControlPlaneCost: 100.0,
+						WorkerPlaneCost:  200.0,
+						DataStoreCost:    300.0,
+						LoadBalancerCost: 20.0,
+						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+						Emissions:        regions["region5"].Emission,
+					},
+					{
+						Region:           "region4",
+						ControlPlaneCost: 100.0,
+						WorkerPlaneCost:  200.0,
+						DataStoreCost:    300.0,
+						LoadBalancerCost: 20.0,
+						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+						Emissions:        regions["region4"].Emission,
+					},
+					{
+						Region:           "region1",
+						ControlPlaneCost: 100.0,
+						WorkerPlaneCost:  200.0,
+						DataStoreCost:    300.0,
+						LoadBalancerCost: 20.0,
+						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+						Emissions:        regions["region1"].Emission,
+					},
+					{
+						Region:           "region3",
+						ControlPlaneCost: 100.0,
+						WorkerPlaneCost:  200.0,
+						DataStoreCost:    300.0,
+						LoadBalancerCost: 20.0,
+						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+						Emissions:        regions["region3"].Emission,
+					},
+				},
+			}
+
+			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+				regions,
+				clusterType,
+				nil,
+				costsSelfManaged,
+				currReg,
+				noCP,
+				noWP,
+				noDS,
+				"", cpSku,
+				wpSku, etcdSku, lbSku,
+			)
+
+			assert.NilError(tII, err, "error should be nil")
+			assert.DeepEqual(tII, expectedResp, actualResp)
+		})
+		tI.Run("different emissions (but higher emissions)", func(tII *testing.T) {
+			currReg := "region2"
+
+			regions := map[string]provider.RegionOutput{
+				"region1": {
+					Sku: "region1",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 150.0,
+						RenewablePercentage:   74.4,
+						LowCarbonPercentage:   5.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region2": {
+					Sku: "region2",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 100.0,
+						RenewablePercentage:   94.4,
+						LowCarbonPercentage:   9.5,
+						LCACarbonIntensity:    100.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region3": {
+					Sku: "region3",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   99.4,
+						LowCarbonPercentage:   4.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region4": {
+					Sku: "region4",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   73.4,
+						LowCarbonPercentage:   4.5,
+						LCACarbonIntensity:    60.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+				"region5": {
+					Sku: "region5",
+					Emission: &provider.RegionalEmission{
+						DirectCarbonIntensity: 50.0,
+						RenewablePercentage:   73.4,
+						LowCarbonPercentage:   10.0,
+						LCACarbonIntensity:    50.0,
+						Unit:                  "gCO2/kWh",
+					},
+				},
+			}
+
+			expectedResp := optimizer.RecommendationAcrossRegions{
+				CurrentRegion:     currReg,
+				CurrentEmissions:  regions[currReg].Emission,
+				CurrentTotalCost:  100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+				InstanceTypeCP:    cpSku,
+				InstanceTypeWP:    wpSku,
+				InstanceTypeDS:    etcdSku,
+				InstanceTypeLB:    lbSku,
+				ControlPlaneCount: noCP,
+				WorkerPlaneCount:  noWP,
+				DataStoreCount:    noDS,
+				RegionRecommendations: []optimizer.RegionRecommendation{
+					{
+						Region:           "region4",
+						ControlPlaneCost: 100.0,
+						WorkerPlaneCost:  200.0,
+						DataStoreCost:    300.0,
+						LoadBalancerCost: 20.0,
+						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+						Emissions:        regions["region4"].Emission,
+					},
+				},
+			}
+
+			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+				regions,
+				clusterType,
+				nil,
+				costsSelfManaged,
+				currReg,
+				noCP,
+				noWP,
+				noDS,
+				"", cpSku,
+				wpSku, etcdSku, lbSku,
+			)
+
+			assert.NilError(tII, err, "error should be nil")
+			assert.DeepEqual(tII, expectedResp, actualResp)
 		})
 	})
 }
