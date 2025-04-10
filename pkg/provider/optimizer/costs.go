@@ -301,8 +301,12 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			}
 
 			if total == res.CurrentTotalCost {
-				if res.CurrentEmissions == nil || regionEmissions == nil {
-					lowerCostReg = append(lowerCostReg, item)
+				if res.CurrentEmissions == nil && regionEmissions != nil {
+					lowerEmissionReg = append(lowerEmissionReg, item) // append here as there is nothing to compare with
+					continue
+				}
+				if regionEmissions == nil {
+					lowerCostReg = append(lowerCostReg, item) // no need to sort based on emissions of the region
 					continue
 				}
 
@@ -355,12 +359,16 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			}
 
 			if total == res.CurrentTotalCost {
-				if res.CurrentEmissions == nil || regionEmissions == nil {
-					lowerCostReg = append(lowerCostReg, item)
+				if res.CurrentEmissions == nil && regionEmissions != nil {
+					lowerEmissionReg = append(lowerEmissionReg, item) // append here as there is nothing to compare with
+					continue
+				}
+				if regionEmissions == nil {
+					lowerCostReg = append(lowerCostReg, item) // no need to sort based on emissions of the region
 					continue
 				}
 
-				if overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) == -1 { // it means the emissions are lower
+				if overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) <= 0 { // it means the emissions higher are skipped
 					lowerEmissionReg = append(lowerEmissionReg, item)
 				}
 			} else {
