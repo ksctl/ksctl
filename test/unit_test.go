@@ -60,7 +60,11 @@ func isCloudProviderPackage(pkg string) string {
 	re := regexp.MustCompile(`.*/pkg/provider/([^/]+)$`)
 	match := re.FindStringSubmatch(pkg)
 	if match != nil {
-		return match[1]
+		provider := match[1]
+		// Only allow azure, aws, and local providers
+		if provider == "azure" || provider == "aws" || provider == "local" {
+			return provider
+		}
 	}
 	return ""
 }
