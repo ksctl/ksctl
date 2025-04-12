@@ -247,13 +247,13 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		lco2Cmp := cmp.Compare(a.LowCarbonPercentage, b.LowCarbonPercentage)
 		lcaco2Cmp := cmp.Compare(a.LCACarbonIntensity, b.LCACarbonIntensity)
 
-		if dco2Cmp == 1 || rpCmp == 1 || lco2Cmp == 1 || lcaco2Cmp == 1 {
+		if dco2Cmp == 1 || rpCmp == -1 || lco2Cmp == -1 || lcaco2Cmp == 1 {
 			return 1
 		}
-		if dco2Cmp == -1 {
+		if dco2Cmp == 1 {
 			return -1
 		}
-		if rpCmp == -1 {
+		if rpCmp == 1 {
 			return -1
 		}
 		if lco2Cmp == -1 {
@@ -263,7 +263,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	}
 
 	if clusterType == consts.ClusterTypeMang {
-		slices.SortFunc(costsManaged, func(a, b RecommendationManagedCost) int {
+		slices.SortStableFunc(costsManaged, func(a, b RecommendationManagedCost) int {
 			return cmp.Compare(a.TotalCost, b.TotalCost)
 		})
 
@@ -377,28 +377,28 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		}
 	}
 
-		slices.SortFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
+	slices.SortStableFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
 		if a.Emissions == nil || b.Emissions == nil {
 			return 0
 		}
 
-		// Compare emissions metrics in order of priority
 		dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
+		rpCmp := cmp.Compare(b.Emissions.RenewablePercentage, a.Emissions.RenewablePercentage)   // Higher is better
+		lco2Cmp := cmp.Compare(b.Emissions.LowCarbonPercentage, a.Emissions.LowCarbonPercentage) // Higher is better
+		lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
+
 		if dco2Cmp != 0 {
 			return dco2Cmp
 		}
 
-		rpCmp := cmp.Compare(b.Emissions.RenewablePercentage, a.Emissions.RenewablePercentage) // Higher is better
 		if rpCmp != 0 {
 			return rpCmp
 		}
 
-		lco2Cmp := cmp.Compare(b.Emissions.LowCarbonPercentage, a.Emissions.LowCarbonPercentage) // Higher is better
 		if lco2Cmp != 0 {
 			return lco2Cmp
 		}
 
-		lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
 		return lcaco2Cmp
 	})
 
