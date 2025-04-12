@@ -199,8 +199,6 @@ type RecommendationAcrossRegions struct {
 }
 
 // InstanceTypeOptimizerAcrossRegions is used to get the best regions for the given instance types across all the regions
-//
-//	TODO: also wrt to the emissions as well!!!
 func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	regions map[string]provider.RegionOutput,
 	clusterType consts.KsctlClusterType,
@@ -377,11 +375,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		}
 	}
 
-	slices.SortStableFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
-		if a.Emissions == nil || b.Emissions == nil {
-			return 0
-		}
-
+	cmpFixingSorting := func(a, b RegionRecommendation) int {
 		dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
 		rpCmp := cmp.Compare(b.Emissions.RenewablePercentage, a.Emissions.RenewablePercentage)   // Higher is better
 		lco2Cmp := cmp.Compare(b.Emissions.LowCarbonPercentage, a.Emissions.LowCarbonPercentage) // Higher is better
@@ -400,10 +394,28 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		}
 
 		return lcaco2Cmp
+	}
+
+	slices.SortStableFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
+		if a.Emissions == nil || b.Emissions == nil {
+			return 0
+		}
+		return cmpFixingSorting(a, b)
 	})
 
-	res.RegionRecommendations = append(res.RegionRecommendations, lowerEmissionReg...)
+	slices.SortStableFunc(lowerCostReg, func(a, b RegionRecommendation) int {
+		_cmp := cmp.Compare(a.TotalCost, b.TotalCost)
+		if _cmp == 0 {
+			if a.Emissions == nil || b.Emissions == nil {
+				return 0
+			}
+			return cmpFixingSorting(a, b)
+		}
+		return _cmp
+	})
+
 	res.RegionRecommendations = append(res.RegionRecommendations, lowerCostReg...)
+	res.RegionRecommendations = append(res.RegionRecommendations, lowerEmissionReg...)
 
 	return res, nil
 }

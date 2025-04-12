@@ -29,7 +29,6 @@ import (
 var (
 	ctx = context.TODO()
 	l   = logger.NewStructuredLogger(-1, os.Stdout)
-	opt = optimizer.NewOptimizer(ctx, l, nil)
 )
 
 func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
@@ -103,7 +102,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			RegionRecommendations: nil,
 		}
 
-		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+		actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 			regions,
 			clusterType,
 			nil,
@@ -169,7 +168,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			},
 		}
 
-		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+		actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 			regions,
 			clusterType,
 			nil,
@@ -340,7 +339,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				},
 			}
 
-			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 				regions,
 				clusterType,
 				nil,
@@ -452,7 +451,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				},
 			}
 
-			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 				regions,
 				clusterType,
 				nil,
@@ -532,15 +531,6 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				DataStoreCount:    noDS,
 				RegionRecommendations: []optimizer.RegionRecommendation{
 					{
-						Region:           "region4",
-						ControlPlaneCost: 100.0,
-						WorkerPlaneCost:  200.0,
-						DataStoreCost:    300.0,
-						LoadBalancerCost: 20.0,
-						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-						Emissions:        regions["region4"].Emission,
-					},
-					{
 						Region:           "region3",
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
@@ -549,10 +539,19 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
 						Emissions:        regions["region3"].Emission,
 					},
+					{
+						Region:           "region4",
+						ControlPlaneCost: 100.0,
+						WorkerPlaneCost:  200.0,
+						DataStoreCost:    300.0,
+						LoadBalancerCost: 20.0,
+						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
+						Emissions:        regions["region4"].Emission,
+					},
 				},
 			}
 
-			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 				regions,
 				clusterType,
 				nil,
@@ -628,7 +627,7 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 			RegionRecommendations: nil,
 		}
 
-		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+		actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 			regions,
 			clusterType,
 			costsManaged,
@@ -683,7 +682,7 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 			},
 		}
 
-		actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+		actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 			regions,
 			clusterType,
 			costsManaged,
@@ -830,7 +829,7 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 				},
 			}
 
-			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 				regions,
 				clusterType,
 				costsManaged,
@@ -931,7 +930,7 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 				},
 			}
 
-			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 				regions,
 				clusterType,
 				costsManaged,
@@ -1024,7 +1023,7 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 				},
 			}
 
-			actualResp, err := opt.InstanceTypeOptimizerAcrossRegions(
+			actualResp, err := optimizer.NewOptimizer(ctx, l, nil).InstanceTypeOptimizerAcrossRegions(
 				regions,
 				clusterType,
 				costsManaged,
