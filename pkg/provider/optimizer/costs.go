@@ -377,28 +377,28 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		}
 	}
 
-	slices.SortFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
+		slices.SortFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
 		if a.Emissions == nil || b.Emissions == nil {
 			return 0
 		}
 
+		// Compare emissions metrics in order of priority
 		dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
-		rpCmp := cmp.Compare(a.Emissions.RenewablePercentage, b.Emissions.RenewablePercentage)
-		lco2Cmp := cmp.Compare(a.Emissions.LowCarbonPercentage, b.Emissions.LowCarbonPercentage)
-		lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
-
 		if dco2Cmp != 0 {
 			return dco2Cmp
 		}
 
+		rpCmp := cmp.Compare(b.Emissions.RenewablePercentage, a.Emissions.RenewablePercentage) // Higher is better
 		if rpCmp != 0 {
 			return rpCmp
 		}
 
+		lco2Cmp := cmp.Compare(b.Emissions.LowCarbonPercentage, a.Emissions.LowCarbonPercentage) // Higher is better
 		if lco2Cmp != 0 {
 			return lco2Cmp
 		}
 
+		lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
 		return lcaco2Cmp
 	})
 
