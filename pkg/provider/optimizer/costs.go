@@ -198,6 +198,103 @@ type RecommendationAcrossRegions struct {
 	DataStoreCount    int `json:"dataStoreCount,omitempty"`
 }
 
+func isA_sEmissionLowerOrEqual(a, b provider.RegionalEmission) bool {
+	dco2Cmp := cmp.Compare(a.DirectCarbonIntensity, b.DirectCarbonIntensity)
+	rpCmp := cmp.Compare(a.RenewablePercentage, b.RenewablePercentage)
+	lco2Cmp := cmp.Compare(a.LowCarbonPercentage, b.LowCarbonPercentage)
+	lcaco2Cmp := cmp.Compare(a.LCACarbonIntensity, b.LCACarbonIntensity)
+
+	if dco2Cmp == 1 || rpCmp == -1 || lco2Cmp == -1 || lcaco2Cmp == 1 {
+		return false
+	}
+	if dco2Cmp == 1 {
+		return true
+	}
+	if rpCmp == 1 {
+		return true
+	}
+	if lco2Cmp == -1 {
+		return true
+	}
+
+	if lcaco2Cmp > 0 {
+		return false
+	}
+	return true
+}
+
+func emissionComparator(a, b RegionRecommendation) int {
+	if a.Emissions == nil || b.Emissions == nil {
+		return 0
+	}
+
+	dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
+	rpCmp := cmp.Compare(b.Emissions.RenewablePercentage, a.Emissions.RenewablePercentage)   // Higher is better
+	lco2Cmp := cmp.Compare(b.Emissions.LowCarbonPercentage, a.Emissions.LowCarbonPercentage) // Higher is better
+	lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
+
+	if dco2Cmp != 0 {
+		return dco2Cmp
+	}
+
+	if rpCmp != 0 {
+		return rpCmp
+	}
+
+	if lco2Cmp != 0 {
+		return lco2Cmp
+	}
+
+	return lcaco2Cmp
+}
+
+// costPlusEmissionDecision return
+//
+//	Refer to test case to understand more TestInstanceTypeOptimizerAcrossRegionsSelfManaged
+func costPlusEmissionDecision(
+	cost_r float64,
+	cost_R float64,
+	emission_r *provider.RegionalEmission,
+	emission_R *provider.RegionalEmission,
+) int {
+
+	if cost_r > cost_R {
+		return 2
+	}
+
+	if cost_r < cost_R {
+		addIt := true
+		if emission_r != nil && emission_R != nil {
+			if !isA_sEmissionLowerOrEqual(*emission_r, *emission_R) {
+				addIt = false
+			}
+		}
+
+		if addIt {
+			return -1
+		}
+	} else if cost_r == cost_R {
+		addIt := true
+		if emission_r == nil {
+			return 0 // no emissions
+		}
+
+		if emission_R == nil { // when selected region emissions are absent
+			return 1
+		} else {
+			if !isA_sEmissionLowerOrEqual(*emission_r, *emission_R) {
+				addIt = false
+			}
+		}
+
+		if addIt {
+			return 1
+		}
+	}
+
+	return -2
+}
+
 // InstanceTypeOptimizerAcrossRegions is used to get the best regions for the given instance types across all the regions
 func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	regions map[string]provider.RegionOutput,
@@ -232,33 +329,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		DataStoreCount:    noOfDS,
 	}
 
-	var (
-		lowerCostReg []RegionRecommendation
-
-		// lowerEmissionReg we use it when the costs are same as the current region
-		lowerEmissionReg []RegionRecommendation
-	)
-
-	var overallEmissionCompare = func(a, b provider.RegionalEmission) int {
-		dco2Cmp := cmp.Compare(a.DirectCarbonIntensity, b.DirectCarbonIntensity)
-		rpCmp := cmp.Compare(a.RenewablePercentage, b.RenewablePercentage)
-		lco2Cmp := cmp.Compare(a.LowCarbonPercentage, b.LowCarbonPercentage)
-		lcaco2Cmp := cmp.Compare(a.LCACarbonIntensity, b.LCACarbonIntensity)
-
-		if dco2Cmp == 1 || rpCmp == -1 || lco2Cmp == -1 || lcaco2Cmp == 1 {
-			return 1
-		}
-		if dco2Cmp == 1 {
-			return -1
-		}
-		if rpCmp == 1 {
-			return -1
-		}
-		if lco2Cmp == -1 {
-			return -1
-		}
-		return lcaco2Cmp
-	}
+	var regWithlowerCost, regWithlowerEmission, regWithNoEmissions []RegionRecommendation
 
 	if clusterType == consts.ClusterTypeMang {
 		slices.SortStableFunc(costsManaged, func(a, b RecommendationManagedCost) int {
@@ -286,10 +357,6 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				regionEmissions = v.Emission
 			}
 
-			if total > res.CurrentTotalCost {
-				break
-			}
-
 			item := RegionRecommendation{
 				Region:           cost.Region,
 				ControlPlaneCost: cost.CpCost,
@@ -298,25 +365,27 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				Emissions:        regionEmissions,
 			}
 
-			if total == res.CurrentTotalCost {
-				if res.CurrentEmissions == nil && regionEmissions != nil {
-					lowerEmissionReg = append(lowerEmissionReg, item) // append here as there is nothing to compare with
-					continue
-				}
-				if regionEmissions == nil {
-					lowerCostReg = append(lowerCostReg, item) // no need to sort based on emissions of the region
-					continue
-				}
-
-				if overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) <= 0 { // it means the emissions higher are skipped
-					lowerEmissionReg = append(lowerEmissionReg, item)
-				}
-			} else {
-				lowerCostReg = append(lowerCostReg, item)
+			resCmp := costPlusEmissionDecision(
+				total,
+				res.CurrentTotalCost,
+				regionEmissions,
+				res.CurrentEmissions,
+			)
+			if resCmp == 2 {
+				break
+			}
+			if resCmp == -1 {
+				regWithlowerCost = append(regWithlowerCost, item)
+			}
+			if resCmp == 0 {
+				regWithNoEmissions = append(regWithNoEmissions, item)
+			}
+			if resCmp == 1 {
+				regWithlowerEmission = append(regWithlowerEmission, item)
 			}
 		}
 	} else if clusterType == consts.ClusterTypeSelfMang {
-		slices.SortFunc(costsSelfManaged, func(a, b RecommendationSelfManagedCost) int {
+		slices.SortStableFunc(costsSelfManaged, func(a, b RecommendationSelfManagedCost) int {
 			return cmp.Compare(a.TotalCost, b.TotalCost)
 		})
 
@@ -342,10 +411,6 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				regionEmissions = v.Emission
 			}
 
-			if total > res.CurrentTotalCost {
-				break
-			}
-
 			item := RegionRecommendation{
 				Region:           cost.Region,
 				ControlPlaneCost: cost.CpCost,
@@ -356,66 +421,40 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 				Emissions:        regionEmissions,
 			}
 
-			if total == res.CurrentTotalCost {
-				if res.CurrentEmissions == nil && regionEmissions != nil {
-					lowerEmissionReg = append(lowerEmissionReg, item) // append here as there is nothing to compare with
-					continue
-				}
-				if regionEmissions == nil {
-					lowerCostReg = append(lowerCostReg, item) // no need to sort based on emissions of the region
-					continue
-				}
-
-				if overallEmissionCompare(*regionEmissions, *res.CurrentEmissions) <= 0 { // it means the emissions higher are skipped
-					lowerEmissionReg = append(lowerEmissionReg, item)
-				}
-			} else {
-				lowerCostReg = append(lowerCostReg, item)
+			resCmp := costPlusEmissionDecision(
+				total,
+				res.CurrentTotalCost,
+				regionEmissions,
+				res.CurrentEmissions,
+			)
+			if resCmp == 2 {
+				break
+			}
+			if resCmp == -1 {
+				regWithlowerCost = append(regWithlowerCost, item)
+			}
+			if resCmp == 0 {
+				regWithNoEmissions = append(regWithNoEmissions, item)
+			}
+			if resCmp == 1 {
+				regWithlowerEmission = append(regWithlowerEmission, item)
 			}
 		}
 	}
 
-	cmpFixingSorting := func(a, b RegionRecommendation) int {
-		dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
-		rpCmp := cmp.Compare(b.Emissions.RenewablePercentage, a.Emissions.RenewablePercentage)   // Higher is better
-		lco2Cmp := cmp.Compare(b.Emissions.LowCarbonPercentage, a.Emissions.LowCarbonPercentage) // Higher is better
-		lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
+	slices.SortStableFunc(regWithlowerEmission, emissionComparator)
 
-		if dco2Cmp != 0 {
-			return dco2Cmp
-		}
-
-		if rpCmp != 0 {
-			return rpCmp
-		}
-
-		if lco2Cmp != 0 {
-			return lco2Cmp
-		}
-
-		return lcaco2Cmp
-	}
-
-	slices.SortStableFunc(lowerEmissionReg, func(a, b RegionRecommendation) int {
-		if a.Emissions == nil || b.Emissions == nil {
-			return 0
-		}
-		return cmpFixingSorting(a, b)
-	})
-
-	slices.SortStableFunc(lowerCostReg, func(a, b RegionRecommendation) int {
+	slices.SortStableFunc(regWithlowerCost, func(a, b RegionRecommendation) int {
 		_cmp := cmp.Compare(a.TotalCost, b.TotalCost)
 		if _cmp == 0 {
-			if a.Emissions == nil || b.Emissions == nil {
-				return 0
-			}
-			return cmpFixingSorting(a, b)
+			return emissionComparator(a, b)
 		}
 		return _cmp
 	})
 
-	res.RegionRecommendations = append(res.RegionRecommendations, lowerCostReg...)
-	res.RegionRecommendations = append(res.RegionRecommendations, lowerEmissionReg...)
+	res.RegionRecommendations = append(res.RegionRecommendations, regWithlowerCost...)
+	res.RegionRecommendations = append(res.RegionRecommendations, regWithlowerEmission...)
+	res.RegionRecommendations = append(res.RegionRecommendations, regWithNoEmissions...)
 
 	return res, nil
 }
