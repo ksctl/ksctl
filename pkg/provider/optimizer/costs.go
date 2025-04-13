@@ -171,20 +171,18 @@ func (k *Optimizer) OptimizeManagedOfferingsAcrossRegions(
 }
 
 type RegionRecommendation struct {
-	Region           string                     `json:"region"`
-	Emissions        *provider.RegionalEmission `json:"emissions,omitempty"`
-	ControlPlaneCost float64                    `json:"controlPlaneCost"`
-	WorkerPlaneCost  float64                    `json:"workerPlaneCost"`
-	DataStoreCost    float64                    `json:"dataStoreCost,omitempty"`
-	LoadBalancerCost float64                    `json:"loadBalancerCost,omitempty"`
-	TotalCost        float64                    `json:"totalCost"`
+	Region           provider.RegionOutput `json:"region"`
+	ControlPlaneCost float64               `json:"controlPlaneCost"`
+	WorkerPlaneCost  float64               `json:"workerPlaneCost"`
+	DataStoreCost    float64               `json:"dataStoreCost,omitempty"`
+	LoadBalancerCost float64               `json:"loadBalancerCost,omitempty"`
+	TotalCost        float64               `json:"totalCost"`
 }
 
 type RecommendationAcrossRegions struct {
-	RegionRecommendations []RegionRecommendation     `json:"regionRecommendations"`
-	CurrentRegion         string                     `json:"current_region"`
-	CurrentTotalCost      float64                    `json:"current_total_cost"`
-	CurrentEmissions      *provider.RegionalEmission `json:"current_emissions"`
+	RegionRecommendations []RegionRecommendation `json:"regionRecommendations"`
+	CurrentRegion         provider.RegionOutput  `json:"current_region"`
+	CurrentTotalCost      float64                `json:"current_total_cost"`
 
 	InstanceTypeCP string `json:"instanceTypeCP,omitempty"`
 	InstanceTypeWP string `json:"instanceTypeWP"`
@@ -224,14 +222,14 @@ func isA_sEmissionLowerOrEqual(a, b provider.RegionalEmission) bool {
 }
 
 func emissionComparator(a, b RegionRecommendation) int {
-	if a.Emissions == nil || b.Emissions == nil {
+	if a.Region.Emission == nil || b.Region.Emission == nil {
 		return 0
 	}
 
-	dco2Cmp := cmp.Compare(a.Emissions.DirectCarbonIntensity, b.Emissions.DirectCarbonIntensity)
-	rpCmp := cmp.Compare(b.Emissions.RenewablePercentage, a.Emissions.RenewablePercentage)   // Higher is better
-	lco2Cmp := cmp.Compare(b.Emissions.LowCarbonPercentage, a.Emissions.LowCarbonPercentage) // Higher is better
-	lcaco2Cmp := cmp.Compare(a.Emissions.LCACarbonIntensity, b.Emissions.LCACarbonIntensity)
+	dco2Cmp := cmp.Compare(a.Region.Emission.DirectCarbonIntensity, b.Region.Emission.DirectCarbonIntensity)
+	rpCmp := cmp.Compare(b.Region.Emission.RenewablePercentage, a.Region.Emission.RenewablePercentage)   // Higher is better
+	lco2Cmp := cmp.Compare(b.Region.Emission.LowCarbonPercentage, a.Region.Emission.LowCarbonPercentage) // Higher is better
+	lcaco2Cmp := cmp.Compare(a.Region.Emission.LCACarbonIntensity, b.Region.Emission.LCACarbonIntensity)
 
 	if dco2Cmp != 0 {
 		return dco2Cmp
@@ -263,16 +261,18 @@ func costPlusEmissionDecision(
 	}
 
 	if cost_r < cost_R {
-		addIt := true
-		if emission_r != nil && emission_R != nil {
-			if !isA_sEmissionLowerOrEqual(*emission_r, *emission_R) {
-				addIt = false
-			}
-		}
-
-		if addIt {
-			return -1
-		}
+		// Note: it removes regions with higher emissions but lower costs
+		//addIt := true
+		//if emission_r != nil && emission_R != nil {
+		//	if !isA_sEmissionLowerOrEqual(*emission_r, *emission_R) {
+		//		addIt = false
+		//	}
+		//}
+		//
+		//if addIt {
+		//	return -1
+		//}
+		return -1
 	} else if cost_r == cost_R {
 		addIt := true
 		if emission_r == nil {
@@ -312,8 +312,7 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 	instanceTypeLB string,
 ) (res RecommendationAcrossRegions, errC error) {
 	res = RecommendationAcrossRegions{
-		CurrentRegion:    currRegion,
-		CurrentEmissions: nil,
+		CurrentRegion:    regions[currRegion],
 		CurrentTotalCost: 0.0,
 
 		InstanceTypeCP:  instanceTypeCP,
@@ -339,9 +338,6 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 		for _, cost := range costsManaged {
 			if cost.Region == currRegion {
 				res.CurrentTotalCost = cost.CpCost + cost.WpCost*float64(noOfWP)
-				if v, ok := regions[cost.Region]; ok && v.Emission != nil {
-					res.CurrentEmissions = v.Emission
-				}
 				break
 			}
 		}
@@ -358,18 +354,17 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			}
 
 			item := RegionRecommendation{
-				Region:           cost.Region,
+				Region:           regions[cost.Region],
 				ControlPlaneCost: cost.CpCost,
 				WorkerPlaneCost:  cost.WpCost,
 				TotalCost:        total,
-				Emissions:        regionEmissions,
 			}
 
 			resCmp := costPlusEmissionDecision(
 				total,
 				res.CurrentTotalCost,
 				regionEmissions,
-				res.CurrentEmissions,
+				res.CurrentRegion.Emission,
 			)
 			if resCmp == 2 {
 				break
@@ -393,9 +388,6 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			total := cost.CpCost*float64(noOfCP) + cost.WpCost*float64(noOfWP) + cost.EtcdCost*float64(noOfDS) + cost.LbCost
 			if cost.Region == currRegion {
 				res.CurrentTotalCost = total
-				if v, ok := regions[cost.Region]; ok && v.Emission != nil {
-					res.CurrentEmissions = v.Emission
-				}
 				break
 			}
 		}
@@ -412,20 +404,19 @@ func (k *Optimizer) InstanceTypeOptimizerAcrossRegions(
 			}
 
 			item := RegionRecommendation{
-				Region:           cost.Region,
+				Region:           regions[cost.Region],
 				ControlPlaneCost: cost.CpCost,
 				WorkerPlaneCost:  cost.WpCost,
 				DataStoreCost:    cost.EtcdCost,
 				LoadBalancerCost: cost.LbCost,
 				TotalCost:        total,
-				Emissions:        regionEmissions,
 			}
 
 			resCmp := costPlusEmissionDecision(
 				total,
 				res.CurrentTotalCost,
 				regionEmissions,
-				res.CurrentEmissions,
+				res.CurrentRegion.Emission,
 			)
 			if resCmp == 2 {
 				break

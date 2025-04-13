@@ -33,109 +33,144 @@ var (
 func TestEmissionCompatator(t *testing.T) {
 	t.Run("Nil safety", func(t *testing.T) {
 		a := RegionRecommendation{
-			Emissions: nil,
+			Region: provider.RegionOutput{
+				Emission: nil,
+			},
 		}
 		b := RegionRecommendation{
-			Emissions: nil,
+			Region: provider.RegionOutput{
+				Emission: nil,
+			},
 		}
 		assert.Equal(t, emissionComparator(a, b), 0)
 
-		b.Emissions = nil
-		a.Emissions = &provider.RegionalEmission{}
+		a.Region.Emission = &provider.RegionalEmission{}
 		assert.Equal(t, emissionComparator(a, b), 0)
 
-		a.Emissions = nil
-		b.Emissions = &provider.RegionalEmission{}
+		a, b = b, a
 		assert.Equal(t, emissionComparator(a, b), 0)
 	})
 
 	t.Logf("Goal is to make `a` (lower direct, lower LCA, higher renewable, higher low-co2) better than `b`")
 
 	t.Run("Direct Co2 diff", func(tt *testing.T) {
-		a := RegionRecommendation{Emissions: &provider.RegionalEmission{}}
-		b := RegionRecommendation{Emissions: &provider.RegionalEmission{}}
+		a := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{},
+			},
+		}
+		b := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{},
+			},
+		}
 
-		a.Emissions.DirectCarbonIntensity = 100
-		b.Emissions.DirectCarbonIntensity = 200
+		a.Region.Emission.DirectCarbonIntensity = 100
+		b.Region.Emission.DirectCarbonIntensity = 200
 		assert.Equal(tt, emissionComparator(a, b), -1, "a should be less than b")
 
-		a.Emissions.DirectCarbonIntensity = 200
-		b.Emissions.DirectCarbonIntensity = 100
+		a, b = b, a
 		assert.Equal(tt, emissionComparator(a, b), 1, "a should be greater than b")
 	})
 
 	t.Run("Renewable percentage diff", func(tt *testing.T) {
-		a := RegionRecommendation{Emissions: &provider.RegionalEmission{
-			DirectCarbonIntensity: 100,
-		}}
-		b := RegionRecommendation{Emissions: &provider.RegionalEmission{
-			DirectCarbonIntensity: 100,
-		}}
+		a := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 100,
+				},
+			},
+		}
 
-		a.Emissions.RenewablePercentage = 100
-		b.Emissions.RenewablePercentage = 200
+		b := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 100,
+				},
+			},
+		}
+		a.Region.Emission.RenewablePercentage = 100
+		b.Region.Emission.RenewablePercentage = 200
+
 		assert.Equal(tt, emissionComparator(a, b), 1, "a should be lower than b")
 
-		a.Emissions.RenewablePercentage = 200
-		b.Emissions.RenewablePercentage = 100
+		a, b = b, a
 		assert.Equal(tt, emissionComparator(a, b), -1, "a should be grater than b")
 	})
 
 	t.Run("Low carbon percentage diff", func(tt *testing.T) {
-		a := RegionRecommendation{Emissions: &provider.RegionalEmission{
-			DirectCarbonIntensity: 100,
-			RenewablePercentage:   50,
-		}}
-		b := RegionRecommendation{Emissions: &provider.RegionalEmission{
-			DirectCarbonIntensity: 100,
-			RenewablePercentage:   50,
-		}}
+		a := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 100,
+					RenewablePercentage:   50,
+				},
+			},
+		}
+		b := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 100,
+					RenewablePercentage:   50,
+				},
+			},
+		}
 
-		a.Emissions.LowCarbonPercentage = 100
-		b.Emissions.LowCarbonPercentage = 200
+		a.Region.Emission.LowCarbonPercentage = 100
+		b.Region.Emission.LowCarbonPercentage = 200
 		assert.Equal(tt, emissionComparator(a, b), 1, "a should be lower than b")
 
-		a.Emissions.LowCarbonPercentage = 200
-		b.Emissions.LowCarbonPercentage = 100
+		a, b = b, a
 		assert.Equal(tt, emissionComparator(a, b), -1, "a should be grater than b")
 	})
 
 	t.Run("LCA carbon intensity diff", func(tt *testing.T) {
-		a := RegionRecommendation{Emissions: &provider.RegionalEmission{
-			DirectCarbonIntensity: 100,
-			RenewablePercentage:   50,
-			LowCarbonPercentage:   50,
-		}}
-		b := RegionRecommendation{Emissions: &provider.RegionalEmission{
-			DirectCarbonIntensity: 100,
-			RenewablePercentage:   50,
-			LowCarbonPercentage:   50,
-		}}
+		a := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 100,
+					RenewablePercentage:   50,
+					LowCarbonPercentage:   50,
+				},
+			},
+		}
+		b := RegionRecommendation{
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 100,
+					RenewablePercentage:   50,
+					LowCarbonPercentage:   50,
+				},
+			},
+		}
 
-		a.Emissions.LCACarbonIntensity = 100
-		b.Emissions.LCACarbonIntensity = 200
+		a.Region.Emission.LCACarbonIntensity = 100
+		b.Region.Emission.LCACarbonIntensity = 200
 		assert.Equal(tt, emissionComparator(a, b), -1, "a should be lower than b")
 
-		a.Emissions.LCACarbonIntensity = 200
-		b.Emissions.LCACarbonIntensity = 100
+		a, b = b, a
 		assert.Equal(tt, emissionComparator(a, b), 1, "a should be grater than b")
 	})
 
 	t.Run("Should Right Go to Left ??", func(tt *testing.T) {
 		a := RegionRecommendation{
-			Emissions: &provider.RegionalEmission{
-				DirectCarbonIntensity: 78.98,
-				RenewablePercentage:   77.22,
-				LowCarbonPercentage:   86.73,
-				LCACarbonIntensity:    108.64,
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 78.98,
+					RenewablePercentage:   77.22,
+					LowCarbonPercentage:   86.73,
+					LCACarbonIntensity:    108.64,
+				},
 			},
 		}
 		b := RegionRecommendation{
-			Emissions: &provider.RegionalEmission{
-				DirectCarbonIntensity: 678.58,
-				RenewablePercentage:   6.1,
-				LowCarbonPercentage:   9.4,
-				LCACarbonIntensity:    736.62,
+			Region: provider.RegionOutput{
+				Emission: &provider.RegionalEmission{
+					DirectCarbonIntensity: 678.58,
+					RenewablePercentage:   6.1,
+					LowCarbonPercentage:   9.4,
+					LCACarbonIntensity:    736.62,
+				},
 			},
 		}
 
@@ -245,23 +280,29 @@ func TestCostPlusEmissionDecision(t *testing.T) {
 		assert.Equal(tt, costPlusEmissionDecision(cost_r, cost_R, nil, nil), 2, "cost_r should be greater than cost_R")
 	})
 
-	t.Run("Case Reject regions with higher emissions regardless of cost_r < or = cost_R", func(tt *testing.T) {
+	t.Run("Case Reject regions with higher emissions regardless of cost_r = cost_R", func(tt *testing.T) {
 
-		cost_r := 10.0
-		cost_R := 50.0
+		//cost_r := 10.0
+		//cost_R := 50.0
+		//
+		//tt.Logf("Goal: we remove the items which are in cost_r < cost_R but higher emissions")
+		//e_r := &provider.RegionalEmission{
+		//	DirectCarbonIntensity: 101.0,
+		//}
+		//e_R := &provider.RegionalEmission{
+		//	DirectCarbonIntensity: 100.0,
+		//}
+		//
+		//assert.Equal(tt, costPlusEmissionDecision(cost_r, cost_R, e_r, e_R), -2, "cost_r should be less than cost_R")
 
-		tt.Logf("Goal: we remove the items which are in cost_r < cost_R but higher emissions")
+		tt.Logf("Goal: we remove the items which are in cost_r == cost_R but higher emissions")
+		cost_r, cost_R := 5.0, 5.0
 		e_r := &provider.RegionalEmission{
 			DirectCarbonIntensity: 101.0,
 		}
 		e_R := &provider.RegionalEmission{
 			DirectCarbonIntensity: 100.0,
 		}
-
-		assert.Equal(tt, costPlusEmissionDecision(cost_r, cost_R, e_r, e_R), -2, "cost_r should be less than cost_R")
-
-		tt.Logf("Goal: we remove the items which are in cost_r == cost_R but higher emissions")
-		cost_r, cost_R = 5.0, 5.0
 
 		assert.Equal(tt, costPlusEmissionDecision(cost_r, cost_R, e_r, e_R), -2, "cost_r == cost_R and e_r > e_R")
 	})
@@ -351,8 +392,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 		currReg := "region1"
 
 		expectedResp := RecommendationAcrossRegions{
-			CurrentRegion:         currReg,
-			CurrentEmissions:      regions[currReg].Emission,
+			CurrentRegion:         regions[currReg],
 			CurrentTotalCost:      100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
 			InstanceTypeCP:        cpSku,
 			InstanceTypeWP:        wpSku,
@@ -425,8 +465,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 		currReg := "region2"
 
 		expectedResp := RecommendationAcrossRegions{
-			CurrentRegion:     currReg,
-			CurrentEmissions:  regions[currReg].Emission,
+			CurrentRegion:     regions[currReg],
 			CurrentTotalCost:  150.0*float64(noCP) + 250.0*float64(noWP) + 350.0*float64(noDS) + 30.0,
 			InstanceTypeCP:    cpSku,
 			InstanceTypeWP:    wpSku,
@@ -437,13 +476,12 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			DataStoreCount:    noDS,
 			RegionRecommendations: []RegionRecommendation{
 				{
-					Region:           "region1",
+					Region:           regions["region1"],
 					ControlPlaneCost: 100.0,
 					WorkerPlaneCost:  200.0,
 					DataStoreCost:    300.0,
 					LoadBalancerCost: 20.0,
 					TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-					Emissions:        regions["region1"].Emission,
 				},
 			},
 		}
@@ -548,8 +586,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			}
 
 			expectedResp := RecommendationAcrossRegions{
-				CurrentRegion:     currReg,
-				CurrentEmissions:  regions[currReg].Emission,
+				CurrentRegion:     regions[currReg],
 				CurrentTotalCost:  100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
 				InstanceTypeCP:    cpSku,
 				InstanceTypeWP:    wpSku,
@@ -560,40 +597,36 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				DataStoreCount:    noDS,
 				RegionRecommendations: []RegionRecommendation{
 					{
-						Region:           "region1",
+						Region:           regions["region1"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						DataStoreCost:    300.0,
 						LoadBalancerCost: 20.0,
 						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-						Emissions:        regions["region1"].Emission,
 					},
 					{
-						Region:           "region4",
+						Region:           regions["region4"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						DataStoreCost:    300.0,
 						LoadBalancerCost: 20.0,
 						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-						Emissions:        regions["region4"].Emission,
 					},
 					{
-						Region:           "region5",
+						Region:           regions["region5"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						DataStoreCost:    300.0,
 						LoadBalancerCost: 20.0,
 						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-						Emissions:        regions["region5"].Emission,
 					},
 					{
-						Region:           "region3",
+						Region:           regions["region3"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						DataStoreCost:    300.0,
 						LoadBalancerCost: 20.0,
 						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-						Emissions:        regions["region3"].Emission,
 					},
 				},
 			}
@@ -654,8 +687,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			}
 
 			expectedResp := RecommendationAcrossRegions{
-				CurrentRegion:     currReg,
-				CurrentEmissions:  regions[currReg].Emission,
+				CurrentRegion:     regions[currReg],
 				CurrentTotalCost:  100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
 				InstanceTypeCP:    cpSku,
 				InstanceTypeWP:    wpSku,
@@ -666,22 +698,20 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 				DataStoreCount:    noDS,
 				RegionRecommendations: []RegionRecommendation{
 					{
-						Region:           "region4",
+						Region:           regions["region4"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						DataStoreCost:    300.0,
 						LoadBalancerCost: 20.0,
 						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-						Emissions:        regions["region4"].Emission,
 					},
 					{
-						Region:           "region3",
+						Region:           regions["region3"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						DataStoreCost:    300.0,
 						LoadBalancerCost: 20.0,
 						TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-						Emissions:        regions["region3"].Emission,
 					},
 				},
 			}
@@ -828,8 +858,7 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 		}
 
 		expectedResp := RecommendationAcrossRegions{
-			CurrentRegion:     currReg,
-			CurrentEmissions:  regions[currReg].Emission,
+			CurrentRegion:     regions[currReg],
 			CurrentTotalCost:  300.0*float64(noCP) + 200.0*float64(noWP) + 400.0*float64(noDS) + 20.0,
 			InstanceTypeCP:    cpSku,
 			InstanceTypeWP:    wpSku,
@@ -840,49 +869,44 @@ func TestInstanceTypeOptimizerAcrossRegionsSelfManaged(t *testing.T) {
 			DataStoreCount:    noDS,
 			RegionRecommendations: []RegionRecommendation{
 				{
-					Region:           "region5",
+					Region:           regions["region5"],
 					ControlPlaneCost: 100.0,
 					WorkerPlaneCost:  200.0,
 					DataStoreCost:    300.0,
 					LoadBalancerCost: 20.0,
 					TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-					Emissions:        regions["region5"].Emission,
 				},
 				{
-					Region:           "region1",
+					Region:           regions["region1"],
 					ControlPlaneCost: 100.0,
 					WorkerPlaneCost:  200.0,
 					DataStoreCost:    300.0,
 					LoadBalancerCost: 20.0,
 					TotalCost:        100.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-					Emissions:        regions["region1"].Emission,
 				},
 				{
-					Region:           "region4",
+					Region:           regions["region4"],
 					ControlPlaneCost: 110.0,
 					WorkerPlaneCost:  200.0,
 					DataStoreCost:    300.0,
 					LoadBalancerCost: 20.0,
 					TotalCost:        110.0*float64(noCP) + 200.0*float64(noWP) + 300.0*float64(noDS) + 20.0,
-					Emissions:        regions["region4"].Emission,
 				},
 				{
-					Region:           "region2",
+					Region:           regions["region2"],
 					ControlPlaneCost: 100,
 					WorkerPlaneCost:  350.0,
 					DataStoreCost:    350.0,
 					LoadBalancerCost: 20.0,
 					TotalCost:        100.0*float64(noCP) + 350.0*float64(noWP) + 350.0*float64(noDS) + 20.0,
-					Emissions:        regions["region2"].Emission,
 				},
 				{
-					Region:           "region3",
+					Region:           regions["region3"],
 					ControlPlaneCost: 200,
 					WorkerPlaneCost:  200.0,
 					DataStoreCost:    400.0,
 					LoadBalancerCost: 120.0,
 					TotalCost:        200.0*float64(noCP) + 200.0*float64(noWP) + 400.0*float64(noDS) + 120.0,
-					Emissions:        regions["region3"].Emission,
 				},
 			},
 		}
@@ -955,8 +979,7 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 		currReg := "region1"
 
 		expectedResp := RecommendationAcrossRegions{
-			CurrentRegion:         currReg,
-			CurrentEmissions:      regions[currReg].Emission,
+			CurrentRegion:         regions[currReg],
 			CurrentTotalCost:      100.0 + 200.0*float64(noWP),
 			ManagedOffering:       managedOfferSku,
 			InstanceTypeWP:        wpSku,
@@ -1020,19 +1043,17 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 		currReg := "region2"
 
 		expectedResp := RecommendationAcrossRegions{
-			CurrentRegion:    currReg,
-			CurrentEmissions: regions[currReg].Emission,
+			CurrentRegion:    regions[currReg],
 			CurrentTotalCost: 150.0 + 250.0*float64(noWP),
 			ManagedOffering:  managedOfferSku,
 			InstanceTypeWP:   wpSku,
 			WorkerPlaneCount: noWP,
 			RegionRecommendations: []RegionRecommendation{
 				{
-					Region:           "region1",
+					Region:           regions["region1"],
 					ControlPlaneCost: 100.0,
 					WorkerPlaneCost:  200.0,
 					TotalCost:        100.0 + 200.0*float64(noWP),
-					Emissions:        regions["region1"].Emission,
 				},
 			},
 		}
@@ -1125,40 +1146,35 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 			}
 
 			expectedResp := RecommendationAcrossRegions{
-				CurrentRegion:    currReg,
-				CurrentEmissions: regions[currReg].Emission,
+				CurrentRegion:    regions[currReg],
 				CurrentTotalCost: 100.0 + 200.0*float64(noWP),
 				ManagedOffering:  managedOfferSku,
 				InstanceTypeWP:   wpSku,
 				WorkerPlaneCount: noWP,
 				RegionRecommendations: []RegionRecommendation{
 					{
-						Region:           "region1",
+						Region:           regions["region1"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						TotalCost:        100.0 + 200.0*float64(noWP),
-						Emissions:        regions["region1"].Emission,
 					},
 					{
-						Region:           "region4",
+						Region:           regions["region4"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						TotalCost:        100.0 + 200.0*float64(noWP),
-						Emissions:        regions["region4"].Emission,
 					},
 					{
-						Region:           "region5",
+						Region:           regions["region5"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						TotalCost:        100.0 + 200.0*float64(noWP),
-						Emissions:        regions["region5"].Emission,
 					},
 					{
-						Region:           "region3",
+						Region:           regions["region3"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						TotalCost:        100.0 + 200.0*float64(noWP),
-						Emissions:        regions["region3"].Emission,
 					},
 				},
 			}
@@ -1220,26 +1236,23 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 			}
 
 			expectedResp := RecommendationAcrossRegions{
-				CurrentRegion:    currReg,
-				CurrentEmissions: regions[currReg].Emission,
+				CurrentRegion:    regions[currReg],
 				CurrentTotalCost: 100.0 + 200.0*float64(noWP),
 				ManagedOffering:  managedOfferSku,
 				InstanceTypeWP:   wpSku,
 				WorkerPlaneCount: noWP,
 				RegionRecommendations: []RegionRecommendation{
 					{
-						Region:           "region4",
+						Region:           regions["region4"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						TotalCost:        100.0 + 200.0*float64(noWP),
-						Emissions:        regions["region4"].Emission,
 					},
 					{
-						Region:           "region3",
+						Region:           regions["region3"],
 						ControlPlaneCost: 100.0,
 						WorkerPlaneCost:  200.0,
 						TotalCost:        100.0 + 200.0*float64(noWP),
-						Emissions:        regions["region3"].Emission,
 					},
 				},
 			}
@@ -1373,47 +1386,41 @@ func TestInstanceTypeOptimizerAcrossRegionsManaged(t *testing.T) {
 		}
 
 		expectedResp := RecommendationAcrossRegions{
-			CurrentRegion:    currReg,
-			CurrentEmissions: regions[currReg].Emission,
+			CurrentRegion:    regions[currReg],
 			CurrentTotalCost: 100.0 + 820*float64(noWP),
 			ManagedOffering:  managedOfferSku,
 			InstanceTypeWP:   wpSku,
 			WorkerPlaneCount: noWP,
 			RegionRecommendations: []RegionRecommendation{
 				{
-					Region:           "region5",
+					Region:           regions["region5"],
 					ControlPlaneCost: 100.0,
 					WorkerPlaneCost:  520.0,
 					TotalCost:        100.0 + 520.0*float64(noWP),
-					Emissions:        regions["region5"].Emission,
 				},
 				{
-					Region:           "region1",
+					Region:           regions["region1"],
 					ControlPlaneCost: 100.0,
 					WorkerPlaneCost:  520.0,
 					TotalCost:        100.0 + 520.0*float64(noWP),
-					Emissions:        regions["region1"].Emission,
 				},
 				{
-					Region:           "region4",
+					Region:           regions["region4"],
 					ControlPlaneCost: 110.0,
 					WorkerPlaneCost:  520.0,
 					TotalCost:        110.0 + 520.0*float64(noWP),
-					Emissions:        regions["region4"].Emission,
 				},
 				{
-					Region:           "region3",
+					Region:           regions["region3"],
 					ControlPlaneCost: 200,
 					WorkerPlaneCost:  620.0,
 					TotalCost:        200.0 + 620.0*float64(noWP),
-					Emissions:        regions["region3"].Emission,
 				},
 				{
-					Region:           "region2",
+					Region:           regions["region2"],
 					ControlPlaneCost: 100,
 					WorkerPlaneCost:  720.0,
 					TotalCost:        100.0 + 720.0*float64(noWP),
-					Emissions:        regions["region2"].Emission,
 				},
 			},
 		}
