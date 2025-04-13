@@ -15,10 +15,12 @@
 package optimizer
 
 import (
+	"cmp"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -162,6 +164,10 @@ func (k *Optimizer) AttachEmissionsToRegions(cloudProvider consts.KsctlCloud) (p
 	}
 
 	close(resultChan)
+
+	slices.SortStableFunc(k.AvailRegions, func(a, b provider.RegionOutput) int {
+		return emissionComparator(RegionRecommendation{Region: a}, RegionRecommendation{Region: b})
+	})
 
 	return k.AvailRegions, nil
 }
@@ -406,6 +412,28 @@ func (k *Optimizer) AttachEmbodiedToInstanceType(
 			k.l.Debug(k.ctx, "No embodied emissions mapping found for instance", "instance", instance.Sku)
 		}
 	}
+
+	slices.SortStableFunc(instances, func(a, b provider.InstanceRegionOutput) int {
+		cpu := cmp.Compare(a.VCpus, b.VCpus)
+		mem := cmp.Compare(a.Memory, b.Memory)
+		price := cmp.Compare(a.GetCost(), b.GetCost())
+
+		if cpu != 0 {
+			return cpu
+		}
+		if mem != 0 {
+			return mem
+		}
+
+		if price != 0 {
+			return price
+		}
+
+		if a.EmboddedEmissions != nil && b.EmboddedEmissions != nil {
+			return cmp.Compare(a.EmboddedEmissions.EmboddedCo2, b.EmboddedEmissions.EmboddedCo2)
+		}
+		return 0
+	})
 
 	return instances, nil
 }
