@@ -70,6 +70,7 @@ func getCiliumComponentOverridings(p stack.ComponentOverrides) (version *string,
 			}
 
 		case "ciliumChartOverridings":
+			// https://artifacthub.io/packages/helm/cilium/cilium?modal=values-schema
 			if v, ok := v.(map[string]any); ok {
 				ciliumChartOverridings = v
 			}
