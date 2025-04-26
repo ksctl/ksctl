@@ -27,6 +27,7 @@ const (
 	CiliumGuidedHubble     = "hubble"
 	CiliumGuidedEncryption = "encryption"
 	CiliumGuidedPrometheus = "prometheus"
+	CiliumGuidedL7Proxy    = "l7-proxy"
 )
 
 type CiliumGuidedOutput struct {
@@ -47,6 +48,10 @@ func CiliumGuidedConfigurations() []CiliumGuidedOutput {
 		{
 			Name:        CiliumGuidedPrometheus,
 			Description: "Enable Prometheus metrics",
+		},
+		{
+			Name:        CiliumGuidedL7Proxy,
+			Description: "Enable cilium L7 proxy",
 		},
 	}
 }
@@ -99,7 +104,10 @@ func setCiliumComponentOverridings(p stack.ComponentOverrides) (
 		ciliumChartOverridings = _ciliumChartOverridings
 	} else if _guidedSetup != nil {
 		for _, v := range _guidedSetup {
-			if v == CiliumGuidedHubble {
+			if v == CiliumGuidedL7Proxy {
+				ciliumChartOverridings["l7Proxy"] = true
+
+			} else if v == CiliumGuidedHubble {
 				ciliumChartOverridings["hubble"] = map[string]any{
 					"ui":    map[string]any{"enabled": true},
 					"relay": map[string]any{"enabled": true},
@@ -146,6 +154,8 @@ func setCiliumComponentOverridings(p stack.ComponentOverrides) (
 					"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
 				}},
 			},
+			// "l7Proxy":              true,
+			// "kubeProxyReplacement": true,
 			"encryption": map[string]any{
 				"enabled": true,
 				"type":    "wireguard",
