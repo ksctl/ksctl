@@ -60,3 +60,39 @@ func (b *BootstrapMetadata) GetAvailableEtcdVersions() ([]string, error) {
 
 	return vers, nil
 }
+
+func (b *BootstrapMetadata) GetAvailableCiliumVersions() ([]string, error) {
+	vers, err := poller.GetSharedPoller().Get("cilium", "cilium")
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			err,
+		)
+	}
+	if len(vers) == 0 {
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInternal,
+			"Unable to get any releases",
+		)
+	}
+
+	return vers, nil
+}
+
+func (b *BootstrapMetadata) GetAvailableFlannelVersions() ([]string, error) {
+	vers, err := poller.GetSharedPoller().Get("flannel-io", "flannel")
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrInternal,
+			err,
+		)
+	}
+	if len(vers) == 0 {
+		return nil, ksctlErrors.WrapErrorf(
+			ksctlErrors.ErrInternal,
+			"Unable to get any releases",
+		)
+	}
+
+	return vers, nil
+}
