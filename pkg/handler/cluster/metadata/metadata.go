@@ -316,6 +316,32 @@ func (kc *Controller) ListAllManagedClusterK8sVersions(region string) (_ []strin
 	return tags, nil
 }
 
+func (kc *Controller) ListAllCiliumVersions() (_ []string, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	return kc.bb.GetAvailableCiliumVersions()
+}
+
+func (kc *Controller) ListAllFlannelVersions() (_ []string, errC error) {
+	defer func() {
+		if errC != nil {
+			v := kc.b.PanicHandler(kc.l)
+			if v != nil {
+				errC = errors.Join(errC, v)
+			}
+		}
+	}()
+
+	return kc.bb.GetAvailableFlannelVersions()
+}
+
 func (kc *Controller) ListAllEtcdVersions() (_ []string, errC error) {
 	defer func() {
 		if errC != nil {
@@ -368,7 +394,7 @@ func (kc *Controller) ListManagedCNIs() (
 		return nil, "", nil, "", err
 	}
 
-	a, b := cni.GetCNIs()
+	a, b := cni.GetCNIs(kc.b.IsLocalProvider(kc.client))
 
 	return c, d, a, b, nil
 }
@@ -398,7 +424,7 @@ func (kc *Controller) ListBootstrapCNIs() (
 	if err != nil {
 		return nil, "", nil, "", err
 	}
-	a, b := cni.GetCNIs()
+	a, b := cni.GetCNIs(false)
 
 	return c, d, a, b, nil
 }

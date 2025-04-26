@@ -23,11 +23,44 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
-func getCiliumComponentOverridings(p stack.ComponentOverrides) (version *string, ciliumChartOverridings map[string]any) {
+const (
+	CiliumGuidedHubble     = "hubble"
+	CiliumGuidedEncryption = "encryption"
+	CiliumGuidedPrometheus = "prometheus"
+	CiliumGuidedL7Proxy    = "l7-proxy"
+)
+
+type CiliumGuidedOutput struct {
+	Name        string
+	Description string
+}
+
+func CiliumGuidedConfigurations() []CiliumGuidedOutput {
+	return []CiliumGuidedOutput{
+		{
+			Name:        CiliumGuidedHubble,
+			Description: "Enable Hubble UI and Relay",
+		},
+		{
+			Name:        CiliumGuidedEncryption,
+			Description: "Enable Wireguard encryption",
+		},
+		{
+			Name:        CiliumGuidedPrometheus,
+			Description: "Enable Prometheus metrics",
+		},
+		{
+			Name:        CiliumGuidedL7Proxy,
+			Description: "Enable cilium L7 proxy",
+		},
+	}
+}
+
+func getCiliumComponentOverridings(p stack.ComponentOverrides) (version *string, ciliumChartOverridings map[string]any, guidedConfig []string) {
 	ciliumChartOverridings = nil // By default it is nil
 
 	if p == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	for k, v := range p {
@@ -36,7 +69,13 @@ func getCiliumComponentOverridings(p stack.ComponentOverrides) (version *string,
 			if v, ok := v.(string); ok {
 				version = utilities.Ptr(v)
 			}
+		case "guidedConfig":
+			if v, ok := v.([]string); ok {
+				guidedConfig = v
+			}
+
 		case "ciliumChartOverridings":
+			// https://artifacthub.io/packages/helm/cilium/cilium?modal=values-schema
 			if v, ok := v.(map[string]any); ok {
 				ciliumChartOverridings = v
 			}
@@ -57,24 +96,82 @@ func setCiliumComponentOverridings(p stack.ComponentOverrides) (
 
 	ciliumChartOverridings = map[string]any{}
 
-	_version, _ciliumChartOverridings := getCiliumComponentOverridings(p)
+	_version, _ciliumChartOverridings, _guidedSetup := getCiliumComponentOverridings(p)
 
 	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
 
 	if _ciliumChartOverridings != nil {
 		ciliumChartOverridings = _ciliumChartOverridings
+	} else if _guidedSetup != nil {
+		for _, v := range _guidedSetup {
+			if v == CiliumGuidedL7Proxy {
+				ciliumChartOverridings["l7Proxy"] = true
+
+			} else if v == CiliumGuidedHubble {
+				ciliumChartOverridings["hubble"] = map[string]any{
+					"ui":    map[string]any{"enabled": true},
+					"relay": map[string]any{"enabled": true},
+					"metrics": map[string]any{"enabled": []string{
+						"dns",
+						"drop",
+						"tcp",
+						"flow",
+						"port-distribution",
+						"icmp",
+						"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
+					}},
+				}
+			} else if v == CiliumGuidedEncryption {
+				ciliumChartOverridings["encryption"] = map[string]any{
+					"enabled": true,
+					"type":    "wireguard",
+				}
+			} else if v == CiliumGuidedPrometheus {
+				ciliumChartOverridings["operator"] = map[string]any{
+					"replicas": 3,
+					"prometheus": map[string]any{
+						"enabled": true,
+					},
+				}
+				ciliumChartOverridings["prometheus"] = map[string]any{
+					"enabled": true,
+				}
+			}
+		}
+
 	} else {
 		ciliumChartOverridings = map[string]any{
 			"hubble": map[string]any{
-				"ui": map[string]any{
-					"enabled": true,
-				},
-				"relay": map[string]any{
+				"ui":    map[string]any{"enabled": true},
+				"relay": map[string]any{"enabled": true},
+				"metrics": map[string]any{"enabled": []string{
+					"dns",
+					"drop",
+					"tcp",
+					"flow",
+					"port-distribution",
+					"icmp",
+					"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
+				}},
+			},
+			"l7Proxy":              true,
+			"kubeProxyReplacement": true,
+			"encryption": map[string]any{
+				"enabled": true,
+				"type":    "wireguard",
+			},
+			"operator": map[string]any{
+				"replicas": 3,
+				"prometheus": map[string]any{
 					"enabled": true,
 				},
 			},
+			"prometheus": map[string]any{
+				"enabled": true,
+			},
 		}
 	}
+
 	return
 }
 

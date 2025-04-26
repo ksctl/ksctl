@@ -158,6 +158,7 @@ func (k *K8sClusterClient) installCni(
 				component := stackManifest.Components[componentId]
 
 				componentVersion := stack.GetComponentVersionOverriding(component)
+				k.l.Print(k.ctx, "Installing component", "type", "cni", "stackId", stackManifest.StackNameID, "version", componentVersion, "component", string(componentId))
 
 				_err := k.handleInstallComponent(componentId, component)
 				if _err != nil {
