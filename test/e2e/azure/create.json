@@ -1,6 +1,6 @@
 {
 	"cluster_name": "test-e2e-azure",
-	"kubernetes_version": "1.29",
+	"kubernetes_version": "1.32",
 	"region": "eastus",
 	"cloud_provider": "azure",
 	"cluster_type": "managed",
