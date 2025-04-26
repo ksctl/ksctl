@@ -154,8 +154,8 @@ func setCiliumComponentOverridings(p stack.ComponentOverrides) (
 					"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
 				}},
 			},
-			// "l7Proxy":              true,
-			// "kubeProxyReplacement": true,
+			"l7Proxy":              true,
+			"kubeProxyReplacement": true,
 			"encryption": map[string]any{
 				"enabled": true,
 				"type":    "wireguard",

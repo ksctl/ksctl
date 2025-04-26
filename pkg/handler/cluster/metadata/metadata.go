@@ -394,7 +394,7 @@ func (kc *Controller) ListManagedCNIs() (
 		return nil, "", nil, "", err
 	}
 
-	a, b := cni.GetCNIs()
+	a, b := cni.GetCNIs(kc.b.IsLocalProvider(kc.client))
 
 	return c, d, a, b, nil
 }
@@ -424,7 +424,7 @@ func (kc *Controller) ListBootstrapCNIs() (
 	if err != nil {
 		return nil, "", nil, "", err
 	}
-	a, b := cni.GetCNIs()
+	a, b := cni.GetCNIs(false)
 
 	return c, d, a, b, nil
 }
