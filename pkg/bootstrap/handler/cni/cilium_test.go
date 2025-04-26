@@ -27,12 +27,32 @@ func TestCiliumComponentOverridingsWithNilParams(t *testing.T) {
 	assert.Equal(t, "v1.16.1", version)
 	assert.Equal(t, map[string]any{
 		"hubble": map[string]any{
-			"ui": map[string]any{
+			"ui":    map[string]any{"enabled": true},
+			"relay": map[string]any{"enabled": true},
+			"metrics": map[string]any{"enabled": []string{
+				"dns",
+				"drop",
+				"tcp",
+				"flow",
+				"port-distribution",
+				"icmp",
+				"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
+			}},
+		},
+		"l7Proxy":              true,
+		"kubeProxyReplacement": true,
+		"encryption": map[string]any{
+			"enabled": true,
+			"type":    "wireguard",
+		},
+		"operator": map[string]any{
+			"replicas": 3,
+			"prometheus": map[string]any{
 				"enabled": true,
 			},
-			"relay": map[string]any{
-				"enabled": true,
-			},
+		},
+		"prometheus": map[string]any{
+			"enabled": true,
 		},
 	}, ciliumChartOverridings)
 }
@@ -44,33 +64,89 @@ func TestCiliumComponentOverridingsWithEmptyParams(t *testing.T) {
 	assert.Equal(t, "v1.16.1", version)
 	assert.Equal(t, map[string]any{
 		"hubble": map[string]any{
-			"ui": map[string]any{
+			"ui":    map[string]any{"enabled": true},
+			"relay": map[string]any{"enabled": true},
+			"metrics": map[string]any{"enabled": []string{
+				"dns",
+				"drop",
+				"tcp",
+				"flow",
+				"port-distribution",
+				"icmp",
+				"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
+			}},
+		},
+		"l7Proxy":              true,
+		"kubeProxyReplacement": true,
+		"encryption": map[string]any{
+			"enabled": true,
+			"type":    "wireguard",
+		},
+		"operator": map[string]any{
+			"replicas": 3,
+			"prometheus": map[string]any{
 				"enabled": true,
 			},
-			"relay": map[string]any{
-				"enabled": true,
-			},
+		},
+		"prometheus": map[string]any{
+			"enabled": true,
 		},
 	}, ciliumChartOverridings)
 }
 
 func TestCiliumComponentOverridingsWithVersionOnly(t *testing.T) {
-	params := stack.ComponentOverrides{
-		"version": "v1.0.0",
-	}
-	version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
-	assert.Nil(t, err)
-	assert.Equal(t, "v1.0.0", version)
-	assert.Equal(t, map[string]any{
-		"hubble": map[string]any{
-			"ui": map[string]any{
+
+	t.Run("with version and GuidedConfig", func(t *testing.T) {
+
+		params := stack.ComponentOverrides{
+			"version":      "v1.0.0",
+			"guidedConfig": []string{"GG", "l7-proxy"},
+		}
+		version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
+		assert.Nil(t, err)
+		assert.Equal(t, "v1.0.0", version)
+		assert.Equal(t, map[string]any{
+			"l7Proxy": true,
+		}, ciliumChartOverridings)
+	})
+
+	t.Run("guidedConfig Hubble, encryption, and prometheus", func(t *testing.T) {
+		params := stack.ComponentOverrides{
+			"version":      "v1.0.0",
+			"guidedConfig": []string{"hubble", "encryption", "prometheus"},
+		}
+		version, ciliumChartOverridings, err := setCiliumComponentOverridings(params)
+		assert.Nil(t, err)
+		assert.Equal(t, "v1.0.0", version)
+		assert.Equal(t, map[string]any{
+			"hubble": map[string]any{
+				"ui":    map[string]any{"enabled": true},
+				"relay": map[string]any{"enabled": true},
+				"metrics": map[string]any{"enabled": []string{
+					"dns",
+					"drop",
+					"tcp",
+					"flow",
+					"port-distribution",
+					"icmp",
+					"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
+				}},
+			},
+			"encryption": map[string]any{
+				"enabled": true,
+				"type":    "wireguard",
+			},
+			"operator": map[string]any{
+				"replicas": 3,
+				"prometheus": map[string]any{
+					"enabled": true,
+				},
+			},
+			"prometheus": map[string]any{
 				"enabled": true,
 			},
-			"relay": map[string]any{
-				"enabled": true,
-			},
-		},
-	}, ciliumChartOverridings)
+		}, ciliumChartOverridings)
+	})
 }
 
 func TestCiliumComponentOverridingsWithCiliumChartOverridingsOnly(t *testing.T) {
