@@ -50,8 +50,8 @@ func getVersionIfItsNotNilAndLatest(ver *string, defaultVer string) string {
 	return *ver
 }
 
-func GetCNIs(isKindCluster bool) (addons.ClusterAddons, string) {
-	if isKindCluster {
+func GetCNIs(isKindCluster bool, isK3sCluster bool) (addons.ClusterAddons, string) {
+	if isKindCluster || isK3sCluster {
 		return addons.ClusterAddons{
 			{
 				Name:   "cilium",

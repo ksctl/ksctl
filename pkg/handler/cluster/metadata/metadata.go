@@ -394,7 +394,7 @@ func (kc *Controller) ListManagedCNIs() (
 		return nil, "", nil, "", err
 	}
 
-	a, b := cni.GetCNIs(kc.b.IsLocalProvider(kc.client))
+	a, b := cni.GetCNIs(kc.b.IsLocalProvider(kc.client), false)
 
 	return c, d, a, b, nil
 }
@@ -424,7 +424,7 @@ func (kc *Controller) ListBootstrapCNIs() (
 	if err != nil {
 		return nil, "", nil, "", err
 	}
-	a, b := cni.GetCNIs(false)
+	a, b := cni.GetCNIs(false, kc.client.Metadata.K8sDistro == consts.K8sK3s)
 
 	return c, d, a, b, nil
 }
