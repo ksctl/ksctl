@@ -32,7 +32,7 @@ type SummaryOutput struct {
 	// Resource information
 	Nodes []k8s.NodeSummary
 
-	ResourceUtilization k8s.ClusterUtilization
+	ResourceUtilization *k8s.ClusterUtilization
 
 	// Workload information
 	WorkloadSummary k8s.WorkloadSummary
@@ -79,13 +79,13 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 	}
 	res.Nodes = nodes
 
-	// // Get utilization info
-	// utilization, err := c.GetClusterUtilization()
-	// if err != nil {
-	// 	kc.l.Warn(kc.ctx, "Unable to get utilization information", "error", err)
-	// } else {
-	// 	res.ResourceUtilization = *utilization
-	// }
+	// Get utilization info
+	utilization, err := c.GetClusterUtilization()
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to get utilization information", "error", err)
+	} else {
+		res.ResourceUtilization = utilization
+	}
 
 	// Get workload summary
 	workloads, err := c.GetWorkloadSummary()
@@ -102,14 +102,15 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 	// } else {
 	// 	res.ControlPlaneComponents = controlPlane
 	// }
-	//
-	// // Get recent warning events
-	// events, err := c.GetRecentWarningEvents()
-	// if err != nil {
-	// 	kc.l.Warn(kc.ctx, "Unable to get recent events", "error", err)
-	// } else {
-	// 	res.RecentWarningEvents = events
-	// }
+
+	// Get recent warning events
+	events, err := c.GetRecentWarningEvents()
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to get recent events", "error", err)
+	} else {
+		res.RecentWarningEvents = events
+	}
+
 	//
 	// // Detect issues
 	// issues, err := c.DetectClusterIssues()

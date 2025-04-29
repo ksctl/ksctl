@@ -241,11 +241,15 @@ type ClusterIssue struct {
 
 type EventSummary struct {
 	Time      time.Time
+	Kind      string
 	Name      string
 	Namespace string
-	Reason    string
-	Message   string
-	Count     int32
+
+	Reason     string
+	Message    string
+	ReportedBy string
+
+	Count int32
 }
 
 type APIServerHealthCheck struct {
@@ -384,7 +388,10 @@ func (c *DirectConnect) GetNodesSummary() ([]NodeSummary, error) {
 }
 
 func (c *DirectConnect) GetClusterUtilization() (*ClusterUtilization, error) {
-	panic("Not implemented")
+	return nil, ksctlErrors.WrapError(
+		ksctlErrors.ErrFailedConnectingKubernetesCluster,
+		c.l.NewError(c.ctx, "GetClusterUtilization is not implemented", "Reason", "Not implemented"),
+	)
 }
 
 func (c *DirectConnect) GetWorkloadSummary() (*WorkloadSummary, error) {
@@ -486,7 +493,31 @@ func (c *DirectConnect) GetWorkloadSummary() (*WorkloadSummary, error) {
 }
 
 func (c *DirectConnect) GetRecentWarningEvents() ([]EventSummary, error) {
-	panic("Not implemented")
+	events, err := c.rC.clientset.EventsV1().Events("").List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get events", "Reason", err),
+		)
+	}
+
+	res := make([]EventSummary, 0, len(events.Items))
+	for _, event := range events.Items {
+		if event.Type == corev1.EventTypeWarning {
+			res = append(res, EventSummary{
+				Kind:       event.Regarding.Kind,
+				Name:       event.Regarding.Name,
+				Namespace:  event.Regarding.Namespace,
+				Time:       event.EventTime.Time,
+				Count:      event.DeprecatedCount,
+				Reason:     event.Reason,
+				ReportedBy: event.ReportingInstance,
+				Message:    event.Note,
+			})
+		}
+	}
+
+	return res, nil
 }
 
 func (c *DirectConnect) GetControlPlaneStatus() (map[string]string, error) {
