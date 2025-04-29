@@ -89,7 +89,7 @@ func (c *DirectConnect) establishConnection(contextName string, kubeconfig strin
 	clusterContext := ""
 	authContext := ""
 	isPresent := false
-	c.l.Print(c.ctx, "searching for current-context", "contextName", contextName)
+	c.l.Debug(c.ctx, "searching for current-context", "contextName", contextName)
 	if config.CurrentContext != contextName {
 		c.l.Warn(c.ctx, "failed context looking for is not the current one", "expected", contextName, "got", config.CurrentContext)
 		c.l.Print(c.ctx, "using the context which is present in the state for configuration", "stateContext", contextName)
@@ -101,7 +101,7 @@ func (c *DirectConnect) establishConnection(contextName string, kubeconfig strin
 			isPresent = true
 			clusterContext = info.Cluster
 			authContext = info.AuthInfo
-			c.l.Print(c.ctx, "Found cluster in kubeconfig",
+			c.l.Debug(c.ctx, "Found cluster in kubeconfig",
 				"current-context", config.CurrentContext,
 				"contexts[...].context.cluster", clusterContext,
 				"contexts[...].context.authinfo", authContext,
@@ -187,6 +187,65 @@ func (c *DirectConnect) httpClient(isTokenBased bool, caCert, clientCert, client
 		Certificates: []tls.Certificate{cert},
 	}
 	return tlsConfig, nil
+}
+
+type ClusterUtilization struct {
+	CPURequestPercentage    float64
+	CPULimitPercentage      float64
+	MemoryRequestPercentage float64
+	MemoryLimitPercentage   float64
+	PodCount                int
+	PodCapacity             int
+}
+
+type ContainerSummary struct {
+	Name           string
+	RestartCount   int32
+	Ready          bool
+	WaitingProblem corev1.ContainerStateWaiting
+}
+
+type PodOwnerRef struct {
+	Kind      string
+	Name      string
+	Namespace string
+}
+
+type PodSummary struct {
+	Name      string
+	Namespace string
+	OwnerRef  []PodOwnerRef
+	IsFailed  bool
+	IsPending bool
+
+	FailedContainers []ContainerSummary
+}
+
+type WorkloadSummary struct {
+	Deployments  int
+	StatefulSets int
+	DaemonSets   int
+	CronJobs     int
+	Namespaces   int
+
+	RunningPods   int
+	UnHealthyPods []PodSummary
+}
+
+type ClusterIssue struct {
+	Severity       string // "Warning", "Error", "Critical"
+	Component      string
+	Message        string
+	Recommendation string
+}
+
+type EventSummary struct {
+	Time      time.Time
+	Name      string
+	Namespace string
+	Reason    string
+	Message   string
+	Count     int32
 }
 
 type APIServerHealthCheck struct {
@@ -322,4 +381,118 @@ func (c *DirectConnect) GetNodesSummary() ([]NodeSummary, error) {
 	}
 
 	return res, nil
+}
+
+func (c *DirectConnect) GetClusterUtilization() (*ClusterUtilization, error) {
+	panic("Not implemented")
+}
+
+func (c *DirectConnect) GetWorkloadSummary() (*WorkloadSummary, error) {
+	ns, err := c.rC.clientset.CoreV1().Namespaces().List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get namespaces", "Reason", err),
+		)
+	}
+
+	deployment, err := c.rC.clientset.AppsV1().Deployments("").List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get deployment", "Reason", err),
+		)
+	}
+
+	statefulSet, err := c.rC.clientset.AppsV1().StatefulSets("").List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get statefulSet", "Reason", err),
+		)
+	}
+
+	daemonSet, err := c.rC.clientset.AppsV1().DaemonSets("").List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get daemonSet", "Reason", err),
+		)
+	}
+
+	cronJob, err := c.rC.clientset.BatchV1().CronJobs("").List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get cronJob", "Reason", err),
+		)
+	}
+
+	res := &WorkloadSummary{
+		Deployments:  len(deployment.Items),
+		StatefulSets: len(statefulSet.Items),
+		DaemonSets:   len(daemonSet.Items),
+		CronJobs:     len(cronJob.Items),
+		Namespaces:   len(ns.Items),
+	}
+
+	pods, err := c.rC.clientset.CoreV1().Pods("").List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get pods", "Reason", err),
+		)
+	}
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == corev1.PodRunning {
+			res.RunningPods++
+		} else {
+			v := PodSummary{
+				Name:      pod.Name,
+				OwnerRef:  make([]PodOwnerRef, 0, len(pod.OwnerReferences)),
+				Namespace: pod.Namespace,
+			}
+			for _, ownerRef := range pod.OwnerReferences {
+				v.OwnerRef = append(v.OwnerRef, PodOwnerRef{
+					Kind:      ownerRef.Kind,
+					Name:      ownerRef.Name,
+					Namespace: pod.Namespace,
+				})
+			}
+
+			if pod.Status.Phase == corev1.PodPending {
+				v.IsPending = true
+			} else if pod.Status.Phase == corev1.PodFailed {
+				v.IsFailed = true
+			}
+			for _, containerStatus := range pod.Status.ContainerStatuses {
+				s := ContainerSummary{
+					Name:         containerStatus.Name,
+					RestartCount: containerStatus.RestartCount,
+					Ready:        containerStatus.Ready,
+				}
+				if containerStatus.State.Waiting != nil {
+					s.WaitingProblem = *containerStatus.State.Waiting
+				}
+
+				v.FailedContainers = append(v.FailedContainers, s)
+			}
+
+			res.UnHealthyPods = append(res.UnHealthyPods, v)
+		}
+	}
+
+	return res, nil
+}
+
+func (c *DirectConnect) GetRecentWarningEvents() ([]EventSummary, error) {
+	panic("Not implemented")
+}
+
+func (c *DirectConnect) GetControlPlaneStatus() (map[string]string, error) {
+	panic("Not implemented")
+}
+
+func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
+	panic("Not implemented")
 }
