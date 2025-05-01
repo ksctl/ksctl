@@ -328,6 +328,45 @@ func (c *DirectConnect) MeasureLatency() (string, string, error) {
 	return latency, v.GitVersion, nil
 }
 
+func (c *DirectConnect) GetControlPlaneVersions() (map[string]string, error) {
+	pods, err := c.rC.clientset.CoreV1().Pods("kube-system").List(c.ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get kube-system pods", "Reason", err),
+		)
+	}
+
+	versions := make(map[string]string)
+
+	componentsToFind := map[string]bool{
+		"kube-apiserver":          false,
+		"kube-controller-manager": false,
+		"kube-scheduler":          false,
+		"etcd":                    false,
+		"coredns":                 false,
+	}
+
+	for _, pod := range pods.Items {
+		for component, alreadyFound := range componentsToFind {
+			if alreadyFound {
+				continue
+			}
+			if strings.Contains(pod.Name, component) {
+				for _, container := range pod.Spec.Containers {
+					if container.Name == component {
+						versions[component] = container.Image
+						componentsToFind[component] = true
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return versions, nil
+}
+
 func (c *DirectConnect) GetHealthz() (*APIServerHealthCheck, error) {
 	url := fmt.Sprintf("%s/healthz?verbose", c.url)
 

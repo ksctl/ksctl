@@ -94,6 +94,13 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 		res.ResourceUtilization = utilization
 	}
 
+	components, err := c.GetControlPlaneVersions()
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to get components information", "error", err)
+	} else {
+		res.ControlPlaneComponents = components
+	}
+
 	workloads, err := c.GetWorkloadSummary()
 	if err != nil {
 		kc.l.Warn(kc.ctx, "Unable to get workload information", "error", err)
