@@ -24,6 +24,9 @@ type SummaryOutput struct {
 	CloudProvider string
 	ClusterType   string
 
+	RoundTripLatency  string
+	KubernetesVersion string
+
 	// Health information
 	APIServerHealthCheck   *k8s.APIServerHealthCheck
 	ControlPlaneComponents map[string]string // Component -> status
@@ -62,6 +65,14 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 		ClusterName:   kc.s.ClusterName,
 		CloudProvider: string(kc.s.InfraProvider),
 		ClusterType:   string(kc.s.ClusterType),
+	}
+
+	latency, k8sVer, err := c.MeasureLatency()
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to measure latency", "error", err)
+	} else {
+		res.RoundTripLatency = latency
+		res.KubernetesVersion = k8sVer
 	}
 
 	healthCheck, err := c.GetHealthz()

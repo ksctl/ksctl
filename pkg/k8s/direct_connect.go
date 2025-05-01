@@ -265,6 +265,69 @@ type APIServerHealthCheck struct {
 	FailedComponents []string
 }
 
+func (c *DirectConnect) MeasureLatency() (string, string, error) {
+	url := fmt.Sprintf("%s/version", c.url)
+
+	c.l.Debug(c.ctx, "full url for version", "url", url)
+
+	tr := &http.Transport{
+		TLSClientConfig: c.conn,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed, client could not create request", "Reason", err),
+		)
+	}
+
+	if c.token != nil {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *c.token))
+	}
+
+	client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
+
+	start := time.Now()
+
+	resHttp, err := client.Do(req)
+	if err != nil {
+		return "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to connect",
+				"Reason", err,
+			),
+		)
+	}
+	latency := time.Since(start).String()
+
+	if resHttp.StatusCode != http.StatusOK {
+		return "", "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to connect",
+				"Reason", fmt.Sprintf("status code was %d", resHttp.StatusCode),
+			),
+		)
+	}
+
+	defer resHttp.Body.Close()
+	type Version struct {
+		GitVersion string `json:"gitVersion"`
+	}
+	var v Version
+
+	if err := json.NewDecoder(resHttp.Body).Decode(&v); err != nil {
+		return latency, "", ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to decode the body",
+				"Reason", err,
+			),
+		)
+	}
+
+	return latency, v.GitVersion, nil
+}
+
 func (c *DirectConnect) GetHealthz() (*APIServerHealthCheck, error) {
 	url := fmt.Sprintf("%s/healthz?verbose", c.url)
 
@@ -532,11 +595,14 @@ func (c *DirectConnect) GetRecentWarningEvents() ([]EventSummary, error) {
 	res := make([]EventSummary, 0, len(events.Items))
 	for _, event := range events.Items {
 		if event.Type == corev1.EventTypeWarning {
+			if time.Since(event.CreationTimestamp.Time) > 24*time.Hour {
+				continue
+			}
 			res = append(res, EventSummary{
 				Kind:       event.Regarding.Kind,
 				Name:       event.Regarding.Name,
 				Namespace:  event.Regarding.Namespace,
-				Time:       event.EventTime.Time,
+				Time:       event.CreationTimestamp.Time,
 				Count:      event.DeprecatedCount,
 				Reason:     event.Reason,
 				ReportedBy: event.ReportingInstance,
@@ -620,13 +686,11 @@ func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
 		)
 	}
 
-	c.l.Note(c.ctx, "found namespaces", "count", len(namespaces.Items))
 	for _, ns := range namespaces.Items {
 		if strings.HasPrefix(ns.Name, "kube-") {
 			continue
 		}
 
-		c.l.Note(c.ctx, ns.Name)
 		resourceQuota, err := c.rC.clientset.CoreV1().ResourceQuotas(ns.Name).List(c.ctx, v1.ListOptions{})
 		if err != nil {
 			return nil, ksctlErrors.WrapError(
@@ -653,12 +717,10 @@ func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
 			c.l.NewError(c.ctx, "failed to get services", "Reason", err),
 		)
 	}
-	c.l.Note(c.ctx, "found services", "count", len(svcs.Items))
 	for _, svc := range svcs.Items {
 		if strings.HasPrefix(svc.Name, "kube-") {
 			continue
 		}
-		c.l.Note(c.ctx, "services", "name", svc.Name, "svcType", svc.Spec.Type, "namespace", svc.Namespace)
 		if svc.Spec.Type == corev1.ServiceTypeNodePort {
 			res = append(res, ClusterIssue{
 				Severity:       "Critical",
