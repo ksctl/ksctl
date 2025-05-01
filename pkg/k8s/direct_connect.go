@@ -191,7 +191,7 @@ func (c *DirectConnect) httpClient(isTokenBased bool, caCert, clientCert, client
 	return tlsConfig, nil
 }
 
-type NodeUtilization struct {
+type nodeUtilization struct {
 	Name              string
 	CPUUtilization    float64 // in percentage
 	MemoryUtilization float64
@@ -263,6 +263,32 @@ type EventSummary struct {
 type APIServerHealthCheck struct {
 	Healthy          bool
 	FailedComponents []string
+}
+
+type NodeSummary struct {
+	Name               string
+	KubeletHealthy     bool
+	Ready              bool
+	MemoryPressure     bool
+	DiskPressure       bool
+	NetworkUnavailable bool
+
+	// Node Details
+	KernelVersion           string
+	OSImage                 string
+	ContainerRuntimeVersion string
+	KubeletVersion          string
+	OperatingSystem         string
+	Architecture            string
+
+	CPUUtilization    float64 // in percentage
+	MemoryUtilization float64
+
+	CPUUnits string
+	MemUnits string
+
+	// Spec
+	Unschedulable bool
 }
 
 func (c *DirectConnect) MeasureLatency() (string, string, error) {
@@ -428,26 +454,6 @@ func (c *DirectConnect) GetHealthz() (*APIServerHealthCheck, error) {
 	return &APIServerHealthCheck{fail_1, failedComponent}, nil
 }
 
-type NodeSummary struct {
-	Name               string
-	KubeletHealthy     bool
-	Ready              bool
-	MemoryPressure     bool
-	DiskPressure       bool
-	NetworkUnavailable bool
-
-	// Node Details
-	KernelVersion           string
-	OSImage                 string
-	ContainerRuntimeVersion string
-	KubeletVersion          string
-	OperatingSystem         string
-	Architecture            string
-
-	// Spec
-	Unschedulable bool
-}
-
 func (c *DirectConnect) GetNodesSummary() ([]NodeSummary, error) {
 	nodes, err := c.rC.clientset.CoreV1().Nodes().List(c.ctx, v1.ListOptions{})
 	if err != nil {
@@ -455,6 +461,11 @@ func (c *DirectConnect) GetNodesSummary() ([]NodeSummary, error) {
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
 			c.l.NewError(c.ctx, "failed to get nodes", "Reason", err),
 		)
+	}
+
+	nodeMetrics, err := c.getClusterUtilization()
+	if err != nil {
+		c.l.Warn(c.ctx, "Unable to get utilization information", "error", err)
 	}
 
 	res := make([]NodeSummary, 0, len(nodes.Items))
@@ -492,6 +503,17 @@ func (c *DirectConnect) GetNodesSummary() ([]NodeSummary, error) {
 			}
 		}
 		res = append(res, resNode)
+	}
+
+	for _, node := range nodeMetrics {
+		for i := range res {
+			if res[i].Name == node.Name {
+				res[i].CPUUtilization = node.CPUUtilization
+				res[i].MemoryUtilization = node.MemoryUtilization
+				res[i].CPUUnits = node.CPUUnits
+				res[i].MemUnits = node.MemUnits
+			}
+		}
 	}
 
 	return res, nil
@@ -773,7 +795,7 @@ func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
 	return res, nil
 }
 
-func (c *DirectConnect) GetClusterUtilization() ([]NodeUtilization, error) {
+func (c *DirectConnect) getClusterUtilization() ([]nodeUtilization, error) {
 
 	url := fmt.Sprintf("%s/apis/metrics.k8s.io/v1beta1/nodes", c.url)
 
@@ -867,12 +889,12 @@ func (c *DirectConnect) GetClusterUtilization() ([]NodeUtilization, error) {
 		)
 	}
 
-	res := make([]NodeUtilization, 0, len(nL.Items))
+	res := make([]nodeUtilization, 0, len(nL.Items))
 
 	for _, n := range nL.Items {
 		for _, nM := range nm.Items {
 			if n.Name == nM.Metadata.Name {
-				nodeUtilz := NodeUtilization{
+				nodeUtilz := nodeUtilization{
 					Name: n.Name,
 				}
 

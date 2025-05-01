@@ -27,26 +27,16 @@ type SummaryOutput struct {
 	RoundTripLatency  string
 	KubernetesVersion string
 
-	// Health information
-	APIServerHealthCheck   *k8s.APIServerHealthCheck
-	ControlPlaneComponents map[string]string // Component -> status
+	APIServerHealthCheck      *k8s.APIServerHealthCheck
+	ControlPlaneComponentVers map[string]string
 
-	// Resource information
 	Nodes []k8s.NodeSummary
 
-	ResourceUtilization []k8s.NodeUtilization
-
-	// Workload information
 	WorkloadSummary k8s.WorkloadSummary
 
-	// Issues (for quick overview)
 	DetectedIssues []k8s.ClusterIssue
 
-	// Events
 	RecentWarningEvents []k8s.EventSummary
-
-	// Add-on information
-	AddonsStatus map[string]string // Add-on name -> status
 }
 
 func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
@@ -87,18 +77,11 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 	}
 	res.Nodes = nodes
 
-	utilization, err := c.GetClusterUtilization()
-	if err != nil {
-		kc.l.Warn(kc.ctx, "Unable to get utilization information", "error", err)
-	} else {
-		res.ResourceUtilization = utilization
-	}
-
 	components, err := c.GetControlPlaneVersions()
 	if err != nil {
 		kc.l.Warn(kc.ctx, "Unable to get components information", "error", err)
 	} else {
-		res.ControlPlaneComponents = components
+		res.ControlPlaneComponentVers = components
 	}
 
 	workloads, err := c.GetWorkloadSummary()
