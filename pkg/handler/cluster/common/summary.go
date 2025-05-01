@@ -25,14 +25,13 @@ type SummaryOutput struct {
 	ClusterType   string
 
 	// Health information
-	OverallStatus          string // "Healthy", "Degraded", "Critical"
 	APIServerHealthCheck   *k8s.APIServerHealthCheck
 	ControlPlaneComponents map[string]string // Component -> status
 
 	// Resource information
 	Nodes []k8s.NodeSummary
 
-	ResourceUtilization *k8s.ClusterUtilization
+	ResourceUtilization []k8s.NodeUtilization
 
 	// Workload information
 	WorkloadSummary k8s.WorkloadSummary
@@ -65,21 +64,18 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 		ClusterType:   string(kc.s.ClusterType),
 	}
 
-	// Get API server health
 	healthCheck, err := c.GetHealthz()
 	if err != nil {
 		return nil, err
 	}
 	res.APIServerHealthCheck = healthCheck
 
-	// Get node information
 	nodes, err := c.GetNodesSummary()
 	if err != nil {
 		return nil, err
 	}
 	res.Nodes = nodes
 
-	// Get utilization info
 	utilization, err := c.GetClusterUtilization()
 	if err != nil {
 		kc.l.Warn(kc.ctx, "Unable to get utilization information", "error", err)
@@ -87,23 +83,13 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 		res.ResourceUtilization = utilization
 	}
 
-	// Get workload summary
 	workloads, err := c.GetWorkloadSummary()
 	if err != nil {
 		kc.l.Warn(kc.ctx, "Unable to get workload information", "error", err)
 	} else {
 		res.WorkloadSummary = *workloads
 	}
-	//
-	// // Get control plane status
-	// controlPlane, err := c.GetControlPlaneStatus()
-	// if err != nil {
-	// 	kc.l.Warn(kc.ctx, "Unable to get control plane status", "error", err)
-	// } else {
-	// 	res.ControlPlaneComponents = controlPlane
-	// }
 
-	// Get recent warning events
 	events, err := c.GetRecentWarningEvents()
 	if err != nil {
 		kc.l.Warn(kc.ctx, "Unable to get recent events", "error", err)
@@ -111,17 +97,12 @@ func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 		res.RecentWarningEvents = events
 	}
 
-	//
-	// // Detect issues
-	// issues, err := c.DetectClusterIssues()
-	// if err != nil {
-	// 	kc.l.Warn(kc.ctx, "Unable to detect cluster issues", "error", err)
-	// } else {
-	// 	res.DetectedIssues = issues
-	// }
-
-	// Determine overall status
-	// res.OverallStatus = determineOverallStatus(res)
+	issues, err := c.DetectClusterIssues()
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to detect cluster issues", "error", err)
+	} else {
+		res.DetectedIssues = issues
+	}
 
 	return res, nil
 }
