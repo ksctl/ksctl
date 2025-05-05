@@ -1,115 +1,104 @@
-![CoverPage Social Media][cover-img-loc]
+![ksctl - Kubernetes Simplified][cover-img-loc]
 
 # Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
+<h3>Making Kubernetes accessible to developers</h3>
 
-<h3>Let's Make Kubernetes accessible to Developers</h3>
-<h3>Visit <a href="https://docs.ksctl.com" target="_blank">ksctl docs</a> for the full documentation,
-examples and guides.</h3>
+[![Discord](https://img.shields.io/badge/discord-ksctl-brightgreen.svg)][discord-link]
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)][license]
+[![X/Twitter][x-badge]][x-link]
+[![Go Report Card](https://goreportcard.com/badge/github.com/ksctl/ksctl)](https://goreportcard.com/report/github.com/ksctl/ksctl)
+[![](https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg)](https://pkg.go.dev/github.com/ksctl/ksctl)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469)
 
-[![Discord](https://img.shields.io/badge/discord-ksctl-brightgreen.svg)][discord-link] [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)][license] [![X/Twitter][x-badge]][x-link]
+## 📖 Overview
 
+Ksctl simplifies the management of Kubernetes clusters across different cloud providers through a unified interface. **It focuses on creating cost-efficient and sustainable Kubernetes infrastructure by intelligently optimizing resource selection and deployment.** It eliminates the need for multiple cloud-specific CLIs (AWS, Azure, etc.) and handles the complex infrastructure setup for you.
 
-It aims to simplify a collection of kubernetes clusters running on different cloud providers. It provides a simple and intuitive interface for managing Kubernetes clusters. It is designed to be efficient and can perform tasks quickly and without the need for additional tools. It is a powerful tool that can be used to perform a wide range of tasks.
+> [!TIP]
+> **Visit [ksctl documentation](https://docs.ksctl.com) for complete guides and examples.**
 
-It is already a valuable tool for developers who want to manage Kubernetes clusters using our CLI. And Get started with Kubernetes without thinking about the infrastructure & configurations. Just run `ksctl create` and your cluster is ready to be used be it a local cluster or a cloud provider managed cluster. It makes the developers skip the cluster setup step as well as day 0 work. Soon we will work on day 1 operations and so on 🙂
+## ✨ Key Features
 
-So It helps you to avoid using Aws, Azure cli and just create and manage the cluster using a single CLI interface
+- **Unified Management Interface** - Manage clusters on multiple cloud providers with a single CLI.
+- **Rapid Cluster Creation** - Deploy production-ready clusters in 5-10 minutes with `ksctl create`.
+- **Multi-Cloud & Cluster Types** - Supports self-managed (K3s, Kubeadm) and managed clusters (AKS, EKS, GKE) across major clouds.
+- **Sustainability Focus** - Intelligently selects regions and instances with lower carbon footprints and higher renewable energy usage.
+- **Cost Optimization** - Reduces cloud expenses through smart resource selection and dynamic region switching.
+- **Simplified Lifecycle Management** - Create, delete, scale, and switch between clusters easily.
+- **Application Stack Deployment** - Deploy common applications like GitOps tools and monitoring solutions.
 
+## 🏗️ Architecture
 
-#### ksctl Components
+![ksctl system architecture][system-level]
 
-The main components of ksctl include:
+## 🧩 Components
 
-- [**ksctl**][ksctl-gh-link]
+The ksctl ecosystem consists of these main components:
 
-It is home to cluster provisioner, Kubernetes Bootstrap, cost & optimization management, addon trigger, interface for cli to use
+- [**ksctl**][ksctl-gh-link] - Core component for cluster provisioning, Kubernetes bootstrap, cost optimization, and addon management
+- [**ksctl/cli**][cli-gh-link] - End-user CLI interface for cluster and addon operations
+- [**Ksctl Cluster Management (kcm)**][kcm-gh-link] - Kubernetes controller for managing ksctl-specific cluster addons
+- [**Ksctl Application (ka)**][ka-gh-link] - Controller for ksctl application stack functionality
 
-- [**ksctl/cli (cli)**][cli-gh-link]
+## 🚀 Current Capabilities
 
-It contains the end-user CLI interface. It can perform cluster: create, delete, connect, scaleup, scaledown, list, get; addons: enable, disable
+- **Cluster Operations**
+  - Create, delete, and get cluster infrastructure details
+  - State storage in local system or MongoDB
+  - Manual scaling up and down via CLI
+  - Switch between clusters
+  - Wasm and application stack deployment
 
-- [**Ksctl Cluster Management (kcm)**][kcm-gh-link]
+- **Supported Cluster Types**
+  - **Self-Managed HA Clusters**:
+    - K3s
+    - Kubeadm
+  - **Cloud Managed Clusters**:
+    - AKS (Azure)
+    - EKS (AWS)
 
-It contains Kubernetes Controller for manageming ksctl specific cluster addons for now ksctl stack is a part of it. In future we are planning for more kubernetes related addons support like unifying EKS, AKS addons as well.
+- **Lifecycle Management**
+  - Deploy Wasm workloads
+  - Common application stack deployment (GitOps, monitoring, etc.)
 
-- [**Ksctl Application (ka)**][ka-gh-link]
+## 🚦 Getting Started
 
-It has the controller for ksctl application stack functionality
+Visit our [Getting Started guide][docs-gettingstarted] for installation instructions and initial setup.
 
+```bash
+# Install ksctl (Linux/macOS)
+curl -sSfL https://get.ksctl.com | python3 -
 
-### So far what have we achieved?
-* Cluster Operations
-  * Create
-  * Delete
-  * Get Cluster infra details
-  * Storage of state in not just local system but also mongodb
-  * Manually Scaleup and Scaledown using the CLI interface
-  * Switch Between Clusters
-  * Wasm, application stack deployment
-* Type Of Cluster
-  * Self-Managed HA Cluster
-    * K3s
-    * Kubeadm
-  * Cloud Managed Cluster
-    * AKS
-    * EKS
-* Lifecycle
-  * You can now deploy wasm workloads using our Ksctl application stack
-  * Common Application Stack Deployment. Example are gitops, monitoring, etc [Refer](https://docs.ksctl.com/docs/ksctl-cluster-mgt/stacks/)
+# Example: Create a cluster (see documentation for full instructions)
+ksctl cluster create
+```
 
+## 👥 Community & Contribution
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/ksctl/ksctl)](https://goreportcard.com/report/github.com/ksctl/ksctl) [![](https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg)](https://pkg.go.dev/github.com/ksctl/ksctl) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469)
+We welcome contributions from the community!
 
-![](https://img.shields.io/github/license/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/issues/ksctl/ksctl?style=for-the-badge) ![](https://img.shields.io/github/forks/ksctl/ksctl?style=for-the-badge)
+- Read our [contribution guide][contribution-link] to get started
+- Join our [Discord server][discord-link] to connect with other users and developers
+- Attend our monthly community call on Tuesday 5:30-6:30 PM (CET) by joining our [Google Group](https://groups.google.com/g/ksctl)
 
-## 📐 Architecture
+⭐ **[Star our repository](https://github.com/ksctl/ksctl)** to help others discover the project and motivate our team! ⭐
 
-Here is the entire Ksctl system level design
+## 💼 Sponsorship
 
-![ksctl-arch][system-level]
+If you find this project valuable and would like to provide financial support, please visit our [sponsorship page](https://github.com/sponsors/dipankardas011). Thank you for considering!
 
-
-## Getting Started guide
-
-[Getting Started guide][docs-gettingstarted]
-
-## 👋 Community
-
-We welcome contributions from the wider community! Read this [guide][contribution-link] to get started, and join our thriving community on [Discord][discord-link].
-
-🌟 [Leave us a star](https://github.com/ksctl/ksctl), it helps the project to get discovered by others and keeps us motivated to build awesome open-source tools! 🌟
-
-## 🙏 Sponsoring
-If you like this project and would like to provide financial help, here's our [sponsoring page](https://github.com/sponsors/dipankardas011). Thanks a lot for considering it !
-
-
-## 👥 Contributing
-
-To learn about how to contribute to k0rdent, see our [contributing documentation][contribution-link].
-
-k0rdent contributors must follow the [ksctl Code of Conduct][code-of-conduct].
-
-To learn about k0rdent governance, see our [community governance document][governance].
-
-<h1 id="license">📃 License</h1>
+## 📜 License
 
 Apache License 2.0, see [LICENSE][license].
 
+## 🙌 Contributors
 
-<h1 id="project resources">💼 Project Resources</h1>
-
-- Join the [Ksctl Discord][discord-link] community.
-- Monthly community call on Tuesday 5:30-6:30 PM (CET) so join our [Google Group](https://groups.google.com/g/ksctl)
-
-## Thanks to all the contributors ❤️
 [Link to Contributors](https://github.com/ksctl/ksctl/graphs/contributors)
 
 <a href="https://github.com/ksctl/ksctl/graphs/contributors">
 	<img src="https://contrib.rocks/image?repo=ksctl/ksctl" />
 </a>
-
-
 
 [cover-img-loc]:./assets/img/cover.svg
 [x-badge]:https://img.shields.io/twitter/follow/ksctl_org?logo=x&style=flat
@@ -121,7 +110,7 @@ Apache License 2.0, see [LICENSE][license].
 [docs-gettingstarted]:https://docs.ksctl.com/docs/getting-started/
 [system-level]:./assets/img/ksctl_solution.svg
 [contribution-link]:https://docs.ksctl.com/docs/contribution-guidelines/
-[discord-link]:https://discord.com/invite/pWjtKxVrMe
+[discord-link]:https://discord.ksctl.com
 [code-of-conduct]:https://github.com/ksctl/ksctl/blob/main/CODE_OF_CONDUCT.md
 [governance]:https://github.com/ksctl/ksctl/blob/main/GOVERNANCE.md
 [license]:https://github.com/ksctl/ksctl/blob/main/LICENSE
