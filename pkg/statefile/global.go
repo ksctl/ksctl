@@ -41,6 +41,18 @@ type StorageDocument struct {
 	SSHKeyPair SSHKeyPairState `json:"ssh_key_pair" bson:"ssh_key_pair"`
 
 	ProvisionerAddons SlimProvisionerAddons `json:"provisioner_addons,omitempty" bson:"provisioner_addons,omitempty"`
+
+	// Role-based kubeconfigs
+	RoleBasedKubeconfigs map[string]RoleBasedKubeconfig `json:"role_based_kubeconfigs,omitempty" bson:"role_based_kubeconfigs,omitempty"`
+}
+
+// RoleBasedKubeconfig represents a kubeconfig with a specific role and TTL
+type RoleBasedKubeconfig struct {
+	Role        consts.KsctlKubeRole `json:"role" bson:"role"`
+	KubeConfig  string               `json:"kubeconfig" bson:"kubeconfig"`
+	TTL         *int64               `json:"ttl,omitempty" bson:"ttl,omitempty"` // Expiry time in seconds
+	CreatedAt   int64                `json:"created_at" bson:"created_at"`       // Unix timestamp
+	Fingerprint string               `json:"fingerprint" bson:"fingerprint"`     // For tracking/identifying this kubeconfig
 }
 
 type SlimProvisionerAddons struct {

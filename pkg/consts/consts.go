@@ -48,6 +48,16 @@ type FirewallRuleAction int
 
 type FirewallRuleDirection int
 
+type KsctlKubeRole string
+
+// Role definitions in pkg/consts/consts.go
+const (
+	KubeRoleAdmin      KsctlKubeRole = "admin"
+	KubeRoleMaintainer KsctlKubeRole = "maintainer"
+	KubeRoleDeveloper  KsctlKubeRole = "developer"
+	// KubeRoleCustom     KsctlKubeRole = "custom"
+)
+
 const (
 	FirewallActionAllow FirewallRuleAction = iota
 	FirewallActionDeny  FirewallRuleAction = iota
