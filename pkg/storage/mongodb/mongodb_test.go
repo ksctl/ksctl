@@ -26,8 +26,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ksctl/ksctl/v2/pkg/utilities"
-
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"github.com/ksctl/ksctl/v2/pkg/storage"
 
@@ -46,12 +44,13 @@ import (
 var (
 	db           *Store
 	parentCtx    context.Context
+	ksc                        = context.Background()
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
-	parentCtx = context.WithValue(parentCtx, consts.KsctlContextUserID, "fake")
+	ksc = context.WithValue(ksc, consts.KsctlContextUserID, "fake")
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -93,15 +92,13 @@ func TestMain(m *testing.M) {
 	}
 
 	v, err := json.Marshal(statefile.CredentialsMongodb{
-		Username: "root",
-		Password: "1234",
-		Domain:   "localhost",
-		Port:     utilities.Ptr(27017),
+		URI: "mongodb://root:1234@localhost:27017",
 	})
 	if err != nil {
 		panic(err)
 	}
-	parentCtx = context.WithValue(parentCtx, consts.KsctlMongodbCredentials, v)
+
+	ksc = context.WithValue(ksc, consts.KsctlMongodbCredentials, v)
 
 	defer func() {
 		if err := cli.ContainerRemove(parentCtx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
@@ -113,37 +110,13 @@ func TestMain(m *testing.M) {
 
 }
 
-func TestUriAssembler(t *testing.T) {
-	testCases := []struct {
-		creds    statefile.CredentialsMongodb
-		expected string
-	}{
-		{
-			creds: statefile.CredentialsMongodb{
-				Username: "root",
-				Password: "1234",
-				Domain:   "localhost",
-			},
-			expected: "mongodb://root:1234@localhost",
-		},
-	}
-
-	for _, tt := range testCases {
-		t.Run(fmt.Sprintf("test case on, %#v", tt.creds), func(t *testing.T) {
-			if got := URIAssembler(tt.creds); got != tt.expected {
-				t.Fatalf("Expected: %s, Got: %s", tt.expected, got)
-			}
-		})
-	}
-}
-
 func TestInitStorage(t *testing.T) {
 	db = NewClient(parentCtx, parentLogger)
 	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeSelfMang)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Connect(); err != nil {
+	if err := db.Connect(ksc); err != nil {
 		t.Fatal(err)
 	}
 }

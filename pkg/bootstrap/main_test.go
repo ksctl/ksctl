@@ -90,7 +90,7 @@ func initClients() {
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeSelfMang)
-	_ = storeHA.Connect()
+	_ = storeHA.Connect(context.TODO())
 
 	fakeClient = NewPreBootStrap(parentCtx, parentLogger, mainState, storeHA)
 	if fakeClient == nil {

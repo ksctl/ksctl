@@ -59,6 +59,7 @@ func (kc *Controller) Delete() (errC error) {
 		_, err := providerHandler.NewController(
 			kc.ctx,
 			kc.l,
+			kc.ksctlConfig,
 			kc.b,
 			kc.s,
 			consts.OperationGet,
@@ -100,6 +101,7 @@ Extra:
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,
+		kc.ksctlConfig,
 		kc.b,
 		kc.s,
 		consts.OperationDelete,

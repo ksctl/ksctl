@@ -33,6 +33,7 @@ import (
 var (
 	db           storage.Storage
 	parentCtx    context.Context
+	ksc                        = context.Background()
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
@@ -53,7 +54,7 @@ func TestInitStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Connect(); err != nil {
+	if err := db.Connect(ksc); err != nil {
 		t.Fatal(err)
 	}
 }

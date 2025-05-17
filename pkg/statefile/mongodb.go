@@ -15,9 +15,5 @@
 package statefile
 
 type CredentialsMongodb struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Domain   string `json:"domain"`
-	Port     *int   `json:"port,omitempty"`
-	SRV      bool   `json:"srv,omitempty"`
+	URI string `json:"uri"`
 }

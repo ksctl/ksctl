@@ -88,13 +88,13 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []
 	switch kc.p.Metadata.Provider {
 
 	case consts.CloudAzure:
-		cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
+		cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 
 	case consts.CloudAws:
-		cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
+		cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
 
 	case consts.CloudLocal:
-		cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
+		cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
 
 	default:
 		switch operation {
@@ -107,15 +107,15 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []
 					),
 				)
 			} else {
-				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
+				cloudMapper[consts.CloudAzure], err = azure.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, nil, kc.p.Storage, azure.ProvideClient)
 				if err != nil {
 					return nil, err
 				}
-				cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
+				cloudMapper[consts.CloudAws], err = aws.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, nil, kc.p.Storage, aws.ProvideClient)
 				if err != nil {
 					return nil, err
 				}
-				cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
+				cloudMapper[consts.CloudLocal], err = local.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, nil, kc.p.Storage, local.ProvideClient)
 				if err != nil {
 					return nil, err
 				}
