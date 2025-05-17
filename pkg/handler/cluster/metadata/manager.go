@@ -28,21 +28,24 @@ import (
 )
 
 type Controller struct {
-	ctx    context.Context
-	l      logger.Logger
-	b      *controller.Controller
-	client *controller.Client
-	cc     provider.ProvisionMetadata
-	bb     *bootstrapMeta.BootstrapMetadata
+	ctx         context.Context
+	ksctlConfig context.Context
+	l           logger.Logger
+	b           *controller.Controller
+	client      *controller.Client
+	cc          provider.ProvisionMetadata
+	bb          *bootstrapMeta.BootstrapMetadata
 }
 
-func NewController(ctx context.Context, log logger.Logger, client *controller.Client) (*Controller, error) {
+func NewController(ctx context.Context, log logger.Logger, ksctlConfig context.Context, client *controller.Client) (*Controller, error) {
 
 	cc := new(Controller)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-metadata")
 	cc.b = controller.NewBaseController(ctx, log)
 	cc.l = log
 	cc.client = client
+
+	cc.ksctlConfig = ksctlConfig
 
 	if err := cc.b.ValidateMetadata(client); err != nil {
 		return nil, err
@@ -66,6 +69,10 @@ func NewController(ctx context.Context, log logger.Logger, client *controller.Cl
 		cc.cc, err = localMeta.NewLocalMeta(cc.ctx, cc.l)
 	}
 	if err != nil {
+		return nil, err
+	}
+
+	if err := cc.cc.Connect(cc.ksctlConfig); err != nil {
 		return nil, err
 	}
 

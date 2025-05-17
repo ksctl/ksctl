@@ -31,15 +31,16 @@ import (
 )
 
 type AddonController struct {
-	ctx context.Context
-	l   logger.Logger
-	p   *controller.Client
-	b   *controller.Controller
-	s   *statefile.StorageDocument
+	ctx         context.Context
+	ksctlConfig context.Context
+	l           logger.Logger
+	p           *controller.Client
+	b           *controller.Controller
+	s           *statefile.StorageDocument
 }
 
 // NewController intended to be used by the cli to enable or disable addon 'ksctl-clustermanager'
-func NewController(ctx context.Context, log logger.Logger, controllerPayload *controller.Client) (*AddonController, error) {
+func NewController(ctx context.Context, log logger.Logger, ksctlConfig context.Context, controllerPayload *controller.Client) (*AddonController, error) {
 
 	cc := new(AddonController)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-addons")
@@ -47,6 +48,8 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 	cc.p = controllerPayload
 	cc.s = new(statefile.StorageDocument)
 	cc.l = log
+
+	cc.ksctlConfig = ksctlConfig
 
 	if err := cc.b.ValidateMetadata(controllerPayload); err != nil {
 		return nil, err
@@ -56,7 +59,7 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 		return nil, err
 	}
 
-	if err := cc.b.InitStorage(controllerPayload); err != nil {
+	if err := cc.b.InitStorage(controllerPayload, ksctlConfig); err != nil {
 		return nil, err
 	}
 
@@ -104,16 +107,16 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudAzure:
-		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
+		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
 
 	case consts.CloudAws:
-		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
+		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
 		if err != nil {
 			break
 		}
 
 	case consts.CloudLocal:
-		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
+		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.ksctlConfig, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
 
 	}
 
@@ -166,7 +169,7 @@ type KsctlAddon interface {
 func (ac *AddonController) GetAddon(sku string) (KsctlAddon, error) {
 	switch sku {
 	case kcm.Sku:
-		return kcm.NewKcm(ac.ctx, ac.l, ac.p, ac.b, ac.s)
+		return kcm.NewKcm(ac.ctx, ac.l, ac.ksctlConfig, ac.p, ac.b, ac.s)
 	default:
 		return nil, ksctlErrors.WrapErrorf(
 			ksctlErrors.ErrInvalidKsctlClusterAddons,

@@ -24,14 +24,15 @@ import (
 )
 
 type Controller struct {
-	ctx context.Context
-	l   logger.Logger
-	p   *controller.Client
-	b   *controller.Controller
-	s   *statefile.StorageDocument
+	ctx         context.Context
+	ksctlConfig context.Context
+	l           logger.Logger
+	p           *controller.Client
+	b           *controller.Controller
+	s           *statefile.StorageDocument
 }
 
-func NewController(ctx context.Context, log logger.Logger, controllerPayload *controller.Client) (*Controller, error) {
+func NewController(ctx context.Context, log logger.Logger, ksctlConfig context.Context, controllerPayload *controller.Client) (*Controller, error) {
 
 	cc := new(Controller)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-manager")
@@ -40,11 +41,13 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 	cc.s = new(statefile.StorageDocument)
 	cc.l = log
 
+	cc.ksctlConfig = ksctlConfig
+
 	if err := cc.b.ValidateMetadata(controllerPayload); err != nil {
 		return nil, err
 	}
 
-	if err := cc.b.InitStorage(controllerPayload); err != nil {
+	if err := cc.b.InitStorage(controllerPayload, cc.ksctlConfig); err != nil {
 		return nil, err
 	}
 

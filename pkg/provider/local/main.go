@@ -51,6 +51,7 @@ type Provider struct {
 func NewClient(
 	ctx context.Context,
 	l logger.Logger,
+	_ context.Context,
 	meta controller.Metadata,
 	state *statefile.StorageDocument,
 	storage storage.Storage,

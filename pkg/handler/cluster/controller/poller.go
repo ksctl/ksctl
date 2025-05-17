@@ -15,6 +15,7 @@
 package controller
 
 import (
+	"context"
 	"sort"
 
 	"github.com/ksctl/ksctl/v2/pkg/config"
@@ -61,7 +62,7 @@ func (cc *Controller) StartPoller() error {
 	return nil
 }
 
-func (cc *Controller) InitStorage(p *Client) error {
+func (cc *Controller) InitStorage(p *Client, ksctlConfig context.Context) error {
 	if !validation.ValidateStorage(p.Metadata.StateLocation) {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidStorageProvider,
@@ -79,7 +80,7 @@ func (cc *Controller) InitStorage(p *Client) error {
 		p.Storage = kubernetesstate.NewClient(cc.ctx, cc.l)
 	}
 
-	if err := p.Storage.Connect(); err != nil {
+	if err := p.Storage.Connect(ksctlConfig); err != nil {
 		return err
 	}
 	cc.l.Debug(cc.ctx, "initialized storageFactory")

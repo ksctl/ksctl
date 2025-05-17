@@ -32,11 +32,12 @@ import (
 )
 
 type Provider struct {
-	l     logger.Logger
-	ctx   context.Context
-	state *statefile.StorageDocument
-	store storage.Storage
-	mu    sync.Mutex
+	l           logger.Logger
+	ctx         context.Context
+	ksctlConfig context.Context
+	state       *statefile.StorageDocument
+	store       storage.Storage
+	mu          sync.Mutex
 
 	controller.Metadata
 
@@ -62,6 +63,7 @@ type Provider struct {
 func NewClient(
 	ctx context.Context,
 	l logger.Logger,
+	ksctlConfig context.Context,
 	meta controller.Metadata,
 	state *statefile.StorageDocument,
 	storage storage.Storage,
@@ -74,6 +76,8 @@ func NewClient(
 	p.l = l
 	p.client = ClientOption()
 	p.store = storage
+
+	p.ksctlConfig = ksctlConfig
 
 	return p, nil
 }
@@ -132,7 +136,7 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 }
 
 func (p *Provider) InitState(operation consts.KsctlOperation) error {
-	v, ok := config.IsContextPresent(p.ctx, consts.KsctlAzureCredentials)
+	v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlAzureCredentials)
 	if !ok {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,

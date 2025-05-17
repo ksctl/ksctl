@@ -136,7 +136,7 @@ func NewClient(parentCtx context.Context, _log logger.Logger) *Store {
 	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 }
 
-func (s *Store) Connect() error {
+func (s *Store) Connect(_ context.Context) error {
 	var err error
 
 	if _, ok := config.IsContextPresent(storeCtx, consts.KsctlTestFlagKey); ok {

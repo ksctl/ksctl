@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"sync"
 
 	"github.com/ksctl/ksctl/v2/pkg/config"
@@ -156,32 +155,8 @@ func getCredentialsFilters(cloud consts.KsctlCloud) bson.M {
 	}
 }
 
-func URIAssembler(creds statefile.CredentialsMongodb) string {
-
-	schema := "mongodb"
-	if creds.SRV {
-		schema = "mongodb+srv"
-	}
-
-	u := url.URL{
-		Scheme: schema,
-		User:   url.UserPassword(creds.Username, creds.Password),
-		Host: func() string {
-			d := creds.Domain
-			if creds.Port != nil {
-				d = fmt.Sprintf("%s:%d", creds.Domain, *creds.Port)
-			}
-			return d
-		}(),
-	}
-	u.Query().Add("retryWrites", "true")
-	u.Query().Add("w", "majority")
-
-	return u.String()
-}
-
-func (db *Store) Connect() error {
-	mongoCreds, ok := config.IsContextPresent(db.ctx, consts.KsctlMongodbCredentials)
+func (db *Store) Connect(ksctlConfig context.Context) error {
+	mongoCreds, ok := config.IsContextPresent(ksctlConfig, consts.KsctlMongodbCredentials)
 	if !ok {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,
@@ -196,7 +171,7 @@ func (db *Store) Connect() error {
 		)
 	}
 
-	db.mongoURI = URIAssembler(extractedCreds)
+	db.mongoURI = extractedCreds.URI
 
 	opts := mongoOptions.Client().ApplyURI(db.mongoURI)
 	var err error

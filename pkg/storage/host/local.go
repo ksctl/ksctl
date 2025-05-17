@@ -192,8 +192,8 @@ func (s *Store) Kill() error {
 	return s.disconnect()
 }
 
-func (s *Store) Connect() error {
-	if v, ok := config.IsContextPresent(s.ctx, consts.KsctlContextUserID); ok {
+func (s *Store) Connect(ksctlConfig context.Context) error {
+	if v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlContextUserID); ok {
 		s.userid = v
 	} else {
 		s.userid = "default"

@@ -40,12 +40,14 @@ var (
 
 func main() {
 	ctx = context.WithValue(
-		context.WithValue(
-			context.Background(),
-			consts.KsctlContextUserID,
-			"e2e",
-		),
+		context.Background(),
 		consts.KsctlModuleNameKey,
+		"e2e",
+	)
+
+	ksctlConfig := context.WithValue(
+		context.TODO(),
+		consts.KsctlContextUserID,
 		"e2e",
 	)
 
@@ -76,14 +78,14 @@ func main() {
 
 	operation, meta := GetReqPayload(l)
 	if meta.StateLocation == consts.StoreExtMongo {
-		ctx = CredsMongo(ctx)
+		ksctlConfig = CredsMongo(ksctlConfig)
 	}
 
 	if meta.Provider == consts.CloudAws {
-		ctx = CredsAws(ctx)
+		ksctlConfig = CredsAws(ksctlConfig)
 	}
 	if meta.Provider == consts.CloudAzure {
-		ctx = CredsAzure(ctx)
+		ksctlConfig = CredsAzure(ksctlConfig)
 	}
 
 	l.Print(ctx, "Testing starting...")
@@ -101,6 +103,7 @@ func main() {
 			managerClient, err := controllerSelfManaged.NewController(
 				ctx,
 				l,
+				ksctlConfig,
 				&controller.Client{
 					Metadata: meta,
 				},
@@ -124,6 +127,7 @@ func main() {
 			managerClient, err := controllerManaged.NewController(
 				ctx,
 				l,
+				ksctlConfig,
 				&controller.Client{
 					Metadata: meta,
 				},
@@ -144,6 +148,7 @@ func main() {
 		managerClient, err := controllerCommon.NewController(
 			ctx,
 			l,
+			ksctlConfig,
 			&controller.Client{
 				Metadata: meta,
 			},
@@ -164,6 +169,7 @@ func main() {
 		cc, err := addonClusterMgt.NewController(
 			ctx,
 			l,
+			ksctlConfig,
 			&controller.Client{
 				Metadata: meta,
 			},

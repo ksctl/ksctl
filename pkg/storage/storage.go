@@ -15,6 +15,8 @@
 package storage
 
 import (
+	"context"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
@@ -22,7 +24,7 @@ import (
 type Storage interface {
 	Kill() error
 
-	Connect() error
+	Connect(ksctlConfig context.Context) error
 
 	Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 

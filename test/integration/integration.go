@@ -33,11 +33,12 @@ var (
 	cli *controller.Client
 	dir = filepath.Join(os.TempDir(), "ksctl-black-box-test")
 	ctx context.Context
+	ksc = context.Background()
 )
 
 func InitCore() (err error) {
-	ctx = context.WithValue(
-		context.Background(),
+	ksc = context.WithValue(
+		ksc,
 		consts.KsctlContextUserID,
 		"demo",
 	)
@@ -70,13 +71,13 @@ func InitCore() (err error) {
 		return err
 	}
 
-	ctx = context.WithValue(
-		ctx,
+	ksc = context.WithValue(
+		ksc,
 		consts.KsctlAwsCredentials,
 		awsC,
 	)
-	ctx = context.WithValue(
-		ctx,
+	ksc = context.WithValue(
+		ksc,
 		consts.KsctlAzureCredentials,
 		azC,
 	)
@@ -96,6 +97,7 @@ func ExecuteKsctlSpecificRun() error {
 	controller, err := controllerCommon.NewController(
 		ctx,
 		log,
+		ksc,
 		cli,
 	)
 	if err != nil {
@@ -122,6 +124,7 @@ func ExecuteManagedRun() error {
 	controller, err := controllerManaged.NewController(
 		ctx,
 		log,
+		ksc,
 		cli,
 	)
 	if err != nil {
@@ -148,6 +151,7 @@ func ExecuteHARun() error {
 	controller, err := controllerSelfManaged.NewController(
 		ctx,
 		log,
+		ksc,
 		cli,
 	)
 	if err != nil {

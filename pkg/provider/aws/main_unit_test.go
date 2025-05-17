@@ -38,6 +38,7 @@ var (
 	fakeClientManaged *Provider
 	storeManaged      storage.Storage
 	parentCtx         context.Context
+	ksc               = context.Background()
 	fakeClientVars    *Provider
 	storeVars         storage.Storage
 
@@ -55,7 +56,7 @@ func TestMain(m *testing.M) {
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeSelfMang)
-	_ = storeVars.Connect()
+	_ = storeVars.Connect(ksc)
 
 	v, err := json.Marshal(statefile.CredentialsAws{
 		AccessKeyId:     "fake",
@@ -64,11 +65,12 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	parentCtx = context.WithValue(parentCtx, consts.KsctlAwsCredentials, v)
+	ksc = context.WithValue(ksc, consts.KsctlAwsCredentials, v)
 
 	fakeClientVars, _ = NewClient(
 		parentCtx,
 		parentLogger,
+		ksc,
 		controller.Metadata{
 			ClusterName: "demo",
 			Region:      "fake-region",
