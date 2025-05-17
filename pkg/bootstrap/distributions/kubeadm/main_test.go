@@ -135,7 +135,7 @@ func initClients() {
 
 func TestMain(m *testing.M) {
 
-	cc := cache.NewInMemCache(parentCtx)
+	cc := cache.NewInMemCache(context.TODO())
 	defer cc.Close()
 	initPoller(cc)
 	initClients()
