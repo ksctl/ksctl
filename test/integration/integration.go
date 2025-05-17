@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
@@ -33,17 +34,17 @@ var (
 	cli *controller.Client
 	dir = filepath.Join(os.TempDir(), "ksctl-black-box-test")
 	ctx context.Context
-	ksc = context.Background()
+	ksc context.Context
 )
 
 func InitCore() (err error) {
 	ksc = context.WithValue(
-		ksc,
+		context.Background(),
 		consts.KsctlContextUserID,
 		"demo",
 	)
 	ctx = context.WithValue(
-		ctx,
+		context.Background(),
 		consts.KsctlCustomDirLoc,
 		dir,
 	)
@@ -97,7 +98,10 @@ func ExecuteKsctlSpecificRun() error {
 	controller, err := controllerCommon.NewController(
 		ctx,
 		log,
-		ksc,
+		controller.KsctlWorkerConfiguration{
+			WorkerCtx:   ksc,
+			PollerCache: cache.NewInMemCache(ctx),
+		},
 		cli,
 	)
 	if err != nil {
@@ -124,7 +128,10 @@ func ExecuteManagedRun() error {
 	controller, err := controllerManaged.NewController(
 		ctx,
 		log,
-		ksc,
+		controller.KsctlWorkerConfiguration{
+			WorkerCtx:   ksc,
+			PollerCache: cache.NewInMemCache(ctx),
+		},
 		cli,
 	)
 	if err != nil {
@@ -151,7 +158,10 @@ func ExecuteHARun() error {
 	controller, err := controllerSelfManaged.NewController(
 		ctx,
 		log,
-		ksc,
+		controller.KsctlWorkerConfiguration{
+			WorkerCtx:   ksc,
+			PollerCache: cache.NewInMemCache(ctx),
+		},
 		cli,
 	)
 	if err != nil {

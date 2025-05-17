@@ -73,7 +73,6 @@ func (kc *Controller) Create() (errC error) {
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,
-		kc.ksctlConfig,
 		kc.b,
 		kc.s,
 		consts.OperationCreate,

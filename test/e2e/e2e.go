@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
@@ -88,6 +89,9 @@ func main() {
 		ksctlConfig = CredsAzure(ksctlConfig)
 	}
 
+	cc := cache.NewInMemCache(ctx)
+	defer cc.Close()
+
 	l.Print(ctx, "Testing starting...")
 
 	switch operation {
@@ -103,7 +107,10 @@ func main() {
 			managerClient, err := controllerSelfManaged.NewController(
 				ctx,
 				l,
-				ksctlConfig,
+				controller.KsctlWorkerConfiguration{
+					WorkerCtx:   ksctlConfig,
+					PollerCache: cc,
+				},
 				&controller.Client{
 					Metadata: meta,
 				},
@@ -127,7 +134,10 @@ func main() {
 			managerClient, err := controllerManaged.NewController(
 				ctx,
 				l,
-				ksctlConfig,
+				controller.KsctlWorkerConfiguration{
+					WorkerCtx:   ksctlConfig,
+					PollerCache: cc,
+				},
 				&controller.Client{
 					Metadata: meta,
 				},
@@ -148,7 +158,10 @@ func main() {
 		managerClient, err := controllerCommon.NewController(
 			ctx,
 			l,
-			ksctlConfig,
+			controller.KsctlWorkerConfiguration{
+				WorkerCtx:   ksctlConfig,
+				PollerCache: cc,
+			},
 			&controller.Client{
 				Metadata: meta,
 			},
@@ -169,7 +182,10 @@ func main() {
 		cc, err := addonClusterMgt.NewController(
 			ctx,
 			l,
-			ksctlConfig,
+			controller.KsctlWorkerConfiguration{
+				WorkerCtx:   ksctlConfig,
+				PollerCache: cc,
+			},
 			&controller.Client{
 				Metadata: meta,
 			},

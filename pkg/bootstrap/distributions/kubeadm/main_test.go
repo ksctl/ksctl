@@ -23,6 +23,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/certs"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
@@ -74,8 +75,8 @@ func NewClientHelper(x provider.CloudResourceState, state *statefile.StorageDocu
 	return p
 }
 
-func initPoller() {
-	poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
+func initPoller(c cache.Cache) {
+	poller.InitSharedGithubReleaseFakePoller(c, func(org, repo string) ([]string, error) {
 		vers := []string{"v0.0.1"}
 
 		if org == "kubernetes" && repo == "kubernetes" {
@@ -134,7 +135,9 @@ func initClients() {
 
 func TestMain(m *testing.M) {
 
-	initPoller()
+	cc := cache.NewInMemCache(parentCtx)
+	defer cc.Close()
+	initPoller(cc)
 	initClients()
 	exitVal := m.Run()
 

@@ -59,7 +59,7 @@ func NewController(
 ) (*Controller, error) {
 
 	cc := new(Controller)
-	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "pkg/bootstrap/handler/bootstrap")
+	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-bootstrap")
 	cc.l = log
 	cc.b = baseController
 	cc.p = controllerPayload

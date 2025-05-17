@@ -22,6 +22,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
@@ -45,8 +46,8 @@ var (
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
-func initPoller() {
-	poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
+func initPoller(c cache.Cache) {
+	poller.InitSharedGithubReleaseFakePoller(c, func(org, repo string) ([]string, error) {
 		vers := []string{"v0.0.1"}
 
 		if org == "etcd-io" && repo == "etcd" {
@@ -100,8 +101,9 @@ func initClients() {
 }
 
 func TestMain(m *testing.M) {
-
-	initPoller()
+	cc := cache.NewInMemCache(context.TODO())
+	defer cc.Close()
+	initPoller(cc)
 	initClients()
 
 	exitVal := m.Run()

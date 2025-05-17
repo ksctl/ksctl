@@ -67,7 +67,6 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,
-		kc.ksctlConfig,
 		kc.b,
 		kc.s,
 		consts.OperationGet,
@@ -143,7 +142,6 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,
-		kc.ksctlConfig,
 		kc.b,
 		kc.s,
 		consts.OperationGet,

@@ -18,6 +18,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 
@@ -32,11 +33,11 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
-func (cc *Controller) StartPoller() error {
+func (cc *Controller) StartPoller(cacheClient cache.Cache) error {
 	if _, ok := config.IsContextPresent(cc.ctx, consts.KsctlTestFlagKey); !ok {
-		poller.InitSharedGithubReleasePoller()
+		poller.InitSharedGithubReleasePoller(cacheClient)
 	} else {
-		poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
+		poller.InitSharedGithubReleaseFakePoller(cacheClient, func(org, repo string) ([]string, error) {
 			vers := []string{"v0.0.1"}
 
 			if org == "etcd-io" && repo == "etcd" {
