@@ -17,6 +17,7 @@ package cache
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -266,14 +267,15 @@ func TestKeys(t *testing.T) {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
 		assert.Equal(t, len(v), 2)
-		assert.DeepEqual(t, []string{"ggg:key1", "ggg:key2"}, v)
+		assert.Check(t, slices.Contains(v, "ggg:key1"))
+		assert.Check(t, slices.Contains(v, "ggg:key2"))
 	}
 
 	if v, err := cache.KeysWithPrefix("ff:"); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
 		assert.Equal(t, len(v), 1)
-		assert.DeepEqual(t, []string{"ff:key2"}, v)
+		assert.Check(t, slices.Contains(v, "ff:key2"))
 	}
 
 	if v, err := cache.KeysWithPrefix("nonexistent:"); err != nil {
@@ -286,6 +288,6 @@ func TestKeys(t *testing.T) {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
 		assert.Equal(t, len(v), 1)
-		assert.DeepEqual(t, []string{"ggg:key1"}, v)
+		assert.Check(t, slices.Contains(v, "ggg:key1"))
 	}
 }
