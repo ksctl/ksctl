@@ -191,7 +191,7 @@ func (db *Store) Connect(ksctlConfig context.Context) error {
 		)
 	}
 
-	if v, ok := config.IsContextPresent(db.ctx, consts.KsctlContextUserID); ok {
+	if v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlContextUserID); ok {
 		db.userid = v
 	} else {
 		db.userid = "default"
