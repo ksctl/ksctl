@@ -73,6 +73,18 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 		} else {
 			return "", false
 		}
+	case consts.KsctlRedisCredentials:
+		if _val == nil {
+			return "", false
+		}
+		if v, ok := _val.([]byte); ok {
+			if err := json.Unmarshal(v, &statefile.CredentialsRedis{}); err != nil {
+				return "", false
+			}
+			return string(v), true
+		} else {
+			return "", false
+		}
 	default:
 		expectedPattern := contextVars[key]
 

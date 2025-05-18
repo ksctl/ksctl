@@ -52,10 +52,6 @@ type Store struct {
 	wg *sync.WaitGroup
 }
 
-const (
-	CredsCollection string = "credentials"
-)
-
 func copyStore(src *Store, dest *Store) {
 	dest.cloudProvider = src.cloudProvider
 	dest.clusterName = src.clusterName
@@ -149,12 +145,6 @@ func getClusterFilters(db *Store) bson.M {
 	}
 }
 
-func getCredentialsFilters(cloud consts.KsctlCloud) bson.M {
-	return bson.M{
-		"cloud_provider": cloud,
-	}
-}
-
 func (db *Store) Connect(ksctlConfig context.Context) error {
 	mongoCreds, ok := config.IsContextPresent(ksctlConfig, consts.KsctlMongodbCredentials)
 	if !ok {
@@ -210,6 +200,10 @@ func (db *Store) Connect(ksctlConfig context.Context) error {
 	db.l.Debug(db.ctx, "CONN to MongoDB")
 
 	return nil
+}
+
+func (db *Store) SetDatabase(userId string) {
+	db.databaseClient = db.client.Database(getUserDatabase(userId))
 }
 
 func (db *Store) disconnect() error {
@@ -327,23 +321,6 @@ func (db *Store) isPresent() (*mongo.SingleResult, error) {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrInternal,
 			db.l.NewError(db.ctx, "failed to get cluster", "Reason", c.Err()),
-		)
-	}
-	return c, nil
-}
-
-func (db *Store) isPresentCreds(cloud consts.KsctlCloud) (*mongo.SingleResult, error) {
-	c := db.databaseClient.Collection(CredsCollection).FindOne(db.ctx, getCredentialsFilters(cloud))
-	if c.Err() != nil {
-		if errors.Is(c.Err(), mongo.ErrNoDocuments) {
-			return nil, ksctlErrors.WrapError(
-				ksctlErrors.ErrNoMatchingRecordsFound,
-				db.l.NewError(db.ctx, "no matching credentials present"),
-			)
-		}
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrNilCredentials,
-			db.l.NewError(db.ctx, "failed to get credentials", "Reason", c.Err()),
 		)
 	}
 	return c, nil
