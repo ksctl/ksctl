@@ -45,7 +45,6 @@ func checkCurrentStateFileHA(t *testing.T) {
 func TestHACluster(t *testing.T) {
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "demo-ha", consts.ClusterTypeSelfMang)
-	_ = storeHA.Connect(ksc)
 
 	fakeClientHA, _ = NewClient(
 		parentCtx,

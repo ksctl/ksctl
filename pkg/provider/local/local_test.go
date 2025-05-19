@@ -178,7 +178,6 @@ networking:
 func TestManagedCluster(t *testing.T) {
 	storeManaged = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)
-	_ = storeManaged.Connect(ksc)
 
 	fakeClientManaged, _ = NewClient(
 		parentCtx,

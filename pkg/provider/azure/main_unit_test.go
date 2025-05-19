@@ -52,7 +52,6 @@ func TestMain(m *testing.M) {
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeSelfMang)
-	_ = storeVars.Connect(ksc)
 
 	v, err := json.Marshal(statefile.CredentialsAzure{
 		SubscriptionID: "fake",

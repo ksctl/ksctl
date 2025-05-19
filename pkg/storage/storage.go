@@ -15,16 +15,12 @@
 package storage
 
 import (
-	"context"
-
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 type Storage interface {
 	Kill() error
-
-	Connect(ksctlConfig context.Context) error
 
 	Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 
@@ -37,15 +33,4 @@ type Storage interface {
 	AlreadyCreated(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 
 	GetOneOrMoreClusters(filters map[consts.KsctlSearchFilter]string) (map[consts.KsctlClusterType][]*statefile.StorageDocument, error)
-
-	// Export is not goroutine safe, but the child process it calls is!
-	Export(filters map[consts.KsctlSearchFilter]string) (*StateExportImport, error)
-
-	// Import is not goroutine safe, but the child process it calls is!
-	Import(*StateExportImport) error
-}
-
-type StateExportImport struct {
-	Clusters []*statefile.StorageDocument
-	// Credentials []*statefile.CredentialsDocument
 }

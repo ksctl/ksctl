@@ -47,7 +47,6 @@ func checkCurrentStateFile(t *testing.T) {
 func TestManagedCluster(t *testing.T) {
 	storeManaged = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeManaged.Setup(consts.CloudAzure, "fake", "demo-managed", consts.ClusterTypeMang)
-	_ = storeManaged.Connect(ksc)
 
 	fakeClientManaged, _ = NewClient(
 		parentCtx,

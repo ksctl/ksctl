@@ -56,7 +56,6 @@ func TestMain(m *testing.M) {
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAws, "fake-region", "demo", consts.ClusterTypeSelfMang)
-	_ = storeVars.Connect(ksc)
 
 	v, err := json.Marshal(statefile.CredentialsAws{
 		AccessKeyId:     "fake",

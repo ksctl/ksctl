@@ -26,7 +26,6 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
-	"github.com/ksctl/ksctl/v2/pkg/storage"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
@@ -47,17 +46,17 @@ type Store struct {
 	clusterType   string
 	clusterName   string
 	region        string
-	userid        any
 	mu            *sync.RWMutex
 	wg            *sync.WaitGroup
 }
 
-func copyStore(src *Store, dest *Store) {
-	dest.cloudProvider = src.cloudProvider
-	dest.clusterName = src.clusterName
-	dest.clusterType = src.clusterType
-	dest.region = src.region
-	dest.userid = src.userid
+func NewClient(parentCtx context.Context, _log logger.Logger) *Store {
+	return &Store{
+		ctx: context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreLocal)),
+		l:   _log,
+		mu:  &sync.RWMutex{},
+		wg:  &sync.WaitGroup{},
+	}
 }
 
 func (s *Store) PresentDirectory(_path []string) (loc string, isPresent bool) {
@@ -110,96 +109,10 @@ func (s *Store) CreateDirectory(_path []string) error {
 	return nil
 }
 
-func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*storage.StateExportImport, error) {
-
-	var cpyS = s
-	copyStore(s, cpyS) // for storing the state of the store before import was called!
-
-	dest := new(storage.StateExportImport)
-
-	_cloud := filters[consts.Cloud]
-	_clusterType := filters[consts.ClusterType]
-	_clusterName := filters[consts.Name]
-	_region := filters[consts.Region]
-
-	stateClustersForTypes, err := s.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
-		consts.Cloud:       _cloud,
-		consts.ClusterType: _clusterType,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, states := range stateClustersForTypes {
-		// NOTE: make sure both filters are available if not then it will not apply
-		if len(_clusterName) == 0 || len(_region) == 0 {
-			dest.Clusters = append(dest.Clusters, states...)
-		}
-		for _, state := range states {
-			if _clusterName == state.ClusterName &&
-				_region == state.Region {
-				dest.Clusters = append(dest.Clusters, state)
-			}
-		}
-	}
-
-	copyStore(cpyS, s) // for restoring the state of the store before import was called!
-	return dest, nil
-}
-
-func (s *Store) Import(src *storage.StateExportImport) error {
-	states := src.Clusters
-
-	var cpyS = s
-	copyStore(s, cpyS) // for storing the state of the store before import was called!
-
-	for _, state := range states {
-		cloud := state.InfraProvider
-		region := state.Region
-		clusterName := state.ClusterName
-		clusterType := consts.KsctlClusterType(state.ClusterType)
-
-		if err := s.Setup(cloud, region, clusterName, clusterType); err != nil {
-			return err
-		}
-
-		if err := s.Write(state); err != nil {
-			return err
-		}
-	}
-
-	copyStore(cpyS, s) // for restoring the state of the store before import was called!
-	return nil
-}
-
-func NewClient(parentCtx context.Context, _log logger.Logger) *Store {
-	return &Store{
-		ctx: context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreLocal)),
-		l:   _log,
-		mu:  &sync.RWMutex{},
-		wg:  &sync.WaitGroup{},
-	}
-}
-
-func (s *Store) disconnect() error {
-	return nil
-}
-
 func (s *Store) Kill() error {
 	s.wg.Wait()
 	defer s.l.Debug(s.ctx, "Local Storage Got Killed")
 
-	return s.disconnect()
-}
-
-func (s *Store) Connect(ksctlConfig context.Context) error {
-	if v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlContextUserID); ok {
-		s.userid = v
-	} else {
-		s.userid = "default"
-	}
-
-	s.l.Debug(s.ctx, "CONN to HostOS")
 	return nil
 }
 

@@ -76,14 +76,22 @@ func (cc *Controller) InitStorage(p *Client, ksctlConfig context.Context) error 
 	case consts.StoreLocal:
 		p.Storage = localstate.NewClient(cc.ctx, cc.l)
 	case consts.StoreExtMongo:
-		p.Storage = externalmongostate.NewClient(cc.ctx, cc.l)
+		mongoClient, err := externalmongostate.NewDBClient(cc.ctx, cc.l, ksctlConfig)
+		if err != nil {
+			return err
+		}
+		p.Storage, err = mongoClient.NewDatabaseClient(ksctlConfig)
+		if err != nil {
+			return err
+		}
 	case consts.StoreK8s:
-		p.Storage = kubernetesstate.NewClient(cc.ctx, cc.l)
+		var err error
+		p.Storage, err = kubernetesstate.NewClient(cc.ctx, cc.l)
+		if err != nil {
+			return err
+		}
 	}
 
-	if err := p.Storage.Connect(ksctlConfig); err != nil {
-		return err
-	}
 	cc.l.Debug(cc.ctx, "initialized storageFactory")
 	return nil
 }
