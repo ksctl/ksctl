@@ -73,18 +73,15 @@ func CredsAzure(ctx context.Context) context.Context {
 	return context.WithValue(ctx, consts.KsctlAzureCredentials, v)
 }
 
-func CredsMongo(ctx context.Context) context.Context {
+func CredsMongo(ctx context.Context) statefile.CredentialsMongodb {
 
 	mongoHost, ok := os.LookupEnv("MONGODB_URI")
 	if !ok {
 		panic("MONGODB_URI not set")
 	}
 
-	v, err := json.Marshal(statefile.CredentialsMongodb{
+	return statefile.CredentialsMongodb{
 		URI: mongoHost,
-	})
-	if err != nil {
-		panic(err)
 	}
-	return context.WithValue(ctx, consts.KsctlMongodbCredentials, v)
+
 }

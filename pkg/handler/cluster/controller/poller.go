@@ -15,20 +15,12 @@
 package controller
 
 import (
-	"context"
 	"sort"
 
 	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/config"
-	"github.com/ksctl/ksctl/v2/pkg/validation"
-
-	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
 	"github.com/ksctl/ksctl/v2/pkg/poller"
-
-	localstate "github.com/ksctl/ksctl/v2/pkg/storage/host"
-	kubernetesstate "github.com/ksctl/ksctl/v2/pkg/storage/kubernetes"
-	externalmongostate "github.com/ksctl/ksctl/v2/pkg/storage/mongodb"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
@@ -60,38 +52,5 @@ func (cc *Controller) StartPoller(cacheClient cache.Cache) error {
 		})
 	}
 
-	return nil
-}
-
-func (cc *Controller) InitStorage(p *Client, ksctlConfig context.Context) error {
-	if !validation.ValidateStorage(p.Metadata.StateLocation) {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrInvalidStorageProvider,
-			cc.l.NewError(
-				cc.ctx, "Problem in validation", "storage", p.Metadata.StateLocation,
-			),
-		)
-	}
-	switch p.Metadata.StateLocation {
-	case consts.StoreLocal:
-		p.Storage = localstate.NewClient(cc.ctx, cc.l)
-	case consts.StoreExtMongo:
-		mongoClient, err := externalmongostate.NewDBClient(cc.ctx, cc.l, ksctlConfig)
-		if err != nil {
-			return err
-		}
-		p.Storage, err = mongoClient.NewDatabaseClient(ksctlConfig)
-		if err != nil {
-			return err
-		}
-	case consts.StoreK8s:
-		var err error
-		p.Storage, err = kubernetesstate.NewClient(cc.ctx, cc.l)
-		if err != nil {
-			return err
-		}
-	}
-
-	cc.l.Debug(cc.ctx, "initialized storageFactory")
 	return nil
 }

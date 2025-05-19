@@ -39,7 +39,12 @@ type AddonController struct {
 }
 
 // NewController intended to be used by the cli to enable or disable addon 'ksctl-clustermanager'
-func NewController(ctx context.Context, log logger.Logger, ksctlConfig controller.KsctlWorkerConfiguration, controllerPayload *controller.Client) (*AddonController, error) {
+func NewController(
+	ctx context.Context,
+	log logger.Logger,
+	ksctlConfig controller.KsctlWorkerConfiguration,
+	controllerPayload *controller.Client,
+) (*AddonController, error) {
 
 	cc := new(AddonController)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-addons")
@@ -53,10 +58,6 @@ func NewController(ctx context.Context, log logger.Logger, ksctlConfig controlle
 	}
 
 	if err := cc.b.ValidateClusterType(controllerPayload.Metadata.ClusterType); err != nil {
-		return nil, err
-	}
-
-	if err := cc.b.InitStorage(controllerPayload, ksctlConfig.WorkerCtx); err != nil {
 		return nil, err
 	}
 

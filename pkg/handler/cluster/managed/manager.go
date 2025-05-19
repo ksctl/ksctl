@@ -31,7 +31,12 @@ type Controller struct {
 	s   *statefile.StorageDocument
 }
 
-func NewController(ctx context.Context, log logger.Logger, ksctlConfig controller.KsctlWorkerConfiguration, controllerPayload *controller.Client) (*Controller, error) {
+func NewController(
+	ctx context.Context,
+	log logger.Logger,
+	ksctlConfig controller.KsctlWorkerConfiguration,
+	controllerPayload *controller.Client,
+) (*Controller, error) {
 
 	cc := new(Controller)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "controller-managed")
@@ -50,10 +55,6 @@ func NewController(ctx context.Context, log logger.Logger, ksctlConfig controlle
 
 	if cc.p.Metadata.ClusterType != consts.ClusterTypeMang {
 		err := cc.l.NewError(cc.ctx, "this feature is only for managed clusters")
-		return nil, err
-	}
-
-	if err := cc.b.InitStorage(controllerPayload, cc.b.KsctlWorkloadConf.WorkerCtx); err != nil {
 		return nil, err
 	}
 

@@ -23,6 +23,8 @@ import (
 
 	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
+	"github.com/ksctl/ksctl/v2/pkg/storage/host"
+	"github.com/ksctl/ksctl/v2/pkg/storage/mongodb"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
@@ -78,9 +80,6 @@ func main() {
 	l = logger.NewStructuredLogger(verbosityLevel, os.Stdout)
 
 	operation, meta := GetReqPayload(l)
-	if meta.StateLocation == consts.StoreExtMongo {
-		ksctlConfig = CredsMongo(ksctlConfig)
-	}
 
 	if meta.Provider == consts.CloudAws {
 		ksctlConfig = CredsAws(ksctlConfig)
@@ -90,6 +89,26 @@ func main() {
 	}
 
 	cc := cache.NewInMemCache(ctx)
+	kscConfig := controller.KsctlWorkerConfiguration{
+		WorkerCtx:   ksctlConfig,
+		PollerCache: cc,
+	}
+
+	if meta.StateLocation == consts.StoreExtMongo { // mongodb storage
+		client, err := mongodb.NewDBClient(ctx, CredsMongo(ctx))
+		if err != nil {
+			l.Error("unable to initialize the mongodb client", "Reason", err)
+			os.Exit(1)
+		}
+		kscConfig.Storage, err = client.NewDatabaseClient(ksctlConfig, l)
+		if err != nil {
+			l.Error("unable to initialize the mongodb client", "Reason", err)
+			os.Exit(1)
+		}
+	} else { // local storage
+		kscConfig.Storage = host.NewClient(ksctlConfig, l)
+	}
+
 	defer cc.Close()
 
 	l.Print(ctx, "Testing starting...")
@@ -107,10 +126,7 @@ func main() {
 			managerClient, err := controllerSelfManaged.NewController(
 				ctx,
 				l,
-				controller.KsctlWorkerConfiguration{
-					WorkerCtx:   ksctlConfig,
-					PollerCache: cc,
-				},
+				kscConfig,
 				&controller.Client{
 					Metadata: meta,
 				},
@@ -134,10 +150,7 @@ func main() {
 			managerClient, err := controllerManaged.NewController(
 				ctx,
 				l,
-				controller.KsctlWorkerConfiguration{
-					WorkerCtx:   ksctlConfig,
-					PollerCache: cc,
-				},
+				kscConfig,
 				&controller.Client{
 					Metadata: meta,
 				},
@@ -158,10 +171,7 @@ func main() {
 		managerClient, err := controllerCommon.NewController(
 			ctx,
 			l,
-			controller.KsctlWorkerConfiguration{
-				WorkerCtx:   ksctlConfig,
-				PollerCache: cc,
-			},
+			kscConfig,
 			&controller.Client{
 				Metadata: meta,
 			},
@@ -182,10 +192,7 @@ func main() {
 		cc, err := addonClusterMgt.NewController(
 			ctx,
 			l,
-			controller.KsctlWorkerConfiguration{
-				WorkerCtx:   ksctlConfig,
-				PollerCache: cc,
-			},
+			kscConfig,
 			&controller.Client{
 				Metadata: meta,
 			},

@@ -48,6 +48,14 @@ func (cc *Controller) ValidateMetadata(c *Client) error {
 			cc.l.NewError(cc.ctx, "invalid format for context value `USERID`", "Reason", "Make sure the value", "type", "string", "format", `^[\w-]+$`),
 		)
 	}
+	if !validation.ValidateStorage(c.Metadata.StateLocation) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidStorageProvider,
+			cc.l.NewError(
+				cc.ctx, "Problem in validation", "storage", c.Metadata.StateLocation,
+			),
+		)
+	}
 
 	if !validation.ValidateCloud(meta.Provider) {
 		return ksctlErrors.WrapError(

@@ -46,6 +46,7 @@ type KsctlWorkerConfiguration struct {
 	// WorkerCtx contains the creds and also userId
 	WorkerCtx   context.Context
 	PollerCache cache.Cache
+	Storage     storage.Storage
 }
 
 type Metadata struct {
@@ -79,10 +80,15 @@ type Metadata struct {
 type Controller struct {
 	l                 logger.Logger
 	ctx               context.Context
+	KsctlStore        storage.Storage
 	KsctlWorkloadConf KsctlWorkerConfiguration
 }
 
-func NewBaseController(ctx context.Context, l logger.Logger, ksctlConfig KsctlWorkerConfiguration) *Controller {
+func NewBaseController(
+	ctx context.Context,
+	l logger.Logger,
+	ksctlConfig KsctlWorkerConfiguration,
+) *Controller {
 	b := new(Controller)
 	b.l = l
 	b.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "manager-base")

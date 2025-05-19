@@ -36,7 +36,12 @@ type Controller struct {
 	bb     *bootstrapMeta.BootstrapMetadata
 }
 
-func NewController(ctx context.Context, log logger.Logger, ksctlConfig controller.KsctlWorkerConfiguration, client *controller.Client) (*Controller, error) {
+func NewController(
+	ctx context.Context,
+	log logger.Logger,
+	ksctlConfig controller.KsctlWorkerConfiguration,
+	client *controller.Client,
+) (*Controller, error) {
 
 	cc := new(Controller)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-metadata")

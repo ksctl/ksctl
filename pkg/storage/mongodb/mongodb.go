@@ -16,7 +16,6 @@ package mongodb
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -39,29 +38,13 @@ type MongoConn struct {
 	mu     *sync.Mutex
 }
 
-func NewDBClient(parentCtx context.Context, _log logger.Logger, ksctlConfig context.Context) (*MongoConn, error) {
+func NewDBClient(parentCtx context.Context, creds statefile.CredentialsMongodb) (*MongoConn, error) {
 	db := &MongoConn{
 		ctx: context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreExtMongo)),
-		l:   _log,
 		mu:  &sync.Mutex{},
 	}
 
-	mongoCreds, ok := config.IsContextPresent(ksctlConfig, consts.KsctlMongodbCredentials)
-	if !ok {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInvalidUserInput,
-			db.l.NewError(db.ctx, "missing mongodb credentials"),
-		)
-	}
-	extractedCreds := statefile.CredentialsMongodb{}
-	if err := json.Unmarshal([]byte(mongoCreds), &extractedCreds); err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			db.l.NewError(db.ctx, "failed to get the creds", "Reason", err),
-		)
-	}
-
-	uri := extractedCreds.URI
+	uri := creds.URI
 
 	opts := mongoOptions.Client().ApplyURI(uri)
 	var err error
@@ -98,11 +81,11 @@ type Store struct {
 	wg *sync.WaitGroup
 }
 
-func (conn *MongoConn) NewDatabaseClient(ksctlConfig context.Context) (*Store, error) {
+func (conn *MongoConn) NewDatabaseClient(ksctlConfig context.Context, l logger.Logger) (*Store, error) {
 
 	db := &Store{
 		ctx: conn.ctx,
-		l:   conn.l,
+		l:   l,
 		mu:  conn.mu,
 		wg:  new(sync.WaitGroup),
 	}

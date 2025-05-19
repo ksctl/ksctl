@@ -19,7 +19,6 @@ package mongodb
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -90,15 +89,6 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	v, err := json.Marshal(statefile.CredentialsMongodb{
-		URI: "mongodb://root:1234@localhost:27017",
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	ksc = context.WithValue(ksc, consts.KsctlMongodbCredentials, v)
-
 	defer func() {
 		if err := cli.ContainerRemove(parentCtx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
 			panic(err)
@@ -110,12 +100,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitStorage(t *testing.T) {
-	_db, err := NewDBClient(parentCtx, parentLogger, ksc)
+	_db, err := NewDBClient(parentCtx, statefile.CredentialsMongodb{
+		URI: "mongodb://root:1234@localhost:27017",
+	})
 	if err != nil {
 		t.Fatalf("Error should not happen: %v", err)
 	}
 
-	db, err = _db.NewDatabaseClient(ksc)
+	db, err = _db.NewDatabaseClient(ksc, parentLogger)
 	if err != nil {
 		t.Fatalf("Error should not happen: %v", err)
 	}

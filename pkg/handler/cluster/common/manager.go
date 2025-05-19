@@ -49,10 +49,6 @@ func NewController(
 		return nil, err
 	}
 
-	if err := cc.b.InitStorage(controllerPayload, cc.b.KsctlWorkloadConf.WorkerCtx); err != nil {
-		return nil, err
-	}
-
 	if err := cc.b.StartPoller(cc.b.KsctlWorkloadConf.PollerCache); err != nil {
 		return nil, err
 	}

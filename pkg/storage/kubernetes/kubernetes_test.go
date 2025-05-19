@@ -49,7 +49,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitStorage(t *testing.T) {
-	db, err := NewClient(parentCtx, parentLogger)
+	var err error
+	db, err = NewClient(parentCtx, parentLogger)
 	if err != nil {
 		t.Fatalf("Error should not happen: %v", err)
 	}
