@@ -57,6 +57,7 @@ func NewController(
 		err := cc.l.NewError(cc.ctx, "this feature is only for managed clusters")
 		return nil, err
 	}
+	cc.p.Storage = ksctlConfig.Storage
 
 	if err := cc.b.StartPoller(cc.b.KsctlWorkloadConf.PollerCache); err != nil {
 		return nil, err

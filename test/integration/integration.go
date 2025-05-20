@@ -28,6 +28,7 @@ import (
 	controllerSelfManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/selfmanaged"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage/host"
 )
 
 var (
@@ -101,6 +102,7 @@ func ExecuteKsctlSpecificRun() error {
 		controller.KsctlWorkerConfiguration{
 			WorkerCtx:   ksc,
 			PollerCache: cache.NewInMemCache(ctx),
+			Storage:     host.NewClient(ctx, log),
 		},
 		cli,
 	)
@@ -131,6 +133,7 @@ func ExecuteManagedRun() error {
 		controller.KsctlWorkerConfiguration{
 			WorkerCtx:   ksc,
 			PollerCache: cache.NewInMemCache(ctx),
+			Storage:     host.NewClient(ctx, log),
 		},
 		cli,
 	)
@@ -161,6 +164,7 @@ func ExecuteHARun() error {
 		controller.KsctlWorkerConfiguration{
 			WorkerCtx:   ksc,
 			PollerCache: cache.NewInMemCache(ctx),
+			Storage:     host.NewClient(ctx, log),
 		},
 		cli,
 	)
