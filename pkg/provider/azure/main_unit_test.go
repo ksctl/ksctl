@@ -41,6 +41,7 @@ var (
 	fakeClientVars *Provider
 	storeVars      storage.Storage
 	parentCtx      context.Context
+	ksc                          = context.Background()
 	parentLogger   logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = filepath.Join(os.TempDir(), "ksctl-azure-test")
@@ -51,7 +52,6 @@ func TestMain(m *testing.M) {
 
 	storeVars = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeVars.Setup(consts.CloudAzure, "fake", "demo", consts.ClusterTypeSelfMang)
-	_ = storeVars.Connect()
 
 	v, err := json.Marshal(statefile.CredentialsAzure{
 		SubscriptionID: "fake",
@@ -62,11 +62,12 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	parentCtx = context.WithValue(parentCtx, consts.KsctlAzureCredentials, v)
+	ksc = context.WithValue(ksc, consts.KsctlAzureCredentials, v)
 
 	fakeClientVars, _ = NewClient(
 		parentCtx,
 		parentLogger,
+		ksc,
 		controller.Metadata{
 			ClusterName: "demo",
 			Region:      "fake",

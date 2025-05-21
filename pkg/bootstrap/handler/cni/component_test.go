@@ -15,16 +15,21 @@
 package cni
 
 import (
+	"context"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/poller"
 	"github.com/ksctl/ksctl/v2/pkg/utilities"
 )
 
 func TestMain(m *testing.M) {
-	poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
+	cc := cache.NewInMemCache(context.TODO())
+	defer cc.Close()
+
+	poller.InitSharedGithubReleaseFakePoller(cc, func(org, repo string) ([]string, error) {
 		vers := []string{"v0.0.1"}
 
 		switch org + " " + repo {

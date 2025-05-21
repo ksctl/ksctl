@@ -36,11 +36,16 @@ type Controller struct {
 	bb     *bootstrapMeta.BootstrapMetadata
 }
 
-func NewController(ctx context.Context, log logger.Logger, client *controller.Client) (*Controller, error) {
+func NewController(
+	ctx context.Context,
+	log logger.Logger,
+	ksctlConfig controller.KsctlWorkerConfiguration,
+	client *controller.Client,
+) (*Controller, error) {
 
 	cc := new(Controller)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-metadata")
-	cc.b = controller.NewBaseController(ctx, log)
+	cc.b = controller.NewBaseController(ctx, log, ksctlConfig)
 	cc.l = log
 	cc.client = client
 
@@ -52,7 +57,7 @@ func NewController(ctx context.Context, log logger.Logger, client *controller.Cl
 		return nil, err
 	}
 
-	if err := cc.b.StartPoller(); err != nil {
+	if err := cc.b.StartPoller(cc.b.KsctlWorkloadConf.PollerCache); err != nil {
 		return nil, err
 	}
 
@@ -66,6 +71,10 @@ func NewController(ctx context.Context, log logger.Logger, client *controller.Cl
 		cc.cc, err = localMeta.NewLocalMeta(cc.ctx, cc.l)
 	}
 	if err != nil {
+		return nil, err
+	}
+
+	if err := cc.cc.Connect(cc.b.KsctlWorkloadConf.WorkerCtx); err != nil {
 		return nil, err
 	}
 

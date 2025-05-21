@@ -31,11 +31,16 @@ type Controller struct {
 	s   *statefile.StorageDocument
 }
 
-func NewController(ctx context.Context, log logger.Logger, controllerPayload *controller.Client) (*Controller, error) {
+func NewController(
+	ctx context.Context,
+	log logger.Logger,
+	ksctlConfig controller.KsctlWorkerConfiguration,
+	controllerPayload *controller.Client,
+) (*Controller, error) {
 
 	cc := new(Controller)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "controller-managed")
-	cc.b = controller.NewBaseController(ctx, log)
+	cc.b = controller.NewBaseController(ctx, log, ksctlConfig)
 	cc.p = controllerPayload
 	cc.s = new(statefile.StorageDocument)
 	cc.l = log
@@ -52,12 +57,9 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 		err := cc.l.NewError(cc.ctx, "this feature is only for managed clusters")
 		return nil, err
 	}
+	cc.p.Storage = ksctlConfig.Storage
 
-	if err := cc.b.InitStorage(controllerPayload); err != nil {
-		return nil, err
-	}
-
-	if err := cc.b.StartPoller(); err != nil {
+	if err := cc.b.StartPoller(cc.b.KsctlWorkloadConf.PollerCache); err != nil {
 		return nil, err
 	}
 

@@ -17,6 +17,8 @@ package poller
 import (
 	"sync"
 	"time"
+
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 )
 
 var (
@@ -24,24 +26,20 @@ var (
 	once     sync.Once
 )
 
-func InitSharedGithubReleasePoller() {
-	once.Do(func() {
-		instance = NewGithubReleasePoller(DefaultPollerDuration, DefaultHttpCaller)
-	})
+func InitSharedGithubReleasePoller(c cache.Cache) {
+	instance = NewGithubReleasePoller(c, DefaultPollerDuration, DefaultHttpCaller)
 }
 
 // InitSharedGithubReleaseFakePoller initializes a shared poller with a fake implementation
 //
 // fakeValidVersions: a function that returns a list of valid versions for a given org and repo, it should be sorted like latest version first to oldest
-func InitSharedGithubReleaseFakePoller(fakeValidVersions func(org, repo string) ([]string, error)) {
-	once.Do(func() {
-		if fakeValidVersions == nil {
-			fakeValidVersions = func(org, repo string) ([]string, error) {
-				return []string{"v1.0.0", "v1.0.1"}, nil
-			}
+func InitSharedGithubReleaseFakePoller(c cache.Cache, fakeValidVersions func(org, repo string) ([]string, error)) {
+	if fakeValidVersions == nil {
+		fakeValidVersions = func(org, repo string) ([]string, error) {
+			return []string{"v1.0.0", "v1.0.1"}, nil
 		}
-		instance = NewGithubReleasePoller(5*time.Second, fakeValidVersions)
-	})
+	}
+	instance = NewGithubReleasePoller(c, 5*time.Second, fakeValidVersions)
 }
 
 func GetSharedPoller() Poller {

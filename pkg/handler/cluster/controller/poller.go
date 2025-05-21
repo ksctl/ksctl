@@ -17,25 +17,19 @@ package controller
 import (
 	"sort"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/config"
-	"github.com/ksctl/ksctl/v2/pkg/validation"
-
-	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
 	"github.com/ksctl/ksctl/v2/pkg/poller"
-
-	localstate "github.com/ksctl/ksctl/v2/pkg/storage/host"
-	kubernetesstate "github.com/ksctl/ksctl/v2/pkg/storage/kubernetes"
-	externalmongostate "github.com/ksctl/ksctl/v2/pkg/storage/mongodb"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
 
-func (cc *Controller) StartPoller() error {
+func (cc *Controller) StartPoller(cacheClient cache.Cache) error {
 	if _, ok := config.IsContextPresent(cc.ctx, consts.KsctlTestFlagKey); !ok {
-		poller.InitSharedGithubReleasePoller()
+		poller.InitSharedGithubReleasePoller(cacheClient)
 	} else {
-		poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
+		poller.InitSharedGithubReleaseFakePoller(cacheClient, func(org, repo string) ([]string, error) {
 			vers := []string{"v0.0.1"}
 
 			if org == "etcd-io" && repo == "etcd" {
@@ -58,30 +52,5 @@ func (cc *Controller) StartPoller() error {
 		})
 	}
 
-	return nil
-}
-
-func (cc *Controller) InitStorage(p *Client) error {
-	if !validation.ValidateStorage(p.Metadata.StateLocation) {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrInvalidStorageProvider,
-			cc.l.NewError(
-				cc.ctx, "Problem in validation", "storage", p.Metadata.StateLocation,
-			),
-		)
-	}
-	switch p.Metadata.StateLocation {
-	case consts.StoreLocal:
-		p.Storage = localstate.NewClient(cc.ctx, cc.l)
-	case consts.StoreExtMongo:
-		p.Storage = externalmongostate.NewClient(cc.ctx, cc.l)
-	case consts.StoreK8s:
-		p.Storage = kubernetesstate.NewClient(cc.ctx, cc.l)
-	}
-
-	if err := p.Storage.Connect(); err != nil {
-		return err
-	}
-	cc.l.Debug(cc.ctx, "initialized storageFactory")
 	return nil
 }

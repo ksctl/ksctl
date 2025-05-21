@@ -15,8 +15,9 @@
 package aws
 
 import (
-	"github.com/ksctl/ksctl/v2/pkg/provider"
 	"testing"
+
+	"github.com/ksctl/ksctl/v2/pkg/provider"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
@@ -41,11 +42,11 @@ func checkCurrentStateFile(t *testing.T) {
 func TestManagedCluster(t *testing.T) {
 	storeManaged = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeManaged.Setup(consts.CloudAws, "fake-region", "demo-managed", consts.ClusterTypeMang)
-	_ = storeManaged.Connect()
 
 	fakeClientManaged, _ = NewClient(
 		parentCtx,
 		parentLogger,
+		ksc,
 		controller.Metadata{
 			ClusterName: "demo-managed",
 			Region:      "fake-region",

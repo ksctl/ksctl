@@ -46,7 +46,7 @@ func NewController(
 ) (*Controller, error) {
 
 	cc := new(Controller)
-	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "pkg/providers/handler/cloud")
+	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-provisioner")
 	cc.l = log
 	cc.b = baseController
 	cc.p = controllerPayload
@@ -65,20 +65,20 @@ func (kc *Controller) setupInterfaces(operation consts.KsctlOperation) error {
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudAzure:
-		kc.p.Cloud, err = azurePkg.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azurePkg.ProvideClient)
+		kc.p.Cloud, err = azurePkg.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, azurePkg.ProvideClient)
 
 		if err != nil {
 			return err
 		}
 	case consts.CloudAws:
-		kc.p.Cloud, err = awsPkg.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, awsPkg.ProvideClient)
+		kc.p.Cloud, err = awsPkg.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, awsPkg.ProvideClient)
 
 		if err != nil {
 			return err
 		}
 
 	case consts.CloudLocal:
-		kc.p.Cloud, err = localPkg.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, localPkg.ProvideClient)
+		kc.p.Cloud, err = localPkg.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, localPkg.ProvideClient)
 
 		if err != nil {
 			return err

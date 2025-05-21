@@ -23,7 +23,6 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
-	"github.com/ksctl/ksctl/v2/pkg/storage"
 
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 
@@ -58,86 +57,11 @@ const (
 	ksctlStateName string = "ksctl-state" // configmap name
 )
 
-func copyStore(src *Store, dest *Store) {
-	dest.cloudProvider = src.cloudProvider
-	dest.clusterName = src.clusterName
-	dest.clusterType = src.clusterType
-	dest.region = src.region
-}
-
-func (s *Store) Export(filters map[consts.KsctlSearchFilter]string) (*storage.StateExportImport, error) {
-
-	var cpyS = s
-	copyStore(s, cpyS)       // for storing the state of the store before import was called!
-	defer copyStore(cpyS, s) // for restoring the state of the store before import was called!
-
-	dest := new(storage.StateExportImport)
-
-	_cloud := filters[consts.Cloud]
-	_clusterType := filters[consts.ClusterType]
-	_clusterName := filters[consts.Name]
-	_region := filters[consts.Region]
-
-	stateClustersForTypes, err := s.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{
-		consts.Cloud:       _cloud,
-		consts.ClusterType: _clusterType,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, states := range stateClustersForTypes {
-		// NOTE: make sure both filters are available if not then it will not apply
-		if len(_clusterName) == 0 || len(_region) == 0 {
-			dest.Clusters = append(dest.Clusters, states...)
-			continue
-		}
-		for _, state := range states {
-			if _clusterName == state.ClusterName &&
-				_region == state.Region {
-				dest.Clusters = append(dest.Clusters, state)
-			}
-		}
-	}
-
-	return dest, nil
-}
-
-func (s *Store) Import(src *storage.StateExportImport) error {
-	states := src.Clusters
-
-	var cpyS *Store = s
-	copyStore(s, cpyS)       // for storing the state of the store before import was called!
-	defer copyStore(cpyS, s) // for restoring the state of the store before import was called!
-
-	for _, state := range states {
-		cloud := state.InfraProvider
-		region := state.Region
-		clusterName := state.ClusterName
-		clusterType := consts.KsctlClusterType(state.ClusterType)
-
-		log.Debug(storeCtx, "key fields of state", "cloud", cloud, "region", region, "clusterName", clusterName, "clusterType", clusterType)
-
-		if err := s.Setup(cloud, region, clusterName, clusterType); err != nil {
-			return err
-		}
-
-		if err := s.Write(state); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func NewClient(parentCtx context.Context, _log logger.Logger) *Store {
+func NewClient(parentCtx context.Context, _log logger.Logger) (*Store, error) {
 	storeCtx = context.WithValue(parentCtx, consts.KsctlModuleNameKey, string(consts.StoreK8s))
 	log = _log
-	return &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
-}
-
-func (s *Store) Connect() error {
 	var err error
+	s := &Store{mu: &sync.Mutex{}, wg: &sync.WaitGroup{}}
 
 	if _, ok := config.IsContextPresent(storeCtx, consts.KsctlTestFlagKey); ok {
 		s.clientSet, err = NewFakeK8sClient(storeCtx)
@@ -146,12 +70,11 @@ func (s *Store) Connect() error {
 	}
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Debug(storeCtx, "CONN to k8s configmap")
-
-	return nil
+	return s, nil
 }
 
 func (s *Store) disconnect() error {

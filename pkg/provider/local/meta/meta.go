@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/dockerhub"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
@@ -33,10 +34,16 @@ type LocalMeta struct {
 }
 
 func NewLocalMeta(ctx context.Context, l logger.Logger) (*LocalMeta, error) {
+	ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "kind-metadata")
+
 	return &LocalMeta{
 		ctx: ctx,
 		l:   l,
 	}, nil
+}
+
+func (l *LocalMeta) Connect(ksctlConfig context.Context) error {
+	return nil
 }
 
 func (l *LocalMeta) GetAvailableManagedK8sVersions(_ string) ([]string, error) {

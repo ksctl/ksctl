@@ -39,11 +39,16 @@ type AddonController struct {
 }
 
 // NewController intended to be used by the cli to enable or disable addon 'ksctl-clustermanager'
-func NewController(ctx context.Context, log logger.Logger, controllerPayload *controller.Client) (*AddonController, error) {
+func NewController(
+	ctx context.Context,
+	log logger.Logger,
+	ksctlConfig controller.KsctlWorkerConfiguration,
+	controllerPayload *controller.Client,
+) (*AddonController, error) {
 
 	cc := new(AddonController)
 	cc.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "ksctl-addons")
-	cc.b = controller.NewBaseController(ctx, log)
+	cc.b = controller.NewBaseController(ctx, log, ksctlConfig)
 	cc.p = controllerPayload
 	cc.s = new(statefile.StorageDocument)
 	cc.l = log
@@ -56,11 +61,9 @@ func NewController(ctx context.Context, log logger.Logger, controllerPayload *co
 		return nil, err
 	}
 
-	if err := cc.b.InitStorage(controllerPayload); err != nil {
-		return nil, err
-	}
+	cc.p.Storage = ksctlConfig.Storage
 
-	if err := cc.b.StartPoller(); err != nil {
+	if err := cc.b.StartPoller(cc.b.KsctlWorkloadConf.PollerCache); err != nil {
 		return nil, err
 	}
 
@@ -104,16 +107,16 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudAzure:
-		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
+		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
 
 	case consts.CloudAws:
-		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
+		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
 		if err != nil {
 			break
 		}
 
 	case consts.CloudLocal:
-		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
+		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
 
 	}
 

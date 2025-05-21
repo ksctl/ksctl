@@ -45,6 +45,7 @@ var (
 
 	fakeClientVars *Provider
 	parentCtx      context.Context
+	ksc                          = context.Background()
 	parentLogger   logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 
 	dir = filepath.Join(os.TempDir(), "ksctl-local-test")
@@ -56,6 +57,7 @@ func TestMain(m *testing.M) {
 	fakeClientVars, _ = NewClient(
 		parentCtx,
 		parentLogger,
+		ksc,
 		controller.Metadata{
 			ClusterName: "demo",
 			Region:      "LOCAL",
@@ -176,11 +178,11 @@ networking:
 func TestManagedCluster(t *testing.T) {
 	storeManaged = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeManaged.Setup(consts.CloudLocal, "LOCAL", "demo-managed", consts.ClusterTypeMang)
-	_ = storeManaged.Connect()
 
 	fakeClientManaged, _ = NewClient(
 		parentCtx,
 		parentLogger,
+		ksc,
 		controller.Metadata{
 			ClusterName: "demo-managed",
 			Region:      "LOCAL",

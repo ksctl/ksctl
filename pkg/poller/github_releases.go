@@ -15,34 +15,52 @@
 package poller
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/github"
 )
 
-type status struct {
-	releases []string
-	err      error
+type Status struct {
+	Releases []string `json:"releases"`
+	Err      string   `json:"error"`
+}
+
+func DecodeStatus(v string) (ret Status, err error) {
+	err = json.Unmarshal([]byte(v), &ret)
+	return
+}
+
+func EncodeStatus(v Status) (ret string, err error) {
+	_v, err := json.Marshal(v)
+	if err != nil {
+		return
+	}
+	ret = string(_v)
+	return
 }
 
 type GithubReleasePoller struct {
 	interval   time.Duration
 	rwm        *sync.RWMutex
 	httpCaller func(string, string) ([]string, error)
-	cache      map[string]status
+	c          cache.Cache
 }
 
 const (
-	delimiter = "/"
+	delimiter    = "/"
+	prefix_cache = "poller:"
 )
 
 var DefaultHttpCaller = github.HttpGetAllStableGithubReleases
 var DefaultPollerDuration = 30 * time.Minute
 
-func NewGithubReleasePoller(t time.Duration, httpCaller func(string, string) ([]string, error)) *GithubReleasePoller {
+func NewGithubReleasePoller(c cache.Cache, t time.Duration, httpCaller func(string, string) ([]string, error)) *GithubReleasePoller {
 	if httpCaller == nil {
 		httpCaller = DefaultHttpCaller
 	}
@@ -54,7 +72,7 @@ func NewGithubReleasePoller(t time.Duration, httpCaller func(string, string) ([]
 		interval:   t,
 		rwm:        new(sync.RWMutex),
 		httpCaller: httpCaller,
-		cache:      make(map[string]status),
+		c:          c,
 	}
 
 	go gh.handleRefresh()
@@ -78,42 +96,60 @@ func (gh *GithubReleasePoller) getSubscribedRepos() []string {
 	defer gh.rwm.RUnlock()
 
 	var repos []string
-	for k, _ := range gh.cache {
+	keys, err := gh.c.KeysWithPrefix(prefix_cache)
+	if err != nil {
+		return repos
+	}
+
+	for _, k := range keys {
 		repos = append(repos, k)
 	}
 
 	return repos
 }
 
-func (gh *GithubReleasePoller) getReleases(org, repo string) (status, bool) {
+func (gh *GithubReleasePoller) getReleases(org, repo string) (Status, bool) {
 	gh.rwm.RLock()
 	defer gh.rwm.RUnlock()
 
-	v, ok := gh.cache[org+delimiter+repo]
-	return v, ok
+	v, ok := gh.c.Get(prefix_cache + org + delimiter + repo)
+	if !ok {
+		return Status{}, false
+	}
+
+	c, err := DecodeStatus(v)
+	if err != nil {
+		return Status{}, false
+	}
+	return c, ok
 }
 
-func (gh *GithubReleasePoller) setReleases(org, repo string, v status) {
+func (gh *GithubReleasePoller) setReleases(org, repo string, v Status) {
 	gh.rwm.Lock()
 	defer gh.rwm.Unlock()
 
-	gh.cache[org+delimiter+repo] = v
+	c, err := EncodeStatus(v)
+	if err != nil {
+		return
+	}
+
+	gh.c.SetWithExpire(prefix_cache+org+delimiter+repo, c, 24*time.Hour)
 }
 
 func (gh *GithubReleasePoller) subscribe(repo string) {
 	_repo := strings.Split(repo, delimiter)
 	releases, err := gh.httpCaller(_repo[0], _repo[1])
 
-	var s status
+	var s Status
 	if err != nil {
-		s = status{
-			releases: nil,
-			err:      fmt.Errorf("latest call failed, can contain stale data: %w", err),
+		s = Status{
+			Releases: nil,
+			Err:      fmt.Errorf("latest call failed, can contain stale data: %w", err).Error(),
 		}
 	} else {
-		s = status{
-			releases: releases,
-			err:      nil,
+		s = Status{
+			Releases: releases,
+			Err:      "",
 		}
 	}
 	gh.setReleases(_repo[0], _repo[1], s)
@@ -122,13 +158,19 @@ func (gh *GithubReleasePoller) subscribe(repo string) {
 func (gh *GithubReleasePoller) Get(org, repo string) ([]string, error) {
 	v, ok := gh.getReleases(org, repo) // get from cache
 	if ok {
-		return v.releases, v.err
+		if v.Err == "" {
+			return v.Releases, nil
+		}
+		return v.Releases, errors.New(v.Err)
 	}
 
 	gh.subscribe(org + delimiter + repo)
 	v, ok = gh.getReleases(org, repo)
 	if ok {
-		return v.releases, v.err
+		if v.Err == "" {
+			return v.Releases, nil
+		}
+		return v.Releases, errors.New(v.Err)
 	} else {
 		return nil, fmt.Errorf("failed to store the release in poller")
 	}

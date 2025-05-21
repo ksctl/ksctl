@@ -19,17 +19,13 @@ package mongodb
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
 	"testing"
 
-	"github.com/ksctl/ksctl/v2/pkg/utilities"
-
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
-	"github.com/ksctl/ksctl/v2/pkg/storage"
 
 	"github.com/docker/docker/api/types/image"
 
@@ -46,12 +42,13 @@ import (
 var (
 	db           *Store
 	parentCtx    context.Context
+	ksc                        = context.Background()
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
 func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
-	parentCtx = context.WithValue(parentCtx, consts.KsctlContextUserID, "fake")
+	ksc = context.WithValue(ksc, consts.KsctlContextUserID, "fake")
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -92,17 +89,6 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	v, err := json.Marshal(statefile.CredentialsMongodb{
-		Username: "root",
-		Password: "1234",
-		Domain:   "localhost",
-		Port:     utilities.Ptr(27017),
-	})
-	if err != nil {
-		panic(err)
-	}
-	parentCtx = context.WithValue(parentCtx, consts.KsctlMongodbCredentials, v)
-
 	defer func() {
 		if err := cli.ContainerRemove(parentCtx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
 			panic(err)
@@ -113,37 +99,24 @@ func TestMain(m *testing.M) {
 
 }
 
-func TestUriAssembler(t *testing.T) {
-	testCases := []struct {
-		creds    statefile.CredentialsMongodb
-		expected string
-	}{
-		{
-			creds: statefile.CredentialsMongodb{
-				Username: "root",
-				Password: "1234",
-				Domain:   "localhost",
-			},
-			expected: "mongodb://root:1234@localhost",
-		},
-	}
-
-	for _, tt := range testCases {
-		t.Run(fmt.Sprintf("test case on, %#v", tt.creds), func(t *testing.T) {
-			if got := URIAssembler(tt.creds); got != tt.expected {
-				t.Fatalf("Expected: %s, Got: %s", tt.expected, got)
-			}
-		})
-	}
-}
-
 func TestInitStorage(t *testing.T) {
-	db = NewClient(parentCtx, parentLogger)
-	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeSelfMang)
+	_db, err := NewDBClient(parentCtx, statefile.CredentialsMongodb{
+		URI: "mongodb://root:1234@localhost:27017",
+	})
+	if err != nil {
+		t.Fatalf("Error should not happen: %v", err)
+	}
+
+	db, err = _db.NewDatabaseClient(ksc, parentLogger)
+	if err != nil {
+		t.Fatalf("Error should not happen: %v", err)
+	}
+
+	err = db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeSelfMang)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Connect(); err != nil {
+	if err := db.Connect(ksc); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -302,149 +275,6 @@ func TestGetClusterInfo(t *testing.T) {
 		}(t)
 	})
 
-}
-
-func TestExportImport(t *testing.T) {
-
-	var bkpData *storage.StateExportImport
-
-	t.Run("Export all", func(t *testing.T) {
-		var _expect = storage.StateExportImport{
-			Clusters: []*statefile.StorageDocument{
-				{
-					Region:        "regionAws",
-					ClusterName:   "name_ha",
-					ClusterType:   "selfmanaged",
-					InfraProvider: consts.CloudAws,
-					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
-					K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
-				},
-				{
-					Region:        "regionAws",
-					ClusterName:   "name_managed",
-					ClusterType:   "managed",
-					InfraProvider: consts.CloudAws,
-					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
-				},
-
-				{
-					Region:        "regionAzure",
-					ClusterName:   "name_managed",
-					ClusterType:   "managed",
-					InfraProvider: consts.CloudAzure,
-					CloudInfra:    &statefile.InfrastructureState{Azure: &statefile.StateConfigurationAzure{}},
-				},
-			},
-		}
-
-		dump.Println(_expect)
-		if _got, err := db.Export(map[consts.KsctlSearchFilter]string{}); err != nil {
-			t.Fatal(err)
-		} else {
-			dump.Println(_got)
-			bkpData = _got // storing the data
-			assert.Check(t, _got != nil && _got.Clusters != nil)
-			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
-
-			for _, g := range _got.Clusters {
-				// make the _ID as 0
-				g.ID = [12]byte{}
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Clusters {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted cluster state")
-			}
-		}
-	})
-
-	t.Run("delete all storage", func(t *testing.T) {
-
-		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
-
-			if err != nil {
-				t.Fatal(err)
-			}
-			dump.Println(m)
-		}(t)
-
-		f := func(factory storage.Storage) *Store {
-			switch o := factory.(type) {
-			case *Store:
-				return o
-			default:
-				return nil
-			}
-		}(db)
-
-		err := f.databaseClient.Drop(parentCtx)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-	})
-
-	t.Run("import data", func(t *testing.T) {
-
-		if err := db.Import(bkpData); err != nil {
-			t.Fatal(err)
-		}
-
-		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
-
-			if err != nil {
-				t.Fatal(err)
-			}
-			dump.Println(m)
-			assert.Check(t, len(m[consts.ClusterTypeSelfMang]) == 1)
-			assert.Check(t, len(m[consts.ClusterTypeMang]) == 2)
-		}(t)
-	})
-
-	t.Run("Export specific cluster", func(t *testing.T) {
-
-		var _expect = storage.StateExportImport{
-			Clusters: []*statefile.StorageDocument{
-				{
-					Region:        "regionAzure",
-					ClusterName:   "name_managed",
-					ClusterType:   "managed",
-					InfraProvider: consts.CloudAzure,
-					CloudInfra:    &statefile.InfrastructureState{Azure: &statefile.StateConfigurationAzure{}},
-				},
-			},
-		}
-
-		if _got, err := db.Export(map[consts.KsctlSearchFilter]string{
-			consts.Cloud:       string(consts.CloudAzure),
-			consts.ClusterType: string(consts.ClusterTypeMang),
-			consts.Name:        "name_managed",
-			consts.Region:      "regionAzure",
-		}); err != nil {
-			t.Fatal(err)
-		} else {
-			dump.Println(_got)
-			assert.Check(t, _got != nil && _got.Clusters != nil)
-			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
-
-			for _, g := range _got.Clusters {
-				g.ID = [12]byte{}
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Clusters {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted cluster state")
-			}
-		}
-	})
 }
 
 func TestDelete(t *testing.T) {

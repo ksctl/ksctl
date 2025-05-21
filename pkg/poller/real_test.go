@@ -17,14 +17,18 @@
 package poller_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gookit/goutil/dump"
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/poller"
 )
 
 func TestMain(m *testing.M) {
-	poller.InitSharedGithubReleasePoller()
+	cc := cache.NewInMemCache(context.TODO())
+	defer cc.Close()
+	poller.InitSharedGithubReleasePoller(cc)
 	m.Run()
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2024 ksctl
+// Copyright 2025 Ksctl Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package poller
+package statefile
 
-type PollerCache struct {
-	Vers []string
-	Err  string
-}
-
-type PollerCacheMap struct {
-	Cache map[string]PollerCache
-}
-
-type Poller interface {
-	Get(string, string) ([]string, error)
+type CredentialsRedis struct {
+	URI string `json:"uri"`
 }

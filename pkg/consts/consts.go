@@ -141,6 +141,7 @@ const (
 	KsctlAwsCredentials     KsctlContextKeyType = iota // the value to be the AzureCredentials struct
 	KsctlAzureCredentials   KsctlContextKeyType = iota // the value to be the AwsCredentials struct
 	KsctlMongodbCredentials KsctlContextKeyType = iota // the value to be the MongodbCredentials struct
+	KsctlRedisCredentials   KsctlContextKeyType = iota // the value to be the RedisCredentials struct
 )
 
 const (

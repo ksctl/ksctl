@@ -45,26 +45,34 @@ type AwsMeta struct {
 	cachedRegionMapping []provider.RegionOutput
 }
 
-func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
-	v, ok := config.IsContextPresent(ctx, consts.KsctlAwsCredentials)
+func (m *AwsMeta) Connect(ksctlConfig context.Context) error {
+	v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlAwsCredentials)
 	if !ok {
-		return nil, ksctlErrors.WrapError(
+		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,
-			l.NewError(ctx, "missing aws credentials"),
-		)
-	}
-	extractedCreds := statefile.CredentialsAws{}
-	if err := json.Unmarshal([]byte(v), &extractedCreds); err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInvalidUserInput,
-			l.NewError(ctx, "failed to get aws credentials", "reason", err),
+			m.l.NewError(m.ctx, "missing aws credentials"),
 		)
 	}
 
+	extractedCreds := statefile.CredentialsAws{}
+	if err := json.Unmarshal([]byte(v), &extractedCreds); err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			m.l.NewError(m.ctx, "failed to get aws credentials", "reason", err),
+		)
+	}
+
+	m.creds = extractedCreds
+
+	return nil
+}
+
+func NewAwsMeta(ctx context.Context, l logger.Logger) (*AwsMeta, error) {
+	ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "aws-metadata")
+
 	return &AwsMeta{
-		ctx:   ctx,
-		l:     l,
-		creds: extractedCreds,
+		ctx: ctx,
+		l:   l,
 	}, nil
 }
 

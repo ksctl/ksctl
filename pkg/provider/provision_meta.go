@@ -15,6 +15,8 @@
 package provider
 
 import (
+	"context"
+
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 )
@@ -227,4 +229,6 @@ type ProvisionMetadata interface {
 	GetPriceInstanceType(regionSku string, instanceType string) (*InstanceRegionOutput, error)
 
 	GetAvailableManagedCNIPlugins(regionSku string) (addons.ClusterAddons, string, error)
+
+	Connect(ksctlConfig context.Context) error
 }

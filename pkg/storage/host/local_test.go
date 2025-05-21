@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
-	"github.com/ksctl/ksctl/v2/pkg/storage"
 
 	"gotest.tools/v3/assert"
 
@@ -54,9 +53,6 @@ func TestInitStorage(t *testing.T) {
 	db = NewClient(parentCtx, parentLogger)
 	err := db.Setup(consts.CloudAzure, "region", "name", consts.ClusterTypeSelfMang)
 	if err != nil {
-		t.Fatal(err)
-	}
-	if err := db.Connect(); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -258,136 +254,6 @@ func TestGetClusterInfo(t *testing.T) {
 			assert.Check(t, len(m[consts.ClusterTypeSelfMang]) == 0)
 			assert.Check(t, len(m[consts.ClusterTypeMang]) == 1)
 		}(t)
-	})
-}
-
-func TestExportImport(t *testing.T) {
-
-	var bkpData *storage.StateExportImport
-
-	t.Run("Export all", func(t *testing.T) {
-		var _expect storage.StateExportImport = storage.StateExportImport{
-			Clusters: []*statefile.StorageDocument{
-				{
-					Region:        "regionAws",
-					ClusterName:   "name_ha",
-					ClusterType:   "selfmanaged",
-					InfraProvider: consts.CloudAws,
-					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
-					K8sBootstrap:  &statefile.KubernetesBootstrapState{K3s: &statefile.StateConfigurationK3s{}},
-				},
-				{
-					Region:        "regionAws",
-					ClusterName:   "name_managed",
-					ClusterType:   "managed",
-					InfraProvider: consts.CloudAws,
-					CloudInfra:    &statefile.InfrastructureState{Aws: &statefile.StateConfigurationAws{}},
-				},
-
-				{
-					Region:        "regionAzure",
-					ClusterName:   "name_managed",
-					ClusterType:   "managed",
-					InfraProvider: consts.CloudAzure,
-					CloudInfra:    &statefile.InfrastructureState{Azure: &statefile.StateConfigurationAzure{}},
-				},
-			},
-		}
-
-		dump.Println(_expect)
-		if _got, err := db.Export(map[consts.KsctlSearchFilter]string{}); err != nil {
-			t.Fatal(err)
-		} else {
-			dump.Println(_got)
-			bkpData = _got // storing the exported data
-
-			assert.Check(t, _got != nil && _got.Clusters != nil)
-			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
-
-			for _, g := range _got.Clusters {
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Clusters {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted cluster state")
-			}
-		}
-	})
-
-	t.Run("delete all storage", func(t *testing.T) {
-
-		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
-
-			if err != nil {
-				t.Fatal(err)
-			}
-			dump.Println(m)
-		}(t)
-
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("import data", func(t *testing.T) {
-
-		if err := db.Import(bkpData); err != nil {
-			t.Fatal(err)
-		}
-
-		func(t *testing.T) {
-			m, err := db.GetOneOrMoreClusters(map[consts.KsctlSearchFilter]string{"cloud": "all", "clusterType": ""})
-
-			if err != nil {
-				t.Fatal(err)
-			}
-			dump.Println(m)
-			assert.Check(t, len(m[consts.ClusterTypeSelfMang]) == 1)
-			assert.Check(t, len(m[consts.ClusterTypeMang]) == 2)
-		}(t)
-	})
-
-	t.Run("Export specific cluster", func(t *testing.T) {
-
-		var _expect storage.StateExportImport = storage.StateExportImport{
-			Clusters: []*statefile.StorageDocument{
-				{
-					Region:        "regionAzure",
-					ClusterName:   "name_managed",
-					ClusterType:   "managed",
-					InfraProvider: consts.CloudAzure,
-					CloudInfra:    &statefile.InfrastructureState{Azure: &statefile.StateConfigurationAzure{}},
-				},
-			},
-		}
-
-		if _got, err := db.Export(map[consts.KsctlSearchFilter]string{
-			consts.Cloud:       string(consts.CloudAzure),
-			consts.ClusterType: string(consts.ClusterTypeMang),
-			consts.Name:        "name_managed",
-			consts.Region:      "regionAzure",
-		}); err != nil {
-			t.Fatal(err)
-		} else {
-			dump.Println(_got)
-			assert.Check(t, _got != nil && _got.Clusters != nil)
-			assert.Check(t, len(_got.Clusters) == len(_expect.Clusters))
-
-			for _, g := range _got.Clusters {
-				assert.Check(t, g != nil)
-				v := false
-				for _, e := range _expect.Clusters {
-					if reflect.DeepEqual(e, g) {
-						v = true
-					}
-				}
-				assert.Check(t, v == true, "didn't find the exepcted cluster state")
-			}
-		}
 	})
 }
 

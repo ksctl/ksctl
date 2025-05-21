@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	controllerCommon "github.com/ksctl/ksctl/v2/pkg/handler/cluster/common"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
@@ -27,22 +28,24 @@ import (
 	controllerSelfManaged "github.com/ksctl/ksctl/v2/pkg/handler/cluster/selfmanaged"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
+	"github.com/ksctl/ksctl/v2/pkg/storage/host"
 )
 
 var (
 	cli *controller.Client
 	dir = filepath.Join(os.TempDir(), "ksctl-black-box-test")
 	ctx context.Context
+	ksc context.Context
 )
 
 func InitCore() (err error) {
-	ctx = context.WithValue(
+	ksc = context.WithValue(
 		context.Background(),
 		consts.KsctlContextUserID,
 		"demo",
 	)
 	ctx = context.WithValue(
-		ctx,
+		context.Background(),
 		consts.KsctlCustomDirLoc,
 		dir,
 	)
@@ -70,13 +73,13 @@ func InitCore() (err error) {
 		return err
 	}
 
-	ctx = context.WithValue(
-		ctx,
+	ksc = context.WithValue(
+		ksc,
 		consts.KsctlAwsCredentials,
 		awsC,
 	)
-	ctx = context.WithValue(
-		ctx,
+	ksc = context.WithValue(
+		ksc,
 		consts.KsctlAzureCredentials,
 		azC,
 	)
@@ -96,6 +99,11 @@ func ExecuteKsctlSpecificRun() error {
 	controller, err := controllerCommon.NewController(
 		ctx,
 		log,
+		controller.KsctlWorkerConfiguration{
+			WorkerCtx:   ksc,
+			PollerCache: cache.NewInMemCache(ctx),
+			Storage:     host.NewClient(ctx, log),
+		},
 		cli,
 	)
 	if err != nil {
@@ -122,6 +130,11 @@ func ExecuteManagedRun() error {
 	controller, err := controllerManaged.NewController(
 		ctx,
 		log,
+		controller.KsctlWorkerConfiguration{
+			WorkerCtx:   ksc,
+			PollerCache: cache.NewInMemCache(ctx),
+			Storage:     host.NewClient(ctx, log),
+		},
 		cli,
 	)
 	if err != nil {
@@ -148,6 +161,11 @@ func ExecuteHARun() error {
 	controller, err := controllerSelfManaged.NewController(
 		ctx,
 		log,
+		controller.KsctlWorkerConfiguration{
+			WorkerCtx:   ksc,
+			PollerCache: cache.NewInMemCache(ctx),
+			Storage:     host.NewClient(ctx, log),
+		},
 		cli,
 	)
 	if err != nil {

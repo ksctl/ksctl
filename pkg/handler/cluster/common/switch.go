@@ -16,6 +16,7 @@ package common
 
 import (
 	"errors"
+
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	"github.com/ksctl/ksctl/v2/pkg/provider/aws"
@@ -62,16 +63,16 @@ func (kc *Controller) Switch() (_ *string, errC error) {
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudAzure:
-		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
+		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
 
 	case consts.CloudAws:
-		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
+		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
 		if err != nil {
 			break
 		}
 
 	case consts.CloudLocal:
-		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
+		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
 
 	}
 

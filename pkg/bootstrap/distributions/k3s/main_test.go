@@ -22,6 +22,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
@@ -44,8 +45,8 @@ var (
 	parentLogger logger.Logger = logger.NewStructuredLogger(-1, os.Stdout)
 )
 
-func initPoller() {
-	poller.InitSharedGithubReleaseFakePoller(func(org, repo string) ([]string, error) {
+func initPoller(c cache.Cache) {
+	poller.InitSharedGithubReleaseFakePoller(c, func(org, repo string) ([]string, error) {
 		vers := []string{"v0.0.1"}
 
 		if org == "k3s-io" && repo == "k3s" {
@@ -72,7 +73,6 @@ func initClients() {
 
 	storeHA = localstate.NewClient(parentCtx, parentLogger)
 	_ = storeHA.Setup(consts.CloudAzure, "fake", "fake", consts.ClusterTypeSelfMang)
-	_ = storeHA.Connect()
 
 	fakeStateFromCloud = provider.CloudResourceState{
 		SSHPrivateKey: mainState.SSHKeyPair.PrivateKey,
@@ -104,7 +104,9 @@ func initClients() {
 
 func TestMain(m *testing.M) {
 
-	initPoller()
+	cc := cache.NewInMemCache(context.TODO())
+	defer cc.Close()
+	initPoller(cc)
 	initClients()
 
 	exitVal := m.Run()

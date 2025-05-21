@@ -58,11 +58,12 @@ type KubeConfigData struct {
 }
 
 type Provider struct {
-	l     logger.Logger
-	ctx   context.Context
-	state *statefile.StorageDocument
-	store storage.Storage
-	mu    sync.Mutex
+	l           logger.Logger
+	ctx         context.Context
+	ksctlConfig context.Context
+	state       *statefile.StorageDocument
+	store       storage.Storage
+	mu          sync.Mutex
 
 	public bool
 
@@ -86,6 +87,7 @@ type Provider struct {
 func NewClient(
 	ctx context.Context,
 	l logger.Logger,
+	ksctlConfig context.Context,
 	meta controller.Metadata,
 	state *statefile.StorageDocument,
 	storage storage.Storage,
@@ -98,6 +100,8 @@ func NewClient(
 	p.l = l
 	p.client = ClientOption()
 	p.store = storage
+
+	p.ksctlConfig = ksctlConfig
 
 	return p, nil
 }
@@ -137,7 +141,7 @@ func (p *Provider) Name(resName string) provider.Cloud {
 }
 
 func (p *Provider) InitState(operation consts.KsctlOperation) error {
-	v, ok := config.IsContextPresent(p.ctx, consts.KsctlAwsCredentials)
+	v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlAwsCredentials)
 	if !ok {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,

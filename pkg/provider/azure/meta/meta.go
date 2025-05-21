@@ -39,19 +39,19 @@ type AzureMeta struct {
 	subscriptionId string
 }
 
-func NewAzureMeta(ctx context.Context, l logger.Logger) (*AzureMeta, error) {
-	v, ok := config.IsContextPresent(ctx, consts.KsctlAzureCredentials)
+func (m *AzureMeta) Connect(ksctlConfig context.Context) error {
+	v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlAzureCredentials)
 	if !ok {
-		return nil, ksctlErrors.WrapError(
+		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,
-			l.NewError(ctx, "missing azure credentials"),
+			m.l.NewError(m.ctx, "missing azure credentials"),
 		)
 	}
 	extractedCreds := statefile.CredentialsAzure{}
 	if err := json.Unmarshal([]byte(v), &extractedCreds); err != nil {
-		return nil, ksctlErrors.WrapError(
+		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,
-			l.NewError(ctx, "failed to get azure credentials", "reason", err),
+			m.l.NewError(m.ctx, "failed to get azure credentials", "reason", err),
 		)
 	}
 
@@ -61,25 +61,31 @@ func NewAzureMeta(ctx context.Context, l logger.Logger) (*AzureMeta, error) {
 		extractedCreds.ClientID,
 		extractedCreds.ClientSecret,
 	); err != nil {
-		return nil, ksctlErrors.WrapError(
+		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInternal,
-			l.NewError(ctx, "failed to set required env vars", "reason", err),
+			m.l.NewError(m.ctx, "failed to set required env vars", "reason", err),
 		)
 	}
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, ksctlErrors.WrapError(
+		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInternal,
-			l.NewError(ctx, "defaultAzureCredential", "Reason", err),
+			m.l.NewError(m.ctx, "defaultAzureCredential", "Reason", err),
 		)
 	}
 
+	m.cred = cred
+	m.subscriptionId = extractedCreds.SubscriptionID
+	return nil
+}
+
+func NewAzureMeta(ctx context.Context, l logger.Logger) (*AzureMeta, error) {
+	ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "azure-metadata")
+
 	return &AzureMeta{
-		ctx:            ctx,
-		l:              l,
-		cred:           cred,
-		subscriptionId: extractedCreds.SubscriptionID,
+		ctx: ctx,
+		l:   l,
 	}, nil
 }
 

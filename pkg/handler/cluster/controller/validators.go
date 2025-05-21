@@ -42,10 +42,18 @@ func (cc *Controller) ValidateClusterType(clusterType consts.KsctlClusterType) e
 
 func (cc *Controller) ValidateMetadata(c *Client) error {
 	meta := c.Metadata
-	if _, ok := config.IsContextPresent(cc.ctx, consts.KsctlContextUserID); !ok {
+	if _, ok := config.IsContextPresent(cc.KsctlWorkloadConf.WorkerCtx, consts.KsctlContextUserID); !ok {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,
 			cc.l.NewError(cc.ctx, "invalid format for context value `USERID`", "Reason", "Make sure the value", "type", "string", "format", `^[\w-]+$`),
+		)
+	}
+	if !validation.ValidateStorage(c.Metadata.StateLocation) {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidStorageProvider,
+			cc.l.NewError(
+				cc.ctx, "Problem in validation", "storage", c.Metadata.StateLocation,
+			),
 		)
 	}
 

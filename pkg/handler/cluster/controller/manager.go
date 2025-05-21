@@ -21,6 +21,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap"
 	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
+	"github.com/ksctl/ksctl/v2/pkg/cache"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/errors"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
@@ -39,6 +40,13 @@ type Client struct {
 	Storage storage.Storage
 
 	Metadata Metadata
+}
+
+type KsctlWorkerConfiguration struct {
+	// WorkerCtx contains the creds and also userId
+	WorkerCtx   context.Context
+	PollerCache cache.Cache
+	Storage     storage.Storage
 }
 
 type Metadata struct {
@@ -70,14 +78,21 @@ type Metadata struct {
 }
 
 type Controller struct {
-	l   logger.Logger
-	ctx context.Context
+	l                 logger.Logger
+	ctx               context.Context
+	KsctlStore        storage.Storage
+	KsctlWorkloadConf KsctlWorkerConfiguration
 }
 
-func NewBaseController(ctx context.Context, l logger.Logger) *Controller {
+func NewBaseController(
+	ctx context.Context,
+	l logger.Logger,
+	ksctlConfig KsctlWorkerConfiguration,
+) *Controller {
 	b := new(Controller)
 	b.l = l
 	b.ctx = context.WithValue(ctx, consts.KsctlModuleNameKey, "manager-base")
+	b.KsctlWorkloadConf = ksctlConfig
 
 	return b
 }
