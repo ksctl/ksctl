@@ -33,7 +33,6 @@ import (
 
 type MongoConn struct {
 	ctx    context.Context
-	l      logger.Logger
 	client *mongo.Client
 	mu     *sync.Mutex
 }
@@ -51,17 +50,11 @@ func NewDBClient(parentCtx context.Context, creds statefile.CredentialsMongodb) 
 
 	db.client, err = mongo.Connect(db.ctx, opts)
 	if err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			db.l.NewError(db.ctx, "MongoDB failed to connect", "Reason", err),
-		)
+		return nil, fmt.Errorf("MongoDB failed to connect, Reason: %v", err)
 	}
 
 	if err := db.client.Database("admin").RunCommand(db.ctx, bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrInternal,
-			db.l.NewError(db.ctx, "MongoDB failed to ping pong the database", "Reason", err),
-		)
+		return nil, fmt.Errorf("MongoDB failed to ping pong the database, Reason: %v", err)
 	}
 
 	return db, nil

@@ -10,7 +10,7 @@ jobs:
     env:
       E2E_FLAGS: debug
       KUBECONFIG: ${{ vars.KUBECONFIG_KSCTL_LOC }}
-      MONGODB_URI: "mongodb://root:1234@127.0.1:27017"
+      MONGODB_URI: "mongodb://root:1234@localhost:27017"
       PS4: '+\[\033[0;33m\](\[\033[0;36m\]${BASH_SOURCE##*/}:${LINENO}\[\033[0;33m\])\[\033[0m\] '
     runs-on: e2e
     defaults:
