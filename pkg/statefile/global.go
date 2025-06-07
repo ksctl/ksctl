@@ -21,9 +21,97 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type ControllerTaskCode string
+
+const (
+	TaskCodeCreate      ControllerTaskCode = "create"
+	TaskCodeDelete      ControllerTaskCode = "delete"
+	TaskCodeGet         ControllerTaskCode = "get"
+	TaskCodeScale       ControllerTaskCode = "scale"
+	TaskCodeConfigAddon ControllerTaskCode = "configure_addon"
+)
+
+type ClusterState string
+
+const (
+	Fresh          ClusterState = "fresh"
+	Creating       ClusterState = "creating"
+	CreationFailed ClusterState = "creation_failed"
+
+	Running ClusterState = "running"
+
+	Configuring       ClusterState = "configuring"
+	ConfiguringFailed ClusterState = "configuring_failed"
+
+	Deleting       ClusterState = "deleting"
+	DeletionFailed ClusterState = "deletion_failed"
+)
+
+// IsControllerOpValid checks if the operation is valid for the current cluster state.
+func (s ClusterState) IsControllerOperationAllowed(operation ControllerTaskCode) error {
+	err := func(_op ControllerTaskCode, _s ClusterState) error {
+		return fmt.Errorf("operation %s is not allowed in state %s", _op, _s)
+	}
+
+	switch s {
+	case Fresh:
+		if operation != TaskCodeCreate {
+			return err(operation, s)
+		}
+
+	case Creating, Deleting: // we cannot perform any operation while creating or deleting
+		if operation != TaskCodeGet {
+			return err(operation, s)
+		}
+
+	case CreationFailed: // we can retry creation or delete
+		if operation != TaskCodeCreate && operation != TaskCodeDelete {
+			return err(operation, s)
+		}
+
+	case DeletionFailed: // we can retry deletion
+		if operation != TaskCodeDelete {
+			return err(operation, s)
+		}
+
+	case Running:
+		if operation != TaskCodeGet &&
+			operation != TaskCodeScale &&
+			operation != TaskCodeConfigAddon &&
+			operation != TaskCodeDelete {
+			return err(operation, s)
+		}
+
+	case Configuring:
+		if operation != TaskCodeGet {
+			return err(operation, s)
+		}
+
+	case ConfiguringFailed:
+		if operation != TaskCodeGet &&
+			operation != TaskCodeConfigAddon &&
+			operation != TaskCodeScale &&
+			operation != TaskCodeDelete {
+			return err(operation, s)
+		}
+
+	default:
+		return nil
+	}
+	return nil
+}
+
+type PlatformSpec struct {
+	Team  string       `json:"team" bson:"team"`
+	Owner string       `json:"owner" bson:"owner"`
+	State ClusterState `json:"state" bson:"state"`
+}
+
 // StorageDocument object which stores the state of infra and bootstrap in a doc
 type StorageDocument struct {
 	ID primitive.ObjectID `bson:"_id,omitempty"`
+
+	PlatformSpec PlatformSpec `json:"platform" bson:"platform"`
 
 	ClusterType string `json:"cluster_type" bson:"cluster_type" `
 	Region      string `json:"region" bson:"region"`
@@ -41,6 +129,27 @@ type StorageDocument struct {
 	SSHKeyPair SSHKeyPairState `json:"ssh_key_pair" bson:"ssh_key_pair"`
 
 	ProvisionerAddons SlimProvisionerAddons `json:"provisioner_addons,omitempty" bson:"provisioner_addons,omitempty"`
+}
+
+func NewStorageDocument(
+	clusterName string,
+	region string,
+	cloud consts.KsctlCloud,
+	clusterClass consts.KsctlClusterType,
+	team string,
+	owner string,
+) *StorageDocument {
+	return &StorageDocument{
+		PlatformSpec: PlatformSpec{
+			State: Fresh,
+			Team:  team,
+			Owner: owner,
+		},
+		ClusterName:   clusterName,
+		Region:        region,
+		InfraProvider: cloud,
+		ClusterType:   string(clusterClass),
+	}
 }
 
 type SlimProvisionerAddons struct {
