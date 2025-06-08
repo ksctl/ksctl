@@ -81,13 +81,6 @@ func (s *Store) disconnect() error {
 	return nil
 }
 
-func (s *Store) Kill() error {
-	s.wg.Wait()
-	defer log.Debug(storeCtx, "K8s Storage Got Killed")
-
-	return s.disconnect()
-}
-
 func (s *Store) Read() (*statefile.StorageDocument, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

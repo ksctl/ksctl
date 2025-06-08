@@ -50,16 +50,6 @@ func (kc *Controller) Switch() (_ *string, errC error) {
 		return nil, err
 	}
 
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
-
 	if state, err := kc.p.Storage.Read(); err != nil {
 		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
 			return nil, err

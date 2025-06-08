@@ -114,13 +114,6 @@ func (db *Store) Connect(_ context.Context) error {
 	return nil
 }
 
-func (db *Store) Kill() error {
-	db.wg.Wait()
-	defer db.l.Debug(db.ctx, "Mongodb Storage Got Killed")
-
-	return nil
-}
-
 func (db *Store) Read() (*statefile.StorageDocument, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()

@@ -80,6 +80,13 @@ type InstalledAddon struct {
 }
 
 func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error) {
+	defer func() {
+		v := kc.b.PanicHandler(kc.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+		}
+	}()
+
 	if kc.p.Metadata.Provider == consts.CloudLocal {
 		kc.p.Metadata.Region = "LOCAL"
 	}
@@ -93,16 +100,6 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 		kc.l.Error("handled error", "catch", err)
 		return nil, err
 	}
-
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
 
 	if state, err := kc.p.Storage.Read(); err != nil {
 		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
@@ -162,7 +159,7 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 		return nil, err
 	}
 
-	if errInit := kc.p.Cloud.InitState(consts.OperationConfigure); errInit != nil {
+	if errInit := kc.p.Cloud.InitState(consts.OperationGet); errInit != nil {
 		kc.l.Error("handled error", "catch", errInit)
 		return nil, errInit
 	}
@@ -188,6 +185,7 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 }
 
 func (ac *AddonController) ListAvailableVersions(addonSku string) ([]string, error) {
+
 	switch addonSku {
 	case kcm.Sku:
 		return kcm.GetAvailableVersions()

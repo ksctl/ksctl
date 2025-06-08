@@ -308,9 +308,3 @@ func TestDelete(t *testing.T) {
 		}()
 	})
 }
-
-func TestKill(t *testing.T) {
-	if err := db.Kill(); err != nil {
-		t.Fatal(err)
-	}
-}

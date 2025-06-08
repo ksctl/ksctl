@@ -66,13 +66,93 @@ func NewKcm(
 	return cc, nil
 }
 
+func (kc *Kcm) prepareClient() (_ *provider.CloudResourceState, errC error) {
+	if kc.p.Metadata.Provider == consts.CloudLocal {
+		kc.p.Metadata.Region = "LOCAL"
+	}
+
+	if err := kc.p.Storage.Setup(
+		kc.p.Metadata.Provider,
+		kc.p.Metadata.Region,
+		kc.p.Metadata.ClusterName,
+		kc.p.Metadata.ClusterType); err != nil {
+
+		kc.l.Error("handled error", "catch", err)
+		return nil, err
+	}
+
+	var err error
+	switch kc.p.Metadata.Provider {
+	case consts.CloudAzure:
+		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
+
+	case consts.CloudAws:
+		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
+		if err != nil {
+			break
+		}
+
+	case consts.CloudLocal:
+		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
+
+	}
+
+	if err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return nil, err
+	}
+
+	if errInit := kc.p.Cloud.InitState(consts.OperationConfigure); errInit != nil {
+		kc.l.Error("handled error", "catch", errInit)
+		return nil, errInit
+	}
+
+	if err := kc.p.Cloud.IsPresent(); err != nil {
+		kc.l.Error("handled error", "catch", err)
+		return nil, err
+	}
+
+	if kc.p.Metadata.ClusterType == consts.ClusterTypeSelfMang {
+		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
+		if errState != nil {
+			kc.l.Error("handled error", "catch", errState)
+			return nil, err
+		}
+
+		return &transferableInfraState, nil
+	}
+	return nil, nil
+}
+
 func (k *Kcm) Install(version string) (errC error) {
 
 	defer func() {
+		v := k.b.PanicHandler(k.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+			if k.s.PlatformSpec.State != statefile.ConfiguringFailed {
+
+				k.s.PlatformSpec.State = statefile.ConfiguringFailed
+				if err := k.p.Storage.Write(k.s); err != nil {
+					errC = errors.Join(errC, err)
+					k.l.Error("Failed to write state after error", "error", err)
+				}
+			}
+		}
+	}()
+
+	defer func() {
 		if errC != nil {
-			v := k.b.PanicHandler(k.l)
-			if v != nil {
-				errC = errors.Join(errC, v)
+			k.s.PlatformSpec.State = statefile.ConfiguringFailed
+			if err := k.p.Storage.Write(k.s); err != nil {
+				errC = errors.Join(errC, err)
+				k.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			k.s.PlatformSpec.State = statefile.Running
+			if err := k.p.Storage.Write(k.s); err != nil {
+				errC = errors.Join(errC, err)
+				k.l.Error("Failed to write state after success", "error", err)
 			}
 		}
 	}()
@@ -118,10 +198,32 @@ func (k *Kcm) Install(version string) (errC error) {
 
 func (k *Kcm) Uninstall() (errC error) {
 	defer func() {
+		v := k.b.PanicHandler(k.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+			if k.s.PlatformSpec.State != statefile.ConfiguringFailed {
+
+				k.s.PlatformSpec.State = statefile.ConfiguringFailed
+				if err := k.p.Storage.Write(k.s); err != nil {
+					errC = errors.Join(errC, err)
+					k.l.Error("Failed to write state after error", "error", err)
+				}
+			}
+		}
+	}()
+
+	defer func() {
 		if errC != nil {
-			v := k.b.PanicHandler(k.l)
-			if v != nil {
-				errC = errors.Join(errC, v)
+			k.s.PlatformSpec.State = statefile.ConfiguringFailed
+			if err := k.p.Storage.Write(k.s); err != nil {
+				errC = errors.Join(errC, err)
+				k.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			k.s.PlatformSpec.State = statefile.Running
+			if err := k.p.Storage.Write(k.s); err != nil {
+				errC = errors.Join(errC, err)
+				k.l.Error("Failed to write state after success", "error", err)
 			}
 		}
 	}()
@@ -168,72 +270,4 @@ func (k *Kcm) Uninstall() (errC error) {
 	}
 
 	return kbc.UninstallKcm(kubeconfig, "ksctl-system", "cluster-config", app)
-}
-
-func (kc *Kcm) prepareClient() (_ *provider.CloudResourceState, errC error) {
-	if kc.p.Metadata.Provider == consts.CloudLocal {
-		kc.p.Metadata.Region = "LOCAL"
-	}
-
-	if err := kc.p.Storage.Setup(
-		kc.p.Metadata.Provider,
-		kc.p.Metadata.Region,
-		kc.p.Metadata.ClusterName,
-		kc.p.Metadata.ClusterType); err != nil {
-
-		kc.l.Error("handled error", "catch", err)
-		return nil, err
-	}
-
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
-
-	var err error
-	switch kc.p.Metadata.Provider {
-	case consts.CloudAzure:
-		kc.p.Cloud, err = azure.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, azure.ProvideClient)
-
-	case consts.CloudAws:
-		kc.p.Cloud, err = aws.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, aws.ProvideClient)
-		if err != nil {
-			break
-		}
-
-	case consts.CloudLocal:
-		kc.p.Cloud, err = local.NewClient(kc.ctx, kc.l, kc.b.KsctlWorkloadConf.WorkerCtx, kc.p.Metadata, kc.s, kc.p.Storage, local.ProvideClient)
-
-	}
-
-	if err != nil {
-		kc.l.Error("handled error", "catch", err)
-		return nil, err
-	}
-
-	if errInit := kc.p.Cloud.InitState(consts.OperationGet); errInit != nil {
-		kc.l.Error("handled error", "catch", errInit)
-		return nil, errInit
-	}
-
-	if err := kc.p.Cloud.IsPresent(); err != nil {
-		kc.l.Error("handled error", "catch", err)
-		return nil, err
-	}
-
-	if kc.p.Metadata.ClusterType == consts.ClusterTypeSelfMang {
-		transferableInfraState, errState := kc.p.Cloud.GetStateForHACluster()
-		if errState != nil {
-			kc.l.Error("handled error", "catch", errState)
-			return nil, err
-		}
-
-		return &transferableInfraState, nil
-	}
-	return nil, nil
 }

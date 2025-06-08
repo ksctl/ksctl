@@ -29,10 +29,15 @@ import (
 
 func (kc *Controller) AddWorkerNodes() (errC error) {
 	defer func() {
-		if errC != nil {
-			v := kc.b.PanicHandler(kc.l)
-			if v != nil {
-				errC = errors.Join(errC, v)
+		v := kc.b.PanicHandler(kc.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+			if kc.s.PlatformSpec.State != statefile.ConfiguringFailed {
+				kc.s.PlatformSpec.State = statefile.ConfiguringFailed
+				if err := kc.p.Storage.Write(kc.s); err != nil {
+					errC = errors.Join(errC, err)
+					kc.l.Error("Failed to write state after error", "error", err)
+				}
 			}
 		}
 	}()
@@ -45,16 +50,6 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 	); err != nil {
 		return err
 	}
-
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
 
 	if state, err := kc.p.Storage.Read(); err != nil {
 		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
@@ -143,10 +138,15 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 
 func (kc *Controller) DeleteWorkerNodes() (errC error) {
 	defer func() {
-		if errC != nil {
-			v := kc.b.PanicHandler(kc.l)
-			if v != nil {
-				errC = errors.Join(errC, v)
+		v := kc.b.PanicHandler(kc.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+			if kc.s.PlatformSpec.State != statefile.ConfiguringFailed {
+				kc.s.PlatformSpec.State = statefile.ConfiguringFailed
+				if err := kc.p.Storage.Write(kc.s); err != nil {
+					errC = errors.Join(errC, err)
+					kc.l.Error("Failed to write state after error", "error", err)
+				}
 			}
 		}
 	}()
@@ -159,16 +159,6 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 	); err != nil {
 		return err
 	}
-
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
 
 	if state, err := kc.p.Storage.Read(); err != nil {
 		if !ksctlErrors.IsNoMatchingRecordsFound(err) {

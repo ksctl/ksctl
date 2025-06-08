@@ -109,13 +109,6 @@ func (s *Store) CreateDirectory(_path []string) error {
 	return nil
 }
 
-func (s *Store) Kill() error {
-	s.wg.Wait()
-	defer s.l.Debug(s.ctx, "Local Storage Got Killed")
-
-	return nil
-}
-
 func (s *Store) genOsClusterPath(subDir ...string) (string, error) {
 
 	var userLoc string

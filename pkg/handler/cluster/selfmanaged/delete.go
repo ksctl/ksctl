@@ -26,10 +26,15 @@ import (
 
 func (kc *Controller) Delete() (errC error) {
 	defer func() {
-		if errC != nil {
-			v := kc.b.PanicHandler(kc.l)
-			if v != nil {
-				errC = errors.Join(errC, v)
+		v := kc.b.PanicHandler(kc.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+			if kc.s.PlatformSpec.State != statefile.DeletionFailed {
+				kc.s.PlatformSpec.State = statefile.DeletionFailed
+				if err := kc.p.Storage.Write(kc.s); err != nil {
+					errC = errors.Join(errC, err)
+					kc.l.Error("Failed to write state after panic recovery", "error", err)
+				}
 			}
 		}
 	}()
@@ -42,16 +47,6 @@ func (kc *Controller) Delete() (errC error) {
 	); err != nil {
 		return err
 	}
-
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
 
 	if state, err := kc.p.Storage.Read(); err != nil {
 		if !ksctlErrors.IsNoMatchingRecordsFound(err) {

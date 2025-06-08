@@ -276,9 +276,3 @@ func TestExternalUsageFunctions(t *testing.T) {
 
 	assert.Equal(t, locGot, filepath.Join(os.TempDir(), "ksctl-local-store-test", "abcd.yml"))
 }
-
-func TestKill(t *testing.T) {
-	if err := db.Kill(); err != nil {
-		t.Fatal(err)
-	}
-}

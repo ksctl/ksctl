@@ -64,16 +64,6 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []
 		}
 	}
 
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
-
 	kc.l.Debug(kc.ctx, "Filter", "cloudProvider", string(kc.p.Metadata.Provider))
 
 	var (
@@ -205,16 +195,6 @@ func (kc *Controller) GetCluster() (_ *provider.ClusterData, errC error) {
 	); err != nil {
 		return nil, err
 	}
-
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
 
 	if state, err := kc.p.Storage.Read(); err != nil {
 		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
