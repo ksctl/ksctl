@@ -164,8 +164,6 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 
 	errLoadState := p.loadStateHelper()
 
-	// NOTE: Need to set the state
-
 	switch operation {
 	case consts.OperationCreate:
 		if errLoadState == nil && p.state.CloudInfra.Azure.B.IsCompleted {
@@ -178,14 +176,29 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 			p.l.Debug(p.ctx, "RESUME triggered!!")
 		} else {
 			p.l.Debug(p.ctx, "Fresh state!!")
+			owner, team := "", ""
 
-			p.state.ClusterName = p.ClusterName
-			p.state.InfraProvider = consts.CloudAzure
-			p.state.ClusterType = string(p.ClusterType)
-			p.state.Region = p.Region
+			if v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlContextUser); ok {
+				owner = v
+			}
+
+			if v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlContextTeam); ok {
+				team = v
+			}
+
+			p.state = statefile.NewStorageDocument(
+				p.ClusterName,
+				p.Region,
+				consts.CloudAzure,
+				p.ClusterType,
+				team,
+				owner,
+			)
+
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Azure: &statefile.StateConfigurationAzure{},
 			}
+			p.state.PlatformSpec.State = statefile.Creating
 		}
 
 	case consts.OperationDelete:
@@ -194,16 +207,36 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 		}
 		p.l.Debug(p.ctx, "Delete resource(s)")
 
+		p.state.PlatformSpec.State = statefile.Deleting
+
 	case consts.OperationGet:
 		if errLoadState != nil {
 			return errLoadState
 		}
 		p.l.Debug(p.ctx, "Get storage")
+
+	case consts.OperationConfigure, consts.OperationScale:
+		if errLoadState != nil {
+			return errLoadState
+		}
+		p.l.Debug(p.ctx, "Configuring resource(s)")
+
+		p.state.PlatformSpec.State = statefile.Configuring
+
 	default:
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidOperation,
 			p.l.NewError(p.ctx, "Invalid operation for init state"),
 		)
+	}
+
+	if operation != consts.OperationGet {
+		if err := p.store.Write(p.state); err != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInternal,
+				p.l.NewError(p.ctx, "failed to write the state", "Reason", err),
+			)
+		}
 	}
 
 	if err := p.client.InitClient(p); err != nil {

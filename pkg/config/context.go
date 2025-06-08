@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"regexp"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
@@ -27,7 +29,6 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 	var contextVars = [...]string{
 		consts.KsctlTestFlagKey:        `true`,
 		consts.KsctlModuleNameKey:      `^[\w-]+$`,
-		consts.KsctlContextUserID:      `^[\w-]+$`,
 		consts.KsctlCustomDirLoc:       `^[\w-:~\\/\s]+$`,
 		consts.KsctlComponentOverrides: `^([\w]+=[\w-:\.~\\/\s]+)+(,[\w]+=[\w-:\.~\\/\s]+)*$`,
 	}
@@ -35,12 +36,10 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 	if _val == nil {
 		return "", false
 	}
+	validate := validator.New()
 
 	switch key {
 	case consts.KsctlAwsCredentials:
-		if _val == nil {
-			return "", false
-		}
 		if v, ok := _val.([]byte); ok {
 			if err := json.Unmarshal(v, &statefile.CredentialsAws{}); err != nil {
 				return "", false
@@ -50,9 +49,6 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 			return "", false
 		}
 	case consts.KsctlAzureCredentials:
-		if _val == nil {
-			return "", false
-		}
 		if v, ok := _val.([]byte); ok {
 			if err := json.Unmarshal(v, &statefile.CredentialsAzure{}); err != nil {
 				return "", false
@@ -61,27 +57,21 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 		} else {
 			return "", false
 		}
-	case consts.KsctlMongodbCredentials:
-		if _val == nil {
-			return "", false
-		}
-		if v, ok := _val.([]byte); ok {
-			if err := json.Unmarshal(v, &statefile.CredentialsMongodb{}); err != nil {
+	case consts.KsctlContextTeam:
+		if v, ok := _val.(string); ok {
+			if uuid.Validate(v) != nil {
 				return "", false
 			}
-			return string(v), true
+			return v, true
 		} else {
 			return "", false
 		}
-	case consts.KsctlRedisCredentials:
-		if _val == nil {
-			return "", false
-		}
-		if v, ok := _val.([]byte); ok {
-			if err := json.Unmarshal(v, &statefile.CredentialsRedis{}); err != nil {
+	case consts.KsctlContextUser:
+		if v, ok := _val.(string); ok {
+			if validate.Var(v, "required,email") != nil {
 				return "", false
 			}
-			return string(v), true
+			return v, true
 		} else {
 			return "", false
 		}

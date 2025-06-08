@@ -85,7 +85,7 @@ func (conn *MongoConn) NewDatabaseClient(ksctlConfig context.Context, l logger.L
 
 	userId := "cli"
 
-	if v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlContextUserID); ok {
+	if v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlContextUser); ok {
 		userId = v
 	}
 

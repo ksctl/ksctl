@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/handler/cluster/controller"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/provider"
@@ -46,12 +47,14 @@ type Provider struct {
 	provider.Cloud
 
 	client KindSDK
+
+	ksc context.Context
 }
 
 func NewClient(
 	ctx context.Context,
 	l logger.Logger,
-	_ context.Context,
+	ksc context.Context,
 	meta controller.Metadata,
 	state *statefile.StorageDocument,
 	storage storage.Storage,
@@ -64,6 +67,8 @@ func NewClient(
 	p.l = l
 	p.client = ClientOption()
 	p.store = storage
+
+	p.ksc = ksc
 
 	p.l.Debug(p.ctx, "Printing", "LocalProvider", p)
 	return p, nil
@@ -89,21 +94,68 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 				p.l.NewError(p.ctx, "already present", "name", p.ClusterName),
 			)
 		}
+
 		p.l.Debug(p.ctx, "Fresh state!!")
+		owner, team := "", ""
 
-		p.state.ClusterName = p.ClusterName
-		p.state.Region = p.Region
+		if v, ok := config.IsContextPresent(p.ksc, consts.KsctlContextUser); ok {
+			owner = v
+		}
+
+		if v, ok := config.IsContextPresent(p.ksc, consts.KsctlContextTeam); ok {
+			team = v
+		}
+
+		p.state = statefile.NewStorageDocument(
+			p.ClusterName,
+			p.Region,
+			consts.CloudLocal,
+			consts.ClusterTypeMang,
+			team,
+			owner,
+		)
 		p.state.CloudInfra = &statefile.InfrastructureState{Local: &statefile.StateConfigurationLocal{}}
-		p.state.InfraProvider = consts.CloudLocal
-		p.state.ClusterType = string(consts.ClusterTypeMang)
+		p.state.PlatformSpec.State = statefile.Creating
 
-	case consts.OperationDelete, consts.OperationGet:
+		if err := p.store.Write(p.state); err != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInternal,
+				p.l.NewError(p.ctx, "failed to write the state", "Reason", err),
+			)
+		}
+
+	case consts.OperationDelete:
 		err := p.loadStateHelper()
 		if err != nil {
 			return err
 		}
+
+		p.state.PlatformSpec.State = statefile.Deleting
+
+	case consts.OperationGet:
+		err := p.loadStateHelper()
+		if err != nil {
+			return err
+		}
+
+	case consts.OperationConfigure:
+		err := p.loadStateHelper()
+		if err != nil {
+			return err
+		}
+
+		p.state.PlatformSpec.State = statefile.Configuring
 	}
 	p.l.Debug(p.ctx, "initialized the state")
+
+	if operation != consts.OperationGet {
+		if err := p.store.Write(p.state); err != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInternal,
+				p.l.NewError(p.ctx, "failed to write the state", "Reason", err),
+			)
+		}
+	}
 	return nil
 }
 

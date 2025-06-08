@@ -23,6 +23,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
@@ -70,7 +71,7 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 		)
 	} else {
 		kc.l.Debug(kc.ctx, "Found previous state, using it")
-		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationConfigure); errOp != nil {
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationScale); errOp != nil {
 			return ksctlErrors.WrapError(
 				ksctlErrors.ErrInvalidUserInput,
 				errOp,
@@ -87,12 +88,28 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 		)
 	}
 
+	defer func() {
+		if errC != nil {
+			kc.s.PlatformSpec.State = statefile.ConfiguringFailed
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			kc.s.PlatformSpec.State = statefile.Running
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after success", "error", err)
+			}
+		}
+	}()
+
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,
 		kc.b,
 		kc.s,
-		consts.OperationGet,
+		consts.OperationScale,
 		kc.p,
 	)
 	if err != nil {
@@ -153,6 +170,29 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 		}
 	}()
 
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return err
+		}
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			kc.l.NewError(
+				kc.ctx, "No previous state found",
+			),
+		)
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationScale); errOp != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
+
 	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidBootstrapProvider,
@@ -161,13 +201,28 @@ func (kc *Controller) DeleteWorkerNodes() (errC error) {
 			),
 		)
 	}
+	defer func() {
+		if errC != nil {
+			kc.s.PlatformSpec.State = statefile.ConfiguringFailed
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			kc.s.PlatformSpec.State = statefile.Running
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after success", "error", err)
+			}
+		}
+	}()
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,
 		kc.b,
 		kc.s,
-		consts.OperationGet,
+		consts.OperationScale,
 		kc.p,
 	)
 	if err != nil {

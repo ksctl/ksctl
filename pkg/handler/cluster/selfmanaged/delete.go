@@ -21,6 +21,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
 
 func (kc *Controller) Delete() (errC error) {
@@ -75,6 +76,17 @@ func (kc *Controller) Delete() (errC error) {
 			)
 		}
 	}
+
+	defer func() {
+		if errC != nil {
+			// failed in cluster deletion failed
+			kc.s.PlatformSpec.State = statefile.DeletionFailed
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after error", "error", err)
+			}
+		}
+	}()
 
 	{
 		/*

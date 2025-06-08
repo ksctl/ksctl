@@ -125,6 +125,22 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 		}
 	}
 
+	defer func() {
+		if errC != nil {
+			kc.s.PlatformSpec.State = statefile.ConfiguringFailed
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			kc.s.PlatformSpec.State = statefile.Running
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after success", "error", err)
+			}
+		}
+	}()
+
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudAzure:
@@ -146,7 +162,7 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 		return nil, err
 	}
 
-	if errInit := kc.p.Cloud.InitState(consts.OperationGet); errInit != nil {
+	if errInit := kc.p.Cloud.InitState(consts.OperationConfigure); errInit != nil {
 		kc.l.Error("handled error", "catch", errInit)
 		return nil, errInit
 	}

@@ -137,7 +137,8 @@ const (
 	KsctlTestFlagKey        KsctlContextKeyType = iota
 	KsctlModuleNameKey      KsctlContextKeyType = iota
 	KsctlCustomDirLoc       KsctlContextKeyType = iota
-	KsctlContextUserID      KsctlContextKeyType = iota
+	KsctlContextUser        KsctlContextKeyType = iota
+	KsctlContextTeam        KsctlContextKeyType = iota
 	KsctlComponentOverrides KsctlContextKeyType = iota
 
 	KsctlAwsCredentials     KsctlContextKeyType = iota // the value to be the AzureCredentials struct

@@ -41,7 +41,7 @@ var (
 func InitCore() (err error) {
 	ksc = context.WithValue(
 		context.Background(),
-		consts.KsctlContextUserID,
+		consts.KsctlContextUser,
 		"demo",
 	)
 	ctx = context.WithValue(

@@ -50,7 +50,7 @@ func main() {
 
 	ksctlConfig := context.WithValue(
 		context.TODO(),
-		consts.KsctlContextUserID,
+		consts.KsctlContextUser,
 		"e2e",
 	)
 

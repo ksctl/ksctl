@@ -94,6 +94,24 @@ func (kc *Controller) Create() (errC error) {
 		return err
 	}
 
+	defer func() {
+		if errC != nil {
+			// failed in cluster creation
+			kc.s.PlatformSpec.State = statefile.CreationFailed
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			// successful cluster creation
+			kc.s.PlatformSpec.State = statefile.Running
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after success", "error", err)
+			}
+		}
+	}()
+
 	kpc, err := providerHandler.NewController(
 		kc.ctx,
 		kc.l,
