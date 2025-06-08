@@ -106,16 +106,14 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 			team = v
 		}
 
-		p.state = statefile.NewStorageDocument(
-			p.ClusterName,
-			p.Region,
-			consts.CloudLocal,
-			consts.ClusterTypeMang,
-			team,
-			owner,
-		)
+		p.state.PlatformSpec.Team = team
+		p.state.PlatformSpec.Owner = owner
 		p.state.CloudInfra = &statefile.InfrastructureState{Local: &statefile.StateConfigurationLocal{}}
 		p.state.PlatformSpec.State = statefile.Creating
+		p.state.ClusterName = p.ClusterName
+		p.state.Region = p.Region
+		p.state.InfraProvider = consts.CloudLocal
+		p.state.ClusterType = string(consts.ClusterTypeMang)
 
 		if err := p.store.Write(p.state); err != nil {
 			return ksctlErrors.WrapError(
@@ -188,6 +186,9 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 				Name:          v.ClusterName,
 				Region:        v.Region,
 				ClusterType:   K,
+				Owner:         v.PlatformSpec.Owner,
+				Team:          v.PlatformSpec.Team,
+				State:         v.PlatformSpec.State,
 
 				NoMgt: v.CloudInfra.Local.Nodes,
 				Mgt: provider.VMData{

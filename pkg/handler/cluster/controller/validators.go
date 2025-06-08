@@ -45,7 +45,7 @@ func (cc *Controller) ValidateMetadata(c *Client) error {
 	if _, ok := config.IsContextPresent(cc.KsctlWorkloadConf.WorkerCtx, consts.KsctlContextUser); !ok {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidUserInput,
-			cc.l.NewError(cc.ctx, "invalid format for context value `USERID`", "Reason", "Make sure the value", "type", "string", "format", `^[\w-]+$`),
+			cc.l.NewError(cc.ctx, "invalid format for context value `USERID`", "Reason", "Make sure the value", "type", "string", "format", `email`, "team", "uuid"),
 		)
 	}
 	if !validation.ValidateStorage(c.Metadata.StateLocation) {

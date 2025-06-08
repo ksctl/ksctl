@@ -51,7 +51,13 @@ func main() {
 	ksctlConfig := context.WithValue(
 		context.TODO(),
 		consts.KsctlContextUser,
-		"e2e",
+		"ksctl@ksctl.com",
+	)
+
+	ksctlConfig = context.WithValue(
+		ksctlConfig,
+		consts.KsctlContextTeam,
+		"47f9a67b-2499-4e96-9576-ddc703d839f0",
 	)
 
 	timer := time.Now()

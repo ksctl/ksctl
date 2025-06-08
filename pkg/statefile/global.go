@@ -121,27 +121,6 @@ type StorageDocument struct {
 	ProvisionerAddons SlimProvisionerAddons `json:"provisioner_addons,omitempty" bson:"provisioner_addons,omitempty"`
 }
 
-func NewStorageDocument(
-	clusterName string,
-	region string,
-	cloud consts.KsctlCloud,
-	clusterClass consts.KsctlClusterType,
-	team string,
-	owner string,
-) *StorageDocument {
-	return &StorageDocument{
-		PlatformSpec: PlatformSpec{
-			State: Fresh,
-			Team:  team,
-			Owner: owner,
-		},
-		ClusterName:   clusterName,
-		Region:        region,
-		InfraProvider: cloud,
-		ClusterType:   string(clusterClass),
-	}
-}
-
 type SlimProvisionerAddons struct {
 	Apps []SlimProvisionerAddon `json:"apps" bson:"apps"`
 	Cni  SlimProvisionerAddon   `json:"cni" bson:"cni"`

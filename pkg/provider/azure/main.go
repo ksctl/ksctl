@@ -186,19 +186,16 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 				team = v
 			}
 
-			p.state = statefile.NewStorageDocument(
-				p.ClusterName,
-				p.Region,
-				consts.CloudAzure,
-				p.ClusterType,
-				team,
-				owner,
-			)
-
+			p.state.PlatformSpec.Team = team
+			p.state.PlatformSpec.Owner = owner
+			p.state.PlatformSpec.State = statefile.Creating
+			p.state.ClusterName = p.ClusterName
+			p.state.Region = p.Region
+			p.state.InfraProvider = consts.CloudAzure
+			p.state.ClusterType = string(p.ClusterType)
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Azure: &statefile.StateConfigurationAzure{},
 			}
-			p.state.PlatformSpec.State = statefile.Creating
 		}
 
 	case consts.OperationDelete:
@@ -574,6 +571,9 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 	for K, Vs := range clusters {
 		for _, v := range Vs {
 			data = append(data, provider.ClusterData{
+				Owner:         v.PlatformSpec.Owner,
+				Team:          v.PlatformSpec.Team,
+				State:         v.PlatformSpec.State,
 				CloudProvider: consts.CloudAzure,
 				Name:          v.ClusterName,
 				Region:        v.Region,

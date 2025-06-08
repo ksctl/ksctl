@@ -187,6 +187,10 @@ func (kc *Controller) GetCluster() (_ *provider.ClusterData, errC error) {
 		}
 	}()
 
+	if kc.b.IsLocalProvider(kc.p) {
+		kc.p.Metadata.Region = "LOCAL"
+	}
+
 	if err := kc.p.Storage.Setup(
 		kc.p.Metadata.Provider,
 		kc.p.Metadata.Region,

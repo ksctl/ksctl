@@ -14,7 +14,10 @@
 
 package provider
 
-import "github.com/ksctl/ksctl/v2/pkg/consts"
+import (
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
+)
 
 type VMData struct {
 	Id           string
@@ -30,6 +33,9 @@ type VMData struct {
 
 type ClusterData struct {
 	Name            string
+	Owner           string
+	Team            string
+	State           statefile.ClusterState
 	CloudProvider   consts.KsctlCloud
 	ClusterType     consts.KsctlClusterType
 	K8sDistro       consts.KsctlKubernetes

@@ -104,6 +104,9 @@ func TestManagedCluster(t *testing.T) {
 				Name:          fakeClientManaged.ClusterName,
 				CloudProvider: consts.CloudAws,
 				ClusterType:   consts.ClusterTypeMang,
+				Team:          "47f9a67b-2499-4e96-9576-ddc703d839f0",
+				Owner:         "dipankar.das@ksctl.com",
+				State:         statefile.Running,
 				NetworkName:   "demo-managed-vpc",
 				NetworkID:     "3456d25f36g474g546",
 				LB: provider.VMData{
