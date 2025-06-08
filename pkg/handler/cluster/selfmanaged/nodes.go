@@ -55,6 +55,29 @@ func (kc *Controller) AddWorkerNodes() (errC error) {
 		}
 	}()
 
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return err
+		}
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			kc.l.NewError(
+				kc.ctx, "No previous state found",
+			),
+		)
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationConfigure); errOp != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
+
 	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidBootstrapProvider,

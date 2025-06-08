@@ -119,9 +119,11 @@ const (
 )
 
 const (
-	OperationGet    KsctlOperation = "get"
-	OperationCreate KsctlOperation = "create"
-	OperationDelete KsctlOperation = "delete"
+	OperationGet       KsctlOperation = "get"
+	OperationCreate    KsctlOperation = "create"
+	OperationDelete    KsctlOperation = "delete"
+	OperationScale     KsctlOperation = "scale"
+	OperationConfigure KsctlOperation = "configure"
 )
 
 const (

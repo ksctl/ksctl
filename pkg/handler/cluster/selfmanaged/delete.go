@@ -19,6 +19,7 @@ import (
 
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
 )
 
@@ -50,6 +51,30 @@ func (kc *Controller) Delete() (errC error) {
 			}
 		}
 	}()
+
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return err
+		}
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrInvalidUserInput,
+			kc.l.NewError(
+				kc.ctx, "No previous state found",
+			),
+		)
+
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationDelete); errOp != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
 
 	{
 		/*

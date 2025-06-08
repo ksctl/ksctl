@@ -104,6 +104,27 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 		}
 	}()
 
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return nil, err
+		}
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrNoMatchingRecordsFound,
+			kc.l.NewError(kc.ctx, "No state is present"),
+		)
+
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationConfigure); errOp != nil {
+			return nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
+
 	var err error
 	switch kc.p.Metadata.Provider {
 	case consts.CloudAzure:

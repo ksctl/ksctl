@@ -21,6 +21,7 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
 	providerHandler "github.com/ksctl/ksctl/v2/pkg/provider/handler"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 )
 
@@ -65,6 +66,29 @@ func (kc *Controller) Create() (errC error) {
 			}
 		}
 	}()
+
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return err
+		}
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+
+		if errOp := statefile.Fresh.IsControllerOperationAllowed(consts.OperationCreate); errOp != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationCreate); errOp != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
 
 	if err := validation.IsValidKsctlClusterAddons(kc.ctx, kc.l, kc.p.Metadata.Addons); err != nil {
 		return err

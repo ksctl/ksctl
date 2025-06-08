@@ -163,6 +163,9 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	p.resourceGroup = generateResourceGroupName(p.ClusterName, string(p.ClusterType))
 
 	errLoadState := p.loadStateHelper()
+
+	// NOTE: Need to set the state
+
 	switch operation {
 	case consts.OperationCreate:
 		if errLoadState == nil && p.state.CloudInfra.Azure.B.IsCompleted {

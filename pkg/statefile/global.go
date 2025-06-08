@@ -21,16 +21,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ControllerTaskCode string
-
-const (
-	TaskCodeCreate      ControllerTaskCode = "create"
-	TaskCodeDelete      ControllerTaskCode = "delete"
-	TaskCodeGet         ControllerTaskCode = "get"
-	TaskCodeScale       ControllerTaskCode = "scale"
-	TaskCodeConfigAddon ControllerTaskCode = "configure_addon"
-)
-
 type ClusterState string
 
 const (
@@ -48,50 +38,50 @@ const (
 )
 
 // IsControllerOpValid checks if the operation is valid for the current cluster state.
-func (s ClusterState) IsControllerOperationAllowed(operation ControllerTaskCode) error {
-	err := func(_op ControllerTaskCode, _s ClusterState) error {
+func (s ClusterState) IsControllerOperationAllowed(operation consts.KsctlOperation) error {
+	err := func(_op consts.KsctlOperation, _s ClusterState) error {
 		return fmt.Errorf("operation %s is not allowed in state %s", _op, _s)
 	}
 
 	switch s {
 	case Fresh:
-		if operation != TaskCodeCreate {
+		if operation != consts.OperationCreate {
 			return err(operation, s)
 		}
 
 	case Creating, Deleting: // we cannot perform any operation while creating or deleting
-		if operation != TaskCodeGet {
+		if operation != consts.OperationGet {
 			return err(operation, s)
 		}
 
 	case CreationFailed: // we can retry creation or delete
-		if operation != TaskCodeCreate && operation != TaskCodeDelete {
+		if operation != consts.OperationCreate && operation != consts.OperationDelete {
 			return err(operation, s)
 		}
 
 	case DeletionFailed: // we can retry deletion
-		if operation != TaskCodeDelete {
+		if operation != consts.OperationDelete {
 			return err(operation, s)
 		}
 
 	case Running:
-		if operation != TaskCodeGet &&
-			operation != TaskCodeScale &&
-			operation != TaskCodeConfigAddon &&
-			operation != TaskCodeDelete {
+		if operation != consts.OperationGet &&
+			operation != consts.OperationScale &&
+			operation != consts.OperationConfigure &&
+			operation != consts.OperationDelete {
 			return err(operation, s)
 		}
 
 	case Configuring:
-		if operation != TaskCodeGet {
+		if operation != consts.OperationGet {
 			return err(operation, s)
 		}
 
 	case ConfiguringFailed:
-		if operation != TaskCodeGet &&
-			operation != TaskCodeConfigAddon &&
-			operation != TaskCodeScale &&
-			operation != TaskCodeDelete {
+		if operation != consts.OperationGet &&
+			operation != consts.OperationScale &&
+			operation != consts.OperationConfigure &&
+			operation != consts.OperationDelete {
 			return err(operation, s)
 		}
 
