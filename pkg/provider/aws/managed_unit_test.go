@@ -106,7 +106,7 @@ func TestManagedCluster(t *testing.T) {
 				ClusterType:   consts.ClusterTypeMang,
 				Team:          "47f9a67b-2499-4e96-9576-ddc703d839f0",
 				Owner:         "dipankar.das@ksctl.com",
-				State:         statefile.Running,
+				State:         statefile.Creating, // As the controller is not here where it actually sets the state so it is creating
 				NetworkName:   "demo-managed-vpc",
 				NetworkID:     "3456d25f36g474g546",
 				LB: provider.VMData{
