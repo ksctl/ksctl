@@ -199,7 +199,7 @@ func TestManagedCluster(t *testing.T) {
 	t.Run("initState", func(t *testing.T) {
 		assert.Equal(t, fakeClientManaged.InitState(consts.OperationCreate), nil, "Init must work before")
 
-		assert.Equal(t, fakeClientManaged.ClusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
+		assert.Equal(t, fakeClientManaged.ClusterType, consts.ClusterTypeMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Local.B.IsCompleted, false, "cluster should not be completed")
 
 		if v, err := storeManaged.Read(); err != nil {
