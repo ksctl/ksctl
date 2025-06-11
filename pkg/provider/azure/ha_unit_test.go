@@ -78,9 +78,10 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, fakeClientHA.ClusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientHA.state.CloudInfra.Azure.B.IsCompleted, false, "cluster should not be completed")
 
-		_, err := storeHA.Read()
-		if err == nil {
-			t.Fatalf("State file and cluster directory present where it should not be")
+		if v, err := storeHA.Read(); err != nil {
+			t.Fatalf("There should be state of creating!!!")
+		} else {
+			assert.Equal(t, v.PlatformSpec.State, statefile.Creating, "state should be creating")
 		}
 	})
 
@@ -577,6 +578,14 @@ func TestHACluster(t *testing.T) {
 		got, err := fakeClientHA.GetRAWClusterInfos()
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
+
+		{
+			// We are assuming the controller updated the state of the cluster after this
+			fakeClientHA.state.PlatformSpec.State = statefile.Running
+			if err := storeHA.Write(fakeClientHA.state); err != nil {
+				t.Fatalf("Unable to write the state, Reason: %v", err)
+			}
+		}
 	})
 
 	{

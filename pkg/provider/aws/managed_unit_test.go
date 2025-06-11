@@ -68,9 +68,10 @@ func TestManagedCluster(t *testing.T) {
 		assert.Equal(t, fakeClientManaged.ClusterType, consts.ClusterTypeMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientManaged.state.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
-		_, err := storeManaged.Read()
-		if err == nil {
-			t.Fatalf("State file and cluster directory present where it should not be")
+		if v, err := storeManaged.Read(); err != nil {
+			t.Fatalf("There should be state of creating!!!")
+		} else {
+			assert.Equal(t, v.PlatformSpec.State, statefile.Creating, "state should be creating")
 		}
 	})
 
