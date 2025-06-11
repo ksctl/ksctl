@@ -21,9 +21,87 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type ClusterState string
+
+const (
+	Fresh          ClusterState = "fresh"
+	Creating       ClusterState = "creating"
+	CreationFailed ClusterState = "creation_failed"
+
+	Running ClusterState = "running"
+
+	Configuring       ClusterState = "configuring"
+	ConfiguringFailed ClusterState = "configuring_failed"
+
+	Deleting       ClusterState = "deleting"
+	DeletionFailed ClusterState = "deletion_failed"
+)
+
+// IsControllerOpValid checks if the operation is valid for the current cluster state.
+func (s ClusterState) IsControllerOperationAllowed(operation consts.KsctlOperation) error {
+	err := func(_op consts.KsctlOperation, _s ClusterState) error {
+		return fmt.Errorf("operation %s is not allowed in state %s", _op, _s)
+	}
+
+	switch s {
+	case Fresh:
+		if operation != consts.OperationCreate {
+			return err(operation, s)
+		}
+
+	case Creating, Deleting: // we cannot perform any operation while creating or deleting
+		if operation != consts.OperationGet {
+			return err(operation, s)
+		}
+
+	case CreationFailed: // we can retry creation or delete
+		if operation != consts.OperationCreate && operation != consts.OperationDelete {
+			return err(operation, s)
+		}
+
+	case DeletionFailed: // we can retry deletion
+		if operation != consts.OperationDelete {
+			return err(operation, s)
+		}
+
+	case Running:
+		if operation != consts.OperationGet &&
+			operation != consts.OperationScale &&
+			operation != consts.OperationConfigure &&
+			operation != consts.OperationDelete {
+			return err(operation, s)
+		}
+
+	case Configuring:
+		if operation != consts.OperationGet {
+			return err(operation, s)
+		}
+
+	case ConfiguringFailed:
+		if operation != consts.OperationGet &&
+			operation != consts.OperationScale &&
+			operation != consts.OperationConfigure &&
+			operation != consts.OperationDelete {
+			return err(operation, s)
+		}
+
+	default:
+		return nil
+	}
+	return nil
+}
+
+type PlatformSpec struct {
+	Team  string       `json:"team" bson:"team"`
+	Owner string       `json:"owner" bson:"owner"`
+	State ClusterState `json:"state" bson:"state"`
+}
+
 // StorageDocument object which stores the state of infra and bootstrap in a doc
 type StorageDocument struct {
 	ID primitive.ObjectID `bson:"_id,omitempty"`
+
+	PlatformSpec PlatformSpec `json:"platform" bson:"platform"`
 
 	ClusterType string `json:"cluster_type" bson:"cluster_type" `
 	Region      string `json:"region" bson:"region"`

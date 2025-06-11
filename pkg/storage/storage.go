@@ -20,8 +20,6 @@ import (
 )
 
 type Storage interface {
-	Kill() error
-
 	Setup(cloud consts.KsctlCloud, region, clusterName string, clusterType consts.KsctlClusterType) error
 
 	Write(*statefile.StorageDocument) error

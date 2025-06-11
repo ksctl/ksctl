@@ -163,6 +163,7 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 	p.resourceGroup = generateResourceGroupName(p.ClusterName, string(p.ClusterType))
 
 	errLoadState := p.loadStateHelper()
+
 	switch operation {
 	case consts.OperationCreate:
 		if errLoadState == nil && p.state.CloudInfra.Azure.B.IsCompleted {
@@ -175,11 +176,23 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 			p.l.Debug(p.ctx, "RESUME triggered!!")
 		} else {
 			p.l.Debug(p.ctx, "Fresh state!!")
+			owner, team := "", ""
 
+			if v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlContextUser); ok {
+				owner = v
+			}
+
+			if v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlContextTeam); ok {
+				team = v
+			}
+
+			p.state.PlatformSpec.Team = team
+			p.state.PlatformSpec.Owner = owner
+			p.state.PlatformSpec.State = statefile.Creating
 			p.state.ClusterName = p.ClusterName
+			p.state.Region = p.Region
 			p.state.InfraProvider = consts.CloudAzure
 			p.state.ClusterType = string(p.ClusterType)
-			p.state.Region = p.Region
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Azure: &statefile.StateConfigurationAzure{},
 			}
@@ -191,16 +204,36 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 		}
 		p.l.Debug(p.ctx, "Delete resource(s)")
 
+		p.state.PlatformSpec.State = statefile.Deleting
+
 	case consts.OperationGet:
 		if errLoadState != nil {
 			return errLoadState
 		}
 		p.l.Debug(p.ctx, "Get storage")
+
+	case consts.OperationConfigure, consts.OperationScale:
+		if errLoadState != nil {
+			return errLoadState
+		}
+		p.l.Debug(p.ctx, "Configuring resource(s)")
+
+		p.state.PlatformSpec.State = statefile.Configuring
+
 	default:
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidOperation,
 			p.l.NewError(p.ctx, "Invalid operation for init state"),
 		)
+	}
+
+	if operation != consts.OperationGet {
+		if err := p.store.Write(p.state); err != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInternal,
+				p.l.NewError(p.ctx, "failed to write the state", "Reason", err),
+			)
+		}
 	}
 
 	if err := p.client.InitClient(p); err != nil {
@@ -538,6 +571,9 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 	for K, Vs := range clusters {
 		for _, v := range Vs {
 			data = append(data, provider.ClusterData{
+				Owner:         v.PlatformSpec.Owner,
+				Team:          v.PlatformSpec.Team,
+				State:         v.PlatformSpec.State,
 				CloudProvider: consts.CloudAzure,
 				Name:          v.ClusterName,
 				Region:        v.Region,

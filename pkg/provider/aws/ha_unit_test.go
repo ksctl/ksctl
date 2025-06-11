@@ -78,9 +78,10 @@ func TestHACluster(t *testing.T) {
 		assert.Equal(t, fakeClientHA.ClusterType, consts.ClusterTypeSelfMang, "clustertype should be managed")
 		assert.Equal(t, fakeClientHA.state.CloudInfra.Aws.B.IsCompleted, false, "cluster should not be completed")
 
-		_, err := storeHA.Read()
-		if err == nil {
-			t.Fatalf("State file and cluster directory present where it should not be")
+		if v, err := storeHA.Read(); err != nil {
+			t.Fatalf("There should be state of creating!!!")
+		} else {
+			assert.Equal(t, v.PlatformSpec.State, statefile.Creating, "state should be creating")
 		}
 	})
 
@@ -286,9 +287,14 @@ func TestHACluster(t *testing.T) {
 				Region:        fakeClientHA.Region,
 				CloudProvider: consts.CloudAws,
 				ClusterType:   consts.ClusterTypeSelfMang,
-				SSHKeyName:    "fake-ssh",
-				NetworkName:   fakeClientHA.ClusterName + "-vpc",
-				NetworkID:     "3456d25f36g474g546",
+
+				Team:  "47f9a67b-2499-4e96-9576-ddc703d839f0",
+				Owner: "dipankar.das@ksctl.com",
+				State: statefile.Creating, // As the controller is not here where it actually sets the state so it is creating
+
+				SSHKeyName:  "fake-ssh",
+				NetworkName: fakeClientHA.ClusterName + "-vpc",
+				NetworkID:   "3456d25f36g474g546",
 
 				NoWP: fakeClientHA.NoWP,
 				NoCP: fakeClientHA.NoCP,
@@ -335,6 +341,14 @@ func TestHACluster(t *testing.T) {
 		got, err := fakeClientHA.GetRAWClusterInfos()
 		assert.NilError(t, err, "no error should be there")
 		assert.DeepEqual(t, got, expected)
+
+		{
+			// We are assuming the controller updated the state of the cluster after this
+			fakeClientHA.state.PlatformSpec.State = statefile.Running
+			if err := storeHA.Write(fakeClientHA.state); err != nil {
+				t.Fatalf("Unable to write the state, Reason: %v", err)
+			}
+		}
 	})
 
 	{

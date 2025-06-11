@@ -64,16 +64,6 @@ func (kc *Controller) clusterDataHelper(operation logger.LogClusterDetail) (_ []
 		}
 	}
 
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
-		}
-	}()
-
 	kc.l.Debug(kc.ctx, "Filter", "cloudProvider", string(kc.p.Metadata.Provider))
 
 	var (
@@ -196,6 +186,40 @@ func (kc *Controller) GetCluster() (_ *provider.ClusterData, errC error) {
 			}
 		}
 	}()
+
+	if kc.b.IsLocalProvider(kc.p) {
+		kc.p.Metadata.Region = "LOCAL"
+	}
+
+	if err := kc.p.Storage.Setup(
+		kc.p.Metadata.Provider,
+		kc.p.Metadata.Region,
+		kc.p.Metadata.ClusterName,
+		kc.p.Metadata.ClusterType,
+	); err != nil {
+		return nil, err
+	}
+
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return nil, err
+		}
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrNoMatchingRecordsFound,
+			kc.l.NewError(kc.ctx, "No state is present"),
+		)
+
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationGet); errOp != nil {
+			return nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
 
 	v, err := kc.clusterDataHelper(logger.LoggingInfoCluster)
 	if err != nil {

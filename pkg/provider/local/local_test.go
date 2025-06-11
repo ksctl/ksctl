@@ -53,6 +53,8 @@ var (
 
 func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlCustomDirLoc, dir)
+	ksc = context.WithValue(ksc, consts.KsctlContextUser, "dipankar.das@ksctl.com")
+	ksc = context.WithValue(ksc, consts.KsctlContextTeam, "47f9a67b-2499-4e96-9576-ddc703d839f0")
 
 	fakeClientVars, _ = NewClient(
 		parentCtx,
@@ -196,6 +198,15 @@ func TestManagedCluster(t *testing.T) {
 
 	t.Run("initState", func(t *testing.T) {
 		assert.Equal(t, fakeClientManaged.InitState(consts.OperationCreate), nil, "Init must work before")
+
+		assert.Equal(t, fakeClientManaged.ClusterType, consts.ClusterTypeMang, "clustertype should be managed")
+		assert.Equal(t, fakeClientManaged.state.CloudInfra.Local.B.IsCompleted, false, "cluster should not be completed")
+
+		if v, err := storeManaged.Read(); err != nil {
+			t.Fatalf("There should be state of creating!!!")
+		} else {
+			assert.Equal(t, v.PlatformSpec.State, statefile.Creating, "state should be creating")
+		}
 	})
 	t.Run("managed cluster", func(t *testing.T) {
 
@@ -222,9 +233,13 @@ func TestManagedCluster(t *testing.T) {
 				Name:          fakeClientManaged.ClusterName,
 				CloudProvider: consts.CloudLocal,
 				ClusterType:   consts.ClusterTypeMang,
-				Region:        fakeClientManaged.Region,
-				NoMgt:         fakeClientManaged.state.CloudInfra.Local.Nodes,
-				Mgt:           provider.VMData{VMSize: fakeClientManaged.state.CloudInfra.Local.ManagedNodeSize},
+				Owner:         "dipankar.das@ksctl.com",
+				Team:          "47f9a67b-2499-4e96-9576-ddc703d839f0",
+				State:         statefile.Creating, // As the controller is not here where it actually sets the state so it is creating
+
+				Region: fakeClientManaged.Region,
+				NoMgt:  fakeClientManaged.state.CloudInfra.Local.Nodes,
+				Mgt:    provider.VMData{VMSize: fakeClientManaged.state.CloudInfra.Local.ManagedNodeSize},
 
 				K8sDistro:  consts.K8sKind,
 				K8sVersion: *fakeClientManaged.state.Versions.Kind,

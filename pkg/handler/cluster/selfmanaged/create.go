@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"github.com/ksctl/ksctl/v2/pkg/validation"
 
 	bootstrapHandler "github.com/ksctl/ksctl/v2/pkg/bootstrap/handler"
@@ -28,10 +29,15 @@ import (
 
 func (kc *Controller) Create() (errC error) {
 	defer func() {
-		if errC != nil {
-			v := kc.b.PanicHandler(kc.l)
-			if v != nil {
-				errC = errors.Join(errC, v)
+		v := kc.b.PanicHandler(kc.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+			if kc.s.PlatformSpec.State != statefile.CreationFailed {
+				kc.s.PlatformSpec.State = statefile.CreationFailed
+				if err := kc.p.Storage.Write(kc.s); err != nil {
+					errC = errors.Join(errC, err)
+					kc.l.Error("Failed to write state after error", "error", err)
+				}
 			}
 		}
 	}()
@@ -45,15 +51,28 @@ func (kc *Controller) Create() (errC error) {
 		return err
 	}
 
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return err
 		}
-	}()
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+
+		if errOp := statefile.Fresh.IsControllerOperationAllowed(consts.OperationCreate); errOp != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationCreate); errOp != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
 
 	if !validation.ValidateDistro(kc.p.Metadata.K8sDistro) {
 		return ksctlErrors.WrapError(
@@ -67,6 +86,24 @@ func (kc *Controller) Create() (errC error) {
 	if err := validation.IsValidKsctlClusterAddons(kc.ctx, kc.l, kc.p.Metadata.Addons); err != nil {
 		return err
 	}
+
+	defer func() {
+		if errC != nil {
+			// failed in cluster creation
+			kc.s.PlatformSpec.State = statefile.CreationFailed
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			// successful cluster creation
+			kc.s.PlatformSpec.State = statefile.Running
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after success", "error", err)
+			}
+		}
+	}()
 
 	kpc, err := providerHandler.NewController(
 		kc.ctx,

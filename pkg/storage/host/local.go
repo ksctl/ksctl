@@ -109,13 +109,6 @@ func (s *Store) CreateDirectory(_path []string) error {
 	return nil
 }
 
-func (s *Store) Kill() error {
-	s.wg.Wait()
-	defer s.l.Debug(s.ctx, "Local Storage Got Killed")
-
-	return nil
-}
-
 func (s *Store) genOsClusterPath(subDir ...string) (string, error) {
 
 	var userLoc string
@@ -156,7 +149,15 @@ func (s *Store) Read() (*statefile.StorageDocument, error) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	if e := s.clusterPresent(nil); e != nil {
+	if e := s.clusterPresent(func(err error) error {
+		if errors.Is(err, os.ErrNotExist) {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrNoMatchingRecordsFound,
+				s.l.NewError(s.ctx, "cluster not present", "Reason", err),
+			)
+		}
+		return nil
+	}); e != nil {
 		return nil, e
 	}
 	dirPath, err := s.genOsClusterPath(s.cloudProvider, s.clusterType, s.clusterName+" "+s.region, "state.json")

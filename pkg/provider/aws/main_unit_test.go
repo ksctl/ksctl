@@ -65,6 +65,8 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	ksc = context.WithValue(ksc, consts.KsctlAwsCredentials, v)
+	ksc = context.WithValue(ksc, consts.KsctlContextUser, "dipankar.das@ksctl.com")
+	ksc = context.WithValue(ksc, consts.KsctlContextTeam, "47f9a67b-2499-4e96-9576-ddc703d839f0")
 
 	fakeClientVars, _ = NewClient(
 		parentCtx,

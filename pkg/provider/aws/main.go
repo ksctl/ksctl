@@ -179,11 +179,23 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 			p.l.Note(p.ctx, "Cluster state found but not completed, resuming operation")
 		} else {
 			p.l.Debug(p.ctx, "Fresh state!!")
+			owner, team := "", ""
 
+			if v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlContextUser); ok {
+				owner = v
+			}
+
+			if v, ok := config.IsContextPresent(p.ksctlConfig, consts.KsctlContextTeam); ok {
+				team = v
+			}
+
+			p.state.PlatformSpec.Team = team
+			p.state.PlatformSpec.Owner = owner
+			p.state.PlatformSpec.State = statefile.Creating
 			p.state.ClusterName = p.ClusterName
+			p.state.Region = p.Region
 			p.state.InfraProvider = consts.CloudAws
 			p.state.ClusterType = string(p.ClusterType)
-			p.state.Region = p.Region
 			p.state.CloudInfra = &statefile.InfrastructureState{
 				Aws: &statefile.StateConfigurationAws{},
 			}
@@ -194,17 +206,35 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 			return errLoadState
 		}
 		p.l.Debug(p.ctx, "Delete resource(s)")
+		p.state.PlatformSpec.State = statefile.Deleting
 
 	case consts.OperationGet:
 		if errLoadState != nil {
 			return errLoadState
 		}
 		p.l.Debug(p.ctx, "Get storage")
+
+	case consts.OperationConfigure, consts.OperationScale:
+		if errLoadState != nil {
+			return errLoadState
+		}
+		p.l.Debug(p.ctx, "Configuring resource(s)")
+		p.state.PlatformSpec.State = statefile.Configuring
+
 	default:
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrInvalidOperation,
 			p.l.NewError(p.ctx, "Invalid operation for init state"),
 		)
+	}
+
+	if operation != consts.OperationGet {
+		if err := p.store.Write(p.state); err != nil {
+			return ksctlErrors.WrapError(
+				ksctlErrors.ErrInternal,
+				p.l.NewError(p.ctx, "failed to write the state", "Reason", err),
+			)
+		}
 	}
 
 	if err := p.client.InitClient(p); err != nil {
@@ -548,6 +578,9 @@ func (p *Provider) GetRAWClusterInfos() ([]provider.ClusterData, error) {
 				Name:          v.ClusterName,
 				Region:        v.Region,
 				ClusterType:   K,
+				Owner:         v.PlatformSpec.Owner,
+				Team:          v.PlatformSpec.Team,
+				State:         v.PlatformSpec.State,
 				CP:            convertToAllClusterDataType(v, consts.RoleCp),
 				WP:            convertToAllClusterDataType(v, consts.RoleWp),
 				DS:            convertToAllClusterDataType(v, consts.RoleDs),

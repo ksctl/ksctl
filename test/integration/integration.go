@@ -17,6 +17,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -39,20 +40,32 @@ var (
 )
 
 func InitCore() (err error) {
-	ksc = context.WithValue(
-		context.Background(),
-		consts.KsctlContextUserID,
-		"demo",
-	)
 	ctx = context.WithValue(
 		context.Background(),
 		consts.KsctlCustomDirLoc,
 		dir,
 	)
+
 	ctx = context.WithValue(
 		ctx,
 		consts.KsctlTestFlagKey,
 		"true",
+	)
+
+	ctx = context.WithValue(
+		ctx,
+		consts.KsctlTestFlagKey,
+		"true",
+	)
+
+	ksc = context.WithValue(
+		context.WithValue(
+			context.Background(),
+			consts.KsctlContextUser,
+			"ksctl@ksctl.com",
+		),
+		consts.KsctlContextTeam,
+		"47f9a67b-2499-4e96-9576-ddc703d839f0",
 	)
 
 	awsC, err := json.Marshal(statefile.CredentialsAws{
@@ -110,15 +123,19 @@ func ExecuteKsctlSpecificRun() error {
 		return err
 	}
 
-	if _, err := controller.Switch(); err != nil {
+	if v, err := controller.GetCluster(); err != nil {
 		return err
-	}
-
-	if _, err := controller.GetCluster(); err != nil {
-		return err
+	} else {
+		if v.State != statefile.Running {
+			return fmt.Errorf("cluster is not in running state, got: %s, <%s,%s,%s,%s>", v.State, v.Name, v.Region, v.ClusterType, v.CloudProvider)
+		}
 	}
 
 	if _, err := controller.ListClusters(); err != nil {
+		return err
+	}
+
+	if _, err := controller.Switch(); err != nil {
 		return err
 	}
 	return nil

@@ -76,10 +76,6 @@ func patchHelmDirectories(ctx context.Context, log logger.Logger, client *Client
 		return _err
 	}
 
-	if err := store.Kill(); err != nil {
-		return err
-	}
-
 	if _err := os.Setenv("HELM_DRIVER", "secrets"); _err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrUnknown,

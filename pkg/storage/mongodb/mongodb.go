@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ksctl/ksctl/v2/pkg/config"
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 
@@ -83,19 +82,9 @@ func (conn *MongoConn) NewDatabaseClient(ksctlConfig context.Context, l logger.L
 		wg:  new(sync.WaitGroup),
 	}
 
-	userId := "cli"
-
-	if v, ok := config.IsContextPresent(ksctlConfig, consts.KsctlContextUserID); ok {
-		userId = v
-	}
-
-	db.databaseClient = conn.client.Database(getUserDatabase(userId))
+	db.databaseClient = conn.client.Database("ksctl-db")
 
 	return db, nil
-}
-
-func getUserDatabase(userid string) string {
-	return fmt.Sprintf("ksctl-%s-db", userid)
 }
 
 func getClusterFilters(db *Store) bson.M {
@@ -110,13 +99,6 @@ func getClusterFilters(db *Store) bson.M {
 func (db *Store) Connect(_ context.Context) error {
 
 	db.l.Debug(db.ctx, "CONN to MongoDB")
-
-	return nil
-}
-
-func (db *Store) Kill() error {
-	db.wg.Wait()
-	defer db.l.Debug(db.ctx, "Mongodb Storage Got Killed")
 
 	return nil
 }

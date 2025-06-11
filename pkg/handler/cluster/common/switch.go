@@ -50,15 +50,26 @@ func (kc *Controller) Switch() (_ *string, errC error) {
 		return nil, err
 	}
 
-	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
-				errC = errors.Join(errC, err)
-			} else {
-				errC = err
-			}
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return nil, err
 		}
-	}()
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrNoMatchingRecordsFound,
+			kc.l.NewError(kc.ctx, "No state is present"),
+		)
+
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationConfigure); errOp != nil {
+			return nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
 
 	var err error
 	switch kc.p.Metadata.Provider {

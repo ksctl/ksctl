@@ -48,7 +48,7 @@ var (
 
 func TestMain(m *testing.M) {
 	parentCtx = context.WithValue(context.TODO(), consts.KsctlTestFlagKey, "true")
-	ksc = context.WithValue(ksc, consts.KsctlContextUserID, "fake")
+	ksc = context.WithValue(ksc, consts.KsctlContextUser, "fake")
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -307,10 +307,4 @@ func TestDelete(t *testing.T) {
 			}
 		}()
 	})
-}
-
-func TestKill(t *testing.T) {
-	if err := db.Kill(); err != nil {
-		t.Fatal(err)
-	}
 }

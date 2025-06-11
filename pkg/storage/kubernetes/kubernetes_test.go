@@ -209,9 +209,3 @@ func TestGetClusterInfo(t *testing.T) {
 		}(t)
 	})
 }
-
-func TestKill(t *testing.T) {
-	if err := db.Kill(); err != nil {
-		t.Fatal(err)
-	}
-}

@@ -80,6 +80,13 @@ type InstalledAddon struct {
 }
 
 func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error) {
+	defer func() {
+		v := kc.b.PanicHandler(kc.l)
+		if v != nil {
+			errC = errors.Join(errC, v)
+		}
+	}()
+
 	if kc.p.Metadata.Provider == consts.CloudLocal {
 		kc.p.Metadata.Region = "LOCAL"
 	}
@@ -94,12 +101,39 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 		return nil, err
 	}
 
+	if state, err := kc.p.Storage.Read(); err != nil {
+		if !ksctlErrors.IsNoMatchingRecordsFound(err) {
+			return nil, err
+		}
+
+		kc.l.Debug(kc.ctx, "No previous state found, creating a new one")
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrNoMatchingRecordsFound,
+			kc.l.NewError(kc.ctx, "No state is present"),
+		)
+
+	} else {
+		kc.l.Debug(kc.ctx, "Found previous state, using it")
+		if errOp := state.PlatformSpec.State.IsControllerOperationAllowed(consts.OperationConfigure); errOp != nil {
+			return nil, ksctlErrors.WrapError(
+				ksctlErrors.ErrInvalidUserInput,
+				errOp,
+			)
+		}
+	}
+
 	defer func() {
-		if err := kc.p.Storage.Kill(); err != nil {
-			if errC != nil {
+		if errC != nil {
+			kc.s.PlatformSpec.State = statefile.ConfiguringFailed
+			if err := kc.p.Storage.Write(kc.s); err != nil {
 				errC = errors.Join(errC, err)
-			} else {
-				errC = err
+				kc.l.Error("Failed to write state after error", "error", err)
+			}
+		} else {
+			kc.s.PlatformSpec.State = statefile.Running
+			if err := kc.p.Storage.Write(kc.s); err != nil {
+				errC = errors.Join(errC, err)
+				kc.l.Error("Failed to write state after success", "error", err)
 			}
 		}
 	}()
@@ -151,6 +185,7 @@ func (kc *AddonController) ListInstalledAddons() (_ []InstalledAddon, errC error
 }
 
 func (ac *AddonController) ListAvailableVersions(addonSku string) ([]string, error) {
+
 	switch addonSku {
 	case kcm.Sku:
 		return kcm.GetAvailableVersions()
