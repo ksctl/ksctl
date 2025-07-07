@@ -63,13 +63,13 @@ func TestIsContextPresent(t *testing.T) {
 			expected: true,
 		},
 		{
-			ctx:      context.WithValue(ppCtx, consts.KsctlContextTeam, "4a-2499-4e96-9576-ddc7"),
-			key:      consts.KsctlContextTeam,
+			ctx:      context.WithValue(ppCtx, consts.KsctlContextGroup, "4a-2499-4e96-9576-ddc7"),
+			key:      consts.KsctlContextGroup,
 			expected: false,
 		},
 		{
-			ctx:      context.WithValue(ppCtx, consts.KsctlContextTeam, "47f9a67b-2499-4e96-9576-ddc703d839f0"),
-			key:      consts.KsctlContextTeam,
+			ctx:      context.WithValue(ppCtx, consts.KsctlContextGroup, "47f9a67b-2499-4e96-9576-ddc703d839f0"),
+			key:      consts.KsctlContextGroup,
 			expected: true,
 		},
 		{

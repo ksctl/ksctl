@@ -56,7 +56,7 @@ func main() {
 
 	ksctlConfig = context.WithValue(
 		ksctlConfig,
-		consts.KsctlContextTeam,
+		consts.KsctlContextGroup,
 		"47f9a67b-2499-4e96-9576-ddc703d839f0",
 	)
 

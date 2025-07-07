@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 )
@@ -36,7 +34,6 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 	if _val == nil {
 		return "", false
 	}
-	validate := validator.New()
 
 	switch key {
 	case consts.KsctlAwsCredentials:
@@ -57,20 +54,14 @@ func IsContextPresent(ctx context.Context, key consts.KsctlContextKeyType) (val 
 		} else {
 			return "", false
 		}
-	case consts.KsctlContextTeam:
+	case consts.KsctlContextGroup:
 		if v, ok := _val.(string); ok {
-			if uuid.Validate(v) != nil {
-				return "", false
-			}
 			return v, true
 		} else {
 			return "", false
 		}
 	case consts.KsctlContextUser:
 		if v, ok := _val.(string); ok {
-			if validate.Var(v, "required,email") != nil {
-				return "", false
-			}
 			return v, true
 		} else {
 			return "", false

@@ -102,7 +102,7 @@ func (p *Provider) InitState(operation consts.KsctlOperation) error {
 			owner = v
 		}
 
-		if v, ok := config.IsContextPresent(p.ksc, consts.KsctlContextTeam); ok {
+		if v, ok := config.IsContextPresent(p.ksc, consts.KsctlContextGroup); ok {
 			team = v
 		}
 
