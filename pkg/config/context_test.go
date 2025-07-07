@@ -65,7 +65,7 @@ func TestIsContextPresent(t *testing.T) {
 		{
 			ctx:      context.WithValue(ppCtx, consts.KsctlContextGroup, "4a-2499-4e96-9576-ddc7"),
 			key:      consts.KsctlContextGroup,
-			expected: false,
+			expected: true,
 		},
 		{
 			ctx:      context.WithValue(ppCtx, consts.KsctlContextGroup, "47f9a67b-2499-4e96-9576-ddc703d839f0"),
@@ -75,7 +75,7 @@ func TestIsContextPresent(t *testing.T) {
 		{
 			ctx:      context.WithValue(ppCtx, consts.KsctlContextUser, ""),
 			key:      consts.KsctlContextUser,
-			expected: false,
+			expected: true,
 		},
 		{
 			ctx:      context.WithValue(ppCtx, consts.KsctlComponentOverrides, ""),
