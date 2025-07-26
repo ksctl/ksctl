@@ -117,15 +117,19 @@ func NewClient(ctx context.Context, log logger.Logger, opts ...Option) (client *
 	}
 
 	var getter genericclioptions.RESTClientGetter
+	var namespaceToInit string
+
 	if options.kubeconfig != nil {
-		getter = NewRESTClientGetter(client.settings.Namespace(), *options.kubeconfig)
+		getter = NewRESTClientGetter(*options.kubeconfig)
+		namespaceToInit = "" // When using an external kubeconfig, do not impose the current pod's namespace
 	} else {
 		getter = client.settings.RESTClientGetter()
+		namespaceToInit = client.settings.Namespace()
 	}
 
 	if err := client.actionConfig.Init(
 		getter,
-		client.settings.Namespace(),
+		namespaceToInit, // Use the determined namespace
 		os.Getenv("HELM_DRIVER"),
 		_log.HelmDebugf,
 	); err != nil {

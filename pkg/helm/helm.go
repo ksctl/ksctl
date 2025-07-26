@@ -230,13 +230,11 @@ func (c *Client) ListInstalledCharts() error {
 // Reference: https://github.com/helm/helm/issues/6910#issuecomment-601277026
 
 type SimpleRESTClientGetter struct {
-	Namespace  string
 	KubeConfig string
 }
 
-func NewRESTClientGetter(namespace, kubeConfig string) *SimpleRESTClientGetter {
+func NewRESTClientGetter(kubeConfig string) *SimpleRESTClientGetter {
 	return &SimpleRESTClientGetter{
-		Namespace:  namespace,
 		KubeConfig: kubeConfig,
 	}
 }
@@ -282,7 +280,7 @@ func (c *SimpleRESTClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig 
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 
 	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
-	overrides.Context.Namespace = c.Namespace
+	// overrides.Context.Namespace = c.Namespace // COMMENTED OUT: It should not enforce any specific namespace from the worker's context
 
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides)
 }
