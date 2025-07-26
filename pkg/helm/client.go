@@ -116,16 +116,20 @@ func NewClient(ctx context.Context, log logger.Logger, opts ...Option) (client *
 		return nil, err
 	}
 
+	var initNamespace string
+
 	var getter genericclioptions.RESTClientGetter
 	if options.kubeconfig != nil {
-		getter = NewRESTClientGetter(client.settings.Namespace(), *options.kubeconfig)
+		getter = NewRESTClientGetter("default", *options.kubeconfig)
+		initNamespace = "default"
 	} else {
 		getter = client.settings.RESTClientGetter()
+		initNamespace = client.settings.Namespace()
 	}
 
 	if err := client.actionConfig.Init(
 		getter,
-		client.settings.Namespace(),
+		initNamespace,
 		os.Getenv("HELM_DRIVER"),
 		_log.HelmDebugf,
 	); err != nil {
