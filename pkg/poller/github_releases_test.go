@@ -106,7 +106,7 @@ func TestGetSubscribedRepos(t *testing.T) {
 	if len(repos) != 1 {
 		t.Errorf("Expected 1, got %d", len(repos))
 	} else {
-		if repos[0] != prefix_cache+"org/repo" {
+		if repos[0] != "org/repo" {
 			t.Errorf("Expected org/repo, got %s", repos[0])
 		}
 	}

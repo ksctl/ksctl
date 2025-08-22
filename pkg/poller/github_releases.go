@@ -102,7 +102,7 @@ func (gh *GithubReleasePoller) getSubscribedRepos() []string {
 	}
 
 	for _, k := range keys {
-		repos = append(repos, k)
+		repos = append(repos, strings.TrimPrefix(k, prefix_cache))
 	}
 
 	return repos
