@@ -23,16 +23,68 @@ func (kc *Controller) ClusterSummary() (_ *k8s.SummaryOutput, errC error) {
 		return nil, err
 	}
 
-	res := &k8s.SummaryOutput{
+	report := &k8s.SummaryOutput{
 		ClusterName:   kc.s.ClusterName,
 		CloudProvider: string(kc.s.InfraProvider),
 		ClusterType:   string(kc.s.ClusterType),
 	}
 
-	err = k8s.ClusterSummary(kc.ctx, kc.l, *kubeconfig, res)
+	c, err := k8s.NewK8sClient(
+		kc.ctx,
+		kc.l,
+		k8s.WithKubeconfigContent(*kubeconfig),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	latency, k8sVer, err := c.GetServerVersionAndLatency()
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to measure latency", "error", err)
+	} else {
+		report.RoundTripLatency = latency
+		report.KubernetesVersion = k8sVer
+	}
+
+	healthCheck, err := c.GetHealthz(15)
+	if err != nil {
+		return nil, err
+	}
+	report.APIServerHealthCheck = healthCheck
+
+	nodes, err := c.GetNodesSummary(30)
+	if err != nil {
+		return nil, err
+	}
+	report.Nodes = nodes
+
+	components, err := c.GetControlPlaneVersions(30)
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to get components information", "error", err)
+	} else {
+		report.ControlPlaneComponentVers = components
+	}
+
+	workloads, err := c.GetWorkloadSummary(60)
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to get workload information", "error", err)
+	} else {
+		report.WorkloadSummary = *workloads
+	}
+
+	events, err := c.GetRecentWarningEvents(30)
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to get recent events", "error", err)
+	} else {
+		report.RecentWarningEvents = events
+	}
+
+	issues, err := c.DetectClusterIssues(30)
+	if err != nil {
+		kc.l.Warn(kc.ctx, "Unable to detect cluster issues", "error", err)
+	} else {
+		report.DetectedIssues = issues
+	}
+
+	return report, nil
 }

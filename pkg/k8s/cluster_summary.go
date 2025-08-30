@@ -14,12 +14,6 @@
 
 package k8s
 
-import (
-	"context"
-
-	"github.com/ksctl/ksctl/v2/pkg/logger"
-)
-
 type SummaryOutput struct {
 	// Cluster information
 	ClusterName   string
@@ -39,64 +33,4 @@ type SummaryOutput struct {
 	DetectedIssues []ClusterIssue
 
 	RecentWarningEvents []EventSummary
-}
-
-func ClusterSummary(ctx context.Context, l logger.Logger, kubeconfig string, report *SummaryOutput) (errC error) {
-	c, err := NewK8sClient(
-		ctx, l,
-		WithKubeconfigContent(kubeconfig),
-	)
-	if err != nil {
-		return err
-	}
-
-	latency, k8sVer, err := c.GetServerVersionAndLatency()
-	if err != nil {
-		l.Warn(ctx, "Unable to measure latency", "error", err)
-	} else {
-		report.RoundTripLatency = latency
-		report.KubernetesVersion = k8sVer
-	}
-
-	healthCheck, err := c.GetHealthz(15)
-	if err != nil {
-		return err
-	}
-	report.APIServerHealthCheck = healthCheck
-
-	nodes, err := c.GetNodesSummary(30)
-	if err != nil {
-		return err
-	}
-	report.Nodes = nodes
-
-	components, err := c.GetControlPlaneVersions(30)
-	if err != nil {
-		l.Warn(ctx, "Unable to get components information", "error", err)
-	} else {
-		report.ControlPlaneComponentVers = components
-	}
-
-	workloads, err := c.GetWorkloadSummary(60)
-	if err != nil {
-		l.Warn(ctx, "Unable to get workload information", "error", err)
-	} else {
-		report.WorkloadSummary = *workloads
-	}
-
-	events, err := c.GetRecentWarningEvents(30)
-	if err != nil {
-		l.Warn(ctx, "Unable to get recent events", "error", err)
-	} else {
-		report.RecentWarningEvents = events
-	}
-
-	issues, err := c.DetectClusterIssues(30)
-	if err != nil {
-		l.Warn(ctx, "Unable to detect cluster issues", "error", err)
-	} else {
-		report.DetectedIssues = issues
-	}
-
-	return nil
 }
