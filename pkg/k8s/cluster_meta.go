@@ -15,181 +15,17 @@
 package k8s
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 	"time"
 
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
-	"github.com/ksctl/ksctl/v2/pkg/logger"
+	"github.com/ksctl/ksctl/v2/pkg/utilities"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
-
-type DirectConnect struct {
-	ctx context.Context
-	l   logger.Logger
-
-	conn  *tls.Config
-	url   string
-	token *string
-	r     *rest.Config
-	rC    *Client
-}
-
-func NewDirectConnect(
-	ctx context.Context,
-	l logger.Logger,
-	clusterContextName string,
-	kubeconfig string,
-) (*DirectConnect, error) {
-	dc := new(DirectConnect)
-	dc.ctx = ctx
-	dc.l = l
-	dc.r = &rest.Config{}
-
-	err := dc.establishConnection(clusterContextName, kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	dc.r, err = clientcmd.BuildConfigFromKubeconfigGetter(
-		"",
-		func() (*api.Config, error) {
-			return clientcmd.Load([]byte(kubeconfig))
-		})
-	if err != nil {
-		return nil, err
-	}
-
-	dc.rC, err = NewK8sClient(ctx, l, dc.r)
-	if err != nil {
-		return nil, err
-	}
-
-	return dc, nil
-}
-
-func (c *DirectConnect) establishConnection(contextName string, kubeconfig string) error {
-	config, err := clientcmd.Load([]byte(kubeconfig))
-	if err != nil {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed deserializes the contents into Config object", "Reason", err),
-		)
-	}
-
-	clusterContext := ""
-	authContext := ""
-	isPresent := false
-	c.l.Debug(c.ctx, "searching for current-context", "contextName", contextName)
-	if config.CurrentContext != contextName {
-		c.l.Warn(c.ctx, "failed context looking for is not the current one", "expected", contextName, "got", config.CurrentContext)
-		c.l.Print(c.ctx, "using the context which is present in the state for configuration", "stateContext", contextName)
-	}
-
-	for ctxK8s, info := range config.Contexts {
-
-		if ctxK8s == contextName {
-			isPresent = true
-			clusterContext = info.Cluster
-			authContext = info.AuthInfo
-			c.l.Debug(c.ctx, "Found cluster in kubeconfig",
-				"current-context", config.CurrentContext,
-				"contexts[...].context.cluster", clusterContext,
-				"contexts[...].context.authinfo", authContext,
-			)
-		}
-	}
-
-	if !isPresent {
-		return ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to find the context", "contextName", contextName),
-		)
-	}
-
-	cluster := config.Clusters[clusterContext]
-	kubeapiURL := cluster.Server
-
-	if authContext == "aws" {
-		token := config.AuthInfos[authContext].Token
-		if len(token) == 0 {
-			return ksctlErrors.WrapError(
-				ksctlErrors.ErrFailedConnectingKubernetesCluster,
-				c.l.NewError(c.ctx, "failed to get the token", "Reason", "token is empty"),
-			)
-		}
-		tlsConf, _err := c.httpClient(true, cluster.CertificateAuthorityData, nil, nil)
-		if _err != nil {
-			return _err
-		}
-		c.conn = tlsConf
-		c.url = kubeapiURL
-		c.token = &token
-
-		return nil
-
-	} else {
-		usr := config.AuthInfos[authContext]
-
-		caCert := cluster.CertificateAuthorityData
-		clientCert := usr.ClientCertificateData
-		clientKey := usr.ClientKeyData
-		if len(caCert) == 0 || len(clientCert) == 0 || len(clientKey) == 0 {
-			return ksctlErrors.WrapError(
-				ksctlErrors.ErrFailedConnectingKubernetesCluster,
-				c.l.NewError(c.ctx, "failed to get the tls certs", "Reason", "one of the tls certs is empty"),
-			)
-		}
-
-		tlsConf, _err := c.httpClient(false, caCert, clientCert, clientKey)
-		if _err != nil {
-			return _err
-		}
-		c.conn = tlsConf
-		c.url = kubeapiURL
-		c.token = nil
-
-		return nil
-	}
-}
-
-func (c *DirectConnect) httpClient(isTokenBased bool, caCert, clientCert, clientKey []byte) (*tls.Config, error) {
-
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	if isTokenBased {
-		tlsConfig := &tls.Config{
-			RootCAs: caCertPool,
-		}
-		return tlsConfig, nil
-	}
-
-	cert, err := tls.X509KeyPair(clientCert, clientKey)
-	if err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "Error loading client certificate and key", "Reason", err),
-		)
-	}
-
-	tlsConfig := &tls.Config{
-		RootCAs:      caCertPool,
-		Certificates: []tls.Certificate{cert},
-	}
-	return tlsConfig, nil
-}
 
 type nodeUtilization struct {
 	Name              string
@@ -291,75 +127,27 @@ type NodeSummary struct {
 	Unschedulable bool
 }
 
-func (c *DirectConnect) MeasureLatency() (string, string, error) {
-	url := fmt.Sprintf("%s/version", c.url)
-
-	c.l.Debug(c.ctx, "full url for version", "url", url)
-
-	tr := &http.Transport{
-		TLSClientConfig: c.conn,
-	}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return "", "", ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed, client could not create request", "Reason", err),
-		)
-	}
-
-	if c.token != nil {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *c.token))
-	}
-
-	client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
-
+func (k *Client) GetServerVersionAndLatency() (string, string, error) {
 	start := time.Now()
 
-	resHttp, err := client.Do(req)
+	serverVersions, err := k.RawK.ServerVersion()
 	if err != nil {
-		return "", "", ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to connect",
-				"Reason", err,
-			),
-		)
+		return "", "", fmt.Errorf("failed to get server version: %w", err)
 	}
+
 	latency := time.Since(start).String()
 
-	if resHttp.StatusCode != http.StatusOK {
-		return "", "", ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to connect",
-				"Reason", fmt.Sprintf("status code was %d", resHttp.StatusCode),
-			),
-		)
-	}
-
-	defer resHttp.Body.Close()
-	type Version struct {
-		GitVersion string `json:"gitVersion"`
-	}
-	var v Version
-
-	if err := json.NewDecoder(resHttp.Body).Decode(&v); err != nil {
-		return latency, "", ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to decode the body",
-				"Reason", err,
-			),
-		)
-	}
-
-	return latency, v.GitVersion, nil
+	return latency, serverVersions.GitVersion, nil
 }
 
-func (c *DirectConnect) GetControlPlaneVersions() (map[string]string, error) {
-	pods, err := c.rC.clientset.CoreV1().Pods("kube-system").List(c.ctx, v1.ListOptions{})
+func (k *Client) GetControlPlaneVersions(timeoutSeconds int64) (map[string]string, error) {
+	pods, err := k.clientset.CoreV1().Pods("kube-system").List(k.ctx, v1.ListOptions{
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
+	})
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get kube-system pods", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get kube-system pods", "Reason", err),
 		)
 	}
 
@@ -393,53 +181,24 @@ func (c *DirectConnect) GetControlPlaneVersions() (map[string]string, error) {
 	return versions, nil
 }
 
-func (c *DirectConnect) GetHealthz() (*APIServerHealthCheck, error) {
-	url := fmt.Sprintf("%s/healthz?verbose", c.url)
+func (k *Client) GetHealthz(timeoutSeconds int64) (*APIServerHealthCheck, error) {
+	res := k.RawKAPI.Get().
+		AbsPath("healthz").
+		Param("verbose", "").
+		Timeout(time.Duration(timeoutSeconds) * time.Second).
+		Do(k.ctx)
 
-	c.l.Debug(c.ctx, "full url for state transfer", "url", url)
-
-	tr := &http.Transport{
-		TLSClientConfig: c.conn,
+	if res.Error() != nil {
+		return nil, res.Error()
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	data, err := res.Raw()
 	if err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed, client could not create request", "Reason", err),
-		)
+		return nil, err
 	}
 
-	if c.token != nil {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *c.token))
-	}
-
-	client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
-
-	resHttp, err := client.Do(req)
-	if err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to connect",
-				"Reason", err,
-			),
-		)
-	}
-
-	fail_1 := resHttp.StatusCode == http.StatusOK
-
-	defer resHttp.Body.Close()
-	body, _err := io.ReadAll(resHttp.Body)
-	if _err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "status code was 200, but failed to read response",
-				"Reason", _err,
-			),
-		)
-	}
 	var failedComponent []string
-	for _, line := range strings.Split(string(body), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		components := strings.Split(line, " ")
 
 		if !strings.HasPrefix(components[0], "[+]") {
@@ -451,21 +210,26 @@ func (c *DirectConnect) GetHealthz() (*APIServerHealthCheck, error) {
 		}
 	}
 
-	return &APIServerHealthCheck{fail_1, failedComponent}, nil
+	return &APIServerHealthCheck{
+		Healthy:          len(failedComponent) == 0,
+		FailedComponents: failedComponent,
+	}, nil
 }
 
-func (c *DirectConnect) GetNodesSummary() ([]NodeSummary, error) {
-	nodes, err := c.rC.clientset.CoreV1().Nodes().List(c.ctx, v1.ListOptions{})
+func (k *Client) GetNodesSummary(timeoutSeconds int64) ([]NodeSummary, error) {
+	nodes, err := k.clientset.CoreV1().Nodes().List(k.ctx, v1.ListOptions{
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
+	})
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get nodes", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get nodes", "Reason", err),
 		)
 	}
 
-	nodeMetrics, err := c.getClusterUtilization()
+	nodeMetrics, err := k.getClusterUtilization(timeoutSeconds)
 	if err != nil {
-		c.l.Warn(c.ctx, "Unable to get utilization information", "error", err)
+		k.l.Warn(k.ctx, "Unable to get utilization information", "error", err)
 	}
 
 	res := make([]NodeSummary, 0, len(nodes.Items))
@@ -519,68 +283,76 @@ func (c *DirectConnect) GetNodesSummary() ([]NodeSummary, error) {
 	return res, nil
 }
 
-func (c *DirectConnect) GetWorkloadSummary() (*WorkloadSummary, error) {
-	ns, err := c.rC.clientset.CoreV1().Namespaces().List(c.ctx, v1.ListOptions{})
+// GetWorkloadSummary returns list of all the workloads.
+//
+//	TODO: we need to improve the performace of this function like ensuring only specific namespace to be be retrived aka a namespace which is managed by ksctl
+func (k *Client) GetWorkloadSummary(timeoutSeconds int64) (*WorkloadSummary, error) {
+
+	listOpts := v1.ListOptions{
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
+	}
+
+	ns, err := k.clientset.CoreV1().Namespaces().List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get namespaces", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get namespaces", "Reason", err),
 		)
 	}
 
-	deployment, err := c.rC.clientset.AppsV1().Deployments("").List(c.ctx, v1.ListOptions{})
+	deployment, err := k.clientset.AppsV1().Deployments("").List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get deployment", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get deployment", "Reason", err),
 		)
 	}
 
-	statefulSet, err := c.rC.clientset.AppsV1().StatefulSets("").List(c.ctx, v1.ListOptions{})
+	statefulSet, err := k.clientset.AppsV1().StatefulSets("").List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get statefulSet", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get statefulSet", "Reason", err),
 		)
 	}
 
-	daemonSet, err := c.rC.clientset.AppsV1().DaemonSets("").List(c.ctx, v1.ListOptions{})
+	daemonSet, err := k.clientset.AppsV1().DaemonSets("").List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get daemonSet", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get daemonSet", "Reason", err),
 		)
 	}
 
-	cronJob, err := c.rC.clientset.BatchV1().CronJobs("").List(c.ctx, v1.ListOptions{})
+	cronJob, err := k.clientset.BatchV1().CronJobs("").List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get cronJob", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get cronJob", "Reason", err),
 		)
 	}
 
-	persistentVolumeClaim, err := c.rC.clientset.CoreV1().PersistentVolumeClaims("").List(c.ctx, v1.ListOptions{})
+	persistentVolumeClaim, err := k.clientset.CoreV1().PersistentVolumeClaims("").List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get persistentVolumeClaim", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get persistentVolumeClaim", "Reason", err),
 		)
 	}
 
-	persistentVolume, err := c.rC.clientset.CoreV1().PersistentVolumes().List(c.ctx, v1.ListOptions{})
+	persistentVolume, err := k.clientset.CoreV1().PersistentVolumes().List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get persistentVolume", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get persistentVolume", "Reason", err),
 		)
 	}
 
-	storageClass, err := c.rC.clientset.StorageV1().StorageClasses().List(c.ctx, v1.ListOptions{})
+	storageClass, err := k.clientset.StorageV1().StorageClasses().List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get storageClass", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get storageClass", "Reason", err),
 		)
 	}
 
@@ -595,11 +367,11 @@ func (c *DirectConnect) GetWorkloadSummary() (*WorkloadSummary, error) {
 		SC:           len(storageClass.Items),
 	}
 
-	pods, err := c.rC.clientset.CoreV1().Pods("").List(c.ctx, v1.ListOptions{})
+	pods, err := k.clientset.CoreV1().Pods("").List(k.ctx, listOpts)
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get pods", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get pods", "Reason", err),
 		)
 	}
 	for _, pod := range pods.Items {
@@ -619,9 +391,10 @@ func (c *DirectConnect) GetWorkloadSummary() (*WorkloadSummary, error) {
 				})
 			}
 
-			if pod.Status.Phase == corev1.PodPending {
+			switch pod.Status.Phase {
+			case corev1.PodPending:
 				v.IsPending = true
-			} else if pod.Status.Phase == corev1.PodFailed {
+			case corev1.PodFailed:
 				v.IsFailed = true
 			}
 			for _, containerStatus := range pod.Status.ContainerStatuses {
@@ -644,46 +417,48 @@ func (c *DirectConnect) GetWorkloadSummary() (*WorkloadSummary, error) {
 	return res, nil
 }
 
-func (c *DirectConnect) GetRecentWarningEvents() ([]EventSummary, error) {
-	events, err := c.rC.clientset.EventsV1().Events("").List(c.ctx, v1.ListOptions{})
+func (k *Client) GetRecentWarningEvents(timeoutSeconds int64) ([]EventSummary, error) {
+	events, err := k.clientset.EventsV1().Events("").List(k.ctx, v1.ListOptions{
+		FieldSelector:  "type=" + corev1.EventTypeWarning,
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
+	})
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get events", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get events", "Reason", err),
 		)
 	}
 
 	res := make([]EventSummary, 0, len(events.Items))
 	for _, event := range events.Items {
-		if event.Type == corev1.EventTypeWarning {
-			if time.Since(event.CreationTimestamp.Time) > 24*time.Hour {
-				continue
-			}
-			res = append(res, EventSummary{
-				Kind:       event.Regarding.Kind,
-				Name:       event.Regarding.Name,
-				Namespace:  event.Regarding.Namespace,
-				Time:       event.CreationTimestamp.Time,
-				Count:      event.DeprecatedCount,
-				Reason:     event.Reason,
-				ReportedBy: event.ReportingInstance,
-				Message:    event.Note,
-			})
+		if time.Since(event.CreationTimestamp.Time) > 24*time.Hour {
+			continue
 		}
+		res = append(res, EventSummary{
+			Kind:       event.Regarding.Kind,
+			Name:       event.Regarding.Name,
+			Namespace:  event.Regarding.Namespace,
+			Time:       event.CreationTimestamp.Time,
+			Count:      event.DeprecatedCount,
+			Reason:     event.Reason,
+			ReportedBy: event.ReportingInstance,
+			Message:    event.Note,
+		})
 	}
 
 	return res, nil
 }
 
-func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
+func (k *Client) DetectClusterIssues(timeoutSeconds int64) ([]ClusterIssue, error) {
 
-	pods, err := c.rC.clientset.CoreV1().Pods("").List(c.ctx, v1.ListOptions{
-		FieldSelector: "status.phase=Running",
+	pods, err := k.clientset.CoreV1().Pods("").List(k.ctx, v1.ListOptions{
+		FieldSelector:  "status.phase=Running",
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
 	})
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get nodes", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get nodes", "Reason", err),
 		)
 	}
 
@@ -736,14 +511,15 @@ func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
 		}
 	}
 
-	namespaces, err := c.rC.clientset.CoreV1().Namespaces().List(c.ctx, v1.ListOptions{
-		FieldSelector: "status.phase=Active",
-		LabelSelector: "kubernetes.io/metadata.name!=kube-system",
+	namespaces, err := k.clientset.CoreV1().Namespaces().List(k.ctx, v1.ListOptions{
+		FieldSelector:  "status.phase=Active",
+		LabelSelector:  "kubernetes.io/metadata.name!=kube-system",
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
 	})
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get namespaces", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get namespaces", "Reason", err),
 		)
 	}
 
@@ -752,11 +528,13 @@ func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
 			continue
 		}
 
-		resourceQuota, err := c.rC.clientset.CoreV1().ResourceQuotas(ns.Name).List(c.ctx, v1.ListOptions{})
+		resourceQuota, err := k.clientset.CoreV1().ResourceQuotas(ns.Name).List(k.ctx, v1.ListOptions{
+			TimeoutSeconds: utilities.Ptr(timeoutSeconds),
+		})
 		if err != nil {
 			return nil, ksctlErrors.WrapError(
 				ksctlErrors.ErrFailedConnectingKubernetesCluster,
-				c.l.NewError(c.ctx, "failed to get resource quotas", "Reason", err),
+				k.l.NewError(k.ctx, "failed to get resource quotas", "Reason", err),
 			)
 		}
 		if len(resourceQuota.Items) == 0 {
@@ -769,13 +547,14 @@ func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
 		}
 	}
 
-	svcs, err := c.rC.clientset.CoreV1().Services("").List(c.ctx, v1.ListOptions{
-		LabelSelector: "kubernetes.io/metadata.name!=kube-system",
+	svcs, err := k.clientset.CoreV1().Services("").List(k.ctx, v1.ListOptions{
+		LabelSelector:  "kubernetes.io/metadata.name!=kube-system",
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
 	})
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get services", "Reason", err),
+			k.l.NewError(k.ctx, "failed to get services", "Reason", err),
 		)
 	}
 	for _, svc := range svcs.Items {
@@ -795,66 +574,24 @@ func (c *DirectConnect) DetectClusterIssues() ([]ClusterIssue, error) {
 	return res, nil
 }
 
-func (c *DirectConnect) getClusterUtilization() ([]nodeUtilization, error) {
+func (c *Client) getClusterUtilization(timeoutSeconds int64) ([]nodeUtilization, error) {
+	x := c.RawKAPI.
+		Get().
+		AbsPath("apis", "metrics.k8s.io", "v1beta1", "nodes")
 
-	url := fmt.Sprintf("%s/apis/metrics.k8s.io/v1beta1/nodes", c.url)
-
-	c.l.Debug(c.ctx, "full url for node usage", "url", url)
-
-	tr := &http.Transport{
-		TLSClientConfig: c.conn,
+	res := x.Do(c.ctx)
+	if res.Error() != nil {
+		return nil, ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedConnectingKubernetesCluster,
+			c.l.NewError(c.ctx, "failed to get node metrics", "Reason", res.Error()),
+		)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	body, err := res.Raw()
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed, client could not create request", "Reason", err),
-		)
-	}
-
-	if c.token != nil {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *c.token))
-	}
-
-	client := &http.Client{Transport: tr, Timeout: 1 * time.Minute}
-
-	resHttp, err := client.Do(req)
-	if err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to connect",
-				"Reason", err,
-			),
-		)
-	}
-
-	if resHttp.StatusCode == http.StatusNotFound {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to get utilization",
-				"Reason", "metrics.k8s.io not found",
-			),
-		)
-	}
-
-	defer resHttp.Body.Close()
-	body, _err := io.ReadAll(resHttp.Body)
-	if _err != nil {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to read the body",
-				"Reason", _err,
-			),
-		)
-	}
-
-	if resHttp.StatusCode != http.StatusOK {
-		return nil, ksctlErrors.WrapError(
-			ksctlErrors.ErrFailedConnectingKubernetesCluster,
-			c.l.NewError(c.ctx, "failed to connect",
-				"Reason", fmt.Sprintf("status code was %d\n%s", resHttp.StatusCode, string(body)),
-			),
+			c.l.NewError(c.ctx, "failed to read the body", "Reason", err),
 		)
 	}
 
@@ -881,7 +618,9 @@ func (c *DirectConnect) getClusterUtilization() ([]nodeUtilization, error) {
 		)
 	}
 
-	nL, err := c.rC.clientset.CoreV1().Nodes().List(c.ctx, v1.ListOptions{})
+	nL, err := c.clientset.CoreV1().Nodes().List(c.ctx, v1.ListOptions{
+		TimeoutSeconds: utilities.Ptr(timeoutSeconds),
+	})
 	if err != nil {
 		return nil, ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedConnectingKubernetesCluster,
@@ -889,7 +628,7 @@ func (c *DirectConnect) getClusterUtilization() ([]nodeUtilization, error) {
 		)
 	}
 
-	res := make([]nodeUtilization, 0, len(nL.Items))
+	nodes := make([]nodeUtilization, 0, len(nL.Items))
 
 	for _, n := range nL.Items {
 		for _, nM := range nm.Items {
@@ -914,10 +653,10 @@ func (c *DirectConnect) getClusterUtilization() ([]nodeUtilization, error) {
 				nodeUtilz.CPUUnits = cpuTotal.String()
 				nodeUtilz.MemUnits = memTotal.String()
 
-				res = append(res, nodeUtilz)
+				nodes = append(nodes, nodeUtilz)
 			}
 		}
 	}
 
-	return res, nil
+	return nodes, nil
 }

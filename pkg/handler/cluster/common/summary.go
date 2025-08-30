@@ -14,95 +14,24 @@
 
 package common
 
-import (
-	"github.com/ksctl/ksctl/v2/pkg/k8s"
-)
+import "github.com/ksctl/ksctl/v2/pkg/k8s"
 
-type SummaryOutput struct {
-	// Cluster information
-	ClusterName   string
-	CloudProvider string
-	ClusterType   string
-
-	RoundTripLatency  string
-	KubernetesVersion string
-
-	APIServerHealthCheck      *k8s.APIServerHealthCheck
-	ControlPlaneComponentVers map[string]string
-
-	Nodes []k8s.NodeSummary
-
-	WorkloadSummary k8s.WorkloadSummary
-
-	DetectedIssues []k8s.ClusterIssue
-
-	RecentWarningEvents []k8s.EventSummary
-}
-
-func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
+func (kc *Controller) ClusterSummary() (_ *k8s.SummaryOutput, errC error) {
 
 	kubeconfig, err := kc.Switch()
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := k8s.NewDirectConnect(kc.ctx, kc.l, kc.s.ClusterKubeConfigContext, *kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	res := &SummaryOutput{
+	res := &k8s.SummaryOutput{
 		ClusterName:   kc.s.ClusterName,
 		CloudProvider: string(kc.s.InfraProvider),
 		ClusterType:   string(kc.s.ClusterType),
 	}
 
-	latency, k8sVer, err := c.MeasureLatency()
-	if err != nil {
-		kc.l.Warn(kc.ctx, "Unable to measure latency", "error", err)
-	} else {
-		res.RoundTripLatency = latency
-		res.KubernetesVersion = k8sVer
-	}
-
-	healthCheck, err := c.GetHealthz()
+	err = k8s.ClusterSummary(kc.ctx, kc.l, *kubeconfig, res)
 	if err != nil {
 		return nil, err
-	}
-	res.APIServerHealthCheck = healthCheck
-
-	nodes, err := c.GetNodesSummary()
-	if err != nil {
-		return nil, err
-	}
-	res.Nodes = nodes
-
-	components, err := c.GetControlPlaneVersions()
-	if err != nil {
-		kc.l.Warn(kc.ctx, "Unable to get components information", "error", err)
-	} else {
-		res.ControlPlaneComponentVers = components
-	}
-
-	workloads, err := c.GetWorkloadSummary()
-	if err != nil {
-		kc.l.Warn(kc.ctx, "Unable to get workload information", "error", err)
-	} else {
-		res.WorkloadSummary = *workloads
-	}
-
-	events, err := c.GetRecentWarningEvents()
-	if err != nil {
-		kc.l.Warn(kc.ctx, "Unable to get recent events", "error", err)
-	} else {
-		res.RecentWarningEvents = events
-	}
-
-	issues, err := c.DetectClusterIssues()
-	if err != nil {
-		kc.l.Warn(kc.ctx, "Unable to detect cluster issues", "error", err)
-	} else {
-		res.DetectedIssues = issues
 	}
 
 	return res, nil
