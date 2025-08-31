@@ -21,117 +21,112 @@ import (
 )
 
 type nodeUtilization struct {
-	Name              string
-	CPUUtilization    float64 // in percentage
-	MemoryUtilization float64
+	Name              string  `json:"node_name"`
+	CPUUtilization    float64 `json:"cpu_utilization"` // in percentage
+	MemoryUtilization float64 `json:"memory_utilization"`
 
-	CPUUnits string
-	MemUnits string
+	CPUUnits string `json:"cpu_units"`
+	MemUnits string `json:"mem_units"`
 }
 
 type ContainerSummary struct {
-	Name           string
-	RestartCount   int32
-	Ready          bool
-	WaitingProblem corev1.ContainerStateWaiting
+	Name           string                       `json:"name"`
+	RestartCount   int32                        `json:"restart_count"`
+	Ready          bool                         `json:"ready"`
+	WaitingProblem corev1.ContainerStateWaiting `json:"waiting_problem"`
 }
 
 type PodOwnerRef struct {
-	Kind      string
-	Name      string
-	Namespace string
+	Kind      string `json:"kind"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 type PodSummary struct {
-	Name      string
-	Namespace string
-	OwnerRef  []PodOwnerRef
-	IsFailed  bool
-	IsPending bool
+	Name      string        `json:"name"`
+	Namespace string        `json:"namespace"`
+	OwnerRef  []PodOwnerRef `json:"owner_ref"`
+	IsFailed  bool          `json:"is_failed"`
+	IsPending bool          `json:"is_pending"`
 
-	FailedContainers []ContainerSummary
+	FailedContainers []ContainerSummary `json:"failed_containers"`
 }
 
 type WorkloadSummary struct {
-	Deployments  int
-	StatefulSets int
-	DaemonSets   int
-	CronJobs     int
-	Namespaces   int
-	PVC          int
-	PV           int
-	SC           int
+	Deployments  int `json:"deployments"`
+	StatefulSets int `json:"statefulsets"`
+	DaemonSets   int `json:"daemonsets"`
+	CronJobs     int `json:"cronjobs"`
+	Namespaces   int `json:"namespaces"`
+	PVC          int `json:"pvc"`
+	PV           int `json:"pv"`
+	SC           int `json:"sc"`
 
-	LoadbalancerSVC int
-	ClusterIPSVC    int
+	LoadbalancerSVC int `json:"loadbalancer_svc"`
+	ClusterIPSVC    int `json:"clusterip_svc"`
 
-	RunningPods   int
-	UnHealthyPods []PodSummary
+	RunningPods   int          `json:"running_pods"`
+	UnHealthyPods []PodSummary `json:"unhealthy_pods"`
 }
 
 type ClusterIssue struct {
-	Severity       string // "Warning", "Error", "Critical"
-	Component      string
-	Message        string
-	Recommendation string
+	Severity       string `json:"severity"` // "Warning", "Error", "Critical"
+	Component      string `json:"component"`
+	Message        string `json:"message"`
+	Recommendation string `json:"recommendation"`
 }
 
 type EventSummary struct {
-	Time      time.Time
-	Kind      string
-	Name      string
-	Namespace string
+	Time      time.Time `json:"time"`
+	Kind      string    `json:"kind"`
+	Name      string    `json:"name"`
+	Namespace string    `json:"namespace"`
 
-	Reason     string
-	Message    string
-	ReportedBy string
+	Reason     string `json:"reason"`
+	Message    string `json:"message"`
+	ReportedBy string `json:"reported_by"`
 
-	Count int32
+	Count int32 `json:"count"`
 }
 
 type APIServerHealthCheck struct {
-	Healthy          bool
-	FailedComponents []string
+	Healthy          bool     `json:"healthy"`
+	FailedComponents []string `json:"failed_components"`
 }
 
 type NodeSummary struct {
-	Name               string
-	KubeletHealthy     bool
-	Ready              bool
-	MemoryPressure     bool
-	DiskPressure       bool
-	NetworkUnavailable bool
+	Name               string `json:"name"`
+	KubeletHealthy     bool   `json:"kubelet_healthy"`
+	Ready              bool   `json:"ready"`
+	MemoryPressure     bool   `json:"memory_pressure"`
+	DiskPressure       bool   `json:"disk_pressure"`
+	NetworkUnavailable bool   `json:"network_unavailable"`
 
 	// Node Details
-	KernelVersion           string
-	OSImage                 string
-	ContainerRuntimeVersion string
-	KubeletVersion          string
-	OperatingSystem         string
-	Architecture            string
+	KernelVersion           string `json:"kernel_version"`
+	OSImage                 string `json:"os_image"`
+	ContainerRuntimeVersion string `json:"container_runtime_version"`
+	KubeletVersion          string `json:"kubelet_version"`
+	OperatingSystem         string `json:"operating_system"`
+	Architecture            string `json:"architecture"`
 
-	CPUUtilization    float64 // in percentage
-	MemoryUtilization float64
+	CPUUtilization    float64 `json:"cpu_utilization"`    // in percentage
+	MemoryUtilization float64 `json:"memory_utilization"` // in percentage
 
-	CPUUnits string
-	MemUnits string
+	CPUUnits string `json:"cpu_units"`
+	MemUnits string `json:"mem_units"`
 
 	// Spec
-	Unschedulable bool
+	Unschedulable bool `json:"unschedulable"`
 }
 
 type SummaryOutput struct {
-	RoundTripLatency  string
-	KubernetesVersion string
-
-	APIServerHealthCheck      *APIServerHealthCheck
-	ControlPlaneComponentVers map[string]string
-
-	Nodes []NodeSummary
-
-	WorkloadSummary WorkloadSummary
-
-	DetectedIssues []ClusterIssue
-
-	RecentWarningEvents []EventSummary
+	RoundTripLatency          string                `json:"round_trip_latency"`
+	KubernetesVersion         string                `json:"kubernetes_version"`
+	APIServerHealthCheck      *APIServerHealthCheck `json:"api_server_health_check,omitempty"`
+	ControlPlaneComponentVers map[string]string     `json:"control_plane_component_versions,omitempty"`
+	Nodes                     []NodeSummary         `json:"nodes"`
+	WorkloadSummary           WorkloadSummary       `json:"workload_summary"`
+	DetectedIssues            []ClusterIssue        `json:"detected_issues"`
+	RecentWarningEvents       []EventSummary        `json:"recent_warning_events,omitempty"`
 }
