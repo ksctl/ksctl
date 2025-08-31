@@ -21,6 +21,8 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type Client struct {
@@ -29,6 +31,9 @@ type Client struct {
 	clientset           kubernetes.Interface
 	apiextensionsClient clientset.Interface
 	r                   *rest.Config
+
+	RawK    *kubernetes.Clientset
+	RawKAPI rest.Interface
 }
 
 type App struct {
@@ -41,19 +46,49 @@ type App struct {
 	Metadata    string
 }
 
-func NewK8sClient(ctx context.Context, l logger.Logger, c *rest.Config) (k *Client, err error) {
+type restConfig func() (*rest.Config, error)
+
+func WithKubeconfigContent(kubeconfigContent string) restConfig {
+	return func() (*rest.Config, error) {
+		return clientcmd.BuildConfigFromKubeconfigGetter(
+			"",
+			func() (*api.Config, error) {
+				return clientcmd.Load([]byte(kubeconfigContent))
+			},
+		)
+	}
+}
+
+func WithInClusterConfig() restConfig {
+	return func() (*rest.Config, error) {
+		return rest.InClusterConfig()
+	}
+}
+
+func NewK8sClient(ctx context.Context, l logger.Logger, restConfig restConfig) (k *Client, err error) {
 	k = new(Client)
 	k.ctx = context.WithValue(ctx, "module", "kubernetes-client")
-	k.r = c
 	k.l = l
-	k.apiextensionsClient, err = clientset.NewForConfig(c)
+
+	restC, err := restConfig()
+	if err != nil {
+		return nil, err
+	}
+	k.r = restC
+
+	k.apiextensionsClient, err = clientset.NewForConfig(restC)
 	if err != nil {
 		return nil, err
 	}
 
-	k.clientset, err = kubernetes.NewForConfig(c)
+	k.RawK, err = kubernetes.NewForConfig(restC)
 	if err != nil {
 		return nil, err
 	}
+
+	k.clientset = k.RawK
+
+	k.RawKAPI = k.RawK.Discovery().RESTClient()
+
 	return k, nil
 }

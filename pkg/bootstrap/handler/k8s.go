@@ -28,17 +28,12 @@ import (
 	"github.com/ksctl/ksctl/v2/pkg/logger"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
 	"github.com/ksctl/ksctl/v2/pkg/storage"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type K8sClusterClient struct {
 	ctx           context.Context
 	l             logger.Logger
 	storageDriver storage.Storage
-
-	r *rest.Config
 
 	helmClient *helm.Client
 	k8sClient  *k8s.Client
@@ -60,21 +55,10 @@ func NewClusterClient(
 
 	rawKubeconfig := []byte(kubeconfig)
 
-	config := &rest.Config{}
-	config, err = clientcmd.BuildConfigFromKubeconfigGetter(
-		"",
-		func() (*api.Config, error) {
-			return clientcmd.Load(rawKubeconfig)
-		})
+	k.k8sClient, err = k8s.NewK8sClient(parentCtx, parentLog, k8s.WithKubeconfigContent(string(rawKubeconfig)))
 	if err != nil {
 		return
 	}
-
-	k.k8sClient, err = k8s.NewK8sClient(parentCtx, parentLog, config)
-	if err != nil {
-		return
-	}
-	k.r = config
 
 	k.helmClient, err = helm.NewClient(
 		k.ctx,
@@ -117,10 +101,8 @@ func (k *K8sClusterClient) getStackManifest(
 
 	convertedOverriding := make(map[stack.ComponentID]stack.ComponentOverrides)
 
-	if overriding != nil { // there are some user overriding
-		for k, v := range overriding {
-			convertedOverriding[stack.ComponentID(k)] = v
-		}
+	for k, v := range overriding {
+		convertedOverriding[stack.ComponentID(k)] = v
 	}
 
 	appStk, err := cni.FetchKsctlStack(k.ctx, k.l, app.StackName)
