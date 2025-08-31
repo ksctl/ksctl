@@ -14,12 +14,113 @@
 
 package k8s
 
-type SummaryOutput struct {
-	// Cluster information
-	ClusterName   string
-	CloudProvider string
-	ClusterType   string
+import (
+	"time"
 
+	corev1 "k8s.io/api/core/v1"
+)
+
+type nodeUtilization struct {
+	Name              string
+	CPUUtilization    float64 // in percentage
+	MemoryUtilization float64
+
+	CPUUnits string
+	MemUnits string
+}
+
+type ContainerSummary struct {
+	Name           string
+	RestartCount   int32
+	Ready          bool
+	WaitingProblem corev1.ContainerStateWaiting
+}
+
+type PodOwnerRef struct {
+	Kind      string
+	Name      string
+	Namespace string
+}
+
+type PodSummary struct {
+	Name      string
+	Namespace string
+	OwnerRef  []PodOwnerRef
+	IsFailed  bool
+	IsPending bool
+
+	FailedContainers []ContainerSummary
+}
+
+type WorkloadSummary struct {
+	Deployments  int
+	StatefulSets int
+	DaemonSets   int
+	CronJobs     int
+	Namespaces   int
+	PVC          int
+	PV           int
+	SC           int
+
+	LoadbalancerSVC int
+	ClusterIPSVC    int
+
+	RunningPods   int
+	UnHealthyPods []PodSummary
+}
+
+type ClusterIssue struct {
+	Severity       string // "Warning", "Error", "Critical"
+	Component      string
+	Message        string
+	Recommendation string
+}
+
+type EventSummary struct {
+	Time      time.Time
+	Kind      string
+	Name      string
+	Namespace string
+
+	Reason     string
+	Message    string
+	ReportedBy string
+
+	Count int32
+}
+
+type APIServerHealthCheck struct {
+	Healthy          bool
+	FailedComponents []string
+}
+
+type NodeSummary struct {
+	Name               string
+	KubeletHealthy     bool
+	Ready              bool
+	MemoryPressure     bool
+	DiskPressure       bool
+	NetworkUnavailable bool
+
+	// Node Details
+	KernelVersion           string
+	OSImage                 string
+	ContainerRuntimeVersion string
+	KubeletVersion          string
+	OperatingSystem         string
+	Architecture            string
+
+	CPUUtilization    float64 // in percentage
+	MemoryUtilization float64
+
+	CPUUnits string
+	MemUnits string
+
+	// Spec
+	Unschedulable bool
+}
+
+type SummaryOutput struct {
 	RoundTripLatency  string
 	KubernetesVersion string
 

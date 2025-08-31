@@ -16,14 +16,21 @@ package common
 
 import "github.com/ksctl/ksctl/v2/pkg/k8s"
 
-func (kc *Controller) ClusterSummary() (_ *k8s.SummaryOutput, errC error) {
+type SummaryOutput struct {
+	ClusterName   string
+	CloudProvider string
+	ClusterType   string
+	k8s.SummaryOutput
+}
+
+func (kc *Controller) ClusterSummary() (_ *SummaryOutput, errC error) {
 
 	kubeconfig, err := kc.Switch()
 	if err != nil {
 		return nil, err
 	}
 
-	report := &k8s.SummaryOutput{
+	report := &SummaryOutput{
 		ClusterName:   kc.s.ClusterName,
 		CloudProvider: string(kc.s.InfraProvider),
 		ClusterType:   string(kc.s.ClusterType),
