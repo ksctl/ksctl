@@ -10,6 +10,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/ksctl/ksctl)](https://goreportcard.com/report/github.com/ksctl/ksctl)
 [![](https://pkg.go.dev/badge/github.com/ksctl/ksctl.svg)](https://pkg.go.dev/github.com/ksctl/ksctl)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7469/badge)](https://www.bestpractices.dev/projects/7469)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ksctl/ksctl)
 
 ## 📖 Overview
 
