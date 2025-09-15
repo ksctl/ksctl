@@ -16,7 +16,7 @@ jobs:
       run:
         working-directory: test/gh-runner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: hashicorp/setup-terraform@v3
       - name: setup ansible latest
         run: |
@@ -119,7 +119,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: hashicorp/setup-terraform@v3
       - name: setup ansible latest
         run: |
