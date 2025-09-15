@@ -24,7 +24,7 @@ jobs:
           sudo apt install software-properties-common -y
           sudo add-apt-repository --yes --update ppa:ansible/ansible
           sudo apt install ansible -y
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "stable"
 
@@ -127,7 +127,7 @@ jobs:
           sudo apt install software-properties-common -y
           sudo add-apt-repository --yes --update ppa:ansible/ansible
           sudo apt install ansible -y
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "stable"
 
