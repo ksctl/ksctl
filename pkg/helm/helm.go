@@ -105,16 +105,135 @@ func (c *Client) UninstallChart(namespace, releaseName string) error {
 	return nil
 }
 
-// TODO: need to have a upgrade and rollbacks
-func (c *Client) UpdateChart() error {
-	return nil
-}
-
 func (c *Client) RollbackChart() error {
 	return nil
 }
 
 func (c *Client) UpgradeOrInstallChart(
+	chartRef,
+	chartVer,
+	chartName,
+	namespace,
+	releaseName string,
+	createNamespace bool,
+	arguments map[string]any,
+) error {
+	clientInstall := action.NewGet(c.actionConfig)
+	_, err := clientInstall.Run(releaseName)
+	if err != nil {
+		c.log.Print(c.ctx, fmt.Sprintf("Release %s not found, installing...", releaseName))
+		if errInstall := c.InstallChart(
+			chartRef,
+			chartVer,
+			chartName,
+			namespace,
+			releaseName,
+			createNamespace,
+			arguments); errInstall != nil {
+			return errInstall
+		}
+	} else {
+		c.log.Print(c.ctx, fmt.Sprintf("Release %s found, upgrading...", releaseName))
+		if errUpgrade := c.UpgradeChart(
+			chartRef,
+			chartVer,
+			chartName,
+			namespace,
+			releaseName,
+			createNamespace,
+			arguments); errUpgrade != nil {
+			return errUpgrade
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) InstallChart(
+	chartRef,
+	chartVer,
+	chartName,
+	namespace,
+	releaseName string,
+	createNamespace bool,
+	arguments map[string]interface{}) error {
+
+	if len(chartRef) != 0 && registry.IsOCI(chartRef) {
+		if errOciPull := c.runPull(chartRef, chartVer); errOciPull != nil {
+			return errOciPull
+		}
+	}
+
+	clientInstall := action.NewInstall(c.actionConfig)
+
+	// NOTE: Patch for the helm latest releases
+	if chartVer == "latest" {
+		chartVer = ""
+	}
+
+	clientInstall.ChartPathOptions.Version = chartVer
+	clientInstall.ReleaseName = releaseName
+	clientInstall.Namespace = namespace // FIXME: this is not working
+	c.settings.SetNamespace(namespace)
+	//	if c.settings.Namespace() != clientInstall.Namespace {
+	//		panic(fmt.Sprintf("Namespace mismatch: %s != %s", c.settings.Namespace(), clientInstall.Namespace))
+	//	}
+
+	clientInstall.CreateNamespace = createNamespace
+
+	clientInstall.Wait = true
+	clientInstall.Timeout = 5 * time.Minute
+
+	//////
+	// registryClient, err := newRegistryClientTLS(
+	// 	c.settings,
+	// 	c.log.ExternalLogHandlerf,
+	// 	clientInstall.CertFile,
+	// 	clientInstall.KeyFile,
+	// 	clientInstall.CaFile,
+	// 	clientInstall.InsecureSkipTLSverify,
+	// 	clientInstall.PlainHTTP)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to created registry client: %w", err)
+	// }
+	// clientInstall.SetRegistryClient(registryClient)
+	/////
+
+	chartPath, err := func() (string, error) {
+		if len(chartRef) != 0 && registry.IsOCI(chartRef) && c.ociPullDestDir != nil {
+			return filepath.Join(
+				*c.ociPullDestDir,
+				chartName,
+			), nil
+		}
+		return clientInstall.ChartPathOptions.LocateChart(chartName, c.settings)
+	}()
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedHelmClient,
+			c.log.NewError(c.ctx, "failed to locate chart", "Reason", err),
+		)
+	}
+
+	chartRequested, err := loader.Load(chartPath)
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedHelmClient,
+			c.log.NewError(c.ctx, "failed to load a chart", "Reason", err),
+		)
+	}
+
+	_, err = clientInstall.Run(chartRequested, arguments)
+	if err != nil {
+		return ksctlErrors.WrapError(
+			ksctlErrors.ErrFailedHelmClient,
+			c.log.NewError(c.ctx, "failed to install a chart", "Reason", err),
+		)
+	}
+	return nil
+}
+
+func (c *Client) UpgradeChart(
 	chartRef,
 	chartVer,
 	chartName,
