@@ -23,7 +23,7 @@ func (k *Client) HelmDeploy(component *App) error {
 	}
 
 	for _, chart := range charts {
-		if err := k.InstallChart(
+		if err := k.UpgradeOrInstallChart(
 			chart.ChartRef,
 			chart.Version,
 			chart.Name,

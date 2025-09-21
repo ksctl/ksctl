@@ -114,55 +114,35 @@ func (c *Client) RollbackChart() error {
 	return nil
 }
 
-func (c *Client) InstallChart(
+func (c *Client) UpgradeOrInstallChart(
 	chartRef,
 	chartVer,
 	chartName,
 	namespace,
 	releaseName string,
 	createNamespace bool,
-	arguments map[string]interface{}) error {
-
+	arguments map[string]any,
+) error {
 	if len(chartRef) != 0 && registry.IsOCI(chartRef) {
 		if errOciPull := c.runPull(chartRef, chartVer); errOciPull != nil {
 			return errOciPull
 		}
 	}
 
-	clientInstall := action.NewInstall(c.actionConfig)
+	clientUpgrade := action.NewUpgrade(c.actionConfig)
+	clientUpgrade.Install = true
 
 	// NOTE: Patch for the helm latest releases
 	if chartVer == "latest" {
 		chartVer = ""
 	}
 
-	clientInstall.ChartPathOptions.Version = chartVer
-	clientInstall.ReleaseName = releaseName
-	clientInstall.Namespace = namespace // FIXME: this is not working
+	clientUpgrade.Version = chartVer
+	clientUpgrade.Namespace = namespace
 	c.settings.SetNamespace(namespace)
-	//	if c.settings.Namespace() != clientInstall.Namespace {
-	//		panic(fmt.Sprintf("Namespace mismatch: %s != %s", c.settings.Namespace(), clientInstall.Namespace))
-	//	}
 
-	clientInstall.CreateNamespace = createNamespace
-
-	clientInstall.Wait = true
-	clientInstall.Timeout = 5 * time.Minute
-
-	//////
-	// registryClient, err := newRegistryClientTLS(
-	// 	c.settings,
-	// 	c.log.ExternalLogHandlerf,
-	// 	clientInstall.CertFile,
-	// 	clientInstall.KeyFile,
-	// 	clientInstall.CaFile,
-	// 	clientInstall.InsecureSkipTLSverify,
-	// 	clientInstall.PlainHTTP)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to created registry client: %w", err)
-	// }
-	// clientInstall.SetRegistryClient(registryClient)
-	/////
+	clientUpgrade.Wait = true
+	clientUpgrade.Timeout = 5 * time.Minute
 
 	chartPath, err := func() (string, error) {
 		if len(chartRef) != 0 && registry.IsOCI(chartRef) && c.ociPullDestDir != nil {
@@ -171,7 +151,9 @@ func (c *Client) InstallChart(
 				chartName,
 			), nil
 		}
-		return clientInstall.ChartPathOptions.LocateChart(chartName, c.settings)
+
+		clientUpgrade.ChartPathOptions.Version = chartVer
+		return clientUpgrade.ChartPathOptions.LocateChart(chartName, c.settings)
 	}()
 	if err != nil {
 		return ksctlErrors.WrapError(
@@ -188,11 +170,11 @@ func (c *Client) InstallChart(
 		)
 	}
 
-	_, err = clientInstall.Run(chartRequested, arguments)
+	_, err = clientUpgrade.Run(releaseName, chartRequested, arguments)
 	if err != nil {
 		return ksctlErrors.WrapError(
 			ksctlErrors.ErrFailedHelmClient,
-			c.log.NewError(c.ctx, "failed to install a chart", "Reason", err),
+			c.log.NewError(c.ctx, "failed to install/upgrade a chart", "Reason", err),
 		)
 	}
 	return nil
