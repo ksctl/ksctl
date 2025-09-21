@@ -114,15 +114,15 @@ func (c *Client) RollbackChart() error {
 	return nil
 }
 
-func (c *Client) InstallChart(
+func (c *Client) UpgradeOrInstallChart(
 	chartRef,
 	chartVer,
 	chartName,
 	namespace,
 	releaseName string,
 	createNamespace bool,
-	arguments map[string]interface{}) error {
-
+	arguments map[string]any,
+) error {
 	if len(chartRef) != 0 && registry.IsOCI(chartRef) {
 		if errOciPull := c.runPull(chartRef, chartVer); errOciPull != nil {
 			return errOciPull
@@ -152,11 +152,8 @@ func (c *Client) InstallChart(
 			), nil
 		}
 
-		// The Helm upgrade action client doesn't have a `LocateChart` method, so we
-		// use a temporary install client for this purpose.
-		clientInstall := action.NewInstall(c.actionConfig)
-		clientInstall.ChartPathOptions.Version = chartVer
-		return clientInstall.ChartPathOptions.LocateChart(chartName, c.settings)
+		clientUpgrade.ChartPathOptions.Version = chartVer
+		return clientUpgrade.ChartPathOptions.LocateChart(chartName, c.settings)
 	}()
 	if err != nil {
 		return ksctlErrors.WrapError(
