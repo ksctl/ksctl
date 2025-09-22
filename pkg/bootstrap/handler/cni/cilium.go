@@ -89,25 +89,30 @@ func setCiliumComponentOverridings(p stack.ComponentOverrides) (
 	ciliumChartOverridings map[string]any,
 	err error,
 ) {
-	releases, err := poller.GetSharedPoller().Get("cilium", "cilium")
-	if err != nil {
-		return "", nil, err
-	}
 
 	ciliumChartOverridings = map[string]any{}
 
 	_version, _ciliumChartOverridings, _guidedSetup := getCiliumComponentOverridings(p)
+	if _version == nil {
+		releases, err := poller.GetSharedPoller().Get("cilium", "cilium")
+		if err != nil {
+			return "", nil, err
+		}
 
-	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
+		version = releases[0]
+	} else {
+		version = *_version
+	}
 
 	if _ciliumChartOverridings != nil {
 		ciliumChartOverridings = _ciliumChartOverridings
 	} else if _guidedSetup != nil {
 		for _, v := range _guidedSetup {
-			if v == CiliumGuidedL7Proxy {
+			switch v {
+			case CiliumGuidedL7Proxy:
 				ciliumChartOverridings["l7Proxy"] = true
 
-			} else if v == CiliumGuidedHubble {
+			case CiliumGuidedHubble:
 				ciliumChartOverridings["hubble"] = map[string]any{
 					"ui":    map[string]any{"enabled": true},
 					"relay": map[string]any{"enabled": true},
@@ -121,12 +126,12 @@ func setCiliumComponentOverridings(p stack.ComponentOverrides) (
 						"httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction",
 					}},
 				}
-			} else if v == CiliumGuidedEncryption {
+			case CiliumGuidedEncryption:
 				ciliumChartOverridings["encryption"] = map[string]any{
 					"enabled": true,
 					"type":    "wireguard",
 				}
-			} else if v == CiliumGuidedPrometheus {
+			case CiliumGuidedPrometheus:
 				ciliumChartOverridings["operator"] = map[string]any{
 					"replicas": 3,
 					"prometheus": map[string]any{
@@ -181,8 +186,8 @@ func CiliumStandardComponent(params stack.ComponentOverrides) (stack.Component, 
 		return stack.Component{}, err
 	}
 
-	if strings.HasPrefix(version, "v") {
-		version = strings.TrimPrefix(version, "v")
+	if after, ok := strings.CutPrefix(version, "v"); ok {
+		version = after
 	}
 
 	return stack.Component{

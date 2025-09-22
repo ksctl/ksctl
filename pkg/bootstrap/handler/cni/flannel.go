@@ -45,16 +45,20 @@ func setFlannelComponentOverridings(p stack.ComponentOverrides) (
 	postInstall string,
 	err error,
 ) {
-	releases, err := poller.GetSharedPoller().Get("flannel-io", "flannel")
-	if err != nil {
-		return "", "", "", err
-	}
 
 	url = ""
 	postInstall = ""
 
 	_version := getFlannelComponentOverridings(p)
-	version = getVersionIfItsNotNilAndLatest(_version, releases[0])
+	if _version == nil {
+		releases, err := poller.GetSharedPoller().Get("flannel-io", "flannel")
+		if err != nil {
+			return "", "", "", err
+		}
+		version = releases[0]
+	} else {
+		version = *_version
+	}
 
 	defaultVals := func() {
 		url = fmt.Sprintf("https://github.com/flannel-io/flannel/releases/download/%s/kube-flannel.yml", version)
