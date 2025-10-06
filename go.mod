@@ -19,7 +19,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/pricing v1.39.4
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.4
 	github.com/aws/smithy-go v1.23.0
-	github.com/docker/docker v28.3.1+incompatible
+	github.com/docker/docker v28.5.0+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/fatih/color v1.18.0
 	github.com/gookit/goutil v0.7.1
