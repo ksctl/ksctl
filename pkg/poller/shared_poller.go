@@ -15,7 +15,6 @@
 package poller
 
 import (
-	"sync"
 	"time"
 
 	"github.com/ksctl/ksctl/v2/pkg/cache"
@@ -23,7 +22,6 @@ import (
 
 var (
 	instance *GithubReleasePoller
-	once     sync.Once
 )
 
 func InitSharedGithubReleasePoller(c cache.Cache) {

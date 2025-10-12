@@ -62,11 +62,11 @@ func TestSetAndGet(t *testing.T) {
 	cache := NewInMemCache(ctx)
 
 	// Test setting and getting values
-	cache.Set("key1", "value1")
-	cache.Set("key2", "123")
+	cache.Set(ctx, "key1", "value1")
+	cache.Set(ctx, "key2", "123")
 
 	// Test retrieving values
-	value1, ok := cache.Get("key1")
+	value1, ok := cache.Get(ctx, "key1")
 	if !ok {
 		t.Error("Expected key1 to exist in cache")
 	}
@@ -74,7 +74,7 @@ func TestSetAndGet(t *testing.T) {
 		t.Errorf("Expected 'value1', got %v", value1)
 	}
 
-	value2, ok := cache.Get("key2")
+	value2, ok := cache.Get(ctx, "key2")
 	if !ok {
 		t.Error("Expected key2 to exist in cache")
 	}
@@ -83,7 +83,7 @@ func TestSetAndGet(t *testing.T) {
 	}
 
 	// Test non-existent key
-	_, ok = cache.Get("nonexistent")
+	_, ok = cache.Get(ctx, "nonexistent")
 	if ok {
 		t.Error("Expected 'nonexistent' key to not exist")
 	}
@@ -95,9 +95,9 @@ func TestSetWithExpire(t *testing.T) {
 
 	cache := NewInMemCache(ctx)
 
-	cache.SetWithExpire("expiring", "temp-value", 1*time.Second)
+	cache.SetWithExpire(ctx, "expiring", "temp-value", 1*time.Second)
 
-	val, ok := cache.Get("expiring")
+	val, ok := cache.Get(ctx, "expiring")
 	if !ok {
 		t.Error("Expected 'expiring' key to exist immediately after setting")
 	}
@@ -107,7 +107,7 @@ func TestSetWithExpire(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	_, ok = cache.Get("expiring")
+	_, ok = cache.Get(ctx, "expiring")
 	if ok {
 		t.Error("Expected 'expiring' key to be removed after TTL")
 	}
@@ -124,10 +124,10 @@ func TestWorkerCleanup(t *testing.T) {
 	cache := NewInMemCache(ctx)
 
 	for i := range [5]any{} {
-		cache.SetWithExpire(fmt.Sprintf("key%d", i), strconv.Itoa(i), 1*time.Second)
+		cache.SetWithExpire(ctx, fmt.Sprintf("key%d", i), strconv.Itoa(i), 1*time.Second)
 	}
 
-	cache.Set("permanent", "value")
+	cache.Set(ctx, "permanent", "value")
 
 	time.Sleep(2 * time.Second)
 
@@ -140,13 +140,13 @@ func TestWorkerCleanup(t *testing.T) {
 	cache.mu.Unlock()
 
 	for i := range [5]any{} {
-		_, ok := cache.Get(fmt.Sprintf("key%d", i))
+		_, ok := cache.Get(ctx, fmt.Sprintf("key%d", i))
 		if ok {
 			t.Errorf("Expected key%d to be removed after TTL", i)
 		}
 	}
 
-	_, ok := cache.Get("permanent")
+	_, ok := cache.Get(ctx, "permanent")
 	if !ok {
 		t.Error("Expected 'permanent' key to still exist")
 	}
@@ -156,14 +156,14 @@ func TestClose(t *testing.T) {
 	ctx := context.Background()
 	cache := NewInMemCache(ctx)
 
-	cache.Set("test", "value")
+	cache.Set(ctx, "test", "value")
 
 	cache.Close()
 
 	time.Sleep(100 * time.Millisecond)
 
-	cache.Set("another", "value")
-	_, ok := cache.Get("test")
+	cache.Set(ctx, "another", "value")
+	_, ok := cache.Get(ctx, "test")
 	if ok {
 		t.Error("Expected to be unable to get value after closing")
 	}
@@ -191,7 +191,7 @@ func TestConcurrentAccess(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			key := fmt.Sprintf("key-%d", i)
-			cache.Set(key, strconv.Itoa(i))
+			cache.Set(ctx, key, strconv.Itoa(i))
 		}(i)
 	}
 
@@ -199,7 +199,7 @@ func TestConcurrentAccess(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			key := fmt.Sprintf("expiring-key-%d", i)
-			cache.SetWithExpire(key, strconv.Itoa(i), 60*time.Second) // 60 seconds TTL
+			cache.SetWithExpire(ctx, key, strconv.Itoa(i), 60*time.Second) // 60 seconds TTL
 		}(i)
 	}
 
@@ -207,7 +207,7 @@ func TestConcurrentAccess(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			key := fmt.Sprintf("key-%d", i%n)
-			cache.Get(key)
+			cache.Get(ctx, key)
 		}(i)
 	}
 
@@ -215,7 +215,7 @@ func TestConcurrentAccess(t *testing.T) {
 
 	for i := 0; i < n; i += 10 {
 		key := fmt.Sprintf("key-%d", i)
-		val, ok := cache.Get(key)
+		val, ok := cache.Get(ctx, key)
 		if !ok {
 			t.Errorf("Expected key %s to exist", key)
 			continue
@@ -231,10 +231,10 @@ func TestInterfaceImplementation(t *testing.T) {
 	ctx := context.Background()
 	var cache Cache = NewInMemCache(ctx)
 
-	cache.Set("key1", "value1")
-	cache.SetWithExpire("key2", "value2", 5*time.Minute)
+	cache.Set(ctx, "key1", "value1")
+	cache.SetWithExpire(ctx, "key2", "value2", 5*time.Minute)
 
-	val1, ok := cache.Get("key1")
+	val1, ok := cache.Get(ctx, "key1")
 	if !ok {
 		t.Error("Expected key1 to exist")
 	}
@@ -242,7 +242,7 @@ func TestInterfaceImplementation(t *testing.T) {
 		t.Errorf("Expected 'value1', got %v", val1)
 	}
 
-	val2, ok := cache.Get("key2")
+	val2, ok := cache.Get(ctx, "key2")
 	if !ok {
 		t.Error("Expected key2 to exist")
 	}
@@ -259,11 +259,11 @@ func TestKeys(t *testing.T) {
 
 	cache := NewInMemCache(ctx)
 
-	cache.Set("ggg:key1", "value1")
-	cache.Set("ggg:key2", "value2")
-	cache.Set("ff:key2", "value2")
+	cache.Set(ctx, "ggg:key1", "value1")
+	cache.Set(ctx, "ggg:key2", "value2")
+	cache.Set(ctx, "ff:key2", "value2")
 
-	if v, err := cache.KeysWithPrefix("ggg:"); err != nil {
+	if v, err := cache.KeysWithPrefix(ctx, "ggg:"); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
 		assert.Equal(t, len(v), 2)
@@ -271,20 +271,20 @@ func TestKeys(t *testing.T) {
 		assert.Check(t, slices.Contains(v, "ggg:key2"))
 	}
 
-	if v, err := cache.KeysWithPrefix("ff:"); err != nil {
+	if v, err := cache.KeysWithPrefix(ctx, "ff:"); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
 		assert.Equal(t, len(v), 1)
 		assert.Check(t, slices.Contains(v, "ff:key2"))
 	}
 
-	if v, err := cache.KeysWithPrefix("nonexistent:"); err != nil {
+	if v, err := cache.KeysWithPrefix(ctx, "nonexistent:"); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
 		assert.DeepEqual(t, len(v), 0)
 	}
 
-	if v, err := cache.KeysWithPrefix("ggg:key1"); err != nil {
+	if v, err := cache.KeysWithPrefix(ctx, "ggg:key1"); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
 		assert.Equal(t, len(v), 1)

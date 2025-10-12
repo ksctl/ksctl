@@ -17,6 +17,7 @@
 package poller
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -101,7 +102,7 @@ func TestGetSubscribedRepos(t *testing.T) {
 		t.Errorf("Expected 0, got %d", len(repos))
 	}
 
-	obj.c.Set(prefix_cache+"org/repo", `{"releases": [], "err": ""}`)
+	obj.c.Set(context.TODO(), prefix_cache+"org/repo", `{"releases": [], "err": ""}`)
 	repos = obj.getSubscribedRepos()
 	if len(repos) != 1 {
 		t.Errorf("Expected 1, got %d", len(repos))

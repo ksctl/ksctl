@@ -15,6 +15,7 @@
 package poller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -96,7 +97,7 @@ func (gh *GithubReleasePoller) getSubscribedRepos() []string {
 	defer gh.rwm.RUnlock()
 
 	var repos []string
-	keys, err := gh.c.KeysWithPrefix(prefix_cache)
+	keys, err := gh.c.KeysWithPrefix(context.TODO(), prefix_cache)
 	if err != nil {
 		return repos
 	}
@@ -112,7 +113,7 @@ func (gh *GithubReleasePoller) getReleases(org, repo string) (Status, bool) {
 	gh.rwm.RLock()
 	defer gh.rwm.RUnlock()
 
-	v, ok := gh.c.Get(prefix_cache + org + delimiter + repo)
+	v, ok := gh.c.Get(context.TODO(), prefix_cache+org+delimiter+repo)
 	if !ok {
 		return Status{}, false
 	}
@@ -133,7 +134,7 @@ func (gh *GithubReleasePoller) setReleases(org, repo string, v Status) {
 		return
 	}
 
-	gh.c.SetWithExpire(prefix_cache+org+delimiter+repo, c, 24*time.Hour)
+	gh.c.SetWithExpire(context.TODO(), prefix_cache+org+delimiter+repo, c, 24*time.Hour)
 }
 
 func (gh *GithubReleasePoller) subscribe(repo string) {

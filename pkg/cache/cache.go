@@ -14,15 +14,18 @@
 
 package cache
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Cache interface {
-	SetWithExpire(key string, value string, ttl time.Duration)
-	Set(key string, value string)
+	SetWithExpire(_ context.Context, key string, value string, ttl time.Duration)
+	Set(_ context.Context, key string, value string)
 
 	// Keys supports only glob-style patterns like *, ? and [chars].
-	KeysWithPrefix(string) ([]string, error)
+	KeysWithPrefix(context.Context, string) ([]string, error)
 
-	Get(key string) (string, bool)
+	Get(ctx context.Context, key string) (string, bool)
 	Close()
 }

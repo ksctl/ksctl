@@ -70,7 +70,7 @@ func (inMemCache *InMemCache) worker() {
 	}
 }
 
-func (inMemCache *InMemCache) SetWithExpire(key string, value string, ttl time.Duration) {
+func (inMemCache *InMemCache) SetWithExpire(ctx context.Context, key string, value string, ttl time.Duration) {
 	inMemCache.mu.Lock()
 	defer inMemCache.mu.Unlock()
 	inMemCache.o[key] = CacheVal{
@@ -80,7 +80,7 @@ func (inMemCache *InMemCache) SetWithExpire(key string, value string, ttl time.D
 	}
 }
 
-func (inMemCache *InMemCache) Set(key string, value string) {
+func (inMemCache *InMemCache) Set(ctx context.Context, key string, value string) {
 	inMemCache.mu.Lock()
 	defer inMemCache.mu.Unlock()
 
@@ -90,7 +90,7 @@ func (inMemCache *InMemCache) Set(key string, value string) {
 	}
 }
 
-func (inMemCache *InMemCache) Get(key string) (string, bool) {
+func (inMemCache *InMemCache) Get(ctx context.Context, key string) (string, bool) {
 	inMemCache.mu.RLock()
 	defer inMemCache.mu.RUnlock()
 
@@ -108,7 +108,7 @@ func (inMemCache *InMemCache) Close() {
 	}
 }
 
-func (inMemCache *InMemCache) KeysWithPrefix(prefix string) ([]string, error) {
+func (inMemCache *InMemCache) KeysWithPrefix(ctx context.Context, prefix string) ([]string, error) {
 	inMemCache.mu.RLock()
 	defer inMemCache.mu.RUnlock()
 
