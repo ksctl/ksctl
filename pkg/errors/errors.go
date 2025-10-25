@@ -71,6 +71,10 @@ func (e KsctlError) Error() string {
 	return fmt.Sprintf("%s: %v", e.errorCodeToString(), e.err)
 }
 
+func (e KsctlError) Unwrap() error {
+	return e.err
+}
+
 // errorCodeToString converts an ErrorCode to its string representation
 func (e KsctlError) errorCodeToString() string {
 	switch e.code {
