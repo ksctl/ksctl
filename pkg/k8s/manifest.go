@@ -38,11 +38,11 @@ import (
 
 func (k *Client) getDynamicClientFromManifest(manifest []byte, defaultNamespace *string) (dynamic.ResourceInterface, *unstructured.Unstructured, error) {
 
-	dynamicClient, err := dynamic.NewForConfig(k.r)
+	dynamicClient, err := dynamic.NewForConfig(k.R)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating dynamic client: %w", err)
 	}
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(k.r)
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(k.R)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create discovery client: %v", err)
 	}

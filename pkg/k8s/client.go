@@ -30,7 +30,7 @@ type Client struct {
 	l                   logger.Logger
 	clientset           kubernetes.Interface
 	apiextensionsClient clientset.Interface
-	r                   *rest.Config
+	R                   *rest.Config
 
 	RawK    *kubernetes.Clientset
 	RawKAPI rest.Interface
@@ -74,7 +74,7 @@ func NewK8sClient(ctx context.Context, l logger.Logger, restConfig restConfig) (
 	if err != nil {
 		return nil, err
 	}
-	k.r = restC
+	k.R = restC
 
 	k.apiextensionsClient, err = clientset.NewForConfig(restC)
 	if err != nil {
