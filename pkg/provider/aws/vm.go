@@ -390,9 +390,7 @@ func isARM64InstanceType(instanceType string) bool {
 	// Examples: t4g.micro, m6g.large, c7g.xlarge, r6g.medium, m8g.large
 	armFamilies := []string{
 		"t4g", "m6g", "m7g", "m8g", "c6g", "c7g", "r6g", "r7g",
-		"c6gd", "c7gd", "m6gd", "m7gd", "r6gd", "r7gd",
 		"c6gn", "c7gn",
-		"x2gd", "im4gn", "is4gen", "i4g", "hpc7g",
 	}
 	for _, family := range armFamilies {
 		if len(instanceType) > len(family) && instanceType[:len(family)] == family && instanceType[len(family)] == '.' {
