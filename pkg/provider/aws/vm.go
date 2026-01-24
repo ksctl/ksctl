@@ -237,7 +237,7 @@ func (p *Provider) NewVM(index int) error {
 		return err
 	}
 
-	ami, err := p.getLatestUbuntuAMI()
+	ami, err := p.getLatestUbuntuAMI(vmtype)
 	if err != nil {
 		return err
 	}
@@ -383,17 +383,47 @@ func (p *Provider) NewVM(index int) error {
 	return nil
 }
 
-// NOTE: We need to make the AMI for both arm and x86-64
-func (p *Provider) getLatestUbuntuAMI() (string, error) {
+// isARM64InstanceType checks if the instance type is an ARM64 (Graviton) instance
+// ARM64 instances typically have 'g' in their family name suffix (t4g, m6g, c6g, r6g, m7g, c7g, r7g, m8g, etc.)
+func isARM64InstanceType(instanceType string) bool {
+	// ARM64 Graviton instance families end with 'g' before the size specifier
+	// Examples: t4g.micro, m6g.large, c7g.xlarge, r6g.medium, m8g.large
+	armFamilies := []string{
+		"t4g", "m6g", "m7g", "m8g", "c6g", "c7g", "r6g", "r7g",
+		"c6gd", "c7gd", "m6gd", "m7gd", "r6gd", "r7gd",
+		"c6gn", "c7gn",
+		"x2gd", "im4gn", "is4gen", "i4g", "hpc7g",
+	}
+	for _, family := range armFamilies {
+		if len(instanceType) > len(family) && instanceType[:len(family)] == family && instanceType[len(family)] == '.' {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Provider) getLatestUbuntuAMI(vmType string) (string, error) {
+	// Determine architecture based on instance type
+	var amiNamePattern string
+	var architecture string
+
+	if isARM64InstanceType(vmType) {
+		amiNamePattern = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server*"
+		architecture = "arm64"
+	} else {
+		amiNamePattern = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server*"
+		architecture = "x86_64"
+	}
+
 	imageFilter := &ec2.DescribeImagesInput{ // https://cloud-images.ubuntu.com/locator/ec2/
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("name"),
-				Values: []string{"ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server*"},
+				Values: []string{amiNamePattern},
 			},
 			{
 				Name:   aws.String("architecture"),
-				Values: []string{"x86_64"},
+				Values: []string{architecture},
 			},
 			{
 				Name:   aws.String("owner-alias"),

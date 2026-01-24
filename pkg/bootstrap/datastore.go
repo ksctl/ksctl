@@ -111,11 +111,26 @@ GOOGLE_URL=https://storage.googleapis.com/etcd
 GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
 DOWNLOAD_URL=${GOOGLE_URL}
 
-sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+# Detect architecture
+ARCH=$(uname -m)
+case ${ARCH} in
+    x86_64)
+        ETCD_ARCH="amd64"
+        ;;
+    aarch64|arm64)
+        ETCD_ARCH="arm64"
+        ;;
+    *)
+        echo "Unsupported architecture: ${ARCH}"
+        exit 1
+        ;;
+esac
+
+sudo rm -f /tmp/etcd-${ETCD_VER}-linux-${ETCD_ARCH}.tar.gz
 sudo rm -rf /tmp/etcd-download-test
 mkdir -p /tmp/etcd-download-test
 
-curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-${ETCD_ARCH}.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-${ETCD_ARCH}.tar.gz
 `, etcdLatestVer),
 	})
 
@@ -125,8 +140,24 @@ curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/
 		CanRetry:       false,
 		ShellScript: fmt.Sprintf(`
 ETCD_VER=%s
-tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-sudo rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+
+# Detect architecture
+ARCH=$(uname -m)
+case ${ARCH} in
+    x86_64)
+        ETCD_ARCH="amd64"
+        ;;
+    aarch64|arm64)
+        ETCD_ARCH="arm64"
+        ;;
+    *)
+        echo "Unsupported architecture: ${ARCH}"
+        exit 1
+        ;;
+esac
+
+tar xzvf /tmp/etcd-${ETCD_VER}-linux-${ETCD_ARCH}.tar.gz -C /tmp/etcd-download-test --strip-components=1
+sudo rm -f /tmp/etcd-${ETCD_VER}-linux-${ETCD_ARCH}.tar.gz
 
 sudo mv -v /tmp/etcd-download-test/etcd /usr/local/bin
 sudo mv -v /tmp/etcd-download-test/etcdctl /usr/local/bin

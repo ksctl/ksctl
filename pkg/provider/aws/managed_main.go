@@ -346,12 +346,21 @@ func (p *Provider) NewManagedCluster(noOfNode int) error {
 		p.state.CloudInfra.Aws.ManagedNodeSize = vmType
 		p.state.CloudInfra.Aws.NoManagedNodes = noOfNode
 
+		// Determine AMI type based on instance architecture
+		var amiType eksTypes.AMITypes
+		if isARM64InstanceType(vmType) {
+			amiType = eksTypes.AMITypesAl2Arm64
+		} else {
+			amiType = eksTypes.AMITypesAl2X8664
+		}
+
 		nodegroup := eks.CreateNodegroupInput{
 			ClusterName:   aws.String(p.state.CloudInfra.Aws.ManagedClusterName),
 			NodeRole:      aws.String(p.state.CloudInfra.Aws.IamRoleArnWP),
 			NodegroupName: aws.String(eksNodeGroupName),
 			Subnets:       p.state.CloudInfra.Aws.SubnetIDs,
 			CapacityType:  eksTypes.CapacityTypesOnDemand,
+			AmiType:       amiType,
 
 			InstanceTypes: []string{vmType},
 			DiskSize:      aws.Int32(30),
