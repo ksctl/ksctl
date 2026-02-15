@@ -29,7 +29,12 @@ import (
 
 func WithDefaultEC2() Option {
 	return func(o *options) error {
-		o.ec2Type = []string{"c5*", "t3*", "m5*", "r5*", "m7i*", "m7a*", "m8g*"}
+		o.ec2Type = []string{
+			// x86_64 instance families
+			"c5*", "t3*", "m5*", "r5*", "m7i*", "m7a*",
+			// ARM64 (Graviton) instance families
+			"t4g*", "m6g*", "m7g*", "m8g*", "c6g*", "c7g*", "r6g*", "r7g*",
+		}
 		return nil
 	}
 }
@@ -98,13 +103,22 @@ func (m *AwsMeta) listOfVms(region string, opts ...Option) (out []provider.Insta
 	analyseVMType := func(vmTypeSku string) provider.MachineCategory {
 
 		var category provider.MachineCategory
-		if strings.HasPrefix(vmTypeSku, "c5") {
+		// Compute Intensive: c5 (x86), c6g, c7g (ARM64)
+		if strings.HasPrefix(vmTypeSku, "c5") ||
+			strings.HasPrefix(vmTypeSku, "c6g") ||
+			strings.HasPrefix(vmTypeSku, "c7g") {
 			category = provider.ComputeIntensive
-		} else if strings.HasPrefix(vmTypeSku, "t3") {
+		} else if strings.HasPrefix(vmTypeSku, "t3") ||
+			strings.HasPrefix(vmTypeSku, "t4g") {
+			// Burst: t3 (x86), t4g (ARM64)
 			category = provider.Burst
 		} else if strings.HasPrefix(vmTypeSku, "m") {
+			// General Purpose: m5, m7i, m7a (x86), m6g, m7g, m8g (ARM64)
 			category = provider.GeneralPurpose
-		} else if strings.HasPrefix(vmTypeSku, "r5") {
+		} else if strings.HasPrefix(vmTypeSku, "r5") ||
+			strings.HasPrefix(vmTypeSku, "r6g") ||
+			strings.HasPrefix(vmTypeSku, "r7g") {
+			// Memory Intensive: r5 (x86), r6g, r7g (ARM64)
 			category = provider.MemoryIntensive
 		} else {
 			return provider.Unknown

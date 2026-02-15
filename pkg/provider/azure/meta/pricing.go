@@ -169,7 +169,24 @@ func (m *AzureMeta) priceDisks(regionSku string, opts ...Option) ([]provider.Sto
 
 func WithDefaultInstanceType() Option {
 	return func(op *options) error {
-		op.filterInstanceType = utilities.Ptr("(startswith(armSkuName, 'Standard_D2s') or startswith(armSkuName, 'Standard_D4s') or startswith(armSkuName, 'Standard_E2s') or startswith(armSkuName, 'Standard_E4s') or startswith(armSkuName, 'Standard_F2s') or startswith(armSkuName, 'Standard_F4s') or startswith(armSkuName, 'Standard_B2s') or startswith(armSkuName, 'Standard_B4s'))")
+		x86Filters := []string{
+			"startswith(armSkuName, 'Standard_D2s')",
+			"startswith(armSkuName, 'Standard_D4s')",
+			"startswith(armSkuName, 'Standard_E2s')",
+			"startswith(armSkuName, 'Standard_E4s')",
+			"startswith(armSkuName, 'Standard_F2s')",
+			"startswith(armSkuName, 'Standard_F4s')",
+			"startswith(armSkuName, 'Standard_B2s')",
+			"startswith(armSkuName, 'Standard_B4s')",
+		}
+		arm64Filters := []string{
+			"startswith(armSkuName, 'Standard_D2ps')",
+			"startswith(armSkuName, 'Standard_D4ps')",
+			"startswith(armSkuName, 'Standard_E2ps')",
+			"startswith(armSkuName, 'Standard_E4ps')",
+		}
+		allFilters := append(x86Filters, arm64Filters...)
+		op.filterInstanceType = utilities.Ptr("(" + strings.Join(allFilters, " or ") + ")")
 		return nil
 	}
 }
