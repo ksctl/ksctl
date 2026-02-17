@@ -183,7 +183,7 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 					MaxCount:          utilities.Ptr[int32](100),
 					OSType:            utilities.Ptr(armcontainerservice.OSTypeLinux),
 					Type:              utilities.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
-					EnableAutoScaling: utilities.Ptr(true),
+					EnableAutoScaling: utilities.Ptr(false),
 					Mode:              utilities.Ptr(armcontainerservice.AgentPoolModeSystem),
 				},
 			},
