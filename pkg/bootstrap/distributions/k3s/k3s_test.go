@@ -128,6 +128,10 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
+	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="cgroup-driver=systemd" \
 	--tls-san %s \
 	--tls-san %s
 EOF
@@ -166,6 +170,10 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-cafile=/var/lib/etcd/ca.pem \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="cgroup-driver=systemd" \
 	--tls-san %s \
 	--tls-san %s
 EOF
@@ -211,6 +219,10 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
+	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="cgroup-driver=systemd" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -251,6 +263,10 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="cgroup-driver=systemd" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -328,7 +344,11 @@ cat <<EOF > worker-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-agent-uninstall.sh || echo "already deleted"
 export K3S_DEBUG=true
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443 \
+	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="cgroup-driver=systemd"
 EOF
 
 sudo chmod +x worker-setup.sh

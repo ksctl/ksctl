@@ -328,6 +328,20 @@ networking:
   serviceSubnet: 10.96.0.0/12
   podSubnet: 10.244.0.0/16
 scheduler: {}
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+kubeReserved:
+  cpu: "200m"
+  memory: "500Mi"
+systemReserved:
+  cpu: "200m"
+  memory: "500Mi"
+evictionHard:
+  memory.available: "100Mi"
+  nodefs.available: "10%%"
+  imagefs.available: "15%%"
 EOF
 
 `, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
