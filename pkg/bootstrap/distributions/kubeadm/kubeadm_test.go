@@ -20,6 +20,7 @@ import (
 
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
 	testHelper "github.com/ksctl/ksctl/v2/pkg/ssh"
 
@@ -281,7 +282,7 @@ sudo cat /etc/kubernetes/admin.conf
 					Name:       "store configuration for Controlplane0",
 					CanRetry:   true,
 					MaxRetries: 3,
-					ShellScript: fmt.Sprintf(`
+					ShellScript: fmt.Sprintf(`%s
 cat <<EOF > kubeadm-config.yml
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
@@ -331,20 +332,19 @@ scheduler: {}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
-cgroupDriver: systemd
 kubeReserved:
-  cpu: "200m"
-  memory: "500Mi"
+  cpu: "${KUBE_CPU}m"
+  memory: "${KUBE_MEM}Mi"
 systemReserved:
-  cpu: "200m"
-  memory: "500Mi"
+  cpu: "100m"
+  memory: "200Mi"
 evictionHard:
   memory.available: "100Mi"
   nodefs.available: "10%%"
   imagefs.available: "15%%"
 EOF
 
-`, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
+`, distributions.KubeletReservationScript, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
 				},
 				{
 					Name:       "kubeadm init",

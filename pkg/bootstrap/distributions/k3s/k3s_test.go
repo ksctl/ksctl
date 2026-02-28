@@ -21,6 +21,7 @@ import (
 
 	"github.com/ksctl/ksctl/v2/pkg/addons"
 
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/v2/pkg/certs"
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
 	testHelper "github.com/ksctl/ksctl/v2/pkg/ssh"
@@ -114,7 +115,7 @@ func TestScriptsControlplane(t *testing.T) {
 							MaxRetries:     9,
 							CanRetry:       true,
 							ScriptExecutor: consts.LinuxBash,
-							ShellScript: fmt.Sprintf(`
+							ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setup.sh
 #!/bin/bash
 
@@ -128,17 +129,16 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
-	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
-	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
-	--kubelet-arg="cgroup-driver=systemd" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
@@ -160,7 +160,7 @@ sudo ./control-setup.sh &>> ksctl.log
 							MaxRetries:     9,
 							CanRetry:       true,
 							ScriptExecutor: consts.LinuxBash,
-							ShellScript: fmt.Sprintf(`
+							ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
@@ -170,17 +170,16 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-cafile=/var/lib/etcd/ca.pem \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
-	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
-	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
-	--kubelet-arg="cgroup-driver=systemd" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
@@ -206,7 +205,7 @@ sudo ./control-setup.sh &>> ksctl.log
 							MaxRetries:     9,
 							CanRetry:       true,
 							ScriptExecutor: consts.LinuxBash,
-							ShellScript: fmt.Sprintf(`
+							ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
@@ -219,10 +218,9 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
-	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
-	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
-	--kubelet-arg="cgroup-driver=systemd" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -230,7 +228,7 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
@@ -252,7 +250,7 @@ sudo ./control-setupN.sh &>> ksctl.log
 							MaxRetries:     9,
 							CanRetry:       true,
 							ScriptExecutor: consts.LinuxBash,
-							ShellScript: fmt.Sprintf(`
+							ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
@@ -263,10 +261,9 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
-	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
-	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
-	--kubelet-arg="cgroup-driver=systemd" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -274,7 +271,7 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
@@ -339,21 +336,20 @@ func TestSciprWorkerplane(t *testing.T) {
 					CanRetry:       true,
 					MaxRetries:     3,
 					ScriptExecutor: consts.LinuxBash,
-					ShellScript: fmt.Sprintf(`
+					ShellScript: fmt.Sprintf(`%s
 cat <<EOF > worker-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-agent-uninstall.sh || echo "already deleted"
 export K3S_DEBUG=true
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443 \
-	--kubelet-arg="kube-reserved=cpu=200m,memory=500Mi" \
-	--kubelet-arg="system-reserved=cpu=200m,memory=500Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
-	--kubelet-arg="cgroup-driver=systemd"
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%"
 EOF
 
 sudo chmod +x worker-setup.sh
 sudo ./worker-setup.sh &>> ksctl.log
-`, ver, token, private),
+`, distributions.KubeletReservationScript, ver, token, private),
 				},
 			},
 			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
