@@ -179,8 +179,6 @@ func (p *Provider) NewManagedCluster(noOfNodes int) error {
 					Count:             utilities.Ptr(int32(noOfNodes)),
 					VMSize:            utilities.Ptr(vmtype),
 					MaxPods:           utilities.Ptr[int32](110),
-					MinCount:          utilities.Ptr[int32](1),
-					MaxCount:          utilities.Ptr[int32](100),
 					OSType:            utilities.Ptr(armcontainerservice.OSTypeLinux),
 					Type:              utilities.Ptr(armcontainerservice.AgentPoolTypeVirtualMachineScaleSets),
 					EnableAutoScaling: utilities.Ptr(false),
