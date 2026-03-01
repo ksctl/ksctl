@@ -68,6 +68,7 @@ func (p *Kubeadm) configurecp1(sshExecutor ssh.RemoteConnection) error {
 	p.l.Print(p.ctx, "Configuring K8s cluster")
 
 	configureControlPlane0 := scriptAddKubeadmControlplane0(
+		distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()),
 		*p.state.Versions.Kubeadm,
 		p.state.K8sBootstrap.Kubeadm.BootstrapToken,
 		p.state.K8sBootstrap.Kubeadm.CertificateKey,
@@ -133,6 +134,7 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int) error {
 		p.l.Print(p.ctx, "Joining controlplane to existing cluster")
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(scriptJoinControlplane(
+				distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()),
 				p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 				p.state.K8sBootstrap.Kubeadm.BootstrapToken,
 				p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
@@ -216,11 +218,9 @@ kubeadm token create --ttl 20m --description "ksctl bootstrap token"
 	return collection
 }
 
-func scriptAddKubeadmControlplane0(ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) ssh.ExecutionPipeline {
+func scriptAddKubeadmControlplane0(collection ssh.ExecutionPipeline, ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) ssh.ExecutionPipeline {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
-
-	collection := ssh.NewExecutionPipeline()
 
 	collection.Append(ssh.Script{
 		Name:       "store configuration for Controlplane0",
@@ -285,6 +285,7 @@ systemReserved:
 evictionHard:
   memory.available: "100Mi"
   nodefs.available: "10%%"
+  nodefs.inodesFree: "5%%"
   imagefs.available: "15%%"
 EOF
 
@@ -372,9 +373,8 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 	return collection
 }
 
-func scriptJoinControlplane(privateIPLb, token, cacertSHA, certKey string) ssh.ExecutionPipeline {
+func scriptJoinControlplane(collection ssh.ExecutionPipeline, privateIPLb, token, cacertSHA, certKey string) ssh.ExecutionPipeline {
 
-	collection := ssh.NewExecutionPipeline()
 	collection.Append(ssh.Script{
 		Name:           "Join Controlplane [1..N]",
 		CanRetry:       true,

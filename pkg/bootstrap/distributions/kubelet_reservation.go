@@ -14,6 +14,11 @@
 
 package distributions
 
+import (
+	"github.com/ksctl/ksctl/v2/pkg/consts"
+	"github.com/ksctl/ksctl/v2/pkg/ssh"
+)
+
 // KubeletReservation holds computed GKE-style tiered resource reservations.
 type KubeletReservation struct {
 	KubeReservedCPU      int // millicores
@@ -79,11 +84,12 @@ func memReserved(mem int) int {
 //   - KUBE_CPU  – millicores to reserve (e.g. 60, 70, 80)
 //   - KUBE_MEM  – mebibytes to reserve (minimum 255)
 //
-// The snippet is already %%-escaped so it can be embedded directly inside
-// fmt.Sprintf format strings.
+// NOTE: This constant is used via %s in fmt.Sprintf (controlplane.go CP0)
+// and via direct ShellScript assignment (ScriptKubeletDropIn for CP1+/workers).
+// In both cases the string is inserted as-is, so use literal % not %%.
 const KubeletReservationScript = `
 TOTAL_CPUS=$(nproc)
-TOTAL_MEM_MI=$(awk '/MemTotal/{printf "%%d", $2/1024}' /proc/meminfo)
+TOTAL_MEM_MI=$(awk '/MemTotal/{printf "%d", $2/1024}' /proc/meminfo)
 
 cpu_reserved() {
   local cpus=$1
@@ -123,3 +129,55 @@ mem_reserved() {
 KUBE_CPU=$(cpu_reserved "$TOTAL_CPUS")
 KUBE_MEM=$(mem_reserved "$TOTAL_MEM_MI")
 `
+
+// KubeletDropInScript writes a per-node kubelet drop-in config with computed
+// reservations and eviction thresholds, plus enables --config-dir via
+// /etc/default/kubelet. Used for CP1+ and worker nodes where the base config
+// comes from the kubelet-config ConfigMap.
+//
+// NOTE: This constant is assigned directly to ShellScript (not via fmt.Sprintf),
+// so literal % is used for YAML percentage values.
+const KubeletDropInScript = `
+sudo mkdir -p /etc/kubernetes/kubelet.conf.d
+
+sudo tee /etc/kubernetes/kubelet.conf.d/99-reserved.conf > /dev/null <<DROPIN
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+kubeReserved:
+  cpu: "${KUBE_CPU}m"
+  memory: "${KUBE_MEM}Mi"
+systemReserved:
+  cpu: "100m"
+  memory: "200Mi"
+evictionHard:
+  memory.available: "100Mi"
+  nodefs.available: "10%"
+  nodefs.inodesFree: "5%"
+  imagefs.available: "15%"
+DROPIN
+
+echo 'KUBELET_EXTRA_ARGS=--config-dir=/etc/kubernetes/kubelet.conf.d' | sudo tee /etc/default/kubelet > /dev/null
+`
+
+// ScriptKubeletDropIn appends kubelet reservation and drop-in configuration
+// steps to the given execution pipeline. It computes per-node kubeReserved
+// and systemReserved values from local hardware using a GKE-style tiered
+// formula, then writes a kubelet drop-in config file and enables --config-dir.
+// Used for CP1+ and worker nodes.
+func ScriptKubeletDropIn(collection ssh.ExecutionPipeline) ssh.ExecutionPipeline {
+	collection.Append(ssh.Script{
+		Name:           "compute kubelet reservations",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript:    KubeletReservationScript,
+	})
+
+	collection.Append(ssh.Script{
+		Name:           "write kubelet drop-in config",
+		CanRetry:       false,
+		ScriptExecutor: consts.LinuxBash,
+		ShellScript:    KubeletDropInScript,
+	})
+
+	return collection
+}
