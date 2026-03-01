@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/v2/pkg/consts"
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
 	"github.com/ksctl/ksctl/v2/pkg/statefile"
@@ -197,7 +198,7 @@ func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
 		MaxRetries:     9,
 		CanRetry:       true,
 		ScriptExecutor: consts.LinuxBash,
-		ShellScript: fmt.Sprintf(`
+		ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setup.sh
 #!/bin/bash
 
@@ -211,13 +212,16 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--flannel-backend=none \
 	--disable-network-policy \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, ver, dbEndpoint, pubIPlb, privIplb),
+`, distributions.KubeletReservationScript, ver, dbEndpoint, pubIPlb, privIplb),
 	})
 
 	return collection
@@ -237,7 +241,7 @@ func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
 		MaxRetries:     9,
 		CanRetry:       true,
 		ScriptExecutor: consts.LinuxBash,
-		ShellScript: fmt.Sprintf(`
+		ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
@@ -247,13 +251,16 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-cafile=/var/lib/etcd/ca.pem \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, ver, dbEndpoint, pubIPlb, privateIPLb),
+`, distributions.KubeletReservationScript, ver, dbEndpoint, pubIPlb, privateIPLb),
 	})
 
 	return collection
@@ -288,7 +295,7 @@ func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
 		MaxRetries:     9,
 		CanRetry:       true,
 		ScriptExecutor: consts.LinuxBash,
-		ShellScript: fmt.Sprintf(`
+		ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
@@ -299,6 +306,9 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-keyfile=/var/lib/etcd/etcd-key.pem \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -306,7 +316,7 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
+`, distributions.KubeletReservationScript, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
 	})
 
 	return collection
@@ -326,7 +336,7 @@ func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
 		MaxRetries:     9,
 		CanRetry:       true,
 		ScriptExecutor: consts.LinuxBash,
-		ShellScript: fmt.Sprintf(`
+		ShellScript: fmt.Sprintf(`%s
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
@@ -339,6 +349,9 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--flannel-backend=none \
 	--disable-network-policy \
+	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
+	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -346,7 +359,7 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
+`, distributions.KubeletReservationScript, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
 	})
 
 	return collection

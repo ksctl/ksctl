@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
 
 	"github.com/ksctl/ksctl/v2/pkg/consts"
@@ -71,7 +72,8 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int) error {
 	}
 
 	script := scriptJoinWorkerplane(
-		scriptInstallKubeadmAndOtherTools(*p.state.Versions.Kubeadm),
+		distributions.ScriptKubeletDropIn(
+			scriptInstallKubeadmAndOtherTools(*p.state.Versions.Kubeadm)),
 		p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		p.state.K8sBootstrap.Kubeadm.BootstrapToken,
 		p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,

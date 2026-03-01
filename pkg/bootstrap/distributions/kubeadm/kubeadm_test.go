@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/ksctl/ksctl/v2/pkg/addons"
+	"github.com/ksctl/ksctl/v2/pkg/bootstrap/distributions"
 
 	"github.com/ksctl/ksctl/v2/pkg/ssh"
 	testHelper "github.com/ksctl/ksctl/v2/pkg/ssh"
@@ -278,10 +279,16 @@ sudo cat /etc/kubernetes/admin.conf
 			t,
 			[]ssh.Script{
 				{
+					Name:           "compute kubelet reservations and write drop-in config",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript:    distributions.KubeletReservationScript + distributions.KubeletDropInScript,
+				},
+				{
 					Name:       "store configuration for Controlplane0",
 					CanRetry:   true,
 					MaxRetries: 3,
-					ShellScript: fmt.Sprintf(`
+					ShellScript: fmt.Sprintf(`%s
 cat <<EOF > kubeadm-config.yml
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
@@ -328,9 +335,23 @@ networking:
   serviceSubnet: 10.96.0.0/12
   podSubnet: 10.244.0.0/16
 scheduler: {}
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+kubeReserved:
+  cpu: "${KUBE_CPU}m"
+  memory: "${KUBE_MEM}Mi"
+systemReserved:
+  cpu: "100m"
+  memory: "200Mi"
+evictionHard:
+  memory.available: "100Mi"
+  nodefs.available: "10%%"
+  nodefs.inodesFree: "5%%"
+  imagefs.available: "15%%"
 EOF
 
-`, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
+`, distributions.KubeletReservationScript, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
 				},
 				{
 					Name:       "kubeadm init",
@@ -346,7 +367,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 				},
 			},
 			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-				return scriptAddKubeadmControlplane0(ver, bootstrapToken, certificateKey, publicIPLb, privateIPLb, privateIPDs)
+				return scriptAddKubeadmControlplane0(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), ver, bootstrapToken, certificateKey, publicIPLb, privateIPLb, privateIPDs)
 			},
 		)
 	})
@@ -360,6 +381,12 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 			t,
 			[]ssh.Script{
 				{
+					Name:           "compute kubelet reservations and write drop-in config",
+					CanRetry:       false,
+					ScriptExecutor: consts.LinuxBash,
+					ShellScript:    distributions.KubeletReservationScript + distributions.KubeletDropInScript,
+				},
+				{
 					Name:           "Join Controlplane [1..N]",
 					CanRetry:       true,
 					MaxRetries:     3,
@@ -370,7 +397,7 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --
 				},
 			},
 			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-				return scriptJoinControlplane(privateIPLb, token, cacertSHA, crtKey)
+				return scriptJoinControlplane(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), privateIPLb, token, cacertSHA, crtKey)
 			},
 		)
 	})
@@ -418,6 +445,12 @@ func TestSciprWorkerplane(t *testing.T) {
 		t,
 		[]ssh.Script{
 			{
+				Name:           "compute kubelet reservations and write drop-in config",
+				CanRetry:       false,
+				ScriptExecutor: consts.LinuxBash,
+				ShellScript:    distributions.KubeletReservationScript + distributions.KubeletDropInScript,
+			},
+			{
 				Name:           "Join K3s workerplane",
 				CanRetry:       true,
 				MaxRetries:     3,
@@ -428,7 +461,7 @@ sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>
 			},
 		},
 		func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-			return scriptJoinWorkerplane(ssh.NewExecutionPipeline(), privateIPLb, token, cacertSHA)
+			return scriptJoinWorkerplane(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), privateIPLb, token, cacertSHA)
 		},
 	)
 }
