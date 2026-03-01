@@ -166,17 +166,10 @@ echo 'KUBELET_EXTRA_ARGS=--config-dir=/etc/kubernetes/kubelet.conf.d' | sudo tee
 // Used for CP1+ and worker nodes.
 func ScriptKubeletDropIn(collection ssh.ExecutionPipeline) ssh.ExecutionPipeline {
 	collection.Append(ssh.Script{
-		Name:           "compute kubelet reservations",
+		Name:           "compute kubelet reservations and write drop-in config",
 		CanRetry:       false,
 		ScriptExecutor: consts.LinuxBash,
-		ShellScript:    KubeletReservationScript,
-	})
-
-	collection.Append(ssh.Script{
-		Name:           "write kubelet drop-in config",
-		CanRetry:       false,
-		ScriptExecutor: consts.LinuxBash,
-		ShellScript:    KubeletDropInScript,
+		ShellScript:    KubeletReservationScript + KubeletDropInScript,
 	})
 
 	return collection

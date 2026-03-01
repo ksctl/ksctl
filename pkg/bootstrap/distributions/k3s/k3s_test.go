@@ -131,7 +131,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--disable-network-policy \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--tls-san %s \
 	--tls-san %s
 EOF
@@ -172,7 +172,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--datastore-certfile=/var/lib/etcd/etcd.pem \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--tls-san %s \
 	--tls-san %s
 EOF
@@ -220,7 +220,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--disable-network-policy \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -263,7 +263,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%" \
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -344,7 +344,7 @@ export K3S_DEBUG=true
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443 \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,imagefs.available<15%%"
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%"
 EOF
 
 sudo chmod +x worker-setup.sh

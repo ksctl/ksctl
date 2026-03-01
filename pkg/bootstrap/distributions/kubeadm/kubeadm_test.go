@@ -279,16 +279,10 @@ sudo cat /etc/kubernetes/admin.conf
 			t,
 			[]ssh.Script{
 				{
-					Name:           "compute kubelet reservations",
+					Name:           "compute kubelet reservations and write drop-in config",
 					CanRetry:       false,
 					ScriptExecutor: consts.LinuxBash,
-					ShellScript:    distributions.KubeletReservationScript,
-				},
-				{
-					Name:           "write kubelet drop-in config",
-					CanRetry:       false,
-					ScriptExecutor: consts.LinuxBash,
-					ShellScript:    distributions.KubeletDropInScript,
+					ShellScript:    distributions.KubeletReservationScript + distributions.KubeletDropInScript,
 				},
 				{
 					Name:       "store configuration for Controlplane0",
@@ -387,16 +381,10 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 			t,
 			[]ssh.Script{
 				{
-					Name:           "compute kubelet reservations",
+					Name:           "compute kubelet reservations and write drop-in config",
 					CanRetry:       false,
 					ScriptExecutor: consts.LinuxBash,
-					ShellScript:    distributions.KubeletReservationScript,
-				},
-				{
-					Name:           "write kubelet drop-in config",
-					CanRetry:       false,
-					ScriptExecutor: consts.LinuxBash,
-					ShellScript:    distributions.KubeletDropInScript,
+					ShellScript:    distributions.KubeletReservationScript + distributions.KubeletDropInScript,
 				},
 				{
 					Name:           "Join Controlplane [1..N]",
@@ -457,16 +445,10 @@ func TestSciprWorkerplane(t *testing.T) {
 		t,
 		[]ssh.Script{
 			{
-				Name:           "compute kubelet reservations",
+				Name:           "compute kubelet reservations and write drop-in config",
 				CanRetry:       false,
 				ScriptExecutor: consts.LinuxBash,
-				ShellScript:    distributions.KubeletReservationScript,
-			},
-			{
-				Name:           "write kubelet drop-in config",
-				CanRetry:       false,
-				ScriptExecutor: consts.LinuxBash,
-				ShellScript:    distributions.KubeletDropInScript,
+				ShellScript:    distributions.KubeletReservationScript + distributions.KubeletDropInScript,
 			},
 			{
 				Name:           "Join K3s workerplane",
