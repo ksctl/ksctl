@@ -53,7 +53,7 @@ func patchZones(emZone string) (updatedZone string) {
 }
 
 func (k *Optimizer) GetMappingCloudRegionToElectricityMapsZones() (map[string]map[string]string, error) {
-	url := "https://raw.githubusercontent.com/Green-Software-Foundation/real-time-cloud/3ba9accf352bcd081c3fe6b0789ee276d5286f82/Cloud_Region_Metadata.csv"
+	url := "https://raw.githubusercontent.com/Green-Software-Foundation/real-time-cloud/b2858aa2300ae2faf30ed9145b06dcb7ce995148/Cloud_Region_Metadata.csv"
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
