@@ -108,6 +108,7 @@ const (
 	K8sKubeadm KsctlKubernetes = "kubeadm"
 	K8sAks     KsctlKubernetes = "aks"
 	K8sEks     KsctlKubernetes = "eks"
+	K8sGke     KsctlKubernetes = "gke"
 	K8sKind    KsctlKubernetes = "kind"
 	K8sKsctl   KsctlKubernetes = "ksctl"
 )
