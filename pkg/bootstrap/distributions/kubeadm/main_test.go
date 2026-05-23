@@ -67,6 +67,12 @@ func NewClientHelper(x provider.CloudResourceState, state *statefile.StorageDocu
 	p.state.K8sBootstrap.B.PublicIPs.WorkerPlanes = x.IPv4WorkerPlanes
 	p.state.K8sBootstrap.B.PublicIPs.LoadBalancer = x.IPv4LoadBalancer
 	p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
+	p.state.K8sBootstrap.B.VMSizes = statefile.Instances{
+		ControlPlanes: x.VMSizesControlPlanes,
+		WorkerPlanes:  x.VMSizesWorkerPlanes,
+		DataStores:    x.VMSizesDataStores,
+		LoadBalancer:  x.VMSizesLoadBalancer,
+	}
 	p.state.K8sBootstrap.B.SSHInfo = statefile.SSHInfo{
 		UserName:   x.SSHUserName,
 		PrivateKey: x.SSHPrivateKey,
@@ -121,6 +127,11 @@ func initClients() {
 		PrivateIPv4ControlPlanes: []string{"192.168.X.7", "192.168.X.9", "192.168.X.10"},
 		PrivateIPv4DataStores:    []string{"192.168.5.2"},
 		PrivateIPv4LoadBalancer:  "192.168.X.1",
+
+		VMSizesControlPlanes: []string{"t3.medium", "t3.medium", "t3.medium"},
+		VMSizesWorkerPlanes:  []string{"t3.small"},
+		VMSizesDataStores:    []string{"t3.medium"},
+		VMSizesLoadBalancer:  "t3.medium",
 	}
 
 	fakeClient = NewClientHelper(fakeStateFromCloud, mainState)

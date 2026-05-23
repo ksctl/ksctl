@@ -34,6 +34,11 @@ type CloudResourceState struct {
 	Region                   string
 	ClusterType              consts.KsctlClusterType
 	Provider                 consts.KsctlCloud
+
+	VMSizesControlPlanes []string
+	VMSizesWorkerPlanes  []string
+	VMSizesDataStores    []string
+	VMSizesLoadBalancer  string
 }
 
 type Cloud interface {

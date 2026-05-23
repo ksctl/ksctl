@@ -92,6 +92,27 @@ func (p *PreBootstrap) Setup(
 	p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer =
 		cloudState.PrivateIPv4LoadBalancer
 
+	// Validate VMSizes metadata before persisting
+	if len(cloudState.VMSizesControlPlanes) != len(cloudState.IPv4ControlPlanes) {
+		return p.l.NewError(p.ctx, "VMSizesControlPlanes length mismatch: expected %d, got %d",
+			len(cloudState.IPv4ControlPlanes), len(cloudState.VMSizesControlPlanes))
+	}
+	if len(cloudState.VMSizesWorkerPlanes) != len(cloudState.IPv4WorkerPlanes) {
+		return p.l.NewError(p.ctx, "VMSizesWorkerPlanes length mismatch: expected %d, got %d",
+			len(cloudState.IPv4WorkerPlanes), len(cloudState.VMSizesWorkerPlanes))
+	}
+	if len(cloudState.VMSizesDataStores) != len(cloudState.IPv4DataStores) {
+		return p.l.NewError(p.ctx, "VMSizesDataStores length mismatch: expected %d, got %d",
+			len(cloudState.IPv4DataStores), len(cloudState.VMSizesDataStores))
+	}
+
+	p.state.K8sBootstrap.B.VMSizes = statefile.Instances{
+		ControlPlanes: utilities.DeepCopySlice(cloudState.VMSizesControlPlanes),
+		WorkerPlanes:  utilities.DeepCopySlice(cloudState.VMSizesWorkerPlanes),
+		DataStores:    utilities.DeepCopySlice(cloudState.VMSizesDataStores),
+		LoadBalancer:  cloudState.VMSizesLoadBalancer,
+	}
+
 	p.state.K8sBootstrap.B.SSHInfo = statefile.SSHInfo{
 		PrivateKey: cloudState.SSHPrivateKey,
 		UserName:   cloudState.SSHUserName,

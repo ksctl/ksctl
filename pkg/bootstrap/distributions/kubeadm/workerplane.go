@@ -71,12 +71,16 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int) error {
 		return err
 	}
 
+	instanceType := p.state.K8sBootstrap.B.VMSizes.WorkerPlanes[idx]
+
 	script := scriptJoinWorkerplane(
 		distributions.ScriptKubeletDropIn(
 			scriptInstallKubeadmAndOtherTools(*p.state.Versions.Kubeadm)),
 		p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		p.state.K8sBootstrap.Kubeadm.BootstrapToken,
 		p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
+		instanceType,
+		p.state.Region,
 	)
 	p.l.Print(p.ctx, "Installing Kubeadm and Joining WorkerNode to existing cluster")
 
@@ -93,16 +97,30 @@ func (p *Kubeadm) JoinWorkerplane(noOfWP int) error {
 	return nil
 }
 
-func scriptJoinWorkerplane(collection ssh.ExecutionPipeline, privateIPLb, token, cacertSHA string) ssh.ExecutionPipeline {
+func scriptJoinWorkerplane(collection ssh.ExecutionPipeline, privateIPLb, token, cacertSHA string, instanceType, region string) ssh.ExecutionPipeline {
 
 	collection.Append(ssh.Script{
-		Name:           "Join K3s workerplane",
+		Name:           "Join Kubeadm workerplane",
 		CanRetry:       true,
 		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>> ksctl.log
-`, privateIPLb, token, cacertSHA),
+cat <<EOF > join-config.yaml
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    - name: node-labels
+      value: "node.kubernetes.io/instance-type=%s,topology.kubernetes.io/region=%s"
+discovery:
+  bootstrapToken:
+    token: "%s"
+    apiServerEndpoint: "%s:6443"
+    caCertHashes:
+      - sha256:%s
+EOF
+sudo kubeadm join --config join-config.yaml &>> ksctl.log
+`, instanceType, region, token, privateIPLb, cacertSHA),
 	})
 
 	return collection

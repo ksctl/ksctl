@@ -37,6 +37,9 @@ func (p *K3s) configureCP_1(sshExecutor ssh.RemoteConnection) error {
 		}
 	}
 
+	instanceType := p.state.K8sBootstrap.B.VMSizes.ControlPlanes[0]
+	region := p.state.Region
+
 	if consts.KsctlValidCNIPlugin(p.Cni) == consts.CNINone {
 		script = scriptCP_1WithoutCNI(
 			p.state.K8sBootstrap.B.CACert,
@@ -45,7 +48,9 @@ func (p *K3s) configureCP_1(sshExecutor ssh.RemoteConnection) error {
 			*p.state.Versions.K3s,
 			p.state.K8sBootstrap.B.PrivateIPs.DataStores,
 			p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
-			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer)
+			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
+			instanceType,
+			region)
 	} else {
 		script = scriptCP_1(
 			p.state.K8sBootstrap.B.CACert,
@@ -54,7 +59,9 @@ func (p *K3s) configureCP_1(sshExecutor ssh.RemoteConnection) error {
 			*p.state.Versions.K3s,
 			p.state.K8sBootstrap.B.PrivateIPs.DataStores,
 			p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
-			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer)
+			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
+			instanceType,
+			region)
 	}
 
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
@@ -99,6 +106,9 @@ func (p *K3s) ConfigureControlPlane(noOfCP int) error {
 
 		var script ssh.ExecutionPipeline
 
+		instanceType := p.state.K8sBootstrap.B.VMSizes.ControlPlanes[idx]
+		region := p.state.Region
+
 		if consts.KsctlValidCNIPlugin(p.Cni) == consts.CNINone {
 			script = scriptCP_NWithoutCNI(
 				p.state.K8sBootstrap.B.CACert,
@@ -108,7 +118,9 @@ func (p *K3s) ConfigureControlPlane(noOfCP int) error {
 				p.state.K8sBootstrap.B.PrivateIPs.DataStores,
 				p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
-				p.state.K8sBootstrap.K3s.K3sToken)
+				p.state.K8sBootstrap.K3s.K3sToken,
+				instanceType,
+				region)
 		} else {
 			script = scriptCP_N(
 				p.state.K8sBootstrap.B.CACert,
@@ -118,7 +130,9 @@ func (p *K3s) ConfigureControlPlane(noOfCP int) error {
 				p.state.K8sBootstrap.B.PrivateIPs.DataStores,
 				p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
 				p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
-				p.state.K8sBootstrap.K3s.K3sToken)
+				p.state.K8sBootstrap.K3s.K3sToken,
+				instanceType,
+				region)
 		}
 
 		err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(script).
@@ -185,7 +199,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /var/lib/etcd
 }
 
 func scriptCP_1WithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIPlb, privIplb string) ssh.ExecutionPipeline {
+	pubIPlb, privIplb string, instanceType, region string) ssh.ExecutionPipeline {
 
 	collection := ssh.NewExecutionPipeline()
 
@@ -204,6 +218,8 @@ cat <<EOF > control-setup.sh
 
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
 
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
@@ -215,20 +231,22 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver, dbEndpoint, pubIPlb, privIplb),
+`, distributions.KubeletReservationScript, instanceType, region, ver, dbEndpoint, pubIPlb, privIplb),
 	})
 
 	return collection
 }
 
 func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
-	privateIPLb string) ssh.ExecutionPipeline {
+	privateIPLb string, instanceType, region string) ssh.ExecutionPipeline {
 
 	collection := ssh.NewExecutionPipeline()
 
@@ -245,6 +263,8 @@ func scriptCP_1(ca, etcd, key, ver string, privateEtcdIps []string, pubIPlb,
 cat <<EOF > control-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
@@ -254,13 +274,15 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver, dbEndpoint, pubIPlb, privateIPLb),
+`, distributions.KubeletReservationScript, instanceType, region, ver, dbEndpoint, pubIPlb, privateIPLb),
 	})
 
 	return collection
@@ -282,7 +304,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 }
 
 func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) ssh.ExecutionPipeline {
+	pubIplb, privateIPlb, token string, instanceType, region string) ssh.ExecutionPipeline {
 
 	collection := ssh.NewExecutionPipeline()
 
@@ -299,6 +321,8 @@ func scriptCP_N(ca, etcd, key, ver string, privateEtcdIps []string,
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
 	--datastore-endpoint "%s" \
@@ -309,6 +333,8 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -316,14 +342,14 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
+`, distributions.KubeletReservationScript, instanceType, region, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
 	})
 
 	return collection
 }
 
 func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
-	pubIplb, privateIPlb, token string) ssh.ExecutionPipeline {
+	pubIplb, privateIPlb, token string, instanceType, region string) ssh.ExecutionPipeline {
 
 	collection := ssh.NewExecutionPipeline()
 
@@ -340,6 +366,8 @@ func scriptCP_NWithoutCNI(ca, etcd, key, ver string, privateEtcdIps []string,
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
 	--datastore-endpoint "%s" \
@@ -352,6 +380,8 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -359,7 +389,7 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
+`, distributions.KubeletReservationScript, instanceType, region, ver, token, dbEndpoint, privateIPlb, pubIplb, privateIPlb),
 	})
 
 	return collection

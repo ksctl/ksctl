@@ -266,6 +266,11 @@ func (p *Provider) GetStateForHACluster() (provider.CloudResourceState, error) {
 		PrivateIPv4ControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoControlPlanes.PrivateIPs),
 		PrivateIPv4DataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoDatabase.PrivateIPs),
 		PrivateIPv4LoadBalancer:  p.state.CloudInfra.Aws.InfoLoadBalancer.PrivateIP,
+
+		VMSizesControlPlanes: utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoControlPlanes.VMSizes),
+		VMSizesWorkerPlanes:  utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoWorkerPlanes.VMSizes),
+		VMSizesDataStores:    utilities.DeepCopySlice(p.state.CloudInfra.Aws.InfoDatabase.VMSizes),
+		VMSizesLoadBalancer:  p.state.CloudInfra.Aws.InfoLoadBalancer.VMSize,
 	}
 
 	p.l.Success(p.ctx, "Transferred Data, it's ready to be shipped!")

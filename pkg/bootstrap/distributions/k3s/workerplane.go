@@ -32,11 +32,16 @@ func (p *K3s) JoinWorkerplane(no int) error {
 
 	p.l.Note(p.ctx, "configuring Workerplane", "number", strconv.Itoa(idx))
 
+	instanceType := p.state.K8sBootstrap.B.VMSizes.WorkerPlanes[idx]
+	region := p.state.Region
+
 	err := sshExecutor.Flag(consts.UtilExecWithoutOutput).Script(
 		scriptWP(
 			*p.state.Versions.K3s,
 			p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 			p.state.K8sBootstrap.K3s.K3sToken,
+			instanceType,
+			region,
 		)).
 		IPv4(p.state.K8sBootstrap.B.PublicIPs.WorkerPlanes[idx]).
 		FastMode(true).SSHExecute()
@@ -49,7 +54,7 @@ func (p *K3s) JoinWorkerplane(no int) error {
 	return nil
 }
 
-func scriptWP(ver string, privateIPlb, token string) ssh.ExecutionPipeline {
+func scriptWP(ver string, privateIPlb, token string, instanceType, region string) ssh.ExecutionPipeline {
 
 	collection := ssh.NewExecutionPipeline()
 
@@ -63,15 +68,19 @@ cat <<EOF > worker-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-agent-uninstall.sh || echo "already deleted"
 export K3S_DEBUG=true
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443 \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%"
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}"
 EOF
 
 sudo chmod +x worker-setup.sh
 sudo ./worker-setup.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver, token, privateIPlb),
+`, distributions.KubeletReservationScript, instanceType, region, ver, token, privateIPlb),
 	})
 
 	return collection

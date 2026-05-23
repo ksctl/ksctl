@@ -67,6 +67,9 @@ func (p *Kubeadm) configurecp1(sshExecutor ssh.RemoteConnection) error {
 
 	p.l.Print(p.ctx, "Configuring K8s cluster")
 
+	instanceType := p.state.K8sBootstrap.B.VMSizes.ControlPlanes[0]
+	region := p.state.Region
+
 	configureControlPlane0 := scriptAddKubeadmControlplane0(
 		distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()),
 		*p.state.Versions.Kubeadm,
@@ -74,7 +77,9 @@ func (p *Kubeadm) configurecp1(sshExecutor ssh.RemoteConnection) error {
 		p.state.K8sBootstrap.Kubeadm.CertificateKey,
 		p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer,
 		p.state.K8sBootstrap.B.PublicIPs.LoadBalancer,
-		p.state.K8sBootstrap.B.PrivateIPs.DataStores)
+		p.state.K8sBootstrap.B.PrivateIPs.DataStores,
+		instanceType,
+		region)
 
 	if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 		Script(configureControlPlane0).
@@ -132,6 +137,10 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int) error {
 		}
 
 		p.l.Print(p.ctx, "Joining controlplane to existing cluster")
+
+		instanceType := p.state.K8sBootstrap.B.VMSizes.ControlPlanes[idx]
+		region := p.state.Region
+
 		if err := sshExecutor.Flag(consts.UtilExecWithoutOutput).
 			Script(scriptJoinControlplane(
 				distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()),
@@ -139,6 +148,8 @@ func (p *Kubeadm) ConfigureControlPlane(noOfCP int) error {
 				p.state.K8sBootstrap.Kubeadm.BootstrapToken,
 				p.state.K8sBootstrap.Kubeadm.DiscoveryTokenCACertHash,
 				p.state.K8sBootstrap.Kubeadm.CertificateKey,
+				instanceType,
+				region,
 			)).
 			IPv4(p.state.K8sBootstrap.B.PublicIPs.ControlPlanes[idx]).
 			FastMode(true).
@@ -218,7 +229,7 @@ kubeadm token create --ttl 20m --description "ksctl bootstrap token"
 	return collection
 }
 
-func scriptAddKubeadmControlplane0(collection ssh.ExecutionPipeline, ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string) ssh.ExecutionPipeline {
+func scriptAddKubeadmControlplane0(collection ssh.ExecutionPipeline, ver string, bootstrapToken, certificateKey, publicIPLb string, privateIpLb string, privateIPDs []string, instanceType, region string) ssh.ExecutionPipeline {
 
 	etcdConf := generateExternalEtcdConfig(privateIPDs)
 
@@ -227,8 +238,10 @@ func scriptAddKubeadmControlplane0(collection ssh.ExecutionPipeline, ver string,
 		CanRetry:   true,
 		MaxRetries: 3,
 		ShellScript: fmt.Sprintf(`%s
+INSTANCE_TYPE=%s
+REGION=%s
 cat <<EOF > kubeadm-config.yml
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 bootstrapTokens:
 - groups:
@@ -245,6 +258,9 @@ nodeRegistration:
   criSocket: unix:///var/run/containerd/containerd.sock
   imagePullPolicy: IfNotPresent
   taints: null
+  kubeletExtraArgs:
+    - name: node-labels
+      value: "node.kubernetes.io/instance-type=${INSTANCE_TYPE},topology.kubernetes.io/region=${REGION}"
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
@@ -289,7 +305,7 @@ evictionHard:
   imagefs.available: "15%%"
 EOF
 
-`, distributions.KubeletReservationScript, bootstrapToken, certificateKey, publicIPLb, privateIpLb, etcdConf, ver, publicIPLb),
+`, distributions.KubeletReservationScript, instanceType, region, bootstrapToken, certificateKey, publicIPLb, privateIpLb, etcdConf, ver, publicIPLb),
 	})
 
 	collection.Append(ssh.Script{
@@ -373,7 +389,7 @@ sudo mv -v ca.pem etcd.pem etcd-key.pem /etcd/kubernetes/pki/etcd
 	return collection
 }
 
-func scriptJoinControlplane(collection ssh.ExecutionPipeline, privateIPLb, token, cacertSHA, certKey string) ssh.ExecutionPipeline {
+func scriptJoinControlplane(collection ssh.ExecutionPipeline, privateIPLb, token, cacertSHA, certKey string, instanceType, region string) ssh.ExecutionPipeline {
 
 	collection.Append(ssh.Script{
 		Name:           "Join Controlplane [1..N]",
@@ -381,8 +397,24 @@ func scriptJoinControlplane(collection ssh.ExecutionPipeline, privateIPLb, token
 		MaxRetries:     3,
 		ScriptExecutor: consts.LinuxBash,
 		ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s  &>> ksctl.log
-`, privateIPLb, token, cacertSHA, certKey),
+cat <<EOF > join-config.yaml
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    - name: node-labels
+      value: "node.kubernetes.io/instance-type=%s,topology.kubernetes.io/region=%s"
+discovery:
+  bootstrapToken:
+    token: "%s"
+    apiServerEndpoint: "%s:6443"
+    caCertHashes:
+      - sha256:%s
+controlPlane:
+  certificateKey: "%s"
+EOF
+sudo kubeadm join --config join-config.yaml &>> ksctl.log
+`, instanceType, region, token, privateIPLb, cacertSHA, certKey),
 	})
 	return collection
 }

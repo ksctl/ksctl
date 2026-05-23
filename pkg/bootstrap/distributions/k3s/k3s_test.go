@@ -57,6 +57,12 @@ func NewClientHelper(x provider.CloudResourceState, state *statefile.StorageDocu
 
 	p.state.K8sBootstrap.B.PublicIPs.LoadBalancer = x.IPv4LoadBalancer
 	p.state.K8sBootstrap.B.PrivateIPs.LoadBalancer = x.PrivateIPv4LoadBalancer
+	p.state.K8sBootstrap.B.VMSizes = statefile.Instances{
+		ControlPlanes: x.VMSizesControlPlanes,
+		WorkerPlanes:  x.VMSizesWorkerPlanes,
+		DataStores:    x.VMSizesDataStores,
+		LoadBalancer:  x.VMSizesLoadBalancer,
+	}
 	p.state.K8sBootstrap.B.SSHInfo = statefile.SSHInfo{
 		UserName:   x.SSHUserName,
 		PrivateKey: x.SSHPrivateKey,
@@ -99,6 +105,8 @@ func TestScriptsControlplane(t *testing.T) {
 	ca, etcd, key := "-- CA_CERT --", "-- ETCD_CERT --", "-- ETCD_KEY --"
 
 	sampleToken := "k3ssdcdsXXXYYYZZZ"
+	sampleInstanceType := "t3.medium"
+	sampleRegion := "us-east-1"
 
 	t.Run("script for controlplane 0", func(t *testing.T) {
 
@@ -121,6 +129,8 @@ cat <<EOF > control-setup.sh
 
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
 
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
@@ -132,17 +142,19 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, sampleInstanceType, sampleRegion, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
+						return scriptCP_1WithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleInstanceType, sampleRegion)
 					},
 				)
 
@@ -164,6 +176,8 @@ sudo ./control-setup.sh &>> ksctl.log
 cat <<EOF > control-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--node-taint CriticalAddonsOnly=true:NoExecute \
 	--datastore-endpoint "%s" \
@@ -173,17 +187,19 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--tls-san %s \
 	--tls-san %s
 EOF
 
 sudo chmod +x control-setup.sh
 sudo ./control-setup.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, sampleInstanceType, sampleRegion, ver[i], dbEndpoint, pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-						return scriptCP_1(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i])
+						return scriptCP_1(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleInstanceType, sampleRegion)
 					},
 				)
 			}
@@ -209,6 +225,8 @@ sudo ./control-setup.sh &>> ksctl.log
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
 	--datastore-endpoint "%s" \
@@ -221,6 +239,8 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -228,11 +248,11 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, sampleInstanceType, sampleRegion, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
+						return scriptCP_NWithoutCNI(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken, sampleInstanceType, sampleRegion)
 					},
 				)
 			}
@@ -254,6 +274,8 @@ sudo ./control-setupN.sh &>> ksctl.log
 cat <<EOF > control-setupN.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-uninstall.sh || echo "already deleted"
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--token %s \
 	--datastore-endpoint "%s" \
@@ -264,6 +286,8 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - server \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
 	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}" \
 	--server https://%s:6443 \
     --tls-san %s \
     --tls-san %s
@@ -271,11 +295,11 @@ EOF
 
 sudo chmod +x control-setupN.sh
 sudo ./control-setupN.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
+`, distributions.KubeletReservationScript, sampleInstanceType, sampleRegion, ver[i], sampleToken, dbEndpoint, privateIPLb[i], pubIPLb[i], privateIPLb[i]),
 						},
 					},
 					func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-						return scriptCP_N(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken)
+						return scriptCP_N(ca, etcd, key, ver[i], privIP, pubIPLb[i], privateIPLb[i], sampleToken, sampleInstanceType, sampleRegion)
 					},
 				)
 			}
@@ -326,8 +350,10 @@ func TestSciprWorkerplane(t *testing.T) {
 	ver := "1.18"
 	token := "K#Sde43rew34"
 	private := "192.20.3.3"
+	sampleInstanceType := "t3.medium"
+	sampleRegion := "us-east-1"
 
-	t.Run("get kubeconfig", func(t *testing.T) {
+	t.Run("get workerplane script", func(t *testing.T) {
 		testHelper.HelperTestTemplate(
 			t,
 			[]ssh.Script{
@@ -341,19 +367,23 @@ cat <<EOF > worker-setup.sh
 #!/bin/bash
 /bin/bash /usr/local/bin/k3s-agent-uninstall.sh || echo "already deleted"
 export K3S_DEBUG=true
+INSTANCE_TYPE=%s
+REGION=%s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="%s" sh -s - agent --token %s --server https://%s:6443 \
 	--kubelet-arg="kube-reserved=cpu=${KUBE_CPU}m,memory=${KUBE_MEM}Mi" \
 	--kubelet-arg="system-reserved=cpu=100m,memory=200Mi" \
-	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%"
+	--kubelet-arg="eviction-hard=memory.available<100Mi,nodefs.available<10%%,nodefs.inodesFree<5%%,imagefs.available<15%%" \
+	--node-label "node.kubernetes.io/instance-type=${INSTANCE_TYPE}" \
+	--node-label "topology.kubernetes.io/region=${REGION}"
 EOF
 
 sudo chmod +x worker-setup.sh
 sudo ./worker-setup.sh &>> ksctl.log
-`, distributions.KubeletReservationScript, ver, token, private),
+`, distributions.KubeletReservationScript, sampleInstanceType, sampleRegion, ver, token, private),
 				},
 			},
 			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-				return scriptWP(ver, private, token)
+				return scriptWP(ver, private, token, sampleInstanceType, sampleRegion)
 			},
 		)
 	})

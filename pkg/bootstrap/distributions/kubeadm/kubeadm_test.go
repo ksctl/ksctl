@@ -274,6 +274,8 @@ sudo cat /etc/kubernetes/admin.conf
 		privateIPLb := "5.1.1.1"
 		privateIPDs := []string{"8.8.8.8"}
 		etcdConf := generateExternalEtcdConfig(privateIPDs)
+		sampleInstanceType := "t3.medium"
+		sampleRegion := "us-east-1"
 
 		testHelper.HelperTestTemplate(
 			t,
@@ -289,8 +291,10 @@ sudo cat /etc/kubernetes/admin.conf
 					CanRetry:   true,
 					MaxRetries: 3,
 					ShellScript: fmt.Sprintf(`%s
+INSTANCE_TYPE=%s
+REGION=%s
 cat <<EOF > kubeadm-config.yml
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 bootstrapTokens:
 - groups:
@@ -307,6 +311,9 @@ nodeRegistration:
   criSocket: unix:///var/run/containerd/containerd.sock
   imagePullPolicy: IfNotPresent
   taints: null
+  kubeletExtraArgs:
+    - name: node-labels
+      value: "node.kubernetes.io/instance-type=${INSTANCE_TYPE},topology.kubernetes.io/region=${REGION}"
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
@@ -351,7 +358,7 @@ evictionHard:
   imagefs.available: "15%%"
 EOF
 
-`, distributions.KubeletReservationScript, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
+`, distributions.KubeletReservationScript, sampleInstanceType, sampleRegion, bootstrapToken, certificateKey, publicIPLb, privateIPLb, etcdConf, ver, publicIPLb),
 				},
 				{
 					Name:       "kubeadm init",
@@ -367,7 +374,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 				},
 			},
 			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-				return scriptAddKubeadmControlplane0(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), ver, bootstrapToken, certificateKey, publicIPLb, privateIPLb, privateIPDs)
+				return scriptAddKubeadmControlplane0(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), ver, bootstrapToken, certificateKey, publicIPLb, privateIPLb, privateIPDs, sampleInstanceType, sampleRegion)
 			},
 		)
 	})
@@ -377,6 +384,8 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 		token := "abcd"
 		cacertSHA := "x2r23erd23"
 		crtKey := "xxyy"
+		sampleInstanceType := "t3.medium"
+		sampleRegion := "us-east-1"
 		testHelper.HelperTestTemplate(
 			t,
 			[]ssh.Script{
@@ -392,12 +401,28 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 					MaxRetries:     3,
 					ScriptExecutor: consts.LinuxBash,
 					ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s --control-plane --certificate-key %s  &>> ksctl.log
-`, privateIPLb, token, cacertSHA, crtKey),
+cat <<EOF > join-config.yaml
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    - name: node-labels
+      value: "node.kubernetes.io/instance-type=%s,topology.kubernetes.io/region=%s"
+discovery:
+  bootstrapToken:
+    token: "%s"
+    apiServerEndpoint: "%s:6443"
+    caCertHashes:
+      - sha256:%s
+controlPlane:
+  certificateKey: "%s"
+EOF
+sudo kubeadm join --config join-config.yaml &>> ksctl.log
+`, sampleInstanceType, sampleRegion, token, privateIPLb, cacertSHA, crtKey),
 				},
 			},
 			func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-				return scriptJoinControlplane(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), privateIPLb, token, cacertSHA, crtKey)
+				return scriptJoinControlplane(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), privateIPLb, token, cacertSHA, crtKey, sampleInstanceType, sampleRegion)
 			},
 		)
 	})
@@ -441,6 +466,8 @@ func TestSciprWorkerplane(t *testing.T) {
 	privateIPLb := "1.1.1.1"
 	token := "abcd"
 	cacertSHA := "x2r23erd23"
+	sampleInstanceType := "t3.medium"
+	sampleRegion := "us-east-1"
 	testHelper.HelperTestTemplate(
 		t,
 		[]ssh.Script{
@@ -451,17 +478,31 @@ func TestSciprWorkerplane(t *testing.T) {
 				ShellScript:    distributions.KubeletReservationScript + distributions.KubeletDropInScript,
 			},
 			{
-				Name:           "Join K3s workerplane",
+				Name:           "Join Kubeadm workerplane",
 				CanRetry:       true,
 				MaxRetries:     3,
 				ScriptExecutor: consts.LinuxBash,
 				ShellScript: fmt.Sprintf(`
-sudo kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s &>> ksctl.log
-`, privateIPLb, token, cacertSHA),
+cat <<EOF > join-config.yaml
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    - name: node-labels
+      value: "node.kubernetes.io/instance-type=%s,topology.kubernetes.io/region=%s"
+discovery:
+  bootstrapToken:
+    token: "%s"
+    apiServerEndpoint: "%s:6443"
+    caCertHashes:
+      - sha256:%s
+EOF
+sudo kubeadm join --config join-config.yaml &>> ksctl.log
+`, sampleInstanceType, sampleRegion, token, privateIPLb, cacertSHA),
 			},
 		},
 		func() ssh.ExecutionPipeline { // Adjust the signature to match your needs
-			return scriptJoinWorkerplane(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), privateIPLb, token, cacertSHA)
+			return scriptJoinWorkerplane(distributions.ScriptKubeletDropIn(ssh.NewExecutionPipeline()), privateIPLb, token, cacertSHA, sampleInstanceType, sampleRegion)
 		},
 	)
 }
