@@ -261,11 +261,12 @@ nodeRegistration:
   kubeletExtraArgs:
     - name: node-labels
       value: "node.kubernetes.io/instance-type=${INSTANCE_TYPE},topology.kubernetes.io/region=${REGION}"
+timeouts:
+  controlPlaneComponentHealthCheck: 4m0s
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 apiServer:
-  timeoutForControlPlane: 4m0s
   certSANs:
     - "%s"
     - "%s"
@@ -289,6 +290,7 @@ networking:
   serviceSubnet: 10.96.0.0/12
   podSubnet: 10.244.0.0/16
 scheduler: {}
+proxy: {}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
