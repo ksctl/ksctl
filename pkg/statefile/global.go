@@ -156,6 +156,7 @@ type InfrastructureState struct {
 	Aws   *StateConfigurationAws   `json:"aws,omitempty" bson:"aws,omitempty"`
 	Azure *StateConfigurationAzure `json:"azure,omitempty" bson:"azure,omitempty"`
 	Local *StateConfigurationLocal `json:"local,omitempty" bson:"local,omitempty"`
+	Gcp   *StateConfigurationGcp   `json:"gcp,omitempty" bson:"gcp,omitempty"`
 }
 
 type KubernetesBootstrapState struct {
