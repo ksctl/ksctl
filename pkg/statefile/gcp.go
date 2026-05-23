@@ -38,6 +38,6 @@ type StateConfigurationGcp struct {
 	B BaseInfra `json:"b" bson:"b"`
 
 	ProjectID          string `json:"project_id" bson:"project_id"`
-	Zone               string `json:"zone" bson:"zone"`
+	Location           string `json:"location" bson:"location"`
 	ManagedClusterName string `json:"managed_cluster_name" bson:"managed_cluster_name"`
 }
