@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	ksctlErrors "github.com/ksctl/ksctl/v2/pkg/errors"
@@ -78,7 +79,7 @@ func fetchPrices(query string, opts ...Option) ([]AzPrice, error) {
 	}
 
 	client := &http.Client{}
-	nextPage := fmt.Sprintf("%s?$filter=%s", apiURL, query)
+	nextPage := fmt.Sprintf("%s?$filter=%s", apiURL, url.QueryEscape(query))
 
 	for nextPage != "" {
 		req, err := http.NewRequest("GET", nextPage, nil)
@@ -93,12 +94,12 @@ func fetchPrices(query string, opts ...Option) ([]AzPrice, error) {
 			return nil, err
 		}
 
-		defer resp.Body.Close()
-
 		var jsonData APIPricingResponse
-		if err := json.NewDecoder(resp.Body).Decode(&jsonData); err != nil {
-			fmt.Printf("Error parsing JSON: %v\n", err)
-			return nil, err
+		decodeErr := json.NewDecoder(resp.Body).Decode(&jsonData)
+		resp.Body.Close()
+		if decodeErr != nil {
+			fmt.Printf("Error parsing JSON: %v\n", decodeErr)
+			return nil, decodeErr
 		}
 		for _, p := range jsonData.Items {
 			if doesProductNameContainWindows(p.ProductName) {
