@@ -2,6 +2,22 @@
 
 # Ksctl: Simplified Kubernetes Clusters Lifecycle Management
 
+> [!WARNING]
+> **This project is no longer maintained.**
+>
+> What I build now:
+>
+> - **[Kubmin](https://ksctl.com/product/kubmin)** — per-workload cost, efficiency, and SCI/SEI intelligence for Kubernetes. Some parts of this repo were reused there, but the latest migration is removing that dependency.
+> - **[infai](https://infai.dipankar-das.com)** — a terminal control plane for local LLM inference: one profile shape for llama.cpp and vLLM, many models at once, live tokens/sec plus CPU/RAM/VRAM telemetry, hardware fit checks before launch
+> - **[infaiw](https://infai.dipankar-das.com/infaiw/)** — a daemon-based agent harness: sessions keep running after you close the terminal, sidecar loops must pass an acceptance check before reporting back, every event lands on a durable branchable timeline, and approvals wait for you
+>
+> This repo is the core engine behind [kli](https://github.com/ksctl/kli): the cluster provisioning and lifecycle logic that the `kli` CLI wrapped. `kli` is no longer maintained either.
+>
+> **Want to take over maintenance of `ksctl`?** If you still depend on it and would like to become the maintainer, reach out on [Discord](https://discord.ksctl.com) or [open an issue](https://github.com/ksctl/ksctl/issues) on this repo.
+>
+> The code here stays available for reference under its original license.
+
+
 <h3>Making Kubernetes accessible to developers</h3>
 
 [![Discord](https://img.shields.io/badge/discord-ksctl-brightgreen.svg)][discord-link]
